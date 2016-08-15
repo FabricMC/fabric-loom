@@ -17,9 +17,13 @@ repositories {
     flatDir {
         dirs 'libs'
     }
-    ivy {
-        name "Enigma-Temporary"
-        artifactPattern "http://modmuss50.me:8080/job/Enigma-Asie/lastSuccessfulBuild/artifact/build/libs/[module]-[revision]-[classifier].[ext]"
+    maven {
+        name = "Modmuss50"
+        url = "http://maven.modmuss50.me/"
+    }
+	maven {
+        name "Cuchaz"
+        url 'http://maven.cuchazinteractive.com'
     }
 }
 
@@ -35,13 +39,14 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.21'
     compile 'org.slf4j:slf4j-simple:1.7.21'
     shade 'com.google.code.gson:gson:2.6.2'
-    shade 'com.googlecode.java-diff-utils:diffutils:1.3.0'
-    shade 'com.cloudbees:diff4j:1.2'
     shade 'commons-io:commons-io:1.4'
-    shade 'com.google.guava:guava-jdk5:17.0'
-    shade 'org.ow2.asm:asm-debug-all:5.0.3'
     shade 'com.google.guava:guava:19.0'
-    shade name: "enigma", version: "0.11.0.7", classifier: "all"
+	
+	shade 'chorusmc:enigma:0.11.+'
+	shade 'org.javassist:javassist:3.+'
+	shade 'org.bitbucket.mstrobel:procyon-decompiler:0.5.28-enigma'
+	shade 'org.javassist:javassist:3.20.0-GA'
+	shade 'de.sciss:syntaxpane:1.1.+'    
 }
 
 sourceSets {
@@ -59,4 +64,51 @@ jar {
     }
 }
 
-//TODO maven uploading
+uploadArchives {
+    repositories {
+        mavenDeployer {
+		if (project.hasProperty('mavenPass')){
+            repository(url: "http://mavenupload.modmuss50.me/") {
+                authentication(userName: "buildslave", password: project.getProperty('mavenPass'))
+            }
+        }
+        else{ 
+           repository(url: "file:///var/www/maven/")
+        }
+            pom {
+                groupId = "chorusmc"
+                version = project.version
+                artifactId = project.archivesBaseName
+                project {
+                    name project.archivesBaseName
+                    packaging 'jar'
+                    description 'chorus-gradle'
+                    url 'https://github.com/ChorusMC/chorus-gradle'
+                    scm {
+                        url 'https://github.com/ChorusMC/chorus-gradle'
+                        connection 'scm:git:git@github.com:ChorusMC/chorus-gradle.git'
+                        developerConnection 'scm:git:git@github.com:ChorusMC/chorus-gradle.git'
+                    }
+                    issueManagement {
+                        system 'github'
+                        url 'https://github.com/ChorusMC/chorus-gradle/issues'
+                    }
+                    licenses {
+                        license {
+                            name 'License'
+                            url 'https://github.com/ChorusMC/chorus-gradle/blob/master/readme.txt'
+                            distribution 'repo'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id 'modmuss50'
+                            name 'modmuss50'
+                            roles { role 'developer' }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,15 @@
+/.idea
+
+/work
+/tools
+/build
+/.gradle
+*.log
+*.reject
+/run/
+
+*.iml
+*.ipr
+*.iws
+/out
+/classes/

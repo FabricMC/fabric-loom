@@ -143,7 +143,7 @@ public class GenIdeaProjectTask extends DefaultTask {
         }
 
         IdeaRunConfig ideaClient = new IdeaRunConfig();
-        ideaClient.mainClass = "chorusmc.base.launch.ClientStart";
+        ideaClient.mainClass = "chorusmc.base.launch.ChorusClientMain";
         ideaClient.projectName = getProject().getName();
         ideaClient.configName = "Minecraft Client";
         ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;

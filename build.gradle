@@ -41,7 +41,7 @@ dependencies {
     shade 'com.google.guava:guava-jdk5:17.0'
     shade 'org.ow2.asm:asm-debug-all:5.0.3'
     shade 'com.google.guava:guava:19.0'
-    shade name: "enigma", version: "0.11.0.6", classifier: "all"
+    shade name: "enigma", version: "0.11.0.7", classifier: "all"
 }
 
 sourceSets {

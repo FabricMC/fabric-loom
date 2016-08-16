@@ -1,15 +1,18 @@
-/.idea
+# Ignore everything
+/*
 
-/work
-/tools
-/build
-/.gradle
-*.log
-*.reject
-/run/
+# Folders
+!/gradle
+!/src
 
-*.iml
-*.ipr
-*.iws
-/out
-/classes/
+# Files
+!/.gitattributes
+!/.gitignore
+!/build.gradle
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+!/HEADER
+!/LICENSE
+!/README.md
+!/settings.gradle

@@ -1,26 +1,30 @@
-apply plugin: 'java'
-apply plugin: 'groovy'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'idea'
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'maven'
 
-group = 'net.fabric.gradle'
-version = '0.0.1'
-sourceCompatibility = targetCompatibility = '1.8'
+    id 'idea'
+    id 'eclipse'
 
-if (System.getenv().BUILD_NUMBER) {
-    version = version + "." + "${System.getenv().BUILD_NUMBER}"
+    id 'net.minecrell.licenser' version '0.2.1'
 }
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+group = 'net.fabric'
+archivesBaseName = project.name.toLowerCase()
+version = '0.0.1-SNAPSHOT'
 
 repositories {
     mavenCentral()
     maven {
-        name = "Fabric"
-        url = "http://maven.fabricmc.net/"
+        name = 'fabric'
+        url = 'http://maven.fabricmc.net/'
     }
 	maven {
-        name "Cuchaz"
-        url 'http://maven.cuchazinteractive.com'
+        name = 'cuchaz'
+        url = 'http://maven.cuchazinteractive.com/'
     }
 }
 
@@ -38,12 +42,17 @@ dependencies {
     shade 'com.google.code.gson:gson:2.6.2'
     shade 'commons-io:commons-io:1.4'
     shade 'com.google.guava:guava:19.0'
-	
+
 	shade 'net.fabricmc:enigma:0.11.+'
 	shade 'org.javassist:javassist:3.+'
 	shade 'org.bitbucket.mstrobel:procyon-decompiler:0.5.28-enigma'
 	shade 'org.javassist:javassist:3.20.0-GA'
-	shade 'de.sciss:syntaxpane:1.1.+'    
+	shade 'de.sciss:syntaxpane:1.1.+'
+}
+
+license {
+    header file('HEADER')
+    include '**/*.java'
 }
 
 sourceSets {
@@ -64,43 +73,46 @@ jar {
 uploadArchives {
     repositories {
         mavenDeployer {
-		if (project.hasProperty('mavenPass')){
-            repository(url: "http://mavenupload.modmuss50.me/") {
-                authentication(userName: "buildslave", password: project.getProperty('mavenPass'))
+            if (project.hasProperty('mavenPass')) {
+                repository(url: 'http://mavenupload.modmuss50.me/') {
+                    authentication(userName: 'buildslave', password: project.getProperty('mavenPass'))
+                }
+            } else {
+                repository(url: 'file:///var/www/maven/')
             }
-        }
-        else{ 
-           repository(url: "file:///var/www/maven/")
-        }
+
             pom {
-                groupId = "net.fabricmc"
-                version = project.version
                 artifactId = project.archivesBaseName
+
                 project {
-                    name project.archivesBaseName
-                    packaging 'jar'
-                    description 'fabric-loom'
-                    url 'https://github.com/FabricMC/fabric-loom'
+                    name = project.name
+                    description = project.description
+                    packaging = 'jar'
+                    url = project.url
+
                     scm {
-                        url 'https://github.com/FabricMC/fabric-loom'
-                        connection 'scm:git:git@github.com:FabricMC/fabric-loom.git'
-                        developerConnection 'scm:git:git@github.com:FabricMC/fabric-loom.git'
+                        url = 'https://github.com/FabricMC/fabric-loom'
+                        connection = 'scm:git:git@github.com:FabricMC/fabric-loom.git'
+                        developerConnection = 'scm:git:git@github.com:FabricMC/fabric-loom.git'
                     }
+
                     issueManagement {
-                        system 'github'
-                        url 'https://github.com/FabricMC/fabric-loom/issues'
+                        system = 'GitHub'
+                        url = 'https://github.com/FabricMC/fabric-loom/issues'
                     }
+
                     licenses {
                         license {
-                            name 'License'
-                            url 'https://github.com/FabricMC/fabric-loom/blob/master/readme.txt'
-                            distribution 'repo'
+                            name = 'MIT License'
+                            url = 'https://github.com/FabricMC/fabric-loom/blob/master/LICENSE'
+                            distribution = 'repo'
                         }
                     }
+
                     developers {
                         developer {
-                            id 'modmuss50'
-                            name 'modmuss50'
+                            id = 'modmuss50'
+                            name = 'modmuss50'
                             roles { role 'developer' }
                         }
                     }
@@ -108,4 +120,8 @@ uploadArchives {
             }
         }
     }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.14.1'
 }

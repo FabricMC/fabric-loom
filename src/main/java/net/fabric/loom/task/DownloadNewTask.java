@@ -1,11 +1,11 @@
-package chorusmc.gradle.task;
+package net.fabric.loom.task;
 
-import chorusmc.gradle.util.Constants;
+import net.fabric.loom.util.Constants;
+import net.fabric.loom.util.progress.ProgressLogger;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import chorusmc.gradle.util.progress.ProgressLogger;
 
 import java.io.File;
 import java.io.FileOutputStream;

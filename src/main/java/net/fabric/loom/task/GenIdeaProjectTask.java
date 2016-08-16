@@ -1,9 +1,9 @@
-package chorusmc.gradle.task;
+package net.fabric.loom.task;
 
-import chorusmc.gradle.ChorusGradleExtension;
-import chorusmc.gradle.util.Constants;
-import chorusmc.gradle.util.IdeaRunConfig;
-import chorusmc.gradle.util.Version;
+import net.fabric.loom.LoomGradleExtension;
+import net.fabric.loom.util.Constants;
+import net.fabric.loom.util.IdeaRunConfig;
+import net.fabric.loom.util.Version;
 import com.google.gson.Gson;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
@@ -29,7 +29,7 @@ import java.io.IOException;
 public class GenIdeaProjectTask extends DefaultTask {
     @TaskAction
     public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
-        ChorusGradleExtension extension = this.getProject().getExtensions().getByType(ChorusGradleExtension.class);
+        LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
         File file = new File(getProject().getName() + ".iml");
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -143,7 +143,7 @@ public class GenIdeaProjectTask extends DefaultTask {
         }
 
         IdeaRunConfig ideaClient = new IdeaRunConfig();
-        ideaClient.mainClass = "chorusmc.base.launch.ChorusClientMain";
+        ideaClient.mainClass = "net.fabricmc.base.launch.FabricClientMain ";
         ideaClient.projectName = getProject().getName();
         ideaClient.configName = "Minecraft Client";
         ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;

@@ -1,16 +1,13 @@
-package chorusmc.gradle.task;
+package net.fabric.loom.task;
 
 import cuchaz.enigma.Deobfuscator;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
 import cuchaz.enigma.throwables.MappingParseException;
-import groovy.lang.Closure;
+import net.fabric.loom.LoomGradleExtension;
+import net.fabric.loom.util.Constants;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.process.ExecResult;
-import org.gradle.process.JavaExecSpec;
-import chorusmc.gradle.ChorusGradleExtension;
-import chorusmc.gradle.util.Constants;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
@@ -23,7 +20,7 @@ public class MapJarsTask extends DefaultTask {
 
     @TaskAction
     public void mapJars() throws IOException, MappingParseException {
-        ChorusGradleExtension extension = this.getProject().getExtensions().getByType(ChorusGradleExtension.class);
+        LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
         if(Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).exists()){
             Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).delete();
         }

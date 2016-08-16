@@ -1,6 +1,6 @@
-package chorusmc.gradle;
+package net.fabric.loom;
 
-public class ChorusGradleExtension {
+public class LoomGradleExtension {
     public String version;
     public String runDir = "run";
 }

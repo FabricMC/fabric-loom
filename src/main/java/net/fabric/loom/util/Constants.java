@@ -1,7 +1,7 @@
-package chorusmc.gradle.util;
+package net.fabric.loom.util;
 
-import chorusmc.gradle.util.delayed.IDelayed;
-import chorusmc.gradle.util.delayed.DelayedFile;
+import net.fabric.loom.util.delayed.IDelayed;
+import net.fabric.loom.util.delayed.DelayedFile;
 
 import java.io.File;
 import java.net.URL;

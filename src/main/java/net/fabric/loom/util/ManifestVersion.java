@@ -1,4 +1,4 @@
-package chorusmc.gradle.util;
+package net.fabric.loom.util;
 
 import java.util.ArrayList;
 import java.util.List;

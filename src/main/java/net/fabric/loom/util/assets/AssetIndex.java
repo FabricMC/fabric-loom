@@ -1,4 +1,4 @@
-package chorusmc.gradle.util.assets;
+package net.fabric.loom.util.assets;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;

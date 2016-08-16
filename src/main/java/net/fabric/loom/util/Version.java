@@ -1,4 +1,4 @@
-package chorusmc.gradle.util;
+package net.fabric.loom.util;
 
 import com.google.gson.JsonObject;
 

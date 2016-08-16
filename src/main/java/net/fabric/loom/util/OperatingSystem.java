@@ -1,4 +1,4 @@
-package chorusmc.gradle.util;
+package net.fabric.loom.util;
 
 public class OperatingSystem {
     public static String getOS() {

@@ -1,4 +1,4 @@
-package chorusmc.gradle.util.progress;
+package net.fabric.loom.util.progress;
 
 import org.gradle.api.Project;
 

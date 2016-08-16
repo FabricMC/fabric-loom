@@ -1,4 +1,4 @@
-package chorusmc.gradle.util.assets;
+package net.fabric.loom.util.assets;
 
 public class AssetObject {
     private String hash;

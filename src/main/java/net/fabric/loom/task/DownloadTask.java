@@ -1,7 +1,7 @@
-package chorusmc.gradle.task;
+package net.fabric.loom.task;
 
-import chorusmc.gradle.util.Constants;
-import chorusmc.gradle.util.Version;
+import net.fabric.loom.util.Constants;
+import net.fabric.loom.util.Version;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.io.FileUtils;
@@ -9,12 +9,12 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.tasks.TaskAction;
-import chorusmc.gradle.ChorusGradleExtension;
-import chorusmc.gradle.util.Checksum;
-import chorusmc.gradle.util.ManifestVersion;
-import chorusmc.gradle.util.assets.AssetIndex;
-import chorusmc.gradle.util.assets.AssetObject;
-import chorusmc.gradle.util.progress.ProgressLogger;
+import net.fabric.loom.LoomGradleExtension;
+import net.fabric.loom.util.Checksum;
+import net.fabric.loom.util.ManifestVersion;
+import net.fabric.loom.util.assets.AssetIndex;
+import net.fabric.loom.util.assets.AssetObject;
+import net.fabric.loom.util.progress.ProgressLogger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -27,7 +27,7 @@ public class DownloadTask extends DefaultTask {
     @TaskAction
     public void download() {
         try {
-            ChorusGradleExtension extension = this.getProject().getExtensions().getByType(ChorusGradleExtension.class);
+            LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
             if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
                 this.getLogger().lifecycle(":downloading minecraft json");
@@ -56,7 +56,7 @@ public class DownloadTask extends DefaultTask {
             }
 
             this.getLogger().lifecycle(":downloading mappings");
-            FileUtils.copyURLToFile(new URL("https://github.com/ChorusMC/pomf/archive/master.zip"), Constants.MAPPINGS_ZIP);
+            FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/pomf/archive/master.zip"), Constants.MAPPINGS_ZIP);
 
             DependencyHandler dependencyHandler = getProject().getDependencies();
 

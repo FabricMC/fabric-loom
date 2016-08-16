@@ -1,9 +1,9 @@
-package chorusmc.gradle.task;
+package net.fabric.loom.task;
 
+import net.fabric.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 import org.zeroturnaround.zip.ZipUtil;
-import chorusmc.gradle.util.Constants;
 
 import java.io.File;
 import java.io.FileNotFoundException;

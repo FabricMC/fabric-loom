@@ -1,6 +1,6 @@
-package chorusmc.gradle;
+package net.fabric.loom;
 
-import chorusmc.gradle.util.Constants;
+import net.fabric.loom.util.Constants;
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -25,7 +25,7 @@ public class AbstractPlugin implements Plugin<Project> {
         project.apply(ImmutableMap.of("plugin", "eclipse"));
         project.apply(ImmutableMap.of("plugin", "idea"));
 
-        project.getExtensions().create("minecraft", ChorusGradleExtension.class);
+        project.getExtensions().create("minecraft", LoomGradleExtension.class);
 
         // Force add Mojang repository
         addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");

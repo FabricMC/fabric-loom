@@ -4,7 +4,7 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: 'idea'
 
-group = 'chorusmc.gradle'
+group = 'net.fabric.gradle'
 version = '0.0.1'
 sourceCompatibility = targetCompatibility = '1.8'
 
@@ -14,12 +14,9 @@ if (System.getenv().BUILD_NUMBER) {
 
 repositories {
     mavenCentral()
-    flatDir {
-        dirs 'libs'
-    }
     maven {
-        name = "Modmuss50"
-        url = "http://maven.modmuss50.me/"
+        name = "Fabric"
+        url = "https://maven.fabricmc.net/"
     }
 	maven {
         name "Cuchaz"
@@ -42,7 +39,7 @@ dependencies {
     shade 'commons-io:commons-io:1.4'
     shade 'com.google.guava:guava:19.0'
 	
-	shade 'chorusmc:enigma:0.11.+'
+	shade 'net.fabricmc:enigma:0.11.+'
 	shade 'org.javassist:javassist:3.+'
 	shade 'org.bitbucket.mstrobel:procyon-decompiler:0.5.28-enigma'
 	shade 'org.javassist:javassist:3.20.0-GA'
@@ -76,27 +73,27 @@ uploadArchives {
            repository(url: "file:///var/www/maven/")
         }
             pom {
-                groupId = "chorusmc"
+                groupId = "net.fabricmc"
                 version = project.version
                 artifactId = project.archivesBaseName
                 project {
                     name project.archivesBaseName
                     packaging 'jar'
-                    description 'chorus-gradle'
-                    url 'https://github.com/ChorusMC/chorus-gradle'
+                    description 'fabric-loom'
+                    url 'https://github.com/FabricMC/fabric-loom'
                     scm {
-                        url 'https://github.com/ChorusMC/chorus-gradle'
-                        connection 'scm:git:git@github.com:ChorusMC/chorus-gradle.git'
-                        developerConnection 'scm:git:git@github.com:ChorusMC/chorus-gradle.git'
+                        url 'https://github.com/FabricMC/fabric-loom'
+                        connection 'scm:git:git@github.com:FabricMC/fabric-loom.git'
+                        developerConnection 'scm:git:git@github.com:FabricMC/fabric-loom.git'
                     }
                     issueManagement {
                         system 'github'
-                        url 'https://github.com/ChorusMC/chorus-gradle/issues'
+                        url 'https://github.com/FabricMC/fabric-loom/issues'
                     }
                     licenses {
                         license {
                             name 'License'
-                            url 'https://github.com/ChorusMC/chorus-gradle/blob/master/readme.txt'
+                            url 'https://github.com/FabricMC/fabric-loom/blob/master/readme.txt'
                             distribution 'repo'
                         }
                     }

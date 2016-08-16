@@ -22,29 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util;
+package net.fabricmc.loom.util.delayed;
 
-public class OperatingSystem {
-    public static String getOS() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.contains("win")) {
-            return "windows";
-        } else if (osName.contains("mac")) {
-            return "osx";
-        } else {
-            return "linux";
-        }
+import net.fabricmc.loom.LoomGradleExtension;
+
+import java.io.File;
+import java.util.function.Function;
+
+public class DelayedFile implements IDelayed<File> {
+    private File file;
+    private Function<LoomGradleExtension, File> function;
+
+    public DelayedFile(Function<LoomGradleExtension, File> function) {
+        this.function = function;
     }
 
-    public static String getArch() {
-        if (is64Bit()) {
-            return "64";
-        } else {
-            return "32";
+    @Override
+    public File get(LoomGradleExtension extension) {
+        if (this.file == null) {
+            this.file = this.function.apply(extension);
         }
-    }
-
-    public static boolean is64Bit() {
-        return System.getProperty("sun.arch.data.model").contains("64");
+        return this.file;
     }
 }

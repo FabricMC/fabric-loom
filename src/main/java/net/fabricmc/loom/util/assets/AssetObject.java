@@ -22,30 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util;
+package net.fabricmc.loom.util.assets;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
+public class AssetObject {
+    private String hash;
+    private long size;
 
-import java.io.File;
-import java.io.IOException;
+    public String getHash() {
+        return this.hash;
+    }
 
-public class Checksum {
-    public static boolean equals(File file, String checksum) {
-        if (file == null) {
+    public long getSize() {
+        return this.size;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if ((o == null) || (getClass() != o.getClass())) {
             return false;
+        } else {
+            AssetObject that = (AssetObject) o;
+            return this.size == that.size && this.hash.equals(that.hash);
         }
-        try {
-            HashCode hash = Files.hash(file, Hashing.sha1());
-            StringBuilder builder = new StringBuilder();
-            for (Byte hashBytes : hash.asBytes()) {
-                builder.append(Integer.toString((hashBytes & 0xFF) + 0x100, 16).substring(1));
-            }
-            return builder.toString().equals(checksum);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = this.hash.hashCode();
+        result = 31 * result + (int) (this.size ^ this.size >>> 32);
+        return result;
     }
 }

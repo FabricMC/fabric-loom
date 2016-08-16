@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.task;
+package net.fabricmc.loom.task;
 
-import net.fabric.loom.util.Constants;
-import net.fabric.loom.util.progress.ProgressLogger;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.progress.ProgressLogger;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;

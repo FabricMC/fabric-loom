@@ -22,27 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.task;
+package net.fabricmc.loom.task;
 
-import net.fabric.loom.util.Constants;
-import net.fabric.loom.util.Version;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Version;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.ManifestVersion;
+import net.fabricmc.loom.util.assets.AssetIndex;
+import net.fabricmc.loom.util.assets.AssetObject;
+import net.fabricmc.loom.util.progress.ProgressLogger;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
-import net.fabric.loom.LoomGradleExtension;
-import net.fabric.loom.util.Checksum;
-import net.fabric.loom.util.ManifestVersion;
-import net.fabric.loom.util.assets.AssetIndex;
-import net.fabric.loom.util.assets.AssetObject;
-import net.fabric.loom.util.progress.ProgressLogger;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
@@ -53,19 +55,7 @@ public class DownloadTask extends DefaultTask {
         try {
             LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
-            if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
-                this.getLogger().lifecycle(":downloading minecraft json");
-                FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST);
-                ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST), ManifestVersion.class);
-
-                Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(extension.version)).findFirst();
-                if (optionalVersion.isPresent()) {
-                    FileUtils.copyURLToFile(new URL(optionalVersion.get().url), Constants.MINECRAFT_JSON.get(extension));
-                } else {
-                    this.getLogger().info(":failed downloading minecraft json");
-                    throw new RuntimeException("Failed downloading Minecraft json");
-                }
-            }
+            downloadMcJson(extension, getLogger());
 
             Gson gson = new Gson();
             Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
@@ -143,6 +133,22 @@ public class DownloadTask extends DefaultTask {
             progressLogger.completed();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void downloadMcJson(LoomGradleExtension extension, Logger logger) throws IOException {
+        if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
+            logger.lifecycle(":downloading minecraft json");
+            FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST);
+            ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST), ManifestVersion.class);
+
+            Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(extension.version)).findFirst();
+            if (optionalVersion.isPresent()) {
+                FileUtils.copyURLToFile(new URL(optionalVersion.get().url), Constants.MINECRAFT_JSON.get(extension));
+            } else {
+                logger.info(":failed downloading minecraft json");
+                throw new RuntimeException("Failed downloading Minecraft json");
+            }
         }
     }
 }

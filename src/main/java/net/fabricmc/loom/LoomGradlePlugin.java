@@ -22,30 +22,25 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util.assets;
+package net.fabricmc.loom;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import net.fabricmc.loom.task.DownloadTask;
+import net.fabricmc.loom.task.ExtractNativesTask;
+import net.fabricmc.loom.task.GenIdeaProjectTask;
+import net.fabricmc.loom.task.MapJarsTask;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 
-public class AssetIndex {
-    private final Map<String, AssetObject> objects;
-    private boolean virtual;
+public class LoomGradlePlugin extends AbstractPlugin {
+    @Override
+    public void apply(Project target) {
+        super.apply(target);
 
-    public AssetIndex() {
-        this.objects = new LinkedHashMap<>();
-    }
+        makeTask("download", DownloadTask.class);
+        makeTask("mapJars", MapJarsTask.class).dependsOn("download");
+        makeTask("setupFabric", DefaultTask.class).dependsOn("mapJars");
 
-    public Map<String, AssetObject> getFileMap() {
-        return this.objects;
-    }
-
-    public Set<AssetObject> getUniqueObjects() {
-        return new HashSet<>(this.objects.values());
-    }
-
-    public boolean isVirtual() {
-        return this.virtual;
+        makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
+        makeTask("genIdeaRuns", GenIdeaProjectTask.class).dependsOn("cleanIdea").dependsOn("idea").dependsOn("extractNatives");
     }
 }

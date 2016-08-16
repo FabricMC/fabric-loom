@@ -22,13 +22,18 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom;
+package net.fabricmc.loom;
 
-import net.fabric.loom.util.Constants;
+import com.google.gson.Gson;
+import net.fabricmc.loom.task.DownloadTask;
+import net.fabricmc.loom.util.Constants;
 import com.google.common.collect.ImmutableMap;
+import net.fabricmc.loom.util.Version;
+import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -36,6 +41,10 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class AbstractPlugin implements Plugin<Project> {
     protected Project project;
@@ -138,5 +147,34 @@ public class AbstractPlugin implements Plugin<Project> {
 
         Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
         javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+
+        project.afterEvaluate(project1 -> {
+            LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
+            project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+                flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES);
+                flatDirectoryArtifactRepository.setName("LoomCacheFiles");
+            });
+
+            Gson gson = new Gson();
+            try {
+                DownloadTask.downloadMcJson(extension, project1.getLogger());
+                Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
+                for (Version.Library library : version.libraries) {
+                    if (library.allowed() && library.getFile() != null) {
+                        String configName = Constants.CONFIG_MC_DEPENDENCIES;
+                        if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput")) {
+                            configName = Constants.CONFIG_MC_DEPENDENCIES_CLIENT;
+                        }
+                        project1.getDependencies().add(configName, library.getArtifactName());
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" +  Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).getName().replace(".jar", ""));
+
+        });
+
+
     }
 }

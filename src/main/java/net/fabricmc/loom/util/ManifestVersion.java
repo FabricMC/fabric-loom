@@ -22,36 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util.assets;
+package net.fabricmc.loom.util;
 
-public class AssetObject {
-    private String hash;
-    private long size;
+import java.util.ArrayList;
+import java.util.List;
 
-    public String getHash() {
-        return this.hash;
-    }
+public class ManifestVersion {
+    public List<Versions> versions = new ArrayList<>();
 
-    public long getSize() {
-        return this.size;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        } else if ((o == null) || (getClass() != o.getClass())) {
-            return false;
-        } else {
-            AssetObject that = (AssetObject) o;
-            return this.size == that.size && this.hash.equals(that.hash);
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        int result = this.hash.hashCode();
-        result = 31 * result + (int) (this.size ^ this.size >>> 32);
-        return result;
+    public static class Versions {
+        public String id, url;
     }
 }

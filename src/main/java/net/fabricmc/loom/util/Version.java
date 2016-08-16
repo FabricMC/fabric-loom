@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util;
+package net.fabricmc.loom.util;
 
 import com.google.gson.JsonObject;
 

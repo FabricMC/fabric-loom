@@ -22,15 +22,9 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util;
+package net.fabricmc.loom;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ManifestVersion {
-    public List<Versions> versions = new ArrayList<>();
-
-    public static class Versions {
-        public String id, url;
-    }
+public class LoomGradleExtension {
+    public String version;
+    public String runDir = "run";
 }

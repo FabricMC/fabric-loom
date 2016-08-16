@@ -22,12 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.task;
+package net.fabricmc.loom.task;
 
-import net.fabric.loom.LoomGradleExtension;
-import net.fabric.loom.util.Constants;
-import net.fabric.loom.util.IdeaRunConfig;
-import net.fabric.loom.util.Version;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.IdeaRunConfig;
+import net.fabricmc.loom.util.Version;
 import com.google.gson.Gson;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;

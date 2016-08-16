@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util.progress;
+package net.fabricmc.loom.util.progress;
 
 import org.gradle.api.Project;
 

@@ -22,23 +22,30 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.task;
+package net.fabricmc.loom.util;
 
-import net.fabric.loom.util.Constants;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
-import org.zeroturnaround.zip.ZipUtil;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 
-public class ExtractNativesTask extends DefaultTask {
-    @TaskAction
-    public void extractNatives() throws FileNotFoundException {
-        if (!Constants.MINECRAFT_NATIVES.exists()) {
-            for (File source : getProject().getConfigurations().getByName(Constants.CONFIG_NATIVES)) {
-                ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES);
-            }
+public class Checksum {
+    public static boolean equals(File file, String checksum) {
+        if (file == null) {
+            return false;
         }
+        try {
+            HashCode hash = Files.hash(file, Hashing.sha1());
+            StringBuilder builder = new StringBuilder();
+            for (Byte hashBytes : hash.asBytes()) {
+                builder.append(Integer.toString((hashBytes & 0xFF) + 0x100, 16).substring(1));
+            }
+            return builder.toString().equals(checksum);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

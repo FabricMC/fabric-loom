@@ -22,25 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom;
+package net.fabricmc.loom.util;
 
-import net.fabric.loom.task.DownloadTask;
-import net.fabric.loom.task.ExtractNativesTask;
-import net.fabric.loom.task.GenIdeaProjectTask;
-import net.fabric.loom.task.MapJarsTask;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.Project;
+public class OperatingSystem {
+    public static String getOS() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("win")) {
+            return "windows";
+        } else if (osName.contains("mac")) {
+            return "osx";
+        } else {
+            return "linux";
+        }
+    }
 
-public class LoomGradlePlugin extends AbstractPlugin {
-    @Override
-    public void apply(Project target) {
-        super.apply(target);
+    public static String getArch() {
+        if (is64Bit()) {
+            return "64";
+        } else {
+            return "32";
+        }
+    }
 
-        makeTask("download", DownloadTask.class);
-        makeTask("mapJars", MapJarsTask.class).dependsOn("download");
-        makeTask("setupFabric", DefaultTask.class).dependsOn("mapJars");
-
-        makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-        makeTask("genIdeaRuns", GenIdeaProjectTask.class).dependsOn("cleanIdea").dependsOn("idea").dependsOn("extractNatives");
+    public static boolean is64Bit() {
+        return System.getProperty("sun.arch.data.model").contains("64");
     }
 }

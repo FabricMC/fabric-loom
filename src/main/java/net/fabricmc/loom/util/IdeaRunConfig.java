@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util;
+package net.fabricmc.loom.util;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;

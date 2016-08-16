@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package net.fabric.loom.util.delayed;
+package net.fabricmc.loom.util.delayed;
 
-import net.fabric.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradleExtension;
 
 public interface IDelayed<T> {
     T get(LoomGradleExtension extension);

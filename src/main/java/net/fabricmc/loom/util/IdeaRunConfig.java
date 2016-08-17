@@ -40,7 +40,8 @@ public class IdeaRunConfig {
     public String projectName;
     public String mainClass;
     public String runDir;
-    public String arguments;
+    public String vmArgs;
+    public String programArgs;
 
     public Element genRuns(Element doc) throws IOException, ParserConfigurationException, TransformerException {
         Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -50,8 +51,12 @@ public class IdeaRunConfig {
         this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
         this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
 
-        if (!Strings.isNullOrEmpty(arguments)) {
-            this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", arguments));
+        if (!Strings.isNullOrEmpty(vmArgs)) {
+            this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", vmArgs));
+        }
+
+        if (!Strings.isNullOrEmpty(programArgs)) {
+            this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", programArgs));
         }
         return root;
     }

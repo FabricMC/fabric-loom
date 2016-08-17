@@ -167,11 +167,12 @@ public class GenIdeaProjectTask extends DefaultTask {
         }
 
         IdeaRunConfig ideaClient = new IdeaRunConfig();
-        ideaClient.mainClass = "net.fabricmc.base.launch.FabricClientMain ";
+        ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
         ideaClient.projectName = getProject().getName();
         ideaClient.configName = "Minecraft Client";
         ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-        ideaClient.arguments = "--assetIndex " + version.assetIndex.id + " --assetsDir " + new File(Constants.CACHE_FILES, "assets").getAbsolutePath();
+        ideaClient.vmArgs = "-Djava.library.path=../.gradle/minecraft/natives/ -Dfabric.development=true";
+        ideaClient.programArgs = "--tweakClass net.fabricmc.base.launch.FabricClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(Constants.CACHE_FILES, "assets").getAbsolutePath();
 
         runManager.appendChild(ideaClient.genRuns(runManager));
 

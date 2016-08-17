@@ -155,6 +155,24 @@ public class AbstractPlugin implements Plugin<Project> {
                 flatDirectoryArtifactRepository.setName("LoomCacheFiles");
             });
 
+            project1.getRepositories().maven(mavenArtifactRepository -> {
+                mavenArtifactRepository.setName("FabricMC");
+                mavenArtifactRepository.setUrl("http://maven.fabricmc.net/");
+            });
+
+            project1.getRepositories().maven(mavenArtifactRepository -> {
+                mavenArtifactRepository.setName("SpongePowered");
+                mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
+            });
+
+            project1.getRepositories().maven(mavenArtifactRepository -> {
+                mavenArtifactRepository.setName("Mojang");
+                mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
+            });
+
+            project1.getRepositories().mavenCentral();
+            project1.getRepositories().jcenter();
+
             Gson gson = new Gson();
             try {
                 DownloadTask.downloadMcJson(extension, project1.getLogger());
@@ -173,6 +191,10 @@ public class AbstractPlugin implements Plugin<Project> {
             }
             project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" +  Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).getName().replace(".jar", ""));
 
+            if(extension.fabricVersion != null && !extension.fabricVersion.isEmpty()){
+                //only add this when not in a fabric dev env
+                project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion);
+            }
         });
 
 

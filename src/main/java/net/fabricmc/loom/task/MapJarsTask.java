@@ -53,7 +53,7 @@ public class MapJarsTask extends DefaultTask {
 
 		this.getLogger().lifecycle(":remapping jar");
 		deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
-		this.deobfuscator.setMappings(new MappingsEnigmaReader().read(new File(Constants.MAPPINGS_DIR, "pomf-master" + File.separator + "mappings")));
+		this.deobfuscator.setMappings(new MappingsEnigmaReader().read(new File(Constants.MAPPINGS_DIR, "pomf-" + extension.version + File.separator + "mappings")));
 		this.deobfuscator.writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener());
 
 		File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");

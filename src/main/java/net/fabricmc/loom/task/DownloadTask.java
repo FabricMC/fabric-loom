@@ -74,7 +74,7 @@ public class DownloadTask extends DefaultTask {
 			}
 
 			this.getLogger().lifecycle(":downloading mappings");
-			FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/pomf/archive/master.zip"), Constants.MAPPINGS_ZIP);
+			FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/pomf/archive/" + extension.version + ".zip"), Constants.MAPPINGS_ZIP);
 
 			DependencyHandler dependencyHandler = getProject().getDependencies();
 

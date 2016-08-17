@@ -42,7 +42,7 @@ dependencies {
     shade 'com.google.code.gson:gson:2.6.2'
     shade 'commons-io:commons-io:1.4'
     shade 'com.google.guava:guava:19.0'
-    shade 'net.fabricmc:blending-jar:0.1.1.5'
+    shade 'net.fabricmc:blending-jar:0.1.1.6'
 
 	shade 'net.fabricmc:enigma:0.11.+'
 	shade 'org.javassist:javassist:3.+'

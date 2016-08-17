@@ -24,23 +24,21 @@
 
 package net.fabricmc.loom;
 
-import net.fabricmc.loom.task.DownloadTask;
-import net.fabricmc.loom.task.ExtractNativesTask;
-import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.task.MapJarsTask;
+import net.fabricmc.loom.task.*;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 
 public class LoomGradlePlugin extends AbstractPlugin {
-    @Override
-    public void apply(Project target) {
-        super.apply(target);
+	@Override
+	public void apply(Project target) {
+		super.apply(target);
 
-        makeTask("download", DownloadTask.class);
-        makeTask("mapJars", MapJarsTask.class).dependsOn("download");
-        makeTask("setupFabric", DefaultTask.class).dependsOn("mapJars");
+		makeTask("download", DownloadTask.class);
+		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
+		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
+		makeTask("setupFabric", DefaultTask.class).dependsOn("mapJars");
 
-        makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-        makeTask("genIdeaRuns", GenIdeaProjectTask.class).dependsOn("cleanIdea").dependsOn("idea").dependsOn("extractNatives");
-    }
+		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
+		makeTask("genIdeaRuns", GenIdeaProjectTask.class).dependsOn("cleanIdea").dependsOn("idea").dependsOn("extractNatives");
+	}
 }

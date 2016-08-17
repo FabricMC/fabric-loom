@@ -25,7 +25,7 @@
 package net.fabricmc.loom;
 
 public class LoomGradleExtension {
-    public String version;
-    public String runDir = "run";
-    public String fabricVersion;
+	public String version;
+	public String runDir = "run";
+	public String fabricVersion;
 }

@@ -36,42 +36,42 @@ import java.io.IOException;
 import java.util.Map;
 
 public class IdeaRunConfig {
-    public String configName;
-    public String projectName;
-    public String mainClass;
-    public String runDir;
-    public String vmArgs;
-    public String programArgs;
+	public String configName;
+	public String projectName;
+	public String mainClass;
+	public String runDir;
+	public String vmArgs;
+	public String programArgs;
 
-    public Element genRuns(Element doc) throws IOException, ParserConfigurationException, TransformerException {
-        Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
-        root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
+	public Element genRuns(Element doc) throws IOException, ParserConfigurationException, TransformerException {
+		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
+		root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
 
-        this.addXml(root, "module", ImmutableMap.of("name", projectName));
-        this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
-        this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
+		this.addXml(root, "module", ImmutableMap.of("name", projectName));
+		this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
+		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
 
-        if (!Strings.isNullOrEmpty(vmArgs)) {
-            this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", vmArgs));
-        }
+		if (!Strings.isNullOrEmpty(vmArgs)) {
+			this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", vmArgs));
+		}
 
-        if (!Strings.isNullOrEmpty(programArgs)) {
-            this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", programArgs));
-        }
-        return root;
-    }
+		if (!Strings.isNullOrEmpty(programArgs)) {
+			this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", programArgs));
+		}
+		return root;
+	}
 
-    public Element addXml(Node parent, String name, Map<String, String> values) {
-        Document doc = parent.getOwnerDocument();
-        if (doc == null) {
-            doc = (Document) parent;
-        }
+	public Element addXml(Node parent, String name, Map<String, String> values) {
+		Document doc = parent.getOwnerDocument();
+		if (doc == null) {
+			doc = (Document) parent;
+		}
 
-        Element e = doc.createElement(name);
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            e.setAttribute(entry.getKey(), entry.getValue());
-        }
-        parent.appendChild(e);
-        return e;
-    }
+		Element e = doc.createElement(name);
+		for (Map.Entry<String, String> entry : values.entrySet()) {
+			e.setAttribute(entry.getKey(), entry.getValue());
+		}
+		parent.appendChild(e);
+		return e;
+	}
 }

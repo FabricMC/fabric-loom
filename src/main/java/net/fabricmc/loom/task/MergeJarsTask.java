@@ -22,36 +22,38 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.assets;
+package net.fabricmc.loom.task;
 
-public class AssetObject {
-	private String hash;
-	private long size;
+import net.fabricmc.blendingjar.JarMerger;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.TaskAction;
 
-	public String getHash() {
-		return this.hash;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class MergeJarsTask extends DefaultTask {
+
+	@TaskAction
+	public void mergeJars() throws IOException {
+		this.getLogger().lifecycle(":merging jars");
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+
+		FileInputStream client = new FileInputStream(Constants.MINECRAFT_CLIENT_JAR.get(extension));
+		FileInputStream server = new FileInputStream(Constants.MINECRAFT_SERVER_JAR.get(extension));
+		FileOutputStream merged = new FileOutputStream(Constants.MINECRAFT_MERGED_JAR.get(extension));
+
+		JarMerger jarMerger = new JarMerger(client, server, merged);
+
+		jarMerger.merge();
+		jarMerger.close();
+
+		client.close();
+		server.close();
+		merged.close();
+
 	}
 
-	public long getSize() {
-		return this.size;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if ((o == null) || (getClass() != o.getClass())) {
-			return false;
-		} else {
-			AssetObject that = (AssetObject) o;
-			return this.size == that.size && this.hash.equals(that.hash);
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		int result = this.hash.hashCode();
-		result = 31 * result + (int) (this.size ^ this.size >>> 32);
-		return result;
-	}
 }

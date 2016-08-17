@@ -27,5 +27,5 @@ package net.fabricmc.loom.util.delayed;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public interface IDelayed<T> {
-    T get(LoomGradleExtension extension);
+	T get(LoomGradleExtension extension);
 }

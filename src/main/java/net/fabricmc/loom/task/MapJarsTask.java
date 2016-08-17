@@ -40,50 +40,46 @@ import java.util.jar.JarFile;
 
 public class MapJarsTask extends DefaultTask {
 
-    Deobfuscator deobfuscator;
+	Deobfuscator deobfuscator;
 
-    @TaskAction
-    public void mapJars() throws IOException, MappingParseException {
-        LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-        if(Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).exists()){
-            Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension).delete();
-        }
-        this.getLogger().lifecycle(":unpacking mappings");
-        if(Constants.MAPPINGS_DIR.exists()){
-            FileUtils.deleteDirectory(Constants.MAPPINGS_DIR);
-        }
-        ZipUtil.unpack(Constants.MAPPINGS_ZIP, Constants.MAPPINGS_DIR);
+	@TaskAction
+	public void mapJars() throws IOException, MappingParseException {
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		this.getLogger().lifecycle(":unpacking mappings");
+		if (Constants.MAPPINGS_DIR.exists()) {
+			FileUtils.deleteDirectory(Constants.MAPPINGS_DIR);
+		}
+		ZipUtil.unpack(Constants.MAPPINGS_ZIP, Constants.MAPPINGS_DIR);
 
-        this.getLogger().lifecycle(":remapping jar");
-        deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_CLIENT_JAR.get(extension)));
-        this.deobfuscator.setMappings(new MappingsEnigmaReader().read(new File(Constants.MAPPINGS_DIR, "pomf-master" + File.separator + "mappings")));
-        this.deobfuscator.writeJar(Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension), new ProgressListener());
+		this.getLogger().lifecycle(":remapping jar");
+		deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
+		this.deobfuscator.setMappings(new MappingsEnigmaReader().read(new File(Constants.MAPPINGS_DIR, "pomf-master" + File.separator + "mappings")));
+		this.deobfuscator.writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener());
 
-        File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
+		File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
 
-        ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
-            if (name.startsWith("assets") || name.startsWith("log4j2.xml")) {
-                return name;
-            } else {
-                return null;
-            }
-        });
-        ZipUtil.unpack(Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension), tempAssests);
+		ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
+			if (name.startsWith("assets") || name.startsWith("log4j2.xml")) {
+				return name;
+			} else {
+				return null;
+			}
+		});
+		ZipUtil.unpack(Constants.MINECRAFT_MAPPED_JAR.get(extension), tempAssests);
 
-        ZipUtil.pack(tempAssests, Constants.MINECRAFT_CLIENT_MAPPED_JAR.get(extension));
-    }
+		ZipUtil.pack(tempAssests, Constants.MINECRAFT_MAPPED_JAR.get(extension));
+	}
 
-    public static class ProgressListener implements Deobfuscator.ProgressListener {
-        @Override
-        public void init(int i, String s) {
+	public static class ProgressListener implements Deobfuscator.ProgressListener {
+		@Override
+		public void init(int i, String s) {
 
-        }
+		}
 
-        @Override
-        public void onProgress(int i, String s) {
+		@Override
+		public void onProgress(int i, String s) {
 
-        }
-    }
-
+		}
+	}
 
 }

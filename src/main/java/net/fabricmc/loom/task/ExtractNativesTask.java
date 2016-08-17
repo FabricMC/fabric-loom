@@ -33,12 +33,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 public class ExtractNativesTask extends DefaultTask {
-    @TaskAction
-    public void extractNatives() throws FileNotFoundException {
-        if (!Constants.MINECRAFT_NATIVES.exists()) {
-            for (File source : getProject().getConfigurations().getByName(Constants.CONFIG_NATIVES)) {
-                ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES);
-            }
-        }
-    }
+	@TaskAction
+	public void extractNatives() throws FileNotFoundException {
+		if (!Constants.MINECRAFT_NATIVES.exists()) {
+			for (File source : getProject().getConfigurations().getByName(Constants.CONFIG_NATIVES)) {
+				ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES);
+			}
+		}
+	}
 }

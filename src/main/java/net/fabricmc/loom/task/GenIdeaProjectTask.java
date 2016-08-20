@@ -176,6 +176,16 @@ public class GenIdeaProjectTask extends DefaultTask {
 
 		runManager.appendChild(ideaClient.genRuns(runManager));
 
+		IdeaRunConfig ideaServer = new IdeaRunConfig();
+		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
+		ideaServer.projectName = getProject().getName();
+		ideaServer.configName = "Minecraft Server";
+		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+		ideaServer.vmArgs = "-Dfabric.development=true";
+		ideaServer.programArgs = "--tweakClass net.fabricmc.base.launch.FabricServerTweaker";
+
+		runManager.appendChild(ideaServer.genRuns(runManager));
+
 		transformerFactory = TransformerFactory.newInstance();
 		transformer = transformerFactory.newTransformer();
 		source = new DOMSource(doc);

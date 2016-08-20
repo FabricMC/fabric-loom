@@ -1,5 +1,6 @@
-# ChorusGradle
-Gradle plugin for Chorus
+# fabric-loom
+Gradle plugin for Fabric
 
-run : bash gradlew setupChorus genIdeaRuns
+Usage: `gradlew setupFabric genIdeaRuns`
+(Prefix with `./` on macOS and Linux)
 

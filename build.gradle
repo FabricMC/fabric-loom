@@ -26,6 +26,10 @@ repositories {
         name = 'cuchaz'
         url = 'http://maven.cuchazinteractive.com/'
     }
+	maven {
+		name "RX14 Repository"
+		url 'http://mvn.rx14.co.uk/local/'
+	}
 }
 
 configurations {
@@ -44,11 +48,10 @@ dependencies {
     shade 'com.google.guava:guava:19.0'
     shade 'net.fabricmc:blending-jar:0.1.1.6'
 
-	shade 'net.fabricmc:enigma:0.11.+'
-	shade 'org.javassist:javassist:3.+'
-	shade 'org.bitbucket.mstrobel:procyon-decompiler:0.5.28-enigma'
-	shade 'org.javassist:javassist:3.20.0-GA'
-	shade 'de.sciss:syntaxpane:1.1.+'
+	compile 'net.fabricmc:enigma:0.11.+'
+	compile 'org.javassist:javassist:3.+'
+	compile 'org.bitbucket.mstrobel:procyon-compilertools:0.5.33.6-enigma'
+	compile 'de.sciss:syntaxpane:1.1.+'
 }
 
 license {

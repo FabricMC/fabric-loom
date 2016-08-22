@@ -59,7 +59,7 @@ public class MapJarsTask extends DefaultTask {
 		File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
 
 		ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
-			if (name.startsWith("assets") || name.startsWith("log4j2.xml")) {
+			if (name.startsWith("assets") || name.startsWith("log4j2.xml") || name.startsWith("pack.png")) {
 				return name;
 			} else {
 				return null;

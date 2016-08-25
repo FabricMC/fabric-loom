@@ -123,21 +123,6 @@ public class GenIdeaProjectTask extends DefaultTask {
 			}
 		}
 
-		Element node = doc.createElement("orderEntry");
-		node.setAttribute("type", "module-library");
-		Element libraryElement = doc.createElement("library");
-		Element classes = doc.createElement("CLASSES");
-		Element javadoc = doc.createElement("JAVADOC");
-		Element sources = doc.createElement("SOURCES");
-		Element root = doc.createElement("root");
-		root.setAttribute("url", "jar://" + Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath() + "!/");
-		classes.appendChild(root);
-		libraryElement.appendChild(classes);
-		libraryElement.appendChild(javadoc);
-		libraryElement.appendChild(sources);
-		node.appendChild(libraryElement);
-		component.appendChild(node);
-
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
 		DOMSource source = new DOMSource(doc);

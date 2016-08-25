@@ -25,8 +25,16 @@
 package net.fabricmc.loom.task;
 
 import cuchaz.enigma.Deobfuscator;
+import cuchaz.enigma.TranslatingTypeLoader;
+import cuchaz.enigma.bytecode.ClassPublifier;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
+import cuchaz.enigma.mapping.TranslationDirection;
 import cuchaz.enigma.throwables.MappingParseException;
+import javassist.CtBehavior;
+import javassist.CtClass;
+import javassist.CtField;
+import javassist.bytecode.AccessFlag;
+import javassist.bytecode.InnerClassesAttribute;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.apache.commons.io.FileUtils;
@@ -54,19 +62,11 @@ public class MapJarsTask extends DefaultTask {
 		}
 		ZipUtil.unpack(Constants.MAPPINGS_ZIP, Constants.MAPPINGS_DIR);
 
-		File tempFile = new File(Constants.CACHE_FILES, "tempJar.jar");
-		if (tempFile.exists()) {
-			//This should not happen, just want to be safe
-			tempFile.delete();
-		}
 
 		this.getLogger().lifecycle(":remapping jar");
 		deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
 		this.deobfuscator.setMappings(new MappingsEnigmaReader().read(new File(Constants.MAPPINGS_DIR, "pomf-" + extension.version + File.separator + "mappings")));
-		this.deobfuscator.writeJar(tempFile, new ProgressListener());
-		deobfuscator = new Deobfuscator(new JarFile(tempFile));
-		deobfuscator.publifyJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener());
-		tempFile.delete();
+		writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
 
 		File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
 
@@ -81,6 +81,52 @@ public class MapJarsTask extends DefaultTask {
 
 		ZipUtil.pack(tempAssests, Constants.MINECRAFT_MAPPED_JAR.get(extension));
 	}
+
+	public void writeJar(File out, Deobfuscator.ProgressListener progress, Deobfuscator deobfuscator) {
+		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), deobfuscator.getTranslator(TranslationDirection.Obfuscating), deobfuscator.getTranslator(TranslationDirection.Deobfuscating));
+		deobfuscator.transformJar(out, progress, new CustomClassTransformer(loader));
+	}
+
+	private class CustomClassTransformer implements Deobfuscator.ClassTransformer {
+
+		TranslatingTypeLoader loader;
+
+		public CustomClassTransformer(TranslatingTypeLoader loader) {
+			this.loader = loader;
+		}
+
+		@Override
+		public CtClass transform(CtClass ctClass) throws Exception {
+			return publify(loader.transformClass(ctClass));
+		}
+	}
+
+	//Taken from enigma, anc changed a little
+	public static CtClass publify(CtClass c) {
+
+		for (CtField field : c.getDeclaredFields()) {
+			field.setModifiers(publify(field.getModifiers()));
+		}
+		for (CtBehavior behavior : c.getDeclaredBehaviors()) {
+			behavior.setModifiers(publify(behavior.getModifiers()));
+		}
+		InnerClassesAttribute attr = (InnerClassesAttribute) c.getClassFile().getAttribute(InnerClassesAttribute.tag);
+		if (attr != null) {
+			for (int i = 0; i < attr.tableLength(); i++) {
+				attr.setAccessFlags(i, publify(attr.accessFlags(i)));
+			}
+		}
+
+		return c;
+	}
+
+	private static int publify(int flags) {
+		if (!AccessFlag.isPublic(flags)) {
+			flags = AccessFlag.setPublic(flags);
+		}
+		return flags;
+	}
+
 
 	public static class ProgressListener implements Deobfuscator.ProgressListener {
 		@Override

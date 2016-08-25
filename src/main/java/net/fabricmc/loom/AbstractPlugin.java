@@ -56,6 +56,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class);
+		project.getExtensions().getByType(LoomGradleExtension.class).project = project;
 
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
@@ -152,6 +153,11 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("LoomCacheFiles");
 			});
 
+			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+				flatDirectoryArtifactRepository.dir(extension.getFabricUserCache());
+				flatDirectoryArtifactRepository.setName("UserCacheFiles");
+			});
+
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("FabricMC");
 				mavenArtifactRepository.setUrl("http://maven.fabricmc.net/");
@@ -175,7 +181,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				DownloadTask.downloadMcJson(extension, project1.getLogger());
 				Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
 				for (Version.Library library : version.libraries) {
-					if (library.allowed() && library.getFile() != null) {
+					if (library.allowed() && library.getFile(extension) != null) {
 						String configName = Constants.CONFIG_MC_DEPENDENCIES;
 						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput")) {
 							configName = Constants.CONFIG_MC_DEPENDENCIES_CLIENT;

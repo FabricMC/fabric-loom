@@ -24,8 +24,34 @@
 
 package net.fabricmc.loom;
 
+import org.gradle.api.Project;
+
+import java.io.File;
+
 public class LoomGradleExtension {
 	public String version;
 	public String runDir = "run";
 	public String fabricVersion;
+
+	//Not to be set in the build.gradle
+	public Project project;
+
+	public String getVersionString() {
+		if (isModWorkspace()) {
+			return version + "-" + fabricVersion;
+		}
+		return version;
+	}
+
+	public boolean isModWorkspace() {
+		return fabricVersion != null && !fabricVersion.isEmpty();
+	}
+
+	public File getFabricUserCache() {
+		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "loom");
+		if (!userCache.exists()) {
+			userCache.mkdirs();
+		}
+		return userCache;
+	}
 }

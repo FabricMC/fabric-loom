@@ -80,7 +80,7 @@ public class DownloadTask extends DefaultTask {
 
 			if (getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getState() == Configuration.State.UNRESOLVED) {
 				for (Version.Library library : version.libraries) {
-					if (library.allowed() && library.getFile() != null) {
+					if (library.allowed() && library.getFile(extension) != null) {
 						// By default, they are all available on all sides
 						String configName = Constants.CONFIG_MC_DEPENDENCIES;
 						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput")) {
@@ -100,7 +100,7 @@ public class DownloadTask extends DefaultTask {
 
 			Version.AssetIndex assetIndex = version.assetIndex;
 
-			File assets = new File(Constants.CACHE_FILES, "assets");
+			File assets = new File(extension.getFabricUserCache(), "assets-" + extension.version);
 			if (!assets.exists()) {
 				assets.mkdirs();
 			}
@@ -143,8 +143,8 @@ public class DownloadTask extends DefaultTask {
 	public static void downloadMcJson(LoomGradleExtension extension, Logger logger) throws IOException {
 		if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
 			logger.lifecycle(":downloading minecraft json");
-			FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST);
-			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST), ManifestVersion.class);
+			FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST.get(extension));
+			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST.get(extension)), ManifestVersion.class);
 
 			Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(extension.version)).findFirst();
 			if (optionalVersion.isPresent()) {

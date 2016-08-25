@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
@@ -35,9 +36,10 @@ import java.io.FileNotFoundException;
 public class ExtractNativesTask extends DefaultTask {
 	@TaskAction
 	public void extractNatives() throws FileNotFoundException {
-		if (!Constants.MINECRAFT_NATIVES.exists()) {
+		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
+		if (!Constants.MINECRAFT_NATIVES.get(extension).exists()) {
 			for (File source : getProject().getConfigurations().getByName(Constants.CONFIG_NATIVES)) {
-				ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES);
+				ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES.get(extension));
 			}
 		}
 	}

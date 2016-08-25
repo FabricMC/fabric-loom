@@ -49,10 +49,14 @@ public class MapJarsTask extends DefaultTask {
 		if (Constants.MAPPINGS_DIR.exists()) {
 			FileUtils.deleteDirectory(Constants.MAPPINGS_DIR);
 		}
+		if (Constants.MINECRAFT_MAPPED_JAR.get(extension).exists()) {
+			Constants.MINECRAFT_MAPPED_JAR.get(extension).delete();
+		}
 		ZipUtil.unpack(Constants.MAPPINGS_ZIP, Constants.MAPPINGS_DIR);
 
 		File tempFile = new File(Constants.CACHE_FILES, "tempJar.jar");
 		if (tempFile.exists()) {
+			//This should not happen, just want to be safe
 			tempFile.delete();
 		}
 

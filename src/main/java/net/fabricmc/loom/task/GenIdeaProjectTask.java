@@ -103,7 +103,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
 
 		for (Version.Library library : version.libraries) {
-			if (library.allowed() && library.getFile() != null && library.getFile().exists()) {
+			if (library.allowed() && library.getFile(extension) != null && library.getFile(extension).exists()) {
 				Element node = doc.createElement("orderEntry");
 				node.setAttribute("type", "module-library");
 				Element libraryElement = doc.createElement("library");
@@ -111,7 +111,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 				Element javadoc = doc.createElement("JAVADOC");
 				Element sources = doc.createElement("SOURCES");
 				Element root = doc.createElement("root");
-				root.setAttribute("url", "jar://" + library.getFile().getAbsolutePath() + "!/");
+				root.setAttribute("url", "jar://" + library.getFile(extension).getAbsolutePath() + "!/");
 				classes.appendChild(root);
 				libraryElement.appendChild(classes);
 				libraryElement.appendChild(javadoc);
@@ -119,7 +119,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 				node.appendChild(libraryElement);
 				component.appendChild(node);
 			} else if (!library.allowed()) {
-				this.getLogger().info(":" + library.getFile().getName() + " is not allowed on this os");
+				this.getLogger().info(":" + library.getFile(extension).getName() + " is not allowed on this os");
 			}
 		}
 
@@ -172,7 +172,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Djava.library.path=../.gradle/minecraft/natives/ -Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass net.fabricmc.base.launch.FabricClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(Constants.CACHE_FILES, "assets").getAbsolutePath();
+		ideaClient.programArgs = "--tweakClass net.fabricmc.base.launch.FabricClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(extension.getFabricUserCache(), "assets-" + extension.version).getAbsolutePath();
 
 		runManager.appendChild(ideaClient.genRuns(runManager));
 

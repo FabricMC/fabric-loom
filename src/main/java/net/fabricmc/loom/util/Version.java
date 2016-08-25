@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.LoomGradleExtension;
 
 import java.io.File;
 import java.util.List;
@@ -60,9 +61,9 @@ public class Version {
 			return Constants.LIBRARIES_BASE + path;
 		}
 
-		public File getFile() {
+		public File getFile(LoomGradleExtension extension) {
 			String[] parts = this.name.split(":", 3);
-			return new File(Constants.MINECRAFT_LIBS, parts[0].replace(".", File.separator) + File.separator + parts[1] + File.separator + parts[2] + File.separator + parts[1] + "-" + parts[2] + getClassifier() + ".jar");
+			return new File(Constants.MINECRAFT_LIBS.get(extension), parts[0].replace(".", File.separator) + File.separator + parts[1] + File.separator + parts[2] + File.separator + parts[1] + "-" + parts[2] + getClassifier() + ".jar");
 		}
 
 		public String getSha1() {

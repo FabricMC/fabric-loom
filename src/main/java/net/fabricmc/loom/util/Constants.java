@@ -37,22 +37,19 @@ public class Constants {
 	public static final File WORKING_DIRECTORY = new File(".");
 	public static final File CACHE_FILES = new File(WORKING_DIRECTORY, ".gradle/minecraft");
 
-	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-client.jar"));
-	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-server.jar"));
-	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-merged.jar"));
-	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-mapped.jar"));
+	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-client.jar"));
+	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-server.jar"));
+	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-merged.jar"));
+	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.getVersionString() + "-mapped.jar"));
 
 	public static final File MAPPINGS_ZIP = new File(CACHE_FILES, "mappings.zip");
 	public static final File MAPPINGS_DIR = new File(CACHE_FILES, "mappings");
 
-	public static final File MINECRAFT_LIBS = new File(CACHE_FILES, "libs");
-	public static final File MINECRAFT_NATIVES = new File(CACHE_FILES, "natives");
-	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-info.json"));
+	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-libs"));
+	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-natives"));
+	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-info.json"));
 
-	public static final File MINECRAFT_ROOT = new File(WORKING_DIRECTORY, "minecraft");
-	public static final IDelayed<File> MAPPING_SRG = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "mappings.srg"));
-
-	public static final File VERSION_MANIFEST = new File(CACHE_FILES, "version_manifest.json");
+	public static final IDelayed<File> VERSION_MANIFEST = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "version_manifest.json"));
 
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";

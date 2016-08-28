@@ -39,8 +39,8 @@ public class Constants {
 
 	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-client.jar"));
 	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-server.jar"));
-	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-merged.jar"));
-	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.getVersionString() + "-mapped.jar"));
+	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-merged.jar"));
+	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.getVersionString() + "-mapped.jar"));
 
 	public static final File MAPPINGS_ZIP = new File(CACHE_FILES, "mappings.zip");
 	public static final File MAPPINGS_DIR = new File(CACHE_FILES, "mappings");

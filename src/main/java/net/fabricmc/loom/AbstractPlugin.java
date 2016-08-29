@@ -26,6 +26,8 @@ package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Version;
@@ -40,6 +42,8 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -57,6 +61,8 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class);
 		project.getExtensions().getByType(LoomGradleExtension.class).project = project;
+
+		readModJson(project.getExtensions().getByType(LoomGradleExtension.class));
 
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
@@ -154,6 +160,11 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("UserCacheFiles");
 			});
 
+			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+				flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES);
+				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
+			});
+
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("FabricMC");
 				mavenArtifactRepository.setUrl("http://maven.fabricmc.net/");
@@ -196,5 +207,31 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 		});
 
+	}
+
+	protected void readModJson(LoomGradleExtension extension){
+		File resDir = new File(project.getProjectDir(), "src" + File.separator + "main" + File.separator + "resources");
+		File modJson = new File(resDir, "mod.json");
+		if(modJson.exists()){
+			Gson gson = new Gson();
+			try {
+				JsonElement jsonElement = gson.fromJson(new FileReader(modJson), JsonElement.class);
+				JsonObject jsonObject = jsonElement.getAsJsonObject();
+				if((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")){
+					project.setVersion(jsonObject.get("version").getAsString());
+				}
+				if(jsonObject.has("group")){
+					project.setGroup(jsonObject.get("group").getAsString());
+				}
+				if(jsonObject.has("description")){
+					project.setDescription(jsonObject.get("description").getAsString());
+				}
+				//TODO load deps
+
+			} catch (FileNotFoundException e) {
+				//This wont happen as we have checked for it
+				e.printStackTrace();
+			}
+		}
 	}
 }

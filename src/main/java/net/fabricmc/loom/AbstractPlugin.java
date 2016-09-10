@@ -209,21 +209,21 @@ public class AbstractPlugin implements Plugin<Project> {
 
 	}
 
-	protected void readModJson(LoomGradleExtension extension){
+	protected void readModJson(LoomGradleExtension extension) {
 		File resDir = new File(project.getProjectDir(), "src" + File.separator + "main" + File.separator + "resources");
 		File modJson = new File(resDir, "mod.json");
-		if(modJson.exists()){
+		if (modJson.exists()) {
 			Gson gson = new Gson();
 			try {
 				JsonElement jsonElement = gson.fromJson(new FileReader(modJson), JsonElement.class);
 				JsonObject jsonObject = jsonElement.getAsJsonObject();
-				if((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")){
+				if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
 					project.setVersion(jsonObject.get("version").getAsString());
 				}
-				if(jsonObject.has("group")){
+				if (jsonObject.has("group")) {
 					project.setGroup(jsonObject.get("group").getAsString());
 				}
-				if(jsonObject.has("description")){
+				if (jsonObject.has("description")) {
 					project.setDescription(jsonObject.get("description").getAsString());
 				}
 				//TODO load deps

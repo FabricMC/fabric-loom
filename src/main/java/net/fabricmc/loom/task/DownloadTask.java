@@ -45,6 +45,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 
@@ -69,12 +70,14 @@ public class DownloadTask extends DefaultTask {
 				FileUtils.copyURLToFile(new URL(version.downloads.get("server").url), Constants.MINECRAFT_SERVER_JAR.get(extension));
 			}
 
-			if (Constants.MAPPINGS_ZIP.exists()) {
-				Constants.MAPPINGS_ZIP.delete();
+			if (!Constants.POMF_DIR.get(extension).exists()) {
+				Constants.POMF_DIR.get(extension).mkdir();
 			}
 
-			this.getLogger().lifecycle(":downloading mappings");
-			FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/pomf/archive/" + extension.version + ".zip"), Constants.MAPPINGS_ZIP);
+			if (!Constants.MAPPINGS_ZIP.get(extension).exists()) {
+				this.getLogger().lifecycle(":downloading mappings");
+				FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomf + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomf + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+			}
 
 			DependencyHandler dependencyHandler = getProject().getDependencies();
 
@@ -144,7 +147,7 @@ public class DownloadTask extends DefaultTask {
 		if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
 			logger.lifecycle(":downloading minecraft json");
 			FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST.get(extension));
-			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST.get(extension)), ManifestVersion.class);
+			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST.get(extension), Charset.defaultCharset()), ManifestVersion.class);
 
 			Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(extension.version)).findFirst();
 			if (optionalVersion.isPresent()) {

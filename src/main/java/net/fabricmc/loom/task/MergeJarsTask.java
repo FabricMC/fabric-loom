@@ -38,22 +38,25 @@ public class MergeJarsTask extends DefaultTask {
 
 	@TaskAction
 	public void mergeJars() throws IOException {
-		this.getLogger().lifecycle(":merging jars");
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
-		FileInputStream client = new FileInputStream(Constants.MINECRAFT_CLIENT_JAR.get(extension));
-		FileInputStream server = new FileInputStream(Constants.MINECRAFT_SERVER_JAR.get(extension));
-		FileOutputStream merged = new FileOutputStream(Constants.MINECRAFT_MERGED_JAR.get(extension));
+		if(!Constants.MINECRAFT_MERGED_JAR.get(extension).exists()){
+			this.getLogger().lifecycle(":merging jars");
+			FileInputStream client = new FileInputStream(Constants.MINECRAFT_CLIENT_JAR.get(extension));
+			FileInputStream server = new FileInputStream(Constants.MINECRAFT_SERVER_JAR.get(extension));
+			FileOutputStream merged = new FileOutputStream(Constants.MINECRAFT_MERGED_JAR.get(extension));
 
-		JarMerger jarMerger = new JarMerger(client, server, merged);
+			JarMerger jarMerger = new JarMerger(client, server, merged);
 
-		jarMerger.merge();
-		jarMerger.close();
+			jarMerger.merge();
+			jarMerger.close();
 
-		client.close();
-		server.close();
-		merged.close();
-
+			client.close();
+			server.close();
+			merged.close();
+		} else {
+			this.getLogger().lifecycle(":merged jar found, skipping");
+		}
 	}
 
 }

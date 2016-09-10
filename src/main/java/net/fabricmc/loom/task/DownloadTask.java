@@ -76,7 +76,7 @@ public class DownloadTask extends DefaultTask {
 
 			if (!Constants.MAPPINGS_ZIP.get(extension).exists()) {
 				this.getLogger().lifecycle(":downloading mappings");
-				FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomf_build + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomf_build + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+				FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
 			}
 
 			DependencyHandler dependencyHandler = getProject().getDependencies();

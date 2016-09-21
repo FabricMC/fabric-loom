@@ -24,60 +24,69 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Version;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Install https://marketplace.visualstudio.com/items?itemName=georgewfraser.vscode-javac into vscode
- */
-public class GenVSCodeProjectTask extends DefaultTask {
+public class RunClientTask extends JavaExec {
 
-	@TaskAction
-	public void genVsCodeProject() throws IOException {
+	@Override
+	public void exec() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		File classPathFile = new File("vscodeClasspath.txt");
-		File configFile = new File("javaconfig.json");
-
 		Gson gson = new Gson();
-		Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
+		Version version = null;
+		try {
+			version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 
 		List<String> libs = new ArrayList<>();
-		for (Version.Library library : version.libraries) {
-			if (library.allowed() && library.getFile(extension) != null && library.getFile(extension).exists()) {
-				libs.add(library.getFile(extension).getAbsolutePath());
-			}
-		}
-		libs.add(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
-		FileUtils.writeLines(classPathFile, libs);
+		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles()) {
+			libs.add(file.getAbsolutePath());
+		}
+		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles()) {
+			libs.add(file.getAbsolutePath());
+		}
+		//Used to add the fabric jar that has been built
+		for (File file : new File(getProject().getBuildDir(), "libs").listFiles()) {
+			if (file.isFile()) {
+				libs.add(file.getAbsolutePath());
+			}
+		}
+		libs.add(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
+		classpath(libs);
 
-		JsonObject jsonObject = new JsonObject();
-		JsonArray jsonArray = new JsonArray();
-		jsonArray.add("src/main/java");
-		jsonArray.add("src/main/resorces");
-		jsonArray.add("src/test/java");
-		jsonArray.add("src/test/resorces");
-		jsonObject.add("sourcePath", jsonArray);
-		JsonElement element = new JsonPrimitive(classPathFile.getName());
-		jsonObject.add("classPathFile", element);
-		element = new JsonPrimitive("vscode");
-		jsonObject.add("outputDirectory", element);
+		args("--tweakClass", "net.fabricmc.base.launch.FabricClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getFabricUserCache(), "assets-" + extension.version).getAbsolutePath());
 
-		FileUtils.write(configFile, gson.toJson(jsonObject), Charset.defaultCharset());
+		setWorkingDir(new File(getProject().getRootDir(), "run"));
+
+		super.exec();
+	}
+
+	@Override
+	public String getMain() {
+		return "net.minecraft.launchwrapper.Launch";
+	}
+
+	@Override
+	public List<String> getJvmArgs() {
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		List<String> args = new ArrayList<>();
+		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
+		args.add("-Dfabric.development=true");
+		return args;
 	}
 
 }

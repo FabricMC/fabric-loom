@@ -40,7 +40,7 @@ public class MergeJarsTask extends DefaultTask {
 	public void mergeJars() throws IOException {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
-		if(!Constants.MINECRAFT_MERGED_JAR.get(extension).exists()){
+		if (!Constants.MINECRAFT_MERGED_JAR.get(extension).exists()) {
 			this.getLogger().lifecycle(":merging jars");
 			FileInputStream client = new FileInputStream(Constants.MINECRAFT_CLIENT_JAR.get(extension));
 			FileInputStream server = new FileInputStream(Constants.MINECRAFT_SERVER_JAR.get(extension));

@@ -147,7 +147,7 @@ public class DownloadTask extends DefaultTask {
 		if (!Constants.MINECRAFT_JSON.get(extension).exists()) {
 			logger.lifecycle(":downloading minecraft json");
 			FileUtils.copyURLToFile(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), Constants.VERSION_MANIFEST.get(extension));
-			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST.get(extension), Charset.defaultCharset()), ManifestVersion.class);
+			ManifestVersion mcManifest = new GsonBuilder().create().fromJson(FileUtils.readFileToString(Constants.VERSION_MANIFEST.get(extension), "UTF-8"), ManifestVersion.class);
 
 			Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(extension.version)).findFirst();
 			if (optionalVersion.isPresent()) {

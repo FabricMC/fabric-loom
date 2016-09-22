@@ -77,7 +77,7 @@ public class GenVSCodeProjectTask extends DefaultTask {
 		element = new JsonPrimitive("vscode");
 		jsonObject.add("outputDirectory", element);
 
-		FileUtils.write(configFile, gson.toJson(jsonObject), Charset.defaultCharset());
+		FileUtils.writeStringToFile(configFile, gson.toJson(jsonObject), "UF-8");
 	}
 
 }

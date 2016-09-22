@@ -5,16 +5,17 @@ plugins {
 
     id 'idea'
     id 'eclipse'
-
-    id 'net.minecrell.licenser' version '0.2.1'
 }
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/maven.gradle'
+apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
+
 group = 'net.fabricmc'
 archivesBaseName = project.name.toLowerCase()
-version = '0.0.2-SNAPSHOT'
+version = '0.0.3-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -40,22 +41,15 @@ configurations {
 
 dependencies {
     compile gradleApi()
-    shade 'org.zeroturnaround:zt-zip:1.9'
-    shade 'org.slf4j:slf4j-api:1.7.21'
-    shade 'org.slf4j:slf4j-simple:1.7.21'
-    shade 'com.google.code.gson:gson:2.6.2'
-    shade 'commons-io:commons-io:1.4'
-    shade 'com.google.guava:guava:19.0'
-    shade 'net.fabricmc:blending-jar:0.1.1.6'
-    shade 'net.fabricmc:enigma:+'
-    shade 'org.javassist:javassist:3.+'
-    shade 'org.bitbucket.mstrobel:procyon-compilertools:0.5.33.6-enigma'
-    shade 'de.sciss:syntaxpane:1.1.+'
-}
 
-license {
-    header file('HEADER')
-    include '**/*.java'
+	shade 'org.zeroturnaround:zt-zip:1.9'
+	shade 'org.slf4j:slf4j-api:1.7.21'
+	shade 'org.slf4j:slf4j-simple:1.7.21'
+	shade 'com.google.code.gson:gson:2.6.2'
+	shade 'commons-io:commons-io:1.4'
+	shade 'com.google.guava:guava:19.0'
+	shade 'net.fabricmc:weave:0.1.0.6'
+	shade 'cuchaz:enigma:0.11.0.5:lib'
 }
 
 sourceSets {
@@ -73,58 +67,7 @@ jar {
     }
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            if (project.hasProperty('mavenPass')) {
-                repository(url: 'http://mavenupload.modmuss50.me/') {
-                    authentication(userName: 'buildslave', password: project.getProperty('mavenPass'))
-                }
-            } else {
-                repository(url: 'file:///var/www/maven/')
-            }
-
-            pom {
-                artifactId = project.archivesBaseName
-
-                project {
-                    name = project.name
-                    description = project.description
-                    packaging = 'jar'
-                    url = project.url
-
-                    scm {
-                        url = 'https://github.com/FabricMC/fabric-loom'
-                        connection = 'scm:git:git@github.com:FabricMC/fabric-loom.git'
-                        developerConnection = 'scm:git:git@github.com:FabricMC/fabric-loom.git'
-                    }
-
-                    issueManagement {
-                        system = 'GitHub'
-                        url = 'https://github.com/FabricMC/fabric-loom/issues'
-                    }
-
-                    licenses {
-                        license {
-                            name = 'MIT License'
-                            url = 'https://github.com/FabricMC/fabric-loom/blob/master/LICENSE'
-                            distribution = 'repo'
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id = 'modmuss50'
-                            name = 'modmuss50'
-                            roles { role 'developer' }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
+    gradleVersion = '3.1'
 }

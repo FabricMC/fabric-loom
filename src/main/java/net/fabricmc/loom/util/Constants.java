@@ -46,6 +46,9 @@ public class Constants {
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "pomf"));
 	public static final IDelayed<File> MAPPINGS_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));
 	public static final IDelayed<File> MAPPINGS_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
+	public static final IDelayed<File> MAPPINGS_SRG = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "mappings.srg"));
+
+	public static final IDelayed<File> REF_MAP = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "RefMap.json"));
 
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-libs"));
 	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-natives"));

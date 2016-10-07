@@ -51,7 +51,6 @@ public class MapJarsTask extends DefaultTask {
 	@TaskAction
 	public void mapJars() throws IOException, MappingParseException {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-
 		if (!Constants.MINECRAFT_MAPPED_JAR.get(extension).exists()) {
 			this.getLogger().lifecycle(":unpacking mappings");
 			if (!Constants.MAPPINGS_DIR.get(extension).exists()) {
@@ -76,6 +75,7 @@ public class MapJarsTask extends DefaultTask {
 
 			ZipUtil.pack(tempAssests, Constants.MINECRAFT_MAPPED_JAR.get(extension));
 		} else {
+			this.getLogger().lifecycle(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
 			this.getLogger().lifecycle(":mapped jar found, skipping mapping");
 		}
 	}

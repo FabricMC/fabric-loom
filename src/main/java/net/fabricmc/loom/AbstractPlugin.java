@@ -31,7 +31,6 @@ import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Version;
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -76,6 +75,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES_CLIENT);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
+		project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
 
 		// Common libraries extends from client libraries, CONFIG_MC_DEPENDENCIES will contains all MC dependencies
 		project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT));
@@ -84,12 +84,12 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureCompile();
 
 		//TODO other languages?
-		Map<Project,Set<Task>> taskMap = project.getAllTasks(true);
-		for(Map.Entry<Project,Set<Task>> entry : taskMap.entrySet()) {
+		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 			Project project = entry.getKey();
 			Set<Task> taskSet = entry.getValue();
-			for(Task task : taskSet){
-				if(task instanceof JavaCompile){
+			for (Task task : taskSet) {
+				if (task instanceof JavaCompile) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
@@ -227,7 +227,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_MAPPED_JAR.get(extension).getName().replace(".jar", ""));
+			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
 
 			if (extension.fabricVersion != null && !extension.fabricVersion.isEmpty()) {
 				//only add this when not in a fabric dev env

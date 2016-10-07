@@ -41,6 +41,7 @@ public class Constants {
 	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-server.jar"));
 	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-merged.jar"));
 	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.getVersionString() + "-mapped-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.getVersionString() + "-mixed-" + extension.pomfVersion + ".jar"));
 
 	//http://asie.pl:8080/job/pomf/1/artifact/build/libs/pomf-enigma-16w33a.1.zip
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "pomf"));
@@ -65,6 +66,7 @@ public class Constants {
 	public static final String CONFIG_MC_DEPENDENCIES = "MC_DEPENDENCIES";
 	public static final String CONFIG_MC_DEPENDENCIES_CLIENT = "MC_DEPENDENCIES_CLIENT";
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
+	public static final String COMPILE_MODS = "modCompile";
 
 	public static List<String> getClassPath() {
 		URL[] urls = ((URLClassLoader) Constants.class.getClassLoader()).getURLs();

@@ -62,7 +62,7 @@ public class RunServerTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
+		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
 		args("--tweakClass", "net.fabricmc.base.launch.FabricServerTweaker");

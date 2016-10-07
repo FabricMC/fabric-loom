@@ -35,7 +35,6 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +58,7 @@ public class GenVSCodeProjectTask extends DefaultTask {
 				libs.add(library.getFile(extension).getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
+		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}

@@ -22,29 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.util.proccessing;
 
-import net.fabricmc.loom.task.*;
-import org.gradle.api.DefaultTask;
+import net.fabricmc.base.util.MixinPrebaker;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.ProcessModsTask;
+import net.fabricmc.loom.util.Constants;
+import org.apache.logging.log4j.LogManager;
 import org.gradle.api.Project;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+import java.io.File;
+import java.util.List;
 
-		makeTask("download", DownloadTask.class);
-		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
-		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
-		makeTask("processMods", ProcessModsTask.class).dependsOn("mapJars");
-		makeTask("setupFabric", DefaultTask.class).dependsOn("processMods");
+public class PreBakeMixins {
 
-		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-		makeTask("genIdeaRuns", GenIdeaProjectTask.class).dependsOn("cleanIdea").dependsOn("idea").dependsOn("extractNatives");
-
-		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives");
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded");
+	public void proccess(Project project, LoomGradleExtension extension, List<File> mods) {
+		project.getLogger().lifecycle(":Found " + mods.size() + " mods to prebake");
+		String[] args = new String[mods.size() + 2];
+		args[0] = Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath();
+		args[1] = Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath();
+		for (int i = 0; i < mods.size(); i++) {
+			args[i + 2] = mods.get(i).getAbsolutePath();
+		}
+		project.getLogger().lifecycle(":preBaking mixins");
+		ProcessModsTask.addFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), this);
+		LogManager.getFormatterLogger("test");
+		MixinPrebaker.main(args);
 	}
+
 }

@@ -31,6 +31,14 @@ repositories {
 		name "RX14 Repository"
 		url 'http://mvn.rx14.co.uk/local/'
 	}
+	maven {
+		name = 'Mojang'
+		url = 'https://libraries.minecraft.net/'
+	}
+	maven {
+		name = 'SpongePowered'
+		url = 'http://repo.spongepowered.org/maven'
+	}
 }
 
 configurations {
@@ -50,6 +58,10 @@ dependencies {
 	shade 'com.google.guava:guava:19.0'
 	shade 'net.fabricmc:weave:0.1.0.6'
 	shade 'cuchaz:enigma:0.11.0.5:lib'
+	shade 'org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.2.4'
+
+
+	compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 }
 
 sourceSets {
@@ -60,11 +72,9 @@ sourceSets {
 }
 
 jar {
-    configurations.shade.each { dep ->
-        from(project.zipTree(dep)) {
-            exclude 'META-INF', 'META-INF/**'
-        }
-    }
+	from {
+		configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }
+	}
 }
 
 

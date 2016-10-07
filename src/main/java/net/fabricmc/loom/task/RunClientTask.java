@@ -65,7 +65,7 @@ public class RunClientTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
+		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
 		args("--tweakClass", "net.fabricmc.base.launch.FabricClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getFabricUserCache(), "assets-" + extension.version).getAbsolutePath());

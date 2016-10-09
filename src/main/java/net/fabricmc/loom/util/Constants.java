@@ -65,6 +65,7 @@ public class Constants {
 	public static final String CONFIG_NATIVES = "MC_NATIVES";
 	public static final String CONFIG_MC_DEPENDENCIES = "MC_DEPENDENCIES";
 	public static final String CONFIG_MC_DEPENDENCIES_CLIENT = "MC_DEPENDENCIES_CLIENT";
+	public static final String PROCESS_MODS_DEPENDENCIES = "PROCESS_MODS_DEPENDENCIES";
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 	public static final String COMPILE_MODS = "modCompile";
 

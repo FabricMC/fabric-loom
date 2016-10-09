@@ -58,8 +58,6 @@ dependencies {
 	shade 'com.google.guava:guava:19.0'
 	shade 'net.fabricmc:weave:0.1.0.6'
 	shade 'cuchaz:enigma:0.11.0.5:lib'
-	shade 'org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain:2.2.4'
-
 
 	compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 }

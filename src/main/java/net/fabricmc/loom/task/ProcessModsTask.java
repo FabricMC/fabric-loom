@@ -32,8 +32,6 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.tasks.TaskAction;
-import org.jboss.shrinkwrap.resolver.api.maven.ConfigurableMavenResolverSystem;
-import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,10 +67,9 @@ public class ProcessModsTask extends DefaultTask {
 	}
 
 	public void downloadRequiredDeps(LoomGradleExtension extension) {
-		ConfigurableMavenResolverSystem mavenResolver = Maven.configureResolver().withRemoteRepo("Fabric", "http://maven.fabricmc.net/", "default").withRemoteRepo("SpongePowered", "http://repo.spongepowered.org/maven/", "default").withRemoteRepo("Mojang", "https://libraries.minecraft.net/", "default");
-		File[] files = mavenResolver.resolve("net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT").withTransitivity().asFile();
-		for (File file : files) {
-			addFile(file, this);
+		Configuration configuration = getProject().getConfigurations().getByName(Constants.PROCESS_MODS_DEPENDENCIES);
+		for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
+			addFile(artifact.getFile(), this);
 		}
 	}
 

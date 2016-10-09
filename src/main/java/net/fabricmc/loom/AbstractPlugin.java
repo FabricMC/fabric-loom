@@ -77,6 +77,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
 		project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
 
+		project.getConfigurations().maybeCreate(Constants.PROCESS_MODS_DEPENDENCIES);
+
 		// Common libraries extends from client libraries, CONFIG_MC_DEPENDENCIES will contains all MC dependencies
 		project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT));
 
@@ -233,8 +235,8 @@ public class AbstractPlugin implements Plugin<Project> {
 				//only add this when not in a fabric dev env
 				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion);
 			}
+			project1.getDependencies().add(Constants.PROCESS_MODS_DEPENDENCIES, "net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT");
 		});
-
 	}
 
 	protected void readModJson(LoomGradleExtension extension) {

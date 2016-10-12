@@ -41,12 +41,11 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 public class DownloadTask extends DefaultTask {
 	@TaskAction
@@ -76,6 +75,22 @@ public class DownloadTask extends DefaultTask {
 			if (!Constants.MAPPINGS_ZIP.get(extension).exists()) {
 				this.getLogger().lifecycle(":downloading mappings");
 				FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+			}
+
+			if (!Constants.MAPPINGS_TINY.get(extension).exists()) {
+				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists()) {
+					getLogger().lifecycle(":downloading tiny mappings");
+					FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+				}
+				GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(Constants.MAPPINGS_TINY_GZ.get(extension)));
+				FileOutputStream fileOutputStream = new FileOutputStream(Constants.MAPPINGS_TINY.get(extension));
+				int length;
+				byte[] buffer = new byte[1024];
+				while ((length = gzipInputStream.read(buffer)) > 0) {
+					fileOutputStream.write(buffer, 0, length);
+				}
+				gzipInputStream.close();
+				fileOutputStream.close();
 			}
 
 			DependencyHandler dependencyHandler = getProject().getDependencies();

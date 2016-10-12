@@ -28,18 +28,13 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.tinyremapper.OutputConsumerJar;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 
 public class ModRemapper {
 
@@ -53,21 +48,6 @@ public class ModRemapper {
 			project.getLogger().error("Could not find mod jar @" + modJar.getAbsolutePath());
 			return;
 		}
-		if (!Constants.MAPPINGS_TINY.get(extension).exists()) {
-			if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists()) {
-				project.getLogger().lifecycle(":downloading tiny mappings");
-				FileUtils.copyURLToFile(new URL("http://asie.pl:8080/job/pomf/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
-			}
-			GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(Constants.MAPPINGS_TINY_GZ.get(extension)));
-			FileOutputStream fileOutputStream = new FileOutputStream(Constants.MAPPINGS_TINY.get(extension));
-			int length;
-			byte[] buffer = new byte[1024];
-			while ((length = gzipInputStream.read(buffer)) > 0) {
-				fileOutputStream.write(buffer, 0, length);
-			}
-			gzipInputStream.close();
-			fileOutputStream.close();
-		}
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
@@ -78,7 +58,7 @@ public class ModRemapper {
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles());
-		classpathFiles.add(new File(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
+		classpathFiles.add(new File(Constants.MINECRAFT_MERGED_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
 
 		Path[] classpath = new Path[classpathFiles.size()];
 		for (int i = 0; i < classpathFiles.size(); i++) {

@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.util.proccessing;
 
-import net.fabricmc.base.util.MixinPrebaker;
+import net.fabricmc.base.util.mixin.MixinPrebaker;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.ProcessModsTask;
 import net.fabricmc.loom.util.Constants;

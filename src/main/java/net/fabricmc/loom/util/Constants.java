@@ -49,6 +49,7 @@ public class Constants {
 	public static final IDelayed<File> MAPPINGS_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"));
 	public static final IDelayed<File> MAPPINGS_TINY = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion));
+	public static final IDelayed<File> MAPPINGS_MIXIN_EXPORT = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "pomf-tiny-mixin-" + extension.version + "." + extension.pomfVersion));
 
 	public static final IDelayed<File> REF_MAP = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "RefMap.json"));
 

@@ -39,6 +39,7 @@ import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +64,10 @@ public class MapJarsTask extends DefaultTask {
 			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
 
 			File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
+			if(tempAssests.exists()){
+				FileUtils.deleteDirectory(tempAssests);
+			}
+			tempAssests.mkdir();
 
 			ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
 				if (name.startsWith("assets") || name.startsWith("log4j2.xml") || name.startsWith("pack.png")) {
@@ -74,6 +79,7 @@ public class MapJarsTask extends DefaultTask {
 			ZipUtil.unpack(Constants.MINECRAFT_MAPPED_JAR.get(extension), tempAssests);
 
 			ZipUtil.pack(tempAssests, Constants.MINECRAFT_MAPPED_JAR.get(extension));
+			FileUtils.deleteDirectory(tempAssests);
 		} else {
 			this.getLogger().lifecycle(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
 			this.getLogger().lifecycle(":mapped jar found, skipping mapping");

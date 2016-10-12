@@ -22,28 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.task.*;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+public class BuidRemapper {
 
-		makeTask("download", DownloadTask.class);
-		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
-		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
-		makeTask("processMods", ProcessModsTask.class).dependsOn("mapJars");
-		makeTask("setupFabric", DefaultTask.class).dependsOn("processMods");
+	public static void reamp(Project project){
 
-		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-
-		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives");
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded");
 	}
 }

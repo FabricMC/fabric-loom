@@ -95,34 +95,8 @@ public class MapJarsTask extends DefaultTask {
 
 		@Override
 		public CtClass transform(CtClass ctClass) throws Exception {
-			return publify(loader.transformClass(ctClass));
+			return loader.transformClass(ctClass);
 		}
-	}
-
-	//Taken from enigma, anc changed a little
-	public static CtClass publify(CtClass c) {
-
-		for (CtField field : c.getDeclaredFields()) {
-			field.setModifiers(publify(field.getModifiers()));
-		}
-		for (CtBehavior behavior : c.getDeclaredBehaviors()) {
-			behavior.setModifiers(publify(behavior.getModifiers()));
-		}
-		InnerClassesAttribute attr = (InnerClassesAttribute) c.getClassFile().getAttribute(InnerClassesAttribute.tag);
-		if (attr != null) {
-			for (int i = 0; i < attr.tableLength(); i++) {
-				attr.setAccessFlags(i, publify(attr.accessFlags(i)));
-			}
-		}
-
-		return c;
-	}
-
-	private static int publify(int flags) {
-		if (!AccessFlag.isPublic(flags)) {
-			flags = AccessFlag.setPublic(flags);
-		}
-		return flags;
 	}
 
 	public static class ProgressListener implements Deobfuscator.ProgressListener {

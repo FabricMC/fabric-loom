@@ -29,8 +29,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
+import net.fabricmc.loom.task.GenIdeaProjectTask;
+import net.fabricmc.loom.util.BuidRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Version;
+import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -42,7 +45,10 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -237,6 +243,24 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 			project1.getDependencies().add(Constants.PROCESS_MODS_DEPENDENCIES, "net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT");
 		});
+
+		project.getTasks().getByName("build").doLast(task -> {
+			project.getLogger().lifecycle(":remapping mods");
+			BuidRemapper.reamp(project);
+		});
+
+		project.afterEvaluate(project12 -> {
+			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("extractNatives"));
+			project12.getTasks().getByName("idea").doLast(task -> {
+				try {
+					GenIdeaProjectTask.genIdeaRuns(project12);
+				} catch (IOException | ParserConfigurationException | SAXException | TransformerException e) {
+					e.printStackTrace();
+				}
+			});
+		});
+
+
 	}
 
 	protected void readModJson(LoomGradleExtension extension) {

@@ -30,6 +30,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
 import net.fabricmc.loom.util.Version;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -50,12 +51,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class GenIdeaProjectTask extends DefaultTask {
-	@TaskAction
-	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+public class GenIdeaProjectTask {
 
-		File file = new File(getProject().getName() + ".iml");
+	public static void genIdeaRuns(Project project) throws IOException, ParserConfigurationException, SAXException, TransformerException {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
+		File file = new File(project.getName() + ".iml");
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 		Document doc = docBuilder.parse(file);
@@ -70,7 +71,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		}
 
 		if (component == null) {
-			this.getLogger().lifecycle(":failed to generate intellij run configurations");
+			project.getLogger().lifecycle(":failed to generate intellij run configurations");
 			return;
 		}
 
@@ -84,7 +85,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		}
 
 		if (content == null) {
-			this.getLogger().lifecycle(":failed to generate intellij run configurations");
+			project.getLogger().lifecycle(":failed to generate intellij run configurations");
 			return;
 		}
 
@@ -119,7 +120,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 				node.appendChild(libraryElement);
 				component.appendChild(node);
 			} else if (!library.allowed()) {
-				this.getLogger().info(":" + library.getFile(extension).getName() + " is not allowed on this os");
+				project.getLogger().info(":" + library.getFile(extension).getName() + " is not allowed on this os");
 			}
 		}
 
@@ -131,7 +132,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 		transformer.transform(source, result);
 
-		file = new File(getProject().getName() + ".iws");
+		file = new File(project.getName() + ".iws");
 		docFactory = DocumentBuilderFactory.newInstance();
 		docBuilder = docFactory.newDocumentBuilder();
 		doc = docBuilder.parse(file);
@@ -147,13 +148,13 @@ public class GenIdeaProjectTask extends DefaultTask {
 		}
 
 		if (runManager == null) {
-			this.getLogger().lifecycle(":failed to generate intellij run configurations");
+			project.getLogger().lifecycle(":failed to generate intellij run configurations");
 			return;
 		}
 
 		IdeaRunConfig ideaClient = new IdeaRunConfig();
 		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaClient.projectName = getProject().getName();
+		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath() + " -Dfabric.development=true";
@@ -163,7 +164,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 
 		IdeaRunConfig ideaServer = new IdeaRunConfig();
 		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaServer.projectName = getProject().getName();
+		ideaServer.projectName = project.getName();
 		ideaServer.configName = "Minecraft Server";
 		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaServer.vmArgs = "-Dfabric.development=true";

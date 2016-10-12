@@ -25,7 +25,7 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.tinyremapper.OutputConsumerJar;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
@@ -69,8 +69,8 @@ public class ModRemapper {
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
 			.build();
 
-		OutputConsumerJar outputConsumer = new OutputConsumerJar(modOutputJar);
-		outputConsumer.addNonClassFiles(modJar);
+		OutputConsumerPath outputConsumer = new OutputConsumerPath(modOutputJar.toPath());
+		outputConsumer.addNonClassFiles(modJar.toPath());
 		remapper.read(modJar.toPath());
 		remapper.read(classpath);
 		remapper.apply(modJar.toPath(), outputConsumer);

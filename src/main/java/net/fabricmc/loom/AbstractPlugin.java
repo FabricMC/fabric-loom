@@ -37,6 +37,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.internal.file.collections.FileCollectionAdapter;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -100,10 +101,10 @@ public class AbstractPlugin implements Plugin<Project> {
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFile=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFile="  + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
+							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfMojang=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang="  + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + Constants.REF_MAP.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=mojang"); //TODO check if this should be pomf?
 						} catch (IOException e) {
 							e.printStackTrace();
 						}

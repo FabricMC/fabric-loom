@@ -78,7 +78,7 @@ public class ModRemapper {
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles());
-		classpathFiles.add(Constants.MINECRAFT_FINAL_JAR.get(extension));
+		classpathFiles.add(new File(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
 
 		Path[] classpath = new Path[classpathFiles.size()];
 		for (int i = 0; i < classpathFiles.size(); i++) {

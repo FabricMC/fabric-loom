@@ -58,6 +58,7 @@ dependencies {
 	shade 'com.google.guava:guava:19.0'
 	shade 'net.fabricmc:weave:0.1.0.6'
 	shade 'cuchaz:enigma:0.11.0.5:lib'
+	shade 'net.fabricmc:tiny-remapper:+'
 
 	compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 }

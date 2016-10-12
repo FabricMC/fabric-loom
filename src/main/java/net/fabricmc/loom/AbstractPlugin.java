@@ -30,10 +30,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.util.BuidRemapper;
+import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Version;
-import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -41,7 +40,6 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -53,8 +51,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -91,27 +87,27 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureIDEs();
 		configureCompile();
 
-		//TODO other languages?
-		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
-		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
-			Project project = entry.getKey();
-			Set<Task> taskSet = entry.getValue();
-			for (Task task : taskSet) {
-				if (task instanceof JavaCompile) {
-					JavaCompile javaCompileTask = (JavaCompile) task;
-					javaCompileTask.doFirst(task1 -> {
-						project.getLogger().lifecycle(":setting java compiler args");
-						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AreobfNotchSrgFile=" + Constants.MAPPINGS_SRG.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=notch");
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					});
-				}
-			}
-
-		}
+		//TODO wait for AP thing
+//		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+//		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
+//			Project project = entry.getKey();
+//			Set<Task> taskSet = entry.getValue();
+//			for (Task task : taskSet) {
+//				if (task instanceof JavaCompile) {
+//					JavaCompile javaCompileTask = (JavaCompile) task;
+//					javaCompileTask.doFirst(task1 -> {
+//						project.getLogger().lifecycle(":setting java compiler args");
+//						try {
+//							javaCompileTask.getOptions().getCompilerArgs().add("-AreobfNotchSrgFile=" + Constants.MAPPINGS_SRG.get(extension).getCanonicalPath());
+//							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=notch");
+//						} catch (IOException e) {
+//							e.printStackTrace();
+//						}
+//					});
+//				}
+//			}
+//
+//		}
 
 	}
 
@@ -246,7 +242,11 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.getTasks().getByName("build").doLast(task -> {
 			project.getLogger().lifecycle(":remapping mods");
-			BuidRemapper.reamp(project);
+			try {
+				ModRemapper.remap(project);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		});
 
 		project.afterEvaluate(project12 -> {

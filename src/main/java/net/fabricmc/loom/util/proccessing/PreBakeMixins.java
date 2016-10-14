@@ -38,11 +38,13 @@ public class PreBakeMixins {
 
 	public void proccess(Project project, LoomGradleExtension extension, List<File> mods) {
 		project.getLogger().lifecycle(":Found " + mods.size() + " mods to prebake");
-		String[] args = new String[mods.size() + 2];
-		args[0] = Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath();
-		args[1] = Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath();
+		String[] args = new String[mods.size() + 4];
+		args[0] = "-m";
+		args[1] = Constants.MAPPINGS_TINY.get(extension).getAbsolutePath();
+		args[2] = Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath();
+		args[3] = Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath();
 		for (int i = 0; i < mods.size(); i++) {
-			args[i + 2] = mods.get(i).getAbsolutePath();
+			args[i + 4] = mods.get(i).getAbsolutePath();
 		}
 		project.getLogger().lifecycle(":preBaking mixins");
 		ProcessModsTask.addFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), this);

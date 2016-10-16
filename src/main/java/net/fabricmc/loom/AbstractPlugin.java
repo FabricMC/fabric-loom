@@ -96,15 +96,17 @@ public class AbstractPlugin implements Plugin<Project> {
 			Project project = entry.getKey();
 			Set<Task> taskSet = entry.getValue();
 			for (Task task : taskSet) {
-				if (task instanceof JavaCompile) {
+				if (task instanceof JavaCompile
+						&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
 							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
+
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfMojang=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang="  + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + Constants.REF_MAP.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), ".mixin-refmap.json").getCanonicalPath());
 						} catch (IOException e) {
 							e.printStackTrace();
 						}

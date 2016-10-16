@@ -32,6 +32,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +43,17 @@ public class ModRemapper {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		//TODO whats the proper way of doing this???
 		File libsDir = new File(project.getBuildDir(), "libs");
-		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
-		File modOutputJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-final.jar");
-		if (!modJar.exists()) {
+		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-unmapped.jar");
+		File modMappedJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
+		if (!modMappedJar.exists()) {
 			project.getLogger().error("Could not find mod jar @" + modJar.getAbsolutePath());
 			return;
 		}
+		if (modJar.exists()) {
+			modJar.delete();
+		}
+
+		modMappedJar.renameTo(modJar);
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
@@ -67,9 +73,10 @@ public class ModRemapper {
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+			.withMappings(TinyUtils.createTinyMappingProvider(Constants.MAPPINGS_MIXIN_EXPORT.get(extension).toPath(), fromM, toM))
 			.build();
 
-		OutputConsumerPath outputConsumer = new OutputConsumerPath(modOutputJar.toPath());
+		OutputConsumerPath outputConsumer = new OutputConsumerPath(modMappedJar.toPath());
 		outputConsumer.addNonClassFiles(modJar.toPath());
 		remapper.read(modJar.toPath());
 		remapper.read(classpath);

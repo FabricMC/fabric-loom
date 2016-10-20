@@ -30,14 +30,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.Version;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.internal.file.collections.FileCollectionAdapter;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -97,7 +96,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			Set<Task> taskSet = entry.getValue();
 			for (Task task : taskSet) {
 				if (task instanceof JavaCompile
-						&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
+					&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
@@ -105,8 +104,8 @@ public class AbstractPlugin implements Plugin<Project> {
 							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
 
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfMojang=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang="  + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), ".mixin-refmap.json").getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
@@ -266,7 +265,6 @@ public class AbstractPlugin implements Plugin<Project> {
 				}
 			});
 		});
-
 
 	}
 

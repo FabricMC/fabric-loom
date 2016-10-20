@@ -33,19 +33,19 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 
 public class ObfuscationEnvironmentFabric extends ObfuscationEnvironment {
-    protected ObfuscationEnvironmentFabric(ObfuscationType type) {
-        super(type);
-    }
+	protected ObfuscationEnvironmentFabric(ObfuscationType type) {
+		super(type);
+	}
 
-    @Override
-    protected IMappingProvider getMappingProvider(Messager messager, Filer filer) {
-        String from = type.getKey().split(":")[0];
-        String to = type.getKey().split(":")[1];
-        return new MixinMappingProviderTiny(messager, filer, from, to);
-    }
+	@Override
+	protected IMappingProvider getMappingProvider(Messager messager, Filer filer) {
+		String from = type.getKey().split(":")[0];
+		String to = type.getKey().split(":")[1];
+		return new MixinMappingProviderTiny(messager, filer, from, to);
+	}
 
-    @Override
-    protected IMappingWriter getMappingWriter(Messager messager, Filer filer) {
-        return new MixinMappingWriterTiny(messager, filer);
-    }
+	@Override
+	protected IMappingWriter getMappingWriter(Messager messager, Filer filer) {
+		return new MixinMappingWriterTiny(messager, filer);
+	}
 }

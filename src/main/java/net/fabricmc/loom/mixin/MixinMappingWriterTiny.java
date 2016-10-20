@@ -39,37 +39,37 @@ import java.io.PrintWriter;
  * Created by asie on 10/9/16.
  */
 public class MixinMappingWriterTiny extends MappingWriter {
-    public MixinMappingWriterTiny(Messager messager, Filer filer) {
-        super(messager, filer);
-    }
+	public MixinMappingWriterTiny(Messager messager, Filer filer) {
+		super(messager, filer);
+	}
 
-    @Override
-    public void write(String output, ObfuscationType type, IMappingConsumer.MappingSet<MappingField> fields, IMappingConsumer.MappingSet<MappingMethod> methods) {
-        if (output != null) {
-            PrintWriter writer = null;
+	@Override
+	public void write(String output, ObfuscationType type, IMappingConsumer.MappingSet<MappingField> fields, IMappingConsumer.MappingSet<MappingMethod> methods) {
+		if (output != null) {
+			PrintWriter writer = null;
 
-            try {
-                String from = type.getKey().split(":")[0];
-                String to = type.getKey().split(":")[1];
+			try {
+				String from = type.getKey().split(":")[0];
+				String to = type.getKey().split(":")[1];
 
-                writer = this.openFileWriter(output, type + " output TinyMappings");
-                writer.println(String.format("v1\t%s\t%s", from, to));
-                for (IMappingConsumer.MappingSet.Pair<MappingField> pair : fields) {
-                    writer.println(String.format("FIELD\t%s\t%s\t%s\t%s", pair.from.getOwner(), pair.from.getDesc(), pair.from.getSimpleName(), pair.to.getSimpleName()));
-                }
-                for (IMappingConsumer.MappingSet.Pair<MappingMethod> pair : methods) {
-                    writer.println(String.format("METHOD\t%s\t%s\t%s\t%s", pair.from.getOwner(), pair.from.getDesc(), pair.from.getSimpleName(), pair.to.getSimpleName()));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                if (writer != null) {
-                    try {
-                        writer.close();
-                    } catch (Exception e) {
-                    }
-                }
-            }
-        }
-    }
+				writer = this.openFileWriter(output, type + " output TinyMappings");
+				writer.println(String.format("v1\t%s\t%s", from, to));
+				for (IMappingConsumer.MappingSet.Pair<MappingField> pair : fields) {
+					writer.println(String.format("FIELD\t%s\t%s\t%s\t%s", pair.from.getOwner(), pair.from.getDesc(), pair.from.getSimpleName(), pair.to.getSimpleName()));
+				}
+				for (IMappingConsumer.MappingSet.Pair<MappingMethod> pair : methods) {
+					writer.println(String.format("METHOD\t%s\t%s\t%s\t%s", pair.from.getOwner(), pair.from.getDesc(), pair.from.getSimpleName(), pair.to.getSimpleName()));
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				if (writer != null) {
+					try {
+						writer.close();
+					} catch (Exception e) {
+					}
+				}
+			}
+		}
+	}
 }

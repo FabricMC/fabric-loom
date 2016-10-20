@@ -32,7 +32,6 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +63,7 @@ public class ModRemapper {
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles());
-		classpathFiles.add(new File(Constants.MINECRAFT_MERGED_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
+		classpathFiles.add(new File(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
 
 		Path[] classpath = new Path[classpathFiles.size()];
 		for (int i = 0; i < classpathFiles.size(); i++) {

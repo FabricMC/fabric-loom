@@ -37,103 +37,108 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 public class MixinMappingProviderTiny extends MappingProvider {
-    private final String from, to;
+	private final String from, to;
 
-    public MixinMappingProviderTiny(Messager messager, Filer filer, String from, String to) {
-        super(messager, filer);
-        this.from = from;
-        this.to = to;
-    }
+	public MixinMappingProviderTiny(Messager messager, Filer filer, String from, String to) {
+		super(messager, filer);
+		this.from = from;
+		this.to = to;
+	}
 
-    private static final String[] removeFirst(String[] src, int count) {
-        if (count >= src.length) {
-            return new String[0];
-        } else {
-            String[] out = new String[src.length - count];
-            System.arraycopy(src, count, out, 0, out.length);
-            return out;
-        }
-    }
+	private static final String[] removeFirst(String[] src, int count) {
+		if (count >= src.length) {
+			return new String[0];
+		} else {
+			String[] out = new String[src.length - count];
+			System.arraycopy(src, count, out, 0, out.length);
+			return out;
+		}
+	}
 
+	@Override
+	public MappingMethod getMethodMapping(MappingMethod method) {
+		System.out.println("processing " + method.getName() + method.getDesc());
 
-    @Override
-    public MappingMethod getMethodMapping(MappingMethod method) {
-        System.out.println("processing " + method.getName() + method.getDesc());
+		MappingMethod mapped = this.methodMap.get(method);
+		if (mapped != null)
+			return mapped;
 
-        MappingMethod mapped = this.methodMap.get(method);
-        if (mapped != null) return mapped;
+		try {
+			Class c = this.getClass().getClassLoader().loadClass(method.getOwner().replace('/', '.'));
+			if (c == null || c == Object.class) {
+				return null;
+			}
 
-        try {
-            Class c = this.getClass().getClassLoader().loadClass(method.getOwner().replace('/', '.'));
-            if (c == null || c == Object.class) {
-                return null;
-            }
+			for (Class cc : c.getInterfaces()) {
+				mapped = getMethodMapping(method.move(cc.getName().replace('.', '/')));
+				if (mapped != null)
+					return mapped;
+			}
 
-            for (Class cc : c.getInterfaces()) {
-                mapped = getMethodMapping(method.move(cc.getName().replace('.', '/')));
-                if (mapped != null) return mapped;
-            }
+			if (c.getSuperclass() != null) {
+				mapped = getMethodMapping(method.move(c.getSuperclass().getName().replace('.', '/')));
+				if (mapped != null)
+					return mapped;
+			}
 
-            if (c.getSuperclass() != null) {
-                mapped = getMethodMapping(method.move(c.getSuperclass().getName().replace('.', '/')));
-                if (mapped != null) return mapped;
-            }
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	@Override
+	public MappingField getFieldMapping(MappingField field) {
+		System.out.println("processing " + field.getOwner() + "/" + field.getName() + field.getDesc());
 
-    @Override
-    public MappingField getFieldMapping(MappingField field) {
-        System.out.println("processing " + field.getOwner() + "/" + field.getName() + field.getDesc());
+		MappingField mapped = this.fieldMap.get(field);
+		if (mapped != null)
+			return mapped;
 
-        MappingField mapped = this.fieldMap.get(field);
-        if (mapped != null) return mapped;
+		try {
+			Class c = this.getClass().getClassLoader().loadClass(field.getOwner().replace('/', '.'));
+			if (c == null || c == Object.class) {
+				return null;
+			}
 
-        try {
-            Class c = this.getClass().getClassLoader().loadClass(field.getOwner().replace('/', '.'));
-            if (c == null || c == Object.class) {
-                return null;
-            }
+			for (Class cc : c.getInterfaces()) {
+				mapped = getFieldMapping(field.move(cc.getName().replace('.', '/')));
+				if (mapped != null)
+					return mapped;
+			}
 
-            for (Class cc : c.getInterfaces()) {
-                mapped = getFieldMapping(field.move(cc.getName().replace('.', '/')));
-                if (mapped != null) return mapped;
-            }
+			if (c.getSuperclass() != null) {
+				mapped = getFieldMapping(field.move(c.getSuperclass().getName().replace('.', '/')));
+				if (mapped != null)
+					return mapped;
+			}
 
-            if (c.getSuperclass() != null) {
-                mapped = getFieldMapping(field.move(c.getSuperclass().getName().replace('.', '/')));
-                if (mapped != null) return mapped;
-            }
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	// TODO: Unify with tiny-remapper
 
-    // TODO: Unify with tiny-remapper
+	@Override
+	public void read(File input) throws IOException {
+		BufferedReader reader = Files.newBufferedReader(input.toPath());
 
-    @Override
-    public void read(File input) throws IOException {
-        BufferedReader reader = Files.newBufferedReader(input.toPath());
-
-        TinyUtils.read(reader, from, to, (classFrom, classTo) -> {
-            classMap.put(classFrom, classTo);
-        }, (fieldFrom, fieldTo) -> {
-            fieldMap.put(
-                    new MappingField(fieldFrom.owner, fieldFrom.name, fieldFrom.desc),
-                    new MappingField(fieldTo.owner, fieldTo.name, fieldTo.desc)
-            );
-        }, (methodFrom, methodTo) -> {
-            methodMap.put(
-                    new MappingMethod(methodFrom.owner, methodFrom.name, methodFrom.desc),
-                    new MappingMethod(methodTo.owner, methodTo.name, methodTo.desc)
-            );
-        });
-    }
+		TinyUtils.read(reader, from, to, (classFrom, classTo) -> {
+			classMap.put(classFrom, classTo);
+		}, (fieldFrom, fieldTo) -> {
+			fieldMap.put(
+				new MappingField(fieldFrom.owner, fieldFrom.name, fieldFrom.desc),
+				new MappingField(fieldTo.owner, fieldTo.name, fieldTo.desc)
+			);
+		}, (methodFrom, methodTo) -> {
+			methodMap.put(
+				new MappingMethod(methodFrom.owner, methodFrom.name, methodFrom.desc),
+				new MappingMethod(methodTo.owner, methodTo.name, methodTo.desc)
+			);
+		});
+	}
 }

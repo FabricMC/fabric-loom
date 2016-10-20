@@ -33,6 +33,7 @@ public class LoomGradleExtension {
 	public String runDir = "run";
 	public String fabricVersion;
 	public String pomfVersion;
+	public String refmapName;
 
 	//Not to be set in the build.gradle
 	public Project project;

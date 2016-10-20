@@ -29,11 +29,7 @@ import cuchaz.enigma.TranslatingTypeLoader;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
 import cuchaz.enigma.mapping.TranslationDirection;
 import cuchaz.enigma.throwables.MappingParseException;
-import javassist.CtBehavior;
 import javassist.CtClass;
-import javassist.CtField;
-import javassist.bytecode.AccessFlag;
-import javassist.bytecode.InnerClassesAttribute;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
@@ -64,7 +60,7 @@ public class MapJarsTask extends DefaultTask {
 			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
 
 			File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
-			if(tempAssests.exists()){
+			if (tempAssests.exists()) {
 				FileUtils.deleteDirectory(tempAssests);
 			}
 			tempAssests.mkdir();

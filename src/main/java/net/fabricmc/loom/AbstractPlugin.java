@@ -105,6 +105,10 @@ public class AbstractPlugin implements Plugin<Project> {
 
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfMojang=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
+							if(extension.refmapName == null || extension.refmapName.isEmpty()){
+								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
+								extension.refmapName = project.getName() + "-refmap.json";
+							}
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
 						} catch (IOException e) {
 							e.printStackTrace();

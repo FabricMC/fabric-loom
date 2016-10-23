@@ -59,8 +59,6 @@ public class ProcessModsTask extends DefaultTask {
 		if (mods.size() == 0) {
 			FileUtils.copyFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), Constants.MINECRAFT_FINAL_JAR.get(extension));
 		} else {
-			//TODO figure out a way to specify what deps do what
-			//TODO download deps when needed
 			downloadRequiredDeps(extension);
 			new PreBakeMixins().proccess(getProject(), extension, mods);
 		}

@@ -241,7 +241,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			if (extension.fabricVersion != null && !extension.fabricVersion.isEmpty()) {
 				//only add this when not in a fabric dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion);
+				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion + ":debof");
 			}
 			project1.getDependencies().add(Constants.PROCESS_MODS_DEPENDENCIES, "net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT");
 		});

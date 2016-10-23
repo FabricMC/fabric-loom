@@ -42,17 +42,19 @@ public class ModRemapper {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		//TODO whats the proper way of doing this???
 		File libsDir = new File(project.getBuildDir(), "libs");
-		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-unmapped.jar");
-		File modMappedJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
-		if (!modMappedJar.exists()) {
-			project.getLogger().error("Could not find mod jar @" + modJar.getAbsolutePath());
+		File debofJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-debof.jar");
+		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
+		if (!modJar.exists()) {
+			project.getLogger().error("Could not find mod jar @" + debofJar.getAbsolutePath());
+			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
 			return;
 		}
-		if (modJar.exists()) {
-			modJar.delete();
+		if (debofJar.exists()) {
+			debofJar.delete();
 		}
 
-		modMappedJar.renameTo(modJar);
+		//Move the pre existing mod jar to the debof jar
+		modJar.renameTo(debofJar);
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
@@ -75,12 +77,16 @@ public class ModRemapper {
 			.withMappings(TinyUtils.createTinyMappingProvider(Constants.MAPPINGS_MIXIN_EXPORT.get(extension).toPath(), fromM, toM))
 			.build();
 
-		OutputConsumerPath outputConsumer = new OutputConsumerPath(modMappedJar.toPath());
-		outputConsumer.addNonClassFiles(modJar.toPath());
-		remapper.read(modJar.toPath());
+		OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
+		//Rebof the debof jar
+		outputConsumer.addNonClassFiles(debofJar.toPath());
+		remapper.read(debofJar.toPath());
 		remapper.read(classpath);
-		remapper.apply(modJar.toPath(), outputConsumer);
+		remapper.apply(debofJar.toPath(), outputConsumer);
 		outputConsumer.finish();
 		remapper.finish();
+
+		//Add the debof jar to be uploaded to maven
+		project.getArtifacts().add("archives", debofJar);
 	}
 }

@@ -110,6 +110,7 @@ public class AbstractPlugin implements Plugin<Project> {
 								extension.refmapName = project.getName() + "-refmap.json";
 							}
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=pomf:mojang");
 						} catch (IOException e) {
 							e.printStackTrace();
 						}

@@ -42,19 +42,19 @@ public class ModRemapper {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		//TODO whats the proper way of doing this???
 		File libsDir = new File(project.getBuildDir(), "libs");
-		File debofJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-debof.jar");
+		File deobfJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-deobf.jar");
 		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
 		if (!modJar.exists()) {
-			project.getLogger().error("Could not find mod jar @" + debofJar.getAbsolutePath());
+			project.getLogger().error("Could not find mod jar @" + deobfJar.getAbsolutePath());
 			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
 			return;
 		}
-		if (debofJar.exists()) {
-			debofJar.delete();
+		if (deobfJar.exists()) {
+			deobfJar.delete();
 		}
 
-		//Move the pre existing mod jar to the debof jar
-		modJar.renameTo(debofJar);
+		//Move the pre existing mod jar to the deobf jar
+		modJar.renameTo(deobfJar);
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
@@ -78,15 +78,15 @@ public class ModRemapper {
 			.build();
 
 		OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
-		//Rebof the debof jar
-		outputConsumer.addNonClassFiles(debofJar.toPath());
-		remapper.read(debofJar.toPath());
+		//Rebof the deobf jar
+		outputConsumer.addNonClassFiles(deobfJar.toPath());
+		remapper.read(deobfJar.toPath());
 		remapper.read(classpath);
-		remapper.apply(debofJar.toPath(), outputConsumer);
+		remapper.apply(deobfJar.toPath(), outputConsumer);
 		outputConsumer.finish();
 		remapper.finish();
 
-		//Add the debof jar to be uploaded to maven
-		project.getArtifacts().add("archives", debofJar);
+		//Add the deobf jar to be uploaded to maven
+		project.getArtifacts().add("archives", deobfJar);
 	}
 }

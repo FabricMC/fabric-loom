@@ -72,12 +72,12 @@ public class DownloadTask extends DefaultTask {
 				Constants.POMF_DIR.get(extension).mkdir();
 			}
 
-			if (!Constants.MAPPINGS_ZIP.get(extension).exists()) {
+			if (!Constants.MAPPINGS_ZIP.get(extension).exists() && extension.hasPomf()) {
 				this.getLogger().lifecycle(":downloading mappings");
 				FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/pomf/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
 			}
 
-			if (!Constants.MAPPINGS_TINY.get(extension).exists()) {
+			if (!Constants.MAPPINGS_TINY.get(extension).exists() && extension.hasPomf()) {
 				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists()) {
 					getLogger().lifecycle(":downloading tiny mappings");
 					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/pomf/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));

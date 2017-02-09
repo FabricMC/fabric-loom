@@ -56,4 +56,8 @@ public class LoomGradleExtension {
 		}
 		return userCache;
 	}
+
+	public boolean hasPomf(){
+		return pomfVersion != null && !pomfVersion.isEmpty();
+	}
 }

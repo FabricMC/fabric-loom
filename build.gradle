@@ -15,7 +15,7 @@ apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.g
 
 group = 'net.fabricmc'
 archivesBaseName = project.name.toLowerCase()
-version = '0.0.5-SNAPSHOT'
+version = '0.0.6-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -60,7 +60,15 @@ dependencies {
 	shade 'cuchaz:enigma:0.11.0.19:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 
-	compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
+	//Always fun when your dep needs the tool to build, but the tool needs the dep.
+	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
+
+	shade('org.spongepowered:mixin:0.6-SNAPSHOT') {
+		exclude module: 'launchwrapper'
+		exclude module: 'guava'
+	}
+	shade 'org.apache.commons:commons-lang3:3.5'
+
 }
 
 sourceSets {

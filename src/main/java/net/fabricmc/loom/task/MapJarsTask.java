@@ -49,6 +49,11 @@ public class MapJarsTask extends DefaultTask {
 	public void mapJars() throws IOException, MappingParseException {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		if (!Constants.MINECRAFT_MAPPED_JAR.get(extension).exists()) {
+			if(!extension.hasPomf()){
+				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
+				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
+				return;
+			}
 			this.getLogger().lifecycle(":unpacking mappings");
 			if (!Constants.MAPPINGS_DIR.get(extension).exists()) {
 				ZipUtil.unpack(Constants.MAPPINGS_ZIP.get(extension), Constants.MAPPINGS_DIR.get(extension));

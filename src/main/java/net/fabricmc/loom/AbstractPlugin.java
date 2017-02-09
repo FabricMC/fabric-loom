@@ -253,8 +253,11 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.getTasks().getByName("build").doLast(task -> {
 			project.getLogger().lifecycle(":remapping mods");
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			try {
-				ModRemapper.remap(project);
+				if(extension.hasPomf()){
+					ModRemapper.remap(project);
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

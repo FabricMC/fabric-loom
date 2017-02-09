@@ -24,11 +24,9 @@
 
 package net.fabricmc.loom.util.proccessing;
 
-import net.fabricmc.base.util.mixin.MixinPrebaker;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.ProcessModsTask;
 import net.fabricmc.loom.util.Constants;
-import org.apache.logging.log4j.LogManager;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -48,8 +46,8 @@ public class PreBakeMixins {
 		}
 		project.getLogger().lifecycle(":preBaking mixins");
 		ProcessModsTask.addFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), this);
-		LogManager.getFormatterLogger("test");
-		MixinPrebaker.main(args);
+		//LogManager.getFormatterLogger("test");
+	//	MixinPrebaker.main(args);
 	}
 
 }

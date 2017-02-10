@@ -76,9 +76,27 @@ public class DownloadTask extends DefaultTask {
 				this.getLogger().lifecycle(":downloading mappings");
 				FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/pomf/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
 			}
+			if(!extension.hasPomf()){
+				if(Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()){
+					if(Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()){
+						this.getLogger().lifecycle("Found local mapping files");
+						extension.localMappings = true;
+						extension.pomfVersion = "local"; //TODO set this to include the hash or something to so the jar name is unique?
+
+						//We delete this to make sure they are always re extracted.
+						deleteIfExists(Constants.MAPPINGS_ZIP.get(extension));
+						deleteIfExists(Constants.MAPPINGS_TINY_GZ.get(extension));
+						deleteIfExists(Constants.MAPPINGS_TINY.get(extension));
+						deleteIfExists(Constants.MAPPINGS_DIR.get(extension));
+
+						Constants.MAPPINGS_TINY_GZ = Constants.MAPPINGS_TINY_GZ_LOCAL;
+						Constants.MAPPINGS_ZIP = Constants.MAPPINGS_ZIP_LOCAL;
+					}
+				}
+			}
 
 			if (!Constants.MAPPINGS_TINY.get(extension).exists() && extension.hasPomf()) {
-				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists()) {
+				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists() && !extension.localMappings) {
 					getLogger().lifecycle(":downloading tiny mappings");
 					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/pomf/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
 				}
@@ -171,5 +189,20 @@ public class DownloadTask extends DefaultTask {
 				throw new RuntimeException("Failed downloading Minecraft json");
 			}
 		}
+	}
+
+	private static boolean deleteIfExists(File file){
+		if(file.exists()){
+			if(file.isDirectory()){
+				try {
+					FileUtils.deleteDirectory(file);
+					return file.mkdir();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			return file.delete();
+		}
+		return false;
 	}
 }

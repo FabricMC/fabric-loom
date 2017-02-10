@@ -34,6 +34,7 @@ public class LoomGradleExtension {
 	public String fabricVersion;
 	public String pomfVersion;
 	public String refmapName;
+	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle
 	public Project project;
@@ -58,6 +59,9 @@ public class LoomGradleExtension {
 	}
 
 	public boolean hasPomf(){
+		if(localMappings){
+			return true;
+		}
 		return pomfVersion != null && !pomfVersion.isEmpty();
 	}
 }

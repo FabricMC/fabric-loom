@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
 
@@ -108,7 +109,14 @@ public class Version {
 			if (artifact == null) {
 				artifact = new Artifact(name);
 			}
-			return artifact.getArtifact(natives == null ? artifact.getClassifier() : natives.get(OperatingSystem.getOS()).getAsString());
+			if(natives != null){
+				JsonElement jsonElement = natives.get(OperatingSystem.getOS());
+				if(jsonElement != null){
+					return artifact.getArtifact(jsonElement.getAsString());
+				}
+			}
+
+			return artifact.getArtifact(artifact.classifier);
 		}
 
 		private class Artifact {

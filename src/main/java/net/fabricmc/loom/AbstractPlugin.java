@@ -233,7 +233,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				for (Version.Library library : version.libraries) {
 					if (library.allowed() && library.getFile(extension) != null) {
 						String configName = Constants.CONFIG_MC_DEPENDENCIES;
-						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput")) {
+						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput") || library.name.contains("text2speech") || library.name.contains("objc")) {
 							configName = Constants.CONFIG_MC_DEPENDENCIES_CLIENT;
 						}
 						project1.getDependencies().add(configName, library.getArtifactName());

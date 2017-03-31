@@ -118,7 +118,7 @@ public class DownloadTask extends DefaultTask {
 					if (library.allowed() && library.getFile(extension) != null) {
 						// By default, they are all available on all sides
 						String configName = Constants.CONFIG_MC_DEPENDENCIES;
-						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput")) {
+						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput") || library.name.contains("text2speech") || library.name.contains("objc")) {
 							configName = Constants.CONFIG_MC_DEPENDENCIES_CLIENT;
 						}
 						dependencyHandler.add(configName, library.getArtifactName());

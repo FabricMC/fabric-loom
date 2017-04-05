@@ -57,7 +57,7 @@ dependencies {
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
 	shade 'net.fabricmc:weave:0.1.0.6'
-	shade 'cuchaz:enigma:0.11.0.19:lib'
+	shade 'cuchaz:enigma:+:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.

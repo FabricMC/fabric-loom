@@ -83,7 +83,11 @@ public class Version {
 			if (natives == null) {
 				return "";
 			} else {
-				return "-" + natives.get(OperatingSystem.getOS().replace("${arch}", OperatingSystem.getArch())).getAsString().replace("\"", "");
+				JsonElement element = natives.get(OperatingSystem.getOS().replace("${arch}", OperatingSystem.getArch()));
+				if(element == null){
+					return "";
+				}
+				return "-" + element.getAsString().replace("\"", "");
 			}
 		}
 

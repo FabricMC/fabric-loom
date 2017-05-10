@@ -24,10 +24,6 @@ repositories {
         url = 'http://maven.fabricmc.net/'
     }
 	maven {
-        name = 'cuchaz'
-        url = 'http://maven.cuchazinteractive.com/'
-    }
-	maven {
 		name "RX14 Repository"
 		url 'http://mvn.rx14.co.uk/local/'
 	}
@@ -57,7 +53,7 @@ dependencies {
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
 	shade 'net.fabricmc:weave:0.1.0.6'
-	shade 'cuchaz:enigma:+:lib'
+	shade 'cuchaz:enigma:0.11.0.+:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.

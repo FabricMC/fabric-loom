@@ -52,7 +52,7 @@ dependencies {
 	shade 'com.google.code.gson:gson:2.6.2'
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
-	shade 'net.fabricmc:weave:0.1.0.6'
+	shade 'net.fabricmc:weave:0.1.0.+'
 	shade 'cuchaz:enigma:0.11.0.+:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 

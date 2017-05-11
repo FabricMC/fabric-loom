@@ -29,7 +29,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
 import net.fabricmc.loom.util.Version;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -49,10 +51,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class GenIdeaProjectTask {
+public class GenIdeaProjectTask extends DefaultTask {
 
-	public static void genIdeaRuns(Project project) throws IOException, ParserConfigurationException, SAXException, TransformerException {
+	@TaskAction
+	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
+		Project project = this.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		project.getLogger().lifecycle(":Building idea workspace");
 
 		File file = new File(project.getName() + ".iml");
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -100,27 +105,6 @@ public class GenIdeaProjectTask {
 		Gson gson = new Gson();
 
 		Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
-
-		for (Version.Library library : version.libraries) {
-			if (library.allowed() && library.getFile(extension) != null && library.getFile(extension).exists()) {
-				Element node = doc.createElement("orderEntry");
-				node.setAttribute("type", "module-library");
-				Element libraryElement = doc.createElement("library");
-				Element classes = doc.createElement("CLASSES");
-				Element javadoc = doc.createElement("JAVADOC");
-				Element sources = doc.createElement("SOURCES");
-				Element root = doc.createElement("root");
-				root.setAttribute("url", "jar://" + library.getFile(extension).getAbsolutePath() + "!/");
-				classes.appendChild(root);
-				libraryElement.appendChild(classes);
-				libraryElement.appendChild(javadoc);
-				libraryElement.appendChild(sources);
-				node.appendChild(libraryElement);
-				component.appendChild(node);
-			} else if (!library.allowed()) {
-				project.getLogger().info(":" + library.getFile(extension).getName() + " is not allowed on this os");
-			}
-		}
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();

@@ -58,8 +58,9 @@ public class MapJarsTask extends DefaultTask {
 				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
 				return;
 			}
-			this.getLogger().lifecycle(":unpacking mappings");
-			if (!Constants.MAPPINGS_DIR.get(extension).exists()) {
+			if (!Constants.MAPPINGS_DIR.get(extension).exists() || extension.localMappings) {
+				this.getLogger().lifecycle(":unpacking mappings");
+				FileUtils.deleteDirectory(Constants.MAPPINGS_DIR.get(extension));
 				ZipUtil.unpack(Constants.MAPPINGS_ZIP.get(extension), Constants.MAPPINGS_DIR.get(extension));
 			}
 

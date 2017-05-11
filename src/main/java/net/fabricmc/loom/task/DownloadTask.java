@@ -131,7 +131,7 @@ public class DownloadTask extends DefaultTask {
 			}
 
 			// Force add LaunchWrapper
-			dependencyHandler.add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:launchwrapper:1.11");
+			dependencyHandler.add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:launchwrapper:1.12");
 
 			Version.AssetIndex assetIndex = version.assetIndex;
 

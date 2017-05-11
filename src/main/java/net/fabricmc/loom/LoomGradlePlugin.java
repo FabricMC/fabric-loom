@@ -40,6 +40,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		makeTask("setupFabric", DefaultTask.class).dependsOn("processMods");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
+		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea");
 
 		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives");
 

@@ -31,10 +31,6 @@ repositories {
 		name = 'Mojang'
 		url = 'https://libraries.minecraft.net/'
 	}
-	maven {
-		name = 'SpongePowered'
-		url = 'http://repo.spongepowered.org/maven'
-	}
 }
 
 configurations {
@@ -60,10 +56,6 @@ dependencies {
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.
 	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 
-	shade('org.spongepowered:mixin:0.6.8-SNAPSHOT') {
-		exclude module: 'launchwrapper'
-		exclude module: 'guava'
-	}
 	shade 'org.apache.commons:commons-lang3:3.5'
 
 }

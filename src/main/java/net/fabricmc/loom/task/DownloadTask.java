@@ -79,9 +79,8 @@ public class DownloadTask extends DefaultTask {
 			if(!extension.hasPomf()){
 				if(Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()){
 					if(Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()){
-						this.getLogger().lifecycle("Found local mapping files");
+						this.getLogger().lifecycle(":using local mappings!");
 						extension.localMappings = true;
-						extension.pomfVersion = "local"; //TODO set this to include the hash or something to so the jar name is unique?
 
 						//We delete this to make sure they are always re extracted.
 						deleteIfExists(Constants.MAPPINGS_ZIP.get(extension));

@@ -56,10 +56,11 @@ dependencies {
 	shade 'cuchaz:enigma:0.11.0.+:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 
+
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.
 	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 
-	shade('org.spongepowered:mixin:0.6-SNAPSHOT') {
+	shade('org.spongepowered:mixin:0.6.8-SNAPSHOT') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
@@ -76,7 +77,11 @@ sourceSets {
 
 jar {
 	from {
-		configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }
+		configurations.shade.each { dep ->
+			from(project.zipTree(dep)){
+				exclude 'META-INF', 'META-INF/**'
+			}
+		}
 	}
 }
 

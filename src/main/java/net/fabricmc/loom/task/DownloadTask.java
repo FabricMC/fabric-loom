@@ -74,11 +74,16 @@ public class DownloadTask extends DefaultTask {
 
 			if (!Constants.MAPPINGS_ZIP.get(extension).exists() && extension.hasPomf()) {
 				this.getLogger().lifecycle(":downloading mappings");
-				FileUtils.copyURLToFile(new URL("http://jenkins.modmuss50.me/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+				try {
+					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to download mappings", e);
+				}
+
 			}
-			if(!extension.hasPomf()){
-				if(Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()){
-					if(Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()){
+			if (!extension.hasPomf()) {
+				if (Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()) {
+					if (Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()) {
 						this.getLogger().lifecycle(":using local mappings!");
 						extension.localMappings = true;
 
@@ -97,7 +102,11 @@ public class DownloadTask extends DefaultTask {
 			if (!Constants.MAPPINGS_TINY.get(extension).exists() && extension.hasPomf()) {
 				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists() && !extension.localMappings) {
 					getLogger().lifecycle(":downloading tiny mappings");
-					FileUtils.copyURLToFile(new URL("http://jenkins.modmuss50.me/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+					try {
+						FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to download mappings", e);
+					}
 				}
 				GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(Constants.MAPPINGS_TINY_GZ.get(extension)));
 				FileOutputStream fileOutputStream = new FileOutputStream(Constants.MAPPINGS_TINY.get(extension));
@@ -190,9 +199,9 @@ public class DownloadTask extends DefaultTask {
 		}
 	}
 
-	private static boolean deleteIfExists(File file){
-		if(file.exists()){
-			if(file.isDirectory()){
+	private static boolean deleteIfExists(File file) {
+		if (file.exists()) {
+			if (file.isDirectory()) {
 				try {
 					FileUtils.deleteDirectory(file);
 					return file.mkdir();

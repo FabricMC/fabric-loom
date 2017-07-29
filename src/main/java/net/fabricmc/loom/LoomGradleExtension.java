@@ -33,6 +33,7 @@ public class LoomGradleExtension {
 	public String runDir = "run";
 	public String fabricVersion;
 	public String pomfVersion;
+	public String accessManipulator;
 	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle

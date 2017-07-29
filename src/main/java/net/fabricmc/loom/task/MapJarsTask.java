@@ -32,6 +32,8 @@ import cuchaz.enigma.throwables.MappingParseException;
 import javassist.CtClass;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.proccessing.AccessManipulatorUtils;
+import net.fabricmc.loom.util.proccessing.ClassAccessManipulator;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 import org.zeroturnaround.zip.ZipUtil;
@@ -67,7 +69,7 @@ public class MapJarsTask extends DefaultTask {
 			this.getLogger().lifecycle(":remapping jar");
 			deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
 			this.deobfuscator.setMappings(new MappingsEnigmaReader().read(Constants.MAPPINGS_DIR.get(extension)));
-			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
+			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator, extension);
 
 			File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
 			if (tempAssests.exists()) {
@@ -92,14 +94,20 @@ public class MapJarsTask extends DefaultTask {
 		}
 	}
 
-	public void writeJar(File out, Deobfuscator.ProgressListener progress, Deobfuscator deobfuscator) {
+	public void writeJar(File out, Deobfuscator.ProgressListener progress, Deobfuscator deobfuscator, LoomGradleExtension extension) throws IOException {
 		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), deobfuscator.getTranslator(TranslationDirection.Obfuscating), deobfuscator.getTranslator(TranslationDirection.Deobfuscating));
-		deobfuscator.transformJar(out, progress, new CustomClassTransformer(loader));
+		CustomClassTransformer transformer = new CustomClassTransformer(loader);
+		if(extension != null && extension.accessManipulator != null && !extension.accessManipulator.isEmpty()){
+			File amFile = new File(extension.accessManipulator);
+			transformer.setClassAccessManipulator(new ClassAccessManipulator(AccessManipulatorUtils.readAMFromFile(amFile)));
+		}
+		deobfuscator.transformJar(out, progress, transformer);
 	}
 
 	private class CustomClassTransformer implements Deobfuscator.ClassTransformer {
 
 		TranslatingTypeLoader loader;
+		ClassAccessManipulator classAccessManipulator;
 
 		public CustomClassTransformer(TranslatingTypeLoader loader) {
 			this.loader = loader;
@@ -107,7 +115,14 @@ public class MapJarsTask extends DefaultTask {
 
 		@Override
 		public CtClass transform(CtClass ctClass) throws Exception {
+			if(classAccessManipulator != null){
+				return classAccessManipulator.transform(loader.transformClass(ctClass));
+			}
 			return loader.transformClass(ctClass);
+		}
+
+		public void setClassAccessManipulator(ClassAccessManipulator classAccessManipulator) {
+			this.classAccessManipulator = classAccessManipulator;
 		}
 	}
 

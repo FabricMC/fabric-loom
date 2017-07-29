@@ -17,11 +17,11 @@ public class ClassAccessManipulator implements Deobfuscator.ClassTransformer {
 	}
 
 	public CtClass transform(CtClass ctClass) {
-		data.classData.stream().filter(classData -> classData.isEqual(ctClass.getName()))
-			.forEach(classData -> Streams.concat(classData.getMethods().stream(), classData.getFields().stream())
-			.forEach(accessData -> Streams.concat(Arrays.stream(ctClass.getDeclaredBehaviors()), Arrays.stream(ctClass.getDeclaredFields()))
-			.filter(member -> accessData.isEqual(AccessManipulatorUtils.getMemberName(member)))
-			.forEach(member -> setAccess(member, accessData.access))));
+		data.data.stream().filter(classData -> classData.name.equals(ctClass.getName()))
+			.forEach(classData -> classData.members
+			.forEach(memberData -> Streams.concat(Arrays.stream(ctClass.getDeclaredBehaviors()), Arrays.stream(ctClass.getDeclaredFields()))
+			.filter(member -> AccessManipulatorUtils.isEqual(memberData, member))
+			.forEach(member -> setAccess(member, AccessManipulatorData.Access.fromString(memberData.acc)))));
 		return ctClass;
 	}
 

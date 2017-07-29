@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.jar.JarFile;
+import java.util.stream.Stream;
 
 public class AccessManipulatorUtils {
 
@@ -29,34 +30,29 @@ public class AccessManipulatorUtils {
 
 	public static AccessManipulatorData.ClassData getClassData(CtClass ctClass){
 		AccessManipulatorData.ClassData classData = new AccessManipulatorData.ClassData();
-		String mappingName = "pomf";
-		classData.addName(mappingName, ctClass.getName());
-		Arrays.stream(ctClass.getDeclaredMethods()).forEach(ctBehavior -> {
-			AccessManipulatorData.AccessData accessData = new AccessManipulatorData.AccessData();
-			accessData.addName(mappingName, getMemberName(ctBehavior));
-			accessData.access = getAccesss(ctBehavior);
-			classData.addMethod(accessData);
-		});
-		Arrays.stream(ctClass.getDeclaredFields()).forEach(ctBehavior -> {
-			AccessManipulatorData.AccessData accessData = new AccessManipulatorData.AccessData();
-			accessData.addName(mappingName, getMemberName(ctBehavior));
-			accessData.access = getAccesss(ctBehavior);
-			classData.addField(accessData);
+		classData.name = ctClass.getName();
+		classData.members = new ArrayList<>();
+		Stream.concat(Arrays.stream(ctClass.getDeclaredMethods()), Arrays.stream(ctClass.getDeclaredFields())).forEach(ctMember -> {
+			AccessManipulatorData.MemberData memberData = new AccessManipulatorData.MemberData();
+			memberData.name = ctMember.getName();
+			if(!(ctMember instanceof CtField)){
+				memberData.desc = ctMember.getSignature();
+			}
+			memberData.acc = getaccesss(ctMember).name();
+			classData.members.add(memberData);
 		});
 		return classData;
 	}
 
-	public static String getMemberName(CtMember ctMember){
-		if(ctMember instanceof CtMethod){
-			return ctMember.getName() + ctMember.getSignature();
-		} else if (ctMember instanceof CtField){
-			return ctMember.getName() + " " + ctMember.getSignature();
+	public static boolean isEqual(AccessManipulatorData.MemberData memberData, CtMember member){
+		if(member instanceof CtField){
+			return Arrays.asList(memberData.name.split("\\|")).contains(member.getName());
 		}
-		return ctMember.getName() + ctMember.getSignature();
+		return memberData.name != null && memberData.desc != null && Arrays.asList(memberData.name.split("\\|")).contains(member.getName()) && Arrays.asList(memberData.desc.split("\\|")).contains(member.getSignature());
 	}
 
 
-	public static AccessManipulatorData.Access getAccesss(CtMember ctMember){
+	public static AccessManipulatorData.Access getaccesss(CtMember ctMember){
 		if(AccessFlag.isPublic(ctMember.getModifiers())){
 			return AccessManipulatorData.Access.PUBLIC;
 		}
@@ -69,13 +65,18 @@ public class AccessManipulatorUtils {
 		return AccessManipulatorData.Access.DEAFULT;
 	}
 
+	public static AccessManipulatorData merge(AccessManipulatorData data1, AccessManipulatorData data2){
+		//TODO merge two sets of data
+		return null;
+	}
+
 	// Code used to test outside of gradle
 	public static void buildDataForJar(File jarFile) throws IOException {
 		AccessManipulatorData data = new AccessManipulatorData();
-		data.classData = new ArrayList<>();
+		data.data = new ArrayList<>();
 		Deobfuscator deobfuscator = new Deobfuscator(new JarFile(jarFile));
 		deobfuscator.transformJar(new File(jarFile.getName() + ".export.jar"), new MapJarsTask.ProgressListener(), ctClass -> {
-			data.classData.add(getClassData(ctClass));
+			data.data.add(getClassData(ctClass));
 			System.out.println("Loaded: " + ctClass.getName());
 			return ctClass;
 		});

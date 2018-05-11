@@ -37,7 +37,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
 		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
 		makeTask("processMods", ProcessModsTask.class).dependsOn("mapJars");
-		makeTask("setupFabric", DefaultTask.class).dependsOn("processMods");
+		makeTask("setup", DefaultTask.class).dependsOn("processMods");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
 		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea");

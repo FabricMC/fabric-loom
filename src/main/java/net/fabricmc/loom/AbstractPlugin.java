@@ -39,7 +39,6 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -48,8 +47,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -229,7 +226,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		});
 
 		project.afterEvaluate(project12 -> {
-			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("setupFabric")).dependsOn(project12.getTasks().getByName("extractNatives"));
+			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("setup")).dependsOn(project12.getTasks().getByName("extractNatives"));
 			project12.getTasks().getByName("idea").finalizedBy(project12.getTasks().getByName("genIdeaWorkspace"));
 		});
 

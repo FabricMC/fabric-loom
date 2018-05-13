@@ -161,7 +161,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getFabricUserCache());
+				flatDirectoryArtifactRepository.dir(extension.getUserCache());
 				flatDirectoryArtifactRepository.setName("UserCacheFiles");
 			});
 

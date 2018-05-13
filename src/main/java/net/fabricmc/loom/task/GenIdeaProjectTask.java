@@ -140,7 +140,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath() + " -Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass com.openmodloader.loader.launch.OpenClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(extension.getFabricUserCache(), "assets-" + extension.version).getAbsolutePath();
+		ideaClient.programArgs = "--tweakClass com.openmodloader.loader.launch.OpenClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath();
 
 		runManager.appendChild(ideaClient.genRuns(runManager));
 

@@ -37,13 +37,13 @@ public class Constants {
 	public static final File WORKING_DIRECTORY = new File(".");
 	public static final File CACHE_FILES = new File(WORKING_DIRECTORY, ".gradle/minecraft");
 
-	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-client.jar"));
-	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-server.jar"));
-	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-merged.jar"));
-	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.getVersionString() + "-mapped-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-client.jar"));
+	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-server.jar"));
+	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-merged.jar"));
+	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.getVersionString() + "-mapped-" + extension.pomfVersion + ".jar"));
 	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.getVersionString() + "-mixed-" + extension.pomfVersion + ".jar"));
 
-	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "pomf"));
+	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getUserCache(), "pomf"));
 	public static       IDelayed<File> MAPPINGS_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));
 	public static final IDelayed<File> MAPPINGS_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
 	public static       IDelayed<File> MAPPINGS_TINY_GZ = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"));
@@ -53,11 +53,11 @@ public class Constants {
 	public static final IDelayed<File> MAPPINGS_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-tiny-" + extension.version + ".gz"));
 
-	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-libs"));
-	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-natives"));
-	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getFabricUserCache(), extension.version + "-info.json"));
+	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
+	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-natives"));
+	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-info.json"));
 
-	public static final IDelayed<File> VERSION_MANIFEST = new DelayedFile(extension -> new File(extension.getFabricUserCache(), "version_manifest.json"));
+	public static final IDelayed<File> VERSION_MANIFEST = new DelayedFile(extension -> new File(extension.getUserCache(), "version_manifest.json"));
 
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";

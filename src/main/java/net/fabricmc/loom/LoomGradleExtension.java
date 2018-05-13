@@ -49,8 +49,8 @@ public class LoomGradleExtension {
 		return fabricVersion != null && !fabricVersion.isEmpty();
 	}
 
-	public File getFabricUserCache() {
-		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "loom");
+	public File getUserCache() {
+		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "opengradle");
 		if (!userCache.exists()) {
 			userCache.mkdirs();
 		}

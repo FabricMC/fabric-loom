@@ -143,7 +143,7 @@ public class DownloadTask extends DefaultTask {
 
 			Version.AssetIndex assetIndex = version.assetIndex;
 
-			File assets = new File(extension.getFabricUserCache(), "assets-" + extension.version);
+			File assets = new File(extension.getUserCache(), "assets-" + extension.version);
 			if (!assets.exists()) {
 				assets.mkdirs();
 			}

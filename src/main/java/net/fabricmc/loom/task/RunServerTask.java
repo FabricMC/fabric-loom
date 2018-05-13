@@ -66,6 +66,7 @@ public class RunServerTask extends JavaExec {
 		classpath(libs);
 
 		args("--tweakClass", "com.openmodloader.loader.launch.OpenServerTweaker");
+		args("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker");
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

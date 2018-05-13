@@ -38,14 +38,14 @@ public class OpenGradlePlugin extends AbstractPlugin {
 		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
 		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
 		makeTask("processMods", ProcessModsTask.class).dependsOn("mapJars");
-		makeTask("setup", DefaultTask.class).dependsOn("processMods");
+		makeTask("setup", DefaultTask.class).dependsOn("processMods").setGroup("openmodloader");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea");
+		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
 
-		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives");
+		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives").setGroup("ide");
 
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded");
+		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraft");
+		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraft");
 	}
 }

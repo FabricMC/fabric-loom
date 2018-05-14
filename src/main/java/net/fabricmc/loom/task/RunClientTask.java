@@ -86,6 +86,7 @@ public class RunClientTask extends JavaExec {
 		List<String> args = new ArrayList<>();
 		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
 		args.add("-Dfabric.development=true");
+		args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}
 

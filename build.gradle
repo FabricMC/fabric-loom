@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'groovy'
     id 'maven'
+	id 'maven-publish'
 
     id 'idea'
     id 'eclipse'
@@ -12,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'com.openmodloader'
 archivesBaseName = project.name
-version = '0.0.7-SNAPSHOT'
+version = '0.0.8-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -84,5 +85,35 @@ jar {
 
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
+    gradleVersion = '4.7'
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId 'OpenGradle'
+			artifactId project.archivesBaseName
+			version project.version
+
+			from components.java
+
+			artifact jar
+
+			//Removes all of the dependencies from the maven pom, prevents sub projects downloading all the libs, as we use a fat jar
+			pom.withXml {
+				asNode().remove(asNode().get('dependencies'))
+			}
+		}
+	}
+	repositories {
+		maven {
+			url "http://mavenupload.modmuss50.me/"
+			if (project.hasProperty('mavenPass')) {
+				credentials {
+					username 'buildslave'
+					password project.getProperty('mavenPass')
+				}
+			}
+		}
+	}
 }

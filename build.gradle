@@ -74,7 +74,8 @@ sourceSets {
 }
 
 jar {
-	from (configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from (configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
 		exclude 'META-INF/*'
 		exclude 'META-INF'
 	}
@@ -93,7 +94,7 @@ publishing {
 			version project.version
 
 			from components.java
-			
+
 			//Removes all of the dependencies from the maven pom, prevents sub projects downloading all the libs, as we use a fat jar
 			pom.withXml {
 				asNode().remove(asNode().get('dependencies'))

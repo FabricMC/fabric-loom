@@ -57,7 +57,7 @@ dependencies {
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.
 	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
 
-	shade('org.spongepowered:mixin:0.6.8-SNAPSHOT') {
+	shade('org.spongepowered:mixin:0.7.8-SNAPSHOT') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

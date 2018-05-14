@@ -65,10 +65,10 @@ public class RunClientTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
+		libs.add(Constants.MINECRAFT_CLIENT_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
-		args("--tweakClass", "com.openmodloader.loader.launch.OpenClientTweaker", "--tweakClass", "org.spongepowered.asm.launch.MixinTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
+		args("--tweakClass", "com.openmodloader.loader.launch.OpenClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
@@ -85,7 +85,6 @@ public class RunClientTask extends JavaExec {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
 		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
-		args.add("-Dfabric.development=true");
 		args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}

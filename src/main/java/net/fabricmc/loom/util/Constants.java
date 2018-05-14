@@ -53,7 +53,7 @@ public class Constants {
 	public static final IDelayed<File> MAPPINGS_DIR_LOCAL = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "mappings"));
 	public static final IDelayed<File> MAPPINGS_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-tiny-" + extension.version + ".gz"));
-	
+
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
 	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-natives"));
 	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-info.json"));

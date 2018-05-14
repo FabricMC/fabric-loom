@@ -22,46 +22,30 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.mixin;
 
-import org.gradle.api.Project;
+import org.spongepowered.tools.obfuscation.ObfuscationEnvironment;
+import org.spongepowered.tools.obfuscation.ObfuscationType;
+import org.spongepowered.tools.obfuscation.mapping.IMappingProvider;
+import org.spongepowered.tools.obfuscation.mapping.IMappingWriter;
 
-import java.io.File;
+import javax.annotation.processing.Filer;
+import javax.annotation.processing.Messager;
 
-public class LoomGradleExtension {
-	public String version;
-	public String runDir = "run";
-	public String fabricVersion;
-	public String pomfVersion;
-	public String refmapName;
-	public boolean localMappings = false;
-
-	//Not to be set in the build.gradle
-	public Project project;
-
-	public String getVersionString() {
-		if (isModWorkspace()) {
-			return version + "-" + fabricVersion;
-		}
-		return version;
+public class ObfuscationEnvironmentFabric extends ObfuscationEnvironment {
+	protected ObfuscationEnvironmentFabric(ObfuscationType type) {
+		super(type);
 	}
 
-	public boolean isModWorkspace() {
-		return fabricVersion != null && !fabricVersion.isEmpty();
+	@Override
+	protected IMappingProvider getMappingProvider(Messager messager, Filer filer) {
+		String from = type.getKey().split(":")[0];
+		String to = type.getKey().split(":")[1];
+		return new MixinMappingProviderTiny(messager, filer, from, to);
 	}
 
-	public File getUserCache() {
-		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "opengradle");
-		if (!userCache.exists()) {
-			userCache.mkdirs();
-		}
-		return userCache;
-	}
-
-	public boolean hasPomf(){
-		if(localMappings){
-			return true;
-		}
-		return pomfVersion != null && !pomfVersion.isEmpty();
+	@Override
+	protected IMappingWriter getMappingWriter(Messager messager, Filer filer) {
+		return new MixinMappingWriterTiny(messager, filer);
 	}
 }

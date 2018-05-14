@@ -46,7 +46,7 @@ public class RunClientTask extends JavaExec {
 		try {
 			version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+            getLogger().error("Failed to retrieve version from  minecraft json", e);
 		}
 
 		List<String> libs = new ArrayList<>();

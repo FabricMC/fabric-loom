@@ -74,12 +74,9 @@ sourceSets {
 }
 
 jar {
-	from {
-		configurations.shade.each { dep ->
-			from(project.zipTree(dep)){
-				exclude 'META-INF', 'META-INF/**'
-			}
-		}
+	from (configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+		exclude 'META-INF/*'
+		exclude 'META-INF'
 	}
 }
 

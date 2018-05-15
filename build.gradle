@@ -54,6 +54,9 @@ dependencies {
 	shade 'cuchaz:enigma:0.11.0.+:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 
+	shade ('net.minecraft:launchwrapper:1.12') {
+		transitive = false
+	}
 
 	//Always fun when your dep needs the tool to build, but the tool needs the dep.
 	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'

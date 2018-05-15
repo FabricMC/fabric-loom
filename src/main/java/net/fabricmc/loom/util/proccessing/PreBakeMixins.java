@@ -46,8 +46,7 @@ public class PreBakeMixins {
 		}
 		project.getLogger().lifecycle(":preBaking mixins");
 		ProcessModsTask.addFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), this);
-		//LogManager.getFormatterLogger("test");
-	//	MixinPrebaker.main(args);
+		MixinPrebaker.main(args);
 	}
 
 }

@@ -76,7 +76,7 @@ public class MapJarsTask extends DefaultTask {
 			tempAssests.mkdir();
 
 			ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
-				if (name.startsWith("assets") || name.startsWith("data") || name.startsWith("log4j2.xml") || name.startsWith("pack.png")) {
+				if (name.startsWith("assets") || name.startsWith("pack.mcmeta") || name.startsWith("data") || name.toLowerCase().startsWith("log4j2") || name.startsWith("pack.png")) {
 					return name;
 				} else {
 					return null;

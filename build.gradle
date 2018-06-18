@@ -13,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'com.openmodloader'
 archivesBaseName = project.name
-version = '0.0.8-SNAPSHOT'
+version = '0.0.9-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -56,6 +56,10 @@ dependencies {
 	shade 'org.ow2.asm:asm-debug-all:5.2'
 	shade 'cuchaz:enigma:0.11.0.33:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
+	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
+	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
+	shade 'org.apache.logging.log4j:log4j-core:2.11.0'
+
 
 	shade ('net.minecraft:launchwrapper:1.12') {
 		transitive = false

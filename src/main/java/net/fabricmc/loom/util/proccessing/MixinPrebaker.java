@@ -16,15 +16,20 @@
 package net.fabricmc.loom.util.proccessing;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
 import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.mixin.MixinServiceGradle;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 import org.objectweb.asm.*;
 import org.spongepowered.asm.launch.GlobalProperties;
+import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.EnvironmentStateTweaker;
+import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.transformer.MixinTransformer;
 import org.spongepowered.asm.service.mojang.MixinServiceLaunchWrapper;
 
@@ -116,8 +121,9 @@ public class MixinPrebaker {
 
 	public static final String APPLIED_MIXIN_CONFIGS_FILENAME = ".oml-applied-mixin-configs";
 	public static final String MAPPINGS_FILENAME = ".oml-dev-mappings.tiny";
+	public static MixinTransformer mixinTransformer;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		boolean hasMappingsFile = false;
 
 		if (args.length < 3) {
@@ -148,17 +154,8 @@ public class MixinPrebaker {
 		Launch.blackboard = new HashMap<>();
 		Launch.blackboard.put(MixinServiceLaunchWrapper.BLACKBOARD_KEY_TWEAKS, Collections.emptyList());
 
-		List<JsonObject> modInfo = findModInfo(modFiles);
-		List<JsonObject> mods = new ArrayList<>();
-		for(JsonObject modInfoJson : modInfo){
-			if(!modInfoJson.isJsonArray()){
-				continue;
-			}
-			JsonArray jsonArray = modInfoJson.getAsJsonArray();
-			for (int i = 0; i < jsonArray.size(); i++) {
-				mods.add(jsonArray.get(i).getAsJsonObject());
-			}
-		}
+		List<JsonObject> mods = findModInfo(modFiles);
+		System.out.println("Found " + mods.size() + " mods");
 		List<String> mixins = new ArrayList<>();
 		for(JsonObject modObject : mods){
 			mixins.addAll(findMixins(modObject.getAsJsonArray("mixins")));
@@ -167,11 +164,30 @@ public class MixinPrebaker {
 		}
 		System.out.println("Found " + mixins.size() + " mixins to pre bake");
 
+		List<String> tweakers = new ArrayList<>();
+		tweakers.add("com.openmodloader.loader.launch.OpenTweaker");
+		GlobalProperties.put("TweakClasses", tweakers);
+
+		MixinBootstrap.init();
+		mixins.forEach(Mixins::addConfiguration);
+
+		MixinServiceGradle.setupModFiles(modFiles, new File(args[argOffset + 0]));
+
 		EnvironmentStateTweaker tweaker = new EnvironmentStateTweaker();
 		tweaker.getLaunchArguments();
 		tweaker.injectIntoClassLoader(Launch.classLoader);
 
-		MixinTransformer mixinTransformer = GlobalProperties.get(GlobalProperties.Keys.TRANSFORMER);
+		if(mixinTransformer == null){
+			mixinTransformer = GlobalProperties.get(GlobalProperties.Keys.TRANSFORMER);
+		}
+		//Check to ensure its not null
+		if(mixinTransformer == null){
+			throw new RuntimeException("Failed to get MixinTransformer!");
+		}
+
+		MixinEnvironment mixinEnvironment = MixinEnvironment.getDefaultEnvironment();
+		mixinEnvironment.setSide(MixinEnvironment.Side.CLIENT); //TODO have an all side?
+		mixinTransformer.audit(mixinEnvironment);
 
 		try {
 			JarInputStream input = new JarInputStream(new FileInputStream(new File(args[argOffset + 0])));
@@ -233,21 +249,29 @@ public class MixinPrebaker {
 	}
 
 	private static List<JsonObject> findModInfo(Set<File> mods){
-		return mods.stream().map(file -> {
+		List<JsonArray> modFiles = mods.stream().map(file -> {
 			try {
 				JarFile jar = new JarFile(file);
 				return readModInfoFromJar(jar);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to mod " + file.getName(), e);
 			}
-		}).collect(Collectors.toList());
+		}).filter((Predicate<JsonArray>) Objects::nonNull).collect(Collectors.toList());
+
+		List<JsonObject> containedMods = new ArrayList<>();
+		for(JsonArray modFile : modFiles){
+			for (int i = 0; i < modFile.size(); i++) {
+				containedMods.add(modFile.get(i).getAsJsonObject());
+			}
+		}
+		return containedMods;
 	}
 
-	private static JsonObject readModInfoFromJar(@Nonnull JarFile file) throws IOException {
+	private static JsonArray readModInfoFromJar(@Nonnull JarFile file) throws IOException {
 		Gson gson = new Gson();
 		ZipEntry entry = file.getEntry("mod.json");
 		if (entry == null)
 			return null;
-		return gson.fromJson(new InputStreamReader(file.getInputStream(entry)), JsonObject.class);
+		return gson.fromJson(new InputStreamReader(file.getInputStream(entry)), JsonArray.class);
 	}
 }

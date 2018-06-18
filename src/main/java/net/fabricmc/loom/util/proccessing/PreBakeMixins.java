@@ -30,11 +30,12 @@ import net.fabricmc.loom.util.Constants;
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 public class PreBakeMixins {
 
-	public void proccess(Project project, LoomGradleExtension extension, List<File> mods) {
+	public void proccess(Project project, LoomGradleExtension extension, List<File> mods) throws IOException {
 		project.getLogger().lifecycle(":Found " + mods.size() + " mods to prebake");
 		String[] args = new String[mods.size() + 4];
 		args[0] = "-m";

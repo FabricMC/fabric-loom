@@ -211,6 +211,11 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setName("modmuss50");
+				mavenArtifactRepository.setUrl("https://maven.modmuss50.me");
+			});
+
+			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("SpongePowered");
 				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
 			});
@@ -241,11 +246,10 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
 
-			if (extension.fabricVersion != null && !extension.fabricVersion.isEmpty()) {
+			if (extension.omlVersion != null && !extension.omlVersion.isEmpty()) {
 				//only add this when not in a fabric dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion + ":deobf");
+				project1.getDependencies().add(Constants.COMPILE_MODS, "OpenModLoader:OpenModLoader:" + extension.version + "-" + extension.omlVersion);
 			}
-			project1.getDependencies().add(Constants.PROCESS_MODS_DEPENDENCIES, "net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT");
 		});
 
 		project.getTasks().getByName("build").doLast(task -> {

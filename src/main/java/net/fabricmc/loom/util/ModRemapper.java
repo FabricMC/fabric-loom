@@ -28,6 +28,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -53,8 +54,11 @@ public class ModRemapper {
 			deobfJar.delete();
 		}
 
+		FileUtils.touch(modJar); //Done to ensure that the file can be moved
 		//Move the pre existing mod jar to the deobf jar
-		modJar.renameTo(deobfJar);
+		if(!modJar.renameTo(deobfJar)){
+			throw new RuntimeException("Failed to rename " + modJar);
+		}
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 

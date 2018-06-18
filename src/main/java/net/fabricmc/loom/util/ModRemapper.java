@@ -90,6 +90,10 @@ public class ModRemapper {
 		outputConsumer.finish();
 		remapper.finish();
 
+		if(!deobfJar.exists() || !modJar.exists()){
+			throw new RuntimeException("Failed to remap jar");
+		}
+
 		//Add the deobf jar to be uploaded to maven
 		project.getArtifacts().add("archives", deobfJar);
 	}

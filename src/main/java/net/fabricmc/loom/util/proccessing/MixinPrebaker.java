@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 import net.fabricmc.loom.mixin.MixinServiceGradle;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
+import org.gradle.api.Project;
 import org.objectweb.asm.*;
 import org.spongepowered.asm.launch.GlobalProperties;
 import org.spongepowered.asm.launch.MixinBootstrap;
@@ -31,6 +32,7 @@ import org.spongepowered.asm.mixin.EnvironmentStateTweaker;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.transformer.MixinTransformer;
+import org.spongepowered.asm.service.MixinService;
 import org.spongepowered.asm.service.mojang.MixinServiceLaunchWrapper;
 
 import javax.annotation.Nonnull;
@@ -121,9 +123,10 @@ public class MixinPrebaker {
 
 	public static final String APPLIED_MIXIN_CONFIGS_FILENAME = ".oml-applied-mixin-configs";
 	public static final String MAPPINGS_FILENAME = ".oml-dev-mappings.tiny";
-	public static MixinTransformer mixinTransformer;
 
-	public static void main(String[] args) throws IOException {
+	public static Map<String, InputStream> jarFileCache = new HashMap<>();
+
+	public static void main(String[] args, Project project) throws IOException {
 		boolean hasMappingsFile = false;
 
 		if (args.length < 3) {
@@ -143,6 +146,8 @@ public class MixinPrebaker {
 				break;
 			}
 		}
+
+
 
 		Set<File> modFiles = new HashSet<>();
 		for (int i = argOffset + 2; i < args.length; i++) {
@@ -173,21 +178,32 @@ public class MixinPrebaker {
 
 		MixinServiceGradle.setupModFiles(modFiles, new File(args[argOffset + 0]));
 
+
 		EnvironmentStateTweaker tweaker = new EnvironmentStateTweaker();
 		tweaker.getLaunchArguments();
 		tweaker.injectIntoClassLoader(Launch.classLoader);
 
-		if(mixinTransformer == null){
-			mixinTransformer = GlobalProperties.get(GlobalProperties.Keys.TRANSFORMER);
-		}
-		//Check to ensure its not null
-		if(mixinTransformer == null){
-			throw new RuntimeException("Failed to get MixinTransformer!");
-		}
+		//MixinServiceGradle.addMCDeps(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles(), tweaker);
 
 		MixinEnvironment mixinEnvironment = MixinEnvironment.getDefaultEnvironment();
+
+		System.out.println("Loading mappings: " + mappingsFile);
+		InputStream mappingStream = new FileInputStream(mappingsFile);
+		MixinDevRemapper devRemapper = new MixinDevRemapper();
+		devRemapper.readMapping(new BufferedReader(new InputStreamReader(mappingStream)), "pomf", "mojang");
+		mappingStream.close();
+		mixinEnvironment.getRemappers().add(devRemapper);
+
 		mixinEnvironment.setSide(MixinEnvironment.Side.CLIENT); //TODO have an all side?
+
+
+		MixinTransformer mixinTransformer = GlobalProperties.get(GlobalProperties.Keys.TRANSFORMER);
+		if(mixinTransformer == null){
+			MixinService.getService().beginPhase();
+			mixinTransformer = GlobalProperties.get(GlobalProperties.Keys.TRANSFORMER);
+		}
 		mixinTransformer.audit(mixinEnvironment);
+
 
 		try {
 			JarInputStream input = new JarInputStream(new FileInputStream(new File(args[argOffset + 0])));
@@ -272,6 +288,30 @@ public class MixinPrebaker {
 		ZipEntry entry = file.getEntry("mod.json");
 		if (entry == null)
 			return null;
-		return gson.fromJson(new InputStreamReader(file.getInputStream(entry)), JsonArray.class);
+
+		InputStreamReader stream = new InputStreamReader(file.getInputStream(entry));
+		JsonArray jsonArray = gson.fromJson(stream, JsonArray.class);
+		stream.close();
+
+		List<String> mixins = new ArrayList<>();
+		for (int i = 0; i < jsonArray.size(); i++) {
+			JsonObject modObject = jsonArray.get(i).getAsJsonObject();
+			mixins.addAll(findMixins(modObject.getAsJsonArray("mixins")));
+			mixins.addAll(findMixins(modObject.getAsJsonArray("clientMixins")));
+			mixins.addAll(findMixins(modObject.getAsJsonArray("serverMixins")));
+		}
+
+		System.out.println("Found: " + mixins.size() + " mixins in " + file.getName());
+
+		mixins.forEach(s -> {
+			ZipEntry entry1 = file.getEntry(s);
+			try {
+				jarFileCache.put(s, file.getInputStream(entry1));
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to load jar", e);
+			}
+		});
+		return jsonArray;
 	}
+
 }

@@ -41,13 +41,13 @@ public class PreBakeMixins {
 		args[0] = "-m";
 		args[1] = Constants.MAPPINGS_TINY.get(extension).getAbsolutePath();
 		args[2] = Constants.MINECRAFT_MERGED_JAR.get(extension).getAbsolutePath();
-		args[3] = Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath();
+		args[3] = Constants.MINECRAFT_MIXED_JAR.get(extension).getAbsolutePath();
 		for (int i = 0; i < mods.size(); i++) {
 			args[i + 4] = mods.get(i).getAbsolutePath();
 		}
 		project.getLogger().lifecycle(":preBaking mixins");
-		ProcessModsTask.addFile(Constants.MINECRAFT_MERGED_JAR.get(extension), this);
-		MixinPrebaker.main(args);
+		ProcessModsTask.addFile(Constants.MINECRAFT_MIXED_JAR.get(extension), this);
+		MixinPrebaker.main(args, project);
 	}
 
 }

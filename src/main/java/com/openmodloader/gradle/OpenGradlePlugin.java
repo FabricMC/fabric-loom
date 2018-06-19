@@ -38,7 +38,8 @@ public class OpenGradlePlugin extends AbstractPlugin {
 		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
 		makeTask("processMods", ProcessModsTask.class).dependsOn("mergeJars");
 		makeTask("mapJars", MapJarsTask.class).dependsOn("processMods");
-		makeTask("setup", DefaultTask.class).dependsOn("mapJars").setGroup("openmodloader");
+		makeTask("finaliseJars", FinaliseJar.class).dependsOn("mapJars");
+		makeTask("setup", DefaultTask.class).dependsOn("finaliseJars").setGroup("openmodloader");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
 		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");

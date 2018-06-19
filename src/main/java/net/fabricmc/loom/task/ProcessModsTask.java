@@ -57,7 +57,7 @@ public class ProcessModsTask extends DefaultTask {
 			Constants.MINECRAFT_FINAL_JAR.get(extension).delete();
 		}
 		if (mods.size() == 0) {
-			FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
+			FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MIXED_JAR.get(extension));
 		} else {
 			downloadRequiredDeps(extension);
 			new PreBakeMixins().proccess(getProject(), extension, mods);

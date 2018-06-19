@@ -55,7 +55,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 			if(!extension.hasPomf()){
 				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
-				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
+				FileUtils.copyFile(Constants.MINECRAFT_MIXED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
 				return;
 			}
 			if (!Constants.MAPPINGS_DIR.get(extension).exists() || extension.localMappings) {
@@ -65,7 +65,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 
 			this.getLogger().lifecycle(":remapping jar");
-			deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
+			deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MIXED_JAR.get(extension)));
 			this.deobfuscator.setMappings(new MappingsEnigmaReader().read(Constants.MAPPINGS_DIR.get(extension)));
 			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
 

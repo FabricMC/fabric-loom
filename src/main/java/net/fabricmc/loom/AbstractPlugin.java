@@ -169,10 +169,12 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModule.getModule().setDownloadSources(true);
 		ideaModule.getModule().setInheritOutputDirs(true);
 		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 
 		// ECLIPSE
 		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
 		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 	}
 
 	/**

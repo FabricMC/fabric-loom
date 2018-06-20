@@ -50,7 +50,7 @@ public class ProcessModsTask extends DefaultTask {
 		Configuration configuration = getProject().getConfigurations().getByName(Constants.COMPILE_MODS);
 		List<File> mods = new ArrayList<>();
 		for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
-			getProject().getLogger().lifecycle(":found mod to mix:" + artifact.getFile().getName());
+			//getProject().getLogger().lifecycle(":found mod to mix:" + artifact.getFile().getName());
 			mods.add(artifact.getFile());
 		}
 		if (Constants.MINECRAFT_FINAL_JAR.get(extension).exists()) {

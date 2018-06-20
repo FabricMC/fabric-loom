@@ -56,7 +56,7 @@ public class ProcessModsTask extends DefaultTask {
 		if (Constants.MINECRAFT_FINAL_JAR.get(extension).exists()) {
 			Constants.MINECRAFT_FINAL_JAR.get(extension).delete();
 		}
-		if (mods.size() == 0) {
+		if (mods.size() == 0 || extension.skipPrebake) {
 			getProject().getLogger().lifecycle(":skipping mixin prebake");
 			FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MIXED_JAR.get(extension));
 		} else {

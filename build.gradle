@@ -54,7 +54,7 @@ dependencies {
 		transitive = false
 	}
 	shade 'org.ow2.asm:asm-debug-all:5.2'
-	shade 'enigma-asm:enigma:0.12.0.6:lib'
+	shade 'enigma-asm:enigma:0.12.0.8:lib'
 	shade 'net.fabricmc:tiny-remapper:+'
 	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	shade 'org.apache.logging.log4j:log4j-api:2.11.0'

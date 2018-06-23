@@ -35,8 +35,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 
@@ -99,21 +97,7 @@ public class MapJarsTask extends DefaultTask {
 		Translator obfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.OBFUSCATING);
 		Translator deobfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.DEOBFUSCATING);
 		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), new ReferencedEntryPool(), obfuscationTranslator, deobfuscationTranslator);
-		deobfuscator.transformJar(out, progress, new CustomClassTransformer(loader));
-	}
-
-	private class CustomClassTransformer implements Deobfuscator.ClassTransformer {
-
-		TranslatingTypeLoader loader;
-
-		public CustomClassTransformer(TranslatingTypeLoader loader) {
-			this.loader = loader;
-		}
-
-		@Override
-		public void write(ClassNode classNode, ClassWriter classWriter) {
-			loader.createTransformer(classNode, classWriter);
-		}
+		deobfuscator.transformJar(out, progress, loader::transformInto);
 	}
 
 	public static class ProgressListener implements Deobfuscator.ProgressListener {

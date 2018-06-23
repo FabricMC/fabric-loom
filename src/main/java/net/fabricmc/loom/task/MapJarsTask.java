@@ -28,12 +28,15 @@ import cuchaz.enigma.Deobfuscator;
 import cuchaz.enigma.TranslatingTypeLoader;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
 import cuchaz.enigma.mapping.TranslationDirection;
+import cuchaz.enigma.mapping.Translator;
+import cuchaz.enigma.mapping.entry.ReferencedEntryPool;
 import cuchaz.enigma.throwables.MappingParseException;
-import javassist.CtClass;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 
@@ -93,7 +96,9 @@ public class MapJarsTask extends DefaultTask {
 	}
 
 	public void writeJar(File out, Deobfuscator.ProgressListener progress, Deobfuscator deobfuscator) {
-		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), deobfuscator.getTranslator(TranslationDirection.Obfuscating), deobfuscator.getTranslator(TranslationDirection.Deobfuscating));
+		Translator obfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.OBFUSCATING);
+		Translator deobfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.DEOBFUSCATING);
+		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), new ReferencedEntryPool(), obfuscationTranslator, deobfuscationTranslator);
 		deobfuscator.transformJar(out, progress, new CustomClassTransformer(loader));
 	}
 
@@ -106,8 +111,8 @@ public class MapJarsTask extends DefaultTask {
 		}
 
 		@Override
-		public CtClass transform(CtClass ctClass) throws Exception {
-			return loader.transformClass(ctClass);
+		public void write(ClassNode classNode, ClassWriter classWriter) {
+			loader.createTransformer(classNode, classWriter);
 		}
 	}
 

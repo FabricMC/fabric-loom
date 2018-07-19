@@ -50,7 +50,7 @@ dependencies {
 	shade 'com.google.code.gson:gson:2.6.2'
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
-	shade ('weave-asm:weave:0.1.0.5'){
+	shade ('weave-asm:weave:0.1.0.7'){
 		transitive = false
 	}
 	shade 'org.ow2.asm:asm-debug-all:5.2'

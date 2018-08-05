@@ -58,7 +58,6 @@ public class Constants {
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
 	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-natives"));
 	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-info.json"));
-	public static final IDelayed<File> REF_MAP = new DelayedFile(extension -> new File(CACHE_FILES, "mixin-refmap.json"));
 
 	public static final IDelayed<File> VERSION_MANIFEST = new DelayedFile(extension -> new File(extension.getUserCache(), "version_manifest.json"));
 

@@ -68,7 +68,7 @@ public class RunClientTask extends JavaExec {
 		libs.add(Constants.MINECRAFT_CLIENT_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
-		args("--tweakClass", "com.openmodloader.loader.launch.OpenClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
+		args("--launchTarget", "oml", "--accessToken", "NOT_A_TOKEN", "--version", extension.version, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

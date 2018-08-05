@@ -78,7 +78,6 @@ public class ModRemapper {
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
-			.withMappings(TinyUtils.createTinyMappingProvider(Constants.MAPPINGS_MIXIN_EXPORT.get(extension).toPath(), toM, fromM))
 			.build();
 
 		OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());

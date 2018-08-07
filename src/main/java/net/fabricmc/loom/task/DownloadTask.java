@@ -138,9 +138,6 @@ public class DownloadTask extends DefaultTask {
 				version.libraries.stream().filter(lib -> lib.natives != null).forEach(lib -> dependencyHandler.add(Constants.CONFIG_NATIVES, lib.getArtifactName()));
 			}
 
-			// Force add LaunchWrapper
-			dependencyHandler.add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:launchwrapper:1.12");
-
 			Version.AssetIndex assetIndex = version.assetIndex;
 
 			File assets = new File(extension.getUserCache(), "assets-" + extension.version);

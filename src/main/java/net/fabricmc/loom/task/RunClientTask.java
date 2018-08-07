@@ -77,7 +77,7 @@ public class RunClientTask extends JavaExec {
 
 	@Override
 	public String getMain() {
-		return "net.minecraft.launchwrapper.Launch";
+		return "cpw.mods.modlauncher.Launcher";
 	}
 
 	@Override

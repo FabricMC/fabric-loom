@@ -66,6 +66,11 @@ public class RunClientTask extends JavaExec {
 			}
 		}
 		libs.add(Constants.MINECRAFT_CLIENT_JAR.get(extension).getAbsolutePath());
+
+		//Removes the deobf jars
+		libs.removeIf(s -> s.contains(Constants.MINECRAFT_FINAL_JAR.get(extension).getName()));
+		libs.removeIf(s -> s.contains(getProject().getName() + "-" + getProject().getVersion() + "-deobf.jar"));
+
 		classpath(libs);
 
 		args("--launchTarget", "oml", "--accessToken", "NOT_A_TOKEN", "--version", extension.version, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
@@ -85,7 +90,7 @@ public class RunClientTask extends JavaExec {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
 		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
-		args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
+		//args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}
 

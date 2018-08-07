@@ -13,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'com.openmodloader'
 archivesBaseName = project.name
-version = '0.0.10-SNAPSHOT'
+version = '0.0.11-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -56,7 +56,7 @@ dependencies {
 	shade ('enigma-asm:enigma:0.12.0.33:lib'){
 		exclude group: 'org.ow2.asm'
 	}
-	shade 'OpenModLoader.tiny-remapper:tiny-remapper:+'
+	shade 'OpenModLoader.tiny-remapper:tiny-remapper:0.1.0.7'
 	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
 	shade 'org.apache.logging.log4j:log4j-core:2.11.0'

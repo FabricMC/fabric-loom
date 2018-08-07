@@ -25,17 +25,21 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.TinyUtils;
+import net.fabricmc.tinyremapper.*;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ModRemapper {
 
@@ -77,6 +81,7 @@ public class ModRemapper {
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+			.withRemapperExtension(new MixinRemapper())
 			.build();
 
 		try {
@@ -100,4 +105,131 @@ public class ModRemapper {
 		//Add the deobf jar to be uploaded to maven
 		project.getArtifacts().add("archives", deobfJar);
 	}
+
+	public static class MixinRemapper implements IRemapperExtension{
+
+		@Override
+		public byte[] handleUnmappedClass(byte[] inBytes, TinyRemapper remapper) {
+			//I know this isnt the fastest, but its the easiest
+			ClassNode classNode = readClassFromBytes(inBytes);
+			if(isMixin(classNode)){
+				String target = getMixinTarget(classNode);
+				System.out.println("Remapping mixin (" + classNode.name + ") targeting: " + target);
+				for(MethodNode methodNode : classNode.methods){
+					if(needsTargetMap(methodNode.visibleAnnotations)){
+						methodNode.visibleAnnotations.add(createTargetMap(methodNode, target, remapper));
+					}
+				}
+				for(FieldNode fieldNode : classNode.fields){
+					if(needsTargetMap(fieldNode.visibleAnnotations)){
+						//fieldNode.visibleAnnotations.add(createTargetMap(fieldNode));
+					}
+				}
+				return writeClassToBytes(classNode);
+			}
+			return inBytes;
+		}
+
+		private AnnotationNode createTargetMap(MethodNode methodNode, String targetClass, TinyRemapper remapper){
+			AnnotationNode targetMapNode = new AnnotationNode("Lme/modmuss50/fusion/api/TargetMap;");
+			String deobfTarget = methodNode.name + methodNode.desc;
+			if(getRewriteTarget(methodNode).isPresent()){
+				deobfTarget = getRewriteTarget(methodNode).get();
+			}
+
+			if(deobfTarget.equals("<init>")){
+				//No need to handle constructors, may need to do something about the desc but we will see
+				return targetMapNode;
+			}
+			String oldName = deobfTarget.substring(0, deobfTarget.indexOf("("));
+			String oldDesc = deobfTarget.substring(deobfTarget.lastIndexOf("("));
+
+			String newName = remapper.remapper.mapMethodName(targetClass.replaceAll("\\.", "/"), oldName, oldDesc);
+			String newDesc = remapper.remapper.mapDesc(oldDesc);
+
+			System.out.println(oldName + oldDesc + " -> " + newName + newDesc);
+			targetMapNode.visit("value", newName + newDesc);
+			return targetMapNode;
+		}
+
+		private boolean isMixin(ClassNode classNode){
+			if(classNode.visibleAnnotations == null){
+				return false;
+			}
+			for(AnnotationNode annotation : classNode.visibleAnnotations){
+				if(annotation.desc.equals("Lme/modmuss50/fusion/api/Mixin;")){
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private String getMixinTarget(ClassNode classNode){
+			if(classNode.visibleAnnotations == null){
+				throw new RuntimeException(classNode.name + " is not a mixin!");
+			}
+			for(AnnotationNode annotation : classNode.visibleAnnotations){
+				if(annotation.desc.equals("Lme/modmuss50/fusion/api/Mixin;")){
+					for (int i = 0; i < annotation.values.size(); i++) {
+						Object value = annotation.values.get(i);
+						if(value instanceof String && value.toString().equals("value")){
+							Type target = (Type) annotation.values.get(i + 1);
+							return target.getClassName();
+						}
+					}
+
+				}
+			}
+			throw new RuntimeException(classNode.name + " is not a valid mixin!");
+		}
+
+		private Optional<String> getRewriteTarget(MethodNode methodNode){
+			if(methodNode.visibleAnnotations == null){
+				return Optional.empty();
+			}
+			for(AnnotationNode annotation : methodNode.visibleAnnotations){
+				if(annotation.desc.equals("Lme/modmuss50/fusion/api/Rewrite;")){
+					for (int i = 0; i < annotation.values.size(); i++) {
+						Object value = annotation.values.get(i);
+						if(value instanceof String && value.toString().equals("target")){
+							return Optional.of((String) annotation.values.get(i + 1));
+						}
+					}
+				}
+			}
+			return Optional.empty();
+		}
+
+		private boolean needsTargetMap(List<AnnotationNode> annotationNodes){
+			if(annotationNodes == null){
+				return false;
+			}
+			for(AnnotationNode annotation : annotationNodes){
+				if(annotation.desc.equals("Lme/modmuss50/fusion/api/Rewrite;")){
+					return true;
+				}
+				if(annotation.desc.equals("Lme/modmuss50/fusion/api/Inject;")){
+					return true;
+				}
+			}
+			return false;
+		}
+
+
+		private static ClassNode readClassFromBytes(byte[] bytes) {
+			ClassNode classNode = new org.objectweb.asm.tree.ClassNode();
+			ClassReader classReader = new ClassReader(bytes);
+			classReader.accept(classNode, 0);
+			return classNode;
+		}
+
+		private static byte[] writeClassToBytes(ClassNode classNode) {
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+			classNode.accept(writer);
+			return writer.toByteArray();
+		}
+
+	}
+
+
 }

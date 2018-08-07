@@ -69,7 +69,6 @@ public class ModRemapper {
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles());
-		classpathFiles.add(new File(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath()));//Seems to fix it not finding it
 
 		Path[] classpath = new Path[classpathFiles.size()];
 		for (int i = 0; i < classpathFiles.size(); i++) {
@@ -80,17 +79,22 @@ public class ModRemapper {
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
 			.build();
 
-		OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
-		//Rebof the deobf jar
-		outputConsumer.addNonClassFiles(deobfJar.toPath());
-		remapper.read(deobfJar.toPath());
-		remapper.read(classpath);
-		remapper.apply(deobfJar.toPath(), outputConsumer);
-		outputConsumer.finish();
-		remapper.finish();
+		try {
+			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
+			//Rebof the deobf jar
+			outputConsumer.addNonClassFiles(deobfJar.toPath());
+			remapper.read(deobfJar.toPath());
+			remapper.read(classpath);
+			remapper.apply(deobfJar.toPath(), outputConsumer);
+			outputConsumer.finish();
+			remapper.finish();
+		} catch (Exception e){
+			remapper.finish();
+			throw new RuntimeException("Failed to remap jar", e);
+		}
 
 		if(!deobfJar.exists() || !modJar.exists()){
-			throw new RuntimeException("Failed to remap jar");
+			throw new RuntimeException("Failed to rebof jar");
 		}
 
 		//Add the deobf jar to be uploaded to maven

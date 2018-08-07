@@ -53,16 +53,14 @@ dependencies {
 	shade ('weave-asm:weave:0.1.0.7'){
 		transitive = false
 	}
-	shade 'org.ow2.asm:asm-debug-all:5.2'
-	shade 'enigma-asm:enigma:0.12.0.17:lib'
-	shade 'net.fabricmc:tiny-remapper:+'
+	shade ('enigma-asm:enigma:0.12.0.33:lib'){
+		exclude group: 'org.ow2.asm'
+	}
+	shade 'OpenModLoader.tiny-remapper:tiny-remapper:+'
 	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
 	shade 'org.apache.logging.log4j:log4j-core:2.11.0'
-
-
 	shade 'cpw.mods:modlauncher:0.1.0-rc.3'
-
 	shade 'org.apache.commons:commons-lang3:3.5'
 
 }

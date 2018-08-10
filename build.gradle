@@ -2,8 +2,7 @@ plugins {
     id 'java'
     id 'groovy'
     id 'maven'
-	id 'maven-publish'
-
+    id 'maven-publish'
     id 'idea'
     id 'eclipse'
 }
@@ -88,7 +87,7 @@ task wrapper(type: Wrapper) {
 publishing {
 	publications {
 		maven(MavenPublication) {
-			groupId 'OpenGradle'
+			groupId project.group
 			artifactId project.archivesBaseName
 			version project.version
 

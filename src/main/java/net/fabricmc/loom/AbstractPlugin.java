@@ -215,7 +215,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			if (extension.isModWorkspace()) {
 				//only add this when not in a dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "com.openmodloader:OpenModLoader:" + extension.getVersionString());
+				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "com.openmodloader:OpenModLoader:" + extension.getVersionString() +":deobf");
 			}
 		});
 

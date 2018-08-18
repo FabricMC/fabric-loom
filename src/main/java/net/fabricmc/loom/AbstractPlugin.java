@@ -184,7 +184,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("modmuss50");
-				mavenArtifactRepository.setUrl("https://maven.modmuss50.me");
+				mavenArtifactRepository.setUrl("https://maven.modmuss50.me/");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
@@ -213,9 +213,9 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
 
-			if (extension.omlVersion != null && !extension.omlVersion.isEmpty()) {
-				//only add this when not in a fabric dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "OpenModLoader:OpenModLoader:" + extension.version + "-" + extension.omlVersion);
+			if (extension.isModWorkspace()) {
+				//only add this when not in a dev env
+				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "com.openmodloader:OpenModLoader:" + extension.getVersionString());
 			}
 		});
 

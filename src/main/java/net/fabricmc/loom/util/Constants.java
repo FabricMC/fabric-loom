@@ -41,8 +41,8 @@ public class Constants {
 	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-server.jar"));
 	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-merged.jar"));
 	public static final IDelayed<File> MINECRAFT_MIXED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-mixed.jar"));
-	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.getVersionString() + "-mapped-" + extension.pomfVersion + ".jar"));
-	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.getVersionString() + "-final-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-mapped-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-final-" + extension.pomfVersion + ".jar"));
 
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getUserCache(), "pomf"));
 	public static       IDelayed<File> MAPPINGS_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));

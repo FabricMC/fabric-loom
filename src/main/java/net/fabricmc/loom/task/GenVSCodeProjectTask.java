@@ -67,9 +67,9 @@ public class GenVSCodeProjectTask extends DefaultTask {
 		JsonObject jsonObject = new JsonObject();
 		JsonArray jsonArray = new JsonArray();
 		jsonArray.add("src/main/java");
-		jsonArray.add("src/main/resorces");
+		jsonArray.add("src/main/resources");
 		jsonArray.add("src/test/java");
-		jsonArray.add("src/test/resorces");
+		jsonArray.add("src/test/resources");
 		jsonObject.add("sourcePath", jsonArray);
 		JsonElement element = new JsonPrimitive(classPathFile.getName());
 		jsonObject.add("classPathFile", element);

@@ -11,5 +11,5 @@ node {
 
    stage "Archive artifacts"
 
-   sh "./gradlew upload"
+   sh "./gradlew publish"
 }

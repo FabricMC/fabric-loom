@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.proccessing.PreBakeMixins;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
@@ -50,17 +49,17 @@ public class ProcessModsTask extends DefaultTask {
 		Configuration configuration = getProject().getConfigurations().getByName(Constants.COMPILE_MODS);
 		List<File> mods = new ArrayList<>();
 		for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
-			getProject().getLogger().lifecycle(":found mod to mix:" + artifact.getFile().getName());
+			//getProject().getLogger().lifecycle(":found mod to mix:" + artifact.getFile().getName());
 			mods.add(artifact.getFile());
 		}
 		if (Constants.MINECRAFT_FINAL_JAR.get(extension).exists()) {
 			Constants.MINECRAFT_FINAL_JAR.get(extension).delete();
 		}
-		if (mods.size() == 0) {
-			FileUtils.copyFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), Constants.MINECRAFT_FINAL_JAR.get(extension));
+		if (mods.size() == 0 || extension.skipPrebake) {
+			FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MIXED_JAR.get(extension));
 		} else {
-			downloadRequiredDeps(extension);
-			new PreBakeMixins().proccess(getProject(), extension, mods);
+//			downloadRequiredDeps(extension);
+			throw new UnsupportedOperationException("Mixin prebake isnt done yet");
 		}
 	}
 

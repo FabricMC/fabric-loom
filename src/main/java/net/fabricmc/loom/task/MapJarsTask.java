@@ -28,8 +28,9 @@ import cuchaz.enigma.Deobfuscator;
 import cuchaz.enigma.TranslatingTypeLoader;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
 import cuchaz.enigma.mapping.TranslationDirection;
+import cuchaz.enigma.mapping.Translator;
+import cuchaz.enigma.mapping.entry.ReferencedEntryPool;
 import cuchaz.enigma.throwables.MappingParseException;
-import javassist.CtClass;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
@@ -55,7 +56,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 			if(!extension.hasPomf()){
 				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
-				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
+				FileUtils.copyFile(Constants.MINECRAFT_MIXED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
 				return;
 			}
 			if (!Constants.MAPPINGS_DIR.get(extension).exists() || extension.localMappings) {
@@ -65,7 +66,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 
 			this.getLogger().lifecycle(":remapping jar");
-			deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MERGED_JAR.get(extension)));
+			deobfuscator = new Deobfuscator(new JarFile(Constants.MINECRAFT_MIXED_JAR.get(extension)));
 			this.deobfuscator.setMappings(new MappingsEnigmaReader().read(Constants.MAPPINGS_DIR.get(extension)));
 			writeJar(Constants.MINECRAFT_MAPPED_JAR.get(extension), new ProgressListener(), deobfuscator);
 
@@ -76,7 +77,7 @@ public class MapJarsTask extends DefaultTask {
 			tempAssests.mkdir();
 
 			ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
-				if (name.startsWith("assets") || name.startsWith("log4j2.xml") || name.startsWith("pack.png")) {
+				if (name.startsWith("assets") || name.startsWith("pack.mcmeta") || name.startsWith("data") || name.toLowerCase().startsWith("log4j2") || name.startsWith("pack.png")) {
 					return name;
 				} else {
 					return null;
@@ -93,22 +94,10 @@ public class MapJarsTask extends DefaultTask {
 	}
 
 	public void writeJar(File out, Deobfuscator.ProgressListener progress, Deobfuscator deobfuscator) {
-		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), deobfuscator.getTranslator(TranslationDirection.Obfuscating), deobfuscator.getTranslator(TranslationDirection.Deobfuscating));
-		deobfuscator.transformJar(out, progress, new CustomClassTransformer(loader));
-	}
-
-	private class CustomClassTransformer implements Deobfuscator.ClassTransformer {
-
-		TranslatingTypeLoader loader;
-
-		public CustomClassTransformer(TranslatingTypeLoader loader) {
-			this.loader = loader;
-		}
-
-		@Override
-		public CtClass transform(CtClass ctClass) throws Exception {
-			return loader.transformClass(ctClass);
-		}
+		Translator obfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.OBFUSCATING);
+		Translator deobfuscationTranslator = deobfuscator.getTranslator(TranslationDirection.DEOBFUSCATING);
+		TranslatingTypeLoader loader = new TranslatingTypeLoader(deobfuscator.getJar(), deobfuscator.getJarIndex(), new ReferencedEntryPool(), obfuscationTranslator, deobfuscationTranslator);
+		deobfuscator.transformJar(out, progress, loader::transformInto);
 	}
 
 	public static class ProgressListener implements Deobfuscator.ProgressListener {

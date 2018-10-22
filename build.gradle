@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'groovy'
     id 'maven'
-
+    id 'maven-publish'
     id 'idea'
     id 'eclipse'
 }
@@ -10,12 +10,9 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/maven.gradle'
-apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
-
 group = 'net.fabricmc'
-archivesBaseName = project.name.toLowerCase()
-version = '0.0.7-SNAPSHOT'
+archivesBaseName = project.name
+version = '0.0.12-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -24,12 +21,16 @@ repositories {
         url = 'http://maven.fabricmc.net/'
     }
 	maven {
-		name "RX14 Repository"
-		url 'http://mvn.rx14.co.uk/local/'
+		name "Modmuss"
+		url 'http://maven.modmuss50.me/'
 	}
 	maven {
 		name = 'Mojang'
 		url = 'https://libraries.minecraft.net/'
+	}
+	maven {
+		name = 'Forge' //For ModLauncher
+		url = 'http://files.minecraftforge.net/maven/'
 	}
 }
 
@@ -48,14 +49,17 @@ dependencies {
 	shade 'com.google.code.gson:gson:2.6.2'
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
-	shade 'net.fabricmc:weave:0.1.0.+'
-	shade 'cuchaz:enigma:0.11.0.+:lib'
-	shade 'net.fabricmc:tiny-remapper:+'
-
-
-	//Always fun when your dep needs the tool to build, but the tool needs the dep.
-	//compile 'net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT'
-
+	shade ('weave-asm:weave:0.1.0.7'){
+		transitive = false
+	}
+	shade ('enigma-asm:enigma:0.12.0.33:lib'){
+		exclude group: 'org.ow2.asm'
+	}
+	shade 'OpenModLoader.tiny-remapper:tiny-remapper:0.1.0.7'
+	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
+	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
+	shade 'org.apache.logging.log4j:log4j-core:2.11.0'
+	shade 'cpw.mods:modlauncher:0.1.0-rc.3'
 	shade 'org.apache.commons:commons-lang3:3.5'
 
 }
@@ -68,16 +72,42 @@ sourceSets {
 }
 
 jar {
-	from {
-		configurations.shade.each { dep ->
-			from(project.zipTree(dep)){
-				exclude 'META-INF', 'META-INF/**'
-			}
-		}
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from (configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
+		exclude 'META-INF/*'
+		exclude 'META-INF'
 	}
 }
 
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
+    gradleVersion = '4.9'
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupId project.group
+			artifactId project.archivesBaseName
+			version project.version
+
+			from components.java
+
+			//Removes all of the dependencies from the maven pom, prevents sub projects downloading all the libs, as we use a fat jar
+			pom.withXml {
+				asNode().remove(asNode().get('dependencies'))
+			}
+		}
+	}
+	repositories {
+		maven {
+			url "http://mavenupload.modmuss50.me/"
+			if (project.hasProperty('mavenPass')) {
+				credentials {
+					username 'buildslave'
+					password project.getProperty('mavenPass')
+				}
+			}
+		}
+	}
 }

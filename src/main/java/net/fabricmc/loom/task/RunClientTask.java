@@ -46,7 +46,7 @@ public class RunClientTask extends JavaExec {
 		try {
 			version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+            getLogger().error("Failed to retrieve version from  minecraft json", e);
 		}
 
 		List<String> libs = new ArrayList<>();
@@ -65,10 +65,15 @@ public class RunClientTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
+		libs.add(Constants.MINECRAFT_CLIENT_JAR.get(extension).getAbsolutePath());
+
+		//Removes the deobf jars
+		libs.removeIf(s -> s.contains(Constants.MINECRAFT_FINAL_JAR.get(extension).getName()));
+		libs.removeIf(s -> s.contains(getProject().getName() + "-" + getProject().getVersion() + "-deobf.jar"));
+
 		classpath(libs);
 
-		args("--tweakClass", "net.fabricmc.base.launch.FabricClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getFabricUserCache(), "assets-" + extension.version).getAbsolutePath());
+		args("--launchTarget", "oml", "--accessToken", "NOT_A_TOKEN", "--version", extension.version, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
@@ -77,7 +82,7 @@ public class RunClientTask extends JavaExec {
 
 	@Override
 	public String getMain() {
-		return "net.minecraft.launchwrapper.Launch";
+		return "cpw.mods.modlauncher.Launcher";
 	}
 
 	@Override
@@ -85,7 +90,7 @@ public class RunClientTask extends JavaExec {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
 		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
-		args.add("-Dfabric.development=true");
+		//args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}
 

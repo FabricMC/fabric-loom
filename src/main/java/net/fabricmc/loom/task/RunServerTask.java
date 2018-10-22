@@ -65,8 +65,6 @@ public class RunServerTask extends JavaExec {
 		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
-		args("--tweakClass", "net.fabricmc.base.launch.FabricServerTweaker");
-
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
 		super.exec();
@@ -74,7 +72,7 @@ public class RunServerTask extends JavaExec {
 
 	@Override
 	public String getMain() {
-		return "net.minecraft.launchwrapper.Launch";
+		return "com.openmodloader.loader.launch.ServerLauncher";
 	}
 
 	@Override

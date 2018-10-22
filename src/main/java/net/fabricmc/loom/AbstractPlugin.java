@@ -26,6 +26,7 @@ package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
@@ -85,6 +86,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		configureIDEs();
 		configureCompile();
+
 	}
 
 	/**
@@ -137,10 +139,12 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModule.getModule().setDownloadSources(true);
 		ideaModule.getModule().setInheritOutputDirs(true);
 		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 
 		// ECLIPSE
 		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
 		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 	}
 
 	/**
@@ -164,7 +168,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getFabricUserCache());
+				flatDirectoryArtifactRepository.dir(extension.getUserCache());
 				flatDirectoryArtifactRepository.setName("UserCacheFiles");
 			});
 
@@ -179,8 +183,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("SpongePowered");
-				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
+				mavenArtifactRepository.setName("modmuss50");
+				mavenArtifactRepository.setUrl("https://maven.modmuss50.me/");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
@@ -209,14 +213,13 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
 
-			if (extension.fabricVersion != null && !extension.fabricVersion.isEmpty()) {
-				//only add this when not in a fabric dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.version + "-" + extension.fabricVersion + ":deobf");
+			if (extension.isModWorkspace()) {
+				//only add this when not in a dev env
+				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "com.openmodloader:OpenModLoader:" + extension.getVersionString() +":deobf");
 			}
-			project1.getDependencies().add(Constants.PROCESS_MODS_DEPENDENCIES, "net.fabricmc:fabric-base:16w38a-0.0.4-SNAPSHOT");
 		});
 
-		project.getTasks().getByName("build").doLast(task -> {
+		project.getTasks().getByName("jar").doLast(task -> {
 			project.getLogger().lifecycle(":remapping mods");
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			try {
@@ -229,7 +232,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		});
 
 		project.afterEvaluate(project12 -> {
-			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("setupFabric")).dependsOn(project12.getTasks().getByName("extractNatives"));
+			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("setup")).dependsOn(project12.getTasks().getByName("extractNatives"));
 			project12.getTasks().getByName("idea").finalizedBy(project12.getTasks().getByName("genIdeaWorkspace"));
 		});
 
@@ -242,17 +245,19 @@ public class AbstractPlugin implements Plugin<Project> {
 			Gson gson = new Gson();
 			try {
 				JsonElement jsonElement = gson.fromJson(new FileReader(modJson), JsonElement.class);
-				JsonObject jsonObject = jsonElement.getAsJsonObject();
-				if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
-					project.setVersion(jsonObject.get("version").getAsString());
+				JsonArray jsonArray = jsonElement.getAsJsonArray();
+				for (int i = 0; i < jsonArray.size(); i++) {
+					JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+					if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
+						project.setVersion(jsonObject.get("version").getAsString());
+					}
+					if (jsonObject.has("group")) {
+						project.setGroup(jsonObject.get("group").getAsString());
+					}
+					if (jsonObject.has("description")) {
+						project.setDescription(jsonObject.get("description").getAsString());
+					}
 				}
-				if (jsonObject.has("group")) {
-					project.setGroup(jsonObject.get("group").getAsString());
-				}
-				if (jsonObject.has("description")) {
-					project.setDescription(jsonObject.get("description").getAsString());
-				}
-				//TODO load deps
 
 			} catch (FileNotFoundException e) {
 				//This wont happen as we have checked for it

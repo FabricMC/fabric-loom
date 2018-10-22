@@ -75,7 +75,7 @@ public class DownloadTask extends DefaultTask {
 			if (!Constants.MAPPINGS_ZIP.get(extension).exists() && extension.hasPomf()) {
 				this.getLogger().lifecycle(":downloading mappings");
 				try {
-					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
+					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/OpenModLoader/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to download mappings", e);
 				}
@@ -103,7 +103,7 @@ public class DownloadTask extends DefaultTask {
 				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists() && !extension.localMappings) {
 					getLogger().lifecycle(":downloading tiny mappings");
 					try {
-						FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+						FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/OpenModLoader/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
 					} catch (Exception e) {
 						throw new RuntimeException("Failed to download mappings", e);
 					}
@@ -138,12 +138,9 @@ public class DownloadTask extends DefaultTask {
 				version.libraries.stream().filter(lib -> lib.natives != null).forEach(lib -> dependencyHandler.add(Constants.CONFIG_NATIVES, lib.getArtifactName()));
 			}
 
-			// Force add LaunchWrapper
-			dependencyHandler.add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:launchwrapper:1.12");
-
 			Version.AssetIndex assetIndex = version.assetIndex;
 
-			File assets = new File(extension.getFabricUserCache(), "assets-" + extension.version);
+			File assets = new File(extension.getUserCache(), "assets-" + extension.version);
 			if (!assets.exists()) {
 				assets.mkdirs();
 			}

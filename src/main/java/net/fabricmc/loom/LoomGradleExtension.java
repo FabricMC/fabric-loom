@@ -31,8 +31,9 @@ import java.io.File;
 public class LoomGradleExtension {
 	public String version;
 	public String runDir = "run";
-	public String fabricVersion;
+	public String omlVersion;
 	public String pomfVersion;
+	public boolean skipPrebake = false;
 	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle
@@ -40,17 +41,17 @@ public class LoomGradleExtension {
 
 	public String getVersionString() {
 		if (isModWorkspace()) {
-			return version + "-" + fabricVersion;
+			return version + "-" + omlVersion;
 		}
 		return version;
 	}
 
 	public boolean isModWorkspace() {
-		return fabricVersion != null && !fabricVersion.isEmpty();
+		return omlVersion != null && !omlVersion.isEmpty();
 	}
 
-	public File getFabricUserCache() {
-		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "loom");
+	public File getUserCache() {
+		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
 		if (!userCache.exists()) {
 			userCache.mkdirs();
 		}

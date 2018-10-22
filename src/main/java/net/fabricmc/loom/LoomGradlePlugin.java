@@ -35,16 +35,17 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		makeTask("download", DownloadTask.class);
 		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
-		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
-		makeTask("processMods", ProcessModsTask.class).dependsOn("mapJars");
-		makeTask("setupFabric", DefaultTask.class).dependsOn("processMods");
+		makeTask("processMods", ProcessModsTask.class).dependsOn("mergeJars");
+		makeTask("mapJars", MapJarsTask.class).dependsOn("processMods");
+		makeTask("finaliseJars", FinaliseJar.class).dependsOn("mapJars");
+		makeTask("setup", DefaultTask.class).dependsOn("finaliseJars").setGroup("openmodloader");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea");
+		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
 
-		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives");
+		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives").setGroup("ide");
 
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded");
+		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraft");
+		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraft");
 	}
 }

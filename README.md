@@ -1,6 +1,6 @@
-# fabric-loom
-Gradle plugin for Fabric
+# OpenGradle
+Gradle plugin for OpenModLoader
 
-Usage: `gradlew setupFabric idea`
-(Prefix with `./` on macOS and Linux)
+Usage: `gradlew setup idea`
+(Use `./gradle` on macOS and Linux)
 

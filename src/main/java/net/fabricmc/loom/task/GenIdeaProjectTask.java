@@ -135,22 +135,22 @@ public class GenIdeaProjectTask extends DefaultTask {
 		}
 
 		IdeaRunConfig ideaClient = new IdeaRunConfig();
-		ideaClient.mainClass = "cpw.mods.modlauncher.Launcher";
+		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
 		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath() + " -Doml.development=true";
-		ideaClient.programArgs = "--launchTarget oml --accessToken not_a_real_token --version " + extension.version + " --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath();
+		ideaClient.programArgs = "--tweakClass com.openmodloader.loader.launch.OpenClientTweaker --assetIndex " + version.assetIndex.id + " --assetsDir " + new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath();
 
 		runManager.appendChild(ideaClient.genRuns(runManager));
 
 		IdeaRunConfig ideaServer = new IdeaRunConfig();
-		ideaServer.mainClass = "com.openmodloader.loader.launch.ServerLauncher";
+		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
 		ideaServer.projectName = project.getName();
 		ideaServer.configName = "Minecraft Server";
 		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaServer.vmArgs = "-Doml.development=true";
-		ideaServer.programArgs = "";
+		ideaServer.programArgs = "--tweakClass com.openmodloader.loader.launch.OpenServerTweaker";
 
 		runManager.appendChild(ideaServer.genRuns(runManager));
 

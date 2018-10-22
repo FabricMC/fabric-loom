@@ -22,47 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.util.proccessing;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.ProcessModsTask;
+import net.fabricmc.loom.util.Constants;
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
-public class LoomGradleExtension {
-	public String version;
-	public String runDir = "run";
-	public String omlVersion;
-	public String pomfVersion;
-	public String refmapName;
-	public boolean skipPrebake = false;
-	public boolean localMappings = false;
+public class PreBakeMixins {
 
-	//Not to be set in the build.gradle
-	public Project project;
-
-	public String getVersionString() {
-		if (isModWorkspace()) {
-			return version + "-" + omlVersion;
+	public void proccess(Project project, LoomGradleExtension extension, List<File> mods) throws IOException {
+		project.getLogger().lifecycle(":Found " + mods.size() + " mods to prebake");
+		String[] args = new String[mods.size() + 4];
+		args[0] = "-m";
+		args[1] = Constants.MAPPINGS_TINY.get(extension).getAbsolutePath();
+		args[2] = Constants.MINECRAFT_MERGED_JAR.get(extension).getAbsolutePath();
+		args[3] = Constants.MINECRAFT_MIXED_JAR.get(extension).getAbsolutePath();
+		for (int i = 0; i < mods.size(); i++) {
+			args[i + 4] = mods.get(i).getAbsolutePath();
 		}
-		return version;
+		project.getLogger().lifecycle(":preBaking mixins");
+		ProcessModsTask.addFile(Constants.MINECRAFT_MIXED_JAR.get(extension), this);
+		MixinPrebaker.main(args, project);
 	}
 
-	public boolean isModWorkspace() {
-		return omlVersion != null && !omlVersion.isEmpty();
-	}
-
-	public File getUserCache() {
-		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
-		if (!userCache.exists()) {
-			userCache.mkdirs();
-		}
-		return userCache;
-	}
-
-	public boolean hasPomf(){
-		if(localMappings){
-			return true;
-		}
-		return pomfVersion != null && !pomfVersion.isEmpty();
-	}
 }

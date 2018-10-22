@@ -65,6 +65,8 @@ public class RunServerTask extends JavaExec {
 		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
+		args("--tweakClass", "com.openmodloader.loader.launch.OpenServerTweaker");
+
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
 		super.exec();
@@ -72,7 +74,7 @@ public class RunServerTask extends JavaExec {
 
 	@Override
 	public String getMain() {
-		return "com.openmodloader.loader.launch.ServerLauncher";
+		return "net.minecraft.launchwrapper.Launch";
 	}
 
 	@Override

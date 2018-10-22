@@ -87,6 +87,36 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureIDEs();
 		configureCompile();
 
+		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
+			Project project = entry.getKey();
+			Set<Task> taskSet = entry.getValue();
+			for (Task task : taskSet) {
+				if (task instanceof JavaCompile
+					&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
+					JavaCompile javaCompileTask = (JavaCompile) task;
+					javaCompileTask.doFirst(task1 -> {
+						project.getLogger().lifecycle(":setting java compiler args");
+						try {
+							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
+
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfMojang=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfMojang=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
+							if(extension.refmapName == null || extension.refmapName.isEmpty()){
+								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
+								extension.refmapName = project.getName() + "-refmap.json";
+							}
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=pomf:mojang");
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					});
+				}
+			}
+
+		}
+
 	}
 
 	/**
@@ -185,6 +215,11 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("modmuss50");
 				mavenArtifactRepository.setUrl("https://maven.modmuss50.me/");
+			});
+
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setName("SpongePowered");
+				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {

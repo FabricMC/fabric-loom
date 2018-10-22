@@ -32,6 +32,10 @@ repositories {
 		name = 'Forge' //For ModLauncher
 		url = 'http://files.minecraftforge.net/maven/'
 	}
+    maven {
+        name = 'SpongePowered'
+        url = 'http://repo.spongepowered.org/maven'
+    }
 }
 
 configurations {
@@ -59,7 +63,15 @@ dependencies {
 	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
 	shade 'org.apache.logging.log4j:log4j-core:2.11.0'
-	shade 'cpw.mods:modlauncher:0.1.0-rc.3'
+
+    shade ('net.minecraft:launchwrapper:1.12') {
+        transitive = false
+    }
+    
+    shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
 	shade 'org.apache.commons:commons-lang3:3.5'
 
 }

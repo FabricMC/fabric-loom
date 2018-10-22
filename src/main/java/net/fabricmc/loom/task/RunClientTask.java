@@ -73,7 +73,7 @@ public class RunClientTask extends JavaExec {
 
 		classpath(libs);
 
-		args("--launchTarget", "oml", "--accessToken", "NOT_A_TOKEN", "--version", extension.version, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
+		args("--tweakClass", "com.openmodloader.loader.launch.OpenClientTweaker", "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

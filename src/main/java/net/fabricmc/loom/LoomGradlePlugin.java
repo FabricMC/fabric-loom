@@ -22,14 +22,13 @@
  * SOFTWARE.
  */
 
-package com.openmodloader.gradle;
+package net.fabricmc.loom;
 
-import net.fabricmc.loom.AbstractPlugin;
 import net.fabricmc.loom.task.*;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 
-public class OpenGradlePlugin extends AbstractPlugin {
+public class LoomGradlePlugin extends AbstractPlugin {
 	@Override
 	public void apply(Project target) {
 		super.apply(target);

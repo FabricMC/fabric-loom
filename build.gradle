@@ -67,7 +67,7 @@ dependencies {
     shade ('net.minecraft:launchwrapper:1.12') {
         transitive = false
     }
-    
+
     shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
         exclude module: 'launchwrapper'
         exclude module: 'guava'
@@ -93,7 +93,7 @@ jar {
 
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.9'
+    gradleVersion = '4.10.2'
 }
 
 publishing {

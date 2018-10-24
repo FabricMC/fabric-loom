@@ -22,7 +22,7 @@ public class MixinServiceGradle extends MixinServiceLaunchWrapper implements ICl
 
 	@Override
 	public String getName() {
-		return "OpenModLoaderGradle";
+		return "FabricGradle";
 	}
 
 	@Override

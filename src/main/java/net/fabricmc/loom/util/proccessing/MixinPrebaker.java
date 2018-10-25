@@ -121,8 +121,8 @@ public class MixinPrebaker {
 		return writer.toByteArray();
 	}
 
-	public static final String APPLIED_MIXIN_CONFIGS_FILENAME = ".oml-applied-mixin-configs";
-	public static final String MAPPINGS_FILENAME = ".oml-dev-mappings.tiny";
+	public static final String APPLIED_MIXIN_CONFIGS_FILENAME = ".fabric-applied-mixin-configs";
+	public static final String MAPPINGS_FILENAME = ".fabric-dev-mappings.tiny";
 
 	public static Map<String, InputStream> jarFileCache = new HashMap<>();
 
@@ -170,7 +170,7 @@ public class MixinPrebaker {
 		System.out.println("Found " + mixins.size() + " mixins to pre bake");
 
 		List<String> tweakers = new ArrayList<>();
-		tweakers.add("com.openmodloader.loader.launch.OpenTweaker");
+		tweakers.add("net.fabricmc.base.launch.FabricTweaker");
 		GlobalProperties.put("TweakClasses", tweakers);
 
 		MixinBootstrap.init();

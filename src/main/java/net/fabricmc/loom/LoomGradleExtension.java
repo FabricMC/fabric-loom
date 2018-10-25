@@ -31,7 +31,7 @@ import java.io.File;
 public class LoomGradleExtension {
 	public String version;
 	public String runDir = "run";
-	public String omlVersion;
+	public String fabricVersion;
 	public String pomfVersion;
 	public String refmapName;
 	public boolean skipPrebake = false;
@@ -42,13 +42,13 @@ public class LoomGradleExtension {
 
 	public String getVersionString() {
 		if (isModWorkspace()) {
-			return version + "-" + omlVersion;
+			return version + "-" + fabricVersion;
 		}
 		return version;
 	}
 
 	public boolean isModWorkspace() {
-		return omlVersion != null && !omlVersion.isEmpty();
+		return fabricVersion != null && !fabricVersion.isEmpty();
 	}
 
 	public File getUserCache() {

@@ -280,19 +280,17 @@ public class AbstractPlugin implements Plugin<Project> {
 			Gson gson = new Gson();
 			try {
 				JsonElement jsonElement = gson.fromJson(new FileReader(modJson), JsonElement.class);
-				JsonArray jsonArray = jsonElement.getAsJsonArray();
-				for (int i = 0; i < jsonArray.size(); i++) {
-					JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
-					if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
-						project.setVersion(jsonObject.get("version").getAsString());
-					}
-					if (jsonObject.has("group")) {
-						project.setGroup(jsonObject.get("group").getAsString());
-					}
-					if (jsonObject.has("description")) {
-						project.setDescription(jsonObject.get("description").getAsString());
-					}
+				JsonObject jsonObject = jsonElement.getAsJsonObject();
+				if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
+					project.setVersion(jsonObject.get("version").getAsString());
 				}
+				if (jsonObject.has("group")) {
+					project.setGroup(jsonObject.get("group").getAsString());
+				}
+				if (jsonObject.has("description")) {
+					project.setDescription(jsonObject.get("description").getAsString());
+				}
+				//TODO load deps
 
 			} catch (FileNotFoundException e) {
 				//This wont happen as we have checked for it

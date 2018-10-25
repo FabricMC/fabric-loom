@@ -71,14 +71,20 @@ public class MixinMappingProviderTiny extends MappingProvider {
 
 			for (Class cc : c.getInterfaces()) {
 				mapped = getMethodMapping(method.move(cc.getName().replace('.', '/')));
-				if (mapped != null)
+				if (mapped != null) {
+					mapped = mapped.move(classMap.getOrDefault(method.getOwner(), method.getOwner()));
+					methodMap.put(method, mapped);
 					return mapped;
+				}
 			}
 
 			if (c.getSuperclass() != null) {
 				mapped = getMethodMapping(method.move(c.getSuperclass().getName().replace('.', '/')));
-				if (mapped != null)
+				if (mapped != null) {
+					mapped = mapped.move(classMap.getOrDefault(method.getOwner(), method.getOwner()));
+					methodMap.put(method, mapped);
 					return mapped;
+				}
 			}
 
 			return null;
@@ -96,16 +102,12 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		if (mapped != null)
 			return mapped;
 
-		try {
+		return null;
+
+		/* try {
 			Class c = this.getClass().getClassLoader().loadClass(field.getOwner().replace('/', '.'));
 			if (c == null || c == Object.class) {
 				return null;
-			}
-
-			for (Class cc : c.getInterfaces()) {
-				mapped = getFieldMapping(field.move(cc.getName().replace('.', '/')));
-				if (mapped != null)
-					return mapped;
 			}
 
 			if (c.getSuperclass() != null) {
@@ -118,7 +120,7 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
-		}
+		} */
 	}
 
 	// TODO: Unify with tiny-remapper

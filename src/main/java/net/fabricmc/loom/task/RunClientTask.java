@@ -53,10 +53,7 @@ public class RunClientTask extends JavaExec {
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
-		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
-		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles()) {
+		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
 		//Used to add the fabric jar that has been built

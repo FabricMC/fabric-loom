@@ -74,6 +74,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
 		// Minecraft libraries configuration
+		project.getConfigurations().maybeCreate(Constants.CONFIG_MINECRAFT);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES_CLIENT);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
@@ -82,7 +83,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().maybeCreate(Constants.PROCESS_MODS_DEPENDENCIES);
 
 		// Common libraries extends from client libraries, CONFIG_MC_DEPENDENCIES will contains all MC dependencies
-		project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT));
+		project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT)));
 
 		configureIDEs();
 		configureCompile();
@@ -168,12 +169,12 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModule.getModule().setDownloadJavadoc(true);
 		ideaModule.getModule().setDownloadSources(true);
 		ideaModule.getModule().setInheritOutputDirs(true);
-		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 
 		// ECLIPSE
 		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
-		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES));
+		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
 	}
 
@@ -186,10 +187,10 @@ public class AbstractPlugin implements Plugin<Project> {
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 		SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
-		main.setCompileClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES)));
-		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES)));
-		main.setRuntimeClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES)));
-		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES)));
+		main.setCompileClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
+		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
+		main.setRuntimeClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
+		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
 
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
@@ -246,7 +247,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
+			project1.getDependencies().add(Constants.CONFIG_MINECRAFT, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
 
 			if (extension.isModWorkspace()) {
 				//only add this when not in a dev env

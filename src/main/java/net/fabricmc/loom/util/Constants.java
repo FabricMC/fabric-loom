@@ -45,8 +45,6 @@ public class Constants {
 	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-final-" + extension.pomfVersion + ".jar"));
 
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getUserCache(), "pomf"));
-	public static       IDelayed<File> MAPPINGS_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));
-	public static final IDelayed<File> MAPPINGS_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
 	public static       IDelayed<File> MAPPINGS_TINY_GZ = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"));
 	public static final IDelayed<File> MAPPINGS_TINY = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion));
 	public static final IDelayed<File> MAPPINGS_MIXIN_EXPORT = new DelayedFile(extension -> new File(CACHE_FILES, "mixin-map-" + extension.version + "." + extension.pomfVersion + ".mappings"));
@@ -70,6 +68,7 @@ public class Constants {
 
 	public static final String CONFIG_NATIVES = "MC_NATIVES";
 	public static final String CONFIG_MC_DEPENDENCIES = "MC_DEPENDENCIES";
+	public static final String CONFIG_MINECRAFT = "MINECRAFT";
 	public static final String CONFIG_MC_DEPENDENCIES_CLIENT = "MC_DEPENDENCIES_CLIENT";
 	public static final String PROCESS_MODS_DEPENDENCIES = "PROCESS_MODS_DEPENDENCIES";
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";

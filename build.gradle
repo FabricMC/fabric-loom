@@ -16,10 +16,6 @@ version = '0.0.12-SNAPSHOT'
 
 repositories {
     mavenCentral()
-    maven {
-        name = 'fabric'
-        url = 'http://maven.fabricmc.net/'
-    }
 	maven {
 		name "Modmuss"
 		url 'http://maven.modmuss50.me/'
@@ -53,13 +49,10 @@ dependencies {
 	shade 'com.google.code.gson:gson:2.6.2'
 	shade 'commons-io:commons-io:1.4'
 	shade 'com.google.guava:guava:19.0'
-	shade ('weave-asm:weave:0.1.0.7'){
+	shade ('net.fabricmc:weave:+'){
 		transitive = false
 	}
-	shade ('enigma-asm:enigma:0.12.0.33:lib'){
-		exclude group: 'org.ow2.asm'
-	}
-	shade 'OpenModLoader.tiny-remapper:tiny-remapper:0.1.0.7'
+	shade 'net.fabricmc:tiny-remapper:0.1.0.5'
 	shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
 	shade 'org.apache.logging.log4j:log4j-api:2.11.0'
 	shade 'org.apache.logging.log4j:log4j-core:2.11.0'

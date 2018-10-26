@@ -72,15 +72,6 @@ public class DownloadTask extends DefaultTask {
 				Constants.POMF_DIR.get(extension).mkdir();
 			}
 
-			if (!Constants.MAPPINGS_ZIP.get(extension).exists() && extension.hasPomf()) {
-				this.getLogger().lifecycle(":downloading mappings");
-				try {
-					FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"), Constants.MAPPINGS_ZIP.get(extension));
-				} catch (Exception e) {
-					throw new RuntimeException("Failed to download mappings", e);
-				}
-
-			}
 			if (!extension.hasPomf()) {
 				if (Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()) {
 					if (Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()) {
@@ -88,13 +79,10 @@ public class DownloadTask extends DefaultTask {
 						extension.localMappings = true;
 
 						//We delete this to make sure they are always re extracted.
-						deleteIfExists(Constants.MAPPINGS_ZIP.get(extension));
 						deleteIfExists(Constants.MAPPINGS_TINY_GZ.get(extension));
 						deleteIfExists(Constants.MAPPINGS_TINY.get(extension));
-						deleteIfExists(Constants.MAPPINGS_DIR.get(extension));
 
 						Constants.MAPPINGS_TINY_GZ = Constants.MAPPINGS_TINY_GZ_LOCAL;
-						Constants.MAPPINGS_ZIP = Constants.MAPPINGS_ZIP_LOCAL;
 					}
 				}
 			}

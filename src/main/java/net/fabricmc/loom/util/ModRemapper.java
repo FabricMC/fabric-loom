@@ -28,13 +28,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.tinyremapper.*;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,8 +64,7 @@ public class ModRemapper {
 
 		List<File> classpathFiles = new ArrayList<>();
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
-		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT).getFiles());
-		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles());
+		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles());
 
 		Path[] classpath = new Path[classpathFiles.size()];
 		for (int i = 0; i < classpathFiles.size(); i++) {

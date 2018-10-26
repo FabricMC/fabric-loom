@@ -51,7 +51,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 			if(!extension.hasPomf()){
 				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
-				FileUtils.copyFile(Constants.MINECRAFT_MIXED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
+				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
 				return;
 			}
 
@@ -72,10 +72,10 @@ public class MapJarsTask extends DefaultTask {
 			try {
 				OutputConsumerPath outputConsumer = new OutputConsumerPath(Constants.MINECRAFT_MAPPED_JAR.get(extension).toPath());
 				//Rebof the mixed mc jar
-				outputConsumer.addNonClassFiles(Constants.MINECRAFT_MIXED_JAR.get(extension).toPath());
-				remapper.read(Constants.MINECRAFT_MIXED_JAR.get(extension).toPath());
+				outputConsumer.addNonClassFiles(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
+				remapper.read(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
 				remapper.read(classpath);
-				remapper.apply(Constants.MINECRAFT_MIXED_JAR.get(extension).toPath(), outputConsumer);
+				remapper.apply(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath(), outputConsumer);
 				outputConsumer.finish();
 				remapper.finish();
 			} catch (Exception e){

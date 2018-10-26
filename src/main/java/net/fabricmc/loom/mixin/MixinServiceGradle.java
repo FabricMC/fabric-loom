@@ -1,8 +1,6 @@
 package net.fabricmc.loom.mixin;
 
 import com.google.common.io.ByteStreams;
-import net.fabricmc.loom.task.ProcessModsTask;
-import net.fabricmc.loom.util.proccessing.MixinPrebaker;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.service.mojang.MixinServiceLaunchWrapper;
 
@@ -27,9 +25,6 @@ public class MixinServiceGradle extends MixinServiceLaunchWrapper implements ICl
 
 	@Override
 	public InputStream getResourceAsStream(String name) {
-		if(MixinPrebaker.jarFileCache.containsKey(name)){
-			return MixinPrebaker.jarFileCache.get(name);
-		}
 		for(JarFile file : jars){
 			ZipEntry entry = file.getEntry(name);
 			if(entry != null){
@@ -51,14 +46,6 @@ public class MixinServiceGradle extends MixinServiceLaunchWrapper implements ICl
 			jars.add(jarFile);
 		}
 		jars.add(new JarFile(minecraft));
-	}
-
-	public static void addMCDeps(Set<File> deps, Object object) throws IOException {
-		for(File mod : deps){
-			JarFile jarFile = new JarFile(mod);
-			jars.add(jarFile);
-			ProcessModsTask.addFile(mod, object);
-		}
 	}
 
 	@Override

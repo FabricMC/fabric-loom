@@ -157,7 +157,7 @@ public class DownloadTask extends DefaultTask {
 				String assetName = entry.getKey();
 				int end = assetName.lastIndexOf("/") + 1;
 				if (end > 0) {
-					assetName = assetName.substring(end, assetName.length());
+					assetName = assetName.substring(end);
 				}
 				progressLogger.progress(assetName + " - " + position + "/" + totalSize + " (" + (int) ((position / (double) totalSize) * 100) + "%) assets downloaded");
 				position++;

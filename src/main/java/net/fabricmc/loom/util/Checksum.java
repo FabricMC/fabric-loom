@@ -37,6 +37,7 @@ public class Checksum {
 			return false;
 		}
 		try {
+			//noinspection deprecation
 			HashCode hash = Files.hash(file, Hashing.sha1());
 			StringBuilder builder = new StringBuilder();
 			for (Byte hashBytes : hash.asBytes()) {

@@ -45,7 +45,6 @@ import java.nio.channels.ReadableByteChannel;
  * Generic Download class compatible with ProgressLogger
  */
 public class DownloadNewTask extends DefaultTask {
-
 	@Input
 	private Object output;
 

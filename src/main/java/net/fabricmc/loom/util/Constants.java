@@ -60,6 +60,9 @@ public class Constants {
 
 	public static final IDelayed<File> VERSION_MANIFEST = new DelayedFile(extension -> new File(extension.getUserCache(), "version_manifest.json"));
 
+	public static final String FABRIC_CLIENT_TWEAKER = "net.fabricmc.base.launch.FabricClientTweaker";
+	public static final String FABRIC_SERVER_TWEAKER = "net.fabricmc.base.launch.FabricServerTweaker";
+
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
 

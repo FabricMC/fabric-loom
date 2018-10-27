@@ -71,7 +71,6 @@ public class MapJarsTask extends DefaultTask {
 
 			try {
 				OutputConsumerPath outputConsumer = new OutputConsumerPath(Constants.MINECRAFT_MAPPED_JAR.get(extension).toPath());
-				//Rebof the mixed mc jar
 				outputConsumer.addNonClassFiles(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
 				remapper.read(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
 				remapper.read(classpath);
@@ -83,23 +82,13 @@ public class MapJarsTask extends DefaultTask {
 				throw new RuntimeException("Failed to remap minecraft to " + toM, e);
 			}
 
-			File tempAssests = new File(Constants.CACHE_FILES, "tempAssets");
-			if (tempAssests.exists()) {
-				FileUtils.deleteDirectory(tempAssests);
+			File tempAssets = new File(Constants.CACHE_FILES, "tempAssets");
+			if (tempAssets.exists()) {
+				FileUtils.deleteDirectory(tempAssets);
 			}
-			tempAssests.mkdir();
+			tempAssets.mkdir();
 
-			ZipUtil.unpack(Constants.MINECRAFT_CLIENT_JAR.get(extension), tempAssests, name -> {
-				if (name.startsWith("assets") || name.startsWith("pack.mcmeta") || name.startsWith("data") || name.toLowerCase().startsWith("log4j2") || name.startsWith("pack.png")) {
-					return name;
-				} else {
-					return null;
-				}
-			});
-			ZipUtil.unpack(Constants.MINECRAFT_MAPPED_JAR.get(extension), tempAssests);
-
-			ZipUtil.pack(tempAssests, Constants.MINECRAFT_MAPPED_JAR.get(extension));
-			FileUtils.deleteDirectory(tempAssests);
+			FileUtils.deleteDirectory(tempAssets);
 		} else {
 			this.getLogger().lifecycle(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
 			this.getLogger().lifecycle(":mapped jar found, skipping mapping");

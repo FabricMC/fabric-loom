@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016 FabricMC
+ * Copyright (c) 2016, 2017, 2018 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,20 +37,25 @@ public class Constants {
 	public static final File WORKING_DIRECTORY = new File(".");
 	public static final File CACHE_FILES = new File(WORKING_DIRECTORY, ".gradle/minecraft");
 
+	public static final String JAR_MAPPER_ENIGMA = "enigma";
+	public static final String JAR_MAPPER_TINY = "tiny";
+
 	public static final IDelayed<File> MINECRAFT_CLIENT_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-client.jar"));
 	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-server.jar"));
 	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-merged.jar"));
 	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-mapped-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_PARTIAL_ENIGMA_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-partial-enigma-" + extension.pomfVersion + ".jar"));
 	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-final-" + extension.pomfVersion + ".jar"));
 
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getUserCache(), "pomf"));
 	public static       IDelayed<File> MAPPINGS_TINY_GZ = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"));
 	public static final IDelayed<File> MAPPINGS_TINY = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion));
 	public static final IDelayed<File> MAPPINGS_MIXIN_EXPORT = new DelayedFile(extension -> new File(CACHE_FILES, "mixin-map-" + extension.version + "." + extension.pomfVersion + ".mappings"));
-
+	public static       IDelayed<File> MAPPINGS_ENIGMA_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));
+	public static final IDelayed<File> MAPPINGS_ENIGMA_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
 
 	public static final IDelayed<File> MAPPINGS_DIR_LOCAL = new DelayedFile(extension -> new File(WORKING_DIRECTORY, "mappings"));
-	public static final IDelayed<File> MAPPINGS_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
+	public static final IDelayed<File> MAPPINGS_ENIGMA_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-tiny-" + extension.version + ".gz"));
 
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
@@ -62,6 +67,7 @@ public class Constants {
 
 	public static final String FABRIC_CLIENT_TWEAKER = "net.fabricmc.base.launch.FabricClientTweaker";
 	public static final String FABRIC_SERVER_TWEAKER = "net.fabricmc.base.launch.FabricServerTweaker";
+	public static final String POMF_JENKINS_SERVER = "http://modmuss50.me:8080";
 
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";

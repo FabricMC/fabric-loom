@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016 FabricMC
+ * Copyright (c) 2016, 2017, 2018 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
+import org.spongepowered.asm.mixin.injection.Constant;
 
 import java.io.*;
 import java.net.URL;
@@ -72,17 +73,34 @@ public class DownloadTask extends DefaultTask {
 				Constants.POMF_DIR.get(extension).mkdir();
 			}
 
+			if (Constants.JAR_MAPPER_ENIGMA.equals(extension.jarMapper)) {
+				if (!Constants.MAPPINGS_ENIGMA_ZIP.get(extension).exists() && extension.hasPomf()) {
+					this.getLogger().lifecycle(":downloading enigma mappings");
+					try {
+						FileUtils.copyURLToFile(
+								new URL(Constants.POMF_JENKINS_SERVER + "/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"),
+								Constants.MAPPINGS_ENIGMA_ZIP.get(extension)
+						);
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to download mappings", e);
+					}
+				}
+			}
+
 			if (!extension.hasPomf()) {
 				if (Constants.MAPPINGS_DIR_LOCAL.get(extension).exists()) {
-					if (Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && Constants.MAPPINGS_ZIP_LOCAL.get(extension).exists()) {
+					if (Constants.MAPPINGS_TINY_GZ_LOCAL.get(extension).exists() && (!Constants.JAR_MAPPER_ENIGMA.equals(extension.jarMapper) || Constants.MAPPINGS_ENIGMA_ZIP_LOCAL.get(extension).exists())) {
 						this.getLogger().lifecycle(":using local mappings!");
 						extension.localMappings = true;
 
 						//We delete this to make sure they are always re extracted.
+						deleteIfExists(Constants.MAPPINGS_ENIGMA_DIR.get(extension));
+						deleteIfExists(Constants.MAPPINGS_ENIGMA_ZIP.get(extension));
 						deleteIfExists(Constants.MAPPINGS_TINY_GZ.get(extension));
 						deleteIfExists(Constants.MAPPINGS_TINY.get(extension));
 
 						Constants.MAPPINGS_TINY_GZ = Constants.MAPPINGS_TINY_GZ_LOCAL;
+						Constants.MAPPINGS_ENIGMA_ZIP = Constants.MAPPINGS_ENIGMA_ZIP_LOCAL;
 					}
 				}
 			}
@@ -91,7 +109,7 @@ public class DownloadTask extends DefaultTask {
 				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists() && !extension.localMappings) {
 					getLogger().lifecycle(":downloading tiny mappings");
 					try {
-						FileUtils.copyURLToFile(new URL("http://modmuss50.me:8080/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+						FileUtils.copyURLToFile(new URL(Constants.POMF_JENKINS_SERVER + "/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
 					} catch (Exception e) {
 						throw new RuntimeException("Failed to download mappings", e);
 					}

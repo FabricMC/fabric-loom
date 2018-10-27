@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016 FabricMC
+ * Copyright (c) 2016, 2017, 2018 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,10 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	@Override

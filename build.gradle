@@ -83,6 +83,7 @@ jar {
 	}
 }
 
+apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.10.2'

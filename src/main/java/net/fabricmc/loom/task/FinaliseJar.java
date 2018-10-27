@@ -35,7 +35,7 @@ import java.io.IOException;
 public class FinaliseJar extends DefaultTask {
 
 	@TaskAction
-	public void finalisejar() throws IOException {
+	public void finaliseJar() throws IOException {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		if(Constants.MINECRAFT_FINAL_JAR.get(extension).exists()){
 			Constants.MINECRAFT_FINAL_JAR.get(extension).delete();

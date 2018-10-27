@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import net.fabricmc.loom.util.Constants;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -34,7 +35,7 @@ public class LoomGradleExtension {
 	public String fabricVersion;
 	public String pomfVersion;
 	public String refmapName;
-	public boolean skipPrebake = false;
+	public String jarMapper = Constants.JAR_MAPPER_ENIGMA; // enigma, tiny
 	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle
@@ -60,7 +61,7 @@ public class LoomGradleExtension {
 	}
 
 	public boolean hasPomf(){
-		if(localMappings){
+		if (localMappings) {
 			return true;
 		}
 		return pomfVersion != null && !pomfVersion.isEmpty();

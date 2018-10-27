@@ -25,8 +25,10 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	@Override

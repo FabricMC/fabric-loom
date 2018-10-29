@@ -58,6 +58,8 @@ public class Constants {
 	public static final IDelayed<File> MAPPINGS_ENIGMA_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-tiny-" + extension.version + ".gz"));
 
+	public static final IDelayed<File> REMAPPED_MODS_STORE = new DelayedFile(extension -> new File(CACHE_FILES, "remapped_mods"));
+
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
 	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-natives"));
 	public static final IDelayed<File> MINECRAFT_JSON = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-info.json"));
@@ -78,9 +80,9 @@ public class Constants {
 	public static final String CONFIG_MC_DEPENDENCIES = "MC_DEPENDENCIES";
 	public static final String CONFIG_MINECRAFT = "MINECRAFT";
 	public static final String CONFIG_MC_DEPENDENCIES_CLIENT = "MC_DEPENDENCIES_CLIENT";
-	public static final String PROCESS_MODS_DEPENDENCIES = "PROCESS_MODS_DEPENDENCIES";
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 	public static final String COMPILE_MODS = "modCompile";
+	public static final String COMPILE_MODS_PROCESSED = "modCompile_PROCESSED";
 
 	public static List<String> getClassPath() {
 		URL[] urls = ((URLClassLoader) Constants.class.getClassLoader()).getURLs();

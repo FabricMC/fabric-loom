@@ -26,7 +26,6 @@ package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
@@ -36,6 +35,7 @@ import net.fabricmc.loom.util.Version;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -78,15 +78,17 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES_CLIENT);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
-		project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
+		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
+		project.getConfigurations().maybeCreate(Constants.COMPILE_MODS_PROCESSED);
 
-		project.getConfigurations().maybeCreate(Constants.PROCESS_MODS_DEPENDENCIES);
+		compileModsConfig.setTransitive(false); //Dont get transitive deps of mods
 
 		// Common libraries extends from client libraries, CONFIG_MC_DEPENDENCIES will contains all MC dependencies
 		project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT)));
 
 		configureIDEs();
 		configureCompile();
+
 
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
@@ -170,12 +172,12 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModule.getModule().setDownloadSources(true);
 		ideaModule.getModule().setInheritOutputDirs(true);
 		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
-		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
+		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS_PROCESSED));
 
 		// ECLIPSE
 		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
 		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
-		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS));
+		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS_PROCESSED));
 	}
 
 	/**
@@ -206,11 +208,6 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES);
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
-			});
-
-			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("FabricMC");
-				mavenArtifactRepository.setUrl("http://maven.fabricmc.net/");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
@@ -251,8 +248,10 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			if (extension.isModWorkspace()) {
 				//only add this when not in a dev env
-				project1.getDependencies().add(Constants.CONFIG_MC_DEPENDENCIES, "net.fabricmc:fabric-base:" + extension.getVersionString() +":deobf");
+				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-base:" + extension.getVersionString());
 			}
+
+
 		});
 
 		project.getTasks().getByName("jar").doLast(task -> {

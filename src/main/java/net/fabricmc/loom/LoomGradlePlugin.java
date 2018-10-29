@@ -25,10 +25,7 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.task.*;
-import net.fabricmc.loom.util.Constants;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	@Override
@@ -39,7 +36,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
 		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
 		makeTask("finaliseJars", FinaliseJar.class).dependsOn("mapJars");
-		makeTask("setup", DefaultTask.class).dependsOn("finaliseJars").setGroup("fabric");
+		makeTask("setup", SetupTask.class).dependsOn("finaliseJars").setGroup("fabric");
 
 		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
 		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");

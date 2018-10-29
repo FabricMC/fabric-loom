@@ -30,10 +30,6 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +44,7 @@ public class MapJarsTiny {
 		String toM = "pomf";
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
-		Path[] classpath = task.getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles().stream()
+		Path[] classpath = task.getProject().getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
 

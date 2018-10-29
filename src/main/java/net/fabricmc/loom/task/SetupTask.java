@@ -26,39 +26,36 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModProccessor;
+import org.apache.commons.lang3.Validate;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.TaskAction;
-import org.zeroturnaround.zip.commons.FileUtils;
 
-public class MapJarsTask extends DefaultTask {
+import java.io.File;
 
-	//Set to to true if you want to always remap the jar, useful for when working on the gradle plugin
-	public static final boolean ALWAYS_REMAP = false;
+public class SetupTask extends DefaultTask {
 
 	@TaskAction
-	public void mapJars() throws Exception {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		if (!Constants.MINECRAFT_MAPPED_JAR.get(extension).exists() || extension.localMappings || ALWAYS_REMAP) {
-			if(Constants.MINECRAFT_MAPPED_JAR.get(extension).exists()){
-				Constants.MINECRAFT_MAPPED_JAR.get(extension).delete();
-			}
+	public void setup(){
+		configureModRemapper();
+	}
 
-			if (!extension.hasPomf()) {
-				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
-				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
-				return;
-			}
-
-			if (Constants.JAR_MAPPER_ENIGMA.equals(extension.jarMapper)) {
-				new MapJarsEnigma().mapJars(this);
-			} else if (Constants.JAR_MAPPER_TINY.equals(extension.jarMapper)) {
-				new MapJarsTiny().mapJars(this);
-			} else {
-				throw new RuntimeException("Unknown JAR mapper type: " + extension.jarMapper);
-			}
-		} else {
-			this.getLogger().lifecycle(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
-			this.getLogger().lifecycle(":mapped jar found, skipping mapping");
-		}
+	public void configureModRemapper(){
+		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
+		Configuration inputConfig =  getProject().getConfigurations().getByName(Constants.COMPILE_MODS);
+		inputConfig.getResolvedConfiguration().getFiles().stream()
+			.filter(file -> file.getName().endsWith(".jar"))
+			.forEach(input -> {
+				String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + extension.pomfVersion  + ".jar";//TODO use the hash of the input file or something?
+				File output = new File(Constants.REMAPPED_MODS_STORE.get(extension), outputName);
+				if(!output.getParentFile().exists()){
+					output.mkdirs();
+				}
+				getProject().getLogger().lifecycle(":remapping jar " + input.getName());
+				ModProccessor.handleMod(input, output, getProject());
+				Validate.isTrue(output.exists());
+				getProject().getDependencies().add(Constants.COMPILE_MODS_PROCESSED, getProject().files(output.getPath()));
+			});
 	}
 }

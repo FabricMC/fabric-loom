@@ -40,7 +40,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
-import org.spongepowered.asm.mixin.injection.Constant;
 
 import java.io.*;
 import java.net.URL;
@@ -78,7 +77,7 @@ public class DownloadTask extends DefaultTask {
 					this.getLogger().lifecycle(":downloading enigma mappings");
 					try {
 						FileUtils.copyURLToFile(
-								new URL(Constants.POMF_JENKINS_SERVER + "/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"),
+								new URL(String.format("%1$s%2$s.%3$s/pomf-%2$s.%3$s-engima.zip", Constants.POMF_MAVEN_SERVER, extension.version, extension.pomfVersion)),
 								Constants.MAPPINGS_ENIGMA_ZIP.get(extension)
 						);
 					} catch (Exception e) {
@@ -109,7 +108,7 @@ public class DownloadTask extends DefaultTask {
 				if (!Constants.MAPPINGS_TINY_GZ.get(extension).exists() && !extension.localMappings) {
 					getLogger().lifecycle(":downloading tiny mappings");
 					try {
-						FileUtils.copyURLToFile(new URL(Constants.POMF_JENKINS_SERVER + "/job/FabricMC/job/pomf/job/" + extension.version + "/" + extension.pomfVersion + "/artifact/build/libs/pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"), Constants.MAPPINGS_TINY_GZ.get(extension));
+						FileUtils.copyURLToFile(new URL(String.format("%1$s%2$s.%3$s/pomf-%2$s.%3$s-tiny.gz", Constants.POMF_MAVEN_SERVER, extension.version, extension.pomfVersion)), Constants.MAPPINGS_TINY_GZ.get(extension));
 					} catch (Exception e) {
 						throw new RuntimeException("Failed to download mappings", e);
 					}

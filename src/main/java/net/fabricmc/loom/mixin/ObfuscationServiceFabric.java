@@ -60,16 +60,16 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 	@Override
 	public Set<String> getSupportedOptions() {
 		ImmutableSet.Builder builder = new ImmutableSet.Builder();
-		addSupportedOptions(builder, "mojang", "pomf");
-		addSupportedOptions(builder, "pomf", "mojang");
+		addSupportedOptions(builder, "intermediary", "pomf");
+		addSupportedOptions(builder, "pomf", "intermediary");
 		return builder.build();
 	}
 
 	@Override
 	public Collection<ObfuscationTypeDescriptor> getObfuscationTypes() {
 		return ImmutableSet.of(
-			createObfuscationType("mojang", "pomf"),
-			createObfuscationType("pomf", "mojang")
+			createObfuscationType("intermediary", "pomf"),
+			createObfuscationType("pomf", "intermediary")
 		);
 	}
 }

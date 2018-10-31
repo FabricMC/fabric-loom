@@ -25,14 +25,17 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.tinyremapper.*;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.TinyUtils;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ModRemapper {
 
@@ -60,7 +63,7 @@ public class ModRemapper {
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
 		String fromM = "pomf";
-		String toM = "mojang";
+		String toM = "intermediary";
 
 		List<File> classpathFiles = new ArrayList<>();
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());

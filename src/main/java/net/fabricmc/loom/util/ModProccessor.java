@@ -59,7 +59,7 @@ public class ModProccessor {
 
 	private static void remapJar(File input, File output, Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		String fromM = "mojang";
+		String fromM = "intermediary";
 		String toM = "pomf";
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();

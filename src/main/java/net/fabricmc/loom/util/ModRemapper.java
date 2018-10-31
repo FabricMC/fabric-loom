@@ -96,8 +96,7 @@ public class ModRemapper {
 			throw new RuntimeException("Failed to rebof jar");
 		}
 
-		//Add the deobf jar to be uploaded to maven
-		project.getArtifacts().add("archives", deobfJar);
+		deobfJar.delete();
 	}
 
 }

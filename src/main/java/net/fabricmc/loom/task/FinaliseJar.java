@@ -36,11 +36,11 @@ public class FinaliseJar extends DefaultTask {
 
 	@TaskAction
 	public void finaliseJar() throws IOException {
+		//What is the point to this?
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		if(Constants.MINECRAFT_FINAL_JAR.get(extension).exists()){
-			Constants.MINECRAFT_FINAL_JAR.get(extension).delete();
+		if(!Constants.MINECRAFT_FINAL_JAR.get(extension).exists()){
+			FileUtils.copyFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), Constants.MINECRAFT_FINAL_JAR.get(extension));
 		}
-		FileUtils.copyFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), Constants.MINECRAFT_FINAL_JAR.get(extension));
 	}
 
 

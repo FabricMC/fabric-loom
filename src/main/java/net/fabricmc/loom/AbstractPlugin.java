@@ -79,7 +79,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES_CLIENT);
 		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
-		project.getConfigurations().maybeCreate(Constants.COMPILE_MODS_PROCESSED);
 
 		compileModsConfig.setTransitive(false); //Dont get transitive deps of mods
 
@@ -172,12 +171,10 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModule.getModule().setDownloadSources(true);
 		ideaModule.getModule().setInheritOutputDirs(true);
 		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
-		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.COMPILE_MODS_PROCESSED));
 
 		// ECLIPSE
 		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
 		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
-		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.COMPILE_MODS_PROCESSED));
 	}
 
 	/**

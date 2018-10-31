@@ -82,7 +82,6 @@ public class Constants {
 	public static final String CONFIG_MC_DEPENDENCIES_CLIENT = "MC_DEPENDENCIES_CLIENT";
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 	public static final String COMPILE_MODS = "modCompile";
-	public static final String COMPILE_MODS_PROCESSED = "modCompile_PROCESSED";
 
 	public static List<String> getClassPath() {
 		URL[] urls = ((URLClassLoader) Constants.class.getClassLoader()).getURLs();

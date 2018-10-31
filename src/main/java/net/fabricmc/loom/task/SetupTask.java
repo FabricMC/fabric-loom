@@ -54,7 +54,7 @@ public class SetupTask extends DefaultTask {
 				}
 				ModProccessor.handleMod(input, output, getProject());
 				Validate.isTrue(output.exists());
-				getProject().getDependencies().add(Constants.COMPILE_MODS_PROCESSED, getProject().files(output.getPath()));
+				getProject().getDependencies().add(Constants.CONFIG_MINECRAFT, getProject().files(output.getPath()));
 			});
 	}
 }

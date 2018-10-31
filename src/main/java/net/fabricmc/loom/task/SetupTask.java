@@ -52,7 +52,6 @@ public class SetupTask extends DefaultTask {
 				if(!output.getParentFile().exists()){
 					output.mkdirs();
 				}
-				getProject().getLogger().lifecycle(":remapping jar " + input.getName());
 				ModProccessor.handleMod(input, output, getProject());
 				Validate.isTrue(output.exists());
 				getProject().getDependencies().add(Constants.COMPILE_MODS_PROCESSED, getProject().files(output.getPath()));

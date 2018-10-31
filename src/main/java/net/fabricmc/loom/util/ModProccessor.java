@@ -32,7 +32,9 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import java.io.File;
 import java.io.IOException;
@@ -91,18 +93,26 @@ public class ModProccessor {
 	}
 
 	private static void handleInstallerJson(JsonObject jsonObject, Project project){
-		DependencyHandler dependencyHandler = project.getDependencies();
-
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
 		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
 			String name = jsonElement.getAsJsonObject().get("name").getAsString();
-			dependencyHandler.add("compile", name);
 
-			//TODO is it an issue if we add the same url twice? or do I need to check this?
+			Configuration configuration = project.getConfigurations().getByName("compile");
+			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
+			modDep.setTransitive(false);
+			configuration.getDependencies().add(modDep);
+
 			if(jsonElement.getAsJsonObject().has("url")){
-				project.getRepositories().maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(jsonElement.getAsJsonObject().get("url").getAsString()));
-			}
+				String url = jsonElement.getAsJsonObject().get("url").getAsString();
+				long count = project.getRepositories().stream()
+					.filter(artifactRepository -> artifactRepository instanceof MavenArtifactRepository)
+					.map(artifactRepository -> (MavenArtifactRepository) artifactRepository)
+					.filter(mavenArtifactRepository -> mavenArtifactRepository.getUrl().toString().equalsIgnoreCase(url)).count();
+				if(count == 0){
+					project.getRepositories().maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(jsonElement.getAsJsonObject().get("url").getAsString()));
+				}
 
+			}
 		});
 	}
 

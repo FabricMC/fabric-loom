@@ -49,14 +49,14 @@ dependencies {
     shade 'com.google.code.gson:gson:2.8.5'
     shade 'commons-io:commons-io:2.6'
     shade 'org.apache.commons:commons-lang3:3.8.1'
-    shade 'com.google.guava:guava:23.0'
+    shade 'com.google.guava:guava:27.0-jre'
     shade ('net.fabricmc:weave:+'){
         transitive = false
     }
     shade ('cuchaz:enigma:0.12.0.+:lib'){
         exclude group: 'org.ow2.asm'
     }
-    shade 'net.fabricmc:tiny-remapper:0.1.0.13'
+    shade 'net.fabricmc:tiny-remapper:0.1.0.14'
     shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
     shade 'org.apache.logging.log4j:log4j-api:2.11.1'
     shade 'org.apache.logging.log4j:log4j-core:2.11.1'

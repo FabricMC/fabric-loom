@@ -35,7 +35,7 @@ public class LoomGradleExtension {
 	public String fabricVersion;
 	public String pomfVersion;
 	public String refmapName;
-	public String jarMapper = Constants.JAR_MAPPER_ENIGMA; // enigma, tiny
+	public String jarMapper = Constants.JAR_MAPPER_TINY; // enigma, tiny
 	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle

@@ -44,7 +44,7 @@ public class MapJarsTask extends DefaultTask {
 			}
 
 			if (!extension.hasPomf()) {
-				this.getLogger().lifecycle("POMF version not set, skipping mapping!");
+				this.getLogger().lifecycle("Mapping version not set, skipping mapping!");
 				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
 				return;
 			}

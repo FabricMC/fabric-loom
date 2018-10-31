@@ -50,7 +50,10 @@ dependencies {
     shade 'commons-io:commons-io:2.6'
     shade 'org.apache.commons:commons-lang3:3.8.1'
     shade 'com.google.guava:guava:27.0-jre'
-    shade ('net.fabricmc:weave:+'){
+    shade ('net.fabricmc:weave:0.2.0.+'){
+        transitive = false
+    }
+    shade ('net.fabricmc:stitch:0.1.0.+'){
         transitive = false
     }
     shade ('cuchaz:enigma:0.12.0.+:lib'){

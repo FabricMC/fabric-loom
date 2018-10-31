@@ -26,7 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.weave.merge.JarMerger;
+import net.fabricmc.stitch.merge.JarMerger;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 

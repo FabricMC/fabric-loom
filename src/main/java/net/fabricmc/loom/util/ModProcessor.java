@@ -24,9 +24,14 @@
 
 package net.fabricmc.loom.util;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.mixin.MixinMappingProviderTiny;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -35,17 +40,28 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.objectweb.asm.commons.Remapper;
+import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
+import org.spongepowered.asm.obfuscation.mapping.common.MappingField;
+import org.spongepowered.asm.obfuscation.mapping.common.MappingMethod;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-public class ModProccessor {
+public class ModProcessor {
 
 	public static void handleMod(File input, File output, Project project){
 		if(output.exists()){
@@ -64,7 +80,9 @@ public class ModProccessor {
 		String fromM = "intermediary";
 		String toM = "pomf";
 
-		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
+		File mappingsFile = Constants.MAPPINGS_TINY.get(extension);
+		Path mappings = mappingsFile.toPath();
+		Path mc = Constants.MINECRAFT_INTERMEDIARY_JAR.get(extension).toPath();
 		Path[] classpath = project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles().stream()
 			.map(File::toPath)
 			.toArray(Path[]::new);
@@ -79,16 +97,110 @@ public class ModProccessor {
 			OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()));
 			outputConsumer.addNonClassFiles(input.toPath());
 			remapper.read(input.toPath());
+			remapper.read(mc);
 			remapper.read(classpath);
 			remapper.apply(input.toPath(), outputConsumer);
 			outputConsumer.finish();
-			remapper.finish();
 		} catch (Exception e){
 			remapper.finish();
-			throw new RuntimeException("Failed to remap jar to " + toM, e);
+			throw new RuntimeException("Failed to remap JAR to " + toM, e);
 		}
 		if(!output.exists()){
-			throw new RuntimeException("Failed to remap jar to " + toM + " file not found: " + output.getAbsolutePath());
+			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
+		}
+
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		project.getLogger().lifecycle(":remapping " + input.getName() + " (Mixin reference map)");
+		// first, identify all of the mixin refmaps
+		Set<String> mixinRefmapFilenames = new HashSet<>();
+		// TODO: this is a lovely hack
+		ZipUtil.iterate(output, (stream, entry) -> {
+			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
+				// JSON file in root directory
+				try {
+					JsonObject json = gson.fromJson(new InputStreamReader(stream), JsonObject.class);
+					if (json != null && json.has("refmap")) {
+						mixinRefmapFilenames.add(json.get("refmap").getAsString());
+					}
+				} catch (Exception e) {
+					// ...
+				}
+			}
+		});
+
+		if (mixinRefmapFilenames.size() > 0) {
+			Remapper asmRemapper;
+			// TODO: Expose in tiny-remapper
+			try {
+				Field f = TinyRemapper.class.getDeclaredField("remapper");;
+				f.setAccessible(true);
+				asmRemapper = (Remapper) f.get(remapper);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+
+			ZipUtil.transformEntries(
+					output,
+					mixinRefmapFilenames.stream()
+						.map((f) -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
+							@Override
+							protected String transform(ZipEntry zipEntry, String input) throws IOException {
+								return transformRefmap(asmRemapper, gson, input);
+							}
+						})).toArray(ZipEntryTransformerEntry[]::new)
+			);
+
+			remapper.finish();
+		}
+	}
+
+	public static String transformRefmap(Remapper remapper, Gson gson, String input) throws IOException {
+		try {
+			JsonObject refMap = gson.fromJson(input, JsonObject.class);
+			JsonObject mappings = refMap.getAsJsonObject("mappings");
+
+			for (Map.Entry<String, JsonElement> elementEntry : mappings.entrySet()) {
+				JsonObject value = elementEntry.getValue().getAsJsonObject();
+				for (String k : new HashSet<>(value.keySet())) {
+					try {
+						String v = value.get(k).getAsString();
+						String v2;
+
+						if (v.charAt(0) == 'L') {
+							// field or member
+							MemberInfo info = MemberInfo.parse(v);
+							String owner = remapper.map(info.owner);
+							if (info.isField()) {
+								v2 = new MemberInfo(
+										remapper.mapFieldName(info.owner, info.name, info.desc),
+										owner,
+										remapper.mapDesc(info.desc)
+								).toString();
+							} else {
+								v2 = new MemberInfo(
+										remapper.mapMethodName(info.owner, info.name, info.desc),
+										owner,
+										remapper.mapMethodDesc(info.desc)
+								).toString();
+							}
+						} else {
+							// class
+							v2 = remapper.map(v);
+						}
+
+						if (v2 != null) {
+							value.addProperty(k, v2);
+						}
+					} catch (Exception ee) {
+						ee.printStackTrace();
+					}
+				}
+			}
+
+			return gson.toJson(refMap);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return input;
 		}
 	}
 

@@ -94,11 +94,11 @@ public class ModRemapper {
 			remapper.finish();
 		} catch (Exception e){
 			remapper.finish();
-			throw new RuntimeException("Failed to remap jar", e);
+			throw new RuntimeException("Failed to remap JAR", e);
 		}
 
 		if(!deobfJar.exists() || !modJar.exists()){
-			throw new RuntimeException("Failed to rebof jar");
+			throw new RuntimeException("Failed to reobfuscate JAR");
 		}
 
 		deobfJar.delete();

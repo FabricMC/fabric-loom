@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.mixin;
 
+import net.fabricmc.stitch.representation.JarEntry;
+import net.fabricmc.stitch.representation.JarReader;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingField;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingMethod;
@@ -35,6 +37,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MixinMappingProviderTiny extends MappingProvider {
 	private final String from, to;
@@ -125,9 +129,7 @@ public class MixinMappingProviderTiny extends MappingProvider {
 	public void read(File input) throws IOException {
 		BufferedReader reader = Files.newBufferedReader(input.toPath());
 
-		TinyUtils.read(reader, from, to, (classFrom, classTo) -> {
-			classMap.put(classFrom, classTo);
-		}, (fieldFrom, fieldTo) -> {
+		TinyUtils.read(reader, from, to, classMap::put, (fieldFrom, fieldTo) -> {
 			fieldMap.put(
 				new MappingField(fieldFrom.owner, fieldFrom.name, fieldFrom.desc),
 				new MappingField(fieldTo.owner, fieldTo.name, fieldTo.desc)

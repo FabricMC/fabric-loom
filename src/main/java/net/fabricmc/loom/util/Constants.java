@@ -44,6 +44,7 @@ public class Constants {
 	public static final IDelayed<File> MINECRAFT_SERVER_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-server.jar"));
 	public static final IDelayed<File> MINECRAFT_MERGED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-merged.jar"));
 	public static final IDelayed<File> MINECRAFT_MAPPED_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-mapped-" + extension.pomfVersion + ".jar"));
+	public static final IDelayed<File> MINECRAFT_INTERMEDIARY_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-intermediary.jar"));
 //	public static final IDelayed<File> MINECRAFT_PARTIAL_ENIGMA_JAR = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-partial-enigma-" + extension.pomfVersion + ".jar"));
 //	public static final IDelayed<File> MINECRAFT_FINAL_JAR = new DelayedFile(extension -> new File(CACHE_FILES, extension.version + "-final-" + extension.pomfVersion + ".jar"));
 	public static final IDelayed<File> MINECRAFT_FINAL_JAR = MINECRAFT_MAPPED_JAR;

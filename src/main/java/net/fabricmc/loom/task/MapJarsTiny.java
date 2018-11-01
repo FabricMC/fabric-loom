@@ -35,38 +35,43 @@ import net.fabricmc.tinyremapper.TinyUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class MapJarsTiny {
 
 	public void mapJars(MapJarsTask task) throws IOException {
 		String fromM = "mojang";
-		String toM = "pomf";
 
 		Path mappings = task.getMappingFile().toPath();
 		Path[] classpath = task.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
-		task.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
-
-		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
-				.build();
-
 		Path input = task.getInputJar().toPath();
-		Path output = task.getMappedJar().toPath();
+		Path outputMapped = task.getMappedJar().toPath();
+		Path outputIntermediary = task.getIntermediaryJar().toPath();
 
-		try {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath(output);
-			outputConsumer.addNonClassFiles(input);
-			remapper.read(input);
-			remapper.read(classpath);
-			remapper.apply(input, outputConsumer);
-			outputConsumer.finish();
-			remapper.finish();
-		} catch (Exception e){
-			remapper.finish();
-			throw new RuntimeException("Failed to remap minecraft to " + toM, e);
+		for (String toM : Arrays.asList("pomf", "intermediary")) {
+			Path output = "pomf".equals(toM) ? outputMapped : outputIntermediary;
+
+			task.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+			TinyRemapper remapper = TinyRemapper.newRemapper()
+					.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+					.build();
+
+			try {
+				OutputConsumerPath outputConsumer = new OutputConsumerPath(output);
+				outputConsumer.addNonClassFiles(input);
+				remapper.read(input);
+				remapper.read(classpath);
+				remapper.apply(input, outputConsumer);
+				outputConsumer.finish();
+				remapper.finish();
+			} catch (Exception e) {
+				remapper.finish();
+				throw new RuntimeException("Failed to remap minecraft to " + toM, e);
+			}
 		}
 	}
 }

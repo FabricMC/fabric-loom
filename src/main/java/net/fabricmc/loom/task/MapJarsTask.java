@@ -51,6 +51,11 @@ public class MapJarsTask extends LoomBaseTask {
 	}
 
 	@OutputFile
+	public File getIntermediaryJar() {
+		return getFile(Constants.MINECRAFT_INTERMEDIARY_JAR);
+	}
+
+	@OutputFile
 	public File getMappedJar() {
 		return getFile(Constants.MINECRAFT_MAPPED_JAR);
 	}

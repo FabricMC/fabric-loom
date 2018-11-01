@@ -26,7 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModProccessor;
+import net.fabricmc.loom.util.ModProcessor;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.TaskAction;
@@ -51,7 +51,7 @@ public class SetupTask extends DefaultTask {
 				if(!output.getParentFile().exists()){
 					output.mkdirs();
 				}
-				ModProccessor.handleMod(input, output, getProject());
+				ModProcessor.handleMod(input, output, getProject());
 				if (!output.exists()) {
 					throw new RuntimeException("Output does not exist!");
 				}

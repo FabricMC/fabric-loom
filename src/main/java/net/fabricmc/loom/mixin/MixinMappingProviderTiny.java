@@ -45,7 +45,7 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		this.to = to;
 	}
 
-	private static final String[] removeFirst(String[] src, int count) {
+	private static String[] removeFirst(String[] src, int count) {
 		if (count >= src.length) {
 			return new String[0];
 		} else {

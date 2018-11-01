@@ -41,15 +41,17 @@ public class ModRemapper {
 
 	public static void remap(Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		//TODO whats the proper way of doing this???
+		// TODO: What's the proper way of doing this?
 		File libsDir = new File(project.getBuildDir(), "libs");
 		File deobfJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-deobf.jar");
 		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
+
 		if (!modJar.exists()) {
-			project.getLogger().error("Could not find mod jar @" + deobfJar.getAbsolutePath());
+			project.getLogger().error("Could not find mod .JAR at" + deobfJar.getAbsolutePath());
 			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
 			return;
 		}
+
 		if (deobfJar.exists()) {
 			deobfJar.delete();
 		}
@@ -69,18 +71,21 @@ public class ModRemapper {
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles());
 
-		Path[] classpath = new Path[classpathFiles.size()];
-		for (int i = 0; i < classpathFiles.size(); i++) {
-			classpath[i] = classpathFiles.get(i).toPath();
+		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
+
+		File mixinMapFile = Constants.MAPPINGS_MIXIN_EXPORT.get(extension);
+		Path mixinMapPath = mixinMapFile.toPath();
+
+		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
+		remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM));
+		if (mixinMapFile.exists()) {
+			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
 		}
 
-		TinyRemapper remapper = TinyRemapper.newRemapper()
-			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
-			.build();
+		TinyRemapper remapper = remapperBuilder.build();
 
 		try {
 			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
-			//Rebof the deobf jar
 			outputConsumer.addNonClassFiles(deobfJar.toPath());
 			remapper.read(deobfJar.toPath());
 			remapper.read(classpath);

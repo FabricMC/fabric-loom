@@ -70,7 +70,7 @@ public class RunClientTask extends JavaExec {
 
 		classpath(libs);
 
-		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath());
+		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath(), "--fabricMappingFile", Constants.MAPPINGS_TINY.get(extension).getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

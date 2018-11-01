@@ -27,38 +27,72 @@ package net.fabricmc.loom.task;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.*;
 import org.zeroturnaround.zip.commons.FileUtils;
 
-public class MapJarsTask extends DefaultTask {
+import java.io.File;
+import java.util.Collection;
 
-	//Set to to true if you want to always remap the jar, useful for when working on the gradle plugin
-	public static final boolean ALWAYS_REMAP = false;
+public class MapJarsTask extends LoomBaseTask {
+	@InputFiles
+	@Classpath
+	public Collection<File> getMapperPaths() {
+		return this.getProject().getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles();
+	}
+
+	@InputFile
+	public File getMappingFile() {
+		return getFile(Constants.MAPPINGS_TINY);
+	}
+
+	@InputFile
+	public File getInputJar() {
+		return getFile(Constants.MINECRAFT_MERGED_JAR);
+	}
+
+	@OutputFile
+	public File getMappedJar() {
+		return getFile(Constants.MINECRAFT_MAPPED_JAR);
+	}
+
+	@Input
+	public boolean localMappings() {
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		return extension.localMappings;
+	}
+
+	@Input
+	public String pomfVersion() {
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		return extension.pomfVersion;
+	}
+
+	@Input
+	public String jarMapper() {
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		return extension.jarMapper;
+	}
 
 	@TaskAction
 	public void mapJars() throws Exception {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		if (!Constants.MINECRAFT_MAPPED_JAR.get(extension).exists() || extension.localMappings || ALWAYS_REMAP) {
-			if(Constants.MINECRAFT_MAPPED_JAR.get(extension).exists()){
-				Constants.MINECRAFT_MAPPED_JAR.get(extension).delete();
-			}
 
-			if (!extension.hasPomf()) {
-				this.getLogger().lifecycle("Mapping version not set, skipping mapping!");
-				FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), Constants.MINECRAFT_MAPPED_JAR.get(extension));
-				return;
-			}
+		if (getMappedJar().exists()){
+			getMappedJar().delete();
+		}
 
-			if (Constants.JAR_MAPPER_ENIGMA.equals(extension.jarMapper)) {
-				new MapJarsEnigma().mapJars(this);
-			} else if (Constants.JAR_MAPPER_TINY.equals(extension.jarMapper)) {
-				new MapJarsTiny().mapJars(this);
-			} else {
-				throw new RuntimeException("Unknown JAR mapper type: " + extension.jarMapper);
-			}
+		if (!extension.hasPomf()) {
+			this.getLogger().lifecycle("Mapping version not set, skipping mapping!");
+			FileUtils.copyFile(Constants.MINECRAFT_MERGED_JAR.get(extension), getMappedJar());
+			return;
+		}
+
+		if (Constants.JAR_MAPPER_ENIGMA.equals(jarMapper())) {
+			new MapJarsEnigma().mapJars(this);
+		} else if (Constants.JAR_MAPPER_TINY.equals(jarMapper())) {
+			new MapJarsTiny().mapJars(this);
 		} else {
-			this.getLogger().lifecycle(Constants.MINECRAFT_MAPPED_JAR.get(extension).getAbsolutePath());
-			this.getLogger().lifecycle(":mapped jar found, skipping mapping");
+			throw new RuntimeException("Unknown JAR mapper type: " + jarMapper());
 		}
 	}
 }

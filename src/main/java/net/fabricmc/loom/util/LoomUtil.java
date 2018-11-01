@@ -22,25 +22,14 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.delayed;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.LoomGradleExtension;
+public final class LoomUtil {
+	private LoomUtil() {
 
-import java.io.File;
-import java.util.function.Function;
-
-public class DelayedFile implements IDelayed<File> {
-	private File file;
-	private Function<LoomGradleExtension, File> function;
-
-	public DelayedFile(Function<LoomGradleExtension, File> function) {
-		this.function = function;
 	}
 
-	@Override
-	public File get(LoomGradleExtension extension) {
-		// TODO: Figure out caching issues
-		this.file = this.function.apply(extension);
-		return this.file;
+	public static String capitalize(String s) {
+		return s.substring(0, 1).toUpperCase() + s.substring(1);
 	}
 }

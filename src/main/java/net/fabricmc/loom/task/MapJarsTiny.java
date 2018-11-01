@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task;
 
 
+import com.google.common.base.Joiner;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -38,13 +39,11 @@ import java.nio.file.Path;
 public class MapJarsTiny {
 
 	public void mapJars(MapJarsTask task) throws IOException {
-		LoomGradleExtension extension = task.getProject().getExtensions().getByType(LoomGradleExtension.class);
-
 		String fromM = "mojang";
 		String toM = "pomf";
 
-		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
-		Path[] classpath = task.getProject().getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles().stream()
+		Path mappings = task.getMappingFile().toPath();
+		Path[] classpath = task.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
@@ -54,12 +53,15 @@ public class MapJarsTiny {
 				.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
 				.build();
 
+		Path input = task.getInputJar().toPath();
+		Path output = task.getMappedJar().toPath();
+
 		try {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath(Constants.MINECRAFT_MAPPED_JAR.get(extension).toPath());
-			outputConsumer.addNonClassFiles(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
-			remapper.read(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath());
+			OutputConsumerPath outputConsumer = new OutputConsumerPath(output);
+			outputConsumer.addNonClassFiles(input);
+			remapper.read(input);
 			remapper.read(classpath);
-			remapper.apply(Constants.MINECRAFT_MERGED_JAR.get(extension).toPath(), outputConsumer);
+			remapper.apply(input, outputConsumer);
 			outputConsumer.finish();
 			remapper.finish();
 		} catch (Exception e){

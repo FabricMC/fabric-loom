@@ -25,23 +25,14 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
-import org.apache.commons.io.FileUtils;
+import net.fabricmc.loom.util.delayed.IDelayed;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.TaskAction;
 
-import java.io.IOException;
+import java.io.File;
 
-public class FinaliseJar extends DefaultTask {
-
-	@TaskAction
-	public void finaliseJar() throws IOException {
-		//What is the point to this?
+public class LoomBaseTask extends DefaultTask {
+	protected final File getFile(IDelayed<File> file) {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		if(!Constants.MINECRAFT_FINAL_JAR.get(extension).exists()){
-			FileUtils.copyFile(Constants.MINECRAFT_MAPPED_JAR.get(extension), Constants.MINECRAFT_FINAL_JAR.get(extension));
-		}
+		return file.get(extension);
 	}
-
-
 }

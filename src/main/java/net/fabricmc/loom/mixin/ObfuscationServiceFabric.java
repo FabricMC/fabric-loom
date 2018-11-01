@@ -25,7 +25,7 @@
 package net.fabricmc.loom.mixin;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang3.StringUtils;
+import net.fabricmc.loom.util.LoomUtil;
 import org.spongepowered.tools.obfuscation.service.IObfuscationService;
 import org.spongepowered.tools.obfuscation.service.ObfuscationTypeDescriptor;
 
@@ -38,7 +38,7 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 	public static final String OUT_MAP_FILE = "outMapFile";
 
 	private String asSuffixed(String arg, String from, String to) {
-		return arg + StringUtils.capitalize(from) + StringUtils.capitalize(to);
+		return arg + LoomUtil.capitalize(from) + LoomUtil.capitalize(to);
 	}
 
 	private ObfuscationTypeDescriptor createObfuscationType(String from, String to) {
@@ -51,7 +51,7 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 		);
 	}
 
-	private void addSupportedOptions(ImmutableSet.Builder builder, String from, String to) {
+	private void addSupportedOptions(ImmutableSet.Builder<String> builder, String from, String to) {
 		builder.add(asSuffixed(ObfuscationServiceFabric.IN_MAP_FILE, from, to));
 		builder.add(asSuffixed(ObfuscationServiceFabric.IN_MAP_EXTRA_FILES, from, to));
 		builder.add(asSuffixed(ObfuscationServiceFabric.OUT_MAP_FILE, from, to));
@@ -59,8 +59,12 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 
 	@Override
 	public Set<String> getSupportedOptions() {
-		ImmutableSet.Builder builder = new ImmutableSet.Builder();
+		ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
+		addSupportedOptions(builder, "mojang", "intermediary");
+		addSupportedOptions(builder, "mojang", "pomf");
+		addSupportedOptions(builder, "intermediary", "mojang");
 		addSupportedOptions(builder, "intermediary", "pomf");
+		addSupportedOptions(builder, "pomf", "mojang");
 		addSupportedOptions(builder, "pomf", "intermediary");
 		return builder.build();
 	}
@@ -68,8 +72,12 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 	@Override
 	public Collection<ObfuscationTypeDescriptor> getObfuscationTypes() {
 		return ImmutableSet.of(
-			createObfuscationType("intermediary", "pomf"),
-			createObfuscationType("pomf", "intermediary")
+				createObfuscationType("mojang", "intermediary"),
+				createObfuscationType("mojang", "pomf"),
+				createObfuscationType("intermediary", "mojang"),
+				createObfuscationType("intermediary", "pomf"),
+				createObfuscationType("pomf", "mojang"),
+				createObfuscationType("pomf", "intermediary")
 		);
 	}
 }

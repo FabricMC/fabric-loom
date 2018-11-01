@@ -57,8 +57,6 @@ public class MixinMappingProviderTiny extends MappingProvider {
 
 	@Override
 	public MappingMethod getMethodMapping(MappingMethod method) {
-		System.out.println("processing " + method.getName() + method.getDesc());
-
 		MappingMethod mapped = this.methodMap.get(method);
 		if (mapped != null)
 			return mapped;
@@ -96,8 +94,6 @@ public class MixinMappingProviderTiny extends MappingProvider {
 
 	@Override
 	public MappingField getFieldMapping(MappingField field) {
-		System.out.println("processing " + field.getOwner() + "/" + field.getName() + field.getDesc());
-
 		MappingField mapped = this.fieldMap.get(field);
 		if (mapped != null)
 			return mapped;

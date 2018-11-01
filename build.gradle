@@ -43,30 +43,14 @@ configurations {
 dependencies {
     compile gradleApi()
 
-    shade 'org.zeroturnaround:zt-zip:1.13'
-    shade 'org.slf4j:slf4j-api:1.7.25'
-    shade 'org.slf4j:slf4j-simple:1.7.25'
-    shade 'com.google.code.gson:gson:2.8.5'
     shade 'commons-io:commons-io:2.6'
-    shade 'org.apache.commons:commons-lang3:3.8.1'
+    shade 'org.zeroturnaround:zt-zip:1.13'
+    shade 'com.google.code.gson:gson:2.8.5'
     shade 'com.google.guava:guava:27.0-jre'
-    shade ('net.fabricmc:weave:0.2.0.+'){
-        transitive = false
-    }
     shade ('net.fabricmc:stitch:0.1.0.+'){
         transitive = false
     }
-    shade ('cuchaz:enigma:0.12.0.+:lib'){
-        exclude group: 'org.ow2.asm'
-    }
     shade 'net.fabricmc:tiny-remapper:0.1.0.14'
-    shade 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    shade 'org.apache.logging.log4j:log4j-api:2.11.1'
-    shade 'org.apache.logging.log4j:log4j-core:2.11.1'
-
-    shade ('net.minecraft:launchwrapper:1.12') {
-        transitive = false
-    }
 
     shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
         exclude module: 'launchwrapper'

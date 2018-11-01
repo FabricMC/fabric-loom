@@ -41,7 +41,6 @@ public class MixinServiceGradle extends MixinServiceLaunchWrapper implements ICl
 
 	private static List<JarFile> jars = new ArrayList<>();
 
-
 	@Override
 	public String getName() {
 		return "FabricGradle";

@@ -26,37 +26,49 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.delayed.IDelayed;
 import net.fabricmc.stitch.merge.JarMerger;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class MergeJarsTask extends DefaultTask {
+public class MergeJarsTask extends LoomBaseTask {
+	@InputFile
+	public File getClientJar() {
+		return getFile(Constants.MINECRAFT_CLIENT_JAR);
+	}
+
+	@InputFile
+	public File getServerJar() {
+		return getFile(Constants.MINECRAFT_SERVER_JAR);
+	}
+
+	@OutputFile
+	public File getMergedJar() {
+		return getFile(Constants.MINECRAFT_MERGED_JAR);
+	}
 
 	@TaskAction
 	public void mergeJars() throws IOException {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		this.getLogger().lifecycle(":merging jars");
+		FileInputStream client = new FileInputStream(getClientJar());
+		FileInputStream server = new FileInputStream(getServerJar());
+		FileOutputStream merged = new FileOutputStream(getMergedJar());
 
-		if (!Constants.MINECRAFT_MERGED_JAR.get(extension).exists()) {
-			this.getLogger().lifecycle(":merging jars");
-			FileInputStream client = new FileInputStream(Constants.MINECRAFT_CLIENT_JAR.get(extension));
-			FileInputStream server = new FileInputStream(Constants.MINECRAFT_SERVER_JAR.get(extension));
-			FileOutputStream merged = new FileOutputStream(Constants.MINECRAFT_MERGED_JAR.get(extension));
+		JarMerger jarMerger = new JarMerger(client, server, merged);
 
-			JarMerger jarMerger = new JarMerger(client, server, merged);
+		jarMerger.merge();
+		jarMerger.close();
 
-			jarMerger.merge();
-			jarMerger.close();
-
-			client.close();
-			server.close();
-			merged.close();
-		} else {
-			this.getLogger().lifecycle(":merged jar found, skipping");
-		}
+		client.close();
+		server.close();
+		merged.close();
 	}
 
 }

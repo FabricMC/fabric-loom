@@ -42,8 +42,10 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.plugins.ide.api.GeneratorTask;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.gradle.plugins.ide.internal.IdePlugin;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -88,12 +90,15 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureIDEs();
 		configureCompile();
 
-
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 			Project project = entry.getKey();
 			Set<Task> taskSet = entry.getValue();
 			for (Task task : taskSet) {
+				if (task instanceof GeneratorTask) {
+					task.dependsOn("setup");
+				}
+
 				if (task instanceof JavaCompile
 					&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
@@ -164,17 +169,17 @@ public class AbstractPlugin implements Plugin<Project> {
 	 */
 	protected void configureIDEs() {
 		// IDEA
-		IdeaModel ideaModule = (IdeaModel) project.getExtensions().getByName("idea");
+		IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
 
-		ideaModule.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
-		ideaModule.getModule().setDownloadJavadoc(true);
-		ideaModule.getModule().setDownloadSources(true);
-		ideaModule.getModule().setInheritOutputDirs(true);
-		ideaModule.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
+		ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
+		ideaModel.getModule().setDownloadJavadoc(true);
+		ideaModel.getModule().setDownloadSources(true);
+		ideaModel.getModule().setInheritOutputDirs(true);
+		ideaModel.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 
 		// ECLIPSE
-		EclipseModel eclipseModule = (EclipseModel) project.getExtensions().getByName("eclipse");
-		eclipseModule.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
+		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
+		eclipseModel.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 	}
 
 	/**

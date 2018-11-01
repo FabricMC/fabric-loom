@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
@@ -43,7 +45,9 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.*;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 
@@ -145,6 +149,20 @@ public class DownloadTask extends DefaultTask {
 
 			Version.AssetIndex assetIndex = version.assetIndex;
 
+			// get existing cache files
+			this.getLogger().lifecycle(":checking for existing asset files");
+			Multimap<String, File> assetFilenameToFile = HashMultimap.create();
+			for (File assetDir : Objects.requireNonNull(extension.getUserCache().listFiles((f) -> f.isDirectory() && f.getName().startsWith("assets-")))) {
+				File objectsDir = new File(assetDir, "objects");
+				if (objectsDir.exists() && objectsDir.isDirectory()) {
+					for (File subDir : Objects.requireNonNull(objectsDir.listFiles(File::isDirectory))) {
+						for (File subFile : Objects.requireNonNull(subDir.listFiles(File::isFile))) {
+							assetFilenameToFile.put("objects" + File.separator + subDir.getName() + File.separator + subFile.getName(), subFile);
+						}
+					}
+				}
+			}
+
 			File assets = new File(extension.getUserCache(), "assets-" + extension.version);
 			if (!assets.exists()) {
 				assets.mkdirs();
@@ -166,7 +184,18 @@ public class DownloadTask extends DefaultTask {
 			for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
 				AssetObject object = entry.getValue();
 				String sha1 = object.getHash();
-				File file = new File(assets, "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1);
+				String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
+				File file = new File(assets, filename);
+				if (!file.exists() && assetFilenameToFile.containsKey(filename)) {
+					this.getLogger().debug(":copying asset " + entry.getKey());
+					for (File srcFile : assetFilenameToFile.get(filename)) {
+						if (Checksum.equals(srcFile, sha1)) {
+							FileUtils.copyFile(srcFile, file);
+							break;
+						}
+					}
+				}
+
 				if (!file.exists() || !Checksum.equals(file, sha1)) {
 					this.getLogger().debug(":downloading asset " + entry.getKey());
 					FileUtils.copyURLToFile(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file);

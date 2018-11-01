@@ -27,7 +27,6 @@ package net.fabricmc.loom.task;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ModProccessor;
-import org.apache.commons.lang3.Validate;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.TaskAction;
@@ -53,7 +52,9 @@ public class SetupTask extends DefaultTask {
 					output.mkdirs();
 				}
 				ModProccessor.handleMod(input, output, getProject());
-				Validate.isTrue(output.exists());
+				if (!output.exists()) {
+					throw new RuntimeException("Output does not exist!");
+				}
 				getProject().getDependencies().add(Constants.CONFIG_MINECRAFT, getProject().files(output.getPath()));
 			});
 	}

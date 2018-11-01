@@ -25,13 +25,13 @@
 package net.fabricmc.loom.task;
 
 
-import cuchaz.enigma.Deobfuscator;
+/* import cuchaz.enigma.Deobfuscator;
 import cuchaz.enigma.TranslatingTypeLoader;
 import cuchaz.enigma.mapping.MappingsEnigmaReader;
 import cuchaz.enigma.mapping.TranslationDirection;
 import cuchaz.enigma.mapping.Translator;
 import cuchaz.enigma.mapping.entry.ReferencedEntryPool;
-import cuchaz.enigma.throwables.MappingParseException;
+import cuchaz.enigma.throwables.MappingParseException; */
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -48,7 +48,11 @@ import java.nio.file.Path;
 import java.util.jar.JarFile;
 
 public class MapJarsEnigma {
-	Deobfuscator deobfuscator;
+	public void mapJars(MapJarsTask task) {
+		throw new RuntimeException("Currently unsupported!");
+	}
+
+	/* Deobfuscator deobfuscator;
 
 	public void mapJars(MapJarsTask task) throws IOException, MappingParseException {
 		LoomGradleExtension extension = task.getProject().getExtensions().getByType(LoomGradleExtension.class);
@@ -114,5 +118,5 @@ public class MapJarsEnigma {
 		public void onProgress(int i, String s) {
 
 		}
-	}
+	} */
 }

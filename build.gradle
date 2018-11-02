@@ -50,7 +50,7 @@ dependencies {
     shade ('net.fabricmc:stitch:0.1.0.+'){
         transitive = false
     }
-    shade 'net.fabricmc:tiny-remapper:0.1.0.14'
+    shade 'net.fabricmc:tiny-remapper:0.1.0.15'
 
     shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
         exclude module: 'launchwrapper'

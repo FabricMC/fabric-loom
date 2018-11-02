@@ -251,7 +251,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			if (extension.isModWorkspace()) {
 				//only add this when not in a dev env
-				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-base:" + extension.getVersionString());
+				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-loader:" + extension.getVersionString());
 			}
 
 

@@ -43,6 +43,7 @@ public class SetupTask extends DefaultTask {
 	public void configureModRemapper(){
 		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
 		Configuration inputConfig =  getProject().getConfigurations().getByName(Constants.COMPILE_MODS);
+
 		inputConfig.getResolvedConfiguration().getFiles().stream()
 			.filter(file -> file.getName().endsWith(".jar"))
 			.forEach(input -> {

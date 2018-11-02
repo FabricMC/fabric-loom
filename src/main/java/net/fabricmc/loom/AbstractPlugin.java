@@ -105,6 +105,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
+							javaCompileTask.getClasspath().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
 
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfIntermediary=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());

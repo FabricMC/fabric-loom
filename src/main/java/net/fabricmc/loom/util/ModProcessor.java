@@ -53,10 +53,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -83,9 +80,13 @@ public class ModProcessor {
 		File mappingsFile = Constants.MAPPINGS_TINY.get(extension);
 		Path mappings = mappingsFile.toPath();
 		Path mc = Constants.MINECRAFT_INTERMEDIARY_JAR.get(extension).toPath();
-		Path[] classpath = project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles().stream()
+		Path[] mcDeps = project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).getFiles().stream()
 			.map(File::toPath)
 			.toArray(Path[]::new);
+		Collection<File> modCompileFiles = project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles();
+		Path[] modCompiles = modCompileFiles.stream()
+				.map(File::toPath)
+				.toArray(Path[]::new);
 
 		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
 
@@ -96,9 +97,12 @@ public class ModProcessor {
 		try {
 			OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()));
 			outputConsumer.addNonClassFiles(input.toPath());
-			remapper.read(input.toPath());
+			if (!modCompileFiles.contains(input)) {
+				remapper.read(input.toPath());
+			}
+			remapper.read(modCompiles);
 			remapper.read(mc);
-			remapper.read(classpath);
+			remapper.read(mcDeps);
 			remapper.apply(input.toPath(), outputConsumer);
 			outputConsumer.finish();
 		} catch (Exception e){
@@ -110,7 +114,6 @@ public class ModProcessor {
 		}
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		project.getLogger().lifecycle(":remapping " + input.getName() + " (Mixin reference map)");
 		// first, identify all of the mixin refmaps
 		Set<String> mixinRefmapFilenames = new HashSet<>();
 		// TODO: this is a lovely hack
@@ -138,6 +141,8 @@ public class ModProcessor {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
+
+			project.getLogger().lifecycle(":remapping " + input.getName() + " (Mixin reference maps)");
 
 			ZipUtil.transformEntries(
 					output,

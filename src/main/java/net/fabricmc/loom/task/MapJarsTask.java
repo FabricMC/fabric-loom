@@ -82,8 +82,12 @@ public class MapJarsTask extends LoomBaseTask {
 	public void mapJars() throws Exception {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 
-		if (getMappedJar().exists()){
+		if (getMappedJar().exists()) {
 			getMappedJar().delete();
+		}
+
+		if (getIntermediaryJar().exists()) {
+			getIntermediaryJar().delete();
 		}
 
 		if (!extension.hasPomf()) {

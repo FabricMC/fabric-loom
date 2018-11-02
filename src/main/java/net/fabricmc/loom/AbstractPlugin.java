@@ -108,14 +108,14 @@ public class AbstractPlugin implements Plugin<Project> {
 							javaCompileTask.getClasspath().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
 
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFilePomfIntermediary=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFilePomfIntermediary=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
 							if(extension.refmapName == null || extension.refmapName.isEmpty()){
 								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
 								extension.refmapName = project.getName() + "-refmap.json";
 							}
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=pomf:intermediary");
+							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
 						} catch (IOException e) {
 							e.printStackTrace();
 						}

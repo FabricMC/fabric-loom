@@ -40,7 +40,7 @@ import java.util.Arrays;
 public class MapJarsTiny {
 
 	public void mapJars(MapJarsTask task) throws IOException {
-		String fromM = "mojang";
+		String fromM = "official";
 
 		Path mappings = task.getMappingFile().toPath();
 		Path[] classpath = task.getMapperPaths().stream()
@@ -51,8 +51,8 @@ public class MapJarsTiny {
 		Path outputMapped = task.getMappedJar().toPath();
 		Path outputIntermediary = task.getIntermediaryJar().toPath();
 
-		for (String toM : Arrays.asList("pomf", "intermediary")) {
-			Path output = "pomf".equals(toM) ? outputMapped : outputIntermediary;
+		for (String toM : Arrays.asList("named", "intermediary")) {
+			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
 
 			task.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 

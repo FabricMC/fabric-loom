@@ -64,7 +64,7 @@ public class ModRemapper {
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
 
-		String fromM = "pomf";
+		String fromM = "named";
 		String toM = "intermediary";
 
 		List<File> classpathFiles = new ArrayList<>();

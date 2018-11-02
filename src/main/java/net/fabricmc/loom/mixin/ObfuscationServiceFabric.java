@@ -60,24 +60,24 @@ public class ObfuscationServiceFabric implements IObfuscationService {
 	@Override
 	public Set<String> getSupportedOptions() {
 		ImmutableSet.Builder<String> builder = new ImmutableSet.Builder<>();
-		addSupportedOptions(builder, "mojang", "intermediary");
-		addSupportedOptions(builder, "mojang", "pomf");
-		addSupportedOptions(builder, "intermediary", "mojang");
-		addSupportedOptions(builder, "intermediary", "pomf");
-		addSupportedOptions(builder, "pomf", "mojang");
-		addSupportedOptions(builder, "pomf", "intermediary");
+		addSupportedOptions(builder, "official", "intermediary");
+		addSupportedOptions(builder, "official", "named");
+		addSupportedOptions(builder, "intermediary", "official");
+		addSupportedOptions(builder, "intermediary", "named");
+		addSupportedOptions(builder, "named", "official");
+		addSupportedOptions(builder, "named", "intermediary");
 		return builder.build();
 	}
 
 	@Override
 	public Collection<ObfuscationTypeDescriptor> getObfuscationTypes() {
 		return ImmutableSet.of(
-				createObfuscationType("mojang", "intermediary"),
-				createObfuscationType("mojang", "pomf"),
-				createObfuscationType("intermediary", "mojang"),
-				createObfuscationType("intermediary", "pomf"),
-				createObfuscationType("pomf", "mojang"),
-				createObfuscationType("pomf", "intermediary")
+				createObfuscationType("official", "intermediary"),
+				createObfuscationType("official", "named"),
+				createObfuscationType("intermediary", "official"),
+				createObfuscationType("intermediary", "named"),
+				createObfuscationType("named", "official"),
+				createObfuscationType("named", "intermediary")
 		);
 	}
 }

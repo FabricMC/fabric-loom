@@ -66,6 +66,7 @@ public class RunClientTask extends JavaExec {
 
 		//Removes the deobf jars
 		libs.removeIf(s -> s.contains(Constants.MINECRAFT_FINAL_JAR.get(extension).getName()));
+		libs.removeIf(s -> s.contains(getProject().getName() + "-" + getProject().getVersion() + "-deobf.jar"));
 
 		classpath(libs);
 
@@ -74,14 +75,6 @@ public class RunClientTask extends JavaExec {
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
 		super.exec();
-	}
-
-	@Override
-	public void setWorkingDir(File dir) {
-		if(!dir.exists()){
-			dir.mkdirs();
-		}
-		super.setWorkingDir(dir);
 	}
 
 	@Override

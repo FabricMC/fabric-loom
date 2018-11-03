@@ -79,7 +79,6 @@ public class MixinServiceGradle extends MixinServiceLaunchWrapper implements ICl
 	public byte[] getClassBytes(String name, String transformedName) throws IOException {
 		InputStream inputStream = getResourceAsStream(name.replace(".", "/") + ".class");
 		byte[] classBytes = ByteStreams.toByteArray(inputStream);
-		inputStream.close();
 		if(classBytes == null){
 			return super.getClassBytes(name, transformedName);
 		}

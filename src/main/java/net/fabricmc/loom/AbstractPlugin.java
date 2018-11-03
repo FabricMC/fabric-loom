@@ -60,6 +60,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	public void apply(Project target) {
 		this.project = target;
 
+		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));

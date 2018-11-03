@@ -11,7 +11,15 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.0.12-SNAPSHOT'
+version = '0.0.13-SNAPSHOT'
+
+def build = "local"
+def ENV = System.getenv()
+if (ENV.BUILD_NUMBER) {
+	build = "jenkins #${ENV.BUILD_NUMBER}"
+}
+
+
 
 // Remove the gradleApi so it isn't merged into the jar file.
 configurations.compile.dependencies.remove dependencies.gradleApi()
@@ -65,6 +73,9 @@ jar {
 	from(configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
 		exclude 'META-INF/*'
 		exclude 'META-INF'
+	}
+	manifest {
+		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
 }
 

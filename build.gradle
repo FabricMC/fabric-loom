@@ -1,10 +1,9 @@
 plugins {
-    id 'java'
-    id 'groovy'
-    id 'maven'
-    id 'maven-publish'
-    id 'idea'
-    id 'eclipse'
+	id 'java'
+	id 'maven-publish'
+	id 'java-gradle-plugin'
+	id 'idea'
+	id 'eclipse'
 }
 
 sourceCompatibility = 1.8
@@ -14,11 +13,14 @@ group = 'net.fabricmc'
 archivesBaseName = project.name
 version = '0.0.12-SNAPSHOT'
 
+// Remove the gradleApi so it isn't merged into the jar file.
+configurations.compile.dependencies.remove dependencies.gradleApi()
+
 repositories {
-    mavenCentral()
+	mavenCentral()
 	maven {
-		name "Modmuss"
-		url 'http://maven.modmuss50.me/'
+		name = "Modmuss"
+		url = 'http://maven.modmuss50.me/'
 	}
 	maven {
 		name = 'Mojang'
@@ -28,46 +30,39 @@ repositories {
 		name = 'Forge' //For ModLauncher
 		url = 'http://files.minecraftforge.net/maven/'
 	}
-    maven {
-        name = 'SpongePowered'
-        url = 'http://repo.spongepowered.org/maven'
-    }
+	maven {
+		name = 'SpongePowered'
+		url = 'http://repo.spongepowered.org/maven'
+	}
 }
 
 configurations {
-    deployerJars
-    shade
-    compile.extendsFrom shade
+	deployerJars
+	shade
+	compile.extendsFrom shade
 }
 
 dependencies {
-    compile gradleApi()
+	implementation gradleApi()
 
-    shade 'commons-io:commons-io:2.6'
-    shade 'org.zeroturnaround:zt-zip:1.13'
-    shade 'com.google.code.gson:gson:2.8.5'
-    shade 'com.google.guava:guava:27.0-jre'
-    shade ('net.fabricmc:stitch:0.1.0.+'){
-        transitive = false
-    }
-    shade 'net.fabricmc:tiny-remapper:0.1.0.15'
+	shade('commons-io:commons-io:2.6')
+	shade('org.zeroturnaround:zt-zip:1.13')
+	shade('com.google.code.gson:gson:2.8.5')
+	shade('com.google.guava:guava:27.0-jre')
+	shade('net.fabricmc:stitch:0.1.0.+') {
+		transitive = false
+	}
+	shade('net.fabricmc:tiny-remapper:0.1.0.15')
 
-    shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
-        exclude module: 'launchwrapper'
-        exclude module: 'guava'
-    }
-}
-
-sourceSets {
-    main.compileClasspath += configurations.shade;
-    main.runtimeClasspath += configurations.shade;
-    test.compileClasspath += configurations.shade;
-    test.runtimeClasspath += configurations.shade;
+	shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+		exclude module: 'launchwrapper'
+		exclude module: 'guava'
+	}
 }
 
 jar {
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-	from (configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
+	from(configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
 		exclude 'META-INF/*'
 		exclude 'META-INF'
 	}
@@ -76,17 +71,24 @@ jar {
 apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.10.2'
+	gradleVersion = '4.10.2'
+}
+
+gradlePlugin {
+	plugins {
+		register("fabricLoom") {
+			id = "fabric-loom"
+			implementationClass = "net.fabricmc.loom.LoomGradlePlugin"
+		}
+	}
 }
 
 publishing {
 	publications {
-		maven(MavenPublication) {
+		pluginMaven(MavenPublication) { publication ->
 			groupId project.group
 			artifactId project.archivesBaseName
 			version project.version
-
-			from components.java
 
 			//Removes all of the dependencies from the maven pom, prevents sub projects downloading all the libs, as we use a fat jar
 			pom.withXml {

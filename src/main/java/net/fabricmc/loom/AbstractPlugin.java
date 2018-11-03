@@ -30,7 +30,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModProcessor;
 import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.Version;
 import org.gradle.api.Plugin;
@@ -254,7 +253,6 @@ public class AbstractPlugin implements Plugin<Project> {
 				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-loader:" + extension.getVersionString());
 			}
 
-			ModProcessor.configureModRemapper(project1);
 
 		});
 

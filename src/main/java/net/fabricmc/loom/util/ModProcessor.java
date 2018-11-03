@@ -24,14 +24,11 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.mixin.MixinMappingProviderTiny;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -42,43 +39,26 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.objectweb.asm.commons.Remapper;
 import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
-import org.spongepowered.asm.obfuscation.mapping.common.MappingField;
-import org.spongepowered.asm.obfuscation.mapping.common.MappingMethod;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public class ModProcessor {
-
-	public static void configureModRemapper(Project project){
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		Configuration inputConfig =  project.getConfigurations().getByName(Constants.COMPILE_MODS);
-
-		inputConfig.getResolvedConfiguration().getFiles().stream()
-				.filter(file -> file.getName().endsWith(".jar"))
-				.forEach(input -> {
-					String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + extension.pomfVersion  + ".jar";//TODO use the hash of the input file or something?
-					File output = new File(Constants.REMAPPED_MODS_STORE.get(extension), outputName);
-					if(!output.getParentFile().exists()){
-						output.mkdirs();
-					}
-					ModProcessor.handleMod(input, output, project);
-					if (!output.exists()) {
-						throw new RuntimeException("Output does not exist!");
-					}
-					project.getDependencies().add(Constants.CONFIG_MINECRAFT, project.files(output.getPath()));
-				});
-	}
 
 	public static void handleMod(File input, File output, Project project){
 		if(output.exists()){

@@ -30,6 +30,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.task.DownloadTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModProcessor;
 import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.Version;
 import org.gradle.api.Plugin;
@@ -45,7 +46,6 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.api.GeneratorTask;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.gradle.plugins.ide.internal.IdePlugin;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -254,6 +254,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-loader:" + extension.getVersionString());
 			}
 
+			ModProcessor.configureModRemapper(project1);
 
 		});
 

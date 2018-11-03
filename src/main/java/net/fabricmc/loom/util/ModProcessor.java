@@ -60,6 +60,26 @@ import java.util.zip.ZipOutputStream;
 
 public class ModProcessor {
 
+	public static void configureModRemapper(Project project){
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		Configuration inputConfig =  project.getConfigurations().getByName(Constants.COMPILE_MODS);
+
+		inputConfig.getResolvedConfiguration().getFiles().stream()
+				.filter(file -> file.getName().endsWith(".jar"))
+				.forEach(input -> {
+					String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + extension.pomfVersion  + ".jar";//TODO use the hash of the input file or something?
+					File output = new File(Constants.REMAPPED_MODS_STORE.get(extension), outputName);
+					if(!output.getParentFile().exists()){
+						output.mkdirs();
+					}
+					ModProcessor.handleMod(input, output, project);
+					if (!output.exists()) {
+						throw new RuntimeException("Output does not exist!");
+					}
+					project.getDependencies().add(Constants.CONFIG_MINECRAFT, project.files(output.getPath()));
+				});
+	}
+
 	public static void handleMod(File input, File output, Project project){
 		if(output.exists()){
 			output.delete();

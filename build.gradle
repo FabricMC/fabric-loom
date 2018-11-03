@@ -35,10 +35,6 @@ repositories {
 		url = 'https://libraries.minecraft.net/'
 	}
 	maven {
-		name = 'Forge' //For ModLauncher
-		url = 'http://files.minecraftforge.net/maven/'
-	}
-	maven {
 		name = 'SpongePowered'
 		url = 'http://repo.spongepowered.org/maven'
 	}

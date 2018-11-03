@@ -125,6 +125,7 @@ public class ModProcessor {
 			remapper.read(mcDeps);
 			remapper.apply(input.toPath(), outputConsumer);
 			outputConsumer.finish();
+			remapper.finish();
 		} catch (Exception e){
 			remapper.finish();
 			throw new RuntimeException("Failed to remap JAR to " + toM, e);
@@ -141,7 +142,10 @@ public class ModProcessor {
 			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
 				// JSON file in root directory
 				try {
-					JsonObject json = gson.fromJson(new InputStreamReader(stream), JsonObject.class);
+					InputStreamReader inputStreamReader = new InputStreamReader(stream);
+					JsonObject json = gson.fromJson(inputStreamReader, JsonObject.class);
+					inputStreamReader.close();
+					stream.close();
 					if (json != null && json.has("refmap")) {
 						mixinRefmapFilenames.add(json.get("refmap").getAsString());
 					}

@@ -78,6 +78,14 @@ public class RunServerTask extends JavaExec {
 	}
 
 	@Override
+	public void setWorkingDir(File dir) {
+		if(!dir.exists()){
+			dir.mkdirs();
+		}
+		super.setWorkingDir(dir);
+	}
+
+	@Override
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();

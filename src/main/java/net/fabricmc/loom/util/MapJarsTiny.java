@@ -22,15 +22,14 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.util;
 
 
-import com.google.common.base.Joiner;
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.providers.MinecraftJarProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
+import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,22 +38,22 @@ import java.util.Arrays;
 
 public class MapJarsTiny {
 
-	public void mapJars(MapJarsTask task) throws IOException {
+	public void mapJars(MinecraftJarProvider jarProvider, Project project) throws IOException {
 		String fromM = "official";
 
-		Path mappings = task.getMappingFile().toPath();
-		Path[] classpath = task.getMapperPaths().stream()
+		Path mappings = jarProvider.getMappingFile().toPath();
+		Path[] classpath = jarProvider.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
-		Path input = task.getInputJar().toPath();
-		Path outputMapped = task.getMappedJar().toPath();
-		Path outputIntermediary = task.getIntermediaryJar().toPath();
+		Path input = jarProvider.getInputJar().toPath();
+		Path outputMapped = jarProvider.getMappedJar().toPath();
+		Path outputIntermediary = jarProvider.getIntermediaryJar().toPath();
 
 		for (String toM : Arrays.asList("named", "intermediary")) {
 			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
 
-			task.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
 					.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))

@@ -26,9 +26,10 @@ package net.fabricmc.loom.task;
 
 import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
-import net.fabricmc.loom.util.Version;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -104,7 +105,8 @@ public class GenIdeaProjectTask extends DefaultTask {
 
 		Gson gson = new Gson();
 
-		Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
+		MinecraftProvider minecraftProvider =  extension.getDependencyManager().getProvider(MinecraftProvider.class);
+		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
@@ -139,8 +141,8 @@ public class GenIdeaProjectTask extends DefaultTask {
 		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaClient.vmArgs = "-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath() + " -Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + version.assetIndex.id + " --assetsDir \"" + new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath() + "\" --fabricMappingFile \"" + Constants.MAPPINGS_TINY.get(extension).getAbsolutePath() + "\"";
+		ideaClient.vmArgs = "-Djava.library.path=" + extension.getMinecraftProvider().libraryProvider.MINECRAFT_NATIVES.getAbsolutePath() + " -Dfabric.development=true";
+		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.id + " --assetsDir \"" + new File(extension.getUserCache(), "assets-" + minecraftProvider.minecraftVersion).getAbsolutePath() + "\" --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
 
 		runManager.appendChild(ideaClient.genRuns(runManager));
 
@@ -150,7 +152,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		ideaServer.configName = "Minecraft Server";
 		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaServer.vmArgs = "-Dfabric.development=true";
-		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER + " --fabricMappingFile \"" + Constants.MAPPINGS_TINY.get(extension).getAbsolutePath() + "\"";
+		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER + " --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
 
 		runManager.appendChild(ideaServer.genRuns(runManager));
 

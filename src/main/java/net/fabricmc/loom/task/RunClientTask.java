@@ -24,15 +24,12 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.Version;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,19 +38,11 @@ public class RunClientTask extends JavaExec {
 	@Override
 	public void exec() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		Gson gson = new Gson();
-		Version version = null;
-		try {
-			version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
-		} catch (FileNotFoundException e) {
-            getLogger().error("Failed to retrieve version from  minecraft json", e);
-		}
+		MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().versionInfo;
+
 
 		List<String> libs = new ArrayList<>();
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
-		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
 		//Used to add the fabric jar that has been built
@@ -62,14 +51,9 @@ public class RunClientTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_CLIENT_JAR.get(extension).getAbsolutePath());
-
-		//Removes the deobf jars
-		libs.removeIf(s -> s.contains(Constants.MINECRAFT_FINAL_JAR.get(extension).getName()));
 
 		classpath(libs);
-
-		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", version.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.version).getAbsolutePath(), "--fabricMappingFile", Constants.MAPPINGS_TINY.get(extension).getAbsolutePath());
+		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.id, "--assetsDir", new File(extension.getUserCache(), "assets-" + extension.getMinecraftProvider().minecraftVersion).getAbsolutePath(), "--fabricMappingFile", extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
@@ -93,7 +77,7 @@ public class RunClientTask extends JavaExec {
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
-		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
+		args.add("-Djava.library.path=" + extension.getMinecraftProvider().libraryProvider.MINECRAFT_NATIVES.getAbsolutePath());
 		//args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}

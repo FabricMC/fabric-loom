@@ -28,10 +28,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.fabricmc.loom.task.DownloadTask;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModRemapper;
-import net.fabricmc.loom.util.Version;
+import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.ModRemapperProvider;
+import net.fabricmc.loom.util.*;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -70,22 +69,13 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		readModJson(extension);
-
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
-		// Minecraft libraries configuration
-		project.getConfigurations().maybeCreate(Constants.CONFIG_MINECRAFT);
-		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES);
-		project.getConfigurations().maybeCreate(Constants.CONFIG_MC_DEPENDENCIES_CLIENT);
-		project.getConfigurations().maybeCreate(Constants.CONFIG_NATIVES);
+
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
-
 		compileModsConfig.setTransitive(false); //Dont get transitive deps of mods
-
-		// Common libraries extends from client libraries, CONFIG_MC_DEPENDENCIES will contains all MC dependencies
-		project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES).extendsFrom(project.getConfigurations().getByName(Constants.CONFIG_MC_DEPENDENCIES_CLIENT)));
+		project.getConfigurations().maybeCreate(Constants.MINECRAFT);
 
 		configureIDEs();
 		configureCompile();
@@ -95,21 +85,17 @@ public class AbstractPlugin implements Plugin<Project> {
 			Project project = entry.getKey();
 			Set<Task> taskSet = entry.getValue();
 			for (Task task : taskSet) {
-				if (task instanceof GeneratorTask) {
-					task.dependsOn("setup");
-				}
-
 				if (task instanceof JavaCompile
 					&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
-							javaCompileTask.getClasspath().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
-							javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
+							//javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
 
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + Constants.MAPPINGS_TINY.get(extension).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + Constants.MAPPINGS_MIXIN_EXPORT.get(extension).getCanonicalPath());
+
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
 							if(extension.refmapName == null || extension.refmapName.isEmpty()){
 								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
 								extension.refmapName = project.getName() + "-refmap.json";
@@ -176,11 +162,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModel.getModule().setDownloadJavadoc(true);
 		ideaModel.getModule().setDownloadSources(true);
 		ideaModel.getModule().setInheritOutputDirs(true);
-		ideaModel.getModule().getScopes().get("COMPILE").get("plus").add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 
 		// ECLIPSE
 		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
-		eclipseModel.getClasspath().getPlusConfigurations().add(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT));
 	}
 
 	/**
@@ -191,11 +175,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 		SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
-
-		main.setCompileClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
-		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
-		main.setRuntimeClasspath(main.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
-		test.setCompileClasspath(test.getCompileClasspath().plus(project.getConfigurations().getByName(Constants.CONFIG_MINECRAFT)));
 
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
@@ -231,74 +210,25 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getRepositories().mavenCentral();
 			project1.getRepositories().jcenter();
 
-			Gson gson = new Gson();
-			try {
-				DownloadTask.downloadMcJson(extension, project1.getLogger());
-				Version version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
-				for (Version.Library library : version.libraries) {
-					if (library.allowed() && library.getFile(extension) != null) {
-						String configName = Constants.CONFIG_MC_DEPENDENCIES;
-						if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput") || library.name.contains("text2speech") || library.name.contains("objc")) {
-							configName = Constants.CONFIG_MC_DEPENDENCIES_CLIENT;
-						}
-						project1.getDependencies().add(configName, library.getArtifactName());
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			project1.getDependencies().add(Constants.CONFIG_MINECRAFT, "net.minecraft:" + Constants.MINECRAFT_FINAL_JAR.get(extension).getName().replace(".jar", ""));
+			LoomDependencyManager dependencyManager = new LoomDependencyManager();
+			extension.setDependencyManager(dependencyManager);
 
-			if (extension.isModWorkspace()) {
-				//only add this when not in a dev env
-				project1.getDependencies().add(Constants.COMPILE_MODS, "net.fabricmc:fabric-loader:" + extension.getVersionString());
-			}
+			dependencyManager.addProvider(new MinecraftProvider());
+			dependencyManager.addProvider(new ModRemapperProvider());
 
+			dependencyManager.handleDependencies(project1);
 
+			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 		});
 
 		project.getTasks().getByName("jar").doLast(task -> {
 			project.getLogger().lifecycle(":remapping mods");
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			try {
-				if(extension.hasPomf()){
-					ModRemapper.remap(project);
-				}
+				ModRemapper.remap(project);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		});
 
-		project.afterEvaluate(project12 -> {
-			project12.getTasks().getByName("idea").dependsOn(project12.getTasks().getByName("cleanIdea")).dependsOn(project12.getTasks().getByName("setup")).dependsOn(project12.getTasks().getByName("extractNatives"));
-			project12.getTasks().getByName("idea").finalizedBy(project12.getTasks().getByName("genIdeaWorkspace"));
-		});
-
-	}
-
-	protected void readModJson(LoomGradleExtension extension) {
-		File resDir = new File(project.getProjectDir(), "src" + File.separator + "main" + File.separator + "resources");
-		File modJson = new File(resDir, "mod.json");
-		if (modJson.exists()) {
-			Gson gson = new Gson();
-			try {
-				JsonElement jsonElement = gson.fromJson(new FileReader(modJson), JsonElement.class);
-				JsonObject jsonObject = jsonElement.getAsJsonObject();
-				if ((extension.version == null || extension.version.isEmpty()) && jsonObject.has("version")) {
-					project.setVersion(jsonObject.get("version").getAsString());
-				}
-				if (jsonObject.has("group")) {
-					project.setGroup(jsonObject.get("group").getAsString());
-				}
-				if (jsonObject.has("description")) {
-					project.setDescription(jsonObject.get("description").getAsString());
-				}
-				//TODO load deps
-
-			} catch (FileNotFoundException e) {
-				//This wont happen as we have checked for it
-				e.printStackTrace();
-			}
-		}
 	}
 }

@@ -24,36 +24,22 @@
 
 package net.fabricmc.loom;
 
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.util.LoomDependencyManager;
 import org.gradle.api.Project;
 
 import java.io.File;
 
 public class LoomGradleExtension {
-	public String version;
 	public String runDir = "run";
-	public String fabricVersion;
-	public String pomfVersion;
 	public String refmapName;
-	public String jarMapper = Constants.JAR_MAPPER_TINY; // enigma, tiny
-	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle
 	private Project project;
+	private LoomDependencyManager dependencyManager;
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
-	}
-
-	public String getVersionString() {
-		if (isModWorkspace()) {
-			return version + "-" + fabricVersion;
-		}
-		return version;
-	}
-
-	public boolean isModWorkspace() {
-		return fabricVersion != null && !fabricVersion.isEmpty();
 	}
 
 	public File getUserCache() {
@@ -64,10 +50,15 @@ public class LoomGradleExtension {
 		return userCache;
 	}
 
-	public boolean hasPomf(){
-		if (localMappings) {
-			return true;
-		}
-		return pomfVersion != null && !pomfVersion.isEmpty();
+	public LoomDependencyManager getDependencyManager() {
+		return dependencyManager;
+	}
+
+	public MinecraftProvider getMinecraftProvider(){
+		return getDependencyManager().getProvider(MinecraftProvider.class);
+	}
+
+	public void setDependencyManager(LoomDependencyManager dependencyManager) {
+		this.dependencyManager = dependencyManager;
 	}
 }

@@ -32,15 +32,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 	public void apply(Project target) {
 		super.apply(target);
 
-		makeTask("download", DownloadTask.class);
-		makeTask("mergeJars", MergeJarsTask.class).dependsOn("download");
-		makeTask("mapJars", MapJarsTask.class).dependsOn("mergeJars");
-		makeTask("setup", SetupTask.class).dependsOn("mapJars").setGroup("fabric");
-
-		makeTask("extractNatives", ExtractNativesTask.class).dependsOn("download");
 		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-
-		makeTask("vscode", GenVSCodeProjectTask.class).dependsOn("extractNatives").setGroup("ide");
 
 		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraft");
 		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraft");

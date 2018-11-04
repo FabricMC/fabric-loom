@@ -24,15 +24,11 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.Version;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,19 +37,9 @@ public class RunServerTask extends JavaExec {
 	@Override
 	public void exec() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		Gson gson = new Gson();
-		Version version = null;
-		try {
-			version = gson.fromJson(new FileReader(Constants.MINECRAFT_JSON.get(extension)), Version.class);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
 
 		List<String> libs = new ArrayList<>();
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
-		for (File file : getProject().getConfigurations().getByName(Constants.CONFIG_MINECRAFT).getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
 		//Used to add the fabric jar that has been built
@@ -62,10 +48,9 @@ public class RunServerTask extends JavaExec {
 				libs.add(file.getAbsolutePath());
 			}
 		}
-		libs.add(Constants.MINECRAFT_FINAL_JAR.get(extension).getAbsolutePath());
 		classpath(libs);
 
-		args("--tweakClass", Constants.FABRIC_SERVER_TWEAKER,  "--fabricMappingFile", Constants.MAPPINGS_TINY.get(extension).getAbsolutePath());
+		args("--tweakClass", Constants.FABRIC_SERVER_TWEAKER,  "--fabricMappingFile", extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 
@@ -89,7 +74,6 @@ public class RunServerTask extends JavaExec {
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
-		args.add("-Djava.library.path=" + Constants.MINECRAFT_NATIVES.get(extension).getAbsolutePath());
 		args.add("-Dfabric.development=true");
 		return args;
 	}

@@ -22,25 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.delayed;
+package net.fabricmc.loom.providers;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DependencyProvider;
+import net.fabricmc.loom.util.ModProcessor;
+import org.gradle.api.Project;
 
 import java.io.File;
-import java.util.function.Function;
 
-public class DelayedFile implements IDelayed<File> {
-	private File file;
-	private Function<LoomGradleExtension, File> function;
+public class ModRemapperProvider extends DependencyProvider {
+	@Override
+	public void provide(DependcyInfo dependency, Project project, LoomGradleExtension extension) {
+		File input = dependency.resolveFile();
 
-	public DelayedFile(Function<LoomGradleExtension, File> function) {
-		this.function = function;
+		project.getLogger().lifecycle("Providing " + dependency.getDepString());
+
+		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
+
+		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + minecraftProvider.pomfVersion + ".jar";//TODO use the hash of the input file or something?
+		File output = new File(Constants.REMAPPED_MODS_STORE, outputName);
+
+		ModProcessor.handleMod(input, output, project);
+
+		addDep(output, project);
 	}
 
 	@Override
-	public File get(LoomGradleExtension extension) {
-		// TODO: Figure out caching issues
-		this.file = this.function.apply(extension);
-		return this.file;
+	public String getTargetConfig() {
+		return Constants.COMPILE_MODS;
 	}
 }

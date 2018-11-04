@@ -11,7 +11,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.0.12-SNAPSHOT'
+version = '0.0.13-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()
@@ -47,7 +47,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': version + " Build(" + build + ")"
+		attributes 'Implementation-MinecraftVersionInfo': version + " Build(" + build + ")"
 	}
 }
 

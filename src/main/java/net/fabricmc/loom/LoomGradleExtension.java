@@ -39,7 +39,11 @@ public class LoomGradleExtension {
 	public boolean localMappings = false;
 
 	//Not to be set in the build.gradle
-	public Project project;
+	private Project project;
+
+	public LoomGradleExtension(Project project) {
+		this.project = project;
+	}
 
 	public String getVersionString() {
 		if (isModWorkspace()) {

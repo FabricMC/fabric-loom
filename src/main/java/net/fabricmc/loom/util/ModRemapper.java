@@ -28,7 +28,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -43,23 +42,11 @@ public class ModRemapper {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		// TODO: What's the proper way of doing this?
 		File libsDir = new File(project.getBuildDir(), "libs");
-		File deobfJar = new File(libsDir, project.getName() + "-" + project.getVersion() + "-deobf.jar");
 		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
 
 		if (!modJar.exists()) {
-			project.getLogger().error("Could not find mod .JAR at" + deobfJar.getAbsolutePath());
 			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
 			return;
-		}
-
-		if (deobfJar.exists()) {
-			deobfJar.delete();
-		}
-
-		FileUtils.touch(modJar); //Done to ensure that the file can be moved
-		//Move the pre existing mod jar to the deobf jar
-		if(!modJar.renameTo(deobfJar)){
-			throw new RuntimeException("Failed to rename " + modJar);
 		}
 
 		Path mappings = Constants.MAPPINGS_TINY.get(extension).toPath();
@@ -86,10 +73,10 @@ public class ModRemapper {
 
 		try {
 			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
-			outputConsumer.addNonClassFiles(deobfJar.toPath());
-			remapper.read(deobfJar.toPath());
+			outputConsumer.addNonClassFiles(modJar.toPath());
+			remapper.read(modJar.toPath());
 			remapper.read(classpath);
-			remapper.apply(deobfJar.toPath(), outputConsumer);
+			remapper.apply(modJar.toPath(), outputConsumer);
 			outputConsumer.finish();
 			remapper.finish();
 		} catch (Exception e){
@@ -97,11 +84,9 @@ public class ModRemapper {
 			throw new RuntimeException("Failed to remap JAR", e);
 		}
 
-		if(!deobfJar.exists() || !modJar.exists()){
+		if(!modJar.exists()){
 			throw new RuntimeException("Failed to reobfuscate JAR");
 		}
-
-		deobfJar.delete();
 	}
 
 }

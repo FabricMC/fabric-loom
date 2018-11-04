@@ -19,60 +19,46 @@ if (ENV.BUILD_NUMBER) {
 	build = "jenkins #${ENV.BUILD_NUMBER}"
 }
 
-
-
-// Remove the gradleApi so it isn't merged into the jar file.
-configurations.compile.dependencies.remove dependencies.gradleApi()
-
 repositories {
 	mavenCentral()
 	maven {
 		name = "Modmuss"
 		url = 'http://maven.modmuss50.me/'
 	}
-	maven {
-		name = 'Mojang'
-		url = 'https://libraries.minecraft.net/'
-	}
-	maven {
-		name = 'SpongePowered'
-		url = 'http://repo.spongepowered.org/maven'
-	}
-}
-
-configurations {
-	deployerJars
-	shade
-	compile.extendsFrom shade
 }
 
 dependencies {
 	implementation gradleApi()
 
-	shade('commons-io:commons-io:2.6')
-	shade('org.zeroturnaround:zt-zip:1.13')
-	shade('com.google.code.gson:gson:2.8.5')
-	shade('com.google.guava:guava:27.0-jre')
-	shade('net.fabricmc:stitch:0.1.0.+') {
+	implementation ('commons-io:commons-io:2.6')
+	implementation ('org.zeroturnaround:zt-zip:1.13')
+	implementation ('com.google.code.gson:gson:2.8.5')
+	implementation ('com.google.guava:guava:27.0-jre')
+	implementation ('net.fabricmc:stitch:0.1.0.+')
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.16') {
 		transitive = false
 	}
-	shade('net.fabricmc:tiny-remapper:0.1.0.16')
 
-	shade('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+	implementation ('net.fabricmc:sponge-mixin:0.7.11.3') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
 }
 
 jar {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-	from(configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }) {
-		exclude 'META-INF/*'
-		exclude 'META-INF'
-	}
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
 }
 
 apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
@@ -92,15 +78,15 @@ gradlePlugin {
 
 publishing {
 	publications {
-		pluginMaven(MavenPublication) { publication ->
+		plugin(MavenPublication) { publication ->
 			groupId project.group
 			artifactId project.archivesBaseName
 			version project.version
 
-			//Removes all of the dependencies from the maven pom, prevents sub projects downloading all the libs, as we use a fat jar
-			pom.withXml {
-				asNode().remove(asNode().get('dependencies'))
-			}
+			from components["java"]
+	
+			artifact sourcesJar
+			artifact javadocJar
 		}
 	}
 	repositories {

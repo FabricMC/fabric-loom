@@ -209,7 +209,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES);
+				flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES.get(extension));
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 

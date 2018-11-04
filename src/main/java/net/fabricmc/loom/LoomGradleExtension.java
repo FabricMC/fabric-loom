@@ -70,4 +70,8 @@ public class LoomGradleExtension {
 		}
 		return pomfVersion != null && !pomfVersion.isEmpty();
 	}
+
+	public Project getProject() {
+		return project;
+	}
 }

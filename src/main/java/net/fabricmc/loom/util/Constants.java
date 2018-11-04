@@ -35,7 +35,8 @@ import java.util.List;
 
 public class Constants {
 	public static final File WORKING_DIRECTORY = new File(".");
-	public static final File CACHE_FILES = new File(WORKING_DIRECTORY, ".gradle/minecraft");
+	public static final IDelayed<File> PROJECT_CACHE_DIR = new DelayedFile(extension -> extension.getProject().getGradle().getStartParameter().getProjectCacheDir());
+	public static final IDelayed<File> CACHE_FILES = new DelayedFile(extension -> new File(extension.getProject().getGradle().getStartParameter().getProjectCacheDir(), "minecraft"));
 
 	public static final String JAR_MAPPER_ENIGMA = "enigma";
 	public static final String JAR_MAPPER_TINY = "tiny";
@@ -52,7 +53,7 @@ public class Constants {
 	public static final IDelayed<File> POMF_DIR = new DelayedFile(extension -> new File(extension.getUserCache(), "pomf"));
 	public static       IDelayed<File> MAPPINGS_TINY_GZ = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion + ".gz"));
 	public static final IDelayed<File> MAPPINGS_TINY = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-tiny-" + extension.version + "." + extension.pomfVersion));
-	public static final IDelayed<File> MAPPINGS_MIXIN_EXPORT = new DelayedFile(extension -> new File(CACHE_FILES, "mixin-map-" + extension.version + "." + extension.pomfVersion + ".tiny"));
+	public static final IDelayed<File> MAPPINGS_MIXIN_EXPORT = new DelayedFile(extension -> new File(CACHE_FILES.get(extension), "mixin-map-" + extension.version + "." + extension.pomfVersion + ".tiny"));
 	public static       IDelayed<File> MAPPINGS_ENIGMA_ZIP = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ".zip"));
 	public static final IDelayed<File> MAPPINGS_ENIGMA_DIR = new DelayedFile(extension -> new File(POMF_DIR.get(extension), "pomf-enigma-" + extension.version + "." + extension.pomfVersion + ""));
 
@@ -60,7 +61,7 @@ public class Constants {
 	public static final IDelayed<File> MAPPINGS_ENIGMA_ZIP_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-enigma-" + extension.version + ".zip"));
 	public static final IDelayed<File> MAPPINGS_TINY_GZ_LOCAL = new DelayedFile(extension -> new File(MAPPINGS_DIR_LOCAL.get(extension), "pomf-tiny-" + extension.version + ".gz"));
 
-	public static final IDelayed<File> REMAPPED_MODS_STORE = new DelayedFile(extension -> new File(CACHE_FILES, "remapped_mods"));
+	public static final IDelayed<File> REMAPPED_MODS_STORE = new DelayedFile(extension -> new File(CACHE_FILES.get(extension), "remapped_mods"));
 
 	public static final IDelayed<File> MINECRAFT_LIBS = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-libs"));
 	public static final IDelayed<File> MINECRAFT_NATIVES = new DelayedFile(extension -> new File(extension.getUserCache(), extension.version + "-natives"));

@@ -44,9 +44,17 @@ public class MinecraftVersionInfo {
 	}
 
 	public class AssetIndex {
-		public String id;
+		private String id;
 		public String sha1;
 		public String url;
+
+		public String getId() {
+			return id;
+		}
+
+		public String getFabricId(String version) {
+			return id.equals(version) ? version : version + "-" + id;
+		}
 	}
 
 	public class Library {

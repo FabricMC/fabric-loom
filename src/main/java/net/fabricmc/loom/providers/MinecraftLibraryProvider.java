@@ -78,25 +78,12 @@ public class MinecraftLibraryProvider {
 		MinecraftVersionInfo.AssetIndex assetIndex = versionInfo.assetIndex;
 
 		// get existing cache files
-		project.getLogger().lifecycle(":checking for existing asset files");
-		Multimap<String, File> assetFilenameToFile = HashMultimap.create();
-		for (File assetDir : Objects.requireNonNull(extension.getUserCache().listFiles((f) -> f.isDirectory() && f.getName().startsWith("assets-")))) {
-			File objectsDir = new File(assetDir, "objects");
-			if (objectsDir.exists() && objectsDir.isDirectory()) {
-				for (File subDir : Objects.requireNonNull(objectsDir.listFiles(File::isDirectory))) {
-					for (File subFile : Objects.requireNonNull(subDir.listFiles(File::isFile))) {
-						assetFilenameToFile.put("objects" + File.separator + subDir.getName() + File.separator + subFile.getName(), subFile);
-					}
-				}
-			}
-		}
-
-		File assets = new File(extension.getUserCache(), "assets-" + minecraftProvider.minecraftVersion);
+		File assets = new File(extension.getUserCache(), "assets");
 		if (!assets.exists()) {
 			assets.mkdirs();
 		}
 
-		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.id + ".json");
+		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");
 			FileUtils.copyURLToFile(new URL(assetIndex.url), assetsInfo);
@@ -116,15 +103,6 @@ public class MinecraftLibraryProvider {
 			String sha1 = object.getHash();
 			String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
 			File file = new File(assets, filename);
-			if (!file.exists() && assetFilenameToFile.containsKey(filename)) {
-				project.getLogger().debug(":copying asset " + entry.getKey());
-				for (File srcFile : assetFilenameToFile.get(filename)) {
-					if (Checksum.equals(srcFile, sha1)) {
-						FileUtils.copyFile(srcFile, file);
-						break;
-					}
-				}
-			}
 
 			if (!file.exists() || !Checksum.equals(file, sha1)) {
 				project.getLogger().debug(":downloading asset " + entry.getKey());
@@ -138,6 +116,7 @@ public class MinecraftLibraryProvider {
 			progressLogger.progress(assetName + " - " + position + "/" + totalSize + " (" + (int) ((position / (double) totalSize) * 100) + "%) assets downloaded");
 			position++;
 		}
+
 		progressLogger.completed();
 	}
 

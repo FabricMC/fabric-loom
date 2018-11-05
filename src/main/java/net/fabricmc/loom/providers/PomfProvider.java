@@ -77,7 +77,7 @@ public class PomfProvider {
 			GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(MAPPINGS_TINY_GZ));
 			FileOutputStream fileOutputStream = new FileOutputStream(MAPPINGS_TINY);
 			int length;
-			byte[] buffer = new byte[1024];
+			byte[] buffer = new byte[4096];
 			while ((length = gzipInputStream.read(buffer)) > 0) {
 				fileOutputStream.write(buffer, 0, length);
 			}

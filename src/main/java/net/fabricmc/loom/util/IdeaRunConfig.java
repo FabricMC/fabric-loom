@@ -93,7 +93,7 @@ public class IdeaRunConfig {
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.id + " --assetsDir \"" + new File(extension.getUserCache(), "assets-" + minecraftProvider.minecraftVersion).getAbsolutePath() + "\" --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\" --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
 
 		return ideaClient;
 	}
@@ -115,7 +115,7 @@ public class IdeaRunConfig {
 	}
 
 	public String fromDummy() throws IOException {
-		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream("dummy_runconfig.xml");
+		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml");
 		String dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
 		input.close();
 

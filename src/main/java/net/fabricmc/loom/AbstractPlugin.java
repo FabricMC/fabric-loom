@@ -74,8 +74,9 @@ public class AbstractPlugin implements Plugin<Project> {
 
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
-		compileModsConfig.setTransitive(false); //Dont get transitive deps of mods
-		project.getConfigurations().maybeCreate(Constants.MINECRAFT);
+		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
+		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
+		minecraftConfig.setTransitive(false); // The launchers do not recurse dependencies
 
 		configureIDEs();
 		configureCompile();

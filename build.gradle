@@ -47,7 +47,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-MinecraftVersionInfo': version + " Build(" + build + ")"
+		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
 }
 

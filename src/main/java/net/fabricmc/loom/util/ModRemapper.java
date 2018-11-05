@@ -62,7 +62,7 @@ public class ModRemapper {
 
 		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
 
-		File mixinMapFile = extension.getMinecraftProvider().jarProvider.MINECRAFT_MAPPED_JAR;
+		File mixinMapFile = extension.getMinecraftProvider().pomfProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();

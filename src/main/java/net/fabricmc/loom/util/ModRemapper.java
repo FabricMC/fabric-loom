@@ -25,33 +25,31 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PomfProvider;
+import net.fabricmc.loom.task.RemapModsTask;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ModRemapper {
 
-	public static void remap(Project project) throws IOException {
+	public static void remap(RemapModsTask task) {
+		Project project = task.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		// TODO: What's the proper way of doing this?
-		File libsDir = new File(project.getBuildDir(), "libs");
-		File modJar = new File(libsDir, project.getName() + "-" + project.getVersion() + ".jar");
+
+		File modJar = task.getArchivePath();
 
 		if (!modJar.exists()) {
 			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
 			return;
 		}
 
-		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
 		PomfProvider pomfProvider = extension.getPomfProvider();
 
 		Path mappings = pomfProvider.MAPPINGS_TINY.toPath();
@@ -72,6 +70,9 @@ public class ModRemapper {
 		if (mixinMapFile.exists()) {
 			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
 		}
+
+
+		project.getLogger().lifecycle("Remapping " + modJar.getName());
 
 		TinyRemapper remapper = remapperBuilder.build();
 

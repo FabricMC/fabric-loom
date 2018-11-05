@@ -28,9 +28,9 @@ import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.providers.PomfProvider;
+import net.fabricmc.loom.task.RemapModsTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
-import net.fabricmc.loom.util.ModRemapper;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -219,16 +219,19 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 
 			SetupIntelijRunConfigs.setup(project1);
+
+			//Enables the default mod remapper
+			if(extension.remapMod){
+				RemapModsTask remapModsTask = (RemapModsTask) project1.getTasks().findByName("remapMod");
+				remapModsTask.from(main.getOutput());
+				remapModsTask.doLast(task -> project1.getArtifacts().add("archives", remapModsTask));
+				project1.getTasks().getByName("build").finalizedBy(remapModsTask);
+			}
+
 		});
 
-		project.getTasks().getByName("jar").doLast(task -> {
-			project.getLogger().lifecycle(":remapping mods");
-			try {
-				ModRemapper.remap(project);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+		//Disables the creation of a standard jar
+		project.getTasks().getByName("jar").onlyIf(element -> false);
 
 	}
 }

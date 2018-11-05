@@ -34,6 +34,7 @@ import java.io.File;
 public class LoomGradleExtension {
 	public String runDir = "run";
 	public String refmapName;
+	public boolean remapMod = true;
 
 	//Not to be set in the build.gradle
 	private Project project;

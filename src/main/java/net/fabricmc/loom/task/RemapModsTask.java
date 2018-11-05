@@ -22,24 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.task.RemapModsTask;
-import net.fabricmc.loom.task.RunClientTask;
-import net.fabricmc.loom.task.RunServerTask;
-import org.gradle.api.Project;
+import net.fabricmc.loom.util.ModRemapper;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+public class RemapModsTask extends Jar {
 
-		makeTask("remapMod", RemapModsTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraft");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraft");
+	@TaskAction
+	public void remap() {
+		ModRemapper.remap(this);
 	}
+
 }

@@ -46,10 +46,10 @@ public class MinecraftJarProvider {
 	public MinecraftJarProvider(Project project, MinecraftProvider minecraftProvider) throws IOException {
 		this.minecraftProvider = minecraftProvider;
 		initFiles(project, minecraftProvider);
-		proccess(project, minecraftProvider);
+		process(project, minecraftProvider);
 	}
 
-	private void proccess(Project project, MinecraftProvider minecraftProvider) throws IOException {
+	private void process(Project project, MinecraftProvider minecraftProvider) throws IOException {
 		if (!MINECRAFT_MERGED_JAR.exists()) {
 			mergeJars(project);
 		}
@@ -67,7 +67,7 @@ public class MinecraftJarProvider {
 		if (!MINECRAFT_MAPPED_JAR.exists()) {
 			throw new RuntimeException("mapped jar not found");
 		}
-		minecraftProvider.addDep(MINECRAFT_MAPPED_JAR, project);
+		minecraftProvider.addDependency(MINECRAFT_MAPPED_JAR, project);
 	}
 
 	public void mergeJars(Project project) throws IOException {

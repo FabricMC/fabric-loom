@@ -57,7 +57,7 @@ public class MinecraftProvider extends DependencyProvider {
 	Gson gson = new Gson();
 
 	@Override
-	public void provide(DependcyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
 		minecraftVersion = dependency.getDependency().getName();
 		pomfVersion = dependency.getDependency().getVersion();
 
@@ -66,12 +66,14 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson();
 		versionInfo = gson.fromJson(new FileReader(MINECRAFT_JSON), MinecraftVersionInfo.class);
 
+		// Add Loom as an annotation processor
+        addDependency(project.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()), project, "compileOnly");
+
 		downloadJars();
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, project);
 
-		//Downloads and setups up pomf
 		pomfProvider = new PomfProvider(pomfVersion, minecraftVersion, project);
 
 		jarProvider = new MinecraftJarProvider(project, this);

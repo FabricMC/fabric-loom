@@ -34,7 +34,7 @@ import java.io.File;
 
 public class ModRemapperProvider extends DependencyProvider {
 	@Override
-	public void provide(DependcyInfo dependency, Project project, LoomGradleExtension extension) {
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) {
 		File input = dependency.resolveFile();
 
 		project.getLogger().lifecycle("Providing " + dependency.getDepString());
@@ -46,7 +46,7 @@ public class ModRemapperProvider extends DependencyProvider {
 
 		ModProcessor.handleMod(input, output, project);
 
-		addDep(output, project);
+		addDependency(output, project);
 	}
 
 	@Override

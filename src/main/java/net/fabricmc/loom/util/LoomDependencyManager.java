@@ -69,7 +69,7 @@ public class LoomDependencyManager {
 			configuration.getDependencies().stream().forEach(dependency -> {
 				for(DependencyProvider provider : dependencyProviderList){
 					if(provider.getTargetConfig().equals(config)){
-						DependencyProvider.DependcyInfo info = new DependencyProvider.DependcyInfo(dependency, configuration);
+						DependencyProvider.DependencyInfo info = new DependencyProvider.DependencyInfo(dependency, configuration);
 						try {
 							provider.provide(info, project, extension);
 						} catch (Exception e) {

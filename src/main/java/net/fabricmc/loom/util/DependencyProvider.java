@@ -36,15 +36,19 @@ public abstract class DependencyProvider {
 
 	private LoomDependencyManager dependencyManager;
 
-	public abstract void provide(DependcyInfo dependency, Project project, LoomGradleExtension extension) throws Exception;
+	public abstract void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception;
 
 	public abstract String getTargetConfig();
 
-	public void addDep(Object object, Project project){
+	public void addDependency(Object object, Project project) {
+		addDependency(object, project, "compile");
+	}
+
+	public void addDependency(Object object, Project project, String target) {
 		if(object instanceof File){
 			object = project.files(object);
 		}
-		project.getDependencies().add("compile", object);
+		project.getDependencies().add(target, object);
 	}
 
 	public void register(LoomDependencyManager dependencyManager){
@@ -55,11 +59,11 @@ public abstract class DependencyProvider {
 		return dependencyManager;
 	}
 
-	public static class DependcyInfo {
+	public static class DependencyInfo {
 		final Dependency dependency;
 		final Configuration sourceConfiguration;
 
-		public DependcyInfo(Dependency dependency, Configuration sourceConfiguration) {
+		public DependencyInfo(Dependency dependency, Configuration sourceConfiguration) {
 			this.dependency = dependency;
 			this.sourceConfiguration = sourceConfiguration;
 		}

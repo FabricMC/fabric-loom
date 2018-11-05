@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.providers;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
@@ -44,7 +42,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 
 public class MinecraftLibraryProvider {
 
@@ -71,7 +68,7 @@ public class MinecraftLibraryProvider {
 					FileUtils.copyURLToFile(new URL(library.getURL()), library.getFile(MINECRAFT_LIBS));
 				}
 				libs.add(library.getFile(MINECRAFT_LIBS));
-				minecraftProvider.addDep(library.getFile(MINECRAFT_LIBS), project);
+				minecraftProvider.addDependency(library.getFile(MINECRAFT_LIBS), project);
 			}
 		}
 

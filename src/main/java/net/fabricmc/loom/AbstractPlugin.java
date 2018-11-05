@@ -69,7 +69,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
-
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
 		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
@@ -89,9 +88,6 @@ public class AbstractPlugin implements Plugin<Project> {
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
-							//javaCompileTask.getClasspath().add(target.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()));
-
-
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
 							if(extension.refmapName == null || extension.refmapName.isEmpty()){

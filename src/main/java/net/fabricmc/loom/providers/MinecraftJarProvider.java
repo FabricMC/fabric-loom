@@ -54,13 +54,15 @@ public class MinecraftJarProvider {
 			mergeJars(project);
 		}
 
-		if (getMappedJar().exists()) {
-			getMappedJar().delete();
+		if(!getMappedJar().exists() || !getIntermediaryJar().exists()){
+			if (getMappedJar().exists()) {
+				getMappedJar().delete();
+			}
+			if (getIntermediaryJar().exists()) {
+				getIntermediaryJar().delete();
+			}
+			new MapJarsTiny().mapJars(this, project);
 		}
-		if (getIntermediaryJar().exists()) {
-			getIntermediaryJar().delete();
-		}
-		new MapJarsTiny().mapJars(this, project);
 
 		if (!MINECRAFT_MAPPED_JAR.exists()) {
 			throw new RuntimeException("mapped jar not found");

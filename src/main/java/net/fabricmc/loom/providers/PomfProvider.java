@@ -26,63 +26,52 @@ package net.fabricmc.loom.providers;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import org.apache.commons.io.FileUtils;
+import net.fabricmc.loom.util.DependencyProvider;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.util.zip.GZIPInputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 //TODO fix local mappings
 //TODO possibly use maven for mappings, can fix above at the same time
-public class PomfProvider {
+public class PomfProvider extends DependencyProvider {
 
 	public String minecraftVersion;
 	public String pomfVersion;
 
-	public File POMF_DIR;
-	public File MAPPINGS_TINY_GZ;
+	private File POMF_DIR;
 	public File MAPPINGS_TINY;
+
 	public File MAPPINGS_MIXIN_EXPORT;
 
-	public PomfProvider(String pomfVersion, String minecraftVersion, Project project) {
-		this.pomfVersion = pomfVersion;
-		this.minecraftVersion = minecraftVersion;
-		initFiles(project);
-		try {
-			init(project);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to setup pomf", e);
-		}
-	}
+	@Override
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+		project.getLogger().lifecycle(":setting up pomf " + dependency.getDependency().getVersion());
 
-	public void init(Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		project.getLogger().lifecycle(":setting up pomf " + pomfVersion);
+		String version = dependency.getDependency().getVersion();
+		String[] split = version.split("\\.");
+
+		File mappingsJar = dependency.resolveFile();
+
+		this.pomfVersion = split[0];
+		this.minecraftVersion = split[1];
+
+		initFiles(project);
 
 		if (!POMF_DIR.exists()) {
 			POMF_DIR.mkdir();
 		}
 
-		if (!MAPPINGS_TINY_GZ.exists()) {
-			FileUtils.copyURLToFile(
-				new URL(String.format("%1$s%2$s.%3$s/pomf-%2$s.%3$s-tiny.gz", Constants.POMF_MAVEN_SERVER, minecraftVersion, pomfVersion)),
-				MAPPINGS_TINY_GZ);
-		}
 
 		if (!MAPPINGS_TINY.exists()) {
-			GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(MAPPINGS_TINY_GZ));
-			FileOutputStream fileOutputStream = new FileOutputStream(MAPPINGS_TINY);
-			int length;
-			byte[] buffer = new byte[4096];
-			while ((length = gzipInputStream.read(buffer)) > 0) {
-				fileOutputStream.write(buffer, 0, length);
+			project.getLogger().lifecycle(":extracting " + mappingsJar.getName());
+			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
+				Path fileToExtract = fileSystem.getPath("mappings/mappings.tiny");
+				Files.copy(fileToExtract, MAPPINGS_TINY.toPath());
 			}
-			gzipInputStream.close();
-			fileOutputStream.close();
 		}
 	}
 
@@ -90,9 +79,12 @@ public class PomfProvider {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		POMF_DIR = new File(extension.getUserCache(), "pomf");
 
-		MAPPINGS_TINY_GZ = new File(POMF_DIR, "pomf-tiny-" + minecraftVersion + "." + pomfVersion + ".gz");
 		MAPPINGS_TINY = new File(POMF_DIR, "pomf-tiny-" + minecraftVersion + "." + pomfVersion);
 		MAPPINGS_MIXIN_EXPORT = new File(Constants.CACHE_FILES, "mixin-map-" + minecraftVersion + "." + pomfVersion + ".tiny");
 	}
 
+	@Override
+	public String getTargetConfig() {
+		return Constants.MAPPINGS;
+	}
 }

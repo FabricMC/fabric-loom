@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -51,8 +52,9 @@ public class ModRemapper {
 		}
 
 		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
+		PomfProvider pomfProvider = extension.getPomfProvider();
 
-		Path mappings = minecraftProvider.pomfProvider.MAPPINGS_TINY.toPath();
+		Path mappings = pomfProvider.MAPPINGS_TINY.toPath();
 
 		String fromM = "named";
 		String toM = "intermediary";
@@ -62,7 +64,7 @@ public class ModRemapper {
 
 		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
 
-		File mixinMapFile = extension.getMinecraftProvider().pomfProvider.MAPPINGS_MIXIN_EXPORT;
+		File mixinMapFile = pomfProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();

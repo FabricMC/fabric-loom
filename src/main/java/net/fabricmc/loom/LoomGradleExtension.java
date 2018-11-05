@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import org.gradle.api.Project;
 
@@ -56,6 +57,10 @@ public class LoomGradleExtension {
 
 	public MinecraftProvider getMinecraftProvider(){
 		return getDependencyManager().getProvider(MinecraftProvider.class);
+	}
+
+	public PomfProvider getPomfProvider(){
+		return getDependencyManager().getProvider(PomfProvider.class);
 	}
 
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {

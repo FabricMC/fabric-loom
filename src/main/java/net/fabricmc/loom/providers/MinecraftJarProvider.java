@@ -88,14 +88,11 @@ public class MinecraftJarProvider {
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		PomfProvider pomfProvider = extension.getPomfProvider();
 		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-intermediary.jar");
 		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-merged.jar");
-		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-mapped-" + minecraftProvider.pomfVersion + ".jar");
+		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-mapped-" + pomfProvider.pomfVersion + ".jar");
 
-	}
-
-	public File getMappingFile() {
-		return minecraftProvider.pomfProvider.MAPPINGS_TINY;
 	}
 
 	public Collection<File> getMapperPaths() {

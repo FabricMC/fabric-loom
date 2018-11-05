@@ -42,9 +42,7 @@ import java.util.Optional;
 public class MinecraftProvider extends DependencyProvider {
 
 	public String minecraftVersion;
-	public String pomfVersion;
 
-	public PomfProvider pomfProvider;
 	public MinecraftVersionInfo versionInfo;
 	public MinecraftLibraryProvider libraryProvider;
 	public MinecraftJarProvider jarProvider;
@@ -58,8 +56,7 @@ public class MinecraftProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
-		minecraftVersion = dependency.getDependency().getName();
-		pomfVersion = dependency.getDependency().getVersion();
+		minecraftVersion = dependency.getDependency().getVersion();
 
 		initFiles(project);
 
@@ -73,8 +70,6 @@ public class MinecraftProvider extends DependencyProvider {
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, project);
-
-		pomfProvider = new PomfProvider(pomfVersion, minecraftVersion, project);
 
 		jarProvider = new MinecraftJarProvider(project, this);
 	}
@@ -96,7 +91,7 @@ public class MinecraftProvider extends DependencyProvider {
 		if (optionalVersion.isPresent()) {
 			FileUtils.copyURLToFile(new URL(optionalVersion.get().url), MINECRAFT_JSON);
 		} else {
-			throw new RuntimeException("Failed to download minecraft json");
+			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
 		}
 
 	}

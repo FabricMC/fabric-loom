@@ -39,12 +39,19 @@ public class ModRemapperProvider extends DependencyProvider {
 
 		project.getLogger().lifecycle("Providing " + dependency.getDepString());
 
-		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
+		PomfProvider pomfProvider = getDependencyManager().getProvider(PomfProvider.class);
 
-		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + minecraftProvider.pomfVersion + ".jar";//TODO use the hash of the input file or something?
+		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + pomfProvider.pomfVersion + ".jar";//TODO use the hash of the input file or something?
 		File output = new File(Constants.REMAPPED_MODS_STORE, outputName);
+		if(output.exists()){
+			output.delete();
+		}
 
 		ModProcessor.handleMod(input, output, project);
+
+		if(!output.exists()){
+			throw new RuntimeException("Failed to remap mod");
+		}
 
 		addDependency(output, project);
 	}

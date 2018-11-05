@@ -50,7 +50,7 @@ public class RunServerTask extends JavaExec {
 		}
 		classpath(libs);
 
-		args("--tweakClass", Constants.FABRIC_SERVER_TWEAKER,  "--fabricMappingFile", extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getAbsolutePath());
+		args("--tweakClass", Constants.FABRIC_SERVER_TWEAKER,  "--fabricMappingFile", extension.getPomfProvider().MAPPINGS_TINY.getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

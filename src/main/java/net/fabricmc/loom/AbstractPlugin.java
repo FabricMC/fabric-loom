@@ -27,6 +27,7 @@ package net.fabricmc.loom;
 import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
+import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.ModRemapper;
@@ -74,6 +75,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
 		minecraftConfig.setTransitive(false); // The launchers do not recurse dependencies
 
+		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+
 		configureIDEs();
 		configureCompile();
 
@@ -88,8 +91,8 @@ public class AbstractPlugin implements Plugin<Project> {
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_TINY.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMinecraftProvider().pomfProvider.MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getPomfProvider().MAPPINGS_TINY.getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getPomfProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
 							if(extension.refmapName == null || extension.refmapName.isEmpty()){
 								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
 								extension.refmapName = project.getName() + "-refmap.json";
@@ -207,6 +210,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
+			dependencyManager.addProvider(new PomfProvider());
 			dependencyManager.addProvider(new MinecraftProvider());
 			dependencyManager.addProvider(new ModRemapperProvider());
 

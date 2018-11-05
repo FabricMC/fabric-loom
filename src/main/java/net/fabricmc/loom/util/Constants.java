@@ -44,4 +44,5 @@ public class Constants {
 
 	public static final String COMPILE_MODS = "modCompile";
 	public static final String MINECRAFT = "minecraft";
+	public static final String MAPPINGS = "mappings";
 }

@@ -75,13 +75,6 @@ public class MinecraftLibraryProvider {
 			}
 		}
 
-		//adds the natvies to compile //TODO extract natives
-		versionInfo.libraries.stream().filter(lib -> lib.natives != null).forEach(lib -> minecraftProvider.addDep(lib.getArtifactName(), project));
-
-		//		for (File source : getProject().getConfigurations().getByName(Constants.CONFIG_NATIVES)) {
-		//			ZipUtil.unpack(source, Constants.MINECRAFT_NATIVES.get(extension));
-		//		}
-
 		MinecraftVersionInfo.AssetIndex assetIndex = versionInfo.assetIndex;
 
 		// get existing cache files
@@ -155,7 +148,6 @@ public class MinecraftLibraryProvider {
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MINECRAFT_LIBS = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-libs");
-		MINECRAFT_NATIVES = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-natives");
 	}
 
 }

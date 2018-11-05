@@ -25,12 +25,12 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
-import net.fabricmc.loom.util.*;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.ModRemapper;
+import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -41,13 +41,10 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.plugins.ide.api.GeneratorTask;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -220,6 +217,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			dependencyManager.handleDependencies(project1);
 
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
+
+			SetupIntelijRunConfigs.setup(project1);
 		});
 
 		project.getTasks().getByName("jar").doLast(task -> {

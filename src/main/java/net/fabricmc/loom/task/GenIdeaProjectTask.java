@@ -26,10 +26,8 @@ package net.fabricmc.loom.task;
 
 import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -49,7 +47,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 
 public class GenIdeaProjectTask extends DefaultTask {
@@ -105,8 +102,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 
 		Gson gson = new Gson();
 
-		MinecraftProvider minecraftProvider =  extension.getDependencyManager().getProvider(MinecraftProvider.class);
-		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
+
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
@@ -136,25 +132,9 @@ public class GenIdeaProjectTask extends DefaultTask {
 			return;
 		}
 
-		IdeaRunConfig ideaClient = new IdeaRunConfig();
-		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaClient.projectName = project.getName();
-		ideaClient.configName = "Minecraft Client";
-		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaClient.vmArgs = "-Djava.library.path=" + extension.getMinecraftProvider().libraryProvider.MINECRAFT_NATIVES.getAbsolutePath() + " -Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.id + " --assetsDir \"" + new File(extension.getUserCache(), "assets-" + minecraftProvider.minecraftVersion).getAbsolutePath() + "\" --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+		runManager.appendChild(IdeaRunConfig.clientRunConfig(project).genRuns(runManager));
 
-		runManager.appendChild(ideaClient.genRuns(runManager));
-
-		IdeaRunConfig ideaServer = new IdeaRunConfig();
-		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaServer.projectName = project.getName();
-		ideaServer.configName = "Minecraft Server";
-		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaServer.vmArgs = "-Dfabric.development=true";
-		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER + " --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
-
-		runManager.appendChild(ideaServer.genRuns(runManager));
+		runManager.appendChild(IdeaRunConfig.serverRunConfig(project).genRuns(runManager));
 
 		transformerFactory = TransformerFactory.newInstance();
 		transformer = transformerFactory.newTransformer();

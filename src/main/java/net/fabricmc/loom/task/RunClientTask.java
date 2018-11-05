@@ -77,8 +77,6 @@ public class RunClientTask extends JavaExec {
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
-		args.add("-Djava.library.path=" + extension.getMinecraftProvider().libraryProvider.MINECRAFT_NATIVES.getAbsolutePath());
-		//args.add("-XstartOnFirstThread"); //Fixes lwjgl starting on an incorrect thread
 		return args;
 	}
 

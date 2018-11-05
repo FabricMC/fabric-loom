@@ -26,13 +26,20 @@ package net.fabricmc.loom.util;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftProvider;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class IdeaRunConfig {
@@ -73,5 +80,51 @@ public class IdeaRunConfig {
 		}
 		parent.appendChild(e);
 		return e;
+	}
+
+	public static IdeaRunConfig clientRunConfig(Project project){
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftProvider minecraftProvider =  extension.getDependencyManager().getProvider(MinecraftProvider.class);
+		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
+
+		IdeaRunConfig ideaClient = new IdeaRunConfig();
+		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
+		ideaClient.projectName = project.getName();
+		ideaClient.configName = "Minecraft Client";
+		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+		ideaClient.vmArgs = "-Dfabric.development=true";
+		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.id + " --assetsDir \"" + new File(extension.getUserCache(), "assets-" + minecraftProvider.minecraftVersion).getAbsolutePath() + "\" --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+
+		return ideaClient;
+	}
+
+	public static IdeaRunConfig serverRunConfig(Project project){
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftProvider minecraftProvider =  extension.getDependencyManager().getProvider(MinecraftProvider.class);
+		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
+
+		IdeaRunConfig ideaServer = new IdeaRunConfig();
+		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
+		ideaServer.projectName = project.getName();
+		ideaServer.configName = "Minecraft Server";
+		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+		ideaServer.vmArgs = "-Dfabric.development=true";
+		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER + " --fabricMappingFile \"" + minecraftProvider.pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+
+		return ideaServer;
+	}
+
+	public String fromDummy() throws IOException {
+		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream("dummy_runconfig.xml");
+		String dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
+		input.close();
+
+		dummyConfig = dummyConfig.replace("%NAME%", configName);
+		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
+		dummyConfig = dummyConfig.replace("%MODULE%", projectName);
+		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", programArgs.replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
+
+		return dummyConfig;
 	}
 }

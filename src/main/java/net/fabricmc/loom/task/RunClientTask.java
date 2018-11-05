@@ -79,6 +79,7 @@ public class RunClientTask extends JavaExec {
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>();
+		args.add("-Dfabric.development=true");
 		return args;
 	}
 

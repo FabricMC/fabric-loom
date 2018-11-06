@@ -56,8 +56,8 @@ public class PomfProvider extends DependencyProvider {
 
 		File mappingsJar = dependency.resolveFile();
 
-		this.pomfVersion = split[0];
-		this.minecraftVersion = split[1];
+		this.minecraftVersion = split[0];
+		this.pomfVersion = split[1];
 
 		initFiles(project);
 

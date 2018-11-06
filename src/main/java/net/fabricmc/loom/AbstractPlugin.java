@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.providers.PomfProvider;
-import net.fabricmc.loom.task.RemapModsTask;
+import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
@@ -40,8 +40,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
@@ -221,17 +223,15 @@ public class AbstractPlugin implements Plugin<Project> {
 			SetupIntelijRunConfigs.setup(project1);
 
 			//Enables the default mod remapper
-			if(extension.remapMod){
-				RemapModsTask remapModsTask = (RemapModsTask) project1.getTasks().findByName("remapMod");
-				remapModsTask.from(main.getOutput());
-				remapModsTask.doLast(task -> project1.getArtifacts().add("archives", remapModsTask));
-				project1.getTasks().getByName("build").finalizedBy(remapModsTask);
+			if (extension.remapMod) {
+				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
+
+				RemapJar remapJarTask = (RemapJar) project1.getTasks().findByName("remapJar");
+				remapJarTask.jar = jarTask.getArchivePath();
+				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
+				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
+				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 			}
-
 		});
-
-		//Disables the creation of a standard jar
-		project.getTasks().getByName("jar").onlyIf(element -> false);
-
 	}
 }

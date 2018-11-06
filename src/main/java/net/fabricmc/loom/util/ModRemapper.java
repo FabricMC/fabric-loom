@@ -26,7 +26,7 @@ package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.PomfProvider;
-import net.fabricmc.loom.task.RemapModsTask;
+import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -39,14 +39,14 @@ import java.util.List;
 
 public class ModRemapper {
 
-	public static void remap(RemapModsTask task) {
+	public static void remap(RemapJar task) {
 		Project project = task.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File modJar = task.getArchivePath();
+		File modJar = task.jar;
 
 		if (!modJar.exists()) {
-			project.getLogger().error("This is can be fixed by adding a 'settings.gradle' file specifying 'rootProject.name'");
+			project.getLogger().error("Source .JAR not found!");
 			return;
 		}
 
@@ -59,8 +59,12 @@ public class ModRemapper {
 
 		List<File> classpathFiles = new ArrayList<>();
 		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
-
 		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
+		Path modJarPath = modJar.toPath();
+
+		String s =modJar.getAbsolutePath();
+		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
+		Path modJarOutputPath = modJarOutput.toPath();
 
 		File mixinMapFile = pomfProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();
@@ -71,17 +75,16 @@ public class ModRemapper {
 			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
 		}
 
-
 		project.getLogger().lifecycle("Remapping " + modJar.getName());
 
 		TinyRemapper remapper = remapperBuilder.build();
 
 		try {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJar.toPath());
-			outputConsumer.addNonClassFiles(modJar.toPath());
-			remapper.read(modJar.toPath());
+			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJarOutputPath);
+			outputConsumer.addNonClassFiles(modJarPath);
 			remapper.read(classpath);
-			remapper.apply(modJar.toPath(), outputConsumer);
+			remapper.read(modJarPath);
+			remapper.apply(modJarPath, outputConsumer);
 			outputConsumer.finish();
 			remapper.finish();
 		} catch (Exception e){
@@ -89,9 +92,19 @@ public class ModRemapper {
 			throw new RuntimeException("Failed to remap JAR", e);
 		}
 
-		if(!modJar.exists()){
+		if (!modJarOutput.exists()){
 			throw new RuntimeException("Failed to reobfuscate JAR");
 		}
+
+		if (extension.refmapName != null && extension.refmapName.length() > 0) {
+			MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput);
+		}
+
+		if (modJar.exists()) {
+			modJar.delete();
+		}
+
+		modJarOutput.renameTo(modJar);
 	}
 
 }

@@ -25,7 +25,7 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.task.RemapModsTask;
+import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import org.gradle.api.Project;
@@ -35,7 +35,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 	public void apply(Project target) {
 		super.apply(target);
 
-		makeTask("remapMod", RemapModsTask.class);
+		makeTask("remapJar", RemapJar.class);
 
 		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
 

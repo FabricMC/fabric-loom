@@ -28,4 +28,8 @@ public class ModExtension {
     public void setVersion(String version) {
         this.version = version;
     }
+
+    public boolean getEnabled() {
+    	return id != null && version != null;
+	}
 }

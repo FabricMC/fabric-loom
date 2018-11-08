@@ -100,8 +100,7 @@ public class ModRemapper {
 			MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput);
 		}
 
-		if (modExtension.getId() != null && modExtension.getVersion() != null) {
-			// update mod.json in jar
+		if (modExtension.getEnabled()) {
 			ModJsonUpdater.updateModJson(modExtension, modJarOutput);
 		}
 

@@ -25,6 +25,10 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.providers.PomfProvider;
@@ -43,12 +47,13 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,12 +72,14 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().create("mod", ModExtension.class, project);
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
+		compileModsConfig.extendsFrom(project.getConfigurations().getByName("compileOnly"));
 		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
 		minecraftConfig.setTransitive(false); // The launchers do not recurse dependencies
@@ -180,6 +187,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
+			ModExtension modExtension = project1.getExtensions().getByType(ModExtension.class);
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(extension.getUserCache());
@@ -231,6 +239,32 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+			}
+
+			if(modExtension.getId() != null && modExtension.getVersion() != null) {
+				// add resources
+				File resourcesFolder = modExtension.getResourceFolder();
+				main.getResources().srcDir(resourcesFolder);
+
+				RemapJar remapJarTask = (RemapJar) project1.getTasks().findByName("remapJar");
+
+				remapJarTask.doFirst(task -> {
+					JsonObject mod = new JsonObject();
+					if(modExtension.getId() != null) {
+						mod.add("id", new JsonPrimitive(modExtension.getId()));
+					}
+					if(modExtension.getVersion() != null) {
+						mod.add("version", new JsonPrimitive(modExtension.getVersion()));
+					}
+
+					File modJsonFile = new File(resourcesFolder, "mod.json");
+					try (Writer writer = new FileWriter(modJsonFile)) {
+						Gson gson = new GsonBuilder().setPrettyPrinting().create();
+						gson.toJson(mod, writer);
+					} catch (IOException e) {
+						project.getLogger().error("Failed to write mod.json", e);
+					}
+				});
 			}
 		});
 	}

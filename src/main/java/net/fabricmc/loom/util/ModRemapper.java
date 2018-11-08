@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.ModExtension;
 import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -42,6 +43,7 @@ public class ModRemapper {
 	public static void remap(RemapJar task) {
 		Project project = task.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		ModExtension modExtension = project.getExtensions().getByType(ModExtension.class);
 
 		File modJar = task.jar;
 
@@ -96,6 +98,11 @@ public class ModRemapper {
 
 		if (extension.refmapName != null && extension.refmapName.length() > 0) {
 			MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput);
+		}
+
+		if (modExtension.getId() != null && modExtension.getVersion() != null) {
+			// update mod.json in jar
+			ModJsonUpdater.updateModJson(modExtension, modJarOutput);
 		}
 
 		if (modJar.exists()) {

@@ -19,7 +19,7 @@ public class ModJsonUpdater {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	public static void updateModJson(ModExtension modExtension, File jarFile) {
-		Set<String> modJsonFileNames = new HashSet<String>();
+		Set<String> modJsonFileNames = new HashSet<>();
 		modJsonFileNames.add("mod.json");
 		ZipUtil.transformEntries(
 				jarFile,

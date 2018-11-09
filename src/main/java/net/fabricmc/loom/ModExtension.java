@@ -30,6 +30,6 @@ public class ModExtension {
     }
 
     public boolean getEnabled() {
-    	return id != null && version != null;
+    	return id != null || version != null;
 	}
 }

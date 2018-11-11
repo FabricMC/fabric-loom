@@ -80,11 +80,9 @@ public final class MixinRefmapHelper {
         ZipUtil.iterate(output, (stream, entry) -> {
             if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
                 // JSON file in root directory
+                InputStreamReader inputStreamReader = new InputStreamReader(stream);
                 try {
-                    InputStreamReader inputStreamReader = new InputStreamReader(stream);
                     JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
-                    inputStreamReader.close();
-                    stream.close();
                     if (json != null && json.has("mixins") && json.get("mixins").isJsonArray()) {
                         if (!onlyWithoutRefmap || !json.has("refmap")) {
                             mixinFilename.add(entry.getName());
@@ -92,6 +90,9 @@ public final class MixinRefmapHelper {
                     }
                 } catch (Exception e) {
                     // ...
+                } finally {
+                    inputStreamReader.close();
+                    stream.close();
                 }
             }
         });
@@ -105,16 +106,17 @@ public final class MixinRefmapHelper {
         ZipUtil.iterate(output, (stream, entry) -> {
             if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
                 // JSON file in root directory
+                InputStreamReader inputStreamReader = new InputStreamReader(stream);
                 try {
-                    InputStreamReader inputStreamReader = new InputStreamReader(stream);
                     JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
-                    inputStreamReader.close();
-                    stream.close();
                     if (json != null && json.has("refmap")) {
                         mixinRefmapFilenames.add(json.get("refmap").getAsString());
                     }
                 } catch (Exception e) {
                     // ...
+                } finally {
+                    inputStreamReader.close();
+                    stream.close();
                 }
             }
         });

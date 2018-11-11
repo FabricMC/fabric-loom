@@ -99,8 +99,9 @@ public class ModProcessor {
 			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
 			.build();
 
+		OutputConsumerPath outputConsumer = null;
 		try {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()));
+			outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()));
 			outputConsumer.addNonClassFiles(input.toPath());
 			if (!modCompileFiles.contains(input)) {
 				remapper.read(input.toPath());
@@ -112,9 +113,18 @@ public class ModProcessor {
 			outputConsumer.finish();
 			remapper.finish();
 		} catch (Exception e){
-			remapper.finish();
 			throw new RuntimeException("Failed to remap JAR to " + toM, e);
+		} finally {
+			if (outputConsumer != null) {
+				try {
+					outputConsumer.finish();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			remapper.finish();
 		}
+
 		if(!output.exists()){
 			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
 		}

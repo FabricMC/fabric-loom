@@ -79,17 +79,24 @@ public class ModRemapper {
 
 		TinyRemapper remapper = remapperBuilder.build();
 
+		OutputConsumerPath outputConsumer = null;
 		try {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath(modJarOutputPath);
+			outputConsumer = new OutputConsumerPath(modJarOutputPath);
 			outputConsumer.addNonClassFiles(modJarPath);
 			remapper.read(classpath);
 			remapper.read(modJarPath);
 			remapper.apply(modJarPath, outputConsumer);
-			outputConsumer.finish();
-			remapper.finish();
-		} catch (Exception e){
-			remapper.finish();
+		} catch (Exception e) {
 			throw new RuntimeException("Failed to remap JAR", e);
+		} finally {
+			if (outputConsumer != null) {
+				try {
+					outputConsumer.finish();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			remapper.finish();
 		}
 
 		if (!modJarOutput.exists()){

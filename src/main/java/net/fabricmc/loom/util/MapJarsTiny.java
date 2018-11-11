@@ -64,17 +64,24 @@ public class MapJarsTiny {
 					.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
 					.build();
 
+			OutputConsumerPath outputConsumer = null;
 			try {
-				OutputConsumerPath outputConsumer = new OutputConsumerPath(output);
+				outputConsumer = new OutputConsumerPath(output);
 				outputConsumer.addNonClassFiles(input);
 				remapper.read(input);
 				remapper.read(classpath);
 				remapper.apply(input, outputConsumer);
-				outputConsumer.finish();
-				remapper.finish();
 			} catch (Exception e) {
+				throw new RuntimeException("Failed to remap JAR", e);
+			} finally {
+				if (outputConsumer != null) {
+					try {
+						outputConsumer.finish();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
 				remapper.finish();
-				throw new RuntimeException("Failed to remap minecraft to " + toM, e);
 			}
 		}
 	}

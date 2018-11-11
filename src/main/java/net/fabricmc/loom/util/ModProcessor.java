@@ -110,8 +110,6 @@ public class ModProcessor {
 			remapper.read(mc);
 			remapper.read(mcDeps);
 			remapper.apply(input.toPath(), outputConsumer);
-			outputConsumer.finish();
-			remapper.finish();
 		} catch (Exception e){
 			throw new RuntimeException("Failed to remap JAR to " + toM, e);
 		} finally {

@@ -35,7 +35,7 @@ dependencies {
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:27.0-jre')
 	implementation ('net.fabricmc:stitch:0.1.0.+')
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.16') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.17') {
 		transitive = false
 	}
 

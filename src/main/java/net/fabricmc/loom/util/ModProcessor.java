@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -80,12 +81,13 @@ public class ModProcessor {
 		String toM = "named";
 
 		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
+		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		PomfProvider pomfProvider = extension.getPomfProvider();
 
 		File mappingsFile = pomfProvider.MAPPINGS_TINY;
 		Path mappings = mappingsFile.toPath();
-		Path mc = minecraftProvider.jarProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
-		Path[] mcDeps = minecraftProvider.jarProvider.getMapperPaths().stream()
+		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
+		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
 			.map(File::toPath)
 			.toArray(Path[]::new);
 		Collection<File> modCompileFiles = project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles();

@@ -27,6 +27,7 @@ package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftJarProvider;
+import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -40,20 +41,20 @@ import java.util.Arrays;
 
 public class MapJarsTiny {
 
-	public void mapJars(MinecraftJarProvider jarProvider, Project project) throws IOException {
+	public void mapJars(MinecraftJarProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
 		String fromM = "official";
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		PomfProvider pomfProvider = extension.getPomfProvider();
 
 		Path mappings = pomfProvider.MAPPINGS_TINY.toPath();
-		Path[] classpath = jarProvider.getMapperPaths().stream()
+		Path[] classpath = mapProvider.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
 		Path input = jarProvider.getInputJar().toPath();
-		Path outputMapped = jarProvider.getMappedJar().toPath();
-		Path outputIntermediary = jarProvider.getIntermediaryJar().toPath();
+		Path outputMapped = mapProvider.getMappedJar().toPath();
+		Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
 
 		for (String toM : Arrays.asList("named", "intermediary")) {
 			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;

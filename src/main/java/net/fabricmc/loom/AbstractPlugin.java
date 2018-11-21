@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
+import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.providers.PomfProvider;
@@ -78,6 +79,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftConfig.setTransitive(false); // The launchers do not recurse dependencies
 
 		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+
+		Configuration minecraftMappedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_MAPPED);
+		minecraftMappedConfig.setTransitive(false); // The launchers do not recurse dependencies
 
 		configureIDEs();
 		configureCompile();
@@ -212,8 +216,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new PomfProvider());
 			dependencyManager.addProvider(new MinecraftProvider());
+			dependencyManager.addProvider(new PomfProvider());
 			dependencyManager.addProvider(new ModRemapperProvider());
 
 			dependencyManager.handleDependencies(project1);

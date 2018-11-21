@@ -29,7 +29,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LoomDependencyManager {
 
@@ -58,7 +60,7 @@ public class LoomDependencyManager {
 	public void handleDependencies(Project project){
 		project.getLogger().lifecycle(":setting up loom dependencies");
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		List<String> targetConfigs = new ArrayList<>();
+		Set<String> targetConfigs = new LinkedHashSet<>();
 		for(DependencyProvider provider : dependencyProviderList){
 			targetConfigs.add(provider.getTargetConfig());
 		}

@@ -36,10 +36,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 public class MinecraftJarProvider {
-
-	public File MINECRAFT_INTERMEDIARY_JAR;
 	public File MINECRAFT_MERGED_JAR;
-	public File MINECRAFT_MAPPED_JAR;
 
 	MinecraftProvider minecraftProvider;
 
@@ -53,21 +50,6 @@ public class MinecraftJarProvider {
 		if (!MINECRAFT_MERGED_JAR.exists()) {
 			mergeJars(project);
 		}
-
-		if(!getMappedJar().exists() || !getIntermediaryJar().exists()){
-			if (getMappedJar().exists()) {
-				getMappedJar().delete();
-			}
-			if (getIntermediaryJar().exists()) {
-				getIntermediaryJar().delete();
-			}
-			new MapJarsTiny().mapJars(this, project);
-		}
-
-		if (!MINECRAFT_MAPPED_JAR.exists()) {
-			throw new RuntimeException("mapped jar not found");
-		}
-		minecraftProvider.addDependency(MINECRAFT_MAPPED_JAR, project);
 	}
 
 	public void mergeJars(Project project) throws IOException {
@@ -89,26 +71,11 @@ public class MinecraftJarProvider {
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		PomfProvider pomfProvider = extension.getPomfProvider();
-		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-intermediary.jar");
 		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-merged.jar");
-		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-mapped-" + pomfProvider.pomfVersion + ".jar");
-
-	}
-
-	public Collection<File> getMapperPaths() {
-		return minecraftProvider.libraryProvider.getLibraries();
 	}
 
 	public File getInputJar() {
 		return MINECRAFT_MERGED_JAR;
-	}
-
-	public File getIntermediaryJar() {
-		return MINECRAFT_INTERMEDIARY_JAR;
-	}
-
-	public File getMappedJar() {
-		return MINECRAFT_MAPPED_JAR;
 	}
 
 }

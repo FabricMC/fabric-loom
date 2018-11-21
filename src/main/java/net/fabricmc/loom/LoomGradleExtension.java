@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
@@ -58,6 +59,10 @@ public class LoomGradleExtension {
 
 	public MinecraftProvider getMinecraftProvider(){
 		return getDependencyManager().getProvider(MinecraftProvider.class);
+	}
+
+	public MinecraftMappedProvider getMinecraftMappedProvider(){
+		return getPomfProvider().mappedProvider;
 	}
 
 	public PomfProvider getPomfProvider(){

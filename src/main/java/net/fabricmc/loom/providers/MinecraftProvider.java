@@ -75,7 +75,7 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void initFiles(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_JSON = new File(extension.getUserCache(), minecraftVersion + "-info.jar");
+		MINECRAFT_JSON = new File(extension.getUserCache(), minecraftVersion + "-info.json");
 		MINECRAFT_CLIENT_JAR = new File(extension.getUserCache(), minecraftVersion + "-client.jar");
 		MINECRAFT_SERVER_JAR = new File(extension.getUserCache(), minecraftVersion + "-server.jar");
 		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), minecraftVersion + "-merged.jar");

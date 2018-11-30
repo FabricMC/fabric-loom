@@ -25,10 +25,13 @@
 package net.fabricmc.loom.providers;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.GenSourcesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.MapJarsTiny;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 
 import java.io.File;
 import java.util.Collection;
@@ -54,14 +57,16 @@ public class MinecraftMappedProvider extends DependencyProvider {
         if (!MINECRAFT_MAPPED_JAR.exists()) {
             throw new RuntimeException("mapped jar not found");
         }
-        minecraftProvider.addDependency(MINECRAFT_MAPPED_JAR, project);
+
+        String version = minecraftProvider.minecraftVersion + "-mapped-" + extension.getPomfProvider().pomfVersion;
+        project.getDependencies().add("compile", project.getDependencies().module("net.minecraft:minecraft:" + version));
     }
 
     public void initFiles(Project project, MinecraftProvider minecraftProvider, PomfProvider pomfProvider) {
         LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
         this.minecraftProvider = minecraftProvider;
-        MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-intermediary.jar");
-        MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-mapped-" + pomfProvider.pomfVersion + ".jar");
+        MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-intermediary.jar");
+        MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-mapped-" + pomfProvider.pomfVersion + ".jar");
     }
 
     public Collection<File> getMapperPaths() {

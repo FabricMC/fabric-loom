@@ -71,7 +71,7 @@ public class MinecraftJarProvider {
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		PomfProvider pomfProvider = extension.getPomfProvider();
-		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-merged.jar");
+		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-merged.jar");
 	}
 
 	public File getInputJar() {

@@ -123,7 +123,7 @@ public class MinecraftLibraryProvider {
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), minecraftProvider.minecraftVersion + "-libs");
+		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
 	}
 
 }

@@ -11,7 +11,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.0.13-SNAPSHOT'
+version = '0.0.14-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()
@@ -33,11 +33,12 @@ dependencies {
 	implementation ('commons-io:commons-io:2.6')
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
-	implementation ('com.google.guava:guava:27.0-jre')
-	implementation ('net.fabricmc:stitch:0.1.0.11')
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.18') {
+	implementation ('com.google.guava:guava:27.0.1-jre')
+	implementation ('net.fabricmc:stitch:0.1.0.16')
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.19') {
 		transitive = false
 	}
+	implementation ('org.benf:cfr:0.136')
 
 	implementation ('net.fabricmc:sponge-mixin:0.7.11.3') {
 		exclude module: 'launchwrapper'

@@ -35,10 +35,11 @@ dependencies {
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:27.0.1-jre')
 	implementation ('net.fabricmc:stitch:0.1.0.17')
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.19') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.20') {
 		transitive = false
 	}
-	implementation ('org.benf:cfr:0.136')
+//	implementation ('org.benf:cfr:0.136')
+	implementation ('org.jetbrains:intellij-fernflower:1.0.0.2')
 
 	implementation ('net.fabricmc:sponge-mixin:0.7.11.3') {
 		exclude module: 'launchwrapper'
@@ -50,6 +51,7 @@ jar {
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
+	from { zipTree("/home/asie/intellij-fernflower-1.0.0.2.jar") }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

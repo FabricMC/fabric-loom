@@ -24,33 +24,26 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.providers.PomfProvider;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
-import org.benf.cfr.reader.api.CfrDriver;
-import org.benf.cfr.reader.api.ClassFileSource;
-import org.benf.cfr.reader.api.OutputSinkFactory;
-import org.benf.cfr.reader.api.SinkReturns;
-import org.benf.cfr.reader.entities.Method;
-import org.benf.cfr.reader.util.output.StreamDumper;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
-import org.xml.sax.SAXException;
+import org.jetbrains.java.decompiler.main.ClassReference14Processor;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
+import java.util.jar.*;
 
 public class GenSourcesTask extends DefaultTask {
 	public static File getSourcesJar(Project project) {
@@ -69,86 +62,82 @@ public class GenSourcesTask extends DefaultTask {
 	public void genSources() throws IOException {
 		Project project = this.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
 		PomfProvider pomfProvider = extension.getPomfProvider();
 		File mappedJar = pomfProvider.mappedProvider.getMappedJar();
 		File sourcesJar = getSourcesJar(project);
 
 		Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-		Set<String> addedDirectories = new HashSet<>();
 
-		try (FileOutputStream fos = new FileOutputStream(sourcesJar);
-			JarOutputStream jos = new JarOutputStream(fos, manifest)) {
+		project.getLogger().lifecycle(":preparing sources JAR");
+		Map<String, Object> options = new HashMap<>();
+		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
+		options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 
-			project.getLogger().lifecycle(":generating sources JAR");
-			CfrDriver driver = new CfrDriver.Builder()
-					.withOptions(ImmutableMap.of("renameillegalidents","true"))
-					.withOutputSink(new OutputSinkFactory() {
-						@Override
-						public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> collection) {
-							switch (sinkType) {
-								case PROGRESS:
-									return Collections.singletonList(SinkClass.STRING);
-								case JAVA:
-									return Collections.singletonList(SinkClass.DECOMPILED);
-								default:
-									return Collections.emptyList();
-							}
+		LoomFernflowerDecompiler decompiler = new LoomFernflowerDecompiler(sourcesJar.getParentFile(), sourcesJar.getName(), options, new LoomFernflowerLogger());
+		decompiler.addSource(mappedJar);
+		for (File lib : libraryProvider.getLibraries()) {
+			try {
+				decompiler.addLibrary(lib);
+			} catch (Exception e) {
+				// pass
+			}
+		}
+
+		project.getLogger().lifecycle(":generating sources JAR");
+		decompiler.decompileContext();
+
+		Map<String, int[]> mapNumbers = decompiler.getDifferingMappings();
+		if (!mapNumbers.isEmpty()) {
+			project.getLogger().lifecycle(":readjusting line numbers");
+
+			File tmpJar = new File(mappedJar.getAbsolutePath() + ".tmp");
+			mappedJar.renameTo(tmpJar);
+			try (
+					FileInputStream fis = new FileInputStream(tmpJar);
+					JarInputStream jis = new JarInputStream(fis);
+					FileOutputStream fos = new FileOutputStream(mappedJar);
+					JarOutputStream jos = new JarOutputStream(fos)
+					) {
+				JarEntry entry;
+
+				while ((entry = jis.getNextJarEntry()) != null) {
+					JarEntry outputEntry = new JarEntry(entry.getName());
+					outputEntry.setTime(entry.getTime());
+					outputEntry.setCreationTime(entry.getCreationTime());
+					outputEntry.setLastAccessTime(entry.getLastAccessTime());
+					outputEntry.setLastModifiedTime(entry.getLastModifiedTime());
+
+					if (!entry.getName().endsWith(".class")) {
+						jos.putNextEntry(outputEntry);
+						ByteStreams.copy(jis, jos);
+						jos.closeEntry();
+					} else {
+						String idx = entry.getName().substring(0, entry.getName().length() - 6);
+						int dollarPos = idx.indexOf('$');
+						if (dollarPos >= 0) {
+							idx = idx.substring(0, dollarPos);
 						}
 
-						@Override
-						public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
-							switch (sinkType) {
-								case PROGRESS:
-									return (t) -> getLogger().debug((String) t);
-								case JAVA:
-									//noinspection unchecked
-									return (Sink<T>) new Sink<SinkReturns.Decompiled>() {
-										@Override
-										public void write(SinkReturns.Decompiled decompiled) {
-											String filename = decompiled.getPackageName().replace('.', '/');
-											if (!filename.isEmpty()) filename += "/";
-											filename += decompiled.getClassName() + ".java";
+						byte[] data = ByteStreams.toByteArray(jis);
+						if (mapNumbers.containsKey(idx)) {
+							ClassReader reader = new ClassReader(data);
+							ClassWriter writer = new ClassWriter(0);
 
-											String[] path = filename.split("/");
-											String pathPart = "";
-											for (int i = 0; i < path.length - 1; i++) {
-												pathPart += path[i] + "/";
-												if (addedDirectories.add(pathPart)) {
-													JarEntry entry = new JarEntry(pathPart);
-													entry.setTime(new Date().getTime());
-
-													try {
-														jos.putNextEntry(entry);
-														jos.closeEntry();
-													} catch (IOException e) {
-														throw new RuntimeException(e);
-													}
-												}
-											}
-
-											byte[] data = decompiled.getJava().getBytes(Charsets.UTF_8);
-											JarEntry entry = new JarEntry(filename);
-											entry.setTime(new Date().getTime());
-											entry.setSize(data.length);
-
-											try {
-												jos.putNextEntry(entry);
-												jos.write(data);
-												jos.closeEntry();
-											} catch (IOException e) {
-												throw new RuntimeException(e);
-											}
-										}
-									};
-								default:
-									return (t) -> {};
-							}
+							reader.accept(new LineNumberAdjustmentVisitor(Opcodes.ASM7, writer, mapNumbers.get(idx)), 0);
+							data = writer.toByteArray();
 						}
-					})
-					.build();
 
-			driver.analyse(Collections.singletonList(mappedJar.getAbsolutePath()));
+						jos.putNextEntry(outputEntry);
+						jos.write(data);
+						jos.closeEntry();
+					}
+				}
+			}
+
+			//noinspection ResultOfMethodCallIgnored
+			tmpJar.delete();
 		}
 	}
 }

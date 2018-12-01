@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.gson.Gson;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
@@ -33,7 +33,6 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
@@ -57,65 +56,10 @@ public class GenIdeaProjectTask extends DefaultTask {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		project.getLogger().lifecycle(":Building idea workspace");
 
-		File file = new File(project.getName() + ".iml");
+		File file = new File(project.getName() + ".iws");
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 		Document doc = docBuilder.parse(file);
-
-		Node component = null;
-		NodeList module = doc.getElementsByTagName("module").item(0).getChildNodes();
-		for (int i = 0; i < module.getLength(); i++) {
-			if (module.item(i).getNodeName().equals("component")) {
-				component = module.item(i);
-				break;
-			}
-		}
-
-		if (component == null) {
-			project.getLogger().lifecycle(":failed to generate intellij run configurations");
-			return;
-		}
-
-		Node content = null;
-		NodeList moduleList = component.getChildNodes();
-
-		for (int i = 0; i < moduleList.getLength(); i++) {
-			if (moduleList.item(i).getNodeName().equals("content")) {
-				content = moduleList.item(i);
-			}
-		}
-
-		if (content == null) {
-			project.getLogger().lifecycle(":failed to generate intellij run configurations");
-			return;
-		}
-
-		Element sourceFolder = doc.createElement("sourceFolder");
-		sourceFolder.setAttribute("url", "file://$MODULE_DIR$/minecraft/src/main/java");
-		sourceFolder.setAttribute("isTestSource", "false");
-		content.appendChild(sourceFolder);
-
-		sourceFolder = doc.createElement("sourceFolder");
-		sourceFolder.setAttribute("url", "file://$MODULE_DIR$/minecraft/src/main/resources");
-		sourceFolder.setAttribute("type", "java-resource");
-		content.appendChild(sourceFolder);
-
-		Gson gson = new Gson();
-
-
-
-		TransformerFactory transformerFactory = TransformerFactory.newInstance();
-		Transformer transformer = transformerFactory.newTransformer();
-		DOMSource source = new DOMSource(doc);
-		StreamResult result = new StreamResult(file);
-		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-		transformer.transform(source, result);
-
-		file = new File(project.getName() + ".iws");
-		docFactory = DocumentBuilderFactory.newInstance();
-		docBuilder = docFactory.newDocumentBuilder();
-		doc = docBuilder.parse(file);
 
 		NodeList list = doc.getElementsByTagName("component");
 		Element runManager = null;
@@ -128,18 +72,22 @@ public class GenIdeaProjectTask extends DefaultTask {
 		}
 
 		if (runManager == null) {
-			project.getLogger().lifecycle(":failed to generate intellij run configurations");
-			return;
+			throw new RuntimeException("Failed to generate intellij run configurations (runManager was not found)");
+		}
+
+		//Done to remove the old run configs before adding the new ones with potentially new run configs.
+		//This has the downside of removing custom run configs but does fix the issue of the provided ones not being updated correctly
+		while (runManager.getFirstChild() != null){
+			runManager.removeChild(runManager.getFirstChild());
 		}
 
 		runManager.appendChild(IdeaRunConfig.clientRunConfig(project).genRuns(runManager));
-
 		runManager.appendChild(IdeaRunConfig.serverRunConfig(project).genRuns(runManager));
 
-		transformerFactory = TransformerFactory.newInstance();
-		transformer = transformerFactory.newTransformer();
-		source = new DOMSource(doc);
-		result = new StreamResult(file);
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		DOMSource source = new DOMSource(doc);
+		StreamResult result = new StreamResult(file);
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 		transformer.transform(source, result);

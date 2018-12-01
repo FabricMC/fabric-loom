@@ -51,7 +51,6 @@ jar {
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"
 	}
-	from { zipTree("/home/asie/intellij-fernflower-1.0.0.2.jar") }
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

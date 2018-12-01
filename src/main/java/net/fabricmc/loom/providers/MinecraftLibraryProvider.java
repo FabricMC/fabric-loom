@@ -58,17 +58,15 @@ public class MinecraftLibraryProvider {
 
 		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
 			if (library.allowed() && library.getFile(MINECRAFT_LIBS) != null) {
+				// TODO: Add custom library locations
+
 				// By default, they are all available on all sides
-				boolean isClientOnly = false;
+				/* boolean isClientOnly = false;
 				if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput") || library.name.contains("text2speech") || library.name.contains("objc")) {
 					isClientOnly = true;
-				}
-				if(!library.getFile(MINECRAFT_LIBS).exists()){
-					project.getLogger().lifecycle(":downloading " + library.getURL());
-					FileUtils.copyURLToFile(new URL(library.getURL()), library.getFile(MINECRAFT_LIBS));
-				}
-				libs.add(library.getFile(MINECRAFT_LIBS));
-				minecraftProvider.addDependency(library.getFile(MINECRAFT_LIBS), project);
+				} */
+
+				project.getDependencies().add("compile", project.getDependencies().module(library.getArtifactName()));
 			}
 		}
 

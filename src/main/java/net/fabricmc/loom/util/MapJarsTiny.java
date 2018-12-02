@@ -63,6 +63,7 @@ public class MapJarsTiny {
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
 					.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+					.rebuildSourceFilenames(true)
 					.build();
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {

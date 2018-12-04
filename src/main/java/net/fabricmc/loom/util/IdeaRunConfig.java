@@ -28,7 +28,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.PomfProvider;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.w3c.dom.Document;
@@ -86,7 +85,6 @@ public class IdeaRunConfig {
 	public static IdeaRunConfig clientRunConfig(Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftProvider minecraftProvider =  extension.getMinecraftProvider();
-		PomfProvider pomfProvider = extension.getPomfProvider();
 		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
 
 		IdeaRunConfig ideaClient = new IdeaRunConfig();
@@ -95,14 +93,13 @@ public class IdeaRunConfig {
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaClient.vmArgs = "-Dfabric.development=true";
-		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\" --fabricMappingFile \"" + pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
 
 		return ideaClient;
 	}
 
 	public static IdeaRunConfig serverRunConfig(Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		PomfProvider pomfProvider = extension.getPomfProvider();
 
 		IdeaRunConfig ideaServer = new IdeaRunConfig();
 		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
@@ -110,7 +107,7 @@ public class IdeaRunConfig {
 		ideaServer.configName = "Minecraft Server";
 		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		ideaServer.vmArgs = "-Dfabric.development=true";
-		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER + " --fabricMappingFile \"" + pomfProvider.MAPPINGS_TINY.getAbsolutePath() + "\"";
+		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER;
 
 		return ideaServer;
 	}

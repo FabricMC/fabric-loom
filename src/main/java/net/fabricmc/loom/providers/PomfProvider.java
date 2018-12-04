@@ -91,6 +91,8 @@ public class PomfProvider extends DependencyProvider {
 			});
 		}
 
+		project.getDependencies().add("compile", project.getDependencies().module("net.fabricmc:pomf:" + version));
+
 		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
 		mappedProvider.provide(dependency, project, extension);

@@ -75,12 +75,6 @@ public class GenIdeaProjectTask extends DefaultTask {
 			throw new RuntimeException("Failed to generate intellij run configurations (runManager was not found)");
 		}
 
-		//Done to remove the old run configs before adding the new ones with potentially new run configs.
-		//This has the downside of removing custom run configs but does fix the issue of the provided ones not being updated correctly
-		while (runManager.getFirstChild() != null){
-			runManager.removeChild(runManager.getFirstChild());
-		}
-
 		runManager.appendChild(IdeaRunConfig.clientRunConfig(project).genRuns(runManager));
 		runManager.appendChild(IdeaRunConfig.serverRunConfig(project).genRuns(runManager));
 

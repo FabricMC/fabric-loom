@@ -25,7 +25,6 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
@@ -55,7 +54,7 @@ public class RunClientTask extends JavaExec {
 		}
 
 		classpath(libs);
-		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion), "--assetsDir", new File(extension.getUserCache(), "assets").getAbsolutePath(), "--fabricMappingFile", pomfProvider.MAPPINGS_TINY.getAbsolutePath());
+		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion), "--assetsDir", new File(extension.getUserCache(), "assets").getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

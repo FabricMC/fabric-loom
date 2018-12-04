@@ -66,8 +66,10 @@ public class SetupIntelijRunConfigs {
 		String clientRunConfig = IdeaRunConfig.clientRunConfig(project).fromDummy();
 		String serverRunConfig = IdeaRunConfig.serverRunConfig(project).fromDummy();
 
-		FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+		if(!clientRunConfigs.exists())
+			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
+		if(!serverRunConfigs.exists())
+			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 
 
 	}

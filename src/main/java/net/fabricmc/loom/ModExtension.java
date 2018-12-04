@@ -2,34 +2,30 @@ package net.fabricmc.loom;
 
 import org.gradle.api.Project;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ModExtension {
 	private final Project project;
-	private String id = null;
-	private String version = null;
-	// TODO: add more properties
-	// TODO: add dependencies
+	private HashMap<String, String> replacements = new HashMap<>();
 
 	public ModExtension(Project project) {
 		this.project = project;
 	}
 
-	public String getId() {
-		return id;
+	public void replace(String key, String value) {
+		replacements.put(key, value);
 	}
 
-	public String getVersion() {
-		return version;
+	public void replace(Map<String, String> replacements) {
+		this.replacements.putAll(replacements);
 	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
+	public Map<String, String> getReplacements() {
+		return replacements;
 	}
 
 	public boolean getEnabled() {
-		return id != null || version != null;
+		return !replacements.isEmpty();
 	}
 }

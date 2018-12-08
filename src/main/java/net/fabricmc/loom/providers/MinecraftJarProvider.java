@@ -59,6 +59,7 @@ public class MinecraftJarProvider {
 		FileOutputStream merged = new FileOutputStream(MINECRAFT_MERGED_JAR);
 
 		JarMerger jarMerger = new JarMerger(client, server, merged);
+		jarMerger.enableSyntheticParamsOffset();
 
 		jarMerger.merge();
 		jarMerger.close();
@@ -70,11 +71,10 @@ public class MinecraftJarProvider {
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		PomfProvider pomfProvider = extension.getPomfProvider();
 		MINECRAFT_MERGED_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-merged.jar");
 	}
 
-	public File getInputJar() {
+	public File getMergedJar() {
 		return MINECRAFT_MERGED_JAR;
 	}
 

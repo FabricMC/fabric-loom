@@ -52,7 +52,7 @@ public class MapJarsTiny {
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
-		Path input = jarProvider.getInputJar().toPath();
+		Path input = jarProvider.getMergedJar().toPath();
 		Path outputMapped = mapProvider.getMappedJar().toPath();
 		Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
 

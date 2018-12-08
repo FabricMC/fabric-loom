@@ -22,26 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.LoomGradleExtension;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskAction;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
-		
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-
-		makeTask("remapJar", RemapJar.class);
-
-		makeTask("genSources", GenSourcesTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-	}
+public class CleanLoomBinaries extends DefaultTask {
+    @TaskAction
+    public void run() {
+        Project project = this.getProject();
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        extension.getMinecraftProvider().jarProvider.getMergedJar().delete();
+        extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
+        extension.getMinecraftMappedProvider().getMappedJar().delete();
+    }
 }

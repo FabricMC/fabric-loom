@@ -31,7 +31,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 	@Override
 	public void apply(Project target) {
 		super.apply(target);
-		
+
 		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
 
 		makeTask("remapJar", RemapJar.class);

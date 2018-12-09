@@ -196,14 +196,14 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("modmuss50");
-				mavenArtifactRepository.setUrl("https://maven.modmuss50.me/");
+				mavenArtifactRepository.setName("Fabric");
+				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
 			});
 
-			project1.getRepositories().maven(mavenArtifactRepository -> {
+			/* project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("SpongePowered");
 				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
-			});
+			}); */
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Mojang");

@@ -22,8 +22,8 @@ if (ENV.BUILD_NUMBER) {
 repositories {
 	mavenCentral()
 	maven {
-		name = "Modmuss"
-		url = 'http://maven.modmuss50.me/'
+		name = "Fabric"
+		url = 'https://maven.fabricmc.net/'
 	}
 }
 

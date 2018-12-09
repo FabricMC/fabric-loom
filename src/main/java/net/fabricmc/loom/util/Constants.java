@@ -35,7 +35,7 @@ public class Constants {
 
 	public static final String FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
 	public static final String FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
-	public static final String POMF_MAVEN_SERVER = "https://maven.modmuss50.me/net/fabricmc/pomf/";
+	public static final String POMF_MAVEN_SERVER = "https://maven.fabricmc.net/net/fabricmc/pomf/";
 
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";

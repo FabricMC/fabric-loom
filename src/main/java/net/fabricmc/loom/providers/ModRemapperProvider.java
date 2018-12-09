@@ -39,9 +39,9 @@ public class ModRemapperProvider extends DependencyProvider {
 
 		project.getLogger().lifecycle("Providing " + dependency.getDepString());
 
-		PomfProvider pomfProvider = getDependencyManager().getProvider(PomfProvider.class);
+		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
 
-		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + pomfProvider.pomfVersion + ".jar";//TODO use the hash of the input file or something?
+		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + mappingsProvider.mappingsVersion + ".jar";//TODO use the hash of the input file or something?
 		File output = new File(Constants.REMAPPED_MODS_STORE, outputName);
 		if(output.exists()){
 			output.delete();

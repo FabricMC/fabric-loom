@@ -32,8 +32,8 @@ public class GenSourcesCfrTask extends DefaultTask {
 	public void genSources() throws IOException {
 		Project project = this.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		PomfProvider pomfProvider = extension.getPomfProvider();
-		File mappedJar = pomfProvider.mappedProvider.getMappedJar();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		File sourcesJar = getSourcesJar(project);
 
 		Manifest manifest = new Manifest();

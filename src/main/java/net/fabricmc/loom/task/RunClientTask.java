@@ -25,7 +25,7 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.PomfProvider;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import org.gradle.api.tasks.JavaExec;
@@ -40,7 +40,7 @@ public class RunClientTask extends JavaExec {
 	public void exec() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().versionInfo;
-		PomfProvider pomfProvider = extension.getPomfProvider();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		List<String> libs = new ArrayList<>();
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {

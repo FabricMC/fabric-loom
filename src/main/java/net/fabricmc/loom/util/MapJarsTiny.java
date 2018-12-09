@@ -28,7 +28,7 @@ package net.fabricmc.loom.util;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftJarProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.providers.PomfProvider;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -45,9 +45,9 @@ public class MapJarsTiny {
 		String fromM = "official";
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		PomfProvider pomfProvider = extension.getPomfProvider();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		Path mappings = pomfProvider.MAPPINGS_TINY.toPath();
+		Path mappings = mappingsProvider.MAPPINGS_TINY.toPath();
 		Path[] classpath = mapProvider.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);

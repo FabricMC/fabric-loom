@@ -38,13 +38,14 @@ import java.nio.file.Path;
 
 //TODO fix local mappings
 //TODO possibly use maven for mappings, can fix above at the same time
-public class PomfProvider extends DependencyProvider {
+public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
 
+	public String mappingsName;
 	public String minecraftVersion;
-	public String pomfVersion;
+	public String mappingsVersion;
 
-	private File POMF_DIR;
+	private File MAPPINGS_DIR;
 	public File MAPPINGS_TINY_BASE;
 	public File MAPPINGS_TINY;
 
@@ -54,20 +55,21 @@ public class PomfProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
 		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
-		project.getLogger().lifecycle(":setting up pomf " + dependency.getDependency().getVersion());
+		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getDependency().getVersion() + ")");
 
 		String version = dependency.getDependency().getVersion();
 		String[] split = version.split("\\.");
 
 		File mappingsJar = dependency.resolveFile();
 
+		this.mappingsName = dependency.getDependency().getName();
 		this.minecraftVersion = split[0];
-		this.pomfVersion = split[1];
+		this.mappingsVersion = split[1];
 
 		initFiles(project);
 
-		if (!POMF_DIR.exists()) {
-			POMF_DIR.mkdir();
+		if (!MAPPINGS_DIR.exists()) {
+			MAPPINGS_DIR.mkdir();
 		}
 
 		if (!MAPPINGS_TINY_BASE.exists() || !MAPPINGS_TINY.exists()) {
@@ -91,7 +93,7 @@ public class PomfProvider extends DependencyProvider {
 			});
 		}
 
-		project.getDependencies().add("compile", project.getDependencies().module("net.fabricmc:pomf:" + version));
+		project.getDependencies().add("compile", project.getDependencies().module(dependency.getDependency().getGroup() + ":" + dependency.getDependency().getName() + ":" + version));
 
 		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
@@ -100,11 +102,11 @@ public class PomfProvider extends DependencyProvider {
 
 	public void initFiles(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		POMF_DIR = new File(extension.getUserCache(), "pomf");
+		MAPPINGS_DIR = new File(extension.getUserCache(), "mappings");
 
-		MAPPINGS_TINY_BASE = new File(POMF_DIR, "pomf-tiny-" + minecraftVersion + "." + pomfVersion + "-base");
-		MAPPINGS_TINY = new File(POMF_DIR, "pomf-tiny-" + minecraftVersion + "." + pomfVersion);
-		MAPPINGS_MIXIN_EXPORT = new File(Constants.CACHE_FILES, "mixin-map-" + minecraftVersion + "." + pomfVersion + ".tiny");
+		MAPPINGS_TINY_BASE = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "." + mappingsVersion + "-base");
+		MAPPINGS_TINY = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "." + mappingsVersion);
+		MAPPINGS_MIXIN_EXPORT = new File(Constants.CACHE_FILES, "mixin-map-" + minecraftVersion + "." + mappingsVersion + ".tiny");
 	}
 
 	@Override

@@ -25,10 +25,9 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
-import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
-import net.fabricmc.loom.providers.PomfProvider;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
@@ -44,7 +43,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
@@ -97,8 +95,8 @@ public class AbstractPlugin implements Plugin<Project> {
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
 						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getPomfProvider().MAPPINGS_TINY.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getPomfProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
 							if(extension.refmapName == null || extension.refmapName.isEmpty()){
 								project.getLogger().error("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
 								extension.refmapName = project.getName() + "-refmap.json";
@@ -217,7 +215,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			extension.setDependencyManager(dependencyManager);
 
 			dependencyManager.addProvider(new MinecraftProvider());
-			dependencyManager.addProvider(new PomfProvider());
+			dependencyManager.addProvider(new MappingsProvider());
 			dependencyManager.addProvider(new ModRemapperProvider());
 
 			dependencyManager.handleDependencies(project1);

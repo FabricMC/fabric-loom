@@ -25,13 +25,11 @@
 package net.fabricmc.loom.util;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.PomfProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -40,24 +38,14 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.objectweb.asm.commons.Remapper;
-import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -82,9 +70,9 @@ public class ModProcessor {
 
 		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-		PomfProvider pomfProvider = extension.getPomfProvider();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		File mappingsFile = pomfProvider.MAPPINGS_TINY;
+		File mappingsFile = mappingsProvider.MAPPINGS_TINY;
 		Path mappings = mappingsFile.toPath();
 		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream()

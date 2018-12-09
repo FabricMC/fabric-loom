@@ -26,13 +26,11 @@ package net.fabricmc.loom.task;
 
 import com.google.common.io.ByteStreams;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
-import net.fabricmc.loom.providers.PomfProvider;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
-import org.jetbrains.java.decompiler.main.ClassReference14Processor;
-import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -48,8 +46,8 @@ import java.util.jar.*;
 public class GenSourcesTask extends DefaultTask {
 	public static File getSourcesJar(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		PomfProvider pomfProvider = extension.getPomfProvider();
-		File mappedJar = pomfProvider.mappedProvider.getMappedJar();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		String path = mappedJar.getAbsolutePath();
 		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
 			throw new RuntimeException("Invalid mapped JAR path: " + path);
@@ -63,8 +61,8 @@ public class GenSourcesTask extends DefaultTask {
 		Project project = this.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
-		PomfProvider pomfProvider = extension.getPomfProvider();
-		File mappedJar = pomfProvider.mappedProvider.getMappedJar();
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		File sourcesJar = getSourcesJar(project);
 
 		Manifest manifest = new Manifest();

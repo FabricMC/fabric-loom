@@ -47,7 +47,7 @@ public class SetupIntelijRunConfigs {
 			throw new RuntimeException("Failed to generate run configs", e);
 		}
 
-		File runDir = new File(Constants.WORKING_DIRECTORY, extension.runDir);
+		File runDir = new File(project.getRootDir(), extension.runDir);
 		if (!runDir.exists()) {
 			runDir.mkdirs();
 		}

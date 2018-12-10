@@ -24,13 +24,8 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
 
 public class Constants {
-	public static final File WORKING_DIRECTORY = new File(".");
-	public static final File CACHE_FILES = new File(WORKING_DIRECTORY, ".gradle/minecraft");
-
-	public static final File REMAPPED_MODS_STORE = new File(CACHE_FILES, "remapped_mods");
 
 	public static final String FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
 	public static final String FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";

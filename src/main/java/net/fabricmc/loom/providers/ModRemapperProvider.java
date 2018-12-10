@@ -42,7 +42,8 @@ public class ModRemapperProvider extends DependencyProvider {
 		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
 
 		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + mappingsProvider.mappingsVersion + ".jar";//TODO use the hash of the input file or something?
-		File output = new File(Constants.REMAPPED_MODS_STORE, outputName);
+		File modStore = new File(extension.getProjectCache(), "remapped_mods");
+		File output = new File(modStore, outputName);
 		if(output.exists()){
 			output.delete();
 		}

@@ -27,7 +27,6 @@ package net.fabricmc.loom.task;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
@@ -70,7 +69,7 @@ public class GenVsCodeProjectTask extends DefaultTask {
             throw new RuntimeException("Failed to write launch.json", e);
         }
 
-        File runDir = new File(Constants.WORKING_DIRECTORY, extension.runDir);
+        File runDir = new File(getProject().getRootDir(), extension.runDir);
         if (!runDir.exists()) {
             runDir.mkdirs();
         }

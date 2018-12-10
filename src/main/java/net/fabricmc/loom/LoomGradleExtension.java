@@ -53,6 +53,14 @@ public class LoomGradleExtension {
 		return userCache;
 	}
 
+	public File getProjectCache(){
+		File projectCache = new File(project.getRootDir(), ".gradle/minecraft/");
+		if(!projectCache.exists()){
+			projectCache.mkdirs();
+		}
+		return projectCache;
+	}
+
 	public LoomDependencyManager getDependencyManager() {
 		return dependencyManager;
 	}

@@ -25,9 +25,9 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
-import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
@@ -189,7 +189,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(Constants.CACHE_FILES);
+				flatDirectoryArtifactRepository.dir(extension.getProjectCache());
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 

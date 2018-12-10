@@ -24,9 +24,7 @@
 
 package net.fabricmc.loom.task;
 
-
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.IdeaRunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
@@ -86,7 +84,7 @@ public class GenIdeaProjectTask extends DefaultTask {
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 		transformer.transform(source, result);
 
-		File runDir = new File(Constants.WORKING_DIRECTORY, extension.runDir);
+		File runDir = new File(getProject().getRootDir(), extension.runDir);
 		if (!runDir.exists()) {
 			runDir.mkdirs();
 		}

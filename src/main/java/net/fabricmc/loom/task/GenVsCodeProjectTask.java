@@ -89,7 +89,7 @@ public class GenVsCodeProjectTask extends DefaultTask {
         public String name;
         public String request = "launch";
         public String cwd = "${workspaceFolder}\\run";
-        public String conolse = "internalConsole";
+        public String console = "internalConsole";
         public boolean stopOnEntry = false;
         public String mainClass;
         public String vmArgs;

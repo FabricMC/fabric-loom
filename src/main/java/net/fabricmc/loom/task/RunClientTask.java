@@ -78,6 +78,7 @@ public class RunClientTask extends JavaExec {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>(super.getJvmArgs());
 		args.add("-Dfabric.development=true");
+		args.add("-XstartOnFirstThread");
 		return args;
 	}
 

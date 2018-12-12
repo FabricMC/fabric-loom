@@ -92,7 +92,7 @@ public class RunConfig {
 		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaClient.vmArgs = "-Dfabric.development=true";
+		ideaClient.vmArgs = "-Dfabric.development=true -XstartOnFirstThread";
 		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
 
 		return ideaClient;

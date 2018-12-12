@@ -73,7 +73,7 @@ public class RunServerTask extends JavaExec {
 	@Override
 	public List<String> getJvmArgs() {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		List<String> args = new ArrayList<>();
+		List<String> args = new ArrayList<>(super.getJvmArgs());
 		args.add("-Dfabric.development=true");
 		return args;
 	}

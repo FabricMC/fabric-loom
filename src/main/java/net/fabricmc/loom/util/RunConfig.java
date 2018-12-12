@@ -92,7 +92,7 @@ public class RunConfig {
 		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaClient.vmArgs = "-Dfabric.development=true -XstartOnFirstThread";
+		ideaClient.vmArgs = "-Dfabric.development=true" + getOSClientJVMArgs();
 		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
 
 		return ideaClient;
@@ -124,5 +124,12 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
 
 		return dummyConfig;
+	}
+
+	public static String getOSClientJVMArgs(){
+		if(OperatingSystem.getOS().equalsIgnoreCase("osx")){
+			return " -XstartOnFirstThread";
+		}
+		return "";
 	}
 }

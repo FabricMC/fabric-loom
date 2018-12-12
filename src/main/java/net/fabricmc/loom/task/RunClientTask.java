@@ -28,6 +28,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
+import net.fabricmc.loom.util.OperatingSystem;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
@@ -78,7 +79,9 @@ public class RunClientTask extends JavaExec {
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> args = new ArrayList<>(super.getJvmArgs());
 		args.add("-Dfabric.development=true");
-		args.add("-XstartOnFirstThread");
+		if(OperatingSystem.getOS().equalsIgnoreCase("osx")){
+			args.add("-XstartOnFirstThread");
+		}
 		return args;
 	}
 

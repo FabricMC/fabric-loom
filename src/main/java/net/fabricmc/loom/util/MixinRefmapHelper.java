@@ -54,7 +54,7 @@ public final class MixinRefmapHelper {
         Set<String> mixinFilenames = findMixins(output, true);
 
         if (mixinFilenames.size() > 0) {
-            ZipUtil.transformEntries(
+            return ZipUtil.transformEntries(
                     output,
                     mixinFilenames.stream()
                             .map((f) -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
@@ -66,8 +66,6 @@ public final class MixinRefmapHelper {
                                 }
                             })).toArray(ZipEntryTransformerEntry[]::new)
             );
-
-            return true;
         } else {
             return false;
         }

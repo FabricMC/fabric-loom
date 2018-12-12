@@ -100,7 +100,9 @@ public class ModRemapper {
 		}
 
 		if (extension.refmapName != null && extension.refmapName.length() > 0) {
-			MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput);
+			if (MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput)) {
+				project.getLogger().debug("Transformed mixin reference maps in output JAR!");
+			}
 		}
 
 		if (modJar.exists()) {

@@ -63,8 +63,8 @@ public class SetupIntelijRunConfigs {
 			runConfigsDir.mkdirs();
 		}
 
-		String clientRunConfig = IdeaRunConfig.clientRunConfig(project).fromDummy();
-		String serverRunConfig = IdeaRunConfig.serverRunConfig(project).fromDummy();
+		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
+		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
 
 		if(!clientRunConfigs.exists())
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);

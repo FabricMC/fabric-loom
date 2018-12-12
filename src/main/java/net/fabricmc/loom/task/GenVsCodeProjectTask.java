@@ -27,7 +27,7 @@ package net.fabricmc.loom.task;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.IdeaRunConfig;
+import net.fabricmc.loom.util.RunConfig;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
@@ -57,8 +57,8 @@ public class GenVsCodeProjectTask extends DefaultTask {
         }
 
         VsCodeLaunch launch = new VsCodeLaunch();
-        launch.add(IdeaRunConfig.clientRunConfig(getProject()));
-        launch.add(IdeaRunConfig.serverRunConfig(getProject()));
+        launch.add(RunConfig.clientRunConfig(getProject()));
+        launch.add(RunConfig.serverRunConfig(getProject()));
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         String json = gson.toJson(launch);
@@ -79,7 +79,7 @@ public class GenVsCodeProjectTask extends DefaultTask {
         public String version = "0.2.0";
         public List<VsCodeConfiguration> configurations = new ArrayList<>();
 
-        public void add(IdeaRunConfig runConfig) {
+        public void add(RunConfig runConfig) {
             configurations.add(new VsCodeConfiguration(runConfig));
         }
     }
@@ -95,7 +95,7 @@ public class GenVsCodeProjectTask extends DefaultTask {
         public String vmArgs;
         public String args;
 
-        public VsCodeConfiguration(IdeaRunConfig runConfig) {
+        public VsCodeConfiguration(RunConfig runConfig) {
             this.name = runConfig.configName;
             this.mainClass = runConfig.mainClass;
             this.vmArgs = runConfig.vmArgs;

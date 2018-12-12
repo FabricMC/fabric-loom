@@ -25,7 +25,7 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.IdeaRunConfig;
+import net.fabricmc.loom.util.RunConfig;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -73,8 +73,8 @@ public class GenIdeaProjectTask extends DefaultTask {
 			throw new RuntimeException("Failed to generate intellij run configurations (runManager was not found)");
 		}
 
-		runManager.appendChild(IdeaRunConfig.clientRunConfig(project).genRuns(runManager));
-		runManager.appendChild(IdeaRunConfig.serverRunConfig(project).genRuns(runManager));
+		runManager.appendChild(RunConfig.clientRunConfig(project).genRuns(runManager));
+		runManager.appendChild(RunConfig.serverRunConfig(project).genRuns(runManager));
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();

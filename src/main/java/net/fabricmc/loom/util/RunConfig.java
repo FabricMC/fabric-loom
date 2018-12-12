@@ -42,7 +42,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class IdeaRunConfig {
+public class RunConfig {
 	public String configName;
 	public String projectName;
 	public String mainClass;
@@ -82,12 +82,12 @@ public class IdeaRunConfig {
 		return e;
 	}
 
-	public static IdeaRunConfig clientRunConfig(Project project){
+	public static RunConfig clientRunConfig(Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftProvider minecraftProvider =  extension.getMinecraftProvider();
 		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
 
-		IdeaRunConfig ideaClient = new IdeaRunConfig();
+		RunConfig ideaClient = new RunConfig();
 		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
 		ideaClient.projectName = project.getName();
 		ideaClient.configName = "Minecraft Client";
@@ -98,10 +98,10 @@ public class IdeaRunConfig {
 		return ideaClient;
 	}
 
-	public static IdeaRunConfig serverRunConfig(Project project){
+	public static RunConfig serverRunConfig(Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		IdeaRunConfig ideaServer = new IdeaRunConfig();
+		RunConfig ideaServer = new RunConfig();
 		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
 		ideaServer.projectName = project.getName();
 		ideaServer.configName = "Minecraft Server";
@@ -112,8 +112,8 @@ public class IdeaRunConfig {
 		return ideaServer;
 	}
 
-	public String fromDummy() throws IOException {
-		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml");
+	public String fromDummy(String dummy) throws IOException {
+		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy);
 		String dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
 		input.close();
 

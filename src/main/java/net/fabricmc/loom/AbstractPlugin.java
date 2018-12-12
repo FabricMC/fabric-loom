@@ -222,6 +222,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			dependencyManager.handleDependencies(project1);
 
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
+			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
 			SetupIntelijRunConfigs.setup(project1);
 

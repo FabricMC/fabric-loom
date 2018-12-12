@@ -22,27 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.*;
-import org.gradle.api.Project;
+import net.fabricmc.loom.util.RunConfig;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.TaskAction;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
+public class GenEclipseRunsTask extends DefaultTask {
 
-		makeTask("remapJar", RemapJar.class);
+    @TaskAction
+    public void genRuns() throws IOException {
+	    File clientRunConfigs = new File(getProject().getRootDir(), "Minecraft_Client.launch");
+	    File serverRunConfigs = new File(getProject().getRootDir(), "Minecraft_Server.launch");
 
-		makeTask("genSources", GenSourcesTask.class);
+	    String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
+	    String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).setGroup("ide");
+	    if(!clientRunConfigs.exists())
+		    FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
+	    if(!serverRunConfigs.exists())
+		    FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-	}
+    }
+
 }

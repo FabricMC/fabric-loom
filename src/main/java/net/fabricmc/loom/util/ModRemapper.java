@@ -66,6 +66,11 @@ public class ModRemapper {
 		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
 		Path modJarOutputPath = modJarOutput.toPath();
 
+		File modJarUnmappedCopy = new File(s.substring(0, s.length() - 4) + "-dev.jar");
+		if (modJarUnmappedCopy.exists()) {
+			modJarUnmappedCopy.delete();
+		}
+
 		File mixinMapFile = mappingsProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();
 
@@ -99,7 +104,8 @@ public class ModRemapper {
 		}
 
 		if (modJar.exists()) {
-			modJar.delete();
+			modJar.renameTo(modJarUnmappedCopy);
+			extension.addUnmappedMod(modJarUnmappedCopy);
 		}
 
 		modJarOutput.renameTo(modJar);

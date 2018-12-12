@@ -31,11 +31,16 @@ import net.fabricmc.loom.util.LoomDependencyManager;
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
 	public String refmapName;
 	public boolean remapMod = true;
+
+	private List<File> unmappedModsBuilt = new ArrayList<>();
 
 	//Not to be set in the build.gradle
 	private Project project;
@@ -43,6 +48,14 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
+	}
+
+	public void addUnmappedMod(File file) {
+		unmappedModsBuilt.add(file);
+	}
+
+	public List<File> getUnmappedMods() {
+		return Collections.unmodifiableList(unmappedModsBuilt);
 	}
 
 	public File getUserCache() {

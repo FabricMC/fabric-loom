@@ -46,8 +46,7 @@ public class RunClientTask extends JavaExec {
 		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
 			libs.add(file.getAbsolutePath());
 		}
-		//Used to add the fabric jar that has been built
-		for (File file : new File(getProject().getBuildDir(), "libs").listFiles()) {
+		for (File file : extension.getUnmappedMods()) {
 			if (file.isFile()) {
 				libs.add(file.getAbsolutePath());
 			}

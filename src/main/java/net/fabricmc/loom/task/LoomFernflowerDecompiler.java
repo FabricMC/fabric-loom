@@ -77,7 +77,9 @@ public class LoomFernflowerDecompiler extends ConsoleDecompiler {
 
 	@Override
 	public void copyEntry(String s, String s1, String s2, String s3) {
-		super.copyEntry(s, s1, jarName, s3);
+		if (s3.endsWith(".java")) {
+			super.copyEntry(s, s1, jarName, s3);
+		}
 	}
 
 	@Override

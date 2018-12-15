@@ -31,6 +31,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -100,7 +101,7 @@ public class ModRemapper {
 		}
 
 		if (extension.refmapName != null && extension.refmapName.length() > 0) {
-			if (MixinRefmapHelper.addRefmapName(extension.refmapName, modJarOutput)) {
+			if (MixinRefmapHelper.addRefmapName(extension.refmapName, extension.getMixinVersion(), modJarOutput)) {
 				project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 			}
 		}

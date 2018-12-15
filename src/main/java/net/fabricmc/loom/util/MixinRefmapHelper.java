@@ -50,7 +50,7 @@ public final class MixinRefmapHelper {
     private MixinRefmapHelper() {
 
     }
-    public static boolean addRefmapName(String filename, File output) {
+    public static boolean addRefmapName(String filename, String mixinVersion, File output) {
         Set<String> mixinFilenames = findMixins(output, true);
 
         if (mixinFilenames.size() > 0) {
@@ -61,7 +61,12 @@ public final class MixinRefmapHelper {
                                 @Override
                                 protected String transform(ZipEntry zipEntry, String input) throws IOException {
                                     JsonObject json = GSON.fromJson(input, JsonObject.class);
-                                    json.addProperty("refmap", filename);
+                                    if (!json.has("refmap")) {
+                                        json.addProperty("refmap", filename);
+                                    }
+                                    if (!json.has("minVersion") && mixinVersion != null) {
+                                        json.addProperty("minVersion", mixinVersion);
+                                    }
                                     return GSON.toJson(json);
                                 }
                             })).toArray(ZipEntryTransformerEntry[]::new)
@@ -82,7 +87,7 @@ public final class MixinRefmapHelper {
                 try {
                     JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
                     if (json != null && json.has("mixins") && json.get("mixins").isJsonArray()) {
-                        if (!onlyWithoutRefmap || !json.has("refmap")) {
+                        if (!onlyWithoutRefmap || !json.has("refmap") || !json.has("minVersion")) {
                             mixinFilename.add(entry.getName());
                         }
                     }

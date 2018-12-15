@@ -29,11 +29,14 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -72,6 +75,24 @@ public class LoomGradleExtension {
 			projectCache.mkdirs();
 		}
 		return projectCache;
+	}
+
+	@Nullable
+	public String getMixinVersion() {
+		for (Dependency dependency : project.getConfigurations().getByName("compile").getDependencies()) {
+			if (dependency.getName().equalsIgnoreCase("mixin") && dependency.getGroup().equals("org.spongepowered")) {
+				return dependency.getVersion();
+			}
+
+			if (dependency.getName().equals("sponge-mixin") && dependency.getGroup().equals("net.fabricmc")) {
+				if (Objects.requireNonNull(dependency.getVersion()).split("\\.").length >= 4) {
+					return dependency.getVersion().substring(0, dependency.getVersion().lastIndexOf('.')) + "-SNAPSHOT";
+				}
+				return dependency.getVersion();
+			}
+		}
+
+		return null;
 	}
 
 	public LoomDependencyManager getDependencyManager() {

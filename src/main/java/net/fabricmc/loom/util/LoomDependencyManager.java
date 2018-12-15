@@ -66,7 +66,7 @@ public class LoomDependencyManager {
 		}
 		for(String config : targetConfigs){
 			Configuration configuration = project.getConfigurations().getByName(config);
-			configuration.getDependencies().stream().forEach(dependency -> {
+			configuration.getDependencies().forEach(dependency -> {
 				for(DependencyProvider provider : dependencyProviderList){
 					if(provider.getTargetConfig().equals(config)){
 						DependencyProvider.DependencyInfo info = new DependencyProvider.DependencyInfo(dependency, configuration);

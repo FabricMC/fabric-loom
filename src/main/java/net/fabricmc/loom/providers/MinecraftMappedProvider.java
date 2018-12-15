@@ -41,6 +41,14 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
     @Override
     public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+        if (!extension.getMappingsProvider().MAPPINGS_TINY.exists()) {
+            throw new RuntimeException("mappings file not found");
+        }
+
+        if (!extension.getMinecraftProvider().jarProvider.getMergedJar().exists()) {
+            throw new RuntimeException("input merged jar not found");
+        }
+
         if(!getMappedJar().exists() || !getIntermediaryJar().exists()){
             if (getMappedJar().exists()) {
                 getMappedJar().delete();

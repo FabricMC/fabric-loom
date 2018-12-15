@@ -55,9 +55,9 @@ public class MappingsProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
 		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
-		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getDependency().getVersion() + ")");
+		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
-		String version = dependency.getDependency().getVersion();
+		String version = dependency.getResolvedVersion();
 		String[] split = version.split("\\.");
 
 		File mappingsJar = dependency.resolveFile();

@@ -68,19 +68,25 @@ public class ModProcessor {
 		String fromM = "intermediary";
 		String toM = "named";
 
-		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		File mappingsFile = mappingsProvider.MAPPINGS_TINY;
 		Path mappings = mappingsFile.toPath();
+		Path inputPath = input.getAbsoluteFile().toPath();
 		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
 			.map(File::toPath)
 			.toArray(Path[]::new);
 		Collection<File> modCompileFiles = project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles();
 		Path[] modCompiles = modCompileFiles.stream()
-				.map(File::toPath)
+				.map(p -> {
+					if (p.equals(input)) {
+						return inputPath;
+					} else {
+						return p.toPath();
+					}
+				})
 				.toArray(Path[]::new);
 
 		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
@@ -90,14 +96,14 @@ public class ModProcessor {
 			.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
-			outputConsumer.addNonClassFiles(input.toPath());
+			outputConsumer.addNonClassFiles(inputPath);
 			if (!modCompileFiles.contains(input)) {
-				remapper.read(input.toPath());
+				remapper.read(inputPath);
 			}
 			remapper.read(modCompiles);
 			remapper.read(mc);
 			remapper.read(mcDeps);
-			remapper.apply(input.toPath(), outputConsumer);
+			remapper.apply(inputPath, outputConsumer);
 		} catch (Exception e){
 			throw new RuntimeException("Failed to remap JAR to " + toM, e);
 		} finally {

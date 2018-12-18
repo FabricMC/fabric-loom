@@ -11,7 +11,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.1.0-SNAPSHOT'
+version = '0.1.1-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()
@@ -24,6 +24,10 @@ repositories {
 	maven {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
+	}
+	maven {
+		name = "SonaType"
+		url = "https://oss.sonatype.org/content/repositories/snapshots/"
 	}
 }
 
@@ -45,6 +49,9 @@ dependencies {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
+
+	implementation ('org.cadixdev:mercury:0.1.0-SNAPSHOT')
+
 }
 
 jar {

@@ -22,29 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.*;
-import org.gradle.api.Project;
+import net.fabricmc.loom.util.SourceRemapper;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.TaskAction;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+public class RemapSourcesTask extends DefaultTask {
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-
-		makeTask("remapJar", RemapJar.class);
-
-		makeTask("genSources", GenSourcesTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).setGroup("ide");
-
-		makeTask("remapSources", RemapSourcesTask.class);
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
+	@TaskAction
+	public void remap() throws Exception {
+		SourceRemapper.remapSources(getProject());
 	}
+
 }

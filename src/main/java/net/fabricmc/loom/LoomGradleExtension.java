@@ -42,6 +42,7 @@ public class LoomGradleExtension {
 	public String runDir = "run";
 	public String refmapName;
 	public boolean remapMod = true;
+	public boolean autoGenIDERuns = true;
 
 	private List<File> unmappedModsBuilt = new ArrayList<>();
 

@@ -224,7 +224,10 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
-			SetupIntelijRunConfigs.setup(project1);
+			if(extension.autoGenIDERuns){
+				SetupIntelijRunConfigs.setup(project1);
+			}
+
 
 			//Enables the default mod remapper
 			if (extension.remapMod) {

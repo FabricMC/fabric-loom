@@ -34,8 +34,8 @@ dependencies {
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:27.0.1-jre')
-	implementation ('net.fabricmc:stitch:0.1.0.28')
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.20') {
+	implementation ('net.fabricmc:stitch:0.1.0.29')
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.22') {
 		transitive = false
 	}
 //	implementation ('org.benf:cfr:0.136')

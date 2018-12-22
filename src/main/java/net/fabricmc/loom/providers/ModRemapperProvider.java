@@ -40,9 +40,10 @@ public class ModRemapperProvider extends DependencyProvider {
 		project.getLogger().lifecycle("Providing " + dependency.getDepString());
 
 		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
+		String verSuffix = ".mapped." + mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
 
-		String outputName = input.getName().substring(0, input.getName().length() - 4) + "-mapped-" + mappingsProvider.mappingsVersion + ".jar";//TODO use the hash of the input file or something?
-		File modStore = new File(extension.getProjectCache(), "remapped_mods");
+		String outputName = input.getName().substring(0, input.getName().length() - 4) + verSuffix + ".jar";//TODO use the hash of the input file or something?
+		File modStore = extension.getRemappedModCache();
 		File output = new File(modStore, outputName);
 		if(output.exists()){
 			output.delete();
@@ -54,7 +55,9 @@ public class ModRemapperProvider extends DependencyProvider {
 			throw new RuntimeException("Failed to remap mod");
 		}
 
-		addDependency(output, project);
+		project.getDependencies().add("compile", project.getDependencies().module(
+				dependency.getDepString() + verSuffix
+		));
 	}
 
 	@Override

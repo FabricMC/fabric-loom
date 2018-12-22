@@ -100,6 +100,14 @@ public class LoomGradleExtension {
 		return projectCache;
 	}
 
+	public File getRemappedModCache() {
+		File remappedModCache = new File(getProjectCache(), "remapped_mods/");
+		if (!remappedModCache.exists()) {
+			remappedModCache.mkdir();
+		}
+		return remappedModCache;
+	}
+
 	@Nullable
 	public String getMixinVersion() {
 		for (Dependency dependency : project.getConfigurations().getByName("compile").getDependencies()) {

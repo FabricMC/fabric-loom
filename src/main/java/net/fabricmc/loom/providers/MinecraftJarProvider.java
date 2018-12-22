@@ -54,19 +54,11 @@ public class MinecraftJarProvider {
 
 	public void mergeJars(Project project) throws IOException {
 		project.getLogger().lifecycle(":merging jars");
-		FileInputStream client = new FileInputStream(minecraftProvider.MINECRAFT_CLIENT_JAR);
-		FileInputStream server = new FileInputStream(minecraftProvider.MINECRAFT_SERVER_JAR);
-		FileOutputStream merged = new FileOutputStream(MINECRAFT_MERGED_JAR);
-
-		JarMerger jarMerger = new JarMerger(client, server, merged);
+		JarMerger jarMerger = new JarMerger(minecraftProvider.MINECRAFT_CLIENT_JAR, minecraftProvider.MINECRAFT_SERVER_JAR, minecraftProvider.MINECRAFT_MERGED_JAR);
 		jarMerger.enableSyntheticParamsOffset();
 
 		jarMerger.merge();
 		jarMerger.close();
-
-		client.close();
-		server.close();
-		merged.close();
 	}
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {

@@ -29,12 +29,14 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.task.RemapJar;
+import net.fabricmc.loom.task.RemapSourcesJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
@@ -238,6 +240,18 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+
+				try {
+					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
+
+					RemapSourcesJar remapSourcesJarTask = (RemapSourcesJar) project1.getTasks().findByName("remapSourcesJar");
+					remapSourcesJarTask.jar = sourcesTask.getArchivePath();
+					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.jar));
+					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
+					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
+				} catch (UnknownTaskException e) {
+					// pass
+				}
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				extension.addUnmappedMod(jarTask.getArchivePath());

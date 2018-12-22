@@ -42,7 +42,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
 		makeTask("genEclipseRuns", GenEclipseRunsTask.class).setGroup("ide");
 
-		makeTask("remapSources", RemapSourcesTask.class);
+		makeTask("remapSourcesJar", RemapSourcesJar.class);
 
 		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
 		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");

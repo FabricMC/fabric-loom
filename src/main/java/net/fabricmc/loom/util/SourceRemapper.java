@@ -24,31 +24,49 @@
 
 package net.fabricmc.loom.util;
 
+import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.stitch.util.Pair;
+import net.fabricmc.stitch.util.StitchUtil;
 import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.io.TextMappingsReader;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
+import org.objectweb.asm.commons.Remapper;
+import org.zeroturnaround.zip.ZipUtil;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.Reader;
+import java.io.*;
+import java.net.URI;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SourceRemapper {
-
-	public static void remapSources(Project project) throws Exception {
+	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		project.getLogger().lifecycle("Setting up source remapper");
+		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
+			try {
+				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 
-		FileReader mappingsReader = new FileReader(mappingsProvider.MAPPINGS_TINY);
-		MappingSet mappings = new TinyReader(mappingsReader, "intermediary", "named").read();
-		mappingsReader.close();
+				FileReader mappingsReader = new FileReader(mappingsProvider.MAPPINGS_TINY);
+				MappingSet mappingsOut = new TinyReader(mappingsReader, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
+				mappingsReader.close();
+				return mappingsOut;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
+
+		project.getLogger().lifecycle(":remapping source jar");
 
 		Mercury mercury = new Mercury();
 
@@ -61,92 +79,170 @@ public class SourceRemapper {
 			}
 		}
 
-		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
+		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
 		mercury.getProcessors().add(MercuryRemapper.create(mappings));
 
-		project.getLogger().lifecycle("Remapping source");
-		mercury.rewrite(new File(project.getRootDir(), "src/main/java").toPath(), new File(project.getRootDir(), "src_mapped").toPath());
-	}
-
-	//Thanks jamierocks
-	public static class TinyReader extends TextMappingsReader {
-
-		public TinyReader(final Reader reader, String to, String from) {
-			super(reader, mappingSet -> new Processor(mappingSet, to, from));
-		}
-
-		public static class Processor extends TextMappingsReader.Processor {
-
-			String to;
-			String from;
-
-			int toOffset = 0;
-			int fromOffset = 1;
-
-			public Processor(MappingSet mappings, String to, String from) {
-				super(mappings);
-				this.to = to;
-				this.from = from;
+		if (source.equals(destination)) {
+			if (source.isDirectory()) {
+				throw new RuntimeException("Directories must differ!");
 			}
 
-			@Override
-			public void accept(final String line) {
-				final String[] params = line.split("\t");
-				switch (params[0]) {
-					case "v1":
-						Pair<Integer, Integer> offset = getMappingOffset(to, from, line);
-						System.out.println("To: " + to + " From: " + from + " toOffset:" + offset.getLeft() + " from:" + offset.getRight());
-						toOffset = offset.getLeft();
-						fromOffset = offset.getRight();
-						return;
-					case "CLASS": {
-						this.mappings.getOrCreateClassMapping(params[1 + toOffset])
-							.setDeobfuscatedName(params[1 + fromOffset]);
-						System.out.println("Class " + params[1 + toOffset] + " -> " + params[1 + fromOffset]);
-						return;
-					}
-					case "FIELD": {
-						this.mappings.getOrCreateClassMapping(params[1 + toOffset])
-							// params[2] is the descriptor
-							.getOrCreateFieldMapping(params[3 + toOffset])
-							.setDeobfuscatedName(params[3 + fromOffset]);
+			source = new File(destination.getAbsolutePath().substring(0, destination.getAbsolutePath().lastIndexOf('.')) + "-dev.jar");
+			if (!destination.renameTo(source)) {
+				throw new RuntimeException("Could not rename " + destination.getName() + "!");
+			}
+		}
 
-						System.out.println("Field " + params[3 + toOffset] + " -> " + params[3 + fromOffset]);
-						return;
+		Path srcPath = source.toPath();
+		boolean isSrcTmp = false;
+		if (!source.isDirectory()) {
+			// create tmp directory
+			isSrcTmp = true;
+			srcPath = Files.createTempDirectory("fabric-loom-src");
+			ZipUtil.unpack(source, srcPath.toFile());
+		}
+
+		StitchUtil.FileSystemDelegate dstFs = destination.isDirectory() ? null : StitchUtil.getJarFileSystem(destination, true);
+		Path dstPath = dstFs != null ? dstFs.get().getPath("/") : destination.toPath();
+
+		mercury.rewrite(srcPath, dstPath);
+
+		if (dstFs != null) {
+			dstFs.close();
+		}
+
+		if (isSrcTmp) {
+			Files.walkFileTree(srcPath, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+					Files.delete(path);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+					Files.delete(path);
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		}
+	}
+
+	static class SimpleClassMapper extends Remapper {
+		final Map<String, String> classMap;
+
+		public SimpleClassMapper(Map<String, String> map) {
+			this.classMap = map;
+		}
+
+		public String map(String typeName) {
+			return this.classMap.getOrDefault(typeName, typeName);
+		}
+	}
+
+	// With help from jamierocks; heavily modified
+	public static class TinyReader extends MappingsReader {
+		private final Reader reader;
+		private final String to;
+		private final String from;
+
+		private int toOffset = 0;
+		private int fromOffset = 1;
+		private int lineNumber = 0;
+
+		public TinyReader(Reader reader, String from, String to) {
+			this.reader = reader;
+			this.from = from;
+			this.to = to;
+		}
+
+		//This looks at the first line of the tiny file and finds the column of the mappings, horrible but works.
+		public Pair<Integer, Integer> getMappingOffset(String to, String from, String line){
+			int toOffset = -1;
+			int fromOffset = -1;
+			String[] split = line.split("\t");
+			for (int i = 0; i < split.length; i++) {
+				String mapping = split[i];
+				if(mapping.equalsIgnoreCase(to)){
+					fromOffset = i -1;
+				}
+				if(mapping.equalsIgnoreCase(from)){
+					toOffset = i -1;
+				}
+			}
+			return Pair.of(toOffset, fromOffset);
+		}
+
+		@Override
+		public MappingSet read(final MappingSet mappings) throws IOException {
+			// As TinyV1 stores descriptors in obfuscated format always, we need to take a two-step approach.
+			Map<String, String> classNames = new HashMap<>();
+			List<String[]> otherNames = new ArrayList<>();
+			SimpleClassMapper classMapper = new SimpleClassMapper(classNames);
+			BufferedReader br = new BufferedReader(reader);
+
+			br.lines().forEach((line) -> {
+				final String[] params = line.split("\t");
+				if ((lineNumber++) == 0) {
+					if (params.length < 1) {
+						throw new RuntimeException("Invalid mapping file!");
+					} else if (params.length < 3 || !params[0].equals("v1")) {
+						throw new RuntimeException("Invalid mapping version: '" + params[0] + "'!");
+					}
+
+					Pair<Integer, Integer> offset = getMappingOffset(to, from, line);
+					// System.out.println("To: " + to + " From: " + from + " toOffset:" + offset.getLeft() + " from:" + offset.getRight());
+					toOffset = offset.getLeft();
+					fromOffset = offset.getRight();
+				} else {
+					switch (params[0]) {
+						case "CLASS": {
+							mappings.getOrCreateClassMapping(params[1 + toOffset])
+									.setDeobfuscatedName(params[1 + fromOffset]);
+							classNames.put(params[1], params[1 + toOffset]);
+							// System.out.println("Class " + params[1 + toOffset] + " -> " + params[1 + fromOffset]);
+							return;
+						}
+						case "FIELD":
+						case "METHOD": {
+							otherNames.add(params);
+							return;
+						}
+					}
+				}
+			});
+			br.close();
+
+			for (String[] params : otherNames) {
+				switch (params[0]) {
+					case "FIELD": {
+						mappings.getOrCreateClassMapping(classMapper.map(params[1]))
+								.getOrCreateFieldMapping(params[3 + toOffset], classMapper.mapDesc(params[2]))
+								.setDeobfuscatedName(params[3 + fromOffset]);
+
+						// System.out.println("Field " + params[3 + toOffset] + classMapper.mapDesc(params[2]) + " -> " + params[3 + fromOffset]);
+						break;
 					}
 					case "METHOD": {
-						this.mappings.getOrCreateClassMapping(params[1 + toOffset])
-							.getOrCreateMethodMapping(params[3 + toOffset], params[2])
-							.setDeobfuscatedName(params[3 + fromOffset]);
+						mappings.getOrCreateClassMapping(classMapper.map(params[1]))
+								.getOrCreateMethodMapping(params[3 + toOffset], classMapper.mapMethodDesc(params[2]))
+								.setDeobfuscatedName(params[3 + fromOffset]);
 
-						System.out.println("Method " + params[3 + toOffset] + " -> " + params[3 + fromOffset]);
-						return;
+						// System.out.println("Method " + params[3 + toOffset] + classMapper.mapMethodDesc(params[2]) + " -> " + params[3 + fromOffset]);
+						break;
 					}
 				}
 			}
 
-			//This looks at the first line of the tiny file and finds the column of the mappings, horrible but works.
-			public Pair<Integer, Integer> getMappingOffset(String to, String from, String line){
-				int toOffset = -1;
-				int fromOffset = -1;
-				String[] split = line.split("\t");
-				for (int i = 0; i < split.length; i++) {
-					String mapping = split[i];
-					if(mapping.equalsIgnoreCase(to)){
-						fromOffset = i -1;
-					}
-					if(mapping.equalsIgnoreCase(from)){
-						toOffset = i -1;
-					}
-				}
-				return Pair.of(toOffset, fromOffset);
-			}
-
+			return mappings;
 		}
 
-	}
+		@Override
+		public void close() throws IOException {
 
+		}
+	}
 
 }

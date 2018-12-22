@@ -29,6 +29,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import org.cadixdev.lorenz.MappingSet;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -53,6 +55,11 @@ public class LoomGradleExtension {
 	private LoomDependencyManager dependencyManager;
 	private JsonObject installerJson;
 	private int installerJsonPriority = Integer.MAX_VALUE; // 0+, higher = less prioritized
+	private MappingSet[] srcMappingCache = new MappingSet[2];
+
+	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
+		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());
+	}
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;

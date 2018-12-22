@@ -25,13 +25,12 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.SourceRemapper;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 
-public class RemapSourcesJar extends DefaultTask {
+public class RemapSourcesJar extends DefaultLoomTask {
 	public File jar;
 	public String direction = "intermediary";
 

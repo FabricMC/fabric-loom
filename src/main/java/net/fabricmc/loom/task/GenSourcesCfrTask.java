@@ -24,9 +24,7 @@
 
 package net.fabricmc.loom.task;
 
-import org.gradle.api.DefaultTask;
-
-public class GenSourcesCfrTask extends DefaultTask {
+public class GenSourcesCfrTask extends DefaultLoomTask {
 	/*
 	@TaskAction
 	public void genSources() throws IOException {

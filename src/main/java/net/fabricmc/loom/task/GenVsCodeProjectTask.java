@@ -29,7 +29,6 @@ import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -42,7 +41,7 @@ import java.util.List;
 // https://marketplace.visualstudio.com/items?itemName=redhat.java
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-debug
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
-public class GenVsCodeProjectTask extends DefaultTask {
+public class GenVsCodeProjectTask extends DefaultLoomTask {
 
     @TaskAction
     public void genRuns() {

@@ -46,7 +46,7 @@ dependencies {
 		exclude module: 'guava'
 	}
 
-	implementation ('org.cadixdev:mercury:0.1.0-SNAPSHOT')
+	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
 
 }
 

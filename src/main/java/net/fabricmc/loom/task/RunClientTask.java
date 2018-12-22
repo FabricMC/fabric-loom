@@ -54,7 +54,7 @@ public class RunClientTask extends JavaExec {
 		}
 
 		classpath(libs);
-		args("--tweakClass", Constants.FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion), "--assetsDir", new File(extension.getUserCache(), "assets").getAbsolutePath());
+		args("--tweakClass", Constants.DEFAULT_FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion), "--assetsDir", new File(extension.getUserCache(), "assets").getAbsolutePath());
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

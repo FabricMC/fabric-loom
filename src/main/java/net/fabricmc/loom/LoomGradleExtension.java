@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import com.google.gson.JsonObject;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -41,6 +42,7 @@ import java.util.Objects;
 public class LoomGradleExtension {
 	public String runDir = "run";
 	public String refmapName;
+	public String loaderLaunchMethod;
 	public boolean remapMod = true;
 	public boolean autoGenIDERuns = true;
 
@@ -49,6 +51,8 @@ public class LoomGradleExtension {
 	//Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
+	private JsonObject installerJson;
+	private int installerJsonPriority = Integer.MAX_VALUE; // 0+, higher = less prioritized
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
@@ -61,6 +65,17 @@ public class LoomGradleExtension {
 	public List<File> getUnmappedMods() {
 		return Collections.unmodifiableList(unmappedModsBuilt);
 	}
+
+	public void setInstallerJson(JsonObject object, int priority) {
+	    if (installerJson == null || priority <= installerJsonPriority) {
+            this.installerJson = object;
+            this.installerJsonPriority = priority;
+        }
+    }
+
+    public JsonObject getInstallerJson() {
+	    return installerJson;
+    }
 
 	public File getUserCache() {
 		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
@@ -94,6 +109,10 @@ public class LoomGradleExtension {
 		}
 
 		return null;
+	}
+
+	public String getLoaderLaunchMethod() {
+		return loaderLaunchMethod != null ? loaderLaunchMethod : "";
 	}
 
 	public LoomDependencyManager getDependencyManager() {

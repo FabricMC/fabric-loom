@@ -40,20 +40,19 @@ public class LineNumberAdjustmentVisitor extends ClassVisitor {
 		@Override
 		public void visitLineNumber(final int line, final Label start) {
 			int tLine = line;
-			/* while (tLine >= 1 && !lineNumberMap.containsKey(tLine)) {
-				tLine--;
-			} */
-			while (tLine <= maxLine && !lineNumberMap.containsKey(tLine)) {
-				tLine++;
-			}
 			if (tLine <= 0) {
-				tLine = 1;
+				super.visitLineNumber(1, start);
 			} else if (tLine >= maxLine) {
-				tLine = maxLineDst;
+				super.visitLineNumber(maxLineDst, start);
 			} else {
-				tLine = lineNumberMap.get(tLine);
+				Integer matchedLine = null;
+
+				while (tLine <= maxLine && ((matchedLine = lineNumberMap.get(tLine)) == null)) {
+					tLine++;
+				}
+
+				super.visitLineNumber(matchedLine != null ? matchedLine : maxLineDst, start);
 			}
-			super.visitLineNumber(tLine, start);
 		}
 	}
 

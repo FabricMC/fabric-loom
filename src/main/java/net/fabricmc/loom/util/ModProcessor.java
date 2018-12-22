@@ -50,17 +50,14 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 public class ModProcessor {
+	private static final Gson GSON = new Gson();
 
 	public static void handleMod(File input, File output, Project project){
 		if(output.exists()){
 			output.delete();
 		}
 		remapJar(input, output, project);
-
-		JsonObject jsonObject = readInstallerJson(input);
-		if(jsonObject != null){
-			handleInstallerJson(jsonObject, project);
-		}
+		readInstallerJson(input, project);
 	}
 
 	private static void remapJar(File input, File output, Project project){
@@ -120,48 +117,39 @@ public class ModProcessor {
 		}
 	}
 
-	private static void handleInstallerJson(JsonObject jsonObject, Project project){
-		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
-		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
-			String name = jsonElement.getAsJsonObject().get("name").getAsString();
-
-			Configuration configuration = project.getConfigurations().getByName("compile");
-			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
-			modDep.setTransitive(false);
-			configuration.getDependencies().add(modDep);
-
-			if(jsonElement.getAsJsonObject().has("url")){
-				String url = jsonElement.getAsJsonObject().get("url").getAsString();
-				long count = project.getRepositories().stream()
-					.filter(artifactRepository -> artifactRepository instanceof MavenArtifactRepository)
-					.map(artifactRepository -> (MavenArtifactRepository) artifactRepository)
-					.filter(mavenArtifactRepository -> mavenArtifactRepository.getUrl().toString().equalsIgnoreCase(url)).count();
-				if(count == 0){
-					project.getRepositories().maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(jsonElement.getAsJsonObject().get("url").getAsString()));
-				}
-
-			}
-		});
-	}
-
-	private static JsonObject readInstallerJson(File file){
+	private static void readInstallerJson(File file, Project project){
 		try {
 			JarFile jarFile = new JarFile(file);
-			ZipEntry entry = jarFile.getEntry("fabric-installer.json");
+
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			String launchMethod = extension.getLoaderLaunchMethod();
+
+			int priority = 0;
+
+			ZipEntry entry = null;
+			if (!launchMethod.isEmpty()) {
+				entry = jarFile.getEntry("fabric-installer." + launchMethod + ".json");
+				if (entry == null) {
+					project.getLogger().warn("Could not find loader launch method '" + launchMethod + "', falling back");
+				}
+			}
+
 			if(entry == null){
-				return null;
+				entry = jarFile.getEntry("fabric-installer.json");
+				priority = 1;
+				if (entry == null) {
+					return;
+				}
 			}
 			InputStream inputstream = jarFile.getInputStream(entry);
 			String jsonStr = IOUtils.toString(inputstream, StandardCharsets.UTF_8);
 			inputstream.close();
 			jarFile.close();
 
-			JsonObject jsonObject = new Gson().fromJson(jsonStr, JsonObject.class);
-			return jsonObject;
+			JsonObject jsonObject = GSON.fromJson(jsonStr, JsonObject.class);
+			extension.setInstallerJson(jsonObject, priority);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
 		}
 	}
-
 }

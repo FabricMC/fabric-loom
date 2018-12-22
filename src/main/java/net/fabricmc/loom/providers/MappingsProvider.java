@@ -58,13 +58,11 @@ public class MappingsProvider extends DependencyProvider {
 		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
-		String[] split = version.split("\\.");
-
 		File mappingsJar = dependency.resolveFile();
 
 		this.mappingsName = dependency.getDependency().getName();
-		this.minecraftVersion = split[0];
-		this.mappingsVersion = split[1];
+		this.minecraftVersion = version.substring(0, version.lastIndexOf('.'));
+		this.mappingsVersion = version.substring(version.lastIndexOf('.') + 1);
 
 		initFiles(project);
 

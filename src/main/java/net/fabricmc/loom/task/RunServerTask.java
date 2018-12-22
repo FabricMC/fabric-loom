@@ -49,7 +49,7 @@ public class RunServerTask extends JavaExec {
 		}
 		classpath(libs);
 
-		args("--tweakClass", Constants.FABRIC_SERVER_TWEAKER);
+		args("--tweakClass", Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
 
 		setWorkingDir(new File(getProject().getRootDir(), "run"));
 

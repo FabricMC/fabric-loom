@@ -26,6 +26,9 @@ package net.fabricmc.loom.util;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.strobel.collections.ImmutableList;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import org.apache.commons.io.IOUtils;
@@ -40,6 +43,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class RunConfig {
@@ -82,18 +87,72 @@ public class RunConfig {
 		return e;
 	}
 
+	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
+		runConfig.projectName = project.getName();
+		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+		runConfig.vmArgs = "-Dfabric.development=true";
+
+		switch (extension.getLoaderLaunchMethod()) {
+			case "launchwrapper":
+				runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
+				runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
+				break;
+			default:
+				runConfig.mainClass = "net.fabricmc.loader.launch.knot.Knot" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
+				runConfig.programArgs = "";
+				break;
+		}
+
+		// if installer.json found...
+		JsonObject installerJson = extension.getInstallerJson();
+		if (installerJson != null) {
+			List<String> sideKeys = ImmutableList.of(mode, "common");
+
+			// copy main class
+			if (installerJson.has("mainClass")) {
+				JsonElement mainClassJson = installerJson.get("mainClass");
+				if (mainClassJson.isJsonObject()) {
+					JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
+					for (String s : sideKeys) {
+						if (mainClassesJson.has(s)) {
+							runConfig.mainClass = mainClassesJson.get(s).getAsString();
+							break;
+						}
+					}
+				} else {
+					runConfig.mainClass = mainClassJson.getAsString();
+				}
+			}
+
+			// copy launchwrapper tweakers
+			if (installerJson.has("launchwrapper")) {
+				JsonObject launchwrapperJson = installerJson.getAsJsonObject("launchwrapper");
+				if (launchwrapperJson.has("tweakers")) {
+					JsonObject tweakersJson = launchwrapperJson.getAsJsonObject("tweakers");
+					StringBuilder builder = new StringBuilder();
+					for (String s : sideKeys) {
+						if (tweakersJson.has(s)) {
+							for (JsonElement element : tweakersJson.getAsJsonArray(s)) {
+								builder.append(" --tweakClass ").append(element.getAsString());
+							}
+						}
+					}
+					runConfig.programArgs += builder.toString();
+				}
+			}
+		}
+	}
+
 	public static RunConfig clientRunConfig(Project project){
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftProvider minecraftProvider =  extension.getMinecraftProvider();
 		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
 
 		RunConfig ideaClient = new RunConfig();
-		ideaClient.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaClient.projectName = project.getName();
+		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
-		ideaClient.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaClient.vmArgs = "-Dfabric.development=true" + getOSClientJVMArgs();
-		ideaClient.programArgs = "--tweakClass " + Constants.FABRIC_CLIENT_TWEAKER + " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
+		ideaClient.programArgs += " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
+		ideaClient.vmArgs += getOSClientJVMArgs();
 
 		return ideaClient;
 	}
@@ -102,12 +161,8 @@ public class RunConfig {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		RunConfig ideaServer = new RunConfig();
-		ideaServer.mainClass = "net.minecraft.launchwrapper.Launch";
-		ideaServer.projectName = project.getName();
+		populate(project, extension, ideaServer, "server");
 		ideaServer.configName = "Minecraft Server";
-		ideaServer.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		ideaServer.vmArgs = "-Dfabric.development=true";
-		ideaServer.programArgs = "--tweakClass " + Constants.FABRIC_SERVER_TWEAKER;
 
 		return ideaServer;
 	}

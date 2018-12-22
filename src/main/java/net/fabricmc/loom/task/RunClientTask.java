@@ -36,6 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RunClientTask extends JavaExec {
+	public RunClientTask() {
+		setGroup("fabric");
+	}
 
 	@Override
 	public void exec() {

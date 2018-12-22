@@ -25,15 +25,12 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.ModRemapper;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.jvm.tasks.Jar;
 
 import java.io.File;
 
-public class RemapJar extends DefaultTask {
+public class RemapJar extends DefaultLoomTask {
 	public File jar;
 
 	@Input

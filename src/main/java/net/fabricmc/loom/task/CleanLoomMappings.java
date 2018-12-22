@@ -26,14 +26,13 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.DeletingFileVisitor;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class CleanLoomMappings extends DefaultTask {
+public class CleanLoomMappings extends DefaultLoomTask {
     @TaskAction
     public void run() {
         Project project = this.getProject();

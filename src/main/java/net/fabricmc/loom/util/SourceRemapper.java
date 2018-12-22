@@ -125,19 +125,7 @@ public class SourceRemapper {
 		}
 
 		if (isSrcTmp) {
-			Files.walkFileTree(srcPath, new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-					Files.delete(path);
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
-					Files.delete(path);
-					return FileVisitResult.CONTINUE;
-				}
-			});
+			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
 	}
 

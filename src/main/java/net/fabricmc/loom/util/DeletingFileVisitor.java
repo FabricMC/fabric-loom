@@ -22,30 +22,25 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.task.*;
-import org.gradle.api.Project;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
-public class LoomGradlePlugin extends AbstractPlugin {
+public class DeletingFileVisitor extends SimpleFileVisitor<Path> {
 	@Override
-	public void apply(Project target) {
-		super.apply(target);
+	public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+		Files.delete(path);
+		return FileVisitResult.CONTINUE;
+	}
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-		makeTask("cleanLoomMappings", CleanLoomMappings.class);
-
-		makeTask("remapJar", RemapJar.class);
-
-		makeTask("genSources", GenSourcesTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).setGroup("ide");
-
-		makeTask("remapSourcesJar", RemapSourcesJar.class);
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
+	@Override
+	public FileVisitResult postVisitDirectory(Path path, IOException e) throws IOException {
+		Files.delete(path);
+		return FileVisitResult.CONTINUE;
 	}
 }

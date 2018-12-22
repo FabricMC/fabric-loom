@@ -22,30 +22,30 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.DeletingFileVisitor;
+import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskAction;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+import java.io.IOException;
+import java.nio.file.Files;
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-		makeTask("cleanLoomMappings", CleanLoomMappings.class);
-
-		makeTask("remapJar", RemapJar.class);
-
-		makeTask("genSources", GenSourcesTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).setGroup("ide");
-
-		makeTask("remapSourcesJar", RemapSourcesJar.class);
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
-	}
+public class CleanLoomMappings extends DefaultTask {
+    @TaskAction
+    public void run() {
+        Project project = this.getProject();
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        extension.getMappingsProvider().MAPPINGS_TINY.delete();
+        extension.getMappingsProvider().MAPPINGS_TINY_BASE.delete();
+        extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
+        extension.getMinecraftMappedProvider().getMappedJar().delete();
+        try {
+            Files.walkFileTree(extension.getProjectCache().toPath(), new DeletingFileVisitor());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

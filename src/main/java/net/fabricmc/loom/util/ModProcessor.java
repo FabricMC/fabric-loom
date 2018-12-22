@@ -138,6 +138,7 @@ public class ModProcessor {
 				entry = jarFile.getEntry("fabric-installer.json");
 				priority = 1;
 				if (entry == null) {
+					jarFile.close();
 					return;
 				}
 			}

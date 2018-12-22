@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 import org.w3c.dom.Document;
@@ -46,7 +45,7 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 
-public class GenIdeaProjectTask extends DefaultTask {
+public class GenIdeaProjectTask extends DefaultLoomTask {
 
 	@TaskAction
 	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {

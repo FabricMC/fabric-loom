@@ -26,14 +26,13 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.RunConfig;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class GenEclipseRunsTask extends DefaultTask {
+public class GenEclipseRunsTask extends DefaultLoomTask {
 
     @TaskAction
     public void genRuns() throws IOException {

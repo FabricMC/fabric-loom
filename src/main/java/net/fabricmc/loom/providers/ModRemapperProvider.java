@@ -24,27 +24,33 @@
 
 package net.fabricmc.loom.providers;
 
+import com.google.common.io.Files;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.ModProcessor;
+import net.fabricmc.loom.util.SourceRemapper;
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class ModRemapperProvider extends DependencyProvider {
 	@Override
-	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) {
-		File input = dependency.resolveFile();
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) {
+		// Provide JAR
+		File input = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
-		project.getLogger().lifecycle("Providing " + dependency.getDepString());
+		project.getLogger().lifecycle(":providing " + dependency.getDepString());
 
 		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
 		String verSuffix = ".mapped." + mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
 
-		String outputName = input.getName().substring(0, input.getName().length() - 4) + verSuffix + ".jar";//TODO use the hash of the input file or something?
+		String outputNamePrefix = input.getName().substring(0, input.getName().length() - 4) + verSuffix;//TODO use the hash of the input file or something?
 		File modStore = extension.getRemappedModCache();
-		File output = new File(modStore, outputName);
+		File output = new File(modStore, outputNamePrefix + ".jar");
 		if(output.exists()){
 			output.delete();
 		}
@@ -58,6 +64,20 @@ public class ModRemapperProvider extends DependencyProvider {
 		project.getDependencies().add("compile", project.getDependencies().module(
 				dependency.getDepString() + verSuffix
 		));
+
+		postPopulationScheduler.accept(() -> {
+			// Provide sources JAR, if present
+			Optional<File> sourcesFile = dependency.resolveFile("sources");
+			if (sourcesFile.isPresent()) {
+				project.getLogger().lifecycle(":providing " + dependency.getDepString() + " sources");
+
+				try {
+					SourceRemapper.remapSources(project, sourcesFile.get(), new File(modStore, outputNamePrefix + "-sources.jar"), true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 
 	@Override

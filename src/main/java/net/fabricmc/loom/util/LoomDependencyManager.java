@@ -61,6 +61,8 @@ public class LoomDependencyManager {
 	}
 
 	public void handleDependencies(Project project){
+		List<Runnable> afterTasks = new ArrayList<>();
+
 		project.getLogger().lifecycle(":setting up loom dependencies");
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Set<String> targetConfigs = new LinkedHashSet<>();
@@ -72,9 +74,9 @@ public class LoomDependencyManager {
 			configuration.getDependencies().forEach(dependency -> {
 				for(DependencyProvider provider : dependencyProviderList){
 					if(provider.getTargetConfig().equals(config)){
-						DependencyProvider.DependencyInfo info = new DependencyProvider.DependencyInfo(dependency, configuration);
+						DependencyProvider.DependencyInfo info = new DependencyProvider.DependencyInfo(project, dependency, configuration);
 						try {
-							provider.provide(info, project, extension);
+							provider.provide(info, project, extension, afterTasks::add);
 						} catch (Exception e) {
 							throw new RuntimeException("Failed to provide", e);
 						}
@@ -87,6 +89,10 @@ public class LoomDependencyManager {
 			handleInstallerJson(extension.getInstallerJson(), project);
 		} else {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
+		}
+
+		for (Runnable runnable : afterTasks) {
+			runnable.run();
 		}
 	}
 

@@ -24,20 +24,33 @@
 
 package net.fabricmc.loom.util;
 
+import com.google.common.collect.ImmutableSet;
 import net.fabricmc.loom.LoomGradleExtension;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
+import org.gradle.api.artifacts.result.ArtifactResolutionResult;
+import org.gradle.api.artifacts.result.ArtifactResult;
+import org.gradle.api.artifacts.result.ComponentArtifactsResult;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier;
+import org.gradle.jvm.JvmLibrary;
+import org.gradle.language.base.artifact.SourcesArtifact;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public abstract class DependencyProvider {
 
 	private LoomDependencyManager dependencyManager;
 
-	public abstract void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception;
+	public abstract void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception;
 
 	public abstract String getTargetConfig();
 
@@ -61,10 +74,12 @@ public abstract class DependencyProvider {
 	}
 
 	public static class DependencyInfo {
+		final Project project;
 		final Dependency dependency;
 		final Configuration sourceConfiguration;
 
-		public DependencyInfo(Dependency dependency, Configuration sourceConfiguration) {
+		public DependencyInfo(Project project, Dependency dependency, Configuration sourceConfiguration) {
+			this.project = project;
 			this.dependency = dependency;
 			this.sourceConfiguration = sourceConfiguration;
 		}
@@ -87,17 +102,68 @@ public abstract class DependencyProvider {
 			return sourceConfiguration;
 		}
 
-		public Set<File> resolve(){
-			return sourceConfiguration.files(dependency);
+		// TODO: Can this be done with stable APIs only?
+		@SuppressWarnings("UnstableApiUsage")
+		public Set<File> resolve(String classifier) {
+			if (classifier.isEmpty()) {
+				return sourceConfiguration.files(dependency);
+			} else if ("sources".equals(classifier)) {
+				for (ResolvedArtifact rd : sourceConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
+					if (rd.getModuleVersion().getId().getGroup().equals(dependency.getGroup())
+							&& rd.getModuleVersion().getId().getName().equals(dependency.getName())
+							&& rd.getModuleVersion().getId().getVersion().equals(dependency.getVersion())) {
+
+						ImmutableSet.Builder<File> files = ImmutableSet.builder();
+
+						ArtifactResolutionQuery query = project.getDependencies().createArtifactResolutionQuery();
+						query.forComponents(DefaultModuleComponentIdentifier.newId(rd.getModuleVersion().getId()));
+						//noinspection unchecked
+						query.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+						for (ComponentArtifactsResult cresult : query.execute().getResolvedComponents()) {
+							for (ArtifactResult result : cresult.getArtifacts(SourcesArtifact.class)) {
+								if (result instanceof ResolvedArtifactResult) {
+									files.add(((ResolvedArtifactResult) result).getFile());
+								}
+							}
+						}
+
+						return files.build();
+					}
+				}
+
+				return ImmutableSet.of();
+			} else {
+				project.getLogger().warn("Unsupported classifier '" + classifier + "'");
+				return ImmutableSet.of();
+			}
 		}
 
-		public File resolveFile(){
-			Set<File> files = resolve();
-			if(files.size() != 1){
-				throw new RuntimeException(dependency + " resolves to more than one file");
+		public Optional<File> resolveFile() {
+			return resolveFile("");
+		}
+
+		public Optional<File> resolveFile(String classifier) {
+			Set<File> files = resolve(classifier);
+			if (files.isEmpty()) {
+				return Optional.empty();
+			} else if (files.size() > 1) {
+				StringBuilder builder = new StringBuilder(this.toString());
+				if (!classifier.isEmpty()) {
+					builder.append(" [").append(classifier).append("]");
+				}
+				builder.append(" resolves to more than one file:");
+				for (File f : files) {
+					builder.append("\n\t-").append(f.getAbsolutePath());
+				}
+				throw new RuntimeException(builder.toString());
+			} else {
+				return files.stream().findFirst();
 			}
-			File file = files.stream().findFirst().orElse(null);
-			return file;
+		}
+
+		@Override
+		public String toString() {
+			return getDepString();
 		}
 
 		public String getDepString(){

@@ -35,6 +35,7 @@ import org.cadixdev.lorenz.io.TextMappingsReader;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
+import org.gradle.internal.impldep.aQute.bnd.build.Run;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 
@@ -104,10 +105,20 @@ public class SourceRemapper {
 			ZipUtil.unpack(source, srcPath.toFile());
 		}
 
+		if (!destination.isDirectory() && destination.exists()) {
+			if (!destination.delete()) {
+				throw new RuntimeException("Could not delete " + destination.getName() + "!");
+			}
+		}
+
 		StitchUtil.FileSystemDelegate dstFs = destination.isDirectory() ? null : StitchUtil.getJarFileSystem(destination, true);
 		Path dstPath = dstFs != null ? dstFs.get().getPath("/") : destination.toPath();
 
-		mercury.rewrite(srcPath, dstPath);
+		try {
+			mercury.rewrite(srcPath, dstPath);
+		} catch (Exception e) {
+			project.getLogger().warn("Could not remap " + source.getName() + " fully!", e);
+		}
 
 		if (dstFs != null) {
 			dstFs.close();

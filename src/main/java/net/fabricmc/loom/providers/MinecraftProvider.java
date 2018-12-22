@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class MinecraftProvider extends DependencyProvider {
 
@@ -55,7 +56,7 @@ public class MinecraftProvider extends DependencyProvider {
 	Gson gson = new Gson();
 
 	@Override
-	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		minecraftVersion = dependency.getDependency().getVersion();
 
 		initFiles(project);

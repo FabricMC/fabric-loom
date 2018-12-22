@@ -32,6 +32,7 @@ import org.gradle.api.Project;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 public class MinecraftMappedProvider extends DependencyProvider {
     public File MINECRAFT_MAPPED_JAR;
@@ -40,7 +41,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
     private MinecraftProvider minecraftProvider;
 
     @Override
-    public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+    public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
         if (!extension.getMappingsProvider().MAPPINGS_TINY.exists()) {
             throw new RuntimeException("mappings file not found");
         }

@@ -35,6 +35,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 //TODO fix local mappings
 //TODO possibly use maven for mappings, can fix above at the same time
@@ -52,13 +53,13 @@ public class MappingsProvider extends DependencyProvider {
 	public File MAPPINGS_MIXIN_EXPORT;
 
 	@Override
-	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension) throws Exception {
+	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
 		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
-		File mappingsJar = dependency.resolveFile();
+		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
 		this.mappingsName = dependency.getDependency().getName();
 		this.minecraftVersion = version.substring(0, version.lastIndexOf('.'));
@@ -95,7 +96,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
-		mappedProvider.provide(dependency, project, extension);
+		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
 
 	public void initFiles(Project project) {

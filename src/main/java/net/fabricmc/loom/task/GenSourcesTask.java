@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task;
 
 import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
@@ -92,7 +93,7 @@ public class GenSourcesTask extends DefaultLoomTask {
 			project.getLogger().lifecycle(":readjusting line numbers");
 
 			File tmpJar = new File(mappedJar.getAbsolutePath() + ".tmp");
-			mappedJar.renameTo(tmpJar);
+			Files.move(mappedJar, tmpJar);
 			try (
 					FileInputStream fis = new FileInputStream(tmpJar);
 					JarInputStream jis = new JarInputStream(fis);

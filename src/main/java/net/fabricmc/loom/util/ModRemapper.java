@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util;
 
+import com.google.common.io.Files;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.RemapJar;
@@ -34,6 +35,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,12 +108,16 @@ public class ModRemapper {
 			}
 		}
 
-		if (modJar.exists()) {
-			modJar.renameTo(modJarUnmappedCopy);
-			extension.addUnmappedMod(modJarUnmappedCopy);
-		}
+		try {
+			if (modJar.exists()) {
+				Files.move(modJar, modJarUnmappedCopy);
+				extension.addUnmappedMod(modJarUnmappedCopy);
+			}
 
-		modJarOutput.renameTo(modJar);
+			Files.move(modJarOutput, modJar);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

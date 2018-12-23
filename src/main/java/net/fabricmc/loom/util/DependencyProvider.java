@@ -169,5 +169,9 @@ public abstract class DependencyProvider {
 		public String getDepString(){
 			return dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion();
 		}
+
+		public String getResolvedDepString(){
+			return dependency.getGroup() + ":" + dependency.getName() + ":" + getResolvedVersion();
+		}
 	}
 }

@@ -43,7 +43,8 @@ public class ModRemapperProvider extends DependencyProvider {
 		// Provide JAR
 		File input = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
-		project.getLogger().lifecycle(":providing " + dependency.getDepString());
+		String rds = dependency.getResolvedDepString();
+		project.getLogger().lifecycle(":providing " + rds);
 
 		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
 		String verSuffix = ".mapped." + mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
@@ -62,14 +63,14 @@ public class ModRemapperProvider extends DependencyProvider {
 		}
 
 		project.getDependencies().add("compile", project.getDependencies().module(
-				dependency.getDepString() + verSuffix
+				rds + verSuffix
 		));
 
 		postPopulationScheduler.accept(() -> {
 			// Provide sources JAR, if present
 			Optional<File> sourcesFile = dependency.resolveFile("sources");
 			if (sourcesFile.isPresent()) {
-				project.getLogger().lifecycle(":providing " + dependency.getDepString() + " sources");
+				project.getLogger().lifecycle(":providing " + rds + " sources");
 
 				try {
 					SourceRemapper.remapSources(project, sourcesFile.get(), new File(modStore, outputNamePrefix + "-sources.jar"), true);

@@ -29,63 +29,15 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.RunConfig;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RunClientTask extends JavaExec {
+public class RunClientTask extends RunTaskBase {
 	public RunClientTask() {
-		setGroup("fabric");
+		super(RunConfig::clientRunConfig);
 	}
-
-	@Override
-	public void exec() {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().versionInfo;
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		List<String> libs = new ArrayList<>();
-		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
-		for (File file : extension.getUnmappedMods()) {
-			if (file.isFile()) {
-				libs.add(file.getAbsolutePath());
-			}
-		}
-
-		classpath(libs);
-		args("--tweakClass", Constants.DEFAULT_FABRIC_CLIENT_TWEAKER, "--assetIndex", minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion), "--assetsDir", new File(extension.getUserCache(), "assets").getAbsolutePath());
-
-		setWorkingDir(new File(getProject().getRootDir(), "run"));
-
-		super.exec();
-	}
-
-	@Override
-	public void setWorkingDir(File dir) {
-		if(!dir.exists()){
-			dir.mkdirs();
-		}
-		super.setWorkingDir(dir);
-	}
-
-	@Override
-	public String getMain() {
-		return "net.minecraft.launchwrapper.Launch";
-	}
-
-	@Override
-	public List<String> getJvmArgs() {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		List<String> args = new ArrayList<>(super.getJvmArgs());
-		args.add("-Dfabric.development=true");
-		if(OperatingSystem.getOS().equalsIgnoreCase("osx")){
-			args.add("-XstartOnFirstThread");
-		}
-		return args;
-	}
-
 }

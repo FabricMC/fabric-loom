@@ -26,58 +26,15 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.RunConfig;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RunServerTask extends JavaExec {
+public class RunServerTask extends RunTaskBase {
 	public RunServerTask() {
-		setGroup("fabric");
+		super(RunConfig::serverRunConfig);
 	}
-
-	@Override
-	public void exec() {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-
-		List<String> libs = new ArrayList<>();
-		for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
-		for (File file : extension.getUnmappedMods()) {
-			if (file.isFile()) {
-				libs.add(file.getAbsolutePath());
-			}
-		}
-		classpath(libs);
-
-		args("--tweakClass", Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
-
-		setWorkingDir(new File(getProject().getRootDir(), "run"));
-
-		super.exec();
-	}
-
-	@Override
-	public String getMain() {
-		return "net.minecraft.launchwrapper.Launch";
-	}
-
-	@Override
-	public void setWorkingDir(File dir) {
-		if(!dir.exists()){
-			dir.mkdirs();
-		}
-		super.setWorkingDir(dir);
-	}
-
-	@Override
-	public List<String> getJvmArgs() {
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		List<String> args = new ArrayList<>(super.getJvmArgs());
-		args.add("-Dfabric.development=true");
-		return args;
-	}
-
 }

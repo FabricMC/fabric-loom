@@ -96,7 +96,7 @@ public abstract class RunTaskBase extends JavaExec {
         }
 
         args(argsSplit);
-        setWorkingDir(new File(config.runDir));
+        setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
 
         super.exec();
     }

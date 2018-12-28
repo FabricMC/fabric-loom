@@ -50,6 +50,12 @@ import java.util.Map;
 
 public class SourceRemapper {
 	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
+		remapSourcesInner(project, source, destination, toNamed);
+		// TODO: FIXME - WORKAROUND https://github.com/FabricMC/fabric-loom/issues/45
+		System.gc();
+	}
+
+	private static void remapSourcesInner(Project project, File source, File destination, boolean toNamed) throws Exception {
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();

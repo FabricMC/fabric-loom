@@ -38,6 +38,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -235,6 +236,10 @@ public class AbstractPlugin implements Plugin<Project> {
 				SetupIntelijRunConfigs.setup(project1);
 			}
 
+			// add dependencies for mixin annotation processor
+			DependencyHandler handler = project1.getDependencies();
+			handler.add("annotationProcessor", "net.fabricmc:sponge-mixin:" + extension.getMixinVersion());
+			handler.add("annotationProcessor", "net.fabricmc:fabric-loom:0.2.0-SNAPSHOT"); // TODO: determine version automatically
 
 			//Enables the default mod remapper
 			if (extension.remapMod) {

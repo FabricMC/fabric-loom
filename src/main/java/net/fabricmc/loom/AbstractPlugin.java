@@ -80,6 +80,8 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
 		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
+		Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS_MAPPED);
+		compileModsMappedConfig.setTransitive(false); // Dont get transitive deps of mods
 		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
 		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
@@ -93,6 +95,15 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		configureIDEs();
 		configureCompile();
+
+		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
+
+        extendsFrom(Constants.COMPILE_MODS_MAPPED, Constants.MINECRAFT_NAMED);
+        extendsFrom("compile", Constants.COMPILE_MODS_MAPPED);
+        extendsFrom("compile", Constants.MAPPINGS);
+        extendsFrom("annotationProcessor", Constants.COMPILE_MODS_MAPPED);
+        extendsFrom("annotationProcessor", Constants.MAPPINGS);
 
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
@@ -242,13 +253,6 @@ public class AbstractPlugin implements Plugin<Project> {
 			DependencyHandler handler = project1.getDependencies();
 			handler.add("annotationProcessor", "net.fabricmc:sponge-mixin:" + extension.getMixinVersion());
 			handler.add("annotationProcessor", "net.fabricmc:fabric-loom:" + extension.getLoomVersion());
-
-			extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
-			extendsFrom(Constants.COMPILE_MODS, Constants.MINECRAFT_NAMED);
-			extendsFrom("compile", Constants.COMPILE_MODS);
-			extendsFrom("compile", Constants.MAPPINGS);
-			extendsFrom("annotationProcessor", Constants.COMPILE_MODS);
-			extendsFrom("annotationProcessor", Constants.MAPPINGS);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {

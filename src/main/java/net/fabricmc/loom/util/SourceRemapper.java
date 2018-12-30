@@ -77,8 +77,13 @@ public class SourceRemapper {
 
 		Mercury mercury = new Mercury();
 
-		for (File file : project.getConfigurations().getByName("compile").getFiles()) {
+		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
 			mercury.getClassPath().add(file.toPath());
+		}
+		if (!toNamed) {
+			for (File file : project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles()) {
+				mercury.getClassPath().add(file.toPath());
+			}
 		}
 		for (File file : extension.getUnmappedMods()) {
 			if (file.isFile()) {

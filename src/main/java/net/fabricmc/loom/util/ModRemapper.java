@@ -60,9 +60,19 @@ public class ModRemapper {
 		String toM = "intermediary";
 
 		List<File> classpathFiles = new ArrayList<>();
-		classpathFiles.addAll(project.getConfigurations().getByName("compile").getFiles());
+//		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles());
+		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_INTERMEDIARY).getFiles());
 		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
 		Path modJarPath = modJar.toPath();
+		boolean classpathContainsModJarPath = false;
+
+		for (Path p : classpath) {
+			if (modJarPath.equals(p)) {
+				modJarPath = p;
+				classpathContainsModJarPath = true;
+				break;
+			}
+		}
 
 		String s =modJar.getAbsolutePath();
 		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
@@ -89,7 +99,9 @@ public class ModRemapper {
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(modJarOutputPath)) {
 			outputConsumer.addNonClassFiles(modJarPath);
 			remapper.read(classpath);
-			remapper.read(modJarPath);
+			if (!classpathContainsModJarPath) {
+				remapper.read(modJarPath);
+			}
 			remapper.apply(modJarPath, outputConsumer);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to remap JAR", e);

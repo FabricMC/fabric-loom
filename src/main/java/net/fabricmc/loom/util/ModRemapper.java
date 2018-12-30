@@ -101,10 +101,8 @@ public class ModRemapper {
 			throw new RuntimeException("Failed to reobfuscate JAR");
 		}
 
-		if (extension.refmapName != null && extension.refmapName.length() > 0) {
-			if (MixinRefmapHelper.addRefmapName(extension.refmapName, extension.getMixinJsonVersion(), modJarOutput)) {
-				project.getLogger().debug("Transformed mixin reference maps in output JAR!");
-			}
+		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), modJarOutput)) {
+			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
 		try {

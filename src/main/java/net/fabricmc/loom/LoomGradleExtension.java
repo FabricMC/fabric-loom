@@ -216,4 +216,13 @@ public class LoomGradleExtension {
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {
 		this.dependencyManager = dependencyManager;
 	}
+
+	public String getRefmapName() {
+		if(refmapName == null || refmapName.isEmpty()){
+			project.getLogger().warn("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
+			refmapName = project.getName() + "-refmap.json";
+		}
+
+		return refmapName;
+	}
 }

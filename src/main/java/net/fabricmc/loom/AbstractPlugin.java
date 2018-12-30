@@ -87,11 +87,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureIDEs();
 		configureCompile();
 
-		if(extension.refmapName == null || extension.refmapName.isEmpty()){
-			project.getLogger().warn("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
-			extension.refmapName = project.getName() + "-refmap.json";
-		}
-
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 			Project project = entry.getKey();
@@ -105,7 +100,7 @@ public class AbstractPlugin implements Plugin<Project> {
 						try {
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.refmapName).getCanonicalPath());
+							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
 						} catch (IOException e) {
 							e.printStackTrace();

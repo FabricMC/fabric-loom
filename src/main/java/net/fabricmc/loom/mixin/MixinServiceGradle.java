@@ -25,7 +25,6 @@
 package net.fabricmc.loom.mixin;
 
 import com.google.common.io.ByteStreams;
-import com.strobel.collections.ImmutableList;
 import org.spongepowered.asm.lib.ClassReader;
 import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;
@@ -146,7 +145,7 @@ public class MixinServiceGradle implements IClassBytecodeProvider, IClassProvide
 
 	@Override
 	public Collection<String> getPlatformAgents() {
-		return ImmutableList.of("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
+		return Collections.singletonList("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
 	}
 
 	public byte[] getClassBytes(String name, String transformedName) throws IOException {

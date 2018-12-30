@@ -25,10 +25,10 @@
 package net.fabricmc.loom.util;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.strobel.collections.ImmutableList;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import org.apache.commons.io.IOUtils;

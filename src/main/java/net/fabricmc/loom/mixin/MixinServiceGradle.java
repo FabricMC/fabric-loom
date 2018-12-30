@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.mixin;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
-import com.strobel.collections.ImmutableList;
 import org.spongepowered.asm.lib.ClassReader;
 import org.spongepowered.asm.lib.tree.ClassNode;
 import org.spongepowered.asm.mixin.MixinEnvironment;

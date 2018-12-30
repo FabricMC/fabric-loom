@@ -57,6 +57,10 @@ import java.util.Set;
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
 
+	private void extendsFrom(String a, String b) {
+		project.getConfigurations().getByName(a).extendsFrom(project.getConfigurations().getByName(b));
+	}
+
 	@Override
 	public void apply(Project target) {
 		this.project = target;
@@ -76,13 +80,16 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
 		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
+		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
+		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
+		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
+		minecraftIntermediaryConfig.setTransitive(false);
+		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
+		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
-		minecraftConfig.setTransitive(false); // The launchers do not recurse dependencies
+		minecraftConfig.setTransitive(false);
 
 		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
-
-		Configuration minecraftMappedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_MAPPED);
-		minecraftMappedConfig.setTransitive(false); // The launchers do not recurse dependencies
 
 		configureIDEs();
 		configureCompile();
@@ -235,6 +242,13 @@ public class AbstractPlugin implements Plugin<Project> {
 			DependencyHandler handler = project1.getDependencies();
 			handler.add("annotationProcessor", "net.fabricmc:sponge-mixin:" + extension.getMixinVersion());
 			handler.add("annotationProcessor", "net.fabricmc:fabric-loom:" + extension.getLoomVersion());
+
+			extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
+			extendsFrom(Constants.COMPILE_MODS, Constants.MINECRAFT_NAMED);
+			extendsFrom("compile", Constants.COMPILE_MODS);
+			extendsFrom("compile", Constants.MAPPINGS);
+			extendsFrom("annotationProcessor", Constants.COMPILE_MODS);
+			extendsFrom("annotationProcessor", Constants.MAPPINGS);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {

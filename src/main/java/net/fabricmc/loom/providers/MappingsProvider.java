@@ -92,8 +92,6 @@ public class MappingsProvider extends DependencyProvider {
 			});
 		}
 
-		project.getDependencies().add("compile", project.getDependencies().module(dependency.getDependency().getGroup() + ":" + dependency.getDependency().getName() + ":" + version));
-
 		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);

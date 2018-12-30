@@ -62,7 +62,7 @@ public class ModRemapperProvider extends DependencyProvider {
 			throw new RuntimeException("Failed to remap mod");
 		}
 
-		project.getDependencies().add("compile", project.getDependencies().module(
+		project.getDependencies().add(Constants.COMPILE_MODS, project.getDependencies().module(
 				rds + verSuffix
 		));
 

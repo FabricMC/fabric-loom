@@ -65,7 +65,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
         }
 
         String version = minecraftProvider.minecraftVersion + "-mapped-" + extension.getMappingsProvider().mappingsVersion;
-        project.getDependencies().add("compile", project.getDependencies().module("net.minecraft:minecraft:" + version));
+        project.getDependencies().add(Constants.MINECRAFT_NAMED, project.getDependencies().module("net.minecraft:minecraft:" + version));
+        version = minecraftProvider.minecraftVersion + "-intermediary";
+        project.getDependencies().add(Constants.MINECRAFT_INTERMEDIARY, project.getDependencies().module("net.minecraft:minecraft:" + version));
     }
 
     public void initFiles(Project project, MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
@@ -89,6 +91,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
     @Override
     public String getTargetConfig() {
-        return Constants.MINECRAFT_MAPPED;
+        return Constants.MINECRAFT_NAMED;
     }
 }

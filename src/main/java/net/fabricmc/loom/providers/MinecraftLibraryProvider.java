@@ -66,7 +66,7 @@ public class MinecraftLibraryProvider {
 					isClientOnly = true;
 				} */
 
-				project.getDependencies().add("compile", project.getDependencies().module(library.getArtifactName()));
+				project.getDependencies().add(Constants.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.getArtifactName()));
 			}
 		}
 

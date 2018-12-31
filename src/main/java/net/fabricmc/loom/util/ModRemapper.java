@@ -60,8 +60,8 @@ public class ModRemapper {
 		String toM = "intermediary";
 
 		List<File> classpathFiles = new ArrayList<>();
-//		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles());
-		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_INTERMEDIARY).getFiles());
+		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles());
+		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_NAMED).getFiles());
 		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
 		Path modJarPath = modJar.toPath();
 		boolean classpathContainsModJarPath = false;

@@ -259,7 +259,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 
 				RemapJar remapJarTask = (RemapJar) project1.getTasks().findByName("remapJar");
-				remapJarTask.jar = jarTask.getArchivePath();
+				if (remapJarTask.jar==null) remapJarTask.jar = jarTask.getArchivePath();
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);

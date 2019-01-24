@@ -62,8 +62,10 @@ public class MappingsProvider extends DependencyProvider {
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
 		this.mappingsName = dependency.getDependency().getName();
-		this.minecraftVersion = version.substring(0, version.lastIndexOf('.'));
-		this.mappingsVersion = version.substring(version.lastIndexOf('.') + 1);
+		char verSep = version.contains("-") ? '-' : '.';
+
+		this.minecraftVersion = version.substring(0, version.lastIndexOf(verSep));
+		this.mappingsVersion = version.substring(version.lastIndexOf(verSep) + 1);
 
 		initFiles(project);
 
@@ -101,9 +103,9 @@ public class MappingsProvider extends DependencyProvider {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MAPPINGS_DIR = new File(extension.getUserCache(), "mappings");
 
-		MAPPINGS_TINY_BASE = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "." + mappingsVersion + "-base");
-		MAPPINGS_TINY = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "." + mappingsVersion);
-		MAPPINGS_MIXIN_EXPORT = new File(extension.getProjectCache(), "mixin-map-" + minecraftVersion + "." + mappingsVersion + ".tiny");
+		MAPPINGS_TINY_BASE = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
+		MAPPINGS_TINY = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+		MAPPINGS_MIXIN_EXPORT = new File(extension.getProjectCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 
 	@Override

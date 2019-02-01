@@ -34,13 +34,13 @@ dependencies {
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:27.0.1-jre')
-	implementation ('net.fabricmc:stitch:0.1.1.40')
+	implementation ('net.fabricmc:stitch:0.1.1.42')
 	implementation ('net.fabricmc:tiny-remapper:0.1.0.23') {
 		transitive = false
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.5')
 
-	implementation ('net.fabricmc:sponge-mixin:0.7.11.14') {
+	implementation ('net.fabricmc:sponge-mixin:0.7.11.16') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

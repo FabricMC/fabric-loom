@@ -60,6 +60,8 @@ public class LoomGradleExtension {
 
         serverRun.setName("Server");
         serverRun.setMainClass("net.fabricmc.loader.launch.knot.KnotServer");
+        serverRun.addSysProp("fabric.development", "true");
+        serverRun.addSysProp("mixin.env.remapRefMap", "true");
         serverRun.setSourceSet("main");
     }
 

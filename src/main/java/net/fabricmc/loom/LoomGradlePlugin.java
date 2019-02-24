@@ -470,28 +470,23 @@ public class LoomGradlePlugin implements Plugin<Project> {
         processResourcesTask.configure(task -> {
             //This is done in doLast so the transformed jsons can be cached.
             task.doLast(e -> {
-                String mixinArtifact = null;
+                MavenNotation mixinArtifact = null;
                 for (ResolvedArtifactResult artifact : compile.getIncoming().getArtifacts().getArtifacts()) {
                     String id = artifact.getId().getComponentIdentifier().getDisplayName();
                     logger.info("Checking if {} is a mixin artifact.", id);
                     if (extension.mixinArtifactRegex.matcher(id).find()) {
                         logger.info("Found mixin artifact: {}", id);
-                        mixinArtifact = id;
+                        mixinArtifact = MavenNotation.parse(id);
                         break;
                     }
                 }
                 String mixinVersion;
                 if (mixinArtifact != null) {
-                    String[] segs = mixinArtifact.split(":");
-                    String vSeg = segs[2];
-                    int atIndex = vSeg.indexOf("@");
-                    if (atIndex != -1) {
-                        vSeg = vSeg.substring(0, atIndex);
+                    String v = mixinArtifact.version;
+                    if (v.split("\\.").length >= 4) {
+                        v = v.substring(0, v.lastIndexOf(".")) + "-SNAPSHOT";
                     }
-                    if (vSeg.split("\\.").length >= 4) {
-                        vSeg = vSeg.substring(0, vSeg.lastIndexOf(".")) + "-SNAPSHOT";
-                    }
-                    mixinVersion = vSeg;
+                    mixinVersion = v;
                 } else {
                     mixinVersion = null;
                     logger.warn("Unable to find mixin artifact in dependencies, refmaps will not have minVersion's");

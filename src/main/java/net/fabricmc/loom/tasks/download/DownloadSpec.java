@@ -35,7 +35,7 @@ import java.net.URL;
  * <pre>
  * Notable differences:
  *  Wayyy simpler implementation.
- *  Lazy evaluation of file & URL inputs.
+ *  Lazy evaluation of file and URL inputs.
  *  Single file downloads.
  *  External validation of file for up-to-date checking.
  *  UserAgent spoofing. (Thanks mojang!)
@@ -59,7 +59,7 @@ public interface DownloadSpec {
 
     /**
      * Spec to validate the already existing file this DownloadSpec will download.
-     * If this spec returns true, its considered up-to-date, as long as eTag & onlyIfModified
+     * If this spec returns true, its considered up-to-date, as long as eTag and onlyIfModified
      * checks pass, the file will not be re-downloaded.
      *
      * Basically, using this allows you to determine externally if the file is corrupt
@@ -104,7 +104,7 @@ public interface DownloadSpec {
     /**
      * Gets the User-Agent header this DownloadSpec will use for requests.
      *
-     * @return
+     * @return The User-Agent header.
      */
     String getUserAgent();
 

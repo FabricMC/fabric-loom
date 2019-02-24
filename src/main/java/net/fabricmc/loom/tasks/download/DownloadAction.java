@@ -58,7 +58,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * <pre>
  * Notable differences:
  *  Wayyy simpler implementation.
- *  Lazy evaluation of file & URL inputs.
+ *  Lazy evaluation of file and URL inputs.
  *  Single file downloads.
  *  External validation of file for up-to-date checking.
  *  UserAgent spoofing. (Thanks mojang!)

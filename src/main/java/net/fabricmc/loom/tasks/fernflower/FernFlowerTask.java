@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.tasks.fernflower;
 
-import net.fabricmc.loom.tasks.TForkingJavaExecTask;
+import net.fabricmc.loom.tasks.ForkingJavaExecTask;
 import net.fabricmc.loom.tasks.cache.CachedInput;
 import net.fabricmc.loom.tasks.cache.CachedInputTask;
 import net.fabricmc.loom.util.ConsumingOutputStream;
@@ -48,7 +48,7 @@ import static java.text.MessageFormat.format;
 /**
  * Created by covers1624 on 9/02/19.
  */
-public class FernFlowerTask extends CachedInputTask implements TForkingJavaExecTask {
+public class FernFlowerTask extends CachedInputTask implements ForkingJavaExecTask {
 
     private boolean noFork;
     private Object input;

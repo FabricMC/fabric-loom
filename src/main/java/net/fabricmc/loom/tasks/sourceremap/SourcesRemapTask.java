@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.tasks.sourceremap;
 
-import net.fabricmc.loom.tasks.TForkingJavaExecTask;
+import net.fabricmc.loom.tasks.ForkingJavaExecTask;
 import net.fabricmc.loom.tasks.cache.CachedInput;
 import net.fabricmc.loom.tasks.cache.CachedInputTask;
 import net.fabricmc.loom.util.Utils;
@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 /**
  * Created by covers1624 on 9/02/19.
  */
-public class SourcesRemapTask extends CachedInputTask implements TForkingJavaExecTask {
+public class SourcesRemapTask extends CachedInputTask implements ForkingJavaExecTask {
 
     private List<Object> mappings = new ArrayList<>();
     private Object fromMappings;

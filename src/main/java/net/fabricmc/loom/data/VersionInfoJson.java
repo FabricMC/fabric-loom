@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.util.MavenNotation;
 import net.fabricmc.loom.util.Utils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.net.URL;
@@ -177,11 +178,11 @@ public class VersionInfoJson {
             if (currentOS == null) {
                 String osName = System.getProperty("os.name");
                 for (OS os : values()) {
-                    if (osName.contains(os.name)) {
+                    if (StringUtils.containsIgnoreCase(osName, os.name)) {
                         return currentOS = os;
                     }
                     for (String alias : os.aliases) {
-                        if (osName.contains(alias)) {
+                        if (StringUtils.containsIgnoreCase(alias, os.name)) {
                             return currentOS = os;
                         }
                     }

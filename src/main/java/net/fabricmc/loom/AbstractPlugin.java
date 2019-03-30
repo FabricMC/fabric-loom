@@ -65,7 +65,9 @@ public class AbstractPlugin implements Plugin<Project> {
 	public void apply(Project target) {
 		this.project = target;
 
-		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+		if(isRootProject(target)){
+			project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+		}
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));
@@ -280,5 +282,9 @@ public class AbstractPlugin implements Plugin<Project> {
 				extension.addUnmappedMod(jarTask.getArchivePath());
 			}
 		});
+	}
+
+	public static boolean isRootProject(Project project){
+		return project.getRootProject() == project;
 	}
 }

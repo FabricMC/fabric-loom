@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.loom.AbstractPlugin;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
 import org.gradle.api.Project;
@@ -50,6 +51,10 @@ public class GenIdeaProjectTask extends DefaultLoomTask {
 	@TaskAction
 	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
 		Project project = this.getProject();
+		//Only generate the idea runs on the root project
+		if(!AbstractPlugin.isRootProject(project)){
+			return;
+		}
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		project.getLogger().lifecycle(":Building idea workspace");
 

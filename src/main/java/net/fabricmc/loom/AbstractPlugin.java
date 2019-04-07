@@ -62,9 +62,6 @@ public class AbstractPlugin implements Plugin<Project> {
 	public void apply(Project target) {
 		this.project = target;
 
-		//Done to ensure the child projects are built before the root project
-		this.project.evaluationDependsOnChildren();
-
 		if(isRootProject(target)){
 			project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 		}

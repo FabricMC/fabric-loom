@@ -32,6 +32,7 @@ import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.task.RemapSourcesJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
@@ -50,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -266,7 +268,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 				//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
-				project1.subprojects(subProject -> remapJarTask.dependsOn(subProject.getTasksByName("remapJar", false)));
+				NestedJars.getRequiredTasks(project1).forEach(remapJarTask::dependsOn);
 
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");

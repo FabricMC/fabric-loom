@@ -44,6 +44,7 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
@@ -110,6 +111,26 @@ public class NestedJars {
 			}
 		}
 		return fileList;
+	}
+
+	//Looks for any deps that require a sub project to be built first
+	public static List<RemapJar> getRequiredTasks(Project project){
+		List<RemapJar> remapTasks = new ArrayList<>();
+
+		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
+		DependencySet dependencies = configuration.getDependencies();
+		for (Dependency dependency : dependencies) {
+			if (dependency instanceof ProjectDependency) {
+				ProjectDependency projectDependency = (ProjectDependency) dependency;
+				Project dependencyProject = projectDependency.getDependencyProject();
+				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
+					if (task instanceof RemapJar) {
+						remapTasks.add((RemapJar) task);
+					}
+				}
+			}
+		}
+		return remapTasks;
 	}
 
 	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {

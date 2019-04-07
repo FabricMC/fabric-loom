@@ -108,6 +108,14 @@ public class LoomGradleExtension {
 		return remappedModCache;
 	}
 
+	public File getNestedModCache() {
+		File nestedModCache = new File(getProjectCache(), "nested_mods/");
+		if (!nestedModCache.exists()) {
+			nestedModCache.mkdir();
+		}
+		return nestedModCache;
+	}
+
 	@Nullable
 	private Dependency findDependency(Collection<String> configs, BiPredicate<String, String> groupNameFilter) {
 		for (String s : configs) {

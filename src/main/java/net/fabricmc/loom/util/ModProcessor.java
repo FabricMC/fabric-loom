@@ -25,27 +25,28 @@
 package net.fabricmc.loom.util;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.internal.impldep.aQute.lib.strings.Strings;
+import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -58,6 +59,57 @@ public class ModProcessor {
 		}
 		remapJar(input, output, project);
 		readInstallerJson(input, project);
+		try {
+			handleNestedJars(input, project);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to handle nested jar", e);
+		}
+	}
+
+	private static void handleNestedJars(File input, Project project) throws IOException {
+		JarFile jarFile = new JarFile(input);
+		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
+		if(modJsonEntry == null){
+			return;
+		}
+		try(InputStream inputStream = jarFile.getInputStream(modJsonEntry)){
+			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+			if(json == null || !json.has("jars")){
+				return;
+			}
+			JsonArray jsonArray = json.getAsJsonArray("jars");
+			for (int i = 0; i < jsonArray.size(); i++) {
+				JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+				String fileName = jsonObject.get("file").getAsString();
+				project.getLogger().lifecycle(String.format("Found %s nested in %s", fileName, input.getName()));
+				processNestedJar(jarFile, fileName, project);
+			}
+		}
+	}
+
+	private static void processNestedJar(JarFile parentJar, String fileName, Project project){
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
+		JarEntry entry = parentJar.getJarEntry(fileName);
+		if(entry == null){
+			throw new RuntimeException(Strings.format("%s was not found in %s", fileName, parentJar.getName()));
+		}
+
+		File nestedFile = new File(extension.getNestedModCache(), fileName.substring(fileName.lastIndexOf("/")));
+		try(InputStream jarStream = parentJar.getInputStream(entry)){
+			FileUtils.copy(jarStream, nestedFile);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		File remappedFile = new File(extension.getRemappedModCache(), fileName.substring(fileName.lastIndexOf("/")));
+
+		handleMod(nestedFile, remappedFile, project);
+
+		if(!remappedFile.exists()){
+			throw new RuntimeException("Failed to find processed nested jar");
+		}
+		//Add the project right onto the remapped mods, hopefully this works
+		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.files(remappedFile));
 	}
 
 	private static void remapJar(File input, File output, Project project){

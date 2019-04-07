@@ -36,7 +36,10 @@ import net.fabricmc.tinyremapper.TinyUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.internal.impldep.aQute.lib.strings.Strings;
+import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import java.io.File;
 import java.io.IOException;
@@ -108,6 +111,17 @@ public class ModProcessor {
 		if(!remappedFile.exists()){
 			throw new RuntimeException("Failed to find processed nested jar");
 		}
+
+		//Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
+		ZipUtil.transformEntries(remappedFile, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
+			@Override
+			protected String transform(ZipEntry zipEntry, String input) throws IOException {
+				JsonObject json = GSON.fromJson(input, JsonObject.class);
+				json.remove("jars");
+				return GSON.toJson(json);
+			}
+		}))});
+
 		//Add the project right onto the remapped mods, hopefully this works
 		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.files(remappedFile));
 	}

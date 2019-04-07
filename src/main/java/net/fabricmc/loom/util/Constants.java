@@ -37,6 +37,7 @@ public class Constants {
 
 	public static final String COMPILE_MODS = "modCompile";
 	public static final String COMPILE_MODS_MAPPED = "modCompileMapped";
+	public static final String INCLUDE = "include";
 	public static final String MINECRAFT = "minecraft";
 	public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
 	public static final String MINECRAFT_INTERMEDIARY = "minecraftIntermediary";

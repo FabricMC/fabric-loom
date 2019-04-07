@@ -117,6 +117,10 @@ public class ModRemapper {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
+		if (NestedJars.addNestedJars(project, modJarOutput)) {
+			project.getLogger().debug("Added nested jar paths to mod json");
+		}
+
 		try {
 			if (modJar.exists()) {
 				Files.move(modJar, modJarUnmappedCopy);

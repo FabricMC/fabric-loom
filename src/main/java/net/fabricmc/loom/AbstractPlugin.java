@@ -33,10 +33,7 @@ import net.fabricmc.loom.task.RemapSourcesJar;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
+import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -65,6 +62,9 @@ public class AbstractPlugin implements Plugin<Project> {
 	public void apply(Project target) {
 		this.project = target;
 
+		//Done to ensure the child projects are built before the root project
+		this.project.evaluationDependsOnChildren();
+
 		if(isRootProject(target)){
 			project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 		}
@@ -92,6 +92,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
 		minecraftConfig.setTransitive(false);
+
+		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
+		includeConfig.setTransitive(false); // Dont get transitive deps
 
 		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
 
@@ -247,7 +250,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
-			if(extension.autoGenIDERuns){
+			if(extension.autoGenIDERuns && isRootProject(project1)){
 				SetupIntelijRunConfigs.setup(project1);
 			}
 
@@ -265,6 +268,8 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+				//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
+				project1.subprojects(subProject -> remapJarTask.dependsOn(subProject.getTasksByName("remapJar", false)));
 
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");

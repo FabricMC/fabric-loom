@@ -28,7 +28,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.RemapJar;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -44,8 +46,9 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 
 public class NestedJars {
@@ -99,7 +102,7 @@ public class NestedJars {
 					}
 				}
 			} else {
-				fileList.addAll(configuration.files(dependency));
+				fileList.addAll(prepareForNesting(configuration.files(dependency), dependency, project));
 			}
 		}
 		for (File file : fileList) {
@@ -131,6 +134,47 @@ public class NestedJars {
 			}
 		}
 		return remapTasks;
+	}
+
+	//This is a good place to do pre-nesting operations, such as adding a fabric.mod.json to a library
+	private static List<File> prepareForNesting(Set<File> files, Dependency dependency, Project project){
+		List<File> fileList = new ArrayList<>();
+		for(File file : files){
+			//A lib that doesnt have a mod.json, we turn it into a fake mod
+			if(!ZipUtil.containsEntry(file, "fabric.mod.json")){
+				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+				File tempDir = new File(extension.getUserCache(), "temp/modprocessing");
+				if(!tempDir.exists()){
+					tempDir.mkdirs();
+				}
+				File tempFile = new File(tempDir, file.getName());
+				if(tempFile.exists()){
+					tempFile.delete();
+				}
+				try {
+					FileUtils.copyFile(file, tempFile);
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to copy file", e);
+				}
+				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency).getBytes());
+				fileList.add(tempFile);
+			} else {
+				//Default copy the jar right in
+				fileList.add(file);
+			}
+		}
+		return fileList;
+	}
+
+	//Generates a barebones mod for a dependency
+	private static String getMod(Dependency dependency){
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("schemaVersion", 1);
+		jsonObject.addProperty("id", (dependency.getGroup().replaceAll("\\.", "_") + "_" + dependency.getName()).toLowerCase(Locale.ENGLISH));
+		jsonObject.addProperty("version", dependency.getVersion());
+		jsonObject.addProperty("name", dependency.getName());
+
+		return GSON.toJson(jsonObject);
 	}
 
 	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {

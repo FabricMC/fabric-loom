@@ -62,11 +62,16 @@ public class ModProcessor {
 		}
 		remapJar(input, output, project);
 		readInstallerJson(input, project);
-		try {
-			handleNestedJars(input, project);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to handle nested jar", e);
+		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
+		if(project.getExtensions().getByType(LoomGradleExtension.class).extractJars){
+			try {
+				handleNestedJars(input, project);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to handle nested jar", e);
+			}
 		}
+		//Always strip the nested jars
+		stripNestedJars(output);
 	}
 
 	private static void handleNestedJars(File input, Project project) throws IOException {
@@ -112,8 +117,13 @@ public class ModProcessor {
 			throw new RuntimeException("Failed to find processed nested jar");
 		}
 
+		//Add the project right onto the remapped mods, hopefully this works
+		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.files(remappedFile));
+	}
+
+	private static void stripNestedJars(File file){
 		//Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(remappedFile, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
+		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) throws IOException {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
@@ -121,9 +131,6 @@ public class ModProcessor {
 				return GSON.toJson(json);
 			}
 		}))});
-
-		//Add the project right onto the remapped mods, hopefully this works
-		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.files(remappedFile));
 	}
 
 	private static void remapJar(File input, File output, Project project){

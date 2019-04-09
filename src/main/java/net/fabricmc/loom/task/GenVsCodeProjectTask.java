@@ -87,7 +87,7 @@ public class GenVsCodeProjectTask extends DefaultLoomTask {
         public String type = "java";
         public String name;
         public String request = "launch";
-        public String cwd = "${workspaceFolder}\\run";
+        public String cwd = "${workspaceFolder}/run";
         public String console = "internalConsole";
         public boolean stopOnEntry = false;
         public String mainClass;

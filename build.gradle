@@ -37,7 +37,7 @@ dependencies {
 	implementation ('net.fabricmc:stitch:0.1.2.47') {
 		exclude module: 'enigma'
 	}
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.30') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.29') {
 		transitive = false
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.7')

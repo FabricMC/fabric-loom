@@ -86,9 +86,16 @@ public final class MixinRefmapHelper {
                 InputStreamReader inputStreamReader = new InputStreamReader(stream);
                 try {
                     JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
-                    if (json != null && json.has("mixins") && json.get("mixins").isJsonArray()) {
-                        if (!onlyWithoutRefmap || !json.has("refmap") || !json.has("minVersion")) {
-                            mixinFilename.add(entry.getName());
+
+                    if (json != null) {
+                        boolean hasMixins = json.has("mixins") && json.get("mixins").isJsonArray();
+                        boolean hasClient = json.has("client") && json.get("client").isJsonArray();
+                        boolean hasServer = json.has("server") && json.get("server").isJsonArray();
+
+                        if (json.has("package") && (hasMixins || hasClient || hasServer)) {
+                            if (!onlyWithoutRefmap || !json.has("refmap") || !json.has("minVersion")) {
+                                mixinFilename.add(entry.getName());
+                            }
                         }
                     }
                 } catch (Exception e) {

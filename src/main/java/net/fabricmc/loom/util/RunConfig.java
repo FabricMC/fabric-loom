@@ -151,7 +151,7 @@ public class RunConfig {
 		RunConfig ideaClient = new RunConfig();
 		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
-		ideaClient.programArgs += " --assetIndex " + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + " --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
+		ideaClient.programArgs += " --assetIndex \"" + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + "\" --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
 		ideaClient.vmArgs += getOSClientJVMArgs();
 
 		return ideaClient;

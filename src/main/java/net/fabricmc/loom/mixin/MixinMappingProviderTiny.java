@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.mixin;
 
-import net.fabricmc.tinyremapper.TinyUtils;
+import net.fabricmc.mappings.*;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingField;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingMethod;
 import org.spongepowered.tools.obfuscation.mapping.common.MappingProvider;
@@ -33,6 +33,7 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 
@@ -43,16 +44,6 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		super(messager, filer);
 		this.from = from;
 		this.to = to;
-	}
-
-	private static String[] removeFirst(String[] src, int count) {
-		if (count >= src.length) {
-			return new String[0];
-		} else {
-			String[] out = new String[src.length - count];
-			System.arraycopy(src, count, out, 0, out.length);
-			return out;
-		}
 	}
 
 	@Override
@@ -119,22 +110,34 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		} */
 	}
 
-	// TODO: Unify with tiny-remapper
-
 	@Override
 	public void read(File input) throws IOException {
-		BufferedReader reader = Files.newBufferedReader(input.toPath());
+		try (FileInputStream inputStream = new FileInputStream(input)) {
+			Mappings mappings = MappingsProvider.readTinyMappings(inputStream, false);
 
-		TinyUtils.read(reader, from, to, classMap::put, (fieldFrom, fieldTo) -> {
-			fieldMap.put(
-				new MappingField(fieldFrom.owner, fieldFrom.name, fieldFrom.desc),
-				new MappingField(fieldTo.owner, fieldTo.name, fieldTo.desc)
-			);
-		}, (methodFrom, methodTo) -> {
-			methodMap.put(
-				new MappingMethod(methodFrom.owner, methodFrom.name, methodFrom.desc),
-				new MappingMethod(methodTo.owner, methodTo.name, methodTo.desc)
-			);
-		});
+			for (ClassEntry entry : mappings.getClassEntries()) {
+				classMap.put(entry.get(from), entry.get(to));
+			}
+
+			for (FieldEntry entry : mappings.getFieldEntries()) {
+				EntryTriple fromTriple = entry.get(from);
+				EntryTriple toTriple = entry.get(to);
+
+				fieldMap.put(
+						new MappingField(fromTriple.getOwner(), fromTriple.getName(), fromTriple.getDesc()),
+						new MappingField(toTriple.getOwner(), toTriple.getName(), toTriple.getDesc())
+				);
+			}
+
+			for (MethodEntry entry : mappings.getMethodEntries()) {
+				EntryTriple fromTriple = entry.get(from);
+				EntryTriple toTriple = entry.get(to);
+				
+				methodMap.put(
+						new MappingMethod(fromTriple.getOwner(), fromTriple.getName(), fromTriple.getDesc()),
+						new MappingMethod(toTriple.getOwner(), toTriple.getName(), toTriple.getDesc())
+				);
+			}
+		}
 	}
 }

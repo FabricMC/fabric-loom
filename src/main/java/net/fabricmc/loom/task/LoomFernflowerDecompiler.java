@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.fernflower.api.IFabricResultSaver;
 import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler;
 import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler;
 import org.jetbrains.java.decompiler.main.extern.IBytecodeProvider;
@@ -38,7 +37,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
-public class LoomFernflowerDecompiler extends ConsoleDecompiler implements IFabricResultSaver {
+public class LoomFernflowerDecompiler extends ConsoleDecompiler {
 	private final Map<String, int[]> differingMappings = new HashMap<>();
 	private final String jarName;
 
@@ -84,19 +83,12 @@ public class LoomFernflowerDecompiler extends ConsoleDecompiler implements IFabr
 	}
 
 	@Override
-	public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content, int[] mapping) {
+	public void saveClassEntry(String s, String s1, String s2, String s3, String s4, int[] mapping) {
 		if (mapping != null) {
-			differingMappings.put(qualifiedName, mapping);
+			differingMappings.put(s2, mapping);
 		}
 
-		super.saveClassEntry(path, jarName, qualifiedName, entryName, content);
-	}
-
-	@Override
-	public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content) {
-		System.err.println("WARNING: Called saveClassEntry without mapping! " + qualifiedName);
-
-		super.saveClassEntry(path, jarName, qualifiedName, entryName, content);
+		super.saveClassEntry(s, jarName, s2, s3, s4, mapping);
 	}
 
 	@Override

@@ -94,7 +94,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getProjectCache(){
-		File projectCache = new File(project.getRootDir(), ".gradle/minecraft/");
+		File projectCache = new File(project.getRootDir(), ".gradle" + File.separator + "minecraft");
 		if(!projectCache.exists()){
 			projectCache.mkdirs();
 		}
@@ -102,7 +102,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getRemappedModCache() {
-		File remappedModCache = new File(getProjectCache(), "remapped_mods/");
+		File remappedModCache = new File(getProjectCache(), "remapped_mods");
 		if (!remappedModCache.exists()) {
 			remappedModCache.mkdir();
 		}
@@ -110,7 +110,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getNestedModCache() {
-		File nestedModCache = new File(getProjectCache(), "nested_mods/");
+		File nestedModCache = new File(getProjectCache(), "nested_mods");
 		if (!nestedModCache.exists()) {
 			nestedModCache.mkdir();
 		}

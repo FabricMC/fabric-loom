@@ -37,7 +37,7 @@ public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File projectDir = new File(".idea");
+		File projectDir = project.file(".idea");
 		if(!projectDir.exists()){
 			return;
 		}
@@ -54,7 +54,7 @@ public class SetupIntelijRunConfigs {
 	}
 
 	private static void generate(Project project) throws IOException {
-		File projectDir = new File(".idea");
+		File projectDir = project.file(".idea");
 		File runConfigsDir = new File(projectDir, "runConfigurations");
 		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
 		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");

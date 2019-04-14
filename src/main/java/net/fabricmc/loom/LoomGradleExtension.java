@@ -157,6 +157,10 @@ public class LoomGradleExtension {
 			return false;
 		});
 
+		if(dependency == null && !AbstractPlugin.isRootProject(project)){
+			return project.getRootProject().getExtensions().getByType(LoomGradleExtension.class).getLoomVersion();
+		}
+
 		return dependency != null ? dependency.getVersion() : null;
 	}
 

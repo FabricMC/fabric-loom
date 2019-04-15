@@ -31,6 +31,7 @@ import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import org.cadixdev.lorenz.MappingSet;
 import org.gradle.api.Project;
+import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
@@ -158,7 +159,11 @@ public class LoomGradleExtension {
 		});
 
 		if(dependency == null && !AbstractPlugin.isRootProject(project)){
-			return project.getRootProject().getExtensions().getByType(LoomGradleExtension.class).getLoomVersion();
+			try {
+				return project.getRootProject().getExtensions().getByType(LoomGradleExtension.class).getLoomVersion();
+			} catch (UnknownDomainObjectException e){
+				return null;
+			}
 		}
 
 		return dependency != null ? dependency.getVersion() : null;

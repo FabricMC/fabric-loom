@@ -26,6 +26,8 @@ package net.fabricmc.loom.util;
 
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.DependencyProvider.DependencyInfo;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
@@ -74,7 +76,7 @@ public class LoomDependencyManager {
 			configuration.getDependencies().forEach(dependency -> {
 				for(DependencyProvider provider : dependencyProviderList){
 					if(provider.getTargetConfig().equals(config)){
-						DependencyProvider.DependencyInfo info = new DependencyProvider.DependencyInfo(project, dependency, configuration);
+						DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
 						try {
 							provider.provide(info, project, extension, afterTasks::add);
 						} catch (Exception e) {

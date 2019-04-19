@@ -107,12 +107,12 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void downloadJars(Logger logger) throws IOException {
 		if (!MINECRAFT_CLIENT_JAR.exists() || !Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1)) {
-			logger.debug("Downloading Minecraft " + minecraftVersion + " client jar");
+			logger.debug("Downloading Minecraft {} client jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
 		}
 
 		if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1)) {
-			logger.debug("Downloading Minecraft " + minecraftVersion + " server jar");
+			logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
 		}
 	}

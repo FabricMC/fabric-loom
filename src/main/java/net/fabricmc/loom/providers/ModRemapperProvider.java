@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.providers;
 
-import com.google.common.io.Files;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
@@ -33,7 +32,6 @@ import net.fabricmc.loom.util.SourceRemapper;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -49,7 +47,8 @@ public class ModRemapperProvider extends DependencyProvider {
 		MappingsProvider mappingsProvider = getDependencyManager().getProvider(MappingsProvider.class);
 		String verSuffix = ".mapped." + mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
 
-		String outputNamePrefix = input.getName().substring(0, input.getName().length() - 4) + verSuffix;//TODO use the hash of the input file or something?
+		//Output name should match whatever it's under as a dependency so Gradle finds it
+		String outputNamePrefix = rds.substring(rds.indexOf(':') + 1).replace(':', '-') + verSuffix; //group:name:version -> name-version.mapped.yarn.5
 		File modStore = extension.getRemappedModCache();
 		File output = new File(modStore, outputNamePrefix + ".jar");
 		if(output.exists()){

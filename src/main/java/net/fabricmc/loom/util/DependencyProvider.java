@@ -214,7 +214,7 @@ public abstract class DependencyProvider {
 				break;
 
 			default: //File collection, try work out the classifiers
-				List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparing(String::length))).collect(Collectors.toList());
+				List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparingInt(String::length))).collect(Collectors.toList());
 
 				//First element in sortedFiles is the one with the shortest name, we presume all the others are different classifier types of this
 				File shortest = sortedFiles.remove(0);

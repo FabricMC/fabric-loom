@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.providers;
 
+import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.*;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -61,7 +62,7 @@ public class MinecraftProvider extends DependencyProvider {
 
 		initFiles(project);
 
-		downloadMcJson();
+		downloadMcJson(project);
 		FileReader reader = new FileReader(MINECRAFT_JSON);
 		versionInfo = gson.fromJson(reader, MinecraftVersionInfo.class);
 		reader.close();
@@ -69,7 +70,7 @@ public class MinecraftProvider extends DependencyProvider {
 		// Add Loom as an annotation processor
         addDependency(project.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()), project, "compileOnly");
 
-		downloadJars();
+		downloadJars(project.getLogger());
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, project);
@@ -85,26 +86,34 @@ public class MinecraftProvider extends DependencyProvider {
 
 	}
 
-	private void downloadMcJson() throws IOException {
-		String versionManifest = IOUtils.toString(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), StandardCharsets.UTF_8);
+	private void downloadMcJson(Project project) throws IOException {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		File manifests = new File(extension.getUserCache(), "version_manifest.json");
+
+		project.getLogger().debug("Downloading version manifests");
+		DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
+		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
 		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
 
 		Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 		if (optionalVersion.isPresent()) {
-			FileUtils.copyURLToFile(new URL(optionalVersion.get().url), MINECRAFT_JSON);
+			project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
+			DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
 		} else {
 			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
 		}
 
 	}
 
-	private void downloadJars() throws IOException {
+	private void downloadJars(Logger logger) throws IOException {
 		if (!MINECRAFT_CLIENT_JAR.exists() || !Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1)) {
-			FileUtils.copyURLToFile(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR);
+			logger.debug("Downloading Minecraft " + minecraftVersion + " client jar");
+			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
 		}
 
 		if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1)) {
-			FileUtils.copyURLToFile(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR);
+			logger.debug("Downloading Minecraft " + minecraftVersion + " server jar");
+			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
 		}
 	}
 

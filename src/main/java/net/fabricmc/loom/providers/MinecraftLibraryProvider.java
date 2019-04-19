@@ -28,11 +28,11 @@ import com.google.gson.Gson;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.assets.AssetIndex;
 import net.fabricmc.loom.util.assets.AssetObject;
 import net.fabricmc.loom.util.progress.ProgressLogger;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -81,7 +81,7 @@ public class MinecraftLibraryProvider {
 		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");
-			FileUtils.copyURLToFile(new URL(assetIndex.url), assetsInfo);
+			DownloadUtil.downloadIfChanged(new URL(assetIndex.url), assetsInfo, project.getLogger());
 		}
 
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, getClass().getName());
@@ -101,7 +101,7 @@ public class MinecraftLibraryProvider {
 
 			if (!file.exists() || !Checksum.equals(file, sha1)) {
 				project.getLogger().debug(":downloading asset " + entry.getKey());
-				FileUtils.copyURLToFile(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file);
+				DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
 			}
 			String assetName = entry.getKey();
 			int end = assetName.lastIndexOf("/") + 1;

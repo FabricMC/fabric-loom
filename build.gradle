@@ -69,6 +69,10 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
 
+license {
+	exclude '**/loom/util/DownloadUtil.java'
+}
+
 task wrapper(type: Wrapper) {
 	gradleVersion = '4.10.2'
 }

@@ -25,26 +25,40 @@
 package net.fabricmc.loom.util;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 import net.fabricmc.loom.LoomGradleExtension;
+
+import org.apache.commons.io.FilenameUtils;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.SelfResolvingDependency;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
-import org.gradle.api.artifacts.result.ArtifactResolutionResult;
 import org.gradle.api.artifacts.result.ArtifactResult;
 import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
+import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
-import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public abstract class DependencyProvider {
 
@@ -78,7 +92,15 @@ public abstract class DependencyProvider {
 		final Dependency dependency;
 		final Configuration sourceConfiguration;
 
-		public DependencyInfo(Project project, Dependency dependency, Configuration sourceConfiguration) {
+		public static DependencyInfo create(Project project, Dependency dependency, Configuration sourceConfiguration) {
+			if (dependency instanceof SelfResolvingDependency) {
+				return new FileDependencyInfo(project, (SelfResolvingDependency) dependency, sourceConfiguration);
+			} else {
+				return new DependencyInfo(project, dependency, sourceConfiguration);
+			}
+		}
+
+		private DependencyInfo(Project project, Dependency dependency, Configuration sourceConfiguration) {
 			this.project = project;
 			this.dependency = dependency;
 			this.sourceConfiguration = sourceConfiguration;
@@ -172,6 +194,96 @@ public abstract class DependencyProvider {
 
 		public String getResolvedDepString(){
 			return dependency.getGroup() + ":" + dependency.getName() + ":" + getResolvedVersion();
+		}
+	}
+
+	public static class FileDependencyInfo extends DependencyInfo {
+		protected final Map<String, File> classifierToFile = new HashMap<>();
+		protected final String group = "net.fabricmc.synthetic", name, version;
+
+		FileDependencyInfo(Project project, SelfResolvingDependency dependency, Configuration configuration) {
+			super(project, dependency, configuration);
+
+			Set<File> files = dependency.resolve();
+			switch (files.size()) {
+			case 0: //Don't think Gradle would ever let you do this
+				throw new IllegalStateException("Empty dependency?");
+
+			case 1: //Single file dependency
+				classifierToFile.put("", Iterables.getOnlyElement(files));
+				break;
+
+			default: //File collection, try work out the classifiers
+				List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparing(String::length))).collect(Collectors.toList());
+
+				//First element in sortedFiles is the one with the shortest name, we presume all the others are different classifier types of this
+				File shortest = sortedFiles.remove(0);
+				String shortestName = FilenameUtils.removeExtension(shortest.getName()); //name.jar -> name
+
+				for (File file : sortedFiles) {
+					if (!file.getName().startsWith(shortestName)) {
+						//If there is another file which doesn't start with the same name as the presumed classifier-less one we're out of our depth
+						throw new IllegalArgumentException("Unable to resolve classifiers for " + this + " (failed to sort " + files + ')');
+					}
+				}
+
+				//We appear to be right, therefore this is the normal dependency file we want
+				classifierToFile.put("", shortest);
+
+				int start = shortestName.length();
+				for (File file : sortedFiles) {
+					//Now we just have to work out what classifier type the other files are, this shouldn't even return an empty string
+					String classifier = FilenameUtils.removeExtension(file.getName()).substring(start);
+
+					//The classifier could well be separated with a dash (thing name.jar and name-sources.jar), we don't want that leading dash
+					if (classifierToFile.put(classifier.charAt(0) == '-' ? classifier.substring(1) : classifier, file) != null) {
+						throw new InvalidUserDataException("Duplicate classifiers for " + this + " (\"" + file.getName().substring(start) + "\" in " + files + ')');
+					}
+				}
+			}
+
+			File root = classifierToFile.get(""); //We've built the classifierToFile map, now to try find a name and version for our dependency
+			if ("jar".equals(FilenameUtils.getExtension(root.getName())) && ZipUtil.containsEntry(root, "fabric.mod.json")) {
+				//It's a Fabric mod, see how much we can extract out
+				JsonObject json = new Gson().fromJson(new String(ZipUtil.unpackEntry(root, "fabric.mod.json"), StandardCharsets.UTF_8), JsonObject.class);
+				if (json == null || !json.has("id") || !json.has("version")) throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
+
+				if (json.has("name")) {//Go for the name field if it's got one
+					name = json.get("name").getAsString();
+				} else {
+					name = json.get("id").getAsString();
+				}
+				version = json.get("version").getAsString();
+			} else {
+				//Not a Fabric mod, just have to make something up
+				name = FilenameUtils.removeExtension(root.getName());
+				version = "1.0";
+			}
+		}
+
+		@Override
+		public Set<File> resolve(String classifier) {
+			File file = classifierToFile.get(classifier);
+			if (file != null) return Collections.singleton(file);
+
+			//Suppose we can always try the super resolving method, doubt it will do anything more though
+			return super.resolve(classifier);
+		}
+
+		@Override
+		public String getResolvedVersion() {
+			return version;
+		}
+
+		@Override
+		public String getDepString() {
+			//Use our custom name and version with the dummy group rather than the null:unspecified:null it would otherwise return
+			return group + ':' + name + ':' + version;
+		}
+
+		@Override
+		public String getResolvedDepString() {
+			return getDepString();
 		}
 	}
 }

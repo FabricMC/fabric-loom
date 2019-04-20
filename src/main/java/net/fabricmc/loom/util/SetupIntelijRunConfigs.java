@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
@@ -54,6 +55,12 @@ public class SetupIntelijRunConfigs {
 	}
 
 	private static void generate(Project project) throws IOException {
+		//Ensures the assets are downloaded when idea is syncing a project
+		if(Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))){
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+		}
+
 		File projectDir = new File(".idea");
 		File runConfigsDir = new File(projectDir, "runConfigurations");
 		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
@@ -70,7 +77,6 @@ public class SetupIntelijRunConfigs {
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
 		if(!serverRunConfigs.exists())
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
-
 
 	}
 

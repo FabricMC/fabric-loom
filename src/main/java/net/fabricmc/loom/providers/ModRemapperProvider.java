@@ -61,6 +61,8 @@ public class ModRemapperProvider extends DependencyProvider {
 			}
 
 			output.setLastModified(input.lastModified());
+		} else {
+			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
 		}
 
 		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.getDependencies().module(
@@ -85,7 +87,11 @@ public class ModRemapperProvider extends DependencyProvider {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+				} else {
+					project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
 				}
+			} else {
+				project.getLogger().info(":skipping " + rds + " sources, not found");
 			}
 		});
 	}

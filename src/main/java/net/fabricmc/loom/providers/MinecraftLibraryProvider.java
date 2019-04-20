@@ -46,7 +46,6 @@ import java.util.Map;
 public class MinecraftLibraryProvider {
 
 	public File MINECRAFT_LIBS;
-	public File MINECRAFT_NATIVES;
 
 	private Collection<File> libs = new HashSet<>();
 
@@ -69,50 +68,6 @@ public class MinecraftLibraryProvider {
 				project.getDependencies().add(Constants.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.getArtifactName()));
 			}
 		}
-
-		MinecraftVersionInfo.AssetIndex assetIndex = versionInfo.assetIndex;
-
-		// get existing cache files
-		File assets = new File(extension.getUserCache(), "assets");
-		if (!assets.exists()) {
-			assets.mkdirs();
-		}
-
-		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
-		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
-			project.getLogger().lifecycle(":downloading asset index");
-			DownloadUtil.downloadIfChanged(new URL(assetIndex.url), assetsInfo, project.getLogger());
-		}
-
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, getClass().getName());
-		progressLogger.start("Downloading assets...", "assets");
-		FileReader fileReader = new FileReader(assetsInfo);
-		AssetIndex index = new Gson().fromJson(fileReader, AssetIndex.class);
-		fileReader.close();
-		Map<String, AssetObject> parent = index.getFileMap();
-		final int totalSize = parent.size();
-		int position = 0;
-		project.getLogger().lifecycle(":downloading assets...");
-		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
-			AssetObject object = entry.getValue();
-			String sha1 = object.getHash();
-			String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
-			File file = new File(assets, filename);
-
-			if (!file.exists() || !Checksum.equals(file, sha1)) {
-				project.getLogger().debug(":downloading asset " + entry.getKey());
-				DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
-			}
-			String assetName = entry.getKey();
-			int end = assetName.lastIndexOf("/") + 1;
-			if (end > 0) {
-				assetName = assetName.substring(end);
-			}
-			progressLogger.progress(assetName + " - " + position + "/" + totalSize + " (" + (int) ((position / (double) totalSize) * 100) + "%) assets downloaded");
-			position++;
-		}
-
-		progressLogger.completed();
 	}
 
 	public Collection<File> getLibraries() {

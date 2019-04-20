@@ -22,32 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom;
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskAction;
 
-public class LoomGradlePlugin extends AbstractPlugin {
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+import java.io.IOException;
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-		makeTask("cleanLoomMappings", CleanLoomMappings.class);
+public class DownloadAssetsTask extends DefaultLoomTask {
+	@TaskAction
+	public void downloadAssets() throws IOException {
+		Project project = this.getProject();
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		makeTask("remapJar", RemapJar.class);
-
-		makeTask("genSources", GenSourcesTask.class);
-
-		makeTask("downloadAssets", DownloadAssetsTask.class);
-
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea", "downloadAssets").setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).dependsOn("downloadAssets").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).dependsOn("downloadAssets").setGroup("ide");
-
-		makeTask("remapSourcesJar", RemapSourcesJar.class);
-
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded", "downloadAssets").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
+		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
 	}
 }

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.fernflower.api.IFabricResultSaver;
 import org.jetbrains.java.decompiler.main.decompiler.BaseDecompiler;
 import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler;
 import org.jetbrains.java.decompiler.main.extern.IBytecodeProvider;
@@ -37,7 +38,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 
-public class LoomFernflowerDecompiler extends ConsoleDecompiler {
+public class LoomFernflowerDecompiler extends ConsoleDecompiler implements IFabricResultSaver {
 	private final Map<String, int[]> differingMappings = new HashMap<>();
 	private final String jarName;
 
@@ -83,12 +84,18 @@ public class LoomFernflowerDecompiler extends ConsoleDecompiler {
 	}
 
 	@Override
+	public void saveClassEntry(String s, String s1, String s2, String s3, String s4) {
+		System.err.println("Warning: No line mapping provided for " + s1 + " : " + s2 + "!");
+		super.saveClassEntry(s, s1, s2, s3, s4);
+	}
+
+	@Override
 	public void saveClassEntry(String s, String s1, String s2, String s3, String s4, int[] mapping) {
 		if (mapping != null) {
 			differingMappings.put(s2, mapping);
 		}
 
-		super.saveClassEntry(s, jarName, s2, s3, s4, mapping);
+		super.saveClassEntry(s, jarName, s2, s3, s4);
 	}
 
 	@Override

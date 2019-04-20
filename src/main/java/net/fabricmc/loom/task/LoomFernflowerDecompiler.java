@@ -85,13 +85,15 @@ public class LoomFernflowerDecompiler extends ConsoleDecompiler implements IFabr
 
 	@Override
 	public void saveClassEntry(String s, String s1, String s2, String s3, String s4) {
-		System.err.println("Warning: No line mapping provided for " + s1 + " : " + s2 + "!");
+		if (s2 != null) {
+			System.err.println("Warning: No line mapping provided for " + s1 + " : " + s2 + "!");
+		}
 		super.saveClassEntry(s, s1, s2, s3, s4);
 	}
 
 	@Override
 	public void saveClassEntry(String s, String s1, String s2, String s3, String s4, int[] mapping) {
-		if (mapping != null) {
+		if (s2 != null && mapping != null) {
 			differingMappings.put(s2, mapping);
 		}
 

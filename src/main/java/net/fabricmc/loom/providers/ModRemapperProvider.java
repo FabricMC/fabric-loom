@@ -50,15 +50,19 @@ public class ModRemapperProvider extends DependencyProvider {
 		//Output name should match whatever it's under as a dependency so Gradle finds it
 		String outputNamePrefix = rds.substring(rds.indexOf(':') + 1).replace(':', '-') + verSuffix; //group:name:version -> name-version.mapped.yarn.5
 		File modStore = extension.getRemappedModCache();
+
 		File output = new File(modStore, outputNamePrefix + ".jar");
-		if(output.exists()){
-			output.delete();
-		}
+		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
+			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
+			ModProcessor.handleMod(input, output, project);
 
-		ModProcessor.handleMod(input, output, project);
+			if (!output.exists()){
+				throw new RuntimeException("Failed to remap mod");
+			}
 
-		if(!output.exists()){
-			throw new RuntimeException("Failed to remap mod");
+			output.setLastModified(input.lastModified());
+		} else {
+			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
 		}
 
 		project.getDependencies().add(Constants.COMPILE_MODS_MAPPED, project.getDependencies().module(
@@ -71,11 +75,23 @@ public class ModRemapperProvider extends DependencyProvider {
 			if (sourcesFile.isPresent()) {
 				project.getLogger().lifecycle(":providing " + rds + " sources");
 
-				try {
-					SourceRemapper.remapSources(project, sourcesFile.get(), new File(modStore, outputNamePrefix + "-sources.jar"), true);
-				} catch (Exception e) {
-					e.printStackTrace();
+				File sources = sourcesFile.get();
+				File remappedSources = new File(modStore, outputNamePrefix + "-sources.jar");
+
+				if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {
+					try {
+						SourceRemapper.remapSources(project, sources, remappedSources, true);
+
+						//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+						remappedSources.setLastModified(sources.lastModified());
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
 				}
+			} else {
+				project.getLogger().info(":skipping " + rds + " sources, not found");
 			}
 		});
 	}

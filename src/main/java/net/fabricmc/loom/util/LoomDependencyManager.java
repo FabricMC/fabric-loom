@@ -30,9 +30,11 @@ import net.fabricmc.loom.util.DependencyProvider.DependencyInfo;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -85,6 +87,23 @@ public class LoomDependencyManager {
 					}
 				}
 			});
+		}
+
+		if (extension.getInstallerJson() == null) {
+			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
+			project.getLogger().info("Didn't find installer JSON, searching through compileMods");
+			Configuration configuration = project.getConfigurations().getByName(Constants.COMPILE_MODS);
+
+			for (Dependency dependency : configuration.getDependencies()) {
+				DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
+				File input = info.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + info));
+
+				ModProcessor.readInstallerJson(input, project);
+				if (extension.getInstallerJson() != null) {
+					project.getLogger().info("Found installer JSON in " + info);
+					break; //Found it, probably don't need to look any further
+				}
+			}
 		}
 
 		if (extension.getInstallerJson() != null) {

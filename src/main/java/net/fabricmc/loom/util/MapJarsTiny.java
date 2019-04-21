@@ -69,9 +69,9 @@ public class MapJarsTiny {
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
 				outputConsumer.addNonClassFiles(input);
-				remapper.read(input);
-				remapper.read(classpath);
-				remapper.apply(input, outputConsumer);
+				remapper.readClassPath(classpath);
+				remapper.readInputs(input);
+				remapper.apply(outputConsumer);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to remap JAR", e);
 			} finally {

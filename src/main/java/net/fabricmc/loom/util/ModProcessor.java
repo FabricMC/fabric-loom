@@ -148,8 +148,8 @@ public class ModProcessor {
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream()
 			.map(File::toPath)
 			.toArray(Path[]::new);
-		Collection<File> modCompileFiles = project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles();
-		Path[] modCompiles = modCompileFiles.stream()
+		Path[] modCompiles = project.getConfigurations().getByName(Constants.COMPILE_MODS).getFiles().stream()
+				.filter((f) -> !f.equals(input))
 				.map(p -> {
 					if (p.equals(input)) {
 						return inputPath;
@@ -167,13 +167,11 @@ public class ModProcessor {
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
 			outputConsumer.addNonClassFiles(inputPath);
-			if (!modCompileFiles.contains(input)) {
-				remapper.read(inputPath);
-			}
-			remapper.read(modCompiles);
-			remapper.read(mc);
-			remapper.read(mcDeps);
-			remapper.apply(inputPath, outputConsumer);
+			remapper.readClassPath(modCompiles);
+			remapper.readClassPath(mc);
+			remapper.readClassPath(mcDeps);
+			remapper.readInputs(inputPath);
+			remapper.apply(outputConsumer);
 		} catch (Exception e){
 			throw new RuntimeException("Failed to remap JAR to " + toM, e);
 		} finally {

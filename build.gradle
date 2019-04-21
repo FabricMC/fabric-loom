@@ -37,12 +37,12 @@ dependencies {
 	implementation ('net.fabricmc:stitch:0.1.2.49') {
 		exclude module: 'enigma'
 	}
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.29') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.33') {
 		transitive = false
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
 
-	implementation ('net.fabricmc:sponge-mixin:0.7.11.21') {
+	implementation ('net.fabricmc:sponge-mixin:0.7.11.22') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

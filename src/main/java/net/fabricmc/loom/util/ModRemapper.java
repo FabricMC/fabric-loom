@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class ModRemapper {
@@ -62,19 +63,10 @@ public class ModRemapper {
 		List<File> classpathFiles = new ArrayList<>();
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_NAMED).getFiles());
-		Path[] classpath = classpathFiles.stream().map(File::toPath).toArray(Path[]::new);
-		Path modJarPath = modJar.toPath();
-		boolean classpathContainsModJarPath = false;
+		final Path modJarPath = modJar.toPath();
+		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !modJarPath.equals(p)).toArray(Path[]::new);
 
-		for (Path p : classpath) {
-			if (modJarPath.equals(p)) {
-				modJarPath = p;
-				classpathContainsModJarPath = true;
-				break;
-			}
-		}
-
-		String s =modJar.getAbsolutePath();
+		String s = modJar.getAbsolutePath();
 		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
 		Path modJarOutputPath = modJarOutput.toPath();
 
@@ -98,11 +90,9 @@ public class ModRemapper {
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(modJarOutputPath)) {
 			outputConsumer.addNonClassFiles(modJarPath);
-			remapper.read(classpath);
-			if (!classpathContainsModJarPath) {
-				remapper.read(modJarPath);
-			}
-			remapper.apply(modJarPath, outputConsumer);
+			remapper.readClassPath(classpath);
+			remapper.readInputs(modJarPath);
+			remapper.apply(outputConsumer);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to remap JAR", e);
 		} finally {

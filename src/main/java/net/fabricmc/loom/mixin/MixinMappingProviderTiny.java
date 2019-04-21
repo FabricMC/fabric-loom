@@ -24,17 +24,16 @@
 
 package net.fabricmc.loom.mixin;
 
-import net.fabricmc.tinyremapper.TinyUtils;
+import net.fabricmc.mappings.*;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingField;
 import org.spongepowered.asm.obfuscation.mapping.common.MappingMethod;
 import org.spongepowered.tools.obfuscation.mapping.common.MappingProvider;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
-import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 
 public class MixinMappingProviderTiny extends MappingProvider {
 	private final String from, to;
@@ -119,22 +118,36 @@ public class MixinMappingProviderTiny extends MappingProvider {
 		} */
 	}
 
-	// TODO: Unify with tiny-remapper
-
 	@Override
 	public void read(File input) throws IOException {
-		BufferedReader reader = Files.newBufferedReader(input.toPath());
+		Mappings mappings;
 
-		TinyUtils.read(reader, from, to, classMap::put, (fieldFrom, fieldTo) -> {
+		try (FileInputStream stream = new FileInputStream(input)) {
+			mappings = MappingsProvider.readTinyMappings(stream, false);
+		}
+
+		for (ClassEntry entry : mappings.getClassEntries()) {
+			classMap.put(entry.get(from), entry.get(to));
+		}
+
+		for (FieldEntry entry : mappings.getFieldEntries()) {
+			EntryTriple fromEntry = entry.get(from);
+			EntryTriple toEntry = entry.get(to);
+
 			fieldMap.put(
-				new MappingField(fieldFrom.owner, fieldFrom.name, fieldFrom.desc),
-				new MappingField(fieldTo.owner, fieldTo.name, fieldTo.desc)
+					new MappingField(fromEntry.getOwner(), fromEntry.getName(), fromEntry.getDesc()),
+					new MappingField(toEntry.getOwner(), toEntry.getName(), toEntry.getDesc())
 			);
-		}, (methodFrom, methodTo) -> {
+		}
+
+		for (MethodEntry entry : mappings.getMethodEntries()) {
+			EntryTriple fromEntry = entry.get(from);
+			EntryTriple toEntry = entry.get(to);
+
 			methodMap.put(
-				new MappingMethod(methodFrom.owner, methodFrom.name, methodFrom.desc),
-				new MappingMethod(methodTo.owner, methodTo.name, methodTo.desc)
+					new MappingMethod(fromEntry.getOwner(), fromEntry.getName(), fromEntry.getDesc()),
+					new MappingMethod(toEntry.getOwner(), toEntry.getName(), toEntry.getDesc())
 			);
-		});
+		}
 	}
 }

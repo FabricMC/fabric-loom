@@ -33,25 +33,31 @@ import java.io.File;
 
 public class RemapJar extends DefaultLoomTask {
 	public File jar;
-	public File backupTo;
+	public File destination;
+	public boolean nestJar;
 
 	@Input
 	public File getJar() {
 		return jar;
 	}
 
+	@Input
+	public boolean isNestJar() {
+		return nestJar;
+	}
+
 	@OutputFile
-	public File getBackupTo() {
-		if (backupTo == null) {
+	public File getDestination() {
+		if (destination == null) {
 			String s = jar.getAbsolutePath();
 			return new File(s.substring(0, s.length() - 4) + "-dev.jar");
 		}
 
-		return backupTo;
+		return destination;
 	}
 
 	@TaskAction
 	public void remap() {
-		ModRemapper.remap(this);
+		ModRemapper.remap(this, nestJar);
 	}
 }

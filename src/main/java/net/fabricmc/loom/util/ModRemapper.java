@@ -42,7 +42,7 @@ import java.util.List;
 
 public class ModRemapper {
 
-	public static void remap(RemapJar task) {
+	public static void remap(RemapJar task, boolean nest) {
 		Project project = task.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
@@ -70,7 +70,7 @@ public class ModRemapper {
 		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
 		Path modJarOutputPath = modJarOutput.toPath();
 
-		File modJarUnmappedCopy = task.getBackupTo();
+		File modJarUnmappedCopy = task.getDestination();
 		if (modJarUnmappedCopy.exists()) {
 			modJarUnmappedCopy.delete();
 		}
@@ -107,8 +107,10 @@ public class ModRemapper {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
-		if (NestedJars.addNestedJars(project, modJarOutput)) {
-			project.getLogger().debug("Added nested jar paths to mod json");
+		if (nest) {
+			if (NestedJars.addNestedJars(project, modJarOutput)) {
+				project.getLogger().debug("Added nested jar paths to mod json");
+			}
 		}
 
 		try {

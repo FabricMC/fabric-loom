@@ -66,9 +66,10 @@ public class MinecraftAssetsProvider {
 
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
 		progressLogger.start("Downloading assets...", "assets");
-		FileReader fileReader = new FileReader(assetsInfo);
-		AssetIndex index = new Gson().fromJson(fileReader, AssetIndex.class);
-		fileReader.close();
+		AssetIndex index;
+		try (FileReader fileReader = new FileReader(assetsInfo)) {
+			index = new Gson().fromJson(fileReader, AssetIndex.class);
+		}
 		Map<String, AssetObject> parent = index.getFileMap();
 		final int totalSize = parent.size();
 		int position = 0;

@@ -149,10 +149,9 @@ public class MixinServiceGradle implements IClassBytecodeProvider, IClassProvide
 	}
 
 	public byte[] getClassBytes(String name, String transformedName) throws IOException {
-		InputStream inputStream = getResourceAsStream(name.replace(".", "/") + ".class");
-		byte[] classBytes = ByteStreams.toByteArray(inputStream);
-		inputStream.close();
-		return classBytes;
+		try (InputStream inputStream = getResourceAsStream(name.replace(".", "/") + ".class")) {
+			return ByteStreams.toByteArray(inputStream);
+		}
 	}
 
 	@Override

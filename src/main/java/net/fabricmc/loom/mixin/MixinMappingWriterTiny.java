@@ -46,13 +46,10 @@ public class MixinMappingWriterTiny extends MappingWriter {
 	@Override
 	public void write(String output, ObfuscationType type, IMappingConsumer.MappingSet<MappingField> fields, IMappingConsumer.MappingSet<MappingMethod> methods) {
 		if (output != null) {
-			PrintWriter writer = null;
+			String from = type.getKey().split(":")[0];
+			String to = type.getKey().split(":")[1];
 
-			try {
-				String from = type.getKey().split(":")[0];
-				String to = type.getKey().split(":")[1];
-
-				writer = this.openFileWriter(output, type + " output TinyMappings");
+			try (PrintWriter writer = this.openFileWriter(output, type + " output TinyMappings")) {
 				writer.println(String.format("v1\t%s\t%s", from, to));
 				for (IMappingConsumer.MappingSet.Pair<MappingField> pair : fields) {
 					writer.println(String.format("FIELD\t%s\t%s\t%s\t%s", pair.from.getOwner(), pair.from.getDesc(), pair.from.getSimpleName(), pair.to.getSimpleName()));
@@ -62,13 +59,6 @@ public class MixinMappingWriterTiny extends MappingWriter {
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
-			} finally {
-				if (writer != null) {
-					try {
-						writer.close();
-					} catch (Exception e) {
-					}
-				}
 			}
 		}
 	}

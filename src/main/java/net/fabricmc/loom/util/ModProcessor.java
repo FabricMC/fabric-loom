@@ -190,33 +190,33 @@ public class ModProcessor {
 
 	static void readInstallerJson(File file, Project project){
 		try {
-			JarFile jarFile = new JarFile(file);
-
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			String launchMethod = extension.getLoaderLaunchMethod();
 
+			String jsonStr;
 			int priority = 0;
 
-			ZipEntry entry = null;
-			if (!launchMethod.isEmpty()) {
-				entry = jarFile.getEntry("fabric-installer." + launchMethod + ".json");
-				if (entry == null) {
-					project.getLogger().warn("Could not find loader launch method '" + launchMethod + "', falling back");
+			try (JarFile jarFile = new JarFile(file)) {
+				ZipEntry entry = null;
+				if (!launchMethod.isEmpty()) {
+					entry = jarFile.getEntry("fabric-installer." + launchMethod + ".json");
+					if (entry == null) {
+						project.getLogger().warn("Could not find loader launch method '" + launchMethod + "', falling back");
+					}
 				}
-			}
 
-			if(entry == null){
-				entry = jarFile.getEntry("fabric-installer.json");
-				priority = 1;
 				if (entry == null) {
-					jarFile.close();
-					return;
+					entry = jarFile.getEntry("fabric-installer.json");
+					priority = 1;
+					if (entry == null) {
+						return;
+					}
+				}
+
+				try (InputStream inputstream = jarFile.getInputStream(entry)) {
+					jsonStr = IOUtils.toString(inputstream, StandardCharsets.UTF_8);
 				}
 			}
-			InputStream inputstream = jarFile.getInputStream(entry);
-			String jsonStr = IOUtils.toString(inputstream, StandardCharsets.UTF_8);
-			inputstream.close();
-			jarFile.close();
 
 			JsonObject jsonObject = GSON.fromJson(jsonStr, JsonObject.class);
 			extension.setInstallerJson(jsonObject, priority);

@@ -54,11 +54,10 @@ public class MinecraftJarProvider {
 
 	public void mergeJars(Project project) throws IOException {
 		project.getLogger().lifecycle(":merging jars");
-		JarMerger jarMerger = new JarMerger(minecraftProvider.MINECRAFT_CLIENT_JAR, minecraftProvider.MINECRAFT_SERVER_JAR, minecraftProvider.MINECRAFT_MERGED_JAR);
-		jarMerger.enableSyntheticParamsOffset();
-
-		jarMerger.merge();
-		jarMerger.close();
+		try (JarMerger jarMerger = new JarMerger(minecraftProvider.MINECRAFT_CLIENT_JAR, minecraftProvider.MINECRAFT_SERVER_JAR, minecraftProvider.MINECRAFT_MERGED_JAR)) {
+			jarMerger.enableSyntheticParamsOffset();
+			jarMerger.merge();
+		}
 	}
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {

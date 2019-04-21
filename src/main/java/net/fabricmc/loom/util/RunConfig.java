@@ -168,9 +168,10 @@ public class RunConfig {
 	}
 
 	public String fromDummy(String dummy) throws IOException {
-		InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy);
-		String dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
-		input.close();
+		String dummyConfig;
+		try (InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy)) {
+			dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
+		}
 
 		dummyConfig = dummyConfig.replace("%NAME%", configName);
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);

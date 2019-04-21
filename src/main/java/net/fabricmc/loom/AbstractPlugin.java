@@ -25,6 +25,9 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
+import groovy.util.Node;
+import groovy.util.NodeList;
+import groovy.xml.QName;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.ModRemapperProvider;
@@ -36,10 +39,21 @@ import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.artifacts.maven.Conf2ScopeMappingContainer;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.MavenPlugin;
+import org.gradle.api.plugins.MavenPluginConvention;
+import org.gradle.api.publish.Publication;
+import org.gradle.api.publish.PublishingExtension;
+import org.gradle.api.publish.maven.MavenPublication;
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven;
+import org.gradle.api.publish.maven.tasks.GenerateMavenPom;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -49,6 +63,9 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -77,7 +94,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
-		compileModsConfig.setTransitive(false); // Dont get transitive deps of mods
+		compileModsConfig.setTransitive(false);
 		Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS_MAPPED);
 		compileModsMappedConfig.setTransitive(false); // Dont get transitive deps of mods
 		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
@@ -127,9 +144,9 @@ public class AbstractPlugin implements Plugin<Project> {
 					});
 				}
 			}
-
 		}
 
+		configureMaven();
 	}
 
 	/**
@@ -240,7 +257,6 @@ public class AbstractPlugin implements Plugin<Project> {
 			dependencyManager.addProvider(new MinecraftProvider());
 			dependencyManager.addProvider(new MappingsProvider());
 			dependencyManager.addProvider(new ModRemapperProvider());
-
 			dependencyManager.handleDependencies(project1);
 
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
@@ -281,6 +297,36 @@ public class AbstractPlugin implements Plugin<Project> {
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				extension.addUnmappedMod(jarTask.getArchivePath());
+			}
+		});
+	}
+
+	protected void configureMaven() {
+		project.afterEvaluate((p) -> {
+			Configuration compileModsConfig = p.getConfigurations().getByName(Constants.COMPILE_MODS);
+
+			// add modsCompile to maven-publish
+			PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+			if (mavenPublish != null) {
+				mavenPublish.publications((publications) -> {
+					for (Publication publication : publications) {
+						if (publication instanceof MavenPublication) {
+							((MavenPublication) publication).pom((pom) -> {
+								pom.withXml((xml) -> {
+									Node dependencies = xml.asNode().appendNode("dependencies");
+
+									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+										Node depNode = dependencies.appendNode("dependency");
+										depNode.appendNode("groupId", dependency.getGroup());
+										depNode.appendNode("artifactId", dependency.getName());
+										depNode.appendNode("version", dependency.getVersion());
+										depNode.appendNode("scope", "compile");
+									}
+								});
+							});
+						}
+					}
+				});
 			}
 		});
 	}

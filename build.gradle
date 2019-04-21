@@ -34,7 +34,7 @@ dependencies {
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:27.1-jre')
-	implementation ('net.fabricmc:stitch:0.1.2.49') {
+	implementation ('net.fabricmc:stitch:0.1.2.50') {
 		exclude module: 'enigma'
 	}
 	implementation ('net.fabricmc:tiny-remapper:0.1.0.33') {
@@ -42,7 +42,7 @@ dependencies {
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
 
-	implementation ('net.fabricmc:sponge-mixin:0.7.11.22') {
+	implementation ('net.fabricmc:sponge-mixin:0.7.11.23') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

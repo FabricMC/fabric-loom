@@ -267,8 +267,17 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
-				//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
-				NestedJars.getRequiredTasks(project1).forEach(remapJarTask::dependsOn);
+
+				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
+					Set<Task> taskSet = entry.getValue();
+					for (Task task : taskSet) {
+						if (task instanceof RemapJar && ((RemapJar) task).isNestJar()) {
+							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
+							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
+						}
+					}
+				}
 
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");

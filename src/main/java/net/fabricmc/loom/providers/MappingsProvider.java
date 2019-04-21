@@ -62,7 +62,7 @@ public class MappingsProvider extends DependencyProvider {
 		String version = dependency.getResolvedVersion();
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
-		this.mappingsName = dependency.getDependency().getName();
+		this.mappingsName = dependency.getDependency().getGroup() + "." + dependency.getDependency().getName();
 
 		Version mappingsVersion = new Version(version);
 		this.minecraftVersion = mappingsVersion.getMinecraftVersion();

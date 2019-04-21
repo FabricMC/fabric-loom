@@ -26,16 +26,28 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.ModRemapper;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 
 public class RemapJar extends DefaultLoomTask {
 	public File jar;
+	public File backupTo;
 
 	@Input
 	public File getJar() {
 		return jar;
+	}
+
+	@OutputFile
+	public File getBackupTo() {
+		if (backupTo == null) {
+			String s = jar.getAbsolutePath();
+			return new File(s.substring(0, s.length() - 4) + "-dev.jar");
+		}
+
+		return backupTo;
 	}
 
 	@TaskAction

@@ -45,7 +45,7 @@ public class ModRemapper {
 		Project project = task.getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File modJar = task.jar;
+		File modJar = task.getJar();
 
 		if (!modJar.exists()) {
 			project.getLogger().error("Source .JAR not found!");
@@ -78,7 +78,7 @@ public class ModRemapper {
 		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
 		Path modJarOutputPath = modJarOutput.toPath();
 
-		File modJarUnmappedCopy = new File(s.substring(0, s.length() - 4) + "-dev.jar");
+		File modJarUnmappedCopy = task.getBackupTo();
 		if (modJarUnmappedCopy.exists()) {
 			modJarUnmappedCopy.delete();
 		}

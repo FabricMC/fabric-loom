@@ -27,11 +27,13 @@ package net.fabricmc.loom.util;
 import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.mappings.*;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.stitch.util.StitchUtil;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.io.TextMappingsReader;
+import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
@@ -56,18 +58,13 @@ public class SourceRemapper {
 	}
 
 	private static void remapSourcesInner(Project project, File source, File destination, boolean toNamed) throws Exception {
-
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
-			try {
+			try (FileInputStream stream = new FileInputStream(mappingsProvider.MAPPINGS_TINY)) {
 				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
-
-				FileReader mappingsReader = new FileReader(mappingsProvider.MAPPINGS_TINY);
-				MappingSet mappingsOut = new TinyReader(mappingsReader, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
-				mappingsReader.close();
-				return mappingsOut;
+				return new TinyReader(stream, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -142,110 +139,41 @@ public class SourceRemapper {
 		}
 	}
 
-	static class SimpleClassMapper extends Remapper {
-		final Map<String, String> classMap;
-
-		public SimpleClassMapper(Map<String, String> map) {
-			this.classMap = map;
-		}
-
-		public String map(String typeName) {
-			return this.classMap.getOrDefault(typeName, typeName);
-		}
-	}
-
-	// With help from jamierocks; heavily modified
 	public static class TinyReader extends MappingsReader {
-		private final Reader reader;
-		private final String to;
-		private final String from;
+		private final InputStream stream;
+		private final String from, to;
 
-		private int toOffset = 0;
-		private int fromOffset = 1;
-		private int lineNumber = 0;
-
-		public TinyReader(Reader reader, String from, String to) {
-			this.reader = reader;
+		public TinyReader(InputStream stream, String from, String to) {
+			this.stream = stream;
 			this.from = from;
 			this.to = to;
 		}
 
-		//This looks at the first line of the tiny file and finds the column of the mappings, horrible but works.
-		public Pair<Integer, Integer> getMappingOffset(String to, String from, String line){
-			int toOffset = -1;
-			int fromOffset = -1;
-			String[] split = line.split("\t");
-			for (int i = 0; i < split.length; i++) {
-				String mapping = split[i];
-				if(mapping.equalsIgnoreCase(to)){
-					fromOffset = i -1;
-				}
-				if(mapping.equalsIgnoreCase(from)){
-					toOffset = i -1;
-				}
-			}
-			return Pair.of(toOffset, fromOffset);
-		}
-
 		@Override
 		public MappingSet read(final MappingSet mappings) throws IOException {
-			// As TinyV1 stores descriptors in obfuscated format always, we need to take a two-step approach.
-			Map<String, String> classNames = new HashMap<>();
-			List<String[]> otherNames = new ArrayList<>();
-			SimpleClassMapper classMapper = new SimpleClassMapper(classNames);
-			BufferedReader br = new BufferedReader(reader);
+			Mappings m = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
 
-			br.lines().forEach((line) -> {
-				final String[] params = line.split("\t");
-				if ((lineNumber++) == 0) {
-					if (params.length < 1) {
-						throw new RuntimeException("Invalid mapping file!");
-					} else if (params.length < 3 || !params[0].equals("v1")) {
-						throw new RuntimeException("Invalid mapping version: '" + params[0] + "'!");
-					}
+			for (ClassEntry entry : m.getClassEntries()) {
+				mappings.getOrCreateClassMapping(entry.get(from))
+						.setDeobfuscatedName(entry.get(to));
+			}
 
-					Pair<Integer, Integer> offset = getMappingOffset(to, from, line);
-					// System.out.println("To: " + to + " From: " + from + " toOffset:" + offset.getLeft() + " from:" + offset.getRight());
-					toOffset = offset.getLeft();
-					fromOffset = offset.getRight();
-				} else {
-					switch (params[0]) {
-						case "CLASS": {
-							mappings.getOrCreateClassMapping(params[1 + toOffset])
-									.setDeobfuscatedName(params[1 + fromOffset]);
-							classNames.put(params[1], params[1 + toOffset]);
-							// System.out.println("Class " + params[1 + toOffset] + " -> " + params[1 + fromOffset]);
-							return;
-						}
-						case "FIELD":
-						case "METHOD": {
-							otherNames.add(params);
-							return;
-						}
-					}
-				}
-			});
-			br.close();
+			for (FieldEntry entry : m.getFieldEntries()) {
+				EntryTriple fromEntry = entry.get(from);
+				EntryTriple toEntry = entry.get(to);
 
-			for (String[] params : otherNames) {
-				switch (params[0]) {
-					case "FIELD": {
-						mappings.getOrCreateClassMapping(classMapper.map(params[1]))
-								.getOrCreateFieldMapping(params[3 + toOffset], classMapper.mapDesc(params[2]))
-								.setDeobfuscatedName(params[3 + fromOffset]);
+				mappings.getOrCreateClassMapping(fromEntry.getOwner())
+						.getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc())
+						.setDeobfuscatedName(toEntry.getName());
+			}
 
-						// System.out.println("Field " + params[3 + toOffset] + classMapper.mapDesc(params[2]) + " -> " + params[3 + fromOffset]);
-						break;
-					}
-					case "METHOD": {
-						mappings.getOrCreateClassMapping(classMapper.map(params[1]))
-								.getOrCreateMethodMapping(params[3 + toOffset], classMapper.mapMethodDesc(params[2]))
-								.setDeobfuscatedName(params[3 + fromOffset]);
+			for (MethodEntry entry : m.getMethodEntries()) {
+				EntryTriple fromEntry = entry.get(from);
+				EntryTriple toEntry = entry.get(to);
 
-						// System.out.println("Method " + params[3 + toOffset] + classMapper.mapMethodDesc(params[2]) + " -> " + params[3 + fromOffset]);
-						break;
-					}
-				}
+				mappings.getOrCreateClassMapping(fromEntry.getOwner())
+						.getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc())
+						.setDeobfuscatedName(toEntry.getName());
 			}
 
 			return mappings;

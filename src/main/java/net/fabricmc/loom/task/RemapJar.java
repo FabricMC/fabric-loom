@@ -34,7 +34,7 @@ import java.io.File;
 public class RemapJar extends DefaultLoomTask {
 	public File jar;
 	public File destination;
-	public boolean nestJar;
+	public boolean nestJar = true;
 
 	@Input
 	public File getJar() {

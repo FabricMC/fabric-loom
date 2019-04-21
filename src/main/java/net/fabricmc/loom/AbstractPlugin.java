@@ -51,7 +51,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -208,7 +207,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			});
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getProjectCache());
+				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 

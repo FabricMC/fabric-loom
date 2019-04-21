@@ -42,7 +42,7 @@ public class CleanLoomMappings extends DefaultLoomTask {
         extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
         extension.getMinecraftMappedProvider().getMappedJar().delete();
         try {
-            Files.walkFileTree(extension.getProjectCache().toPath(), new DeletingFileVisitor());
+            Files.walkFileTree(extension.getRootProjectBuildCache().toPath(), new DeletingFileVisitor());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

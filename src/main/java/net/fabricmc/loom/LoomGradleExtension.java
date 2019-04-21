@@ -33,7 +33,6 @@ import org.cadixdev.lorenz.MappingSet;
 import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 
 import javax.annotation.Nullable;
@@ -94,8 +93,16 @@ public class LoomGradleExtension {
 		return userCache;
 	}
 
-	public File getProjectCache(){
-		File projectCache = new File(project.getRootDir(), ".gradle/minecraft/");
+	public File getRootProjectBuildCache() {
+		File projectCache = new File(project.getRootProject().getBuildDir(), "loom-cache");
+		if(!projectCache.exists()){
+			projectCache.mkdirs();
+		}
+		return projectCache;
+	}
+
+	public File getProjectBuildCache() {
+		File projectCache = new File(project.getBuildDir(), "loom-cache");
 		if(!projectCache.exists()){
 			projectCache.mkdirs();
 		}
@@ -103,7 +110,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getRemappedModCache() {
-		File remappedModCache = new File(getProjectCache(), "remapped_mods/");
+		File remappedModCache = new File(getRootProjectBuildCache(), "remapped_mods");
 		if (!remappedModCache.exists()) {
 			remappedModCache.mkdir();
 		}
@@ -111,7 +118,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getNestedModCache() {
-		File nestedModCache = new File(getProjectCache(), "nested_mods/");
+		File nestedModCache = new File(getRootProjectBuildCache(), "nested_mods");
 		if (!nestedModCache.exists()) {
 			nestedModCache.mkdir();
 		}

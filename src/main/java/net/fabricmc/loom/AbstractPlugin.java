@@ -146,40 +146,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 		}
 
-		project.afterEvaluate((p) -> {
-			// add modsCompile to maven
-			MavenPluginConvention maven = p.getConvention().findPlugin(MavenPluginConvention.class);
-			if (maven != null) {
-				// TODO: non-functional
-				maven.getConf2ScopeMappings().addMapping(MavenPlugin.COMPILE_PRIORITY, compileModsConfig, Conf2ScopeMappingContainer.COMPILE);
-			}
-
-			// add modsCompile to maven-publish
-			PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
-			if (mavenPublish != null) {
-				System.out.println("YASSS");
-				mavenPublish.publications((publications) -> {
-					for (Publication publication : publications) {
-						System.out.println("yass " + publication.getName());
-						if (publication instanceof MavenPublication) {
-							((MavenPublication) publication).pom((pom) -> {
-								pom.withXml((xml) -> {
-									Node dependencies = xml.asNode().appendNode("dependencies");
-
-									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
-										Node depNode = dependencies.appendNode("dependency");
-										depNode.appendNode("groupId", dependency.getGroup());
-										depNode.appendNode("artifactId", dependency.getName());
-										depNode.appendNode("version", dependency.getVersion());
-										depNode.appendNode("scope", "compile");
-									}
-								});
-							});
-						}
-					}
-				});
-			}
-		});
+		configureMaven();
 	}
 
 	/**
@@ -330,6 +297,36 @@ public class AbstractPlugin implements Plugin<Project> {
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				extension.addUnmappedMod(jarTask.getArchivePath());
+			}
+		});
+	}
+
+	protected void configureMaven() {
+		project.afterEvaluate((p) -> {
+			Configuration compileModsConfig = p.getConfigurations().getByName(Constants.COMPILE_MODS);
+
+			// add modsCompile to maven-publish
+			PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+			if (mavenPublish != null) {
+				mavenPublish.publications((publications) -> {
+					for (Publication publication : publications) {
+						if (publication instanceof MavenPublication) {
+							((MavenPublication) publication).pom((pom) -> {
+								pom.withXml((xml) -> {
+									Node dependencies = xml.asNode().appendNode("dependencies");
+
+									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+										Node depNode = dependencies.appendNode("dependency");
+										depNode.appendNode("groupId", dependency.getGroup());
+										depNode.appendNode("artifactId", dependency.getName());
+										depNode.appendNode("version", dependency.getVersion());
+										depNode.appendNode("scope", "compile");
+									}
+								});
+							});
+						}
+					}
+				});
 			}
 		});
 	}

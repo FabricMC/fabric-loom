@@ -58,7 +58,7 @@ public class GenIdeaProjectTask extends DefaultLoomTask {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		project.getLogger().lifecycle(":Building idea workspace");
 
-		File file = new File(project.getName() + ".iws");
+		File file = project.file(project.getName() + ".iws");
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 		Document doc = docBuilder.parse(file);

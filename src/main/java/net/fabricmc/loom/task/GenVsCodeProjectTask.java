@@ -46,7 +46,7 @@ public class GenVsCodeProjectTask extends DefaultLoomTask {
     @TaskAction
     public void genRuns() {
         LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
-        File projectDir = new File(".vscode");
+        File projectDir = getProject().file(".vscode");
         if (!projectDir.exists()) {
             projectDir.mkdir();
         }

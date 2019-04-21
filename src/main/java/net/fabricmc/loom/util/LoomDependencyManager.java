@@ -122,7 +122,7 @@ public class LoomDependencyManager {
 		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
 			String name = jsonElement.getAsJsonObject().get("name").getAsString();
 
-			Configuration configuration = project.getConfigurations().getByName("compile");
+			Configuration configuration = project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES);
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
 			modDep.setTransitive(false);
 			configuration.getDependencies().add(modDep);

@@ -24,30 +24,110 @@
 
 package net.fabricmc.loom;
 
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.task.*;
+import net.fabricmc.loom.task.fernflower.FernFlowerTask;
+import net.fabricmc.loom.util.LineNumberRemapper;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskContainer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
 
 public class LoomGradlePlugin extends AbstractPlugin {
+	private static File getMappedByproduct(Project project, String suffix) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+		String path = mappedJar.getAbsolutePath();
+		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
+			throw new RuntimeException("Invalid mapped JAR path: " + path);
+		}
+
+		return new File(path.substring(0, path.length() - 4) + suffix);
+	}
+
 	@Override
 	public void apply(Project target) {
 		super.apply(target);
 
-		makeTask("cleanLoomBinaries", CleanLoomBinaries.class);
-		makeTask("cleanLoomMappings", CleanLoomMappings.class);
+		TaskContainer tasks = target.getTasks();
+		
+		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
+		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
-		makeTask("remapJar", RemapJar.class);
+		tasks.register("remapJar", RemapJar.class);
 
-		makeTask("genSources", GenSourcesTask.class);
+		tasks.register("genSources", FernFlowerTask.class, t -> {
+			t.getOutputs().upToDateWhen((o) -> false);
+		});
+		project.afterEvaluate((p) -> {
+			FernFlowerTask task = (FernFlowerTask) p.getTasks().getByName("genSources");
 
-		makeTask("downloadAssets", DownloadAssetsTask.class);
+			Project project = this.getProject();
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
+			MappingsProvider mappingsProvider = extension.getMappingsProvider();
+			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+			File sourcesJar = getMappedByproduct(project, "-sources-tmp.jar");
+			File sourcesFinalJar = getMappedByproduct(project, "-sources.jar");
+			File linemapFile = getMappedByproduct(project, "-sources.lmap");
 
-		makeTask("genIdeaWorkspace", GenIdeaProjectTask.class).dependsOn("idea", "downloadAssets").setGroup("ide");
-		makeTask("genEclipseRuns", GenEclipseRunsTask.class).dependsOn("downloadAssets").setGroup("ide");
-		makeTask("vscode", GenVsCodeProjectTask.class).dependsOn("downloadAssets").setGroup("ide");
+			task.setInput(mappedJar);
+			task.setOutput(sourcesJar);
+			task.setLineMapFile(linemapFile);
+			task.setLibraries(libraryProvider.getLibraries());
 
-		makeTask("remapSourcesJar", RemapSourcesJar.class);
+			if (sourcesJar.exists()) {
+				sourcesJar.delete();
+			}
 
-		makeTask("runClient", RunClientTask.class).dependsOn("buildNeeded", "downloadAssets").setGroup("minecraftMapped");
-		makeTask("runServer", RunServerTask.class).dependsOn("buildNeeded").setGroup("minecraftMapped");
+			task.doLast((tt) -> {
+				project.getLogger().lifecycle(":readjusting line numbers");
+				LineNumberRemapper remapper = new LineNumberRemapper();
+				remapper.readMappings(linemapFile);
+
+				try {
+					remapper.process(sourcesJar.toPath(), sourcesFinalJar.toPath());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+
+				if (sourcesJar.exists()) {
+					sourcesJar.delete();
+				}
+			});
+		});
+
+		tasks.register("downloadAssets", DownloadAssetsTask.class);
+
+		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
+			t.dependsOn("idea", "downloadAssets");
+			t.setGroup("ide");
+		});
+
+		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
+			t.dependsOn("downloadAssets");
+			t.setGroup("ide");
+		});
+
+		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
+			t.dependsOn("downloadAssets");
+			t.setGroup("ide");
+		});
+
+		tasks.register("remapSourcesJar", RemapSourcesJar.class);
+
+		tasks.register("runClient", RunClientTask.class, t -> {
+			t.dependsOn("buildNeeded", "downloadAssets");
+			t.setGroup("minecraftMapped");
+		});
+
+		tasks.register("runServer", RunServerTask.class, t -> {
+			t.dependsOn("buildNeeded");
+			t.setGroup("minecraftMapped");
+		});
 	}
 }

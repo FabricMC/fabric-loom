@@ -24,21 +24,30 @@
 
 package net.fabricmc.loom.task;
 
-import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+import org.gradle.api.Action;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
+import org.gradle.process.ExecResult;
+import org.gradle.process.JavaExecSpec;
 
-public class LoomFernflowerLogger extends IFernflowerLogger {
-	@Override
-	public void writeMessage(String s, Severity severity) {
-		if (severity == Severity.WARN || severity == Severity.ERROR) {
-			System.err.println(s);
-		}
-	}
+/**
+ * Simple trait like interface for a Task that wishes to execute a java process
+ * with the classpath of the gradle plugin plus groovy.
+ *
+ * Created by covers1624 on 11/02/19.
+ */
+public interface ForkingJavaExecTask extends Task {
 
-	@Override
-	public void writeMessage(String s, Severity severity, Throwable throwable) {
-		if (severity == Severity.WARN || severity == Severity.ERROR) {
-			System.err.println(s);
-			throwable.printStackTrace(System.err);
-		}
-	}
+    default ExecResult javaexec(Action<? super JavaExecSpec> action) {
+        ConfigurationContainer configurations = getProject().getBuildscript().getConfigurations();
+        DependencyHandler handler = getProject().getDependencies();
+        FileCollection classpath = configurations.getByName("classpath")//
+                .plus(configurations.detachedConfiguration(handler.localGroovy()));
+        return getProject().javaexec(spec -> {
+            spec.classpath(classpath);
+            action.execute(spec);
+        });
+    }
 }

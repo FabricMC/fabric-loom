@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.ModRemapperProvider;
 import net.fabricmc.loom.task.RemapJar;
 import net.fabricmc.loom.task.RemapSourcesJar;
 import net.fabricmc.loom.util.*;
@@ -81,9 +80,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
 		Configuration compileModsConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS);
-		compileModsConfig.setTransitive(false);
+		compileModsConfig.setTransitive(true);
 		Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(Constants.COMPILE_MODS_MAPPED);
-		compileModsMappedConfig.setTransitive(false); // Dont get transitive deps of mods
+		compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
 		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
 		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
@@ -224,7 +223,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			dependencyManager.addProvider(new MinecraftProvider());
 			dependencyManager.addProvider(new MappingsProvider());
-			dependencyManager.addProvider(new ModRemapperProvider());
+
 			dependencyManager.handleDependencies(project1);
 
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));

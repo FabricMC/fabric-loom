@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.util.DependencyProvider.DependencyInfo;
 
 import org.gradle.api.Project;
@@ -35,12 +36,17 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class LoomDependencyManager {
+	private static class ProviderList {
+		private final String key;
+		private final List<DependencyProvider> providers = new ArrayList<>();
+
+		ProviderList(String key) {
+			this.key = key;
+		}
+	}
 
 	private List<DependencyProvider> dependencyProviderList = new ArrayList<>();
 
@@ -67,41 +73,70 @@ public class LoomDependencyManager {
 	public void handleDependencies(Project project){
 		List<Runnable> afterTasks = new ArrayList<>();
 
+		MappingsProvider mappingsProvider = null;
+
 		project.getLogger().lifecycle(":setting up loom dependencies");
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		Set<String> targetConfigs = new LinkedHashSet<>();
+		Map<String, ProviderList> providerListMap = new HashMap<>();
+		List<ProviderList> targetProviders = new ArrayList<>();
+
 		for(DependencyProvider provider : dependencyProviderList){
-			targetConfigs.add(provider.getTargetConfig());
+			providerListMap.computeIfAbsent(provider.getTargetConfig(), (k) -> {
+				ProviderList list = new ProviderList(k);
+				targetProviders.add(list);
+				return list;
+			}).providers.add(provider);
+
+			if (provider instanceof MappingsProvider) {
+				mappingsProvider = (MappingsProvider) provider;
+			}
 		}
-		for(String config : targetConfigs){
-			Configuration configuration = project.getConfigurations().getByName(config);
+
+		if (mappingsProvider == null) {
+			throw new RuntimeException("Could not find MappingsProvider instance!");
+		}
+
+		for (ProviderList list : targetProviders) {
+			Configuration configuration = project.getConfigurations().getByName(list.key);
 			configuration.getDependencies().forEach(dependency -> {
-				for(DependencyProvider provider : dependencyProviderList){
-					if(provider.getTargetConfig().equals(config)){
-						DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-						try {
-							provider.provide(info, project, extension, afterTasks::add);
-						} catch (Exception e) {
-							throw new RuntimeException("Failed to provide", e);
-						}
+				for (DependencyProvider provider : list.providers) {
+					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
+					try {
+						provider.provide(info, project, extension, afterTasks::add);
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion(), e);
 					}
 				}
 			});
 		}
+
+		ModCompileRemapper.remapDependencies(
+				project,
+				mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion,
+				extension,
+				project.getConfigurations().getByName(Constants.COMPILE_MODS),
+				project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED),
+				project.getConfigurations().getByName("compile"),
+				afterTasks::add
+		);
 
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Didn't find installer JSON, searching through compileMods");
 			Configuration configuration = project.getConfigurations().getByName(Constants.COMPILE_MODS);
 
+			Set<File> seenFiles = new HashSet<>();
+
 			for (Dependency dependency : configuration.getDependencies()) {
 				DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-				File input = info.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + info));
-
-				ModProcessor.readInstallerJson(input, project);
-				if (extension.getInstallerJson() != null) {
-					project.getLogger().info("Found installer JSON in " + info);
-					break; //Found it, probably don't need to look any further
+				for (File input : info.resolve("")) {
+					if (seenFiles.add(input)) {
+						ModProcessor.readInstallerJson(input, project);
+						if (extension.getInstallerJson() != null) {
+							project.getLogger().info("Found installer JSON in " + info);
+							break; //Found it, probably don't need to look any further
+						}
+					}
 				}
 			}
 		}

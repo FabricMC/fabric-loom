@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util;
 
+import net.fabricmc.loom.util.progress.ProgressLogger;
+import org.gradle.api.logging.Logger;
 import org.objectweb.asm.*;
 
 import java.io.*;
@@ -56,9 +58,9 @@ public class LineNumberRemapper {
                     if (line.charAt(0) != '\t') {
                         clazz = lineMap.computeIfAbsent(segs[0], RClass::new);
                         clazz.maxLine = Integer.parseInt(segs[1]);
-                        clazz.maxLineDist = Integer.parseInt(segs[2]);
+                        clazz.maxLineDest = Integer.parseInt(segs[2]);
                     } else {
-                        clazz.lineMap.put(Integer.parseInt(segs[0]), (Integer) Integer.parseInt(segs[1]));
+                        clazz.lineMap.put(Integer.parseInt(segs[0]), Integer.parseInt(segs[1]));
                     }
                     i++;
                 }
@@ -70,7 +72,7 @@ public class LineNumberRemapper {
         }
     }
 
-    public void process(Path input, Path output) throws IOException {
+    public void process(ProgressLogger logger, Path input, Path output) throws IOException {
         Files.walkFileTree(input, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -86,7 +88,11 @@ public class LineNumberRemapper {
                         Files.delete(dst);
                     }
                     String idx = rel.substring(0, rel.length() - 6);
-                    int dollarPos = idx.indexOf('$');//This makes the assumption that only Java classes are to be remapped.
+                    if (logger != null) {
+                        logger.progress("Remapping " + idx);
+                    }
+
+                    int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
                     if (dollarPos >= 0) {
                         idx = idx.substring(0, dollarPos);
                     }
@@ -127,13 +133,13 @@ public class LineNumberRemapper {
                     if (tLine <= 0) {
                         super.visitLineNumber(line, start);
                     } else if (tLine >= rClass.maxLine) {
-                        super.visitLineNumber(rClass.maxLineDist, start);
+                        super.visitLineNumber(rClass.maxLineDest, start);
                     } else {
                         Integer matchedLine = null;
-                        while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) != null)) {
+                        while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) == null)) {
                             tLine++;
                         }
-                        super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDist, start);
+                        super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDest, start);
                     }
                 }
             };
@@ -144,7 +150,7 @@ public class LineNumberRemapper {
 
         private final String name;
         private int maxLine;
-        private int maxLineDist;
+        private int maxLineDest;
         private Map<Integer, Integer> lineMap = new HashMap<>();
 
         private RClass(String name) {

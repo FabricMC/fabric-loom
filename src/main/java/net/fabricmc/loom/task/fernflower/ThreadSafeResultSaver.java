@@ -74,7 +74,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
             try {
                 lineMapWriter = new PrintWriter(new FileWriter(lineMapFile.get()));
             } catch (IOException e) {
-                throw new RuntimeException("Unable to create LineMap file.", e);
+                throw new RuntimeException("Unable to create line mapping file: " + lineMapFile.get(), e);
             }
         }
     }
@@ -100,16 +100,15 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
             }
             if (mapping != null && lineMapWriter != null) {
                 int maxLine = 0;
-                int maxLineDist = 0;
-                // 2 loops here is meh, perhaps merge with a buffer?
+                int maxLineDest = 0;
+                StringBuilder builder = new StringBuilder();
                 for (int i = 0; i < mapping.length; i += 2) {
                     maxLine = Math.max(maxLine, mapping[i]);
-                    maxLineDist = Math.max(maxLineDist, mapping[i + 1]);
+                    maxLineDest = Math.max(maxLineDest, mapping[i + 1]);
+                    builder.append("\t").append(mapping[i]).append("\t").append(mapping[i + 1]).append("\n");
                 }
-                lineMapWriter.println(qualifiedName + "\t" + maxLine + "\t" + maxLineDist);
-                for (int i = 0; i < mapping.length; i += 2) {
-                    lineMapWriter.println("\t" + mapping[i] + "\t" + mapping[i + 1]);
-                }
+                lineMapWriter.println(qualifiedName + "\t" + maxLine + "\t" + maxLineDest);
+                lineMapWriter.println(builder.toString());
             }
         });
     }

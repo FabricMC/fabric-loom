@@ -25,15 +25,20 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.task.*;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 import net.fabricmc.loom.util.LineNumberRemapper;
+import net.fabricmc.loom.util.progress.ProgressLogger;
+import net.fabricmc.stitch.util.StitchUtil;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 public class LoomGradlePlugin extends AbstractPlugin {
@@ -71,8 +76,8 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
 			MappingsProvider mappingsProvider = extension.getMappingsProvider();
 			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-			File sourcesJar = getMappedByproduct(project, "-sources-tmp.jar");
-			File sourcesFinalJar = getMappedByproduct(project, "-sources.jar");
+			File linemappedJarTmp = getMappedByproduct(project, "-linemapped.jar.tmp");
+			File sourcesJar = getMappedByproduct(project, "-sources.jar");
 			File linemapFile = getMappedByproduct(project, "-sources.lmap");
 
 			task.setInput(mappedJar);
@@ -80,23 +85,33 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			task.setLineMapFile(linemapFile);
 			task.setLibraries(libraryProvider.getLibraries());
 
-			if (sourcesJar.exists()) {
-				sourcesJar.delete();
-			}
-
 			task.doLast((tt) -> {
-				project.getLogger().lifecycle(":readjusting line numbers");
+				project.getLogger().lifecycle(":adjusting line numbers");
 				LineNumberRemapper remapper = new LineNumberRemapper();
 				remapper.readMappings(linemapFile);
 
-				try {
-					remapper.process(sourcesJar.toPath(), sourcesFinalJar.toPath());
+				ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, FernFlowerTask.class.getName());
+				progressLogger.start("Adjusting line numbers", "linemap");
+
+				try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(mappedJar, true);
+				     StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarTmp, true)) {
+					remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
 
-				if (sourcesJar.exists()) {
-					sourcesJar.delete();
+				progressLogger.completed();
+
+				Path mappedJarPath = mappedJar.toPath();
+				Path linemappedJarTmpPath = linemappedJarTmp.toPath();
+
+				if (Files.exists(linemappedJarTmpPath)) {
+					try {
+						Files.deleteIfExists(mappedJarPath);
+						Files.move(linemappedJarTmpPath, mappedJarPath);
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
 				}
 			});
 		});

@@ -28,10 +28,14 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.Version;
+import net.fabricmc.mappings.Mappings;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import org.gradle.api.Project;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -50,8 +54,21 @@ public class MappingsProvider extends DependencyProvider {
 	private File MAPPINGS_DIR;
 	public File MAPPINGS_TINY_BASE;
 	public File MAPPINGS_TINY;
-
 	public File MAPPINGS_MIXIN_EXPORT;
+
+	private SoftReference<Mappings> mappings;
+
+	public Mappings getMappings() throws IOException {
+		if (mappings == null || mappings.get() == null) {
+			try (FileInputStream stream = new FileInputStream(MAPPINGS_TINY)) {
+				mappings = new SoftReference<>(
+						net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false)
+				);
+			}
+		}
+		
+		return mappings.get();
+	}
 
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {

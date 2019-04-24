@@ -62,9 +62,10 @@ public class SourceRemapper {
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
-			try (FileInputStream stream = new FileInputStream(mappingsProvider.MAPPINGS_TINY)) {
+			try {
+				Mappings m = mappingsProvider.getMappings();
 				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
-				return new TinyReader(stream, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
+				return new TinyReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -140,19 +141,17 @@ public class SourceRemapper {
 	}
 
 	public static class TinyReader extends MappingsReader {
-		private final InputStream stream;
+		private final Mappings m;
 		private final String from, to;
 
-		public TinyReader(InputStream stream, String from, String to) {
-			this.stream = stream;
+		public TinyReader(Mappings m, String from, String to) {
+			this.m = m;
 			this.from = from;
 			this.to = to;
 		}
 
 		@Override
-		public MappingSet read(final MappingSet mappings) throws IOException {
-			Mappings m = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
-
+		public MappingSet read(final MappingSet mappings) {
 			for (ClassEntry entry : m.getClassEntries()) {
 				mappings.getOrCreateClassMapping(entry.get(from))
 						.setDeobfuscatedName(entry.get(to));

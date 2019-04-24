@@ -22,43 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.util.ModRemapper;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
+import net.fabricmc.mappings.*;
+import net.fabricmc.tinyremapper.IMappingProvider;
+import net.fabricmc.tinyremapper.MemberInstance;
 
-import java.io.File;
-import java.io.IOException;
+public class TinyRemapperMappingsHelper {
+	private TinyRemapperMappingsHelper() {
 
-public class RemapJar extends DefaultLoomTask {
-	public File jar;
-	public File destination;
-	public boolean nestJar = true;
-
-	@Input
-	public File getJar() {
-		return jar;
 	}
 
-	@Input
-	public boolean isNestJar() {
-		return nestJar;
-	}
+	public static IMappingProvider create(Mappings mappings, String from, String to) {
+		return (classMap, fieldMap, methodMap) -> {
+			for (ClassEntry entry : mappings.getClassEntries()) {
+				classMap.put(entry.get(from), entry.get(to));
+			}
 
-	@OutputFile
-	public File getDestination() {
-		if (destination == null) {
-			String s = jar.getAbsolutePath();
-			return new File(s.substring(0, s.length() - 4) + "-dev.jar");
-		}
+			for (FieldEntry entry : mappings.getFieldEntries()) {
+				EntryTriple fromTriple = entry.get(from);
+				fieldMap.put(fromTriple.getOwner() + "/" + MemberInstance.getFieldId(fromTriple.getName(), fromTriple.getDesc()), entry.get(to).getName());
+			}
 
-		return destination;
-	}
-
-	@TaskAction
-	public void remap() throws IOException {
-		ModRemapper.remap(this, nestJar);
+			for (MethodEntry entry : mappings.getMethodEntries()) {
+				EntryTriple fromTriple = entry.get(from);
+				methodMap.put(fromTriple.getOwner() + "/" + MemberInstance.getMethodId(fromTriple.getName(), fromTriple.getDesc()), entry.get(to).getName());
+			}
+		};
 	}
 }

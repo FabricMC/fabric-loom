@@ -44,6 +44,7 @@ import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -116,7 +117,11 @@ public class ModCompileRemapper {
 			File output = new File(modStore, remappedFilename + ".jar");
 			if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
 				//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
-				ModProcessor.handleMod(input, output, project);
+				try {
+					ModProcessor.handleMod(input, output, project);
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to remap mod", e);
+				}
 
 				if (!output.exists()){
 					throw new RuntimeException("Failed to remap mod");

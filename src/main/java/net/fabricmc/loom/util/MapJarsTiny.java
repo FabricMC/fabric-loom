@@ -47,7 +47,6 @@ public class MapJarsTiny {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		Path mappings = mappingsProvider.MAPPINGS_TINY.toPath();
 		Path[] classpath = mapProvider.getMapperPaths().stream()
 				.map(File::toPath)
 				.toArray(Path[]::new);
@@ -62,7 +61,7 @@ public class MapJarsTiny {
 			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
-					.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+					.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
 					.renameInvalidLocals(true)
 					.rebuildSourceFilenames(true)
 					.build();

@@ -56,7 +56,7 @@ import java.util.zip.ZipEntry;
 public class ModProcessor {
 	private static final Gson GSON = new Gson();
 
-	public static void handleMod(File input, File output, Project project){
+	public static void handleMod(File input, File output, Project project) throws IOException {
 		if(output.exists()){
 			output.delete();
 		}
@@ -64,11 +64,7 @@ public class ModProcessor {
 		readInstallerJson(input, project);
 		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
 		if(project.getExtensions().getByType(LoomGradleExtension.class).extractJars){
-			try {
-				handleNestedJars(input, project);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to handle nested jar", e);
-			}
+			handleNestedJars(input, project);
 		}
 		//Always strip the nested jars
 		stripNestedJars(output);
@@ -95,7 +91,7 @@ public class ModProcessor {
 		}
 	}
 
-	private static void processNestedJar(JarFile parentJar, String fileName, Project project){
+	private static void processNestedJar(JarFile parentJar, String fileName, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		JarEntry entry = parentJar.getJarEntry(fileName);
@@ -104,10 +100,8 @@ public class ModProcessor {
 		}
 
 		File nestedFile = new File(extension.getNestedModCache(), fileName.substring(fileName.lastIndexOf("/")));
-		try(InputStream jarStream = parentJar.getInputStream(entry)){
+		try(InputStream jarStream = parentJar.getInputStream(entry)) {
 			FileUtils.copy(jarStream, nestedFile);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
 		}
 		File remappedFile = new File(extension.getRemappedModCache(), fileName.substring(fileName.lastIndexOf("/")));
 
@@ -133,7 +127,7 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static void remapJar(File input, File output, Project project){
+	private static void remapJar(File input, File output, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";
@@ -162,7 +156,7 @@ public class ModProcessor {
 		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-			.withMappings(TinyUtils.createTinyMappingProvider(mappings, fromM, toM))
+			.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
 			.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
@@ -172,8 +166,6 @@ public class ModProcessor {
 			remapper.readClassPath(mcDeps);
 			remapper.readInputs(inputPath);
 			remapper.apply(outputConsumer);
-		} catch (Exception e){
-			throw new RuntimeException("Failed to remap JAR to " + toM, e);
 		} finally {
 			remapper.finish();
 		}

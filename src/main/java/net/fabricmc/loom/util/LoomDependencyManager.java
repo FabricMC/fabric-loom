@@ -129,7 +129,7 @@ public class LoomDependencyManager {
 
 			for (Dependency dependency : configuration.getDependencies()) {
 				DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-				for (File input : info.resolve("")) {
+				for (File input : info.resolve()) {
 					if (seenFiles.add(input)) {
 						ModProcessor.readInstallerJson(input, project);
 						if (extension.getInstallerJson() != null) {

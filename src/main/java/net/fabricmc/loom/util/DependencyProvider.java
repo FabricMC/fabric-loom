@@ -126,53 +126,16 @@ public abstract class DependencyProvider {
 
 		// TODO: Can this be done with stable APIs only?
 		@SuppressWarnings("UnstableApiUsage")
-		public Set<File> resolve(String classifier) {
-			if (classifier.isEmpty()) {
-				return sourceConfiguration.files(dependency);
-			} else if ("sources".equals(classifier)) {
-				for (ResolvedArtifact rd : sourceConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
-					if (rd.getModuleVersion().getId().getGroup().equals(dependency.getGroup())
-							&& rd.getModuleVersion().getId().getName().equals(dependency.getName())
-							&& rd.getModuleVersion().getId().getVersion().equals(dependency.getVersion())) {
-
-						ImmutableSet.Builder<File> files = ImmutableSet.builder();
-
-						ArtifactResolutionQuery query = project.getDependencies().createArtifactResolutionQuery();
-						query.forComponents(DefaultModuleComponentIdentifier.newId(rd.getModuleVersion().getId()));
-						//noinspection unchecked
-						query.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
-						for (ComponentArtifactsResult cresult : query.execute().getResolvedComponents()) {
-							for (ArtifactResult result : cresult.getArtifacts(SourcesArtifact.class)) {
-								if (result instanceof ResolvedArtifactResult) {
-									files.add(((ResolvedArtifactResult) result).getFile());
-								}
-							}
-						}
-
-						return files.build();
-					}
-				}
-
-				return ImmutableSet.of();
-			} else {
-				project.getLogger().warn("Unsupported classifier '" + classifier + "'");
-				return ImmutableSet.of();
-			}
+		public Set<File> resolve() {
+			return sourceConfiguration.files(dependency);
 		}
 
 		public Optional<File> resolveFile() {
-			return resolveFile("");
-		}
-
-		public Optional<File> resolveFile(String classifier) {
-			Set<File> files = resolve(classifier);
+			Set<File> files = resolve();
 			if (files.isEmpty()) {
 				return Optional.empty();
 			} else if (files.size() > 1) {
 				StringBuilder builder = new StringBuilder(this.toString());
-				if (!classifier.isEmpty()) {
-					builder.append(" [").append(classifier).append("]");
-				}
 				builder.append(" resolves to more than one file:");
 				for (File f : files) {
 					builder.append("\n\t-").append(f.getAbsolutePath());
@@ -259,15 +222,6 @@ public abstract class DependencyProvider {
 				name = FilenameUtils.removeExtension(root.getName());
 				version = "1.0";
 			}
-		}
-
-		@Override
-		public Set<File> resolve(String classifier) {
-			File file = classifierToFile.get(classifier);
-			if (file != null) return Collections.singleton(file);
-
-			//Suppose we can always try the super resolving method, doubt it will do anything more though
-			return super.resolve(classifier);
 		}
 
 		@Override

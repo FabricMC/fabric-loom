@@ -34,6 +34,9 @@ import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -135,11 +138,16 @@ public class LoomGradleExtension {
 	}
 
 	@Nullable
-	private Dependency findDependency(Collection<String> configs, BiPredicate<String, String> groupNameFilter) {
-		for (String s : configs) {
-			for (Dependency dependency : project.getConfigurations().getByName(s).getDependencies()) {
-				if (groupNameFilter.test(dependency.getGroup(), dependency.getName())) {
-					return dependency;
+	private ResolvedArtifactResult findDependency(Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
+		for (Configuration config : configs) {
+			for (ResolvedArtifactResult artifact : config.getIncoming().getArtifacts().getArtifacts()) {
+				ComponentIdentifier artifactId = artifact.getId().getComponentIdentifier();
+				if (artifactId instanceof ModuleComponentIdentifier) {
+					String group = ((ModuleComponentIdentifier) artifactId).getGroup();
+					String name = ((ModuleComponentIdentifier) artifactId).getModule();
+					if (groupNameFilter.test(group, name)) {
+						return artifact;
+					}
 				}
 			}
 		}
@@ -148,21 +156,13 @@ public class LoomGradleExtension {
 	}
 
 	@Nullable
-	private Dependency findBuildscriptDependency(BiPredicate<String, String> groupNameFilter) {
-		for (Configuration config : project.getBuildscript().getConfigurations().getAsMap().values()) {
-			for (Dependency dependency : config.getDependencies()) {
-				if (groupNameFilter.test(dependency.getGroup(), dependency.getName())) {
-					return dependency;
-				}
-			}
-		}
-
-		return null;
+	private ResolvedArtifactResult findBuildscriptDependency(BiPredicate<String, String> groupNameFilter) {
+		return findDependency(project.getBuildscript().getConfigurations(), groupNameFilter);
 	}
 
 	@Nullable
 	public String getLoomVersion() {
-		Dependency dependency = findBuildscriptDependency((group, name) -> {
+		ResolvedArtifactResult dependency = findBuildscriptDependency((group, name) -> {
 			if (name.equalsIgnoreCase("fabric-loom")) {
 				return group.equalsIgnoreCase("net.fabricmc");
 			}
@@ -182,12 +182,12 @@ public class LoomGradleExtension {
 			}
 		}
 
-		return dependency != null ? dependency.getVersion() : null;
+		return dependency != null ? ((ModuleComponentIdentifier) dependency.getId().getComponentIdentifier()).getVersion() : null;
 	}
 
 	@Nullable
-	private Dependency getMixinDependency() {
-		return findDependency(Collections.singletonList("compile"), (group, name) -> {
+	private ResolvedArtifactResult getMixinDependency() {
+		return findDependency(Collections.singletonList(project.getConfigurations().getByName("compile")), (group, name) -> {
 			if (name.equalsIgnoreCase("mixin") && group.equalsIgnoreCase("org.spongepowered")) {
 				return true;
 			}
@@ -202,19 +202,17 @@ public class LoomGradleExtension {
 
 	@Nullable
 	public String getMixinVersion() {
-		Dependency dependency = getMixinDependency();
-		if (dependency != null) {
-			return dependency.getVersion();
-		} else {
-			return null;
-		}
+		ResolvedArtifactResult dependency = getMixinDependency();
+		return dependency != null ? ((ModuleComponentIdentifier) dependency.getId().getComponentIdentifier()).getVersion() : null;
 	}
 
 	@Nullable
 	public String getMixinJsonVersion() {
-		Dependency dependency = getMixinDependency();
+		ResolvedArtifactResult artifactResult = getMixinDependency();
 
-		if (dependency != null) {
+		if (artifactResult != null) {
+			ModuleComponentIdentifier dependency = ((ModuleComponentIdentifier) artifactResult.getId().getComponentIdentifier());
+
 			if (dependency.getGroup().equalsIgnoreCase("net.fabricmc")) {
 				if (Objects.requireNonNull(dependency.getVersion()).split("\\.").length >= 4) {
 					return dependency.getVersion().substring(0, dependency.getVersion().lastIndexOf('.')) + "-SNAPSHOT";

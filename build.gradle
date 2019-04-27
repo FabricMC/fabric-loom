@@ -42,7 +42,7 @@ dependencies {
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
 
-	implementation ('net.fabricmc:sponge-mixin:0.7.11.23') {
+	implementation ('net.fabricmc:sponge-mixin:0.7.11.27') {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

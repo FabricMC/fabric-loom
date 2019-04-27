@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
@@ -47,6 +48,9 @@ public class GenEclipseRunsTask extends DefaultLoomTask {
 	    if(!serverRunConfigs.exists())
 		    FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 
+	    File runDir = new File(getProject().getRootDir(), this.getProject().getExtensions().getByType(LoomGradleExtension.class).runDir);
+	    if(!runDir.exists())
+		    runDir.mkdirs();
     }
 
 }

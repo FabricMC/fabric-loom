@@ -42,6 +42,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class LoomGradleExtension {
@@ -138,16 +139,13 @@ public class LoomGradleExtension {
 	}
 
 	@Nullable
-	private ResolvedArtifactResult findDependency(Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
+	private static Dependency findDependency(Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
 		for (Configuration config : configs) {
-			for (ResolvedArtifactResult artifact : config.getIncoming().getArtifacts().getArtifacts()) {
-				ComponentIdentifier artifactId = artifact.getId().getComponentIdentifier();
-				if (artifactId instanceof ModuleComponentIdentifier) {
-					String group = ((ModuleComponentIdentifier) artifactId).getGroup();
-					String name = ((ModuleComponentIdentifier) artifactId).getModule();
-					if (groupNameFilter.test(group, name)) {
-						return artifact;
-					}
+			for (Dependency dependency : config.getDependencies()) {
+				String group = dependency.getGroup();
+				String name = dependency.getName();
+				if (groupNameFilter.test(group, name)) {
+					return dependency;
 				}
 			}
 		}
@@ -156,63 +154,47 @@ public class LoomGradleExtension {
 	}
 
 	@Nullable
-	private ResolvedArtifactResult findBuildscriptDependency(BiPredicate<String, String> groupNameFilter) {
-		return findDependency(project.getBuildscript().getConfigurations(), groupNameFilter);
-	}
-
-	@Nullable
-	public String getLoomVersion() {
-		ResolvedArtifactResult dependency = findBuildscriptDependency((group, name) -> {
-			if (name.equalsIgnoreCase("fabric-loom")) {
-				return group.equalsIgnoreCase("net.fabricmc");
+	private <T> T recurseProjects(Function<Project, T> projectTFunction) {
+		Project p = this.project;
+		T result;
+		while (!AbstractPlugin.isRootProject(p)) {
+			if ((result = projectTFunction.apply(p)) != null) {
+				return result;
 			}
-
-			if (name.equalsIgnoreCase("fabric-loom.gradle.plugin")) {
-				return group.equalsIgnoreCase("fabric-loom");
-			}
-
-			return false;
-		});
-
-		if(dependency == null && !AbstractPlugin.isRootProject(project)){
-			try {
-				return project.getRootProject().getExtensions().getByType(LoomGradleExtension.class).getLoomVersion();
-			} catch (UnknownDomainObjectException e){
-				return null;
-			}
+			p = p.getRootProject();
 		}
-
-		return dependency != null ? ((ModuleComponentIdentifier) dependency.getId().getComponentIdentifier()).getVersion() : null;
+		result = projectTFunction.apply(p);
+		return result;
 	}
 
 	@Nullable
-	private ResolvedArtifactResult getMixinDependency() {
-		return findDependency(Collections.singletonList(project.getConfigurations().getByName("compile")), (group, name) -> {
-			if (name.equalsIgnoreCase("mixin") && group.equalsIgnoreCase("org.spongepowered")) {
-				return true;
-			}
+	private Dependency getMixinDependency() {
+		return recurseProjects((p) -> {
+			List<Configuration> configs = new ArrayList<>();
+			// check compile first
+			configs.add(p.getConfigurations().getByName("compile"));
+			// failing that, buildscript
+			configs.addAll(p.getBuildscript().getConfigurations());
 
-			if (name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc")) {
-				return true;
-			}
+			return findDependency(configs, (group, name) -> {
+				if (name.equalsIgnoreCase("mixin") && group.equalsIgnoreCase("org.spongepowered")) {
+					return true;
+				}
 
-			return false;
+				if (name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc")) {
+					return true;
+				}
+
+				return false;
+			});
 		});
-	}
-
-	@Nullable
-	public String getMixinVersion() {
-		ResolvedArtifactResult dependency = getMixinDependency();
-		return dependency != null ? ((ModuleComponentIdentifier) dependency.getId().getComponentIdentifier()).getVersion() : null;
 	}
 
 	@Nullable
 	public String getMixinJsonVersion() {
-		ResolvedArtifactResult artifactResult = getMixinDependency();
+		Dependency dependency = getMixinDependency();
 
-		if (artifactResult != null) {
-			ModuleComponentIdentifier dependency = ((ModuleComponentIdentifier) artifactResult.getId().getComponentIdentifier());
-
+		if (dependency != null) {
 			if (dependency.getGroup().equalsIgnoreCase("net.fabricmc")) {
 				if (Objects.requireNonNull(dependency.getVersion()).split("\\.").length >= 4) {
 					return dependency.getVersion().substring(0, dependency.getVersion().lastIndexOf('.')) + "-SNAPSHOT";

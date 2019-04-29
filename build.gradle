@@ -41,11 +41,7 @@ dependencies {
 		transitive = false
 	}
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
-
-	implementation ('net.fabricmc:sponge-mixin:0.7.11.27') {
-		exclude module: 'launchwrapper'
-		exclude module: 'guava'
-	}
+	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+')
 
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
 

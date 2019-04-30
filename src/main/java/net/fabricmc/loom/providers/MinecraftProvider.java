@@ -31,6 +31,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.*;
 import net.fabricmc.stitch.merge.JarMerger;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -59,10 +60,11 @@ public class MinecraftProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		minecraftVersion = dependency.getDependency().getVersion();
+		boolean offline = project.getGradle().getStartParameter().isOffline();
 
 		initFiles(project);
 
-		downloadMcJson(project);
+		downloadMcJson(project, offline);
 		try (FileReader reader = new FileReader(MINECRAFT_JSON)) {
 			versionInfo = gson.fromJson(reader, MinecraftVersionInfo.class);
 		}
@@ -70,7 +72,18 @@ public class MinecraftProvider extends DependencyProvider {
 		// Add Loom as an annotation processor
         addDependency(project.files(this.getClass().getProtectionDomain().getCodeSource().getLocation()), project, "compileOnly");
 
-		downloadJars(project.getLogger());
+        if (offline) {
+        	if (MINECRAFT_CLIENT_JAR.exists() && MINECRAFT_SERVER_JAR.exists()) {
+        		project.getLogger().debug("Found client and server jars, presuming up-to-date");
+        	} else if (MINECRAFT_MERGED_JAR.exists()) {
+        		//Strictly we don't need the split jars if the merged one exists, let's try go on
+        		project.getLogger().warn("Missing game jar but merged jar present, things might end badly");
+        	} else {
+        		throw new GradleException("Missing jar(s); Client: " + MINECRAFT_CLIENT_JAR.exists() + ", Server: " + MINECRAFT_SERVER_JAR.exists());
+        	}
+        } else {
+        	downloadJars(project.getLogger());
+        }
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, project);
@@ -89,19 +102,40 @@ public class MinecraftProvider extends DependencyProvider {
 
 	}
 
-	private void downloadMcJson(Project project) throws IOException {
+	private void downloadMcJson(Project project, boolean offline) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		File manifests = new File(extension.getUserCache(), "version_manifest.json");
 
-		project.getLogger().debug("Downloading version manifests");
-		DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
+		if (offline) {
+			if (manifests.exists()) {
+				//If there is the manifests already we'll presume that's good enough
+				project.getLogger().debug("Found version manifests, presuming up-to-date");
+			} else {
+				//If we don't have the manifests then there's nothing more we can do
+				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
+			}
+		} else {
+			project.getLogger().debug("Downloading version manifests");
+			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
+		}
+
 		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
 		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
 
 		Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 		if (optionalVersion.isPresent()) {
-			project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
-			DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
+			if (offline) {
+				if (MINECRAFT_JSON.exists()) {
+					//If there is the manifest already we'll presume that's good enough
+					project.getLogger().debug("Found Minecraft {} manifest, presuming up-to-date", minecraftVersion);
+				} else {
+					//If we don't have the manifests then there's nothing more we can do
+					throw new GradleException("Minecraft " + minecraftVersion + " manifest not found at " + MINECRAFT_JSON.getAbsolutePath());
+				}
+			} else {
+				project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
+				DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
+			}
 		} else {
 			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
 		}

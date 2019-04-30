@@ -33,23 +33,22 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.assets.AssetIndex;
 import net.fabricmc.loom.util.assets.AssetObject;
 import net.fabricmc.loom.util.progress.ProgressLogger;
+
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
 
 public class MinecraftAssetsProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
+		boolean offline = project.getGradle().getStartParameter().isOffline();
 
+		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
 		MinecraftVersionInfo.AssetIndex assetIndex = versionInfo.assetIndex;
 
 		// get existing cache files
@@ -61,7 +60,17 @@ public class MinecraftAssetsProvider {
 		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");
-			DownloadUtil.downloadIfChanged(new URL(assetIndex.url), assetsInfo, project.getLogger());
+			if (offline) {
+				if (assetsInfo.exists()) {
+					//We know it's outdated but can't do anything about it, oh well
+					project.getLogger().warn("Asset index outdated");
+				} else {
+					//We don't know what assets we need, just that we don't have any
+					throw new GradleException("Asset index not found at " + assetsInfo.getAbsolutePath());
+				}
+			} else {
+				DownloadUtil.downloadIfChanged(new URL(assetIndex.url), assetsInfo, project.getLogger());
+			}
 		}
 
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
@@ -81,8 +90,16 @@ public class MinecraftAssetsProvider {
 			File file = new File(assets, filename);
 
 			if (!file.exists() || !Checksum.equals(file, sha1)) {
-				project.getLogger().debug(":downloading asset " + entry.getKey());
-				DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
+				if (offline) {
+					if (file.exists()) {
+						project.getLogger().warn("Outdated asset " + entry.getKey());
+					} else {
+						throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
+					}
+				} else {
+					project.getLogger().debug(":downloading asset " + entry.getKey());
+					DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
+				}
 			}
 			String assetName = entry.getKey();
 			int end = assetName.lastIndexOf("/") + 1;

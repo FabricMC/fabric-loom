@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.*;
+import net.fabricmc.stitch.merge.JarMerger;
 
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -47,7 +48,6 @@ public class MinecraftProvider extends DependencyProvider {
 
 	public MinecraftVersionInfo versionInfo;
 	public MinecraftLibraryProvider libraryProvider;
-	public MinecraftJarProvider jarProvider;
 
 	File MINECRAFT_JSON;
 	File MINECRAFT_CLIENT_JAR;
@@ -74,7 +74,10 @@ public class MinecraftProvider extends DependencyProvider {
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, project);
-		jarProvider = new MinecraftJarProvider(project, this);
+
+		if (!MINECRAFT_MERGED_JAR.exists()) {
+			mergeJars(project.getLogger());
+		}
 	}
 
 	private void initFiles(Project project) {
@@ -115,6 +118,18 @@ public class MinecraftProvider extends DependencyProvider {
 			logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
 		}
+	}
+
+	private void mergeJars(Logger logger) throws IOException {
+		logger.lifecycle(":merging jars");
+		try (JarMerger jarMerger = new JarMerger(MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR)) {
+			jarMerger.enableSyntheticParamsOffset();
+			jarMerger.merge();
+		}
+	}
+
+	public File getMergedJar() {
+		return MINECRAFT_MERGED_JAR;
 	}
 
 	@Override

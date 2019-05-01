@@ -33,7 +33,7 @@ public class CleanLoomBinaries extends DefaultLoomTask {
     public void run() {
         Project project = this.getProject();
         LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        extension.getMinecraftProvider().jarProvider.getMergedJar().delete();
+        extension.getMinecraftProvider().getMergedJar().delete();
         extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
         extension.getMinecraftMappedProvider().getMappedJar().delete();
     }

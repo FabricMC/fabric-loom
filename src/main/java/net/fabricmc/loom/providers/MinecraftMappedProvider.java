@@ -46,7 +46,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
             throw new RuntimeException("mappings file not found");
         }
 
-        if (!extension.getMinecraftProvider().jarProvider.getMergedJar().exists()) {
+        if (!extension.getMinecraftProvider().getMergedJar().exists()) {
             throw new RuntimeException("input merged jar not found");
         }
 
@@ -57,7 +57,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
             if (getIntermediaryJar().exists()) {
                 getIntermediaryJar().delete();
             }
-            new MapJarsTiny().mapJars(minecraftProvider.jarProvider, this, project);
+            new MapJarsTiny().mapJars(minecraftProvider, this, project);
         }
 
         if (!MINECRAFT_MAPPED_JAR.exists()) {

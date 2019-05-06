@@ -25,7 +25,7 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.ModRemapper;
-import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -33,7 +33,7 @@ import java.io.File;
 public class RemapJar extends DefaultLoomTask {
 	public File jar;
 
-	@Input
+	@InputFile
 	public File getJar() {
 		return jar;
 	}

@@ -28,18 +28,15 @@ import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.task.RemapJar;
-import net.fabricmc.loom.task.RemapSourcesJar;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.*;
 import org.gradle.api.*;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
-import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -286,10 +283,15 @@ public class AbstractPlugin implements Plugin<Project> {
 			// Enables the default mod remapper
 			if (extension.remapMod) {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
+				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
-				RemapJar remapJarTask = (RemapJar) project1.getTasks().findByName("remapJar");
-				if (remapJarTask.jar==null) remapJarTask.jar = jarTask.getArchivePath();
-				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.jar));
+				if (remapJarTask.getInput() == null) {
+					remapJarTask.setOutput(jarTask.getArchivePath());
+					jarTask.setClassifier("dev");
+					remapJarTask.setInput(jarTask.getArchivePath());
+				}
+
+				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getOutput()));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
@@ -297,7 +299,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 					Set<Task> taskSet = entry.getValue();
 					for (Task task : taskSet) {
-						if (task instanceof RemapJar && ((RemapJar) task).isNestJar()) {
+						if (task instanceof RemapJarTask && ((RemapJarTask) task).isAddNestedDependencies()) {
 							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
 							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
 						}
@@ -307,9 +309,10 @@ public class AbstractPlugin implements Plugin<Project> {
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
-					RemapSourcesJar remapSourcesJarTask = (RemapSourcesJar) project1.getTasks().findByName("remapSourcesJar");
-					remapSourcesJarTask.jar = sourcesTask.getArchivePath();
-					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.jar));
+					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
+					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
+					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
+					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
 					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
 				} catch (UnknownTaskException e) {
@@ -317,7 +320,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				}
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				extension.addUnmappedMod(jarTask.getArchivePath());
+				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
 			}
 		});
 	}

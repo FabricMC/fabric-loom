@@ -33,6 +33,8 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.JavaExec;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,9 +65,9 @@ public abstract class AbstractRunTask extends JavaExec {
         for (File file : getProject().getConfigurations().getByName("compile").getFiles()) {
             libs.add(file.getAbsolutePath());
         }
-        for (File file : extension.getUnmappedMods()) {
-            if (file.isFile()) {
-                libs.add(file.getAbsolutePath());
+        for (Path file : extension.getUnmappedMods()) {
+            if (Files.isRegularFile(file)) {
+                libs.add(file.toFile().getAbsolutePath());
             }
         }
 

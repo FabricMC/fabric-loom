@@ -40,6 +40,7 @@ import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -54,7 +55,7 @@ public class LoomGradleExtension {
 	public boolean autoGenIDERuns = true;
 	public boolean extractJars = false;
 
-	private List<File> unmappedModsBuilt = new ArrayList<>();
+	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
 	//Not to be set in the build.gradle
 	private Project project;
@@ -71,11 +72,11 @@ public class LoomGradleExtension {
 		this.project = project;
 	}
 
-	public void addUnmappedMod(File file) {
+	public void addUnmappedMod(Path file) {
 		unmappedModsBuilt.add(file);
 	}
 
-	public List<File> getUnmappedMods() {
+	public List<Path> getUnmappedMods() {
 		return Collections.unmodifiableList(unmappedModsBuilt);
 	}
 

@@ -29,7 +29,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.task.RemapJar;
+import net.fabricmc.loom.task.RemapJarTask;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -37,6 +37,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -45,20 +46,20 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.zip.ZipEntry;
 
 public class NestedJars {
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	public static boolean addNestedJars(Project project, File modJar) {
+	public static boolean addNestedJars(Project project, Path modJarPath) {
 		if (getContainedJars(project).isEmpty()) {
 			return false;
 		}
+
+		File modJar = modJarPath.toFile();
 
 		ZipUtil.addEntries(modJar, getContainedJars(project).stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
 
@@ -85,7 +86,6 @@ public class NestedJars {
 	}
 
 	private static List<File> getContainedJars(Project project) {
-
 		List<File> fileList = new ArrayList<>();
 
 		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
@@ -96,9 +96,14 @@ public class NestedJars {
 				Project dependencyProject = projectDependency.getDependencyProject();
 
 				//TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
-				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
-					if (task instanceof RemapJar) {
-						fileList.add(((RemapJar) task).jar);
+				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
+				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
+
+				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
+					if (task instanceof RemapJarTask) {
+						fileList.add(((RemapJarTask) task).getOutput());
+					} else if (task instanceof AbstractArchiveTask) {
+						fileList.add(((AbstractArchiveTask) task).getArchivePath());
 					}
 				}
 			} else {
@@ -117,8 +122,8 @@ public class NestedJars {
 	}
 
 	//Looks for any deps that require a sub project to be built first
-	public static List<RemapJar> getRequiredTasks(Project project){
-		List<RemapJar> remapTasks = new ArrayList<>();
+	public static List<RemapJarTask> getRequiredTasks(Project project){
+		List<RemapJarTask> remapTasks = new ArrayList<>();
 
 		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
 		DependencySet dependencies = configuration.getDependencies();
@@ -127,8 +132,8 @@ public class NestedJars {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
 				Project dependencyProject = projectDependency.getDependencyProject();
 				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
-					if (task instanceof RemapJar) {
-						remapTasks.add((RemapJar) task);
+					if (task instanceof RemapJarTask) {
+						remapTasks.add((RemapJarTask) task);
 					}
 				}
 			}

@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +51,9 @@ public final class MixinRefmapHelper {
     private MixinRefmapHelper() {
 
     }
-    public static boolean addRefmapName(String filename, String mixinVersion, File output) {
+
+    public static boolean addRefmapName(String filename, String mixinVersion, Path outputPath) {
+        File output = outputPath.toFile();
         Set<String> mixinFilenames = findMixins(output, true);
 
         if (mixinFilenames.size() > 0) {

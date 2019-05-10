@@ -24,42 +24,29 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.util.ModRemapper;
+import net.fabricmc.loom.util.SourceRemapper;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
-import java.io.IOException;
 
-public class RemapJar extends AbstractLoomTask {
-	public File jar;
-	public File destination;
-	public boolean nestJar = true;
-
-	@InputFile
-	public File getJar() {
-		return jar;
-	}
-
-	@Input
-	public boolean isNestJar() {
-		return nestJar;
-	}
-
-	@OutputFile
-	public File getDestination() {
-		if (destination == null) {
-			String s = jar.getAbsolutePath();
-			return new File(s.substring(0, s.length() - 4) + "-dev.jar");
-		}
-
-		return destination;
-	}
+public class RemapSourcesJarTask extends AbstractLoomTask {
+	private Object input;
+	private Object output;
+	private String direction = "intermediary";
 
 	@TaskAction
-	public void remap() throws IOException {
-		ModRemapper.remap(this, nestJar);
+	public void remap() throws Exception {
+		SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
 	}
+
+	//@formatter:off
+	@Input public File getInput() { return getProject().file(input); }
+	@OutputFile public File getOutput() { return getProject().file(output == null ? input : output); }
+	@Input public String getTargetNamespace() { return direction; }
+	public void setInput(Object input) { this.input = input; }
+	public void setOutput(Object output) { this.output = output; }
+	public void setTargetNamespace(String value) { this.direction = value; }
+	//@formatter:on
 }

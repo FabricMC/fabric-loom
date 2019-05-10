@@ -83,9 +83,9 @@ public class SourceRemapper {
 				mercury.getClassPath().add(file.toPath());
 			}
 		}
-		for (File file : extension.getUnmappedMods()) {
-			if (file.isFile()) {
-				mercury.getClassPath().add(file.toPath());
+		for (Path file : extension.getUnmappedMods()) {
+			if (Files.isRegularFile(file)) {
+				mercury.getClassPath().add(file);
 			}
 		}
 

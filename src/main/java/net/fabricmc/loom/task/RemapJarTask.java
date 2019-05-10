@@ -22,40 +22,48 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.task;
 
-import com.google.common.io.Files;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.task.RemapJar;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.MixinRefmapHelper;
+import net.fabricmc.loom.util.NestedJars;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-public class ModRemapper {
+public class RemapJarTask extends AbstractLoomTask {
+	private Object input;
+	private Object output;
+	private boolean addNestedDependencies;
 
-	public static void remap(RemapJar task, boolean nest) throws IOException {
-		Project project = task.getProject();
+	@TaskAction
+	public void doTask() throws Throwable {
+		Project project = getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		Path input = getInput().toPath();
+		Path output = getOutput().toPath();
 
-		File modJar = task.getJar();
-
-		if (!modJar.exists()) {
-			project.getLogger().error("Source .JAR not found!");
-			return;
+		if (!Files.exists(input)) {
+			throw new FileNotFoundException(input.toString());
 		}
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		Path mappings = mappingsProvider.MAPPINGS_TINY.toPath();
 
 		String fromM = "named";
 		String toM = "intermediary";
@@ -63,17 +71,7 @@ public class ModRemapper {
 		List<File> classpathFiles = new ArrayList<>();
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles());
 		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_NAMED).getFiles());
-		final Path modJarPath = modJar.toPath();
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !modJarPath.equals(p)).toArray(Path[]::new);
-
-		String s = modJar.getAbsolutePath();
-		File modJarOutput = new File(s.substring(0, s.length() - 4) + ".remapped.jar");
-		Path modJarOutputPath = modJarOutput.toPath();
-
-		File modJarUnmappedCopy = task.getDestination();
-		if (modJarUnmappedCopy.exists()) {
-			modJarUnmappedCopy.delete();
-		}
+		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p)).toArray(Path[]::new);
 
 		File mixinMapFile = mappingsProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();
@@ -85,45 +83,60 @@ public class ModRemapper {
 			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
 		}
 
-		project.getLogger().lifecycle("Remapping " + modJar.getName());
+		project.getLogger().lifecycle(":remapping " + input.getFileName());
 
 		TinyRemapper remapper = remapperBuilder.build();
 
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(modJarOutputPath)) {
-			outputConsumer.addNonClassFiles(modJarPath);
+		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
+			outputConsumer.addNonClassFiles(input);
 			remapper.readClassPath(classpath);
-			remapper.readInputs(modJarPath);
+			remapper.readInputs(input);
 			remapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap JAR", e);
+			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
 		} finally {
 			remapper.finish();
 		}
 
-		if (!modJarOutput.exists()){
-			throw new RuntimeException("Failed to reobfuscate JAR");
+		if (!Files.exists(output)) {
+			throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
 		}
 
-		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), modJarOutput)) {
+		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), output)) {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
-		if (nest) {
-			if (NestedJars.addNestedJars(project, modJarOutput)) {
+		if (addNestedDependencies) {
+			if (NestedJars.addNestedJars(project, output)) {
 				project.getLogger().debug("Added nested jar paths to mod json");
 			}
 		}
 
-		try {
-			if (modJar.exists()) {
-				Files.move(modJar, modJarUnmappedCopy);
-				extension.addUnmappedMod(modJarUnmappedCopy);
-			}
+		extension.addUnmappedMod(input);
 
-			Files.move(modJarOutput, modJar);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		/**
+		 *
+
+		 try {
+		 if (modJar.exists()) {
+		 Files.move(modJar, modJarUnmappedCopy);
+		 extension.addUnmappedMod(modJarUnmappedCopy);
+		 }
+
+		 Files.move(modJarOutput, modJar);
+		 } catch (IOException e) {
+		 throw new RuntimeException(e);
+		 }
+		 */
 	}
 
+	//@formatter:off
+	// the null-check in getInput() is done to allow reconfiguration by AbstractPlugin
+	@InputFile public File getInput() { return input == null ? null : getProject().file(input); }
+	@OutputFile public File getOutput() { return getProject().file(output); }
+	@Input public boolean isAddNestedDependencies() { return addNestedDependencies; }
+	public void setAddNestedDependencies(boolean value) { this.addNestedDependencies = value; }
+	public void setInput(Object input) { this.input = input; }
+	public void setOutput(Object output) { this.output = output; }
+	//@formatter:on
 }

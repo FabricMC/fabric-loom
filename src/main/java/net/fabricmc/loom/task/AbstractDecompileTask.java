@@ -22,26 +22,28 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.task;
 
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
 
-public class Constants {
+import java.io.File;
 
-	public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
-	public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
+public abstract class AbstractDecompileTask extends DefaultLoomTask {
+    private Object input;
+    private Object output;
+    private Object lineMapFile;
+    private Object libraries;
 
-	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
-	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
-
-	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
-
-	public static final String COMPILE_MODS = "modCompile";
-	public static final String COMPILE_MODS_MAPPED = "modCompileMapped";
-	public static final String INCLUDE = "include";
-	public static final String MINECRAFT = "minecraft";
-	public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
-	public static final String MINECRAFT_INTERMEDIARY = "minecraftIntermediary";
-	public static final String MINECRAFT_NAMED = "minecraftNamed";
-	public static final String MINECRAFT_LINEMAPPED = "minecraftLinemapped";
-	public static final String MAPPINGS = "mappings";
+    //@formatter:off
+    @Input public File getInput() { return getProject().file(input); }
+    @OutputFile public File getOutput() { return getProject().file(output); }
+    @OutputFile public File getLineMapFile() { return getProject().file(lineMapFile); }
+    @Input public FileCollection getLibraries() { return getProject().files(libraries); }
+    public void setInput(Object input) { this.input = input; }
+    public void setOutput(Object output) { this.output = output; }
+    public void setLineMapFile(Object lineMapFile) { this.lineMapFile = lineMapFile; }
+    public void setLibraries(Object libraries) { this.libraries = libraries; }
+    //@formatter:on
 }

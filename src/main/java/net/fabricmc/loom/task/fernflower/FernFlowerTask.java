@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import net.fabricmc.loom.task.DefaultLoomTask;
+import net.fabricmc.loom.task.AbstractDecompileTask;
 import net.fabricmc.loom.task.ForkingJavaExecTask;
 import net.fabricmc.loom.util.ConsumingOutputStream;
 import org.gradle.api.file.FileCollection;
@@ -48,13 +48,9 @@ import static java.text.MessageFormat.format;
 /**
  * Created by covers1624 on 9/02/19.
  */
-public class FernFlowerTask extends DefaultLoomTask implements ForkingJavaExecTask {
+public class FernFlowerTask extends AbstractDecompileTask implements ForkingJavaExecTask {
 
-    private boolean noFork;
-    private Object input;
-    private Object output;
-    private Object lineMapFile;
-    private Object libraries;
+    private boolean noFork = false;
     private int numThreads = Runtime.getRuntime().availableProcessors();
 
     @TaskAction
@@ -70,7 +66,9 @@ public class FernFlowerTask extends DefaultLoomTask implements ForkingJavaExecTa
         options.forEach((k, v) -> args.add(format("-{0}={1}", k, v)));
         args.add(getInput().getAbsolutePath());
         args.add("-o=" + getOutput().getAbsolutePath());
-        args.add("-l=" + getLineMapFile().getAbsolutePath());
+        if (getLineMapFile() != null) {
+            args.add("-l=" + getLineMapFile().getAbsolutePath());
+        }
         args.add("-t=" + getNumThreads());
 
         //TODO, Decompiler breaks on jemalloc, J9 module-info.class?
@@ -135,16 +133,8 @@ public class FernFlowerTask extends DefaultLoomTask implements ForkingJavaExecTa
     }
 
     //@formatter:off
-    @Input public File getInput() { return getProject().file(input); }
-    @OutputFile public File getOutput() { return getProject().file(output); }
-    @OutputFile public File getLineMapFile() { return getProject().file(lineMapFile); }
-    @Input public FileCollection getLibraries() { return getProject().files(libraries); }
     @Input public int getNumThreads() { return numThreads; }
     public boolean isNoFork() { return noFork; }
-    public void setInput(Object input) { this.input = input; }
-    public void setOutput(Object output) { this.output = output; }
-    public void setLineMapFile(Object lineMapFile) { this.lineMapFile = lineMapFile; }
-    public void setLibraries(Object libraries) { this.libraries = libraries; }
     public void setNoFork(boolean noFork) { this.noFork = noFork; }
     public void setNumThreads(int numThreads) { this.numThreads = numThreads; }
     //@formatter:on

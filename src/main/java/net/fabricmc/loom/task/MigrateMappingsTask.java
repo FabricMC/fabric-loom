@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Version;
 import net.fabricmc.mappings.*;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
@@ -40,17 +41,54 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UpdateMappingsTask extends AbstractLoomTask {
+public class MigrateMappingsTask extends AbstractLoomTask {
     @TaskAction
     public void doTask() throws Throwable {
         Project project = getProject();
         LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        Map<String, ?> properties = project.getProperties();
 
         project.getLogger().lifecycle(":loading mappings");
 
-        File mappingsFile = new File((String) project.getProperties().get("targetMappingsFile"));
-        File inputDir = new File((String) project.getProperties().get("inputDir"));
-        File outputDir = new File((String) project.getProperties().get("outputDir"));
+        File mappingsFile = null;
+
+        if (properties.containsKey("targetMappingsFile")) {
+            mappingsFile = new File((String) properties.get("targetMappingsFile"));
+        } else if (properties.containsKey("targetMappingsArtifact")) {
+            String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
+            if (artifactName.length != 3) {
+                throw new RuntimeException("Invalid artifact name: " + properties.get("targetMappingsArtifact"));
+            }
+
+            String mappingsName = artifactName[0] + "." + artifactName[1];
+
+            Version v = new Version(artifactName[2]);
+            String minecraftVersion = v.getMinecraftVersion();
+            String mappingsVersion = v.getMappingsVersion();
+
+            mappingsFile = new File(extension.getMappingsProvider().MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+        }
+
+        if (mappingsFile == null || !mappingsFile.exists()) {
+            throw new RuntimeException("Could not find mappings file: " + (mappingsFile != null ? mappingsFile : "null"));
+        }
+
+        if (!properties.containsKey("inputDir") || !properties.containsKey("outputDir")) {
+            throw new RuntimeException("Must specify input and output dir!");
+        }
+
+        File inputDir = new File((String) properties.get("inputDir"));
+        File outputDir = new File((String) properties.get("outputDir"));
+
+        if (!inputDir.exists() || !inputDir.isDirectory()) {
+            throw new RuntimeException("Could not find input directory: " + inputDir);
+        }
+
+        if (!outputDir.exists()) {
+            if (!outputDir.mkdirs()) {
+                throw new RuntimeException("Could not create output directory:"  + outputDir);
+            }
+        }
 
         Mappings sourceMappings = extension.getMappingsProvider().getMappings();
         Mappings targetMappings;

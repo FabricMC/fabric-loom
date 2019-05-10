@@ -51,7 +51,7 @@ public class MappingsProvider extends DependencyProvider {
 	public String minecraftVersion;
 	public String mappingsVersion;
 
-	private File MAPPINGS_DIR;
+	public File MAPPINGS_DIR;
 	public File MAPPINGS_TINY_BASE;
 	public File MAPPINGS_TINY;
 	public File MAPPINGS_MIXIN_EXPORT;

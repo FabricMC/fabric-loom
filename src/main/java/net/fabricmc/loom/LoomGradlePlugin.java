@@ -25,13 +25,9 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.task.*;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
-import net.fabricmc.loom.util.LineNumberRemapper;
-import net.fabricmc.loom.util.progress.ProgressLogger;
-import net.fabricmc.stitch.util.StitchUtil;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskContainer;
@@ -64,7 +60,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
-		tasks.register("updateMappings", UpdateMappingsTask.class, t -> {
+		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.getOutputs().upToDateWhen((o) -> false);
 		});
 

@@ -33,7 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class GenEclipseRunsTask extends DefaultLoomTask {
+public class GenEclipseRunsTask extends AbstractLoomTask {
 
     @TaskAction
     public void genRuns() throws IOException {

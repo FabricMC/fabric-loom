@@ -39,11 +39,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public abstract class RunTaskBase extends JavaExec {
+public abstract class AbstractRunTask extends JavaExec {
     private final Function<Project, RunConfig> configProvider;
     private RunConfig config;
 
-    public RunTaskBase(Function<Project, RunConfig> config) {
+    public AbstractRunTask(Function<Project, RunConfig> config) {
         super();
         setGroup("fabric");
         this.configProvider = config;

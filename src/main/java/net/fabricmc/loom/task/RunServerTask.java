@@ -24,16 +24,9 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.RunConfig;
-import org.gradle.api.tasks.JavaExec;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-public class RunServerTask extends RunTaskBase {
+public class RunServerTask extends AbstractRunTask {
 	public RunServerTask() {
 		super(RunConfig::serverRunConfig);
 	}

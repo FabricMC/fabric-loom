@@ -30,7 +30,7 @@ import org.gradle.api.tasks.OutputFile;
 
 import java.io.File;
 
-public abstract class AbstractDecompileTask extends DefaultLoomTask {
+public abstract class AbstractDecompileTask extends AbstractLoomTask {
     private Object input;
     private Object output;
     private Object lineMapFile;

@@ -31,7 +31,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
 
-public class DownloadAssetsTask extends DefaultLoomTask {
+public class DownloadAssetsTask extends AbstractLoomTask {
 	@TaskAction
 	public void downloadAssets() throws IOException {
 		Project project = this.getProject();

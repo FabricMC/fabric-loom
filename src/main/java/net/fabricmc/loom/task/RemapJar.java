@@ -33,7 +33,7 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.IOException;
 
-public class RemapJar extends DefaultLoomTask {
+public class RemapJar extends AbstractLoomTask {
 	public File jar;
 	public File destination;
 	public boolean nestJar = true;

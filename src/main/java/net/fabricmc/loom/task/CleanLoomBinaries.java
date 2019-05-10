@@ -28,7 +28,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
-public class CleanLoomBinaries extends DefaultLoomTask {
+public class CleanLoomBinaries extends AbstractLoomTask {
     @TaskAction
     public void run() {
         Project project = this.getProject();

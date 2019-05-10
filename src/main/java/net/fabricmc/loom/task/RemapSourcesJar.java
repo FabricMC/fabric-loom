@@ -31,7 +31,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 
-public class RemapSourcesJar extends DefaultLoomTask {
+public class RemapSourcesJar extends AbstractLoomTask {
 	public File jar;
 	public File destinationJar;
 	public String direction = "intermediary";

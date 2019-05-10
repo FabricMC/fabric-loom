@@ -26,9 +26,9 @@ package net.fabricmc.loom.task;
 
 import org.gradle.api.DefaultTask;
 
-public abstract class DefaultLoomTask extends DefaultTask {
+public abstract class AbstractLoomTask extends DefaultTask {
 
-	public DefaultLoomTask() {
+	public AbstractLoomTask() {
 		setGroup("fabric");
 	}
 

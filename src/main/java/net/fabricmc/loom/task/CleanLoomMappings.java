@@ -32,7 +32,7 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class CleanLoomMappings extends DefaultLoomTask {
+public class CleanLoomMappings extends AbstractLoomTask {
     @TaskAction
     public void run() {
         Project project = this.getProject();

@@ -46,7 +46,7 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 
-public class GenIdeaProjectTask extends DefaultLoomTask {
+public class GenIdeaProjectTask extends AbstractLoomTask {
 
 	@TaskAction
 	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {

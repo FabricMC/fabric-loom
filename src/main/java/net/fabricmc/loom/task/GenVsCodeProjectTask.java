@@ -41,7 +41,7 @@ import java.util.List;
 // https://marketplace.visualstudio.com/items?itemName=redhat.java
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-debug
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
-public class GenVsCodeProjectTask extends DefaultLoomTask {
+public class GenVsCodeProjectTask extends AbstractLoomTask {
 
     @TaskAction
     public void genRuns() {

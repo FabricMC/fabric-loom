@@ -24,19 +24,9 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
-import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.RunConfig;
-import org.gradle.api.tasks.JavaExec;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-public class RunClientTask extends RunTaskBase {
+public class RunClientTask extends AbstractRunTask {
 	public RunClientTask() {
 		super(RunConfig::clientRunConfig);
 	}

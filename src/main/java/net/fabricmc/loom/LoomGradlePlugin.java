@@ -64,6 +64,10 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
+		tasks.register("updateMappings", UpdateMappingsTask.class, t -> {
+			t.getOutputs().upToDateWhen((o) -> false);
+		});
+
 		tasks.register("remapJar", RemapJar.class);
 
 		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {

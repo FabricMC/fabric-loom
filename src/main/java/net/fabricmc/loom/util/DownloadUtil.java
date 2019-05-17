@@ -86,7 +86,7 @@ public class DownloadUtil {
 		}
 
 		long modifyTime = connection.getHeaderFieldDate("Last-Modified", -1);
-		if (code == HttpURLConnection.HTTP_NOT_MODIFIED || modifyTime > 0 && to.exists() && to.lastModified() >= modifyTime) {
+		if (to.exists() && (code == HttpURLConnection.HTTP_NOT_MODIFIED || modifyTime > 0 && to.lastModified() >= modifyTime)) {
 			if (!quiet) logger.info("'{}' Not Modified, skipping.", to);
 			return; //What we've got is already fine
 		}
@@ -178,6 +178,22 @@ public class DownloadUtil {
 			return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
 		} else {
 			return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
+		}
+	}
+
+	/**
+	 * Delete the file along with the corresponding ETag, if it exists.
+	 *
+	 * @param file The file to delete.
+	 */
+	public static void delete(File file) {
+		if (file.exists()) {
+			file.delete();
+		}
+
+		File etagFile = getETagFile(file);
+		if (etagFile.exists()) {
+			etagFile.delete();
 		}
 	}
 }

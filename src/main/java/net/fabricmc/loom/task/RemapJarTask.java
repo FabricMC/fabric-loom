@@ -44,8 +44,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class RemapJarTask extends AbstractLoomTask {
 	private Object input;
@@ -68,9 +67,9 @@ public class RemapJarTask extends AbstractLoomTask {
 		String fromM = "named";
 		String toM = "intermediary";
 
-		List<File> classpathFiles = new ArrayList<>();
-		classpathFiles.addAll(project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles());
-		classpathFiles.addAll(project.getConfigurations().getByName(Constants.MINECRAFT_NAMED).getFiles());
+		Set<File> classpathFiles = new LinkedHashSet<>();
+		//noinspection CollectionAddAllCanBeReplacedWithConstructor
+		classpathFiles.addAll(project.getConfigurations().getByName("compileClasspath").getFiles());
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p)).toArray(Path[]::new);
 
 		File mixinMapFile = mappingsProvider.MAPPINGS_MIXIN_EXPORT;
@@ -84,6 +83,12 @@ public class RemapJarTask extends AbstractLoomTask {
 		}
 
 		project.getLogger().lifecycle(":remapping " + input.getFileName());
+
+		StringBuilder rc = new StringBuilder("Remap classpath: ");
+		for (Path p : classpath) {
+			rc.append("\n - ").append(p.toString());
+		}
+		project.getLogger().debug(rc.toString());
 
 		TinyRemapper remapper = remapperBuilder.build();
 

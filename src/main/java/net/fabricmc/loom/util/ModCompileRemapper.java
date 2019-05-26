@@ -66,7 +66,7 @@ public class ModCompileRemapper {
 				version = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getVersion();
 			} else {
 				group = "net.fabricmc.synthetic";
-				name = artifact.getId().getComponentIdentifier().getDisplayName().replace('.', '-');
+				name = artifact.getId().getComponentIdentifier().getDisplayName().replace('.', '-').replace(" :", "-");
 				version = "0.1.0";
 			}
 

@@ -25,14 +25,11 @@
 package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModProcessor;
-import net.fabricmc.loom.util.SourceRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
@@ -45,9 +42,7 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class ModCompileRemapper {
@@ -55,10 +50,11 @@ public class ModCompileRemapper {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
 
-		for (ResolvedArtifactResult artifact : modCompile.getIncoming().getArtifacts().getArtifacts()) {
+		for (ResolvedArtifact artifact : modCompile.getResolvedConfiguration().getResolvedArtifacts()) {
 			String group;
 			String name;
 			String version;
+			String classifierSuffix = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
 			if (artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier) {
 				group = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getGroup();
@@ -70,89 +66,111 @@ public class ModCompileRemapper {
 				version = "0.1.0";
 			}
 
-			String notation = group + ":" + name + ":" + version;
+			final String notation = group + ":" + name + ":" + version + classifierSuffix;
 
-			File input = artifact.getFile();
-			AtomicBoolean isFabricMod = new AtomicBoolean(false);
-			project.zipTree(input).visit(f -> {
-				if (f.getName().endsWith("fabric.mod.json")) {
-					logger.info("Found Fabric mod in modCompile: {}", notation);
-					isFabricMod.set(true);
-					f.stopVisiting();
-				}
-			});
-
-			if (!isFabricMod.get()) {
-				project.getLogger().lifecycle(":providing " + notation);
-				Dependency dep = dependencies.module(notation);
-				if (dep instanceof ModuleDependency) {
-					((ModuleDependency) dep).setTransitive(false);
-				}
-				dependencies.add(regularCompile.getName(), dep);
+			if (!isFabricMod(project, logger, artifact, notation)) {
+				addToRegularCompile(project, regularCompile, notation);
 				continue;
 			}
 
-			AtomicReference<File> sources = new AtomicReference<>();
-			@SuppressWarnings ("unchecked")
-			ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-					.forComponents(artifact.getId().getComponentIdentifier())//
-					.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
-			outer:
-			for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
-				for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {
-					if (srcArtifact instanceof ResolvedArtifactResult) {
-						sources.set(((ResolvedArtifactResult) srcArtifact).getFile());
-						break outer;
-					}
-				}
-			}
+			File sources = findSources(dependencies, artifact);
 
-			String remappedLog = group + ":" + name + ":" + version + " (" + mappingsPrefix + ")";
-			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version;
-			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version;
+			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsPrefix + ")";
+			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version + classifierSuffix;
+			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version + classifierSuffix.replace(':', '-');
 			project.getLogger().lifecycle(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();
 
-			File output = new File(modStore, remappedFilename + ".jar");
-			if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
-				//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
-				try {
-					ModProcessor.handleMod(input, output, project);
-				} catch (IOException e) {
-					throw new RuntimeException("Failed to remap mod", e);
-				}
-
-				if (!output.exists()){
-					throw new RuntimeException("Failed to remap mod");
-				}
-
-				output.setLastModified(input.lastModified());
-			} else {
-				project.getLogger().info(output.getName() + " is up to date with " + input.getName());
-			}
+			remapArtifact(project, artifact, remappedFilename, modStore);
 
 			project.getDependencies().add(modCompileRemapped.getName(), project.getDependencies().module(remappedNotation));
 
-			if (sources.get() != null) {
-				postPopulationScheduler.accept(() -> {
-					project.getLogger().lifecycle(":providing " + remappedLog + " sources");
-					File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
-
-					if (!remappedSources.exists() || sources.get().lastModified() <= 0 || sources.get().lastModified() > remappedSources.lastModified()) {
-						try {
-							SourceRemapper.remapSources(project, sources.get(), remappedSources, true);
-
-							//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
-							remappedSources.setLastModified(sources.get().lastModified());
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-					} else {
-						project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.get().getName());
-					}
-				});
+			if (sources != null) {
+				scheduleSourcesRemapping(project, postPopulationScheduler, sources, remappedLog, remappedFilename, modStore);
 			}
 		}
+	}
+
+	/**
+	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json
+	 */
+	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
+		File input = artifact.getFile();
+		AtomicBoolean fabricMod = new AtomicBoolean(false);
+		project.zipTree(input).visit(f -> {
+			if (f.getName().endsWith("fabric.mod.json")) {
+				logger.info("Found Fabric mod in modCompile: {}", notation);
+				fabricMod.set(true);
+				f.stopVisiting();
+			}
+		});
+		return fabricMod.get();
+	}
+
+	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
+		project.getLogger().lifecycle(":providing " + notation);
+		DependencyHandler dependencies = project.getDependencies();
+		Dependency dep = dependencies.module(notation);
+		if (dep instanceof ModuleDependency) {
+			((ModuleDependency) dep).setTransitive(false);
+		}
+		dependencies.add(regularCompile.getName(), dep);
+	}
+
+	private static void remapArtifact(Project project, ResolvedArtifact artifact, String remappedFilename, File modStore) {
+		File input = artifact.getFile();
+		File output = new File(modStore, remappedFilename + ".jar");
+		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
+			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
+			try {
+				ModProcessor.handleMod(input, output, project);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to remap mod", e);
+			}
+
+			if (!output.exists()){
+				throw new RuntimeException("Failed to remap mod");
+			}
+
+			output.setLastModified(input.lastModified());
+		} else {
+			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
+		}
+	}
+
+	private static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
+		@SuppressWarnings ("unchecked")
+		ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
+				.forComponents(artifact.getId().getComponentIdentifier())//
+				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
+			for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {
+				if (srcArtifact instanceof ResolvedArtifactResult) {
+					return ((ResolvedArtifactResult) srcArtifact).getFile();
+				}
+			}
+		}
+		return null;
+	}
+
+	private static void scheduleSourcesRemapping(Project project, Consumer<Runnable> postPopulationScheduler, File sources, String remappedLog, String remappedFilename, File modStore) {
+		postPopulationScheduler.accept(() -> {
+			project.getLogger().lifecycle(":providing " + remappedLog + " sources");
+			File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
+
+			if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {
+				try {
+					SourceRemapper.remapSources(project, sources, remappedSources, true);
+
+					//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+					remappedSources.setLastModified(sources.lastModified());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
+			}
+		});
 	}
 }

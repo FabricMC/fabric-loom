@@ -29,6 +29,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
@@ -49,10 +50,11 @@ public class ModCompileRemapper {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
 
-		for (ResolvedArtifactResult artifact : modCompile.getIncoming().getArtifacts().getArtifacts()) {
+		for (ResolvedArtifact artifact : modCompile.getResolvedConfiguration().getResolvedArtifacts()) {
 			String group;
 			String name;
 			String version;
+			String classifier = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
 			if (artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier) {
 				group = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getGroup();
@@ -64,7 +66,7 @@ public class ModCompileRemapper {
 				version = "0.1.0";
 			}
 
-			String notation = group + ":" + name + ":" + version;
+			final String notation = group + ":" + name + ":" + version + classifier;
 
 			if (!isFabricMod(project, logger, artifact, notation)) {
 				addToRegularCompile(project, regularCompile, notation);

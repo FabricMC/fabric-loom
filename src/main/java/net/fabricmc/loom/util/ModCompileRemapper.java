@@ -54,7 +54,7 @@ public class ModCompileRemapper {
 			String group;
 			String name;
 			String version;
-			String classifier = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
+			String classifierSuffix = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
 			if (artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier) {
 				group = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getGroup();
@@ -66,7 +66,7 @@ public class ModCompileRemapper {
 				version = "0.1.0";
 			}
 
-			final String notation = group + ":" + name + ":" + version + classifier;
+			final String notation = group + ":" + name + ":" + version + classifierSuffix;
 
 			if (!isFabricMod(project, logger, artifact, notation)) {
 				addToRegularCompile(project, regularCompile, notation);
@@ -75,9 +75,9 @@ public class ModCompileRemapper {
 
 			File sources = findSources(dependencies, artifact);
 
-			String remappedLog = group + ":" + name + ":" + version + " (" + mappingsPrefix + ")";
-			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version;
-			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version;
+			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsPrefix + ")";
+			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version + classifierSuffix;
+			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version + classifierSuffix.replace(':', '-');
 			project.getLogger().lifecycle(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();

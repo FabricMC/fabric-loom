@@ -173,13 +173,6 @@ public class ModProcessor {
 		if(!output.exists()){
 			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
 		}
-
-		if (extension.remapDependencyMixinRefMaps) {
-			if (MixinRefmapHelper.transformRefmaps(remapper, output)) {
-				project.getLogger().lifecycle(":remapping " + input.getName() + " (Mixin reference maps)");
-				remapper.finish();
-			}
-		}
 	}
 
 	static void readInstallerJson(File file, Project project){

@@ -51,7 +51,6 @@ public class LoomGradleExtension {
 	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
-	public boolean remapDependencyMixinRefMaps = true;
 	public boolean autoGenIDERuns = true;
 	public boolean extractJars = false;
 

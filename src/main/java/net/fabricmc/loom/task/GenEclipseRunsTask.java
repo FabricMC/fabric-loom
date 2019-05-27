@@ -37,8 +37,8 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 
     @TaskAction
     public void genRuns() throws IOException {
-	    File clientRunConfigs = new File(getProject().getRootDir(), "Minecraft_Client.launch");
-	    File serverRunConfigs = new File(getProject().getRootDir(), "Minecraft_Server.launch");
+	    File clientRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_client.launch");
+	    File serverRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_server.launch");
 
 	    String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 	    String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");

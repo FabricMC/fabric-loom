@@ -154,13 +154,18 @@ public class LoomDependencyManager {
 
 	private static void handleInstallerJson(JsonObject jsonObject, Project project){
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
+		Configuration mcDepsConfig = project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES);
+		Configuration apDepsConfig = project.getConfigurations().getByName("annotationProcessor");
+
 		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
 			String name = jsonElement.getAsJsonObject().get("name").getAsString();
 
-			Configuration configuration = project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES);
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
 			modDep.setTransitive(false);
-			configuration.getDependencies().add(modDep);
+			mcDepsConfig.getDependencies().add(modDep);
+			apDepsConfig.getDependencies().add(modDep);
+
+			project.getLogger().debug("Loom adding " + name + " from installer JSON");
 
 			if(jsonElement.getAsJsonObject().has("url")){
 				String url = jsonElement.getAsJsonObject().get("url").getAsString();

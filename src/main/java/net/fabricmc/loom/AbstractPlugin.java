@@ -177,7 +177,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		if (module instanceof ResolvedDependencyResult) {
 			if (module.getFrom().getId() instanceof ModuleComponentIdentifier) {
 				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) module.getFrom().getId());
-				proj.getDependencies().add(configuration, proj.getDependencies().module(mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion()));
+				String moduleId = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
+				proj.getDependencies().add(configuration, proj.getDependencies().module(moduleId));
+				proj.getLogger().debug("Loom addModule " + moduleId + " to " + configuration);
 			}
 
 			for (DependencyResult child : ((ResolvedDependencyResult) module).getSelected().getDependencies()) {

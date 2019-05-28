@@ -107,7 +107,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             mercury.getClassPath().add(file.toPath());
         }
 
-        for (File file : project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles()) {
+        for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
             mercury.getClassPath().add(file.toPath());
         }
 

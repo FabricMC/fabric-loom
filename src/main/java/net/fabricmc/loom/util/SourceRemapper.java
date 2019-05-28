@@ -73,26 +73,30 @@ public class SourceRemapper {
 
 		project.getLogger().lifecycle(":remapping source jar");
 
-		Mercury mercury = new Mercury();
+		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
+			Mercury m = new Mercury();
 
-		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
-			mercury.getClassPath().add(file.toPath());
-		}
-		if (!toNamed) {
-			for (File file : project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED).getFiles()) {
-				mercury.getClassPath().add(file.toPath());
+			for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
+				m.getClassPath().add(file.toPath());
 			}
-		}
-		for (Path file : extension.getUnmappedMods()) {
-			if (Files.isRegularFile(file)) {
-				mercury.getClassPath().add(file);
+			if (!toNamed) {
+				for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
+					m.getClassPath().add(file.toPath());
+				}
 			}
-		}
+			for (Path file : extension.getUnmappedMods()) {
+				if (Files.isRegularFile(file)) {
+					m.getClassPath().add(file);
+				}
+			}
 
-		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
-		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
+			m.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
+			m.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
-		mercury.getProcessors().add(MercuryRemapper.create(mappings));
+			m.getProcessors().add(MercuryRemapper.create(mappings));
+
+			return m;
+		});
 
 		if (source.equals(destination)) {
 			if (source.isDirectory()) {

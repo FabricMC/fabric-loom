@@ -25,6 +25,10 @@
 package net.fabricmc.loom.util;
 
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.List;
+
 public class Constants {
 
 	public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
@@ -35,8 +39,15 @@ public class Constants {
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 
-	public static final String COMPILE_MODS = "modCompile";
-	public static final String COMPILE_MODS_MAPPED = "modCompileMapped";
+	public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
+	public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
+	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
+			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
+			new RemappedConfigurationEntry("modApi", "api", true, "compile"),
+			new RemappedConfigurationEntry("modImplementation", "implementation", true, "runtime"),
+			new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, "")
+	);
+
 	public static final String INCLUDE = "include";
 	public static final String MINECRAFT = "minecraft";
 	public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";

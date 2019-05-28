@@ -110,20 +110,24 @@ public class LoomDependencyManager {
 			});
 		}
 
-		ModCompileRemapper.remapDependencies(
-				project,
-				mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion,
-				extension,
-				project.getConfigurations().getByName(Constants.COMPILE_MODS),
-				project.getConfigurations().getByName(Constants.COMPILE_MODS_MAPPED),
-				project.getConfigurations().getByName("compile"),
-				afterTasks::add
-		);
+		{
+			String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
+
+			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+				ModCompileRemapper.remapDependencies(
+						project, mappingsKey, extension,
+						project.getConfigurations().getByName(entry.getSourceConfiguration()),
+						project.getConfigurations().getByName(entry.getRemappedConfiguration()),
+						project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations())),
+						afterTasks::add
+				);
+			}
+		}
 
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
-			project.getLogger().info("Didn't find installer JSON, searching through compileMods");
-			Configuration configuration = project.getConfigurations().getByName(Constants.COMPILE_MODS);
+			project.getLogger().info("Didn't find installer JSON, searching through modCompileClasspath");
+			Configuration configuration = project.getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH);
 
 			Set<File> seenFiles = new HashSet<>();
 

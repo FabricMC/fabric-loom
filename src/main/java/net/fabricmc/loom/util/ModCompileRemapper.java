@@ -82,7 +82,7 @@ public class ModCompileRemapper {
 
 			File modStore = extension.getRemappedModCache();
 
-			remapArtifact(project, artifact, remappedFilename, modStore);
+			remapArtifact(project, modCompileRemapped, artifact, remappedFilename, modStore);
 
 			project.getDependencies().add(modCompileRemapped.getName(), project.getDependencies().module(remappedNotation));
 
@@ -118,13 +118,13 @@ public class ModCompileRemapper {
 		dependencies.add(regularCompile.getName(), dep);
 	}
 
-	private static void remapArtifact(Project project, ResolvedArtifact artifact, String remappedFilename, File modStore) {
+	private static void remapArtifact(Project project, Configuration config, ResolvedArtifact artifact, String remappedFilename, File modStore) {
 		File input = artifact.getFile();
 		File output = new File(modStore, remappedFilename + ".jar");
 		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
 			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
 			try {
-				ModProcessor.handleMod(input, output, project);
+				ModProcessor.processMod(input, output, project, config);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to remap mod", e);
 			}
@@ -137,6 +137,8 @@ public class ModCompileRemapper {
 		} else {
 			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
 		}
+
+		ModProcessor.acknowledgeMod(input, output, project, config);
 	}
 
 	private static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {

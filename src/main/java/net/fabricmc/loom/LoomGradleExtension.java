@@ -30,6 +30,7 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.UnknownDomainObjectException;
 import org.gradle.api.artifacts.Configuration;
@@ -62,9 +63,14 @@ public class LoomGradleExtension {
 	private JsonObject installerJson;
 	private int installerJsonPriority = Integer.MAX_VALUE; // 0+, higher = less prioritized
 	private MappingSet[] srcMappingCache = new MappingSet[2];
+	private Mercury[] srcMercuryCache = new Mercury[2];
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
 		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());
+	}
+
+	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
+		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
 
 	public LoomGradleExtension(Project project) {

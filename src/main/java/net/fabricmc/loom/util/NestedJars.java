@@ -61,7 +61,7 @@ public class NestedJars {
 
 		File modJar = modJarPath.toFile();
 
-		ZipUtil.addEntries(modJar, getContainedJars(project).stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
+		ZipUtil.addOrReplaceEntries(modJar, getContainedJars(project).stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
 
 		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override

@@ -111,7 +111,7 @@ public class LoomDependencyManager {
 		}
 
 		{
-			String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.mappingsVersion;
+			String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
 
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 				ModCompileRemapper.remapDependencies(

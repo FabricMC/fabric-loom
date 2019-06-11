@@ -28,8 +28,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.RemapJarTask;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -47,7 +49,11 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 
 public class NestedJars {
@@ -101,7 +107,7 @@ public class NestedJars {
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
 					if (task instanceof RemapJarTask) {
-						fileList.add(((RemapJarTask) task).getOutput());
+						fileList.add(((RemapJarTask) task).getArchiveFile().get().getAsFile());
 					} else if (task instanceof AbstractArchiveTask) {
 						fileList.add(((AbstractArchiveTask) task).getArchivePath());
 					}

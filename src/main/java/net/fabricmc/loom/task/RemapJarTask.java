@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
@@ -34,29 +33,36 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-public class RemapJarTask extends AbstractLoomTask {
-	private Object input;
-	private Object output;
-	private boolean addNestedDependencies;
+public class RemapJarTask extends Jar {
+	private RegularFileProperty input;
+	private Property<Boolean> addNestedDependencies;
+
+	public RemapJarTask() {
+		super();
+		input = getProject().getObjects().fileProperty();
+		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+	}
 
 	@TaskAction
 	public void doTask() throws Throwable {
 		Project project = getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		Path input = getInput().toPath();
-		Path output = getOutput().toPath();
+		Path input = this.getInput().getAsFile().get().toPath();
+		Path output = this.getArchiveFile().get().getAsFile().toPath();
 
 		if (!Files.exists(input)) {
 			throw new FileNotFoundException(input.toString());
@@ -67,9 +73,9 @@ public class RemapJarTask extends AbstractLoomTask {
 		String fromM = "named";
 		String toM = "intermediary";
 
-		Set<File> classpathFiles = new LinkedHashSet<>();
-		//noinspection CollectionAddAllCanBeReplacedWithConstructor
-		classpathFiles.addAll(project.getConfigurations().getByName("compileClasspath").getFiles());
+		Set<File> classpathFiles = new LinkedHashSet<>(
+				project.getConfigurations().getByName("compileClasspath").getFiles()
+		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p)).toArray(Path[]::new);
 
 		File mixinMapFile = mappingsProvider.MAPPINGS_MIXIN_EXPORT;
@@ -111,7 +117,7 @@ public class RemapJarTask extends AbstractLoomTask {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
-		if (addNestedDependencies) {
+		if (getAddNestedDependencies().get()) {
 			if (NestedJars.addNestedJars(project, output)) {
 				project.getLogger().debug("Added nested jar paths to mod json");
 			}
@@ -119,29 +125,25 @@ public class RemapJarTask extends AbstractLoomTask {
 
 		extension.addUnmappedMod(input);
 
-		/**
-		 *
+		/*try {
+			if (modJar.exists()) {
+				Files.move(modJar, modJarUnmappedCopy);
+				extension.addUnmappedMod(modJarUnmappedCopy);
+			}
 
-		 try {
-		 if (modJar.exists()) {
-		 Files.move(modJar, modJarUnmappedCopy);
-		 extension.addUnmappedMod(modJarUnmappedCopy);
-		 }
-
-		 Files.move(modJarOutput, modJar);
-		 } catch (IOException e) {
-		 throw new RuntimeException(e);
-		 }
-		 */
+			Files.move(modJarOutput, modJar);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}*/
 	}
 
-	//@formatter:off
-	// the null-check in getInput() is done to allow reconfiguration by AbstractPlugin
-	@InputFile public File getInput() { return input == null ? null : getProject().file(input); }
-	@OutputFile public File getOutput() { return getProject().file(output); }
-	@Input public boolean isAddNestedDependencies() { return addNestedDependencies; }
-	public void setAddNestedDependencies(boolean value) { this.addNestedDependencies = value; }
-	public void setInput(Object input) { this.input = input; }
-	public void setOutput(Object output) { this.output = output; }
-	//@formatter:on
+	@InputFile
+	public RegularFileProperty getInput() {
+		return input;
+	}
+
+	@Input
+	public Property<Boolean> getAddNestedDependencies() {
+		return addNestedDependencies;
+	}
 }

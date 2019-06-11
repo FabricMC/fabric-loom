@@ -31,7 +31,10 @@ import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.*;
-import org.gradle.api.*;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
@@ -60,6 +63,10 @@ import java.util.function.Predicate;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
+
+	public static boolean isRootProject(Project project) {
+		return project.getRootProject() == project;
+	}
 
 	private void extendsFrom(String a, String b) {
 		project.getConfigurations().getByName(a).extendsFrom(project.getConfigurations().getByName(b));
@@ -121,8 +128,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
 		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
 
-        extendsFrom("compile", Constants.MAPPINGS);
-        extendsFrom("annotationProcessor", Constants.MAPPINGS);
+		extendsFrom("compile", Constants.MAPPINGS);
+		extendsFrom("annotationProcessor", Constants.MAPPINGS);
 
 		configureIDEs();
 		configureCompile();
@@ -133,7 +140,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			Set<Task> taskSet = entry.getValue();
 			for (Task task : taskSet) {
 				if (task instanceof JavaCompile
-					&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
+						&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
@@ -161,8 +168,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	 * Permit to add a Maven repository to a target project
 	 *
 	 * @param target The garget project
-	 * @param name The name of the repository
-	 * @param url The URL of the repository
+	 * @param name   The name of the repository
+	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
@@ -293,7 +300,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
-			if(extension.autoGenIDERuns && isRootProject(project1)){
+			if (extension.autoGenIDERuns && isRootProject(project1)) {
 				SetupIntelijRunConfigs.setup(project1);
 			}
 
@@ -302,15 +309,15 @@ public class AbstractPlugin implements Plugin<Project> {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
-				if (remapJarTask.getInput() == null) {
-					remapJarTask.setOutput(jarTask.getArchivePath());
-					jarTask.setClassifier("dev");
-					remapJarTask.setInput(jarTask.getArchivePath());
+				assert remapJarTask != null;
+				if (!remapJarTask.getInput().isPresent()) {
+					remapJarTask.getArchiveClassifier().set("remapped");
+					remapJarTask.getInput().set(jarTask.getArchiveFile());
 				}
 
-				remapJarTask.setAddNestedDependencies(true);
+				remapJarTask.getAddNestedDependencies().set(true);
 
-				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getOutput()));
+				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchiveFile()));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
@@ -318,7 +325,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 					Set<Task> taskSet = entry.getValue();
 					for (Task task : taskSet) {
-						if (task instanceof RemapJarTask && ((RemapJarTask) task).isAddNestedDependencies()) {
+						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().get()) {
 							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
 							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
 						}
@@ -393,9 +400,5 @@ public class AbstractPlugin implements Plugin<Project> {
 				}
 			}
 		});
-	}
-
-	public static boolean isRootProject(Project project){
-		return project.getRootProject() == project;
 	}
 }

@@ -26,11 +26,7 @@ package net.fabricmc.loom.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.fabricmc.tinyremapper.TinyRemapper;
-import org.objectweb.asm.commons.Remapper;
-import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
@@ -38,10 +34,8 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 

@@ -87,10 +87,10 @@ publishing {
 """
 }
 
-static String genPropsFile(String mcVersion, String yarnVersion, String loaderVersion, String fabricVersion) {
+static String genPropsFile(String mcVersion, String yarnVersion, String loaderVersion, String fabricVersion, boolean caching = true, boolean parallel = true) {
 	"""
-org.gradle.caching=true
-org.gradle.parallel=true
+org.gradle.caching=$caching
+org.gradle.parallel=$parallel
 
 # Fabric Properties
 # check these on https://fabricmc.net/use
@@ -112,5 +112,64 @@ fabric_version=$fabricVersion
 static String genSettingsFile(String name) {
 	"""
 rootProject.name = '$name'
+"""
+}
+
+static String genModJsonFile() {
+	"""
+{
+  "schemaVersion": 1,
+  "id": "modid",
+  "version": "\${version}",
+
+  "name": "Example Mod",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "CC0-1.0",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.fabricmc.example.ExampleMod"
+    ]
+  },
+  "mixins": [
+    "modid.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.4.0",
+    "fabric": "*"
+  },
+  "suggests": {
+    "flamingo": "*"
+  }
+}
+"""
+}
+
+static String genModExampleFile() {
+	"""
+package net.fabricmc.example;
+
+import net.fabricmc.api.ModInitializer;
+
+public class ExampleMod implements ModInitializer {
+	@Override
+	public void onInitialize() {
+		// This code runs as soon as Minecraft is in a mod-load-ready state.
+		// However, some things (like resources) may still be uninitialized.
+		// Proceed with mild caution.
+
+		System.out.println("Hello Fabric world!");
+	}
+}
 """
 }

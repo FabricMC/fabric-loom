@@ -59,9 +59,10 @@ class MixinBuildFunctionalTest extends Specification {
 
 		when:
 		def result = GradleRunner.create()
-				.withPluginClasspath()
 				.withProjectDir(testProjectDir.root)
 				.withArguments('build')
+				.withPluginClasspath()
+				.withGradleVersion("5.1.1")
 				.build()
 
 		then:

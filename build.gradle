@@ -34,21 +34,21 @@ dependencies {
 	implementation ('commons-io:commons-io:2.6')
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
-	implementation ('com.google.guava:guava:27.1-jre')
+	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.1.2.50') {
+	implementation ('net.fabricmc:stitch:0.2.0.53') {
 		exclude module: 'enigma'
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.33') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.37') {
 		transitive = false
 	}
 	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+')
 
 	// decompilers
-	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.33.+')
+	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
 	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
 
 	// source code remapping

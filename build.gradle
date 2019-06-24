@@ -4,6 +4,7 @@ plugins {
 	id 'java-gradle-plugin'
 	id 'idea'
 	id 'eclipse'
+	id 'groovy'
 }
 
 sourceCompatibility = 1.8
@@ -54,6 +55,9 @@ dependencies {
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
 
+	// Testing
+	testImplementation(gradleTestKit())
+	testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
 }
 
 jar {
@@ -95,7 +99,7 @@ publishing {
 			version project.version
 
 			from components["java"]
-	
+
 			artifact sourcesJar
 			artifact javadocJar
 		}

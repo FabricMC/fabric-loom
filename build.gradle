@@ -11,7 +11,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.4-SNAPSHOT'
+version = '0.2.5-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()
@@ -63,12 +63,12 @@ jar {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = 'sources'
+	archiveClassifier = 'sources'
 	from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
+	archiveClassifier = 'javadoc'
 	from javadoc.destinationDir
 }
 
@@ -76,10 +76,6 @@ apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.g
 
 license {
 	exclude '**/loom/util/DownloadUtil.java'
-}
-
-task wrapper(type: Wrapper) {
-	gradleVersion = '4.10.2'
 }
 
 gradlePlugin {

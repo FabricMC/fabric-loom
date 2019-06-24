@@ -30,7 +30,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import org.objectweb.asm.commons.Remapper;
-import org.spongepowered.asm.mixin.injection.struct.MemberInfo;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;

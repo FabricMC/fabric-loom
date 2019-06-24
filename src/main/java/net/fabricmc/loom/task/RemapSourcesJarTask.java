@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.SourceRemapper;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -42,7 +43,8 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	}
 
 	//@formatter:off
-	@Input public File getInput() { return getProject().file(input); }
+	@InputFile
+	public File getInput() { return getProject().file(input); }
 	@OutputFile public File getOutput() { return getProject().file(output == null ? input : output); }
 	@Input public String getTargetNamespace() { return direction; }
 	public void setInput(Object input) { this.input = input; }

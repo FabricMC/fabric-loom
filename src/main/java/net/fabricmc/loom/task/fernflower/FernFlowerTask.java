@@ -134,7 +134,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 
     //@formatter:off
     @Input public int getNumThreads() { return numThreads; }
-    public boolean isNoFork() { return noFork; }
+    @Input public boolean isNoFork() { return noFork; }
     public void setNoFork(boolean noFork) { this.noFork = noFork; }
     public void setNumThreads(int numThreads) { this.numThreads = numThreads; }
     //@formatter:on

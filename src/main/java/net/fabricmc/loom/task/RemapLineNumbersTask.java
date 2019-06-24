@@ -64,7 +64,7 @@ public class RemapLineNumbersTask extends AbstractLoomTask {
     }
 
     //@formatter:off
-    @Input public File getInput() { return getProject().file(input); }
+    @InputFile public File getInput() { return getProject().file(input); }
     @InputFile public File getLineMapFile() { return getProject().file(lineMapFile); }
     @OutputFile public File getOutput() { return getProject().file(output); }
     public void setInput(Object input) { this.input = input; }

@@ -105,7 +105,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getRootProjectPersistentCache() {
-		File projectCache = new File(project.file(".gradle"), "loom-cache");
+		File projectCache = new File(project.getRootProject().file(".gradle"), "loom-cache");
 		if(!projectCache.exists()){
 			projectCache.mkdirs();
 		}

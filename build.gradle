@@ -37,7 +37,7 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.2.0.53') {
+	implementation ('net.fabricmc:stitch:0.2.1.56') {
 		exclude module: 'enigma'
 	}
 
@@ -49,7 +49,7 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
-	implementation ('org.jetbrains:intellij-fernflower:1.0.0.8')
+	implementation ('org.jetbrains:intellij-fernflower:1.0.0.9')
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')

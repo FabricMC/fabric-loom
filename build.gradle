@@ -37,12 +37,12 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.2.1.59') {
+	implementation ('net.fabricmc:stitch:0.2.1.60') {
 		exclude module: 'enigma'
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.37') {
+	implementation ('net.fabricmc:tiny-remapper:0.1.0.38') {
 		transitive = false
 	}
 	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+')

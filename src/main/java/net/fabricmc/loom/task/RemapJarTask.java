@@ -124,8 +124,6 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
-		extension.addUnmappedMod(input);
-
 		/*try {
 			if (modJar.exists()) {
 				Files.move(modJar, modJarUnmappedCopy);

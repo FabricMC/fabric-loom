@@ -308,6 +308,8 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapJarTask.setInput(jarTask.getArchivePath());
 				}
 
+				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+
 				remapJarTask.setAddNestedDependencies(true);
 
 				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getOutput()));

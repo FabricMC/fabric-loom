@@ -117,8 +117,6 @@ public class RemapJarTask extends AbstractLoomTask {
 			}
 		}
 
-		extension.addUnmappedMod(input);
-
 		/**
 		 *
 

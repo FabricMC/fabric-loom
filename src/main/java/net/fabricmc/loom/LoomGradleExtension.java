@@ -37,6 +37,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.artifacts.UnknownConfigurationException;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -173,7 +174,11 @@ public class LoomGradleExtension {
 		return recurseProjects((p) -> {
 			List<Configuration> configs = new ArrayList<>();
 			// check compile first
-			configs.add(p.getConfigurations().getByName("compile"));
+			try {
+				configs.add(p.getConfigurations().getByName("compile"));
+			} catch (UnknownConfigurationException e) {
+				// do nothing
+			}
 			// failing that, buildscript
 			configs.addAll(p.getBuildscript().getConfigurations());
 

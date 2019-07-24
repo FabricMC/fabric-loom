@@ -52,7 +52,6 @@ public final class MappingsCache {
             return ref.get();
         } else {
             try (InputStream stream = Files.newInputStream(mappingsPath)) {
-                Logging.getLogger(MappingsCache.class).lifecycle("CACHE MISS! OWO " + mappingsPath);
                 Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
                 ref = new SoftReference<>(mappings);
                 mappingsCache.put(mappingsPath, ref);

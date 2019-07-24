@@ -33,6 +33,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -53,7 +54,7 @@ public class RemapJarTask extends Jar {
 
 	public RemapJarTask() {
 		super();
-		input = getProject().getObjects().fileProperty();
+		input = getProject().getLayout().fileProperty();
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 	}
 
@@ -62,7 +63,7 @@ public class RemapJarTask extends Jar {
 		Project project = getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Path input = this.getInput().getAsFile().get().toPath();
-		Path output = this.getArchiveFile().get().getAsFile().toPath();
+		Path output = this.getArchivePath().toPath();
 
 		if (!Files.exists(input)) {
 			throw new FileNotFoundException(input.toString());
@@ -98,7 +99,7 @@ public class RemapJarTask extends Jar {
 
 		TinyRemapper remapper = remapperBuilder.build();
 
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
+		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 			outputConsumer.addNonClassFiles(input);
 			remapper.readClassPath(classpath);
 			remapper.readInputs(input);

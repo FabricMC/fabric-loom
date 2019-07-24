@@ -66,7 +66,7 @@ public class MapJarsTiny {
 					.rebuildSourceFilenames(true)
 					.build();
 
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);
 				remapper.readClassPath(classpath);
 				remapper.readInputs(input);

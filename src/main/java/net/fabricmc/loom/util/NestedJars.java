@@ -107,7 +107,7 @@ public class NestedJars {
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
 					if (task instanceof RemapJarTask) {
-						fileList.add(((RemapJarTask) task).getArchiveFile().get().getAsFile());
+						fileList.add(((RemapJarTask) task).getArchivePath());
 					} else if (task instanceof AbstractArchiveTask) {
 						fileList.add(((AbstractArchiveTask) task).getArchivePath());
 					}

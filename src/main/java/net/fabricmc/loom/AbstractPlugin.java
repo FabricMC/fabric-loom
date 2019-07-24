@@ -311,13 +311,14 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				assert remapJarTask != null;
 				if (!remapJarTask.getInput().isPresent()) {
-					remapJarTask.getArchiveClassifier().set("remapped");
-					remapJarTask.getInput().set(jarTask.getArchiveFile());
+					jarTask.setClassifier("dev");
+					remapJarTask.setClassifier("");
+					remapJarTask.getInput().set(jarTask.getArchivePath());
 				}
 
 				remapJarTask.getAddNestedDependencies().set(true);
 
-				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchiveFile()));
+				remapJarTask.doLast(task -> project1.getArtifacts().add("archives", remapJarTask.getArchivePath()));
 				remapJarTask.dependsOn(project1.getTasks().getByName("jar"));
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 

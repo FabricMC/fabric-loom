@@ -37,7 +37,7 @@ class EmptyBuildFunctionalTest extends Specification {
 				.withProjectDir(testProjectDir.root)
 				.withArguments('build')
 				.withPluginClasspath()
-				.withGradleVersion("5.1.1")
+				.withGradleVersion("4.9")
 				.build()
 
 		then:

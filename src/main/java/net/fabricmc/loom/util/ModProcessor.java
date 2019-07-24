@@ -167,7 +167,7 @@ public class ModProcessor {
 			.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
 			.build();
 
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
+		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
 			outputConsumer.addNonClassFiles(inputPath);
 			remapper.readClassPath(modCompiles.toArray(new Path[0]));
 			remapper.readClassPath(mc);

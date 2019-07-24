@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.5-SNAPSHOT'
+version = '0.2.290-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()
@@ -57,7 +57,7 @@ dependencies {
 
 	// Testing
 	testImplementation(gradleTestKit())
-	testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
+	testImplementation("org.spockframework:spock-core:1.3-groovy-2.4")
 }
 
 jar {
@@ -67,12 +67,12 @@ jar {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-	archiveClassifier = 'sources'
+	classifier = 'sources'
 	from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-	archiveClassifier = 'javadoc'
+	classifier = 'javadoc'
 	from javadoc.destinationDir
 }
 

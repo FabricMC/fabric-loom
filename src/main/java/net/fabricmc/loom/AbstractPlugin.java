@@ -326,7 +326,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 					Set<Task> taskSet = entry.getValue();
 					for (Task task : taskSet) {
-						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().get()) {
+						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().getOrElse(false)) {
 							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
 							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
 						}

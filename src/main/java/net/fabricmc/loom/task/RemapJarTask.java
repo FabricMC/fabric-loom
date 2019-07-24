@@ -118,7 +118,7 @@ public class RemapJarTask extends Jar {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
-		if (getAddNestedDependencies().get()) {
+		if (getAddNestedDependencies().getOrElse(false)) {
 			if (NestedJars.addNestedJars(project, output)) {
 				project.getLogger().debug("Added nested jar paths to mod json");
 			}

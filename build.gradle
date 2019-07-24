@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.290-SNAPSHOT'
+version = '0.2.5-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()

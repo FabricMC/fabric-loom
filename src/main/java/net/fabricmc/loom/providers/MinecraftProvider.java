@@ -124,8 +124,10 @@ public class MinecraftProvider extends DependencyProvider {
 				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
 			}
 		} else {
-			project.getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
+			if (StaticPathWatcher.INSTANCE.hasFileChanged(manifests.toPath())) {
+				project.getLogger().debug("Downloading version manifests");
+				DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
+			}
 		}
 
 		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
@@ -142,8 +144,10 @@ public class MinecraftProvider extends DependencyProvider {
 					throw new GradleException("Minecraft " + minecraftVersion + " manifest not found at " + MINECRAFT_JSON.getAbsolutePath());
 				}
 			} else {
-				project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
-				DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
+				if (StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_JSON.toPath())) {
+					project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
+					DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
+				}
 			}
 		} else {
 			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
@@ -152,12 +156,12 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
-		if (!MINECRAFT_CLIENT_JAR.exists() || !Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1)) {
+		if (!MINECRAFT_CLIENT_JAR.exists() || (!Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_CLIENT_JAR.toPath()))) {
 			logger.debug("Downloading Minecraft {} client jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
 		}
 
-		if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1)) {
+		if (!MINECRAFT_SERVER_JAR.exists() || (!Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_SERVER_JAR.toPath()))) {
 			logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
 		}

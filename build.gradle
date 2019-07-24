@@ -84,7 +84,7 @@ license {
 
 gradlePlugin {
 	plugins {
-		register("fabricLoom") {
+		fabricLoom {
 			id = "fabric-loom"
 			implementationClass = "net.fabricmc.loom.LoomGradlePlugin"
 		}

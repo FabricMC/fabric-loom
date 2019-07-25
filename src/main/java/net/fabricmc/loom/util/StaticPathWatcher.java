@@ -50,6 +50,9 @@ public final class StaticPathWatcher {
     }
 
     public boolean hasFileChanged(Path filePath) {
+    	if(!Files.exists(filePath)){
+    		return true;
+	    }
         WatchKey key;
         while ((key = service.poll()) != null) {
             for (WatchEvent<?> event : key.pollEvents()) {

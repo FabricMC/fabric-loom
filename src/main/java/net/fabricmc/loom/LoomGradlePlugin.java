@@ -76,6 +76,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("genSources", t -> {
 			t.getOutputs().upToDateWhen((o) -> false);
+			t.setGroup("fabric");
 		});
 
 		project.afterEvaluate((p) -> {

@@ -40,7 +40,6 @@ import org.gradle.api.Project;
 import org.gradle.internal.impldep.aQute.bnd.build.Run;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.*;
 import java.net.URI;

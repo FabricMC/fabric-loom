@@ -133,7 +133,20 @@ public class MinecraftProvider extends DependencyProvider {
 		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
 		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
 
-		Optional<ManifestVersion.Versions> optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
+
+		if(extension.customManifest != null){
+			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
+			customVersion.id = minecraftVersion;
+			customVersion.url = extension.customManifest;
+			optionalVersion = Optional.of(customVersion);
+			project.getLogger().lifecycle("Using custom minecraft manifest");
+		}
+
+		if(!optionalVersion.isPresent()){
+			optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+		}
+
 		if (optionalVersion.isPresent()) {
 			if (offline) {
 				if (MINECRAFT_JSON.exists()) {

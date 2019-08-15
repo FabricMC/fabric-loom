@@ -135,6 +135,8 @@ public class SourceRemapper {
 			project.getLogger().warn("Could not remap " + source.getName() + " fully!", e);
 		}
 
+		copyNonJavaFiles(srcPath.toFile(), dstPath);
+
 		if (dstFs != null) {
 			dstFs.close();
 		}
@@ -143,6 +145,29 @@ public class SourceRemapper {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
 	}
+
+	private static void copyNonJavaFiles(File from, Path to) throws IOException {
+        for (File file : from.listFiles()) {
+            Path path = to.resolve(file.getName());
+            if (file.isDirectory()) {
+                Files.createDirectories(path);
+                copyNonJavaFiles(file, path);
+            } else if (!isJavaFile(file)) {
+                Files.copy(file.toPath(), path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+    }
+
+    private static Boolean isJavaFile(File file) {
+    	String name = file.getName();
+        String extension = "";
+
+        int i = name.lastIndexOf('.');
+        if (i > 0) {
+            extension = name.substring(i + 1);
+        }
+        return extension.equals("java");
+    }
 
 	public static class TinyReader extends MappingsReader {
 		private final Mappings m;

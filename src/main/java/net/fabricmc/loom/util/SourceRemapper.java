@@ -40,6 +40,7 @@ import org.gradle.api.Project;
 import org.gradle.internal.impldep.aQute.bnd.build.Run;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -144,6 +145,7 @@ public class SourceRemapper {
 		if (isSrcTmp) {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
+
 	}
 
 	private static void copyNonJavaFiles(File from, Path to) throws IOException {
@@ -158,15 +160,9 @@ public class SourceRemapper {
         }
     }
 
-    private static Boolean isJavaFile(File file) {
-    	String name = file.getName();
-        String extension = "";
-
-        int i = name.lastIndexOf('.');
-        if (i > 0) {
-            extension = name.substring(i + 1);
-        }
-        return extension.equals("java");
+    private static boolean isJavaFile(File file) {
+		String name = file.getName();
+		return name.endsWith(".java") && name.lastIndexOf('.') > 0;
     }
 
 	public static class TinyReader extends MappingsReader {

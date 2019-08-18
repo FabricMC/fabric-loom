@@ -135,7 +135,7 @@ public class SourceRemapper {
 			project.getLogger().warn("Could not remap " + source.getName() + " fully!", e);
 		}
 
-		copyNonJavaFiles(srcPath.toFile(), dstPath);
+		copyNonJavaFiles(srcPath, dstPath, project, source);
 
 		if (dstFs != null) {
 			dstFs.close();
@@ -147,21 +147,23 @@ public class SourceRemapper {
 
 	}
 
-	private static void copyNonJavaFiles(File from, Path to) throws IOException {
-        for (File file : from.listFiles()) {
-            Path path = to.resolve(file.getName());
-            if (file.isDirectory()) {
-                Files.createDirectories(path);
-                copyNonJavaFiles(file, path);
-            } else if (!isJavaFile(file)) {
-                Files.copy(file.toPath(), path, StandardCopyOption.REPLACE_EXISTING);
+    private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
+        Files.walk(from).forEach(path -> {
+            Path targetPath = to.resolve(from.relativize(path).toString());
+            if (!isJavaFile(path) && !Files.exists(targetPath)) {
+                try {
+                    Files.copy(path, targetPath);
+                } catch (IOException e) {
+                    project.getLogger().warn("Could not copy non-java sources '" + source.getName() + "' fully!", e);
+                }
             }
-        }
+        });
     }
 
-    private static boolean isJavaFile(File file) {
-		String name = file.getName();
-		return name.endsWith(".java") && name.lastIndexOf('.') > 0;
+    private static boolean isJavaFile(Path path) {
+        String name = path.getFileName().toString();
+        // ".java" is not a valid java file
+        return name.endsWith(".java") && name.length() != 5;
     }
 
 	public static class TinyReader extends MappingsReader {

@@ -50,6 +50,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
@@ -133,6 +134,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		configureIDEs();
 		configureCompile();
+		configureScala();
 
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
@@ -163,6 +165,24 @@ public class AbstractPlugin implements Plugin<Project> {
 	public Project getProject() {
 		return project;
 	}
+
+    protected void configureScala() {
+        project.afterEvaluate(proj -> {
+            if (project.getPluginManager().hasPlugin("scala")) {
+                ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
+                LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+                project.getLogger().warn(":configuring scala compilation processing");
+                try {
+                    task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
+                    task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+                    task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
+                    task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
 	/**
 	 * Permit to add a Maven repository to a target project

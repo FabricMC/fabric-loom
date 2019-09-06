@@ -45,7 +45,8 @@ public class Constants {
 			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
 			new RemappedConfigurationEntry("modApi", "api", true, "compile"),
 			new RemappedConfigurationEntry("modImplementation", "implementation", true, "runtime"),
-			new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, "")
+			new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, ""),
+			new RemappedConfigurationEntry("modCompileOnly", "compileOnly", true, "")
 	);
 
 	public static final String INCLUDE = "include";

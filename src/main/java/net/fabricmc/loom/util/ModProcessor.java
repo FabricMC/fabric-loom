@@ -139,7 +139,7 @@ public class ModProcessor {
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		File mappingsFile = mappingsProvider.MAPPINGS_TINY;
+		File mappingsFile = mappingsProvider.tinyMappings;
 		Path mappings = mappingsFile.toPath();
 		Path inputPath = input.getAbsoluteFile().toPath();
 		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();

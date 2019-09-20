@@ -16,17 +16,19 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
+repositories { mavenLocal() }
+
 minecraft {
 }
 
 dependencies {
 	//to change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:\${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:\${project.yarn_mappings}"
+	mappings "net.fabricmc:yarn-unmerged:1.14.4+build.local:v2"
 	modCompile "net.fabricmc:fabric-loader:\${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modCompile "net.fabricmc.fabric-api:fabric-api:\${project.fabric_version}"
+//	modCompile "net.fabricmc.fabric-api:fabric-api:\${project.fabric_version}"
 
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.

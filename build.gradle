@@ -26,6 +26,7 @@ repositories {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
 	}
+	mavenLocal()
 }
 
 dependencies {
@@ -38,15 +39,18 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.2.1.60') {
+	implementation ('net.fabricmc:stitch:0.2.1-local') {
 		exclude module: 'enigma'
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.38') {
+	implementation ('net.fabricmc:tiny-remapper:0.2.0.45') {
 		transitive = false
 	}
 	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+')
+	compile ('net.fabricmc:tiny-mappings-parser:0.1.1-local'){
+		force = true
+	}
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
@@ -115,4 +119,9 @@ publishing {
 			}
 		}
 	}
+}
+configurations.all {
+    resolutionStrategy {
+        force 'org.codehaus.groovy:groovy-all:2.4.12'
+    }
 }

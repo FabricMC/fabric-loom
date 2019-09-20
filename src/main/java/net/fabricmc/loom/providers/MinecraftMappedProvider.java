@@ -42,7 +42,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
     @Override
     public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
-        if (!extension.getMappingsProvider().MAPPINGS_TINY.exists()) {
+        if (!extension.getMappingsProvider().tinyMappings.exists()) {
             throw new RuntimeException("mappings file not found");
         }
 

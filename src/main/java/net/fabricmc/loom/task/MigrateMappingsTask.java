@@ -66,7 +66,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             String minecraftVersion = v.getMinecraftVersion();
             String mappingsVersion = v.getMappingsVersion();
 
-            mappingsFile = new File(extension.getMappingsProvider().MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+            mappingsFile = new File(extension.getMappingsProvider().mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
         }
 
         if (mappingsFile == null || !mappingsFile.exists()) {

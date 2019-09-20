@@ -37,8 +37,7 @@ public class CleanLoomMappings extends AbstractLoomTask {
     public void run() {
         Project project = this.getProject();
         LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        extension.getMappingsProvider().MAPPINGS_TINY.delete();
-        extension.getMappingsProvider().MAPPINGS_TINY_BASE.delete();
+        extension.getMappingsProvider().clean();
         extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
         extension.getMinecraftMappedProvider().getMappedJar().delete();
         try {

@@ -52,6 +52,7 @@ public final class MappingsCache {
             return ref.get();
         } else {
             try (InputStream stream = Files.newInputStream(mappingsPath)) {
+                //TODO: replace this with V2 mappings (new seperate MappingsV2 interface I think)
                 Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
                 ref = new SoftReference<>(mappings);
                 mappingsCache.put(mappingsPath, ref);

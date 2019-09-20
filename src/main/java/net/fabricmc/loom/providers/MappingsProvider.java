@@ -29,18 +29,32 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.Version;
 import net.fabricmc.mappings.Mappings;
+import net.fabricmc.stitch.Command;
+import net.fabricmc.stitch.commands.CommandMergeTiny;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
+import net.fabricmc.stitch.commands.CommandReorderTiny;
+import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
+import net.fabricmc.stitch.commands.tinyv2.CommandProposeV2FieldNames;
+import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
+import net.fabricmc.tinyv2.TinyMetadata;
+import net.fabricmc.tinyv2.TinyV2Factory;
+
+import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.Project;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+
 
 //TODO fix local mappings
 //TODO possibly use maven for mappings, can fix above at the same time
@@ -51,13 +65,19 @@ public class MappingsProvider extends DependencyProvider {
 	public String minecraftVersion;
 	public String mappingsVersion;
 
-	public File MAPPINGS_DIR;
-	public File MAPPINGS_TINY_BASE;
-	public File MAPPINGS_TINY;
-	public File MAPPINGS_MIXIN_EXPORT;
+	private boolean isV2;
+	public File mappingsDir;
+	private File unproposedTinyMappings;
+	public File tinyMappings;
+	public File mappingsMixinExport;
+
+	public void clean(){
+		tinyMappings.delete();
+		unproposedTinyMappings.delete();
+	}
 
 	public Mappings getMappings() throws IOException {
-		return MappingsCache.INSTANCE.get(MAPPINGS_TINY.toPath());
+		return MappingsCache.INSTANCE.get(tinyMappings.toPath());
 	}
 
 	@Override
@@ -67,7 +87,9 @@ public class MappingsProvider extends DependencyProvider {
 		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
-		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
+		List<File> mappingsJars = new ArrayList<>(dependency.resolve());
+		if(mappingsJars.isEmpty()) throw new RuntimeException("Could not find dependency " + dependency);
+
 
 		this.mappingsName = dependency.getDependency().getGroup() + "." + dependency.getDependency().getName();
 
@@ -77,29 +99,16 @@ public class MappingsProvider extends DependencyProvider {
 
 		initFiles(project);
 
-		if (!MAPPINGS_DIR.exists()) {
-			MAPPINGS_DIR.mkdir();
+		if (!mappingsDir.exists()) {
+			mappingsDir.mkdir();
 		}
 
-		if (!MAPPINGS_TINY_BASE.exists() || !MAPPINGS_TINY.exists()) {
-			if (!MAPPINGS_TINY_BASE.exists()) {
-				project.getLogger().lifecycle(":extracting " + mappingsJar.getName());
-				try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
-					Path fileToExtract = fileSystem.getPath("mappings/mappings.tiny");
-					Files.copy(fileToExtract, MAPPINGS_TINY_BASE.toPath());
-				}
+		if (!unproposedTinyMappings.exists() || !tinyMappings.exists()) {
+			if (!unproposedTinyMappings.exists()) {
+				saveMappings(project, mappingsJars);
 			}
-
-			if (MAPPINGS_TINY.exists()) {
-				MAPPINGS_TINY.delete();
-			}
-
 			project.getLogger().lifecycle(":populating field names");
-			new CommandProposeFieldNames().run(new String[] {
-					minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(),
-					MAPPINGS_TINY_BASE.getAbsolutePath(),
-					MAPPINGS_TINY.getAbsolutePath()
-			});
+			suggestFieldNames(minecraftProvider,unproposedTinyMappings.toPath(),tinyMappings.toPath());
 		}
 
 		mappedProvider = new MinecraftMappedProvider();
@@ -107,13 +116,120 @@ public class MappingsProvider extends DependencyProvider {
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
 
+	private void saveMappings(Project project, List<File> mappingsJars) throws IOException {
+
+		if(mappingsJars.size() == 1){
+			// These are merged v1 mappings
+			saveMergedV1Mappings(project, mappingsJars.get(0).toPath());
+		}else if(mappingsJars.size() == 3){
+			// These are unmerged v1 mappings or v2 mappings
+			File unmergedYarn = mappingsJars.stream()
+					.filter(f -> f.getName().startsWith("yarn-unmerged")).findFirst()
+					.orElseThrow(() -> new RuntimeException("Could not find unmerged yarn mappings. Mappings: " + mappingsJars ));
+			this.isV2 = FilenameUtils.removeExtension(unmergedYarn.getName()).endsWith("-v2");
+			File unmergedIntermediary = mappingsJars.stream()
+					.filter( f -> {
+						String name = FilenameUtils.removeExtension(f.getName());
+						boolean isV2Intermediary = name.endsWith("-v2");
+						return name.startsWith("intermediary") && isV2 == isV2Intermediary;
+					}).findFirst()
+					.orElseThrow(() -> new RuntimeException("Could not find unmerged intermediary mappings. Mappings: " + mappingsJars));
+
+
+			mergeAndSaveMappings(project, unmergedIntermediary.toPath(), unmergedYarn.toPath());
+		}else {
+			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size());
+		}
+
+
+		if (tinyMappings.exists()) {
+			tinyMappings.delete();
+		}
+
+
+
+	}
+
+	private void saveMergedV1Mappings(Project project, Path mappingsJar) throws IOException {
+		project.getLogger().lifecycle(":extracting " + mappingsJar.getFileName());
+		try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar, null)) {
+			extractMappings(fileSystem,unproposedTinyMappings.toPath());
+		}
+	}
+
+	private void extractMappings(FileSystem jar, Path extractTo) throws IOException{
+		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException{
+		Path unmergedIntermediary = File.createTempFile("unmerged_intermediary",".tiny").toPath();
+		project.getLogger().lifecycle(":extracting " +unmergedIntermediaryJar.getFileName().toString());
+		try(FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, null)){
+			extractMappings(unmergedIntermediaryFs,unmergedIntermediary);
+		}
+
+		Path unmergedYarn = File.createTempFile("unmerged_yarn",".tiny").toPath();
+		project.getLogger().lifecycle(":extracting " +unmergedYarnJar.getFileName().toString());
+		try(FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, null)){
+			extractMappings(unmergedYarnJarFs,unmergedYarn);
+		}
+
+		Path invertedIntermediary = File.createTempFile("inverted_intermediary",".tiny").toPath();
+		reorderMappings(unmergedIntermediary,invertedIntermediary,"intermediary","official");
+		Path unorderedMappings = File.createTempFile("unordered_merged",".tiny").toPath();
+		project.getLogger().lifecycle(":merging");
+		mergeMappings(invertedIntermediary,unmergedYarn,unorderedMappings);
+		reorderMappings(unorderedMappings,unproposedTinyMappings.toPath(),"official","intermediary","named");
+	}
+
+	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
+		Command command = isV2 ? new CommandReorderTinyV2() : new CommandReorderTiny();
+		String[] args = new String[2 + newOrder.length];
+		args[0] = oldMappings.toAbsolutePath().toString();
+		args[1] = newMappings.toAbsolutePath().toString();
+		System.arraycopy(newOrder,0,args,2,newOrder.length);
+		try {
+			command.run(args);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void mergeMappings(Path intermediaryMappings, Path yarnMappings, Path newMergedMappings) {
+		Command command = isV2 ? new CommandMergeTinyV2() : new CommandMergeTiny();
+		try {
+			command.run(new String[]{
+				intermediaryMappings.toAbsolutePath().toString(),
+					yarnMappings.toAbsolutePath().toString(),
+					newMergedMappings.toAbsolutePath().toString(),
+					"intermediary","official"
+			});
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings){
+		Command command = isV2? new CommandProposeV2FieldNames() : new CommandProposeFieldNames();
+		try {
+			command.run(new String[] {
+						minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(),
+						oldMappings.toAbsolutePath().toString(),
+						newMappings.toAbsolutePath().toString()
+				});
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
 	public void initFiles(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MAPPINGS_DIR = new File(extension.getUserCache(), "mappings");
+		mappingsDir = new File(extension.getUserCache(), "mappings");
 
-		MAPPINGS_TINY_BASE = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
-		MAPPINGS_TINY = new File(MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
-		MAPPINGS_MIXIN_EXPORT = new File(extension.getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
+		unproposedTinyMappings = new File(mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
+		tinyMappings = new File(mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+		mappingsMixinExport = new File(extension.getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 
 	@Override

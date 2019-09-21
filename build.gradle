@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.6-992'
+version = '0.2.6-994'
 
 def build = "local"
 def ENV = System.getenv()
@@ -53,10 +53,6 @@ dependencies {
 	}
 
 	implementation (fileTree(dir: "libs", include: "**.jar"))
-
-//	compile ('net.fabricmc:tiny-mappings-parser:0.1.1-local'){
-//		force = true
-//	}
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')

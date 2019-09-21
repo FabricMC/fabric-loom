@@ -27,10 +27,10 @@ package net.fabricmc.loom.util;
 import net.fabricmc.mappings.*;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.MemberInstance;
-import net.fabricmc.tinyv2.LocalVariable;
-import net.fabricmc.tinyv2.LocalVariableEntry;
-import net.fabricmc.tinyv2.MethodParameter;
-import net.fabricmc.tinyv2.MethodParameterEntry;
+import net.fabricmc.tinyv2.model.LocalVariable;
+import net.fabricmc.tinyv2.model.LocalVariableEntry;
+import net.fabricmc.tinyv2.model.MethodParameter;
+import net.fabricmc.tinyv2.model.MethodParameterEntry;
 
 
 public class TinyRemapperMappingsHelper {

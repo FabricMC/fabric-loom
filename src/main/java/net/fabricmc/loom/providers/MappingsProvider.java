@@ -115,8 +115,6 @@ public class MappingsProvider extends DependencyProvider {
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
 
-//	private boolean
-
 	private boolean containsV2Yarn(List<File> mappingsJars){
 		if(mappingsJars.size() == 1) return false;
 		else if(mappingsJars.size() == 3){

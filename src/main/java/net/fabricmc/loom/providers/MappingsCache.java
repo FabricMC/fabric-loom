@@ -26,22 +26,26 @@ package net.fabricmc.loom.providers;
 
 import net.fabricmc.loom.util.StaticPathWatcher;
 import net.fabricmc.mappings.Mappings;
-import org.gradle.api.logging.Logging;
+import net.fabricmc.mappings.MappingsProvider;
+import net.fabricmc.tinyv2.V2MappingsProvider;
 
-import java.io.FileInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import static net.fabricmc.mappings.MappingsProvider.readTinyMappings;
 
 public final class MappingsCache {
     public static final MappingsCache INSTANCE = new MappingsCache();
 
     private final Map<Path, SoftReference<Mappings>> mappingsCache = new HashMap<>();
 
-    public Mappings get(Path mappingsPath) {
+    public Mappings get(Path mappingsPath, boolean isV2) throws IOException {
         mappingsPath = mappingsPath.toAbsolutePath();
         if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
             mappingsCache.remove(mappingsPath);
@@ -51,15 +55,19 @@ public final class MappingsCache {
         if (ref != null && ref.get() != null) {
             return ref.get();
         } else {
-            try (InputStream stream = Files.newInputStream(mappingsPath)) {
-                //TODO: replace this with V2 mappings (new seperate MappingsV2 interface I think)
-                Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
-                ref = new SoftReference<>(mappings);
-                mappingsCache.put(mappingsPath, ref);
-                return mappings;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            Mappings mappings;
+            if (isV2) {
+                try(BufferedReader reader = Files.newBufferedReader(mappingsPath)){
+                    mappings = V2MappingsProvider.readTinyMappings(reader);
+                }
+            } else {
+                try (InputStream stream = Files.newInputStream(mappingsPath)) {
+                     mappings = MappingsProvider.readTinyMappings(stream, false);
+                }
             }
+            ref = new SoftReference<>(mappings);
+            mappingsCache.put(mappingsPath, ref);
+            return mappings;
         }
     }
 }

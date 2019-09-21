@@ -27,30 +27,43 @@ package net.fabricmc.loom.util;
 import net.fabricmc.mappings.*;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.MemberInstance;
+import net.fabricmc.tinyv2.LocalVariable;
+import net.fabricmc.tinyv2.LocalVariableEntry;
+import net.fabricmc.tinyv2.MethodParameter;
+import net.fabricmc.tinyv2.MethodParameterEntry;
+
 
 public class TinyRemapperMappingsHelper {
 	private TinyRemapperMappingsHelper() {
 
 	}
 
+	private static IMappingProvider.Member toMember(EntryTriple entryTriple){
+		return new IMappingProvider.Member(entryTriple.getOwner(),entryTriple.getName(),entryTriple.getDesc());
+	}
+
 	public static IMappingProvider create(Mappings mappings, String from, String to) {
 		return (acceptor) ->{
-		//TODO
+			for (ClassEntry entry : mappings.getClassEntries()) {
+				acceptor.acceptClass(entry.get(from), entry.get(to));
+			}
+
+			for (FieldEntry entry : mappings.getFieldEntries()) {
+				acceptor.acceptField(toMember(entry.get(from)),entry.get(to).getName());
+			}
+
+			for (MethodEntry entry : mappings.getMethodEntries()) {
+				acceptor.acceptMethod(toMember(entry.get(from)),entry.get(to).getName());
+			}
+			for(MethodParameterEntry entry : mappings.getMethodParameterEntries()){
+				MethodParameter parameter = entry.get(from);
+				acceptor.acceptMethodArg(toMember(parameter.getMethod()),parameter.getLocalVariableIndex(),entry.get(to).getName());
+			}
+			for(LocalVariableEntry entry : mappings.getLocalVariableEntries()){
+				LocalVariable localVariable = entry.get(from);
+				acceptor.acceptMethodVar(toMember(localVariable.getMethod()),localVariable.getLocalVariableIndex(),
+						localVariable.getLocalVariableStartOffset(),localVariable.getLocalVariableTableIndex(),entry.get(to).getName());
+			}
 		};
-//		return (classMap, fieldMap, methodMap) -> {
-////			for (ClassEntry entry : mappings.getClassEntries()) {
-////				classMap.put(entry.get(from), entry.get(to));
-////			}
-////
-////			for (FieldEntry entry : mappings.getFieldEntries()) {
-////				EntryTriple fromTriple = entry.get(from);
-////				fieldMap.put(fromTriple.getOwner() + "/" + MemberInstance.getFieldId(fromTriple.getName(), fromTriple.getDesc()), entry.get(to).getName());
-////			}
-////
-////			for (MethodEntry entry : mappings.getMethodEntries()) {
-////				EntryTriple fromTriple = entry.get(from);
-////				methodMap.put(fromTriple.getOwner() + "/" + MemberInstance.getMethodId(fromTriple.getName(), fromTriple.getDesc()), entry.get(to).getName());
-////			}
-//		};
 	}
 }

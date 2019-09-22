@@ -47,6 +47,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,13 +65,14 @@ public class MappingsProvider extends DependencyProvider {
 
 	private boolean isV2;
 	public File mappingsDir;
-	private File tinyMappingsWithoutEnums;
+	private Path mappingsStepsDir;
+	private Path tinyMappingsWithoutEnums;
 	public File tinyMappings;
 	public File mappingsMixinExport;
 
-	public void clean(){
+	public void clean()throws IOException{
 		tinyMappings.delete();
-		tinyMappingsWithoutEnums.delete();
+		Files.delete(tinyMappingsWithoutEnums);
 	}
 
 	public Mappings getMappings() throws IOException {
@@ -101,13 +103,16 @@ public class MappingsProvider extends DependencyProvider {
 		if (!mappingsDir.exists()) {
 			mappingsDir.mkdir();
 		}
+		if(!Files.exists(mappingsStepsDir)){
+			Files.createDirectory(mappingsStepsDir);
+		}
 
-		if (!tinyMappingsWithoutEnums.exists() || !tinyMappings.exists()) {
-			if (!tinyMappingsWithoutEnums.exists()) {
+		if (!Files.exists(tinyMappingsWithoutEnums)|| !tinyMappings.exists()) {
+			if (!Files.exists(tinyMappingsWithoutEnums)) {
 				saveMappings(project, mappingsJars);
 			}
 			project.getLogger().lifecycle(":populating field names");
-			suggestFieldNames(minecraftProvider, tinyMappingsWithoutEnums.toPath(),tinyMappings.toPath());
+			suggestFieldNames(minecraftProvider, tinyMappingsWithoutEnums,tinyMappings.toPath());
 		}
 
 		mappedProvider = new MinecraftMappedProvider();
@@ -120,7 +125,7 @@ public class MappingsProvider extends DependencyProvider {
 		else if(mappingsJars.size() == 3){
 			return FilenameUtils.removeExtension(getUnmergedYarnJar(mappingsJars).getName()).endsWith("-v2");
 		}else{
-			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size());
+			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size() + ". This is likely because your 'mappings' line in build.gradle is incorrect.");
 		}
 	}
 
@@ -164,7 +169,7 @@ public class MappingsProvider extends DependencyProvider {
 	private void saveMergedV1Mappings(Project project, Path mappingsJar) throws IOException {
 		project.getLogger().lifecycle(":extracting " + mappingsJar.getFileName());
 		try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar, null)) {
-			extractMappings(fileSystem, tinyMappingsWithoutEnums.toPath());
+			extractMappings(fileSystem, tinyMappingsWithoutEnums);
 		}
 	}
 
@@ -172,25 +177,29 @@ public class MappingsProvider extends DependencyProvider {
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
+	private String extension(){
+		return isV2 ? ".tiny2" : ".tiny";
+	}
+
 	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException{
-		Path unmergedIntermediary = File.createTempFile("unmerged_intermediary",".tiny").toPath();
+		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary" + extension());
 		project.getLogger().lifecycle(":extracting " +unmergedIntermediaryJar.getFileName().toString());
 		try(FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, null)){
 			extractMappings(unmergedIntermediaryFs,unmergedIntermediary);
 		}
 
-		Path unmergedYarn = File.createTempFile("unmerged_yarn",".tiny").toPath();
+		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(),"unmerged-yarn" + extension());
 		project.getLogger().lifecycle(":extracting " +unmergedYarnJar.getFileName().toString());
 		try(FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, null)){
 			extractMappings(unmergedYarnJarFs,unmergedYarn);
 		}
 
-		Path invertedIntermediary = File.createTempFile("inverted_intermediary",".tiny").toPath();
+		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(),"inverted-intermediary" + extension());
 		reorderMappings(unmergedIntermediary,invertedIntermediary,"intermediary","official");
-		Path unorderedMergedMappings = File.createTempFile("unordered_merged",".tiny").toPath();
+		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(),"unordered-merged" + extension());
 		project.getLogger().lifecycle(":merging");
 		mergeMappings(invertedIntermediary,unmergedYarn,unorderedMergedMappings);
-		reorderMappings(unorderedMergedMappings, tinyMappingsWithoutEnums.toPath(),"official","intermediary","named");
+		reorderMappings(unorderedMergedMappings, tinyMappingsWithoutEnums,"official","intermediary","named");
 	}
 
 	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
@@ -234,12 +243,13 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 
-	public void initFiles(Project project) {
+	private void initFiles(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		mappingsDir = new File(extension.getUserCache(), "mappings");
+		mappingsStepsDir = Paths.get(mappingsDir.getPath(),"steps");
 
-		tinyMappingsWithoutEnums = new File(mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
-		tinyMappings = new File(mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+		tinyMappingsWithoutEnums = Paths.get(mappingsStepsDir.toString(), mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base" + extension());
+		tinyMappings = Paths.get(mappingsDir.getPath(),mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion).toFile();
 		mappingsMixinExport = new File(extension.getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 

@@ -24,13 +24,8 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.mappings.*;
+import net.fabricmc.mapping.tree.*;
 import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.MemberInstance;
-import net.fabricmc.tinyv2.model.LocalVariable;
-import net.fabricmc.tinyv2.model.LocalVariableEntry;
-import net.fabricmc.tinyv2.model.MethodParameter;
-import net.fabricmc.tinyv2.model.MethodParameterEntry;
 
 
 public class TinyRemapperMappingsHelper {
@@ -38,31 +33,38 @@ public class TinyRemapperMappingsHelper {
 
 	}
 
-	private static IMappingProvider.Member toMember(EntryTriple entryTriple){
-		return new IMappingProvider.Member(entryTriple.getOwner(),entryTriple.getName(),entryTriple.getDesc());
+	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {
+		return new IMappingProvider.Member(className, memberName, descriptor);
 	}
 
-	public static IMappingProvider create(Mappings mappings, String from, String to) {
-		return (acceptor) ->{
-			for (ClassEntry entry : mappings.getClassEntries()) {
-				acceptor.acceptClass(entry.get(from), entry.get(to));
-			}
 
-			for (FieldEntry entry : mappings.getFieldEntries()) {
-				acceptor.acceptField(toMember(entry.get(from)),entry.get(to).getName());
-			}
+	public static IMappingProvider create(TinyTree mappings, String from, String to, boolean remapLocalVariables) {
+		return (acceptor) -> {
+			for (ClassDef classDef : mappings.getClasses()) {
+				String className = classDef.getName(from);
+				acceptor.acceptClass(className, classDef.getName(to));
 
-			for (MethodEntry entry : mappings.getMethodEntries()) {
-				acceptor.acceptMethod(toMember(entry.get(from)),entry.get(to).getName());
-			}
-			for(MethodParameterEntry entry : mappings.getMethodParameterEntries()){
-				MethodParameter parameter = entry.get(from);
-				acceptor.acceptMethodArg(toMember(parameter.getMethod()),parameter.getLocalVariableIndex(),entry.get(to).getName());
-			}
-			for(LocalVariableEntry entry : mappings.getLocalVariableEntries()){
-				LocalVariable localVariable = entry.get(from);
-				acceptor.acceptMethodVar(toMember(localVariable.getMethod()),localVariable.getLocalVariableIndex(),
-						localVariable.getLocalVariableStartOffset(),localVariable.getLocalVariableTableIndex(),entry.get(to).getName());
+				for (FieldDef field : classDef.getFields()) {
+					acceptor.acceptField(memberOf(className, field.getName(from), field.getSignature(from)), field.getName(to));
+				}
+
+				for (MethodDef method : classDef.getMethods()) {
+					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getSignature(from));
+					acceptor.acceptMethod(methodIdentifier, method.getName(to));
+
+					if (remapLocalVariables) {
+						for (ParameterDef parameter : method.getParameters()) {
+							acceptor.acceptMethodArg(methodIdentifier, parameter.getLocalVariableIndex(), parameter.getName(to));
+						}
+
+						for (LocalVariableDef localVariable : method.getLocalVariables()) {
+							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLocalVariableIndex(),
+									localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
+									localVariable.getName(to));
+						}
+					}
+
+				}
 			}
 		};
 	}

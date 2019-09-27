@@ -24,31 +24,24 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.mappings.*;
-import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.stitch.util.StitchUtil;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
-import org.cadixdev.lorenz.io.TextMappingsReader;
-import org.cadixdev.lorenz.model.Mapping;
+import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
-import org.gradle.internal.impldep.aQute.bnd.build.Run;
-import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.*;
-import java.net.URI;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class SourceRemapper {
 	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
@@ -63,7 +56,7 @@ public class SourceRemapper {
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
-				Mappings m = mappingsProvider.getMappings();
+				TinyTree m = mappingsProvider.getMappings();
 				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
@@ -167,40 +160,32 @@ public class SourceRemapper {
     }
 
 	public static class TinyReader extends MappingsReader {
-		private final Mappings m;
+		private final TinyTree mappings;
 		private final String from, to;
 
-		public TinyReader(Mappings m, String from, String to) {
-			this.m = m;
+		public TinyReader(TinyTree m, String from, String to) {
+			this.mappings = m;
 			this.from = from;
 			this.to = to;
 		}
 
 		@Override
 		public MappingSet read(final MappingSet mappings) {
-			for (ClassEntry entry : m.getClassEntries()) {
-				mappings.getOrCreateClassMapping(entry.get(from))
-						.setDeobfuscatedName(entry.get(to));
+			for (ClassDef classDef : this.mappings.getClasses()) {
+				ClassMapping classMapping =  mappings.getOrCreateClassMapping(classDef.getName(from))
+						.setDeobfuscatedName(classDef.getName(to));
+
+				for(FieldDef field : classDef.getFields()){
+					classMapping.getOrCreateFieldMapping(field.getName(from),field.getSignature(from))
+							.setDeobfuscatedName(field.getName(to));
+				}
+
+				for(MethodDef method : classDef.getMethods()){
+					classMapping.getOrCreateMethodMapping(method.getName(from),method.getSignature(from))
+							.setDeobfuscatedName(method.getName(to));
+				}
 			}
-
-			for (FieldEntry entry : m.getFieldEntries()) {
-				EntryTriple fromEntry = entry.get(from);
-				EntryTriple toEntry = entry.get(to);
-
-				mappings.getOrCreateClassMapping(fromEntry.getOwner())
-						.getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc())
-						.setDeobfuscatedName(toEntry.getName());
-			}
-
-			for (MethodEntry entry : m.getMethodEntries()) {
-				EntryTriple fromEntry = entry.get(from);
-				EntryTriple toEntry = entry.get(to);
-
-				mappings.getOrCreateClassMapping(fromEntry.getOwner())
-						.getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc())
-						.setDeobfuscatedName(toEntry.getName());
-			}
-
+			
 			return mappings;
 		}
 

@@ -22,42 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.providers;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.mapping.tree.TinyMappingFactory;
-import net.fabricmc.mapping.tree.TinyTree;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
-public final class MappingsCache {
-	public static final MappingsCache INSTANCE = new MappingsCache();
+public class PathUtils {
+	public static void createDirectoryWhenMissing(Path dirPath) throws IOException {
+		if (!Files.exists(dirPath)) Files.createDirectory(dirPath);
+	}
 
-	private final Map<Path, SoftReference<TinyTree>> mappingsCache = new HashMap<>();
-
-	public TinyTree get(Path mappingsPath) throws IOException {
-		mappingsPath = mappingsPath.toAbsolutePath();
-		if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
-			mappingsCache.remove(mappingsPath);
-		}
-
-		SoftReference<TinyTree> ref = mappingsCache.get(mappingsPath);
-		if (ref != null && ref.get() != null) {
-			return ref.get();
-		} else {
-			try (BufferedReader reader = Files.newBufferedReader(mappingsPath)) {
-				TinyTree mappings = TinyMappingFactory.loadWithDetection(reader);
-				ref = new SoftReference<>(mappings);
-				mappingsCache.put(mappingsPath, ref);
-				return mappings;
-			}
-
-		}
+	public static void deleteDirectoryContents(Path dirPath) throws IOException {
+		Files.list(dirPath).forEach(p -> {
+            try {
+                Files.delete(p);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
 	}
 }

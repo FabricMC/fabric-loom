@@ -31,7 +31,7 @@ import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.TinyUtils;
+
 import org.gradle.api.Project;
 
 import java.io.File;
@@ -61,7 +61,7 @@ public class MapJarsTiny {
 			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
-					.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM))
+					.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM,true))
 					.renameInvalidLocals(true)
 					.rebuildSourceFilenames(true)
 					.build();

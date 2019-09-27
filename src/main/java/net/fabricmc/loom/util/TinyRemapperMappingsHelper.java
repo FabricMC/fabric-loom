@@ -45,11 +45,11 @@ public class TinyRemapperMappingsHelper {
 				acceptor.acceptClass(className, classDef.getName(to));
 
 				for (FieldDef field : classDef.getFields()) {
-					acceptor.acceptField(memberOf(className, field.getName(from), field.getSignature(from)), field.getName(to));
+					acceptor.acceptField(memberOf(className, field.getName(from), field.getDescriptor(from)), field.getName(to));
 				}
 
 				for (MethodDef method : classDef.getMethods()) {
-					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getSignature(from));
+					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getDescriptor(from));
 					acceptor.acceptMethod(methodIdentifier, method.getName(to));
 
 					if (remapLocalVariables) {

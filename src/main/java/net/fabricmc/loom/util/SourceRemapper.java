@@ -176,12 +176,12 @@ public class SourceRemapper {
 						.setDeobfuscatedName(classDef.getName(to));
 
 				for(FieldDef field : classDef.getFields()){
-					classMapping.getOrCreateFieldMapping(field.getName(from),field.getSignature(from))
+					classMapping.getOrCreateFieldMapping(field.getName(from),field.getDescriptor(from))
 							.setDeobfuscatedName(field.getName(to));
 				}
 
 				for(MethodDef method : classDef.getMethods()){
-					classMapping.getOrCreateMethodMapping(method.getName(from),method.getSignature(from))
+					classMapping.getOrCreateMethodMapping(method.getName(from),method.getDescriptor(from))
 							.setDeobfuscatedName(method.getName(to));
 				}
 			}

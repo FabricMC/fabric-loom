@@ -69,11 +69,11 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             throw new IllegalArgumentException("You must specify a new mappings version with -PtargetMappings.");
         }
 
-        Path inputDirPath = Paths.get(inputDir);
+        Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
         Path outputDirPath = Paths.get(outputDir);
 
         if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
-            throw new IllegalArgumentException("Could not find input directory: " + inputDir);
+            throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
         }
 
         if (!Files.exists(outputDirPath)) Files.createDirectory(outputDirPath);

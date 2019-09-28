@@ -80,16 +80,13 @@ public class MappingsProvider extends DependencyProvider {
         PathUtils.deleteDirectoryContents(mappingsStepsDir);
     }
 
-//	public boolean mappingsExist(){
-//		return tinyMappings.exists();
-//	}
-
     public TinyTree getMappings() throws IOException {
         return MappingsCache.INSTANCE.get(tinyMappings.toPath());
     }
 
     @Nullable
     public TinyTree getMappingsOfVersion(Project project, String version) throws IOException {
+       String dir = System.getProperty("user.dir");
         Path migrateMappingsDir = mappingsDir.resolve("migrate");
         Path localMappingsOfVersion = migrateMappingsDir.resolve(version + ".tiny");
         if (Files.exists(localMappingsOfVersion)) {

@@ -70,7 +70,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
         }
 
         Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
-        Path outputDirPath = Paths.get(outputDir);
+        Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
 
         if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
             throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
@@ -84,6 +84,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             TinyTree currentMappings = mappingsProvider.getMappings();
             TinyTree targetMappings = mappingsProvider.getMappingsOfVersion(project, targetMappingsVersion);
             migrateMappings(project, extension.getMinecraftMappedProvider(), inputDirPath, outputDirPath, currentMappings, targetMappings);
+            project.getLogger().lifecycle(":remapped project written to " + outputDirPath.toAbsolutePath());
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not find mappings for version " + targetMappingsVersion, e);
         }

@@ -86,7 +86,6 @@ public class MappingsProvider extends DependencyProvider {
 
     @Nullable
     public TinyTree getMappingsOfVersion(Project project, String version) throws IOException {
-       String dir = System.getProperty("user.dir");
         Path migrateMappingsDir = mappingsDir.resolve("migrate");
         Path localMappingsOfVersion = migrateMappingsDir.resolve(version + ".tiny");
         if (Files.exists(localMappingsOfVersion)) {

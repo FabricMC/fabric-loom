@@ -53,7 +53,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-//TODO: the usage of this task is very hacky and barely works.
 public class MigrateMappingsTask extends AbstractLoomTask {
     @TaskAction
     public void doTask() throws Throwable {

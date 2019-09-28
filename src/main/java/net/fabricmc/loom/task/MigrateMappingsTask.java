@@ -171,10 +171,6 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
                 ClassMapping classMapping = mappings.getOrCreateClassMapping(namedMappingOfSourceMapping).setDeobfuscatedName(namedMappingOfTargetMapping);
 
-                if (namedMappingOfSourceMapping.equals("net/minecraft/text/LiteralText") || namedMappingOfSourceMapping.equals("net/minecraft/network/chat/TextComponent")) {
-                    int x = 2;
-                }
-
                 mapDescriptored(sourceClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
                 mapDescriptored(sourceClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
 

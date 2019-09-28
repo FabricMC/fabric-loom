@@ -25,17 +25,29 @@
 package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.mapping.tree.*;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.MinecraftMappedProvider;
+import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.Descriptored;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.Pair;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.lorenz.model.Mapping;
+import org.cadixdev.mercury.Mercury;
+import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,84 +61,59 @@ public class MigrateMappingsTask extends AbstractLoomTask {
         LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
         Map<String, ?> properties = project.getProperties();
 
-        project.getLogger().lifecycle(":loading mappings");
-//
-//        Path mappingsFile = null;
-//        Mappings mappings =
-//
-//        if (properties.containsKey("targetMappingsFile")) {
-//            mappingsFile = Paths.get((String) properties.get("targetMappingsFile"));
-//        } else if (properties.containsKey("targetMappingsArtifact")) {
-//            String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
-//            if (artifactName.length != 3) {
-//                throw new RuntimeException("Invalid artifact name: " + properties.get("targetMappingsArtifact"));
-//            }
-//
-//            String mappingsName = artifactName[0] + "." + artifactName[1];
-//
-//            Version v = new Version(artifactName[2]);
-//            String minecraftVersion = v.getMinecraftVersion();
-//            String mappingsVersion = v.getMappingsVersion();
-//
-//            mappingsFile = Paths.get(extension.getMappingsProvider().mappingsDir, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
-//        }
-//
-//        if (mappingsFile == null || !mappingsFile.exists()) {
-//            throw new RuntimeException("Could not find mappings file: " + (mappingsFile != null ? mappingsFile : "null"));
-//        }
-//
-//        if (!properties.containsKey("inputDir") || !properties.containsKey("outputDir")) {
-//            throw new RuntimeException("Must specify input and output dir!");
-//        }
-//
-//        File inputDir = new File((String) properties.get("inputDir"));
-//        File outputDir = new File((String) properties.get("outputDir"));
-//
-//        if (!inputDir.exists() || !inputDir.isDirectory()) {
-//            throw new RuntimeException("Could not find input directory: " + inputDir);
-//        }
-//
-//        if (!outputDir.exists()) {
-//            if (!outputDir.mkdirs()) {
-//                throw new RuntimeException("Could not create output directory:" + outputDir);
-//            }
-//        }
-//
-//        TinyTree sourceMappings = extension.getMappingsProvider().getMappings();
-//        Mappings targetMappings;
-//
-//        try (BufferedReader reader = new BufferedReader(mappingsFile)) {
-//            targetMappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
-//        }
-//
-//        project.getLogger().lifecycle(":joining mappings");
-//        MappingSet mappingSet = new MappingsJoiner(sourceMappings, targetMappings,
-//                "intermediary", "named").read();
-//
-//        project.getLogger().lifecycle(":remapping");
-//        Mercury mercury = new Mercury();
-//
-//        for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
-//            mercury.getClassPath().add(file.toPath());
-//        }
-//
-//        for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
-//            mercury.getClassPath().add(file.toPath());
-//        }
-//
-//        mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
-//        mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
-//
-//        mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
-//
-//        try {
-//            mercury.rewrite(inputDir.toPath(), outputDir.toPath());
-//        } catch (Exception e) {
-//            project.getLogger().warn("Could not remap fully!", e);
-//        }
-//
-//        project.getLogger().lifecycle(":cleaning file descriptors");
-//        System.gc();
+        String inputDir = (String) properties.get("inputDir");
+        if (inputDir == null) inputDir = "src/main/java";
+        String outputDir = (String) properties.get("outputDir");
+        if (outputDir == null) outputDir = "remappedSrc";
+        String targetMappingsVersion = (String) properties.get("targetMappings");
+        if (targetMappingsVersion == null) {
+            throw new IllegalArgumentException("You must specify a new mappings version with -PtargetMappings.");
+        }
+
+        Path inputDirPath = Paths.get(inputDir);
+        Path outputDirPath = Paths.get(outputDir);
+
+        if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
+            throw new IllegalArgumentException("Could not find input directory: " + inputDir);
+        }
+
+        if (!Files.exists(outputDirPath)) Files.createDirectory(outputDirPath);
+
+
+        MappingsProvider mappingsProvider = extension.getMappingsProvider();
+        try {
+            TinyTree currentMappings = mappingsProvider.getMappings();
+            TinyTree targetMappings = mappingsProvider.getMappingsOfVersion(project, targetMappingsVersion);
+            migrateMappings(project, extension.getMinecraftMappedProvider(), inputDirPath, outputDirPath, currentMappings, targetMappings);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not find mappings for version " + targetMappingsVersion, e);
+        }
+
+    }
+
+    private static void migrateMappings(Project project, MinecraftMappedProvider minecraftMappedProvider,
+                                        Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings) throws IOException {
+
+        project.getLogger().lifecycle(":joining mappings");
+        MappingSet mappingSet = new MappingsJoiner(currentMappings, targetMappings,
+                "intermediary", "named").read();
+
+        project.getLogger().lifecycle(":remapping");
+        Mercury mercury = SourceRemapper.createMercuryWithClassPath(project, false);
+
+        mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_MAPPED_JAR.toPath());
+        mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath());
+
+        mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+
+        try {
+            mercury.rewrite(inputDir, outputDir);
+        } catch (Exception e) {
+            project.getLogger().warn("Could not remap fully!", e);
+        }
+
+        project.getLogger().lifecycle(":cleaning file descriptors");
+        System.gc();
     }
 
 
@@ -134,6 +121,14 @@ public class MigrateMappingsTask extends AbstractLoomTask {
         private final TinyTree sourceMappings, targetMappings;
         private final String fromNamespace, toNamespace;
 
+        /**
+         * Say A is the source mappings and B is the target mappings.
+         * It does not map from intermediary to named but rather maps from named-A to named-B, by matching intermediary names.
+         * It goes through all of the intermediary names of A, and for every such intermediary name, call it I,
+         * matches the named mapping of I in A, with the named mapping of I in B.
+         * <p>
+         * As you might imagine, this requires intermediary mappings to be static across all versions, which they are. :volderthonk:
+         */
         public MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
             this.sourceMappings = sourceMappings;
             this.targetMappings = targetMappings;
@@ -143,13 +138,13 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
         private <T extends Descriptored> void mapDescriptored(Collection<T> fromDescriptored,
                                                               Map<Pair<String, String>, T> targetDescriptored,
-                                                              BiFunction<String,String,Mapping> mapper) {
+                                                              BiFunction<String, String, Mapping> mapper) {
             for (T fromEntry : fromDescriptored) {
                 String fromName = fromEntry.getName(toNamespace);
                 String fromDescriptor = fromEntry.getDescriptor(toNamespace);
                 String toName = targetDescriptored.getOrDefault(Pair.of(fromName, fromDescriptor), fromEntry).getName(toNamespace);
 
-                mapper.apply(fromName,fromDescriptor).setDeobfuscatedName(toName);
+                mapper.apply(fromName, fromDescriptor).setDeobfuscatedName(toName);
             }
         }
 
@@ -171,14 +166,18 @@ public class MigrateMappingsTask extends AbstractLoomTask {
                 }
             }
 
-            for (ClassDef classEntry : sourceMappings.getClasses()) {
-                String from = classEntry.getName(toNamespace);
-                String to = targetClasses.getOrDefault(classEntry.getName(fromNamespace), classEntry).getName(toNamespace);
+            for (ClassDef sourceClass : sourceMappings.getClasses()) {
+                String namedMappingOfSourceMapping = sourceClass.getName(toNamespace);
+                String namedMappingOfTargetMapping = targetClasses.getOrDefault(sourceClass.getName(fromNamespace), sourceClass).getName(toNamespace);
 
-                ClassMapping classMapping = mappings.getOrCreateClassMapping(from).setDeobfuscatedName(to);
+                ClassMapping classMapping = mappings.getOrCreateClassMapping(namedMappingOfSourceMapping).setDeobfuscatedName(namedMappingOfTargetMapping);
 
-                mapDescriptored(classEntry.getFields(), targetFields,classMapping::getOrCreateFieldMapping);
-                mapDescriptored(classEntry.getMethods(), targetMethods,classMapping::getOrCreateMethodMapping);
+                if (namedMappingOfSourceMapping.equals("net/minecraft/text/LiteralText") || namedMappingOfSourceMapping.equals("net/minecraft/network/chat/TextComponent")) {
+                    int x = 2;
+                }
+
+                mapDescriptored(sourceClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
+                mapDescriptored(sourceClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
 
             }
             return mappings;

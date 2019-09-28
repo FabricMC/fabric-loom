@@ -30,7 +30,6 @@ import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.mappings.*;
 import net.fabricmc.stitch.util.StitchUtil;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
@@ -67,16 +66,7 @@ public class SourceRemapper {
 		project.getLogger().lifecycle(":remapping source jar");
 
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
-			Mercury m = new Mercury();
-
-			for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
-				m.getClassPath().add(file.toPath());
-			}
-			if (!toNamed) {
-				for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
-					m.getClassPath().add(file.toPath());
-				}
-			}
+			Mercury m = createMercuryWithClassPath(project, toNamed);
 			for (Path file : extension.getUnmappedMods()) {
 				if (Files.isRegularFile(file)) {
 					m.getClassPath().add(file);
@@ -140,7 +130,21 @@ public class SourceRemapper {
 
 	}
 
-    private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
+	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
+		Mercury m = new Mercury();
+
+		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
+			m.getClassPath().add(file.toPath());
+		}
+		if (!toNamed) {
+			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
+				m.getClassPath().add(file.toPath());
+			}
+		}
+		return m;
+	}
+
+	private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
         Files.walk(from).forEach(path -> {
             Path targetPath = to.resolve(from.relativize(path).toString());
             if (!isJavaFile(path) && !Files.exists(targetPath)) {

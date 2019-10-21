@@ -93,7 +93,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
             spec.setArgs(args);
             spec.setErrorOutput(System.err);
             spec.setStandardOutput(new ConsumingOutputStream(line -> {
-                if (line.startsWith("Listening for transport")) {
+                if (line.startsWith("Listening for transport") || !line.contains("::")) {
                     System.out.println(line);
                     return;
                 }

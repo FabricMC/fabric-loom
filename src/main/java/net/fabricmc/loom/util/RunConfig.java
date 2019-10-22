@@ -90,7 +90,7 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.projectName = project.getName();
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		runConfig.vmArgs = "-Dfabric.development=true -Djava.library.path=" + extension.getNativesDirectory().getAbsolutePath();
+		runConfig.vmArgs = "-Dfabric.development=true -Djava.library.path=\"" + extension.getNativesDirectory().getAbsolutePath()  + "\"";
 
 		switch (extension.getLoaderLaunchMethod()) {
 			case "launchwrapper":

@@ -78,7 +78,7 @@ public class ModCompileRemapper {
 			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsPrefix + ")";
 			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version + classifierSuffix;
 			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version + classifierSuffix.replace(':', '-');
-			project.getLogger().lifecycle(":providing " + remappedLog);
+			project.getLogger().info(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();
 
@@ -109,7 +109,7 @@ public class ModCompileRemapper {
 	}
 
 	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
-		project.getLogger().lifecycle(":providing " + notation);
+		project.getLogger().info(":providing " + notation);
 		DependencyHandler dependencies = project.getDependencies();
 		Dependency dep = dependencies.module(notation);
 		if (dep instanceof ModuleDependency) {
@@ -158,7 +158,7 @@ public class ModCompileRemapper {
 
 	private static void scheduleSourcesRemapping(Project project, Consumer<Runnable> postPopulationScheduler, File sources, String remappedLog, String remappedFilename, File modStore) {
 		postPopulationScheduler.accept(() -> {
-			project.getLogger().lifecycle(":providing " + remappedLog + " sources");
+			project.getLogger().info(":providing " + remappedLog + " sources");
 			File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
 
 			if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {

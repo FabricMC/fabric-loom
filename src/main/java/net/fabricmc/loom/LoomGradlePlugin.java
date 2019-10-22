@@ -56,9 +56,15 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		super.apply(target);
 
 		TaskContainer tasks = target.getTasks();
-		
+
+
 		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
+
+		tasks.register("cleanLoom").configure(task -> {
+			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
+			task.dependsOn(tasks.getByName("cleanLoomMappings"));
+		});
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.getOutputs().upToDateWhen((o) -> false);

@@ -100,6 +100,10 @@ public class MinecraftVersionInfo {
 			}
 		}
 
+		public boolean isNative(){
+			return getClassifier().contains("natives");
+		}
+
 		public boolean allowed() {
 			if (this.rules == null || this.rules.length <= 0) {
 				return true;

@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
+import net.fabricmc.loom.providers.MinecraftNativesProvider;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
@@ -59,6 +60,7 @@ public class SetupIntelijRunConfigs {
 		if(Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))){
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 		}
 
 		File projectDir = project.file(".idea");

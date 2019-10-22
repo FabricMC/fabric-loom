@@ -145,6 +145,22 @@ public class LoomGradleExtension {
 		return nestedModCache;
 	}
 
+	public File getNativesJarStore(){
+		File natives = new File(getUserCache(), "natives/jars");
+		if(!natives.exists()) {
+			natives.mkdirs();
+		}
+		return natives;
+	}
+
+	public File getNativesDirectory(){
+		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().minecraftVersion);
+		if(!natives.exists()) {
+			natives.mkdirs();
+		}
+		return natives;
+	}
+
 	@Nullable
 	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
 		for (Configuration config : configs) {

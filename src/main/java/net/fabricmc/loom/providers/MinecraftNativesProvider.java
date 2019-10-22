@@ -22,28 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.providers;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import org.apache.commons.io.FileUtils;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+import org.zeroturnaround.zip.ZipUtil;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
-public class CleanLoomBinaries extends AbstractLoomTask {
-    @TaskAction
-    public void run() {
-        Project project = this.getProject();
-        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        extension.getMinecraftProvider().getMergedJar().delete();
-        extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
-        extension.getMinecraftMappedProvider().getMappedJar().delete();
-	    try {
-		    FileUtils.deleteDirectory(extension.getNativesDirectory());
-		    FileUtils.deleteDirectory(extension.getNativesJarStore());
-	    } catch (IOException e) {
-		    e.printStackTrace();
-	    }
-    }
+public class MinecraftNativesProvider {
+
+	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
+
+		File nativesDir = extension.getNativesDirectory();
+		File jarStore = extension.getNativesJarStore();
+
+		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
+			File libJarFile = library.getFile(jarStore);
+			if (library.allowed() && library.isNative() && libJarFile != null) {
+				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
+
+				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
+				ZipUtil.unpack(libJarFile, nativesDir);
+			}
+		}
+	}
+
 }

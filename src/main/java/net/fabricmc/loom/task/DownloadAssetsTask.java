@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
+import net.fabricmc.loom.providers.MinecraftNativesProvider;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
@@ -38,5 +39,6 @@ public class DownloadAssetsTask extends AbstractLoomTask {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 	}
 }

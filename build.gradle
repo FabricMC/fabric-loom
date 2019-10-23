@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.6-996'
+version = '0.2.6-9971'
 
 def build = "local"
 def ENV = System.getenv()
@@ -40,7 +40,7 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.2.5') {
+	implementation ('net.fabricmc:stitch:0.3.0') {
 		exclude module: 'enigma'
 	}
 

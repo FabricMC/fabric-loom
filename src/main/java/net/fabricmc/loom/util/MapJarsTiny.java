@@ -72,7 +72,7 @@ public class MapJarsTiny {
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to remap JAR", e);
+				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
 			} finally {
 				remapper.finish();
 			}

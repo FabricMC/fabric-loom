@@ -38,27 +38,20 @@ import net.fabricmc.stitch.commands.CommandReorderTiny;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandProposeV2FieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import javax.annotation.Nullable;
 
 
 public class MappingsProvider extends DependencyProvider {
@@ -100,7 +93,7 @@ public class MappingsProvider extends DependencyProvider {
 			project.getLogger().lifecycle(":downloading new mappings from " + artifactUrl);
 			FileUtils.copyURLToFile(new URL(artifactUrl), mappingsJar);
 			try (FileSystem jar = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
-				if(!Files.exists(migrateMappingsDir)) Files.createDirectory(migrateMappingsDir);
+				if (!Files.exists(migrateMappingsDir)) Files.createDirectory(migrateMappingsDir);
 				extractMappings(jar, localMappingsOfVersion);
 				try (BufferedReader reader = Files.newBufferedReader(localMappingsOfVersion)) {
 					return TinyMappingFactory.loadWithDetection(reader);
@@ -238,11 +231,17 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private void mergeMappings(Path intermediaryMappings, Path yarnMappings, Path newMergedMappings) {
-		Command command = isV2 ? new CommandMergeTinyV2() : new CommandMergeTiny();
-		runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
-				yarnMappings.toAbsolutePath().toString(),
-				newMergedMappings.toAbsolutePath().toString(),
-				"intermediary", "official");
+		try {
+			Command command = isV2 ? new CommandMergeTinyV2() : new CommandMergeTiny();
+			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
+					yarnMappings.toAbsolutePath().toString(),
+					newMergedMappings.toAbsolutePath().toString(),
+					"intermediary", "official");
+		} catch (Exception e) {
+			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString() +
+					" with mappings from " + yarnMappings, e);
+		}
+
 	}
 
 	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {

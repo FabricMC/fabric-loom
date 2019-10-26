@@ -161,7 +161,7 @@ public class ProgressLogger {
 	 * Returns the logging header for the operation. This is logged before any other log messages for this operation are logged. It is usually
 	 * also logged at the end of the operation, along with the final status message. Defaults to null.
 	 *
-	 * <p>f not specified, no logging header is logged.
+	 * <p>If not specified, no logging header is logged.
 	 *
 	 * @return The logging header, possibly empty.
 	 */

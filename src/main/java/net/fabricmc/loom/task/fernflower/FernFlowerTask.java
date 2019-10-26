@@ -40,6 +40,7 @@ import org.gradle.process.ExecResult;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
 import java.io.File;
+import net.fabricmc.loom.util.OperatingSystem;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -55,6 +56,10 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 
     @TaskAction
     public void doTask() throws Throwable {
+    	if(!OperatingSystem.is64Bit()){
+    		throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
+	    }
+
         Map<String, Object> options = new HashMap<>();
         options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
         options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");

@@ -75,8 +75,10 @@ public class RemapJarTask extends Jar {
 		String fromM = "named";
 		String toM = "intermediary";
 
-		Set<File> classpathFiles = new LinkedHashSet<>(project.getConfigurations().getByName("compileClasspath").getFiles());
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p)).toArray(Path[]::new);
+		Set<File> classpathFiles = new LinkedHashSet<>(
+				project.getConfigurations().getByName("compileClasspath").getFiles()
+		);
+		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
 		File mixinMapFile = mappingsProvider.MAPPINGS_MIXIN_EXPORT;
 		Path mixinMapPath = mixinMapFile.toPath();

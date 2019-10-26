@@ -217,7 +217,10 @@ public class LoomGradleExtension {
 		return recurseProjects((p) -> {
 			List<Configuration> configs = new ArrayList<>();
 			// check compile classpath first
-			configs.add(p.getConfigurations().getByName("compileClasspath"));
+			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
+			if (possibleCompileClasspath != null) {
+				configs.add(possibleCompileClasspath);
+			}
 			// failing that, buildscript
 			configs.addAll(p.getBuildscript().getConfigurations());
 

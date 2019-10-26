@@ -218,6 +218,7 @@ public class LoomGradleExtension {
 			List<Configuration> configs = new ArrayList<>();
 			// check compile classpath first
 			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
+
 			if (possibleCompileClasspath != null) {
 				configs.add(possibleCompileClasspath);
 			}

@@ -24,28 +24,31 @@
 
 package net.fabricmc.loom;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
+
 import com.google.gson.JsonObject;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
+
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
-import org.gradle.api.Project;
-import org.gradle.api.UnknownDomainObjectException;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.component.ComponentIdentifier;
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
-
-import javax.annotation.Nullable;
-import java.io.File;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -87,77 +90,93 @@ public class LoomGradleExtension {
 	}
 
 	public void setInstallerJson(JsonObject object, int priority) {
-	    if (installerJson == null || priority <= installerJsonPriority) {
-            this.installerJson = object;
-            this.installerJsonPriority = priority;
-        }
-    }
+		if (installerJson == null || priority <= installerJsonPriority) {
+			this.installerJson = object;
+			this.installerJsonPriority = priority;
+		}
+	}
 
-    public JsonObject getInstallerJson() {
-	    return installerJson;
-    }
+	public JsonObject getInstallerJson() {
+		return installerJson;
+	}
 
 	public File getUserCache() {
 		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
+
 		if (!userCache.exists()) {
 			userCache.mkdirs();
 		}
+
 		return userCache;
 	}
 
 	public File getRootProjectPersistentCache() {
 		File projectCache = new File(project.getRootProject().file(".gradle"), "loom-cache");
-		if(!projectCache.exists()){
+
+		if (!projectCache.exists()) {
 			projectCache.mkdirs();
 		}
+
 		return projectCache;
 	}
 
 	public File getRootProjectBuildCache() {
 		File projectCache = new File(project.getRootProject().getBuildDir(), "loom-cache");
-		if(!projectCache.exists()){
+
+		if (!projectCache.exists()) {
 			projectCache.mkdirs();
 		}
+
 		return projectCache;
 	}
 
 	public File getProjectBuildCache() {
 		File projectCache = new File(project.getBuildDir(), "loom-cache");
-		if(!projectCache.exists()){
+
+		if (!projectCache.exists()) {
 			projectCache.mkdirs();
 		}
+
 		return projectCache;
 	}
 
 	public File getRemappedModCache() {
 		File remappedModCache = new File(getRootProjectPersistentCache(), "remapped_mods");
+
 		if (!remappedModCache.exists()) {
 			remappedModCache.mkdir();
 		}
+
 		return remappedModCache;
 	}
 
 	public File getNestedModCache() {
 		File nestedModCache = new File(getRootProjectPersistentCache(), "nested_mods");
+
 		if (!nestedModCache.exists()) {
 			nestedModCache.mkdir();
 		}
+
 		return nestedModCache;
 	}
 
-	public File getNativesJarStore(){
+	public File getNativesJarStore() {
 		File natives = new File(getUserCache(), "natives/jars");
-		if(!natives.exists()) {
+
+		if (!natives.exists()) {
 			natives.mkdirs();
 		}
+
 		return natives;
 	}
 
-	public File getNativesDirectory(){
+	public File getNativesDirectory() {
 		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().minecraftVersion);
-		if(!natives.exists()) {
+
+		if (!natives.exists()) {
 			natives.mkdirs();
 		}
+
 		return natives;
 	}
 
@@ -167,6 +186,7 @@ public class LoomGradleExtension {
 			for (Dependency dependency : config.getDependencies()) {
 				String group = dependency.getGroup();
 				String name = dependency.getName();
+
 				if (groupNameFilter.test(group, name)) {
 					p.getLogger().debug("Loom findDependency found: " + group + ":" + name + ":" + dependency.getVersion());
 					return dependency;
@@ -181,6 +201,7 @@ public class LoomGradleExtension {
 	private <T> T recurseProjects(Function<Project, T> projectTFunction) {
 		Project p = this.project;
 		T result;
+
 		while (!AbstractPlugin.isRootProject(p)) {
 			if ((result = projectTFunction.apply(p)) != null) {
 				return result;
@@ -239,15 +260,15 @@ public class LoomGradleExtension {
 		return dependencyManager;
 	}
 
-	public MinecraftProvider getMinecraftProvider(){
+	public MinecraftProvider getMinecraftProvider() {
 		return getDependencyManager().getProvider(MinecraftProvider.class);
 	}
 
-	public MinecraftMappedProvider getMinecraftMappedProvider(){
+	public MinecraftMappedProvider getMinecraftMappedProvider() {
 		return getMappingsProvider().mappedProvider;
 	}
 
-	public MappingsProvider getMappingsProvider(){
+	public MappingsProvider getMappingsProvider() {
 		return getDependencyManager().getProvider(MappingsProvider.class);
 	}
 
@@ -256,7 +277,7 @@ public class LoomGradleExtension {
 	}
 
 	public String getRefmapName() {
-		if(refmapName == null || refmapName.isEmpty()){
+		if (refmapName == null || refmapName.isEmpty()) {
 			project.getLogger().warn("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
 			refmapName = project.getName() + "-refmap.json";
 		}

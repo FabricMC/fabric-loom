@@ -5,6 +5,7 @@ plugins {
 	id 'idea'
 	id 'eclipse'
 	id 'groovy'
+	id 'checkstyle'
 }
 
 sourceCompatibility = 1.8
@@ -80,6 +81,11 @@ apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.g
 
 license {
 	exclude '**/loom/util/DownloadUtil.java'
+}
+
+checkstyle {
+	configFile = file("checkstyle.xml")
+	toolVersion = '8.25'
 }
 
 gradlePlugin {

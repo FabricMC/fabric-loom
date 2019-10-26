@@ -24,33 +24,38 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.RunConfig;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskAction;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.FileUtils;
+
+import org.gradle.api.tasks.TaskAction;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.RunConfig;
+
 public class GenEclipseRunsTask extends AbstractLoomTask {
+	@TaskAction
+	public void genRuns() throws IOException {
+		File clientRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_client.launch");
+		File serverRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_server.launch");
 
-    @TaskAction
-    public void genRuns() throws IOException {
-	    File clientRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_client.launch");
-	    File serverRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_server.launch");
+		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
+		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 
-	    String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
-	    String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
+		if (!clientRunConfigs.exists()) {
+			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
+		}
 
-	    if(!clientRunConfigs.exists())
-		    FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-	    if(!serverRunConfigs.exists())
-		    FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+		if (!serverRunConfigs.exists()) {
+			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+		}
 
-	    File runDir = new File(getProject().getRootDir(), this.getProject().getExtensions().getByType(LoomGradleExtension.class).runDir);
-	    if(!runDir.exists())
-		    runDir.mkdirs();
-    }
+		File runDir = new File(getProject().getRootDir(), this.getProject().getExtensions().getByType(LoomGradleExtension.class).runDir);
 
+		if (!runDir.exists()) {
+			runDir.mkdirs();
+		}
+	}
 }

@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import net.fabricmc.fernflower.api.IFabricResultSaver;
-import org.jetbrains.java.decompiler.main.DecompilerContext;
-import org.jetbrains.java.decompiler.main.extern.IResultSaver;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,108 +42,133 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.jetbrains.java.decompiler.main.DecompilerContext;
+import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+
+import net.fabricmc.fernflower.api.IFabricResultSaver;
+
 /**
  * Created by covers1624 on 18/02/19.
  */
 public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
-    private final Supplier<File> output;
-    private final Supplier<File> lineMapFile;
+	private final Supplier<File> output;
+	private final Supplier<File> lineMapFile;
 
-    public Map<String, ZipOutputStream> outputStreams = new HashMap<>();
-    public Map<String, ExecutorService> saveExecutors = new HashMap<>();
-    public PrintWriter lineMapWriter;
+	public Map<String, ZipOutputStream> outputStreams = new HashMap<>();
+	public Map<String, ExecutorService> saveExecutors = new HashMap<>();
+	public PrintWriter lineMapWriter;
 
-    public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile) {
-        this.output = output;
-        this.lineMapFile = lineMapFile;
-    }
+	public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile) {
+		this.output = output;
+		this.lineMapFile = lineMapFile;
+	}
 
-    @Override
-    public void createArchive(String path, String archiveName, Manifest manifest) {
-        String key = path + "/" + archiveName;
-        File file = output.get();
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            ZipOutputStream zos = manifest == null ? new ZipOutputStream(fos) : new JarOutputStream(fos, manifest);
-            outputStreams.put(key, zos);
-            saveExecutors.put(key, Executors.newSingleThreadExecutor());
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to create archive: " + file, e);
-        }
-        if (lineMapFile.get() != null) {
-            try {
-                lineMapWriter = new PrintWriter(new FileWriter(lineMapFile.get()));
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to create line mapping file: " + lineMapFile.get(), e);
-            }
-        }
-    }
+	@Override
+	public void createArchive(String path, String archiveName, Manifest manifest) {
+		String key = path + "/" + archiveName;
+		File file = output.get();
+		try {
+			FileOutputStream fos = new FileOutputStream(file);
+			ZipOutputStream zos = manifest == null ? new ZipOutputStream(fos) : new JarOutputStream(fos, manifest);
+			outputStreams.put(key, zos);
+			saveExecutors.put(key, Executors.newSingleThreadExecutor());
+		} catch (IOException e) {
+			throw new RuntimeException("Unable to create archive: " + file, e);
+		}
 
-    @Override
-    public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content) {
-        this.saveClassEntry(path, archiveName, qualifiedName, entryName, content, null);
-    }
+		if (lineMapFile.get() != null) {
+			try {
+				lineMapWriter = new PrintWriter(new FileWriter(lineMapFile.get()));
+			} catch (IOException e) {
+				throw new RuntimeException("Unable to create line mapping file: " + lineMapFile.get(), e);
+			}
+		}
+	}
 
-    @Override
-    public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content, int[] mapping) {
-        String key = path + "/" + archiveName;
-        ExecutorService executor = saveExecutors.get(key);
-        executor.submit(() -> {
-            ZipOutputStream zos = outputStreams.get(key);
-            try {
-                zos.putNextEntry(new ZipEntry(entryName));
-                if (content != null) {
-                    zos.write(content.getBytes(StandardCharsets.UTF_8));
-                }
-            } catch (IOException e) {
-                DecompilerContext.getLogger().writeMessage("Cannot write entry " + entryName, e);
-            }
-            if (mapping != null && lineMapWriter != null) {
-                int maxLine = 0;
-                int maxLineDest = 0;
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < mapping.length; i += 2) {
-                    maxLine = Math.max(maxLine, mapping[i]);
-                    maxLineDest = Math.max(maxLineDest, mapping[i + 1]);
-                    builder.append("\t").append(mapping[i]).append("\t").append(mapping[i + 1]).append("\n");
-                }
-                lineMapWriter.println(qualifiedName + "\t" + maxLine + "\t" + maxLineDest);
-                lineMapWriter.println(builder.toString());
-            }
-        });
-    }
+	@Override
+	public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content) {
+		this.saveClassEntry(path, archiveName, qualifiedName, entryName, content, null);
+	}
 
-    @Override
-    public void closeArchive(String path, String archiveName) {
-        String key = path + "/" + archiveName;
-        ExecutorService executor = saveExecutors.get(key);
-        Future<?> closeFuture = executor.submit(() -> {
-            ZipOutputStream zos = outputStreams.get(key);
-            try {
-                zos.close();
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to close zip. " + key, e);
-            }
-        });
-        executor.shutdown();
-        try {
-            closeFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-        outputStreams.remove(key);
-        saveExecutors.remove(key);
-        if (lineMapWriter != null) {
-            lineMapWriter.flush();
-            lineMapWriter.close();
-        }
-    }
+	@Override
+	public void saveClassEntry(String path, String archiveName, String qualifiedName, String entryName, String content, int[] mapping) {
+		String key = path + "/" + archiveName;
+		ExecutorService executor = saveExecutors.get(key);
+		executor.submit(() -> {
+			ZipOutputStream zos = outputStreams.get(key);
+			try {
+				zos.putNextEntry(new ZipEntry(entryName));
 
-    //@formatter:off
-    @Override public void saveFolder(String path) { }
-    @Override public void copyFile(String source, String path, String entryName) { }
-    @Override public void saveClassFile(String path, String qualifiedName, String entryName, String content, int[] mapping) { }
-    @Override public void saveDirEntry(String path, String archiveName, String entryName) { }
-    @Override public void copyEntry(String source, String path, String archiveName, String entry) { }
-    //@formatter:on
+				if (content != null) {
+					zos.write(content.getBytes(StandardCharsets.UTF_8));
+				}
+			} catch (IOException e) {
+				DecompilerContext.getLogger().writeMessage("Cannot write entry " + entryName, e);
+			}
+
+			if (mapping != null && lineMapWriter != null) {
+				int maxLine = 0;
+				int maxLineDest = 0;
+				StringBuilder builder = new StringBuilder();
+
+				for (int i = 0; i < mapping.length; i += 2) {
+					maxLine = Math.max(maxLine, mapping[i]);
+					maxLineDest = Math.max(maxLineDest, mapping[i + 1]);
+					builder.append("\t").append(mapping[i]).append("\t").append(mapping[i + 1]).append("\n");
+				}
+
+				lineMapWriter.println(qualifiedName + "\t" + maxLine + "\t" + maxLineDest);
+				lineMapWriter.println(builder.toString());
+			}
+		});
+	}
+
+	@Override
+	public void closeArchive(String path, String archiveName) {
+		String key = path + "/" + archiveName;
+		ExecutorService executor = saveExecutors.get(key);
+		Future<?> closeFuture = executor.submit(() -> {
+			ZipOutputStream zos = outputStreams.get(key);
+			try {
+				zos.close();
+			} catch (IOException e) {
+				throw new RuntimeException("Unable to close zip. " + key, e);
+			}
+		});
+		executor.shutdown();
+		try {
+			closeFuture.get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
+		outputStreams.remove(key);
+		saveExecutors.remove(key);
+
+		if (lineMapWriter != null) {
+			lineMapWriter.flush();
+			lineMapWriter.close();
+		}
+	}
+
+	//@formatter:off
+	@Override
+	public void saveFolder(String path) {
+	}
+
+	@Override
+	public void copyFile(String source, String path, String entryName) {
+	}
+
+	@Override
+	public void saveClassFile(String path, String qualifiedName, String entryName, String content, int[] mapping) {
+	}
+
+	@Override
+	public void saveDirEntry(String path, String archiveName, String entryName) {
+	}
+
+	@Override
+	public void copyEntry(String source, String path, String archiveName, String entry) {
+	}
+	//@formatter:on
 }

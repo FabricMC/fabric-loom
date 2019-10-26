@@ -24,31 +24,27 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.common.collect.ImmutableMap;
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.mappings.*;
-import net.fabricmc.stitch.util.Pair;
-import net.fabricmc.stitch.util.StitchUtil;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
-import org.cadixdev.lorenz.io.TextMappingsReader;
-import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
-import org.gradle.api.Project;
-import org.gradle.internal.impldep.aQute.bnd.build.Run;
-import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 
-import java.io.*;
-import java.net.URI;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.mappings.ClassEntry;
+import net.fabricmc.mappings.EntryTriple;
+import net.fabricmc.mappings.FieldEntry;
+import net.fabricmc.mappings.Mappings;
+import net.fabricmc.mappings.MethodEntry;
+import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
 	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
@@ -79,11 +75,13 @@ public class SourceRemapper {
 			for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
 				m.getClassPath().add(file.toPath());
 			}
+
 			if (!toNamed) {
 				for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
 					m.getClassPath().add(file.toPath());
 				}
 			}
+
 			for (Path file : extension.getUnmappedMods()) {
 				if (Files.isRegularFile(file)) {
 					m.getClassPath().add(file);
@@ -113,6 +111,7 @@ public class SourceRemapper {
 
 		Path srcPath = source.toPath();
 		boolean isSrcTmp = false;
+
 		if (!source.isDirectory()) {
 			// create tmp directory
 			isSrcTmp = true;
@@ -144,27 +143,27 @@ public class SourceRemapper {
 		if (isSrcTmp) {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
-
 	}
 
-    private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
-        Files.walk(from).forEach(path -> {
-            Path targetPath = to.resolve(from.relativize(path).toString());
-            if (!isJavaFile(path) && !Files.exists(targetPath)) {
-                try {
-                    Files.copy(path, targetPath);
-                } catch (IOException e) {
-                    project.getLogger().warn("Could not copy non-java sources '" + source.getName() + "' fully!", e);
-                }
-            }
-        });
-    }
+	private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
+		Files.walk(from).forEach(path -> {
+			Path targetPath = to.resolve(from.relativize(path).toString());
 
-    private static boolean isJavaFile(Path path) {
-        String name = path.getFileName().toString();
-        // ".java" is not a valid java file
-        return name.endsWith(".java") && name.length() != 5;
-    }
+			if (!isJavaFile(path) && !Files.exists(targetPath)) {
+				try {
+					Files.copy(path, targetPath);
+				} catch (IOException e) {
+					project.getLogger().warn("Could not copy non-java sources '" + source.getName() + "' fully!", e);
+				}
+			}
+		});
+	}
+
+	private static boolean isJavaFile(Path path) {
+		String name = path.getFileName().toString();
+		// ".java" is not a valid java file
+		return name.endsWith(".java") && name.length() != 5;
+	}
 
 	public static class TinyReader extends MappingsReader {
 		private final Mappings m;
@@ -179,35 +178,27 @@ public class SourceRemapper {
 		@Override
 		public MappingSet read(final MappingSet mappings) {
 			for (ClassEntry entry : m.getClassEntries()) {
-				mappings.getOrCreateClassMapping(entry.get(from))
-						.setDeobfuscatedName(entry.get(to));
+				mappings.getOrCreateClassMapping(entry.get(from)).setDeobfuscatedName(entry.get(to));
 			}
 
 			for (FieldEntry entry : m.getFieldEntries()) {
 				EntryTriple fromEntry = entry.get(from);
 				EntryTriple toEntry = entry.get(to);
 
-				mappings.getOrCreateClassMapping(fromEntry.getOwner())
-						.getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc())
-						.setDeobfuscatedName(toEntry.getName());
+				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
 			}
 
 			for (MethodEntry entry : m.getMethodEntries()) {
 				EntryTriple fromEntry = entry.get(from);
 				EntryTriple toEntry = entry.get(to);
 
-				mappings.getOrCreateClassMapping(fromEntry.getOwner())
-						.getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc())
-						.setDeobfuscatedName(toEntry.getName());
+				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
 			}
 
 			return mappings;
 		}
 
 		@Override
-		public void close() throws IOException {
-
-		}
+		public void close() throws IOException { }
 	}
-
 }

@@ -24,18 +24,19 @@
 
 package net.fabricmc.loom.providers;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
-import org.gradle.api.Project;
-import org.zeroturnaround.zip.ZipUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-public class MinecraftNativesProvider {
+import org.zeroturnaround.zip.ZipUtil;
 
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
+
+public class MinecraftNativesProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
@@ -45,6 +46,7 @@ public class MinecraftNativesProvider {
 
 		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
 			File libJarFile = library.getFile(jarStore);
+
 			if (library.allowed() && library.isNative() && libJarFile != null) {
 				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
 
@@ -53,5 +55,4 @@ public class MinecraftNativesProvider {
 			}
 		}
 	}
-
 }

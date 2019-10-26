@@ -24,23 +24,23 @@
 
 package net.fabricmc.loom.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 //This is used to bridge the gap over large gradle api changes.
 public class GradleSupport {
-
-	public static RegularFileProperty getfileProperty(Project project){
+	public static RegularFileProperty getfileProperty(Project project) {
 		try {
 			//First try the new method, if that fails fall back.
 			return getfilePropertyModern(project);
-		} catch (Exception e){
+		} catch (Exception e) {
 			//Nope
 		}
+
 		return getfilePropertyLegacy(project);
 	}
 
@@ -51,7 +51,7 @@ public class GradleSupport {
 		return (RegularFileProperty) method.invoke(objectFactory);
 	}
 
-	private static RegularFileProperty getfilePropertyLegacy(Project project){
+	private static RegularFileProperty getfilePropertyLegacy(Project project) {
 		return project.getLayout().fileProperty();
 	}
 }

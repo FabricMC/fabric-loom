@@ -24,51 +24,70 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.task.fernflower.FernFlowerTask;
-import net.fabricmc.loom.util.LineNumberRemapper;
-import net.fabricmc.loom.util.progress.ProgressLogger;
-import net.fabricmc.stitch.util.StitchUtil;
+import java.io.File;
+import java.io.IOException;
+
 import org.gradle.api.Project;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.io.IOException;
+import net.fabricmc.loom.task.fernflower.FernFlowerTask;
+import net.fabricmc.loom.util.LineNumberRemapper;
+import net.fabricmc.loom.util.progress.ProgressLogger;
+import net.fabricmc.stitch.util.StitchUtil;
 
 public class RemapLineNumbersTask extends AbstractLoomTask {
-    private Object input;
-    private Object output;
-    private Object lineMapFile;
+	private Object input;
+	private Object output;
+	private Object lineMapFile;
 
-    @TaskAction
-    public void doTask() throws Throwable {
-        Project project = getProject();
+	@TaskAction
+	public void doTask() throws Throwable {
+		Project project = getProject();
 
-        project.getLogger().lifecycle(":adjusting line numbers");
-        LineNumberRemapper remapper = new LineNumberRemapper();
-        remapper.readMappings(getLineMapFile());
+		project.getLogger().lifecycle(":adjusting line numbers");
+		LineNumberRemapper remapper = new LineNumberRemapper();
+		remapper.readMappings(getLineMapFile());
 
-        ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, FernFlowerTask.class.getName());
-        progressLogger.start("Adjusting line numbers", "linemap");
+		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, FernFlowerTask.class.getName());
+		progressLogger.start("Adjusting line numbers", "linemap");
 
-        try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(getInput(), true);
-             StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(getOutput(), true)) {
-            remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(getInput(), true); StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(getOutput(), true)) {
+			remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
-        progressLogger.completed();
-    }
+		progressLogger.completed();
+	}
 
-    //@formatter:off
-    @InputFile public File getInput() { return getProject().file(input); }
-    @InputFile public File getLineMapFile() { return getProject().file(lineMapFile); }
-    @OutputFile public File getOutput() { return getProject().file(output); }
-    public void setInput(Object input) { this.input = input; }
-    public void setLineMapFile(Object lineMapFile) { this.lineMapFile = lineMapFile; }
-    public void setOutput(Object output) { this.output = output; }
-    //@formatter:on
+	//@formatter:off
+	@InputFile
+	public File getInput() {
+		return getProject().file(input);
+	}
+
+	@InputFile
+	public File getLineMapFile() {
+		return getProject().file(lineMapFile);
+	}
+
+	@OutputFile
+	public File getOutput() {
+		return getProject().file(output);
+	}
+
+	public void setInput(Object input) {
+		this.input = input;
+	}
+
+	public void setLineMapFile(Object lineMapFile) {
+		this.lineMapFile = lineMapFile;
+	}
+
+	public void setOutput(Object output) {
+		this.output = output;
+	}
+	//@formatter:on
 }

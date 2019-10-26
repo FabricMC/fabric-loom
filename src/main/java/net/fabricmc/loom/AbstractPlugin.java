@@ -24,13 +24,17 @@
 
 package net.fabricmc.loom;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.util.*;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -54,13 +58,16 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.GroovyXmlUtil;
+import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.NestedJars;
+import net.fabricmc.loom.util.RemappedConfigurationEntry;
+import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -116,6 +123,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
 
 			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration());
+
 			if (entry.isOnModCompileClasspath()) {
 				extendsFrom(Constants.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
 				extendsFrom(Constants.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
@@ -137,12 +145,13 @@ public class AbstractPlugin implements Plugin<Project> {
 		configureScala();
 
 		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+
 		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 			Project project = entry.getKey();
 			Set<Task> taskSet = entry.getValue();
+
 			for (Task task : taskSet) {
-				if (task instanceof JavaCompile
-						&& !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
+				if (task instanceof JavaCompile && !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
@@ -166,30 +175,30 @@ public class AbstractPlugin implements Plugin<Project> {
 		return project;
 	}
 
-    protected void configureScala() {
-        project.afterEvaluate(proj -> {
-            if (project.getPluginManager().hasPlugin("scala")) {
-                ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
-                LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-                project.getLogger().warn(":configuring scala compilation processing");
-                try {
-                    task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
+	protected void configureScala() {
+		project.afterEvaluate(proj -> {
+			if (project.getPluginManager().hasPlugin("scala")) {
+				ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
+				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+				project.getLogger().warn(":configuring scala compilation processing");
+				try {
+					task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
 
 	/**
-	 * Permit to add a Maven repository to a target project
+	 * Permit to add a Maven repository to a target project.
 	 *
 	 * @param target The garget project
-	 * @param name   The name of the repository
-	 * @param url    The URL of the repository
+	 * @param name The name of the repository
+	 * @param url The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
@@ -200,7 +209,7 @@ public class AbstractPlugin implements Plugin<Project> {
 	}
 
 	/**
-	 * Add Minecraft dependencies to IDE dependencies
+	 * Add Minecraft dependencies to IDE dependencies.
 	 */
 	protected void configureIDEs() {
 		// IDEA
@@ -236,6 +245,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		if (dep instanceof ResolvedDependencyResult) {
 			if (dep.getFrom().getId() instanceof ModuleComponentIdentifier) {
 				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) dep.getFrom().getId());
+
 				if (predicate.test(mci)) {
 					addModule(project, configuration, dep);
 					found = true;
@@ -251,7 +261,7 @@ public class AbstractPlugin implements Plugin<Project> {
 	}
 
 	/**
-	 * Add Minecraft dependencies to compile time
+	 * Add Minecraft dependencies to compile time.
 	 */
 	protected void configureCompile() {
 		JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
@@ -264,12 +274,17 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		// Add Mixin dependencies
 		Project p = project;
+
 		while (true) {
 			boolean found = false;
+
 			for (DependencyResult dep : p.getBuildscript().getConfigurations().getByName("classpath").getIncoming().getResolutionResult().getRoot().getDependencies()) {
 				found = findAndAddModule(project, "annotationProcessor", dep, (mci) -> ("net.fabricmc".equals(mci.getGroup()) && "fabric-mixin-compile-extensions".equals(mci.getModule())));
 			}
-			if (found || AbstractPlugin.isRootProject(p)) break;
+
+			if (found || AbstractPlugin.isRootProject(p)) {
+				break;
+			}
 			p = p.getRootProject();
 		}
 
@@ -330,6 +345,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
 
 				assert remapJarTask != null;
+
 				if (!remapJarTask.getInput().isPresent()) {
 					jarTask.setClassifier("dev");
 					remapJarTask.setClassifier("");
@@ -344,8 +360,10 @@ public class AbstractPlugin implements Plugin<Project> {
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
 				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
+
 				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
 					Set<Task> taskSet = entry.getValue();
+
 					for (Task task : taskSet) {
 						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().getOrElse(false)) {
 							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
@@ -384,6 +402,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				// add modsCompile to maven-publish
 				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+
 				if (mavenPublish != null) {
 					mavenPublish.publications((publications) -> {
 						for (Publication publication : publications) {
@@ -393,15 +412,14 @@ public class AbstractPlugin implements Plugin<Project> {
 										Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
 										Set<String> foundArtifacts = new HashSet<>();
 
-										GroovyXmlUtil.childrenNodesStream(dependencies)
-												.filter((n) -> "dependency".equals(n.name()))
-												.forEach((n) -> {
-													Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
-													Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
-													if (groupId.isPresent() && artifactId.isPresent()) {
-														foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
-													}
-												});
+										GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
+											Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
+											Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
+
+											if (groupId.isPresent() && artifactId.isPresent()) {
+												foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
+											}
+										});
 
 										for (Dependency dependency : compileModsConfig.getAllDependencies()) {
 											if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {

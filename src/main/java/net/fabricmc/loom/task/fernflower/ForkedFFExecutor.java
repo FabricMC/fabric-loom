@@ -24,82 +24,88 @@
 
 package net.fabricmc.loom.task.fernflower;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Entry point for Forked FernFlower task.
  * Takes one parameter, a single file, each line is treated as command line input.
  * Forces one input file.
  * Forces one output file using '-o=/path/to/output'
- *
  * Created by covers1624 on 11/02/19.
  */
 public class ForkedFFExecutor {
+	public static void main(String[] args) throws IOException {
+		Map<String, Object> options = new HashMap<>();
+		File input = null;
+		File output = null;
+		File lineMap = null;
+		List<File> libraries = new ArrayList<>();
+		int numThreads = 0;
 
-    public static void main(String[] args) throws IOException {
-        Map<String, Object> options = new HashMap<>();
-        File input = null;
-        File output = null;
-        File lineMap = null;
-        List<File> libraries = new ArrayList<>();
-        int numThreads = 0;
+		boolean isOption = true;
 
-        boolean isOption = true;
-        for (String arg : args) {
-            if (isOption && arg.length() > 5 && arg.charAt(0) == '-' && arg.charAt(4) == '=') {
-                String value = arg.substring(5);
-                if ("true".equalsIgnoreCase(value)) {
-                    value = "1";
-                } else if ("false".equalsIgnoreCase(value)) {
-                    value = "0";
-                }
+		for (String arg : args) {
+			if (isOption && arg.length() > 5 && arg.charAt(0) == '-' && arg.charAt(4) == '=') {
+				String value = arg.substring(5);
 
-                options.put(arg.substring(1, 4), value);
-            } else {
-                isOption = false;
-                if (arg.startsWith("-e=")) {
-                    libraries.add(new File(arg.substring(3)));
-                } else if (arg.startsWith("-o=")) {
-                    if (output != null) {
-                        throw new RuntimeException("Unable to set more than one output.");
-                    }
-                    output = new File(arg.substring(3));
-                } else if (arg.startsWith("-l=")) {
-                    if (lineMap != null) {
-                        throw new RuntimeException("Unable to set more than one lineMap file.");
-                    }
-                    lineMap = new File(arg.substring(3));
-                } else if (arg.startsWith("-t=")) {
-                    numThreads = Integer.parseInt(arg.substring(3));
-                } else {
-                    if (input != null) {
-                        throw new RuntimeException("Unable to set more than one input.");
-                    }
-                    input = new File(arg);
-                }
-            }
-        }
+				if ("true".equalsIgnoreCase(value)) {
+					value = "1";
+				} else if ("false".equalsIgnoreCase(value)) {
+					value = "0";
+				}
 
-        Objects.requireNonNull(input, "Input not set.");
-        Objects.requireNonNull(output, "Output not set.");
+				options.put(arg.substring(1, 4), value);
+			} else {
+				isOption = false;
 
-        runFF(options, libraries, input, output, lineMap);
-    }
+				if (arg.startsWith("-e=")) {
+					libraries.add(new File(arg.substring(3)));
+				} else if (arg.startsWith("-o=")) {
+					if (output != null) {
+						throw new RuntimeException("Unable to set more than one output.");
+					}
+					output = new File(arg.substring(3));
+				} else if (arg.startsWith("-l=")) {
+					if (lineMap != null) {
+						throw new RuntimeException("Unable to set more than one lineMap file.");
+					}
+					lineMap = new File(arg.substring(3));
+				} else if (arg.startsWith("-t=")) {
+					numThreads = Integer.parseInt(arg.substring(3));
+				} else {
+					if (input != null) {
+						throw new RuntimeException("Unable to set more than one input.");
+					}
+					input = new File(arg);
+				}
+			}
+		}
 
-    public static void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
-        IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
-        IFernflowerLogger logger = new ThreadIDFFLogger();
-        Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
-        for (File library : libraries) {
-            ff.addLibrary(library);
-        }
-        ff.addSource(input);
-        ff.decompileContext();
-    }
+		Objects.requireNonNull(input, "Input not set.");
+		Objects.requireNonNull(output, "Output not set.");
+
+		runFF(options, libraries, input, output, lineMap);
+	}
+
+	public static void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
+		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
+		IFernflowerLogger logger = new ThreadIDFFLogger();
+		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
+
+		for (File library : libraries) {
+			ff.addLibrary(library);
+		}
+		ff.addSource(input);
+		ff.decompileContext();
+	}
 }

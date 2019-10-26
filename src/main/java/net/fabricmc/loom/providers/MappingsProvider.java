@@ -24,23 +24,22 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Consumer;
+
+import org.gradle.api.Project;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.Version;
 import net.fabricmc.mappings.Mappings;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
-import org.gradle.api.Project;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.lang.ref.SoftReference;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.function.Consumer;
 
 //TODO fix local mappings
 //TODO possibly use maven for mappings, can fix above at the same time
@@ -95,11 +94,7 @@ public class MappingsProvider extends DependencyProvider {
 			}
 
 			project.getLogger().lifecycle(":populating field names");
-			new CommandProposeFieldNames().run(new String[] {
-					minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(),
-					MAPPINGS_TINY_BASE.getAbsolutePath(),
-					MAPPINGS_TINY.getAbsolutePath()
-			});
+			new CommandProposeFieldNames().run(new String[]{minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(), MAPPINGS_TINY_BASE.getAbsolutePath(), MAPPINGS_TINY.getAbsolutePath()});
 		}
 
 		mappedProvider = new MinecraftMappedProvider();

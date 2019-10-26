@@ -24,81 +24,86 @@
 
 package net.fabricmc.loom.task;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.RunConfig;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskAction;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.apache.commons.io.FileUtils;
+
+import org.gradle.api.tasks.TaskAction;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.RunConfig;
+
 //Recommended vscode plugins:
 // https://marketplace.visualstudio.com/items?itemName=redhat.java
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-debug
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
 public class GenVsCodeProjectTask extends AbstractLoomTask {
+	@TaskAction
+	public void genRuns() {
+		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
+		File projectDir = getProject().file(".vscode");
 
-    @TaskAction
-    public void genRuns() {
-        LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
-        File projectDir = getProject().file(".vscode");
-        if (!projectDir.exists()) {
-            projectDir.mkdir();
-        }
-        File launchJson = new File(projectDir, "launch.json");
-        if (launchJson.exists()) {
-            launchJson.delete();
-        }
+		if (!projectDir.exists()) {
+			projectDir.mkdir();
+		}
 
-        VsCodeLaunch launch = new VsCodeLaunch();
-        launch.add(RunConfig.clientRunConfig(getProject()));
-        launch.add(RunConfig.serverRunConfig(getProject()));
+		File launchJson = new File(projectDir, "launch.json");
 
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String json = gson.toJson(launch);
+		if (launchJson.exists()) {
+			launchJson.delete();
+		}
 
-        try {
-            FileUtils.writeStringToFile(launchJson, json, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write launch.json", e);
-        }
+		VsCodeLaunch launch = new VsCodeLaunch();
+		launch.add(RunConfig.clientRunConfig(getProject()));
+		launch.add(RunConfig.serverRunConfig(getProject()));
 
-        File runDir = new File(getProject().getRootDir(), extension.runDir);
-        if (!runDir.exists()) {
-            runDir.mkdirs();
-        }
-    }
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String json = gson.toJson(launch);
 
-    private static class VsCodeLaunch {
-        public String version = "0.2.0";
-        public List<VsCodeConfiguration> configurations = new ArrayList<>();
+		try {
+			FileUtils.writeStringToFile(launchJson, json, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to write launch.json", e);
+		}
 
-        public void add(RunConfig runConfig) {
-            configurations.add(new VsCodeConfiguration(runConfig));
-        }
-    }
+		File runDir = new File(getProject().getRootDir(), extension.runDir);
 
-    private static class VsCodeConfiguration {
-        public String type = "java";
-        public String name;
-        public String request = "launch";
-        public String cwd = "${workspaceFolder}/run";
-        public String console = "internalConsole";
-        public boolean stopOnEntry = false;
-        public String mainClass;
-        public String vmArgs;
-        public String args;
+		if (!runDir.exists()) {
+			runDir.mkdirs();
+		}
+	}
 
-        public VsCodeConfiguration(RunConfig runConfig) {
-            this.name = runConfig.configName;
-            this.mainClass = runConfig.mainClass;
-            this.vmArgs = runConfig.vmArgs;
-            this.args = runConfig.programArgs;
-        }
-    }
+	private static class VsCodeLaunch {
+		public String version = "0.2.0";
+		public List<VsCodeConfiguration> configurations = new ArrayList<>();
+
+		public void add(RunConfig runConfig) {
+			configurations.add(new VsCodeConfiguration(runConfig));
+		}
+	}
+
+	private static class VsCodeConfiguration {
+		public String type = "java";
+		public String name;
+		public String request = "launch";
+		public String cwd = "${workspaceFolder}/run";
+		public String console = "internalConsole";
+		public boolean stopOnEntry = false;
+		public String mainClass;
+		public String vmArgs;
+		public String args;
+
+		VsCodeConfiguration(RunConfig runConfig) {
+			this.name = runConfig.configName;
+			this.mainClass = runConfig.mainClass;
+			this.vmArgs = runConfig.vmArgs;
+			this.args = runConfig.programArgs;
+		}
+	}
 }

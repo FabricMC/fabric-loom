@@ -61,6 +61,7 @@ public class LineNumberRemapper {
 			RClass clazz = null;
 			String line = null;
 			int i = 0;
+
 			try {
 				while ((line = reader.readLine()) != null) {
 					if (line.isEmpty()) {

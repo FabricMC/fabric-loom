@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
-
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
@@ -170,6 +169,7 @@ public class DownloadUtil {
 	 */
 	private static void saveETag(File to, String eTag, Logger logger) {
 		File eTagFile = getETagFile(to);
+
 		try {
 			if (!eTagFile.exists()) {
 				eTagFile.createNewFile();

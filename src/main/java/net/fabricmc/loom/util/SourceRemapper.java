@@ -34,7 +34,6 @@ import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.zeroturnaround.zip.ZipUtil;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -102,6 +101,7 @@ public class SourceRemapper {
 			}
 
 			source = new File(destination.getAbsolutePath().substring(0, destination.getAbsolutePath().lastIndexOf('.')) + "-dev.jar");
+
 			try {
 				com.google.common.io.Files.move(destination, source);
 			} catch (IOException e) {

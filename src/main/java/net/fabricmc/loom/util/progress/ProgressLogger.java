@@ -54,6 +54,7 @@ public class ProgressLogger {
 
 	private static Class<?> getFactoryClass() {
 		Class<?> progressLoggerFactoryClass = null;
+
 		try {
 			//Gradle 2.14 and higher
 			progressLoggerFactoryClass = Class.forName("org.gradle.internal.logging.progress.ProgressLoggerFactory");

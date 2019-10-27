@@ -30,7 +30,6 @@ import java.io.IOException;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
-
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
@@ -41,6 +40,7 @@ public class Checksum {
 		if (file == null) {
 			return false;
 		}
+
 		try {
 			//noinspection deprecation
 			HashCode hash = Files.asByteSource(file).hash(Hashing.sha1());

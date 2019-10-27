@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -155,6 +154,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					JavaCompile javaCompileTask = (JavaCompile) task;
 					javaCompileTask.doFirst(task1 -> {
 						project.getLogger().lifecycle(":setting java compiler args");
+
 						try {
 							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
 							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
@@ -181,6 +181,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
 				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 				project.getLogger().warn(":configuring scala compilation processing");
+
 				try {
 					task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
 					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());

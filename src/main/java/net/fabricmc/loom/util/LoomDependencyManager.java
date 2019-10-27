@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.JsonObject;
-
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -110,6 +109,7 @@ public class LoomDependencyManager {
 			configuration.getDependencies().forEach(dependency -> {
 				for (DependencyProvider provider : list.providers) {
 					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
+
 					try {
 						provider.provide(info, project, extension, afterTasks::add);
 					} catch (Exception e) {

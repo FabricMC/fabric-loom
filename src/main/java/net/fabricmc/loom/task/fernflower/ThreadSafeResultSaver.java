@@ -67,6 +67,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 	public void createArchive(String path, String archiveName, Manifest manifest) {
 		String key = path + "/" + archiveName;
 		File file = output.get();
+
 		try {
 			FileOutputStream fos = new FileOutputStream(file);
 			ZipOutputStream zos = manifest == null ? new ZipOutputStream(fos) : new JarOutputStream(fos, manifest);
@@ -96,6 +97,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 		ExecutorService executor = saveExecutors.get(key);
 		executor.submit(() -> {
 			ZipOutputStream zos = outputStreams.get(key);
+
 			try {
 				zos.putNextEntry(new ZipEntry(entryName));
 
@@ -129,6 +131,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 		ExecutorService executor = saveExecutors.get(key);
 		Future<?> closeFuture = executor.submit(() -> {
 			ZipOutputStream zos = outputStreams.get(key);
+
 			try {
 				zos.close();
 			} catch (IOException e) {
@@ -136,6 +139,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 			}
 		});
 		executor.shutdown();
+
 		try {
 			closeFuture.get();
 		} catch (InterruptedException | ExecutionException e) {

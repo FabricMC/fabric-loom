@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.zeroturnaround.zip.ZipUtil;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;

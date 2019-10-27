@@ -36,7 +36,6 @@ import java.util.zip.ZipError;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -72,6 +71,7 @@ public class MinecraftProvider extends DependencyProvider {
 		initFiles(project);
 
 		downloadMcJson(project, offline);
+
 		try (FileReader reader = new FileReader(MINECRAFT_JSON)) {
 			versionInfo = gson.fromJson(reader, MinecraftVersionInfo.class);
 		}
@@ -186,6 +186,7 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void mergeJars(Logger logger) throws IOException {
 		logger.lifecycle(":merging jars");
+
 		try (JarMerger jarMerger = new JarMerger(MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR, MINECRAFT_MERGED_JAR)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();

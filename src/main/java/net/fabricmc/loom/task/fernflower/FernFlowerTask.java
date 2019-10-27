@@ -34,7 +34,6 @@ import java.util.Stack;
 import java.util.function.Supplier;
 
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
-
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;

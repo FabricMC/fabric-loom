@@ -83,6 +83,7 @@ public class MappingsProvider extends DependencyProvider {
 		if (!MAPPINGS_TINY_BASE.exists() || !MAPPINGS_TINY.exists()) {
 			if (!MAPPINGS_TINY_BASE.exists()) {
 				project.getLogger().lifecycle(":extracting " + mappingsJar.getName());
+
 				try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
 					Path fileToExtract = fileSystem.getPath("mappings/mappings.tiny");
 					Files.copy(fileToExtract, MAPPINGS_TINY_BASE.toPath());

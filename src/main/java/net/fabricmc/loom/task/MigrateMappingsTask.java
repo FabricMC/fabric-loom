@@ -34,7 +34,6 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
-
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 

@@ -42,6 +42,7 @@ public class CleanLoomMappings extends AbstractLoomTask {
 		extension.getMappingsProvider().MAPPINGS_TINY_BASE.delete();
 		extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
 		extension.getMinecraftMappedProvider().getMappedJar().delete();
+
 		try {
 			Files.walkFileTree(extension.getRootProjectBuildCache().toPath(), new DeletingFileVisitor());
 		} catch (IOException e) {

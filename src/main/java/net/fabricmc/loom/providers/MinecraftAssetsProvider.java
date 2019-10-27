@@ -31,7 +31,6 @@ import java.net.URL;
 import java.util.Map;
 
 import com.google.gson.Gson;
-
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
@@ -80,6 +79,7 @@ public class MinecraftAssetsProvider {
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
 		progressLogger.start("Downloading assets...", "assets");
 		AssetIndex index;
+
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
 			index = new Gson().fromJson(fileReader, AssetIndex.class);
 		}

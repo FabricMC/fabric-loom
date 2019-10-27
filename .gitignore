@@ -19,3 +19,4 @@
 !/settings.gradle
 !/Jenkinsfile
 !/.travis.yml
+!/checkstyle.xml

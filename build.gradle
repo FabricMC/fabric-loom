@@ -90,7 +90,7 @@ license {
 }
 
 checkstyle {
-	configFile = file("checkstyle.xml")
+	configFile = file("${rootDir}/checkstyle.xml")
 	toolVersion = '8.25'
 }
 

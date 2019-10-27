@@ -61,6 +61,12 @@ dependencies {
 	testImplementation("org.spockframework:spock-core:1.3-groovy-2.4")
 }
 
+configurations.all {
+	resolutionStrategy {
+		force 'org.codehaus.groovy:groovy-all:2.4.12'
+	}
+}
+
 jar {
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"

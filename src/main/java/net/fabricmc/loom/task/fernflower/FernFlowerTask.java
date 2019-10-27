@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.function.Supplier;
 
-import net.fabricmc.loom.util.OperatingSystem;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
@@ -47,6 +46,7 @@ import org.gradle.process.ExecResult;
 import net.fabricmc.loom.task.AbstractDecompileTask;
 import net.fabricmc.loom.task.ForkingJavaExecTask;
 import net.fabricmc.loom.util.ConsumingOutputStream;
+import net.fabricmc.loom.util.OperatingSystem;
 
 /**
  * Created by covers1624 on 9/02/19.

@@ -117,6 +117,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
+
 		super.setWorkingDir(dir);
 	}
 

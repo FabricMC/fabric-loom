@@ -162,6 +162,7 @@ public class LineNumberRemapper {
 						while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) == null)) {
 							tLine++;
 						}
+
 						super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDest, start);
 					}
 				}

@@ -94,6 +94,7 @@ public class DownloadUtil {
 			if (!quiet) {
 				logger.info("'{}' Not Modified, skipping.", to);
 			}
+
 			return; //What we've got is already fine
 		}
 

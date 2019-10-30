@@ -98,6 +98,7 @@ public class RemapJarTask extends Jar {
 		for (Path p : classpath) {
 			rc.append("\n - ").append(p.toString());
 		}
+
 		project.getLogger().debug(rc.toString());
 
 		TinyRemapper remapper = remapperBuilder.build();

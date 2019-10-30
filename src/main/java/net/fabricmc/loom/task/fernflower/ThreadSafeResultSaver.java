@@ -145,6 +145,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
+
 		outputStreams.remove(key);
 		saveExecutors.remove(key);
 
@@ -154,7 +155,6 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 		}
 	}
 
-	//@formatter:off
 	@Override
 	public void saveFolder(String path) {
 	}
@@ -174,5 +174,4 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 	@Override
 	public void copyEntry(String source, String path, String archiveName, String entry) {
 	}
-	//@formatter:on
 }

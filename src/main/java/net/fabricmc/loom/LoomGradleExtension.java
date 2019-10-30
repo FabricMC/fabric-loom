@@ -205,8 +205,10 @@ public class LoomGradleExtension {
 			if ((result = projectTFunction.apply(p)) != null) {
 				return result;
 			}
+
 			p = p.getRootProject();
 		}
+
 		result = projectTFunction.apply(p);
 		return result;
 	}
@@ -221,6 +223,7 @@ public class LoomGradleExtension {
 			if (possibleCompileClasspath != null) {
 				configs.add(possibleCompileClasspath);
 			}
+
 			// failing that, buildscript
 			configs.addAll(p.getBuildscript().getConfigurations());
 

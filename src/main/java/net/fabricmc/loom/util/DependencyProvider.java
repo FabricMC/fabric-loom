@@ -64,6 +64,7 @@ public abstract class DependencyProvider {
 		if (object instanceof File) {
 			object = project.files(object);
 		}
+
 		project.getDependencies().add(target, object);
 	}
 

@@ -62,7 +62,6 @@ public class RemapLineNumbersTask extends AbstractLoomTask {
 		progressLogger.completed();
 	}
 
-	//@formatter:off
 	@InputFile
 	public File getInput() {
 		return getProject().file(input);
@@ -89,5 +88,4 @@ public class RemapLineNumbersTask extends AbstractLoomTask {
 	public void setOutput(Object output) {
 		this.output = output;
 	}
-	//@formatter:on
 }

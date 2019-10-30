@@ -83,6 +83,7 @@ public class MinecraftAssetsProvider {
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
 			index = new Gson().fromJson(fileReader, AssetIndex.class);
 		}
+
 		Map<String, AssetObject> parent = index.getFileMap();
 		final int totalSize = parent.size();
 		int position = 0;

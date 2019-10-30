@@ -286,6 +286,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			if (found || AbstractPlugin.isRootProject(p)) {
 				break;
 			}
+
 			p = p.getRootProject();
 		}
 

@@ -43,7 +43,6 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 		SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
 	}
 
-	//@formatter:off
 	@InputFile
 	public File getInput() {
 		return getProject().file(input);
@@ -70,5 +69,4 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	public void setTargetNamespace(String value) {
 		this.direction = value;
 	}
-	//@formatter:on
 }

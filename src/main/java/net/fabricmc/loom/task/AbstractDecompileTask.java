@@ -37,7 +37,6 @@ public abstract class AbstractDecompileTask extends AbstractLoomTask {
 	private Object lineMapFile;
 	private Object libraries;
 
-	//@formatter:off
 	@InputFile
 	public File getInput() {
 		return getProject().file(input);
@@ -73,5 +72,4 @@ public abstract class AbstractDecompileTask extends AbstractLoomTask {
 	public void setLibraries(Object libraries) {
 		this.libraries = libraries;
 	}
-	//@formatter:on
 }

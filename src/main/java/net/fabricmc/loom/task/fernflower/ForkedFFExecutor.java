@@ -74,11 +74,13 @@ public class ForkedFFExecutor {
 					if (output != null) {
 						throw new RuntimeException("Unable to set more than one output.");
 					}
+
 					output = new File(arg.substring(3));
 				} else if (arg.startsWith("-l=")) {
 					if (lineMap != null) {
 						throw new RuntimeException("Unable to set more than one lineMap file.");
 					}
+
 					lineMap = new File(arg.substring(3));
 				} else if (arg.startsWith("-t=")) {
 					numThreads = Integer.parseInt(arg.substring(3));
@@ -86,6 +88,7 @@ public class ForkedFFExecutor {
 					if (input != null) {
 						throw new RuntimeException("Unable to set more than one input.");
 					}
+
 					input = new File(arg);
 				}
 			}
@@ -105,6 +108,7 @@ public class ForkedFFExecutor {
 		for (File library : libraries) {
 			ff.addLibrary(library);
 		}
+
 		ff.addSource(input);
 		ff.decompileContext();
 	}

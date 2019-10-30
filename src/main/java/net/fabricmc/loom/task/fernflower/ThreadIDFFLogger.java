@@ -71,6 +71,7 @@ public class ThreadIDFFLogger extends IFernflowerLogger {
 			System.out.println(MessageFormat.format("{0} :: waiting", id));
 			return;
 		}
+
 		String line = this.line.get().peek();
 		System.out.println(MessageFormat.format("{0} :: {1}", id, line).trim());
 	}

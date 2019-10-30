@@ -72,6 +72,7 @@ public class RunConfig {
 		if (!Strings.isNullOrEmpty(programArgs)) {
 			this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", programArgs));
 		}
+
 		return root;
 	}
 

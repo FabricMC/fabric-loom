@@ -94,6 +94,10 @@ checkstyle {
 	toolVersion = '8.25'
 }
 
+checkstyleMain {
+	logging.setLevel(LogLevel.LIFECYCLE)
+}
+
 gradlePlugin {
 	plugins {
 		fabricLoom {

@@ -36,18 +36,18 @@ import org.gradle.process.JavaExecSpec;
  * Simple trait like interface for a Task that wishes to execute a java process
  * with the classpath of the gradle plugin plus groovy.
  *
- * Created by covers1624 on 11/02/19.
+ * <p>Created by covers1624 on 11/02/19.
  */
 public interface ForkingJavaExecTask extends Task {
+	default ExecResult javaexec(Action<? super JavaExecSpec> action) {
+		ConfigurationContainer configurations = getProject().getBuildscript().getConfigurations();
+		DependencyHandler handler = getProject().getDependencies();
+		FileCollection classpath = configurations.getByName("classpath")//
+				.plus(configurations.detachedConfiguration(handler.localGroovy()));
 
-    default ExecResult javaexec(Action<? super JavaExecSpec> action) {
-        ConfigurationContainer configurations = getProject().getBuildscript().getConfigurations();
-        DependencyHandler handler = getProject().getDependencies();
-        FileCollection classpath = configurations.getByName("classpath")//
-                .plus(configurations.detachedConfiguration(handler.localGroovy()));
-        return getProject().javaexec(spec -> {
-            spec.classpath(classpath);
-            action.execute(spec);
-        });
-    }
+		return getProject().javaexec(spec -> {
+			spec.classpath(classpath);
+			action.execute(spec);
+		});
+	}
 }

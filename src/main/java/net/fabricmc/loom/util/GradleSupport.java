@@ -22,36 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.assets;
+package net.fabricmc.loom.util;
 
-public class AssetObject {
-	private String hash;
-	private long size;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
-	public String getHash() {
-		return this.hash;
-	}
+import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 
-	public long getSize() {
-		return this.size;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if ((o == null) || (getClass() != o.getClass())) {
-			return false;
-		} else {
-			AssetObject that = (AssetObject) o;
-			return this.size == that.size && this.hash.equals(that.hash);
+//This is used to bridge the gap over large gradle api changes.
+public class GradleSupport {
+	public static RegularFileProperty getfileProperty(Project project) {
+		try {
+			//First try the new method, if that fails fall back.
+			return getfilePropertyModern(project);
+		} catch (Exception e) {
+			//Nope
 		}
+
+		return getfilePropertyLegacy(project);
 	}
 
-	@Override
-	public int hashCode() {
-		int result = this.hash.hashCode();
-		result = 31 * result + (int) (this.size ^ this.size >>> 32);
-		return result;
+	private static RegularFileProperty getfilePropertyModern(Project project) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		ObjectFactory objectFactory = project.getObjects();
+		Method method = objectFactory.getClass().getDeclaredMethod("fileProperty");
+		method.setAccessible(true);
+		return (RegularFileProperty) method.invoke(objectFactory);
+	}
+
+	private static RegularFileProperty getfilePropertyLegacy(Project project) {
+		return project.getLayout().fileProperty();
 	}
 }

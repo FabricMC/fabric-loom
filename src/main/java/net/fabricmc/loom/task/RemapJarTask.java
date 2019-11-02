@@ -24,14 +24,13 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.MixinRefmapHelper;
-import net.fabricmc.loom.util.NestedJars;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.TinyUtils;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -40,12 +39,15 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.util.GradleSupport;
+import net.fabricmc.loom.util.MixinRefmapHelper;
+import net.fabricmc.loom.util.NestedJars;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.TinyUtils;
 
 public class RemapJarTask extends Jar {
 	private RegularFileProperty input;
@@ -53,7 +55,7 @@ public class RemapJarTask extends Jar {
 
 	public RemapJarTask() {
 		super();
-		input = getProject().getLayout().fileProperty();
+		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 	}
 
@@ -76,7 +78,7 @@ public class RemapJarTask extends Jar {
 		Set<File> classpathFiles = new LinkedHashSet<>(
 				project.getConfigurations().getByName("compileClasspath").getFiles()
 		);
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p)).toArray(Path[]::new);
+		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
 		File mixinMapFile = mappingsProvider.mappingsMixinExport;
 		Path mixinMapPath = mixinMapFile.toPath();
@@ -91,9 +93,11 @@ public class RemapJarTask extends Jar {
 		project.getLogger().lifecycle(":remapping " + input.getFileName());
 
 		StringBuilder rc = new StringBuilder("Remap classpath: ");
+
 		for (Path p : classpath) {
 			rc.append("\n - ").append(p.toString());
 		}
+
 		project.getLogger().debug(rc.toString());
 
 		TinyRemapper remapper = remapperBuilder.build();

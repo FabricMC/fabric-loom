@@ -24,14 +24,12 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftLibraryProvider;
-
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 public class MinecraftVersionInfo {
 	public List<Library> libraries;
@@ -93,11 +91,17 @@ public class MinecraftVersionInfo {
 				return "";
 			} else {
 				JsonElement element = natives.get(OperatingSystem.getOS().replace("${arch}", OperatingSystem.getArch()));
-				if(element == null){
+
+				if (element == null) {
 					return "";
 				}
+
 				return "-" + element.getAsString().replace("\"", "");
 			}
+		}
+
+		public boolean isNative() {
+			return getClassifier().contains("natives");
 		}
 
 		public boolean allowed() {
@@ -106,6 +110,7 @@ public class MinecraftVersionInfo {
 			}
 
 			boolean success = false;
+
 			for (Rule rule : this.rules) {
 				if (rule.os != null && rule.os.name != null) {
 					if (rule.os.name.equalsIgnoreCase(OperatingSystem.getOS())) {
@@ -115,6 +120,7 @@ public class MinecraftVersionInfo {
 					success = rule.action.equalsIgnoreCase("allow");
 				}
 			}
+
 			return success;
 		}
 
@@ -122,9 +128,11 @@ public class MinecraftVersionInfo {
 			if (artifact == null) {
 				artifact = new Artifact(name);
 			}
-			if(natives != null){
+
+			if (natives != null) {
 				JsonElement jsonElement = natives.get(OperatingSystem.getOS());
-				if(jsonElement != null){
+
+				if (jsonElement != null) {
 					return artifact.getArtifact(jsonElement.getAsString());
 				}
 			}
@@ -135,15 +143,17 @@ public class MinecraftVersionInfo {
 		private class Artifact {
 			private final String domain, name, version, classifier, ext;
 
-			public Artifact(String name) {
+			Artifact(String name) {
 				String[] splitedArtifact = name.split(":");
 				int idx = splitedArtifact[splitedArtifact.length - 1].indexOf('@');
+
 				if (idx != -1) {
 					ext = splitedArtifact[splitedArtifact.length - 1].substring(idx + 1);
 					splitedArtifact[splitedArtifact.length - 1] = splitedArtifact[splitedArtifact.length - 1].substring(0, idx);
 				} else {
 					ext = "jar";
 				}
+
 				this.domain = splitedArtifact[0];
 				this.name = splitedArtifact[1];
 				this.version = splitedArtifact[2];
@@ -152,15 +162,19 @@ public class MinecraftVersionInfo {
 
 			public String getArtifact(String classifier) {
 				String ret = domain + ":" + name + ":" + version;
+
 				if (classifier != null && classifier.indexOf('$') > -1) {
 					classifier = classifier.replace("${arch}", Constants.SYSTEM_ARCH);
 				}
+
 				if (classifier != null) {
 					ret += ":" + classifier;
 				}
+
 				if (!"jar".equals(ext)) {
 					ret += "@" + ext;
 				}
+
 				return ret;
 			}
 

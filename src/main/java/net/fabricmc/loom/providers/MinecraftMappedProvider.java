@@ -24,15 +24,16 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.function.Consumer;
+
+import org.gradle.api.Project;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.MapJarsTiny;
-import org.gradle.api.Project;
-
-import java.io.File;
-import java.util.Collection;
-import java.util.function.Consumer;
 
 public class MinecraftMappedProvider extends DependencyProvider {
     public File MINECRAFT_MAPPED_JAR;

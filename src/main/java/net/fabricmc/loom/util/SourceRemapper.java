@@ -38,6 +38,7 @@ import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
+import org.gradle.api.Project;
 
 import java.io.*;
 import java.nio.file.*;
@@ -87,6 +88,7 @@ public class SourceRemapper {
 			}
 
 			source = new File(destination.getAbsolutePath().substring(0, destination.getAbsolutePath().lastIndexOf('.')) + "-dev.jar");
+
 			try {
 				com.google.common.io.Files.move(destination, source);
 			} catch (IOException e) {
@@ -96,6 +98,7 @@ public class SourceRemapper {
 
 		Path srcPath = source.toPath();
 		boolean isSrcTmp = false;
+
 		if (!source.isDirectory()) {
 			// create tmp directory
 			isSrcTmp = true;
@@ -127,7 +130,20 @@ public class SourceRemapper {
 		if (isSrcTmp) {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
+	}
 
+	private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
+		Files.walk(from).forEach(path -> {
+			Path targetPath = to.resolve(from.relativize(path).toString());
+
+			if (!isJavaFile(path) && !Files.exists(targetPath)) {
+				try {
+					Files.copy(path, targetPath);
+				} catch (IOException e) {
+					project.getLogger().warn("Could not copy non-java sources '" + source.getName() + "' fully!", e);
+				}
+			}
+		});
 	}
 
 	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
@@ -194,9 +210,6 @@ public class SourceRemapper {
 		}
 
 		@Override
-		public void close() throws IOException {
-
-		}
+		public void close() throws IOException { }
 	}
-
 }

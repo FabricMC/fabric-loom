@@ -24,28 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.task.RemapJarTask;
-
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
-import org.gradle.api.artifacts.ProjectDependency;
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -56,8 +34,28 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
-public class NestedJars {
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
+import org.zeroturnaround.zip.FileSource;
+import org.zeroturnaround.zip.ZipEntrySource;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.RemapJarTask;
+
+public class NestedJars {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	public static boolean addNestedJars(Project project, Path modJarPath) {
@@ -74,6 +72,7 @@ public class NestedJars {
 			protected String transform(ZipEntry zipEntry, String input) throws IOException {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
 				JsonArray nestedJars = json.getAsJsonArray("jars");
+
 				if (nestedJars == null || !json.has("jars")) {
 					nestedJars = new JsonArray();
 				}
@@ -96,6 +95,7 @@ public class NestedJars {
 
 		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
 		DependencySet dependencies = configuration.getDependencies();
+
 		for (Dependency dependency : dependencies) {
 			if (dependency instanceof ProjectDependency) {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
@@ -116,27 +116,32 @@ public class NestedJars {
 				fileList.addAll(prepareForNesting(configuration.files(dependency), dependency, project));
 			}
 		}
+
 		for (File file : fileList) {
 			if (!file.exists()) {
 				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());
 			}
+
 			if (file.isDirectory() || !file.getName().endsWith(".jar")) {
 				throw new RuntimeException("Failed to include nested jars, as file was not a jar: " + file.getAbsolutePath());
 			}
 		}
+
 		return fileList;
 	}
 
 	//Looks for any deps that require a sub project to be built first
-	public static List<RemapJarTask> getRequiredTasks(Project project){
+	public static List<RemapJarTask> getRequiredTasks(Project project) {
 		List<RemapJarTask> remapTasks = new ArrayList<>();
 
 		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
 		DependencySet dependencies = configuration.getDependencies();
+
 		for (Dependency dependency : dependencies) {
 			if (dependency instanceof ProjectDependency) {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
 				Project dependencyProject = projectDependency.getDependencyProject();
+
 				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
 					if (task instanceof RemapJarTask) {
 						remapTasks.add((RemapJarTask) task);
@@ -144,29 +149,36 @@ public class NestedJars {
 				}
 			}
 		}
+
 		return remapTasks;
 	}
 
 	//This is a good place to do pre-nesting operations, such as adding a fabric.mod.json to a library
-	private static List<File> prepareForNesting(Set<File> files, Dependency dependency, Project project){
+	private static List<File> prepareForNesting(Set<File> files, Dependency dependency, Project project) {
 		List<File> fileList = new ArrayList<>();
-		for(File file : files){
+
+		for (File file : files) {
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
-			if(!ZipUtil.containsEntry(file, "fabric.mod.json")){
+			if (!ZipUtil.containsEntry(file, "fabric.mod.json")) {
 				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 				File tempDir = new File(extension.getUserCache(), "temp/modprocessing");
-				if(!tempDir.exists()){
+
+				if (!tempDir.exists()) {
 					tempDir.mkdirs();
 				}
+
 				File tempFile = new File(tempDir, file.getName());
-				if(tempFile.exists()){
+
+				if (tempFile.exists()) {
 					tempFile.delete();
 				}
+
 				try {
 					FileUtils.copyFile(file, tempFile);
 				} catch (IOException e) {
 					throw new RuntimeException("Failed to copy file", e);
 				}
+
 				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency).getBytes());
 				fileList.add(tempFile);
 			} else {
@@ -174,11 +186,12 @@ public class NestedJars {
 				fileList.add(file);
 			}
 		}
+
 		return fileList;
 	}
 
 	//Generates a barebones mod for a dependency
-	private static String getMod(Dependency dependency){
+	private static String getMod(Dependency dependency) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
 		jsonObject.addProperty("id", (dependency.getGroup().replaceAll("\\.", "_") + "_" + dependency.getName()).toLowerCase(Locale.ENGLISH));

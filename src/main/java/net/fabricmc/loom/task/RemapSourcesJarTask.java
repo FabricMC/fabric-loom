@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.util.SourceRemapper;
+import java.io.File;
+
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
+import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
@@ -42,13 +43,30 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 		SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
 	}
 
-	//@formatter:off
 	@InputFile
-	public File getInput() { return getProject().file(input); }
-	@OutputFile public File getOutput() { return getProject().file(output == null ? input : output); }
-	@Input public String getTargetNamespace() { return direction; }
-	public void setInput(Object input) { this.input = input; }
-	public void setOutput(Object output) { this.output = output; }
-	public void setTargetNamespace(String value) { this.direction = value; }
-	//@formatter:on
+	public File getInput() {
+		return getProject().file(input);
+	}
+
+	@OutputFile
+	public File getOutput() {
+		return getProject().file(output == null ? input : output);
+	}
+
+	@Input
+	public String getTargetNamespace() {
+		return direction;
+	}
+
+	public void setInput(Object input) {
+		this.input = input;
+	}
+
+	public void setOutput(Object output) {
+		this.output = output;
+	}
+
+	public void setTargetNamespace(String value) {
+		this.direction = value;
+	}
 }

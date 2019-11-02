@@ -31,14 +31,9 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
  * Created by covers1624 on 11/02/19.
  */
 public class NoopFFLogger extends IFernflowerLogger {
+	@Override
+	public void writeMessage(String message, Severity severity) { }
 
-    @Override
-    public void writeMessage(String message, Severity severity) {
-
-    }
-
-    @Override
-    public void writeMessage(String message, Severity severity, Throwable t) {
-
-    }
+	@Override
+	public void writeMessage(String message, Severity severity, Throwable t) { }
 }

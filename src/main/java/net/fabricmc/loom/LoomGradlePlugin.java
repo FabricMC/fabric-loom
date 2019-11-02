@@ -24,19 +24,32 @@
 
 package net.fabricmc.loom;
 
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftLibraryProvider;
-import net.fabricmc.loom.task.*;
-import net.fabricmc.loom.task.fernflower.FernFlowerTask;
-import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.tasks.TaskContainer;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.tasks.TaskContainer;
+
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.MinecraftLibraryProvider;
+import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.CleanLoomBinaries;
+import net.fabricmc.loom.task.CleanLoomMappings;
+import net.fabricmc.loom.task.DownloadAssetsTask;
+import net.fabricmc.loom.task.GenEclipseRunsTask;
+import net.fabricmc.loom.task.GenIdeaProjectTask;
+import net.fabricmc.loom.task.GenVsCodeProjectTask;
+import net.fabricmc.loom.task.MigrateMappingsTask;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapLineNumbersTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.task.RunClientTask;
+import net.fabricmc.loom.task.RunServerTask;
+import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	private static File getMappedByproduct(Project project, String suffix) {
@@ -44,6 +57,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		String path = mappedJar.getAbsolutePath();
+
 		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
 			throw new RuntimeException("Invalid mapped JAR path: " + path);
 		}
@@ -56,9 +70,14 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		super.apply(target);
 
 		TaskContainer tasks = target.getTasks();
-		
+
 		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
+
+		tasks.register("cleanLoom").configure(task -> {
+			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
+			task.dependsOn(tasks.getByName("cleanLoomMappings"));
+		});
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.getOutputs().upToDateWhen((o) -> false);

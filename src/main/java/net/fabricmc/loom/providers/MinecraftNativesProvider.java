@@ -22,36 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.assets;
+package net.fabricmc.loom.providers;
 
-public class AssetObject {
-	private String hash;
-	private long size;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
-	public String getHash() {
-		return this.hash;
-	}
+import org.zeroturnaround.zip.ZipUtil;
+import org.gradle.api.Project;
 
-	public long getSize() {
-		return this.size;
-	}
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		} else if ((o == null) || (getClass() != o.getClass())) {
-			return false;
-		} else {
-			AssetObject that = (AssetObject) o;
-			return this.size == that.size && this.hash.equals(that.hash);
+public class MinecraftNativesProvider {
+	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
+
+		File nativesDir = extension.getNativesDirectory();
+		File jarStore = extension.getNativesJarStore();
+
+		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
+			File libJarFile = library.getFile(jarStore);
+
+			if (library.allowed() && library.isNative() && libJarFile != null) {
+				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
+
+				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
+				ZipUtil.unpack(libJarFile, nativesDir);
+			}
 		}
-	}
-
-	@Override
-	public int hashCode() {
-		int result = this.hash.hashCode();
-		result = 31 * result + (int) (this.size ^ this.size >>> 32);
-		return result;
 	}
 }

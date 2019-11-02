@@ -24,11 +24,17 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+
+import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -40,16 +46,13 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 public class MapJarsTiny {
-
 	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
 		String fromM = "official";
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		Path[] classpath = mapProvider.getMapperPaths().stream()
-				.map(File::toPath)
-				.toArray(Path[]::new);
+		Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
 		Path input = jarProvider.getMergedJar().toPath();
 		Path outputMapped = mapProvider.getMappedJar().toPath();

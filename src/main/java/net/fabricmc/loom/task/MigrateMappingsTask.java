@@ -54,11 +54,20 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
-    @TaskAction
-    public void doTask() throws Throwable {
-        Project project = getProject();
-        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        Map<String, ?> properties = project.getProperties();
+	@TaskAction
+	public void doTask() throws Throwable {
+		Project project = getProject();
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		Map<String, ?> properties = project.getProperties();
+
+		project.getLogger().lifecycle(":loading mappings");
+
+		File mappingsFile = null;
+
+		if (properties.containsKey("targetMappingsFile")) {
+			mappingsFile = new File((String) properties.get("targetMappingsFile"));
+		} else if (properties.containsKey("targetMappingsArtifact")) {
+			String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
 
         String inputDir = (String) properties.get("inputDir");
         if (inputDir == null) inputDir = "src/main/java";
@@ -104,7 +113,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
         mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_MAPPED_JAR.toPath());
         mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath());
 
-        mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
+		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
         try {
             mercury.rewrite(inputDir, outputDir);
@@ -112,9 +122,11 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             project.getLogger().warn("Could not remap fully!", e);
         }
 
-        project.getLogger().lifecycle(":cleaning file descriptors");
-        System.gc();
-    }
+		try {
+			mercury.rewrite(inputDir.toPath(), outputDir.toPath());
+		} catch (Exception e) {
+			project.getLogger().warn("Could not remap fully!", e);
+		}
 
 
     public static class MappingsJoiner extends MappingsReader {
@@ -179,9 +191,10 @@ public class MigrateMappingsTask extends AbstractLoomTask {
             return mappings;
         }
 
-        @Override
-        public void close() throws IOException {
+			return mappings;
+		}
 
-        }
-    }
+		@Override
+		public void close() throws IOException { }
+	}
 }

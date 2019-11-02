@@ -36,6 +36,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.fabricmc.loom.util.StaticPathWatcher;
+import net.fabricmc.mappings.Mappings;
+
 public final class MappingsCache {
 	public static final MappingsCache INSTANCE = new MappingsCache();
 

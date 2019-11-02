@@ -24,138 +24,160 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.util.progress.ProgressLogger;
-import org.gradle.api.logging.Logger;
-import org.objectweb.asm.*;
+import static java.text.MessageFormat.format;
 
-import java.io.*;
-import java.nio.file.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.text.MessageFormat.format;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
+import net.fabricmc.loom.util.progress.ProgressLogger;
 
 /**
  * TODO, Move to stitch.
  * Created by covers1624 on 18/02/19.
  */
 public class LineNumberRemapper {
+	private final Map<String, RClass> lineMap = new HashMap<>();
 
-    private final Map<String, RClass> lineMap = new HashMap<>();
+	public void readMappings(File lineMappings) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(lineMappings))) {
+			RClass clazz = null;
+			String line = null;
+			int i = 0;
 
-    public void readMappings(File lineMappings) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(lineMappings))) {
-            RClass clazz = null;
-            String line = null;
-            int i = 0;
-            try {
-                while ((line = reader.readLine()) != null) {
-                    if (line.isEmpty()) {
-                        continue;
-                    }
-                    String[] segs = line.trim().split("\t");
-                    if (line.charAt(0) != '\t') {
-                        clazz = lineMap.computeIfAbsent(segs[0], RClass::new);
-                        clazz.maxLine = Integer.parseInt(segs[1]);
-                        clazz.maxLineDest = Integer.parseInt(segs[2]);
-                    } else {
-                        clazz.lineMap.put(Integer.parseInt(segs[0]), Integer.parseInt(segs[1]));
-                    }
-                    i++;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(format("Exception reading mapping line @{0}: {1}", i, line), e);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Exception reading LineMappings file.", e);
-        }
-    }
+			try {
+				while ((line = reader.readLine()) != null) {
+					if (line.isEmpty()) {
+						continue;
+					}
 
-    public void process(ProgressLogger logger, Path input, Path output) throws IOException {
-        Files.walkFileTree(input, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                String rel = input.relativize(file).toString();
-                Path dst = output.resolve(rel);
-                Path parent = dst.getParent();
-                if (parent != null) {
-                    Files.createDirectories(parent);
-                }
-                String fName = file.getFileName().toString();
-                if (fName.endsWith(".class")) {
-                    if (Files.exists(dst)) {
-                        Files.delete(dst);
-                    }
-                    String idx = rel.substring(0, rel.length() - 6);
-                    if (logger != null) {
-                        logger.progress("Remapping " + idx);
-                    }
+					String[] segs = line.trim().split("\t");
 
-                    int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
-                    if (dollarPos >= 0) {
-                        idx = idx.substring(0, dollarPos);
-                    }
-                    if (lineMap.containsKey(idx)) {
-                        try (InputStream is = Files.newInputStream(file)) {
-                            ClassReader reader = new ClassReader(is);
-                            ClassWriter writer = new ClassWriter(0);
+					if (line.charAt(0) != '\t') {
+						clazz = lineMap.computeIfAbsent(segs[0], RClass::new);
+						clazz.maxLine = Integer.parseInt(segs[1]);
+						clazz.maxLineDest = Integer.parseInt(segs[2]);
+					} else {
+						clazz.lineMap.put(Integer.parseInt(segs[0]), Integer.parseInt(segs[1]));
+					}
 
-                            reader.accept(new LineNumberVisitor(Opcodes.ASM7, writer, lineMap.get(idx)), 0);
-                            Files.write(dst, writer.toByteArray());
-                        }
-                    }
+					i++;
+				}
+			} catch (Exception e) {
+				throw new RuntimeException(format("Exception reading mapping line @{0}: {1}", i, line), e);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Exception reading LineMappings file.", e);
+		}
+	}
 
-                } else {
-                    Files.copy(file, dst, StandardCopyOption.REPLACE_EXISTING);
-                }
+	public void process(ProgressLogger logger, Path input, Path output) throws IOException {
+		Files.walkFileTree(input, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				String rel = input.relativize(file).toString();
+				Path dst = output.resolve(rel);
+				Path parent = dst.getParent();
 
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
+				if (parent != null) {
+					Files.createDirectories(parent);
+				}
 
-    private static class LineNumberVisitor extends ClassVisitor {
+				String fName = file.getFileName().toString();
 
-        private final RClass rClass;
+				if (fName.endsWith(".class")) {
+					if (Files.exists(dst)) {
+						Files.delete(dst);
+					}
 
-        public LineNumberVisitor(int api, ClassVisitor classVisitor, RClass rClass) {
-            super(api, classVisitor);
-            this.rClass = rClass;
-        }
+					String idx = rel.substring(0, rel.length() - 6);
 
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-            return new MethodVisitor(api, super.visitMethod(access, name, descriptor, signature, exceptions)) {
-                @Override
-                public void visitLineNumber(int line, Label start) {
-                    int tLine = line;
-                    if (tLine <= 0) {
-                        super.visitLineNumber(line, start);
-                    } else if (tLine >= rClass.maxLine) {
-                        super.visitLineNumber(rClass.maxLineDest, start);
-                    } else {
-                        Integer matchedLine = null;
-                        while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) == null)) {
-                            tLine++;
-                        }
-                        super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDest, start);
-                    }
-                }
-            };
-        }
-    }
+					if (logger != null) {
+						logger.progress("Remapping " + idx);
+					}
 
-    private static class RClass {
+					int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
 
-        private final String name;
-        private int maxLine;
-        private int maxLineDest;
-        private Map<Integer, Integer> lineMap = new HashMap<>();
+					if (dollarPos >= 0) {
+						idx = idx.substring(0, dollarPos);
+					}
 
-        private RClass(String name) {
-            this.name = name;
-        }
-    }
+					if (lineMap.containsKey(idx)) {
+						try (InputStream is = Files.newInputStream(file)) {
+							ClassReader reader = new ClassReader(is);
+							ClassWriter writer = new ClassWriter(0);
 
+							reader.accept(new LineNumberVisitor(Opcodes.ASM7, writer, lineMap.get(idx)), 0);
+							Files.write(dst, writer.toByteArray());
+						}
+					}
+				} else {
+					Files.copy(file, dst, StandardCopyOption.REPLACE_EXISTING);
+				}
+
+				return FileVisitResult.CONTINUE;
+			}
+		});
+	}
+
+	private static class LineNumberVisitor extends ClassVisitor {
+		private final RClass rClass;
+
+		LineNumberVisitor(int api, ClassVisitor classVisitor, RClass rClass) {
+			super(api, classVisitor);
+			this.rClass = rClass;
+		}
+
+		@Override
+		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+			return new MethodVisitor(api, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+				@Override
+				public void visitLineNumber(int line, Label start) {
+					int tLine = line;
+
+					if (tLine <= 0) {
+						super.visitLineNumber(line, start);
+					} else if (tLine >= rClass.maxLine) {
+						super.visitLineNumber(rClass.maxLineDest, start);
+					} else {
+						Integer matchedLine = null;
+
+						while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) == null)) {
+							tLine++;
+						}
+
+						super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDest, start);
+					}
+				}
+			};
+		}
+	}
+
+	private static class RClass {
+		private final String name;
+		private int maxLine;
+		private int maxLineDest;
+		private Map<Integer, Integer> lineMap = new HashMap<>();
+
+		private RClass(String name) {
+			this.name = name;
+		}
+	}
 }

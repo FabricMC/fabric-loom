@@ -24,7 +24,11 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -40,10 +44,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
+import net.fabricmc.loom.LoomGradleExtension;
 
 public class ModCompileRemapper {
 	public static void remapDependencies(Project project, String mappingsPrefix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, Consumer<Runnable> postPopulationScheduler) {
@@ -78,7 +79,7 @@ public class ModCompileRemapper {
 			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsPrefix + ")";
 			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version + classifierSuffix;
 			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version + classifierSuffix.replace(':', '-');
-			project.getLogger().lifecycle(":providing " + remappedLog);
+			project.getLogger().info(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();
 
@@ -93,7 +94,7 @@ public class ModCompileRemapper {
 	}
 
 	/**
-	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json
+	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
 	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
 		File input = artifact.getFile();
@@ -109,18 +110,21 @@ public class ModCompileRemapper {
 	}
 
 	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
-		project.getLogger().lifecycle(":providing " + notation);
+		project.getLogger().info(":providing " + notation);
 		DependencyHandler dependencies = project.getDependencies();
 		Dependency dep = dependencies.module(notation);
+
 		if (dep instanceof ModuleDependency) {
 			((ModuleDependency) dep).setTransitive(false);
 		}
+
 		dependencies.add(regularCompile.getName(), dep);
 	}
 
 	private static void remapArtifact(Project project, Configuration config, ResolvedArtifact artifact, String remappedFilename, File modStore) {
 		File input = artifact.getFile();
 		File output = new File(modStore, remappedFilename + ".jar");
+
 		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
 			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
 			try {
@@ -129,7 +133,7 @@ public class ModCompileRemapper {
 				throw new RuntimeException("Failed to remap mod", e);
 			}
 
-			if (!output.exists()){
+			if (!output.exists()) {
 				throw new RuntimeException("Failed to remap mod");
 			}
 
@@ -142,10 +146,10 @@ public class ModCompileRemapper {
 	}
 
 	private static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
-		@SuppressWarnings ("unchecked")
-		ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
+		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
 				.forComponents(artifact.getId().getComponentIdentifier())//
 				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+
 		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
 			for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {
 				if (srcArtifact instanceof ResolvedArtifactResult) {
@@ -153,12 +157,13 @@ public class ModCompileRemapper {
 				}
 			}
 		}
+
 		return null;
 	}
 
 	private static void scheduleSourcesRemapping(Project project, Consumer<Runnable> postPopulationScheduler, File sources, String remappedLog, String remappedFilename, File modStore) {
 		postPopulationScheduler.accept(() -> {
-			project.getLogger().lifecycle(":providing " + remappedLog + " sources");
+			project.getLogger().info(":providing " + remappedLog + " sources");
 			File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
 
 			if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {

@@ -24,24 +24,27 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftAssetsProvider;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-public class SetupIntelijRunConfigs {
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
+import net.fabricmc.loom.providers.MinecraftNativesProvider;
+
+public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		File projectDir = project.file(".idea");
-		if(!projectDir.exists()){
+
+		if (!projectDir.exists()) {
 			return;
 		}
+
 		try {
 			generate(project);
 		} catch (IOException e) {
@@ -49,6 +52,7 @@ public class SetupIntelijRunConfigs {
 		}
 
 		File runDir = new File(project.getRootDir(), extension.runDir);
+
 		if (!runDir.exists()) {
 			runDir.mkdirs();
 		}
@@ -56,9 +60,10 @@ public class SetupIntelijRunConfigs {
 
 	private static void generate(Project project) throws IOException {
 		//Ensures the assets are downloaded when idea is syncing a project
-		if(Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))){
+		if (Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))) {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 		}
 
 		File projectDir = project.file(".idea");
@@ -66,18 +71,19 @@ public class SetupIntelijRunConfigs {
 		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
 		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");
 
-		if(!runConfigsDir.exists()){
+		if (!runConfigsDir.exists()) {
 			runConfigsDir.mkdirs();
 		}
 
 		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
 
-		if(!clientRunConfigs.exists())
+		if (!clientRunConfigs.exists()) {
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		if(!serverRunConfigs.exists())
+		}
+
+		if (!serverRunConfigs.exists()) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
-
+		}
 	}
-
 }

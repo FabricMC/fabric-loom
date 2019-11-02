@@ -24,15 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import net.fabricmc.tinyremapper.TinyRemapper;
-import org.objectweb.asm.commons.Remapper;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -41,86 +32,91 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+
 public final class MixinRefmapHelper {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private MixinRefmapHelper() {
+	private MixinRefmapHelper() { }
 
-    }
+	public static boolean addRefmapName(String filename, String mixinVersion, Path outputPath) {
+		File output = outputPath.toFile();
+		Set<String> mixinFilenames = findMixins(output, true);
 
-    public static boolean addRefmapName(String filename, String mixinVersion, Path outputPath) {
-        File output = outputPath.toFile();
-        Set<String> mixinFilenames = findMixins(output, true);
+		if (mixinFilenames.size() > 0) {
+			return ZipUtil.transformEntries(output, mixinFilenames.stream().map((f) -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
+				@Override
+				protected String transform(ZipEntry zipEntry, String input) throws IOException {
+					JsonObject json = GSON.fromJson(input, JsonObject.class);
 
-        if (mixinFilenames.size() > 0) {
-            return ZipUtil.transformEntries(
-                    output,
-                    mixinFilenames.stream()
-                            .map((f) -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
-                                @Override
-                                protected String transform(ZipEntry zipEntry, String input) throws IOException {
-                                    JsonObject json = GSON.fromJson(input, JsonObject.class);
-                                    if (!json.has("refmap")) {
-                                        json.addProperty("refmap", filename);
-                                    }
-                                    if (!json.has("minVersion") && mixinVersion != null) {
-                                        json.addProperty("minVersion", mixinVersion);
-                                    }
-                                    return GSON.toJson(json);
-                                }
-                            })).toArray(ZipEntryTransformerEntry[]::new)
-            );
-        } else {
-            return false;
-        }
-    }
+					if (!json.has("refmap")) {
+						json.addProperty("refmap", filename);
+					}
 
-    private static Set<String> findMixins(File output, boolean onlyWithoutRefmap) {
-        // first, identify all of the mixin files
-        Set<String> mixinFilename = new HashSet<>();
-        // TODO: this is a lovely hack
-        ZipUtil.iterate(output, (stream, entry) -> {
-            if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
-                // JSON file in root directory
-                try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
-                    JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
+					if (!json.has("minVersion") && mixinVersion != null) {
+						json.addProperty("minVersion", mixinVersion);
+					}
 
-                    if (json != null) {
-                        boolean hasMixins = json.has("mixins") && json.get("mixins").isJsonArray();
-                        boolean hasClient = json.has("client") && json.get("client").isJsonArray();
-                        boolean hasServer = json.has("server") && json.get("server").isJsonArray();
+					return GSON.toJson(json);
+				}
+			})).toArray(ZipEntryTransformerEntry[]::new));
+		} else {
+			return false;
+		}
+	}
 
-                        if (json.has("package") && (hasMixins || hasClient || hasServer)) {
-                            if (!onlyWithoutRefmap || !json.has("refmap") || !json.has("minVersion")) {
-                                mixinFilename.add(entry.getName());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    // ...
-                }
-            }
-        });
-        return mixinFilename;
-    }
+	private static Set<String> findMixins(File output, boolean onlyWithoutRefmap) {
+		// first, identify all of the mixin files
+		Set<String> mixinFilename = new HashSet<>();
+		// TODO: this is a lovely hack
+		ZipUtil.iterate(output, (stream, entry) -> {
+			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
+				// JSON file in root directory
+				try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
+					JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
 
-    private static Set<String> findRefmaps(File output) {
-        // first, identify all of the mixin refmaps
-        Set<String> mixinRefmapFilenames = new HashSet<>();
-        // TODO: this is also a lovely hack
-        ZipUtil.iterate(output, (stream, entry) -> {
-            if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
-                // JSON file in root directory
-                try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
-                    JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
-                    if (json != null && json.has("refmap")) {
-                        mixinRefmapFilenames.add(json.get("refmap").getAsString());
-                    }
-                } catch (Exception e) {
-                    // ...
-                }
-            }
-        });
-        return mixinRefmapFilenames;
-    }
+					if (json != null) {
+						boolean hasMixins = json.has("mixins") && json.get("mixins").isJsonArray();
+						boolean hasClient = json.has("client") && json.get("client").isJsonArray();
+						boolean hasServer = json.has("server") && json.get("server").isJsonArray();
+
+						if (json.has("package") && (hasMixins || hasClient || hasServer)) {
+							if (!onlyWithoutRefmap || !json.has("refmap") || !json.has("minVersion")) {
+								mixinFilename.add(entry.getName());
+							}
+						}
+					}
+				} catch (Exception e) {
+					// ...
+				}
+			}
+		});
+		return mixinFilename;
+	}
+
+	private static Set<String> findRefmaps(File output) {
+		// first, identify all of the mixin refmaps
+		Set<String> mixinRefmapFilenames = new HashSet<>();
+		// TODO: this is also a lovely hack
+		ZipUtil.iterate(output, (stream, entry) -> {
+			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
+				// JSON file in root directory
+				try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
+					JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
+
+					if (json != null && json.has("refmap")) {
+						mixinRefmapFilenames.add(json.get("refmap").getAsString());
+					}
+				} catch (Exception e) {
+					// ...
+				}
+			}
+		});
+		return mixinRefmapFilenames;
+	}
 }

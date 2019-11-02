@@ -24,7 +24,16 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Map;
+
 import com.google.gson.Gson;
+import org.gradle.api.GradleException;
+import org.gradle.api.Project;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
@@ -33,15 +42,6 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.assets.AssetIndex;
 import net.fabricmc.loom.util.assets.AssetObject;
 import net.fabricmc.loom.util.progress.ProgressLogger;
-
-import org.gradle.api.GradleException;
-import org.gradle.api.Project;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Map;
 
 public class MinecraftAssetsProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
@@ -53,13 +53,16 @@ public class MinecraftAssetsProvider {
 
 		// get existing cache files
 		File assets = new File(extension.getUserCache(), "assets");
+
 		if (!assets.exists()) {
 			assets.mkdirs();
 		}
 
 		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
+
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");
+
 			if (offline) {
 				if (assetsInfo.exists()) {
 					//We know it's outdated but can't do anything about it, oh well
@@ -76,13 +79,16 @@ public class MinecraftAssetsProvider {
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
 		progressLogger.start("Downloading assets...", "assets");
 		AssetIndex index;
+
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
 			index = new Gson().fromJson(fileReader, AssetIndex.class);
 		}
+
 		Map<String, AssetObject> parent = index.getFileMap();
 		final int totalSize = parent.size();
 		int position = 0;
 		project.getLogger().lifecycle(":downloading assets...");
+
 		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
 			AssetObject object = entry.getValue();
 			String sha1 = object.getHash();
@@ -101,11 +107,14 @@ public class MinecraftAssetsProvider {
 					DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
 				}
 			}
+
 			String assetName = entry.getKey();
 			int end = assetName.lastIndexOf("/") + 1;
+
 			if (end > 0) {
 				assetName = assetName.substring(end);
 			}
+
 			progressLogger.progress(assetName + " - " + position + "/" + totalSize + " (" + (int) ((position / (double) totalSize) * 100) + "%) assets downloaded");
 			position++;
 		}

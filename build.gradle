@@ -5,6 +5,7 @@ plugins {
 	id 'idea'
 	id 'eclipse'
 	id 'groovy'
+	id 'checkstyle'
 }
 
 sourceCompatibility = 1.8
@@ -60,6 +61,12 @@ dependencies {
 	testImplementation("org.spockframework:spock-core:1.3-groovy-2.4")
 }
 
+configurations.all {
+	resolutionStrategy {
+		force 'org.codehaus.groovy:groovy-all:2.4.12'
+	}
+}
+
 jar {
 	manifest {
 		attributes 'Implementation-Version': version + " Build(" + build + ")"
@@ -80,6 +87,15 @@ apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.g
 
 license {
 	exclude '**/loom/util/DownloadUtil.java'
+}
+
+checkstyle {
+	configFile = file("checkstyle.xml")
+	toolVersion = '8.25'
+}
+
+checkstyleMain {
+	logging.setLevel(LogLevel.LIFECYCLE)
 }
 
 gradlePlugin {

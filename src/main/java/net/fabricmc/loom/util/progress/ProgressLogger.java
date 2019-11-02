@@ -24,13 +24,13 @@
 
 package net.fabricmc.loom.util.progress;
 
-import org.gradle.api.Project;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.gradle.api.Project;
+
 /**
- * Wrapper to ProgressLogger internal API
+ * Wrapper to ProgressLogger internal API.
  */
 public class ProgressLogger {
 	private final Object logger;
@@ -54,6 +54,7 @@ public class ProgressLogger {
 
 	private static Class<?> getFactoryClass() {
 		Class<?> progressLoggerFactoryClass = null;
+
 		try {
 			//Gradle 2.14 and higher
 			progressLoggerFactoryClass = Class.forName("org.gradle.internal.logging.progress.ProgressLoggerFactory");
@@ -65,6 +66,7 @@ public class ProgressLogger {
 				// Unsupported Gradle version
 			}
 		}
+
 		return progressLoggerFactoryClass;
 	}
 
@@ -73,9 +75,10 @@ public class ProgressLogger {
 			try {
 				return logger.getClass().getMethod(methodName, args);
 			} catch (NoSuchMethodException ignored) {
-
+				//Nope
 			}
 		}
+
 		return null;
 	}
 
@@ -85,14 +88,15 @@ public class ProgressLogger {
 				method.setAccessible(true);
 				return method.invoke(logger, args);
 			} catch (IllegalAccessException | InvocationTargetException ignored) {
-
+				//Nope
 			}
 		}
+
 		return null;
 	}
 
 	/**
-	 * Get a Progress logger from the Gradle internal API
+	 * Get a Progress logger from the Gradle internal API.
 	 *
 	 * @param project The project
 	 * @param category The logger category
@@ -122,9 +126,9 @@ public class ProgressLogger {
 	}
 
 	/**
-	 * <p>Sets the description of the operation. This should be a full, stand-alone description of the operation.
-	 * <p>
-	 * <p>This must be called before {@link #started()}.
+	 * Sets the description of the operation. This should be a full, stand-alone description of the operation.
+	 *
+	 * <p>This must be called before {@link #started()}
 	 *
 	 * @param description The description.
 	 */
@@ -143,8 +147,8 @@ public class ProgressLogger {
 	}
 
 	/**
-	 * <p>Sets the short description of the operation. This is used in place of the full description when display space is limited.
-	 * <p>
+	 * Sets the short description of the operation. This is used in place of the full description when display space is limited.
+	 *
 	 * <p>This must be called before {@link #started()}
 	 *
 	 * @param description The short description.
@@ -155,9 +159,9 @@ public class ProgressLogger {
 	}
 
 	/**
-	 * <p>Returns the logging header for the operation. This is logged before any other log messages for this operation are logged. It is usually
+	 * Returns the logging header for the operation. This is logged before any other log messages for this operation are logged. It is usually
 	 * also logged at the end of the operation, along with the final status message. Defaults to null.
-	 * <p>
+	 *
 	 * <p>If not specified, no logging header is logged.
 	 *
 	 * @return The logging header, possibly empty.
@@ -167,7 +171,7 @@ public class ProgressLogger {
 	}
 
 	/**
-	 * <p>Sets the logging header for the operation. This is logged before any other log messages for this operation are logged. It is usually
+	 * Sets the logging header for the operation. This is logged before any other log messages for this operation are logged. It is usually
 	 * also logged at the end of the operation, along with the final status message. Defaults to null.
 	 *
 	 * @param header The header. May be empty or null.
@@ -213,7 +217,7 @@ public class ProgressLogger {
 	}
 
 	/**
-	 * Logs the completion of the operation, with no final status
+	 * Logs the completion of the operation, with no final status.
 	 */
 	public void completed() {
 		invoke(completed);

@@ -24,14 +24,16 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.mappings.*;
+import net.fabricmc.mappings.ClassEntry;
+import net.fabricmc.mappings.EntryTriple;
+import net.fabricmc.mappings.FieldEntry;
+import net.fabricmc.mappings.Mappings;
+import net.fabricmc.mappings.MethodEntry;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.MemberInstance;
 
 public class TinyRemapperMappingsHelper {
-	private TinyRemapperMappingsHelper() {
-
-	}
+	private TinyRemapperMappingsHelper() { }
 
 	public static IMappingProvider create(Mappings mappings, String from, String to) {
 		return (classMap, fieldMap, methodMap) -> {

@@ -24,41 +24,42 @@
 
 package net.fabricmc.loom.providers;
 
-import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.mappings.Mappings;
-import org.gradle.api.logging.Logging;
-
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.fabricmc.loom.util.StaticPathWatcher;
+import net.fabricmc.mappings.Mappings;
+
 public final class MappingsCache {
-    public static final MappingsCache INSTANCE = new MappingsCache();
+	public static final MappingsCache INSTANCE = new MappingsCache();
 
-    private final Map<Path, SoftReference<Mappings>> mappingsCache = new HashMap<>();
+	private final Map<Path, SoftReference<Mappings>> mappingsCache = new HashMap<>();
 
-    public Mappings get(Path mappingsPath) {
-        mappingsPath = mappingsPath.toAbsolutePath();
-        if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
-            mappingsCache.remove(mappingsPath);
-        }
+	public Mappings get(Path mappingsPath) {
+		mappingsPath = mappingsPath.toAbsolutePath();
 
-        SoftReference<Mappings> ref = mappingsCache.get(mappingsPath);
-        if (ref != null && ref.get() != null) {
-            return ref.get();
-        } else {
-            try (InputStream stream = Files.newInputStream(mappingsPath)) {
-                Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
-                ref = new SoftReference<>(mappings);
-                mappingsCache.put(mappingsPath, ref);
-                return mappings;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+		if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
+			mappingsCache.remove(mappingsPath);
+		}
+
+		SoftReference<Mappings> ref = mappingsCache.get(mappingsPath);
+
+		if (ref != null && ref.get() != null) {
+			return ref.get();
+		} else {
+			try (InputStream stream = Files.newInputStream(mappingsPath)) {
+				Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
+				ref = new SoftReference<>(mappings);
+				mappingsCache.put(mappingsPath, ref);
+				return mappings;
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 }

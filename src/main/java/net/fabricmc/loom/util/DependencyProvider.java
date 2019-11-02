@@ -24,33 +24,8 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
-import net.fabricmc.loom.LoomGradleExtension;
-
-import org.apache.commons.io.FilenameUtils;
-import org.gradle.api.InvalidUserDataException;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedDependency;
-import org.gradle.api.artifacts.SelfResolvingDependency;
-import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
-import org.gradle.api.artifacts.result.ArtifactResult;
-import org.gradle.api.artifacts.result.ComponentArtifactsResult;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
-import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier;
-import org.gradle.jvm.JvmLibrary;
-import org.gradle.language.base.artifact.SourcesArtifact;
-import org.zeroturnaround.zip.ZipUtil;
-
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -60,8 +35,21 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public abstract class DependencyProvider {
+import com.google.common.collect.Iterables;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.FilenameUtils;
+import org.zeroturnaround.zip.ZipUtil;
+import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.SelfResolvingDependency;
 
+import net.fabricmc.loom.LoomGradleExtension;
+
+public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
 
 	public abstract void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception;
@@ -73,13 +61,14 @@ public abstract class DependencyProvider {
 	}
 
 	public void addDependency(Object object, Project project, String target) {
-		if(object instanceof File){
+		if (object instanceof File) {
 			object = project.files(object);
 		}
+
 		project.getDependencies().add(target, object);
 	}
 
-	public void register(LoomDependencyManager dependencyManager){
+	public void register(LoomDependencyManager dependencyManager) {
 		this.dependencyManager = dependencyManager;
 	}
 
@@ -132,14 +121,17 @@ public abstract class DependencyProvider {
 
 		public Optional<File> resolveFile() {
 			Set<File> files = resolve();
+
 			if (files.isEmpty()) {
 				return Optional.empty();
 			} else if (files.size() > 1) {
 				StringBuilder builder = new StringBuilder(this.toString());
 				builder.append(" resolves to more than one file:");
+
 				for (File f : files) {
 					builder.append("\n\t-").append(f.getAbsolutePath());
 				}
+
 				throw new RuntimeException(builder.toString());
 			} else {
 				return files.stream().findFirst();
@@ -151,11 +143,11 @@ public abstract class DependencyProvider {
 			return getDepString();
 		}
 
-		public String getDepString(){
+		public String getDepString() {
 			return dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion();
 		}
 
-		public String getResolvedDepString(){
+		public String getResolvedDepString() {
 			return dependency.getGroup() + ":" + dependency.getName() + ":" + getResolvedVersion();
 		}
 	}
@@ -178,7 +170,6 @@ public abstract class DependencyProvider {
 
 			default: //File collection, try work out the classifiers
 				List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparingInt(String::length))).collect(Collectors.toList());
-
 				//First element in sortedFiles is the one with the shortest name, we presume all the others are different classifier types of this
 				File shortest = sortedFiles.remove(0);
 				String shortestName = FilenameUtils.removeExtension(shortest.getName()); //name.jar -> name
@@ -192,8 +183,8 @@ public abstract class DependencyProvider {
 
 				//We appear to be right, therefore this is the normal dependency file we want
 				classifierToFile.put("", shortest);
-
 				int start = shortestName.length();
+
 				for (File file : sortedFiles) {
 					//Now we just have to work out what classifier type the other files are, this shouldn't even return an empty string
 					String classifier = FilenameUtils.removeExtension(file.getName()).substring(start);
@@ -206,16 +197,21 @@ public abstract class DependencyProvider {
 			}
 
 			File root = classifierToFile.get(""); //We've built the classifierToFile map, now to try find a name and version for our dependency
+
 			if ("jar".equals(FilenameUtils.getExtension(root.getName())) && ZipUtil.containsEntry(root, "fabric.mod.json")) {
 				//It's a Fabric mod, see how much we can extract out
 				JsonObject json = new Gson().fromJson(new String(ZipUtil.unpackEntry(root, "fabric.mod.json"), StandardCharsets.UTF_8), JsonObject.class);
-				if (json == null || !json.has("id") || !json.has("version")) throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
 
-				if (json.has("name")) {//Go for the name field if it's got one
+				if (json == null || !json.has("id") || !json.has("version")) {
+					throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
+				}
+
+				if (json.has("name")) { //Go for the name field if it's got one
 					name = json.get("name").getAsString();
 				} else {
 					name = json.get("id").getAsString();
 				}
+
 				version = json.get("version").getAsString();
 			} else {
 				//Not a Fabric mod, just have to make something up

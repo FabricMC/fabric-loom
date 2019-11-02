@@ -24,10 +24,12 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.Version;
-import net.fabricmc.mappings.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.mercury.Mercury;
@@ -35,149 +37,147 @@ import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Version;
+import net.fabricmc.mappings.ClassEntry;
+import net.fabricmc.mappings.EntryTriple;
+import net.fabricmc.mappings.FieldEntry;
+import net.fabricmc.mappings.Mappings;
+import net.fabricmc.mappings.MethodEntry;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
-    @TaskAction
-    public void doTask() throws Throwable {
-        Project project = getProject();
-        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        Map<String, ?> properties = project.getProperties();
+	@TaskAction
+	public void doTask() throws Throwable {
+		Project project = getProject();
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		Map<String, ?> properties = project.getProperties();
 
-        project.getLogger().lifecycle(":loading mappings");
+		project.getLogger().lifecycle(":loading mappings");
 
-        File mappingsFile = null;
+		File mappingsFile = null;
 
-        if (properties.containsKey("targetMappingsFile")) {
-            mappingsFile = new File((String) properties.get("targetMappingsFile"));
-        } else if (properties.containsKey("targetMappingsArtifact")) {
-            String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
-            if (artifactName.length != 3) {
-                throw new RuntimeException("Invalid artifact name: " + properties.get("targetMappingsArtifact"));
-            }
+		if (properties.containsKey("targetMappingsFile")) {
+			mappingsFile = new File((String) properties.get("targetMappingsFile"));
+		} else if (properties.containsKey("targetMappingsArtifact")) {
+			String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
 
-            String mappingsName = artifactName[0] + "." + artifactName[1];
+			if (artifactName.length != 3) {
+				throw new RuntimeException("Invalid artifact name: " + properties.get("targetMappingsArtifact"));
+			}
 
-            Version v = new Version(artifactName[2]);
-            String minecraftVersion = v.getMinecraftVersion();
-            String mappingsVersion = v.getMappingsVersion();
+			String mappingsName = artifactName[0] + "." + artifactName[1];
 
-            mappingsFile = new File(extension.getMappingsProvider().MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
-        }
+			Version v = new Version(artifactName[2]);
+			String minecraftVersion = v.getMinecraftVersion();
+			String mappingsVersion = v.getMappingsVersion();
 
-        if (mappingsFile == null || !mappingsFile.exists()) {
-            throw new RuntimeException("Could not find mappings file: " + (mappingsFile != null ? mappingsFile : "null"));
-        }
+			mappingsFile = new File(extension.getMappingsProvider().MAPPINGS_DIR, mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion);
+		}
 
-        if (!properties.containsKey("inputDir") || !properties.containsKey("outputDir")) {
-            throw new RuntimeException("Must specify input and output dir!");
-        }
+		if (mappingsFile == null || !mappingsFile.exists()) {
+			throw new RuntimeException("Could not find mappings file: " + (mappingsFile != null ? mappingsFile : "null"));
+		}
 
-        File inputDir = new File((String) properties.get("inputDir"));
-        File outputDir = new File((String) properties.get("outputDir"));
+		if (!properties.containsKey("inputDir") || !properties.containsKey("outputDir")) {
+			throw new RuntimeException("Must specify input and output dir!");
+		}
 
-        if (!inputDir.exists() || !inputDir.isDirectory()) {
-            throw new RuntimeException("Could not find input directory: " + inputDir);
-        }
+		File inputDir = new File((String) properties.get("inputDir"));
+		File outputDir = new File((String) properties.get("outputDir"));
 
-        if (!outputDir.exists()) {
-            if (!outputDir.mkdirs()) {
-                throw new RuntimeException("Could not create output directory:"  + outputDir);
-            }
-        }
+		if (!inputDir.exists() || !inputDir.isDirectory()) {
+			throw new RuntimeException("Could not find input directory: " + inputDir);
+		}
 
-        Mappings sourceMappings = extension.getMappingsProvider().getMappings();
-        Mappings targetMappings;
+		if (!outputDir.exists()) {
+			if (!outputDir.mkdirs()) {
+				throw new RuntimeException("Could not create output directory:" + outputDir);
+			}
+		}
 
-        try (FileInputStream stream = new FileInputStream(mappingsFile)) {
-            targetMappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
-        }
+		Mappings sourceMappings = extension.getMappingsProvider().getMappings();
+		Mappings targetMappings;
 
-        project.getLogger().lifecycle(":joining mappings");
-        MappingSet mappingSet = new MappingsJoiner(sourceMappings, targetMappings, "intermediary", "named").read();
+		try (FileInputStream stream = new FileInputStream(mappingsFile)) {
+			targetMappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
+		}
 
-        project.getLogger().lifecycle(":remapping");
-        Mercury mercury = new Mercury();
+		project.getLogger().lifecycle(":joining mappings");
+		MappingSet mappingSet = new MappingsJoiner(sourceMappings, targetMappings, "intermediary", "named").read();
 
-        for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
-            mercury.getClassPath().add(file.toPath());
-        }
+		project.getLogger().lifecycle(":remapping");
+		Mercury mercury = new Mercury();
 
-        for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
-            mercury.getClassPath().add(file.toPath());
-        }
+		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
+			mercury.getClassPath().add(file.toPath());
+		}
 
-        mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
-        mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
+		for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
+			mercury.getClassPath().add(file.toPath());
+		}
 
-        mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
+		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
-        try {
-            mercury.rewrite(inputDir.toPath(), outputDir.toPath());
-        } catch (Exception e) {
-            project.getLogger().warn("Could not remap fully!", e);
-        }
+		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 
-        project.getLogger().lifecycle(":cleaning file descriptors");
-        System.gc();
-    }
+		try {
+			mercury.rewrite(inputDir.toPath(), outputDir.toPath());
+		} catch (Exception e) {
+			project.getLogger().warn("Could not remap fully!", e);
+		}
 
-    public static class MappingsJoiner extends MappingsReader {
-        private final Mappings sourceMappings, targetMappings;
-        private final String fromNamespace, toNamespace;
+		project.getLogger().lifecycle(":cleaning file descriptors");
+		System.gc();
+	}
 
-        public MappingsJoiner(Mappings sourceMappings, Mappings targetMappings, String fromNamespace, String toNamespace) {
-            this.sourceMappings = sourceMappings;
-            this.targetMappings = targetMappings;
-            this.fromNamespace = fromNamespace;
-            this.toNamespace = toNamespace;
-        }
+	public static class MappingsJoiner extends MappingsReader {
+		private final Mappings sourceMappings, targetMappings;
+		private final String fromNamespace, toNamespace;
 
-        @Override
-        public MappingSet read(MappingSet mappings) throws IOException {
-            Map<String, ClassEntry> targetClasses = new HashMap<>();
-            Map<EntryTriple, FieldEntry> targetFields = new HashMap<>();
-            Map<EntryTriple, MethodEntry> targetMethods = new HashMap<>();
+		public MappingsJoiner(Mappings sourceMappings, Mappings targetMappings, String fromNamespace, String toNamespace) {
+			this.sourceMappings = sourceMappings;
+			this.targetMappings = targetMappings;
+			this.fromNamespace = fromNamespace;
+			this.toNamespace = toNamespace;
+		}
 
-            targetMappings.getClassEntries().forEach((c) -> targetClasses.put(c.get(fromNamespace), c));
-            targetMappings.getFieldEntries().forEach((c) -> targetFields.put(c.get(fromNamespace), c));
-            targetMappings.getMethodEntries().forEach((c) -> targetMethods.put(c.get(fromNamespace), c));
+		@Override
+		public MappingSet read(MappingSet mappings) throws IOException {
+			Map<String, ClassEntry> targetClasses = new HashMap<>();
+			Map<EntryTriple, FieldEntry> targetFields = new HashMap<>();
+			Map<EntryTriple, MethodEntry> targetMethods = new HashMap<>();
 
-            for (ClassEntry entry : sourceMappings.getClassEntries()) {
-                String from = entry.get(toNamespace);
-                String to = targetClasses.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
+			targetMappings.getClassEntries().forEach((c) -> targetClasses.put(c.get(fromNamespace), c));
+			targetMappings.getFieldEntries().forEach((c) -> targetFields.put(c.get(fromNamespace), c));
+			targetMappings.getMethodEntries().forEach((c) -> targetMethods.put(c.get(fromNamespace), c));
 
-                mappings.getOrCreateClassMapping(from).setDeobfuscatedName(to);
-            }
+			for (ClassEntry entry : sourceMappings.getClassEntries()) {
+				String from = entry.get(toNamespace);
+				String to = targetClasses.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
 
-            for (FieldEntry entry : sourceMappings.getFieldEntries()) {
-                EntryTriple fromEntry = entry.get(toNamespace);
-                EntryTriple toEntry = targetFields.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
+				mappings.getOrCreateClassMapping(from).setDeobfuscatedName(to);
+			}
 
-                mappings.getOrCreateClassMapping(fromEntry.getOwner())
-                        .getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc())
-                        .setDeobfuscatedName(toEntry.getName());
-            }
+			for (FieldEntry entry : sourceMappings.getFieldEntries()) {
+				EntryTriple fromEntry = entry.get(toNamespace);
+				EntryTriple toEntry = targetFields.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
 
-            for (MethodEntry entry : sourceMappings.getMethodEntries()) {
-                EntryTriple fromEntry = entry.get(toNamespace);
-                EntryTriple toEntry = targetMethods.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
+				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
+			}
 
-                mappings.getOrCreateClassMapping(fromEntry.getOwner())
-                        .getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc())
-                        .setDeobfuscatedName(toEntry.getName());
-            }
+			for (MethodEntry entry : sourceMappings.getMethodEntries()) {
+				EntryTriple fromEntry = entry.get(toNamespace);
+				EntryTriple toEntry = targetMethods.getOrDefault(entry.get(fromNamespace), entry).get(toNamespace);
 
-            return mappings;
-        }
+				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
+			}
 
-        @Override
-        public void close() throws IOException {
+			return mappings;
+		}
 
-        }
-    }
+		@Override
+		public void close() throws IOException { }
+	}
 }

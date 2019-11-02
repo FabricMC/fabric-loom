@@ -24,14 +24,6 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
-import net.fabricmc.loom.util.OperatingSystem;
-import net.fabricmc.loom.util.RunConfig;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.JavaExec;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,99 +33,113 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.gradle.api.Project;
+import org.gradle.api.tasks.JavaExec;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.util.MinecraftVersionInfo;
+import net.fabricmc.loom.util.RunConfig;
+
 public abstract class AbstractRunTask extends JavaExec {
-    private final Function<Project, RunConfig> configProvider;
-    private RunConfig config;
+	private final Function<Project, RunConfig> configProvider;
+	private RunConfig config;
 
-    public AbstractRunTask(Function<Project, RunConfig> config) {
-        super();
-        setGroup("fabric");
-        this.configProvider = config;
-    }
+	public AbstractRunTask(Function<Project, RunConfig> config) {
+		super();
+		setGroup("fabric");
+		this.configProvider = config;
+	}
 
-    @Override
-    public void exec() {
-        if (config == null) {
-            config = configProvider.apply(getProject());
-        }
+	@Override
+	public void exec() {
+		if (config == null) {
+			config = configProvider.apply(getProject());
+		}
 
-        LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-        MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().versionInfo;
-        MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().versionInfo;
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-        List<String> libs = new ArrayList<>();
-        for (File file : getProject().getConfigurations().getByName("runtimeClasspath").getFiles()) {
-            libs.add(file.getAbsolutePath());
-        }
-        for (Path file : extension.getUnmappedMods()) {
-            if (Files.isRegularFile(file)) {
-                libs.add(file.toFile().getAbsolutePath());
-            }
-        }
+		List<String> libs = new ArrayList<>();
 
-        classpath(libs);
-        List<String> argsSplit = new ArrayList<>();
-        String[] args = config.programArgs.split(" ");
-        int partPos = -1;
-        for (int i = 0; i < args.length; i++) {
-            if (partPos < 0) {
-                if (args[i].startsWith("\"")) {
-                    if (args[i].endsWith("\"")) {
-                        argsSplit.add(args[i].substring(1, args[i].length() - 1));
-                    } else {
-                        partPos = i;
-                    }
-                } else {
-                    argsSplit.add(args[i]);
-                }
-            } else if (args[i].endsWith("\"")) {
-                StringBuilder builder = new StringBuilder(args[partPos].substring(1));
-                for (int j = partPos + 1; j < i; j++) {
-                    builder.append(" ").append(args[j]);
-                }
-                builder.append(" ").append(args[i], 0, args[i].length() - 1);
-                argsSplit.add(builder.toString());
-                partPos = -1;
-            }
-        }
+		for (File file : getProject().getConfigurations().getByName("runtimeClasspath").getFiles()) {
+			libs.add(file.getAbsolutePath());
+		}
 
-        args(argsSplit);
-        setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
+		for (Path file : extension.getUnmappedMods()) {
+			if (Files.isRegularFile(file)) {
+				libs.add(file.toFile().getAbsolutePath());
+			}
+		}
 
-        super.exec();
-    }
+		classpath(libs);
+		List<String> argsSplit = new ArrayList<>();
+		String[] args = config.programArgs.split(" ");
+		int partPos = -1;
 
-    @Override
-    public void setWorkingDir(File dir) {
-        if (config == null) {
-            config = configProvider.apply(getProject());
-        }
+		for (int i = 0; i < args.length; i++) {
+			if (partPos < 0) {
+				if (args[i].startsWith("\"")) {
+					if (args[i].endsWith("\"")) {
+						argsSplit.add(args[i].substring(1, args[i].length() - 1));
+					} else {
+						partPos = i;
+					}
+				} else {
+					argsSplit.add(args[i]);
+				}
+			} else if (args[i].endsWith("\"")) {
+				StringBuilder builder = new StringBuilder(args[partPos].substring(1));
 
-        if(!dir.exists()){
-            dir.mkdirs();
-        }
-        super.setWorkingDir(dir);
-    }
+				for (int j = partPos + 1; j < i; j++) {
+					builder.append(" ").append(args[j]);
+				}
 
-    @Override
-    public String getMain() {
-        if (config == null) {
-            config = configProvider.apply(getProject());
-        }
+				builder.append(" ").append(args[i], 0, args[i].length() - 1);
+				argsSplit.add(builder.toString());
+				partPos = -1;
+			}
+		}
 
-        return config.mainClass;
-    }
+		args(argsSplit);
+		setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
 
-    @Override
-    public List<String> getJvmArgs() {
-        if (config == null) {
-            config = configProvider.apply(getProject());
-        }
-        
-        LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-        List<String> superArgs = super.getJvmArgs();
-        List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
-        args.addAll(Arrays.asList(config.vmArgs.split(" ")));
-        return args;
-    }
+		super.exec();
+	}
+
+	@Override
+	public void setWorkingDir(File dir) {
+		if (config == null) {
+			config = configProvider.apply(getProject());
+		}
+
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+
+		super.setWorkingDir(dir);
+	}
+
+	@Override
+	public String getMain() {
+		if (config == null) {
+			config = configProvider.apply(getProject());
+		}
+
+		return config.mainClass;
+	}
+
+	@Override
+	public List<String> getJvmArgs() {
+		if (config == null) {
+			config = configProvider.apply(getProject());
+		}
+
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
+		List<String> superArgs = super.getJvmArgs();
+		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
+		args.addAll(Arrays.asList(config.vmArgs.split(" ")));
+		return args;
+	}
 }

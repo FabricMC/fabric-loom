@@ -25,7 +25,6 @@
 package net.fabricmc.loom.util;
 
 public class Version {
-
 	private String mappingsVersion;
 	private String minecraftVersion;
 
@@ -34,7 +33,7 @@ public class Version {
 	public Version(String version) {
 		this.version = version;
 
-		if(version.contains("+build.")){
+		if (version.contains("+build.")) {
 			this.minecraftVersion = version.substring(0, version.lastIndexOf('+'));
 			this.mappingsVersion = version.substring(version.lastIndexOf('.') + 1);
 		} else {

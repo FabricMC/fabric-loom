@@ -24,10 +24,6 @@
 
 package net.fabricmc.loom.providers;
 
-import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.mapping.tree.TinyMappingFactory;
-import net.fabricmc.mapping.tree.TinyTree;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.ref.SoftReference;
@@ -37,7 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.mappings.Mappings;
+import net.fabricmc.mapping.tree.TinyMappingFactory;
+import net.fabricmc.mapping.tree.TinyTree;
 
 public final class MappingsCache {
 	public static final MappingsCache INSTANCE = new MappingsCache();
@@ -47,11 +44,13 @@ public final class MappingsCache {
 	//TODO: loom doesn't actually use new mappings when the mappings change until the gradle daemons are stopped
 	public TinyTree get(Path mappingsPath) throws IOException {
 		mappingsPath = mappingsPath.toAbsolutePath();
+
 		if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
 			mappingsCache.remove(mappingsPath);
 		}
 
 		SoftReference<TinyTree> ref = mappingsCache.get(mappingsPath);
+
 		if (ref != null && ref.get() != null) {
 			return ref.get();
 		} else {
@@ -61,7 +60,6 @@ public final class MappingsCache {
 				mappingsCache.put(mappingsPath, ref);
 				return mappings;
 			}
-
 		}
 	}
 }

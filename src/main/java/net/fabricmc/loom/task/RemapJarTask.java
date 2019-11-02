@@ -76,7 +76,7 @@ public class RemapJarTask extends Jar {
 		String toM = "intermediary";
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
-				project.getConfigurations().getByName("compileClasspath").getFiles()
+						project.getConfigurations().getByName("compileClasspath").getFiles()
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
@@ -85,7 +85,8 @@ public class RemapJarTask extends Jar {
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
-		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM,false));
+		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+
 		if (mixinMapFile.exists()) {
 			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
 		}

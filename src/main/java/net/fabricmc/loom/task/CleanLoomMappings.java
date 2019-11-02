@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DeletingFileVisitor;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -34,17 +34,17 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 
 public class CleanLoomMappings extends AbstractLoomTask {
-    @TaskAction
-    public void run() {
-        try {
-            Project project = this.getProject();
-            LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-            extension.getMappingsProvider().clean();
-            extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
-            extension.getMinecraftMappedProvider().getMappedJar().delete();
-            Files.walkFileTree(extension.getRootProjectBuildCache().toPath(), new DeletingFileVisitor());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	@TaskAction
+	public void run() {
+		try {
+			Project project = this.getProject();
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			extension.getMappingsProvider().clean();
+			extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
+			extension.getMinecraftMappedProvider().getMappedJar().delete();
+			Files.walkFileTree(extension.getRootProjectBuildCache().toPath(), new DeletingFileVisitor());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

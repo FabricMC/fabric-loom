@@ -41,13 +41,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.internal.impldep.aQute.lib.strings.Strings;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.internal.impldep.aQute.lib.strings.Strings;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -133,7 +133,7 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		//Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
+		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) throws IOException {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
@@ -169,8 +169,8 @@ public class ModProcessor {
 		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-			.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM,false))
-			.build();
+						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+						.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
 			outputConsumer.addNonClassFiles(inputPath);

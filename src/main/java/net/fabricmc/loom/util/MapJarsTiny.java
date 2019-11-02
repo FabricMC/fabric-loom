@@ -38,13 +38,6 @@ import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-import org.gradle.api.Project;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Arrays;
-
 public class MapJarsTiny {
 	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
 		String fromM = "official";
@@ -64,10 +57,10 @@ public class MapJarsTiny {
 			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
-					.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM,true))
-					.renameInvalidLocals(true)
-					.rebuildSourceFilenames(true)
-					.build();
+							.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, true))
+							.renameInvalidLocals(true)
+							.rebuildSourceFilenames(true)
+							.build();
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);

@@ -175,30 +175,31 @@ public class AbstractPlugin implements Plugin<Project> {
 		return project;
 	}
 
-    protected void configureScala() {
-        project.afterEvaluate(proj -> {
-            if (project.getPluginManager().hasPlugin("scala")) {
-                ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
-                LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-                project.getLogger().warn(":configuring scala compilation processing");
-                try {
-                    task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-                    task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
+	protected void configureScala() {
+		project.afterEvaluate(proj -> {
+			if (project.getPluginManager().hasPlugin("scala")) {
+				ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
+				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+				project.getLogger().warn(":configuring scala compilation processing");
+
+				try {
+					task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().tinyMappings.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
 
 	/**
 	 * Permit to add a Maven repository to a target project.
 	 *
 	 * @param target The garget project
-	 * @param name The name of the repository
-	 * @param url The URL of the repository
+	 * @param name   The name of the repository
+	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {

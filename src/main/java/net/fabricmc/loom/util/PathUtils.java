@@ -35,11 +35,11 @@ public class PathUtils {
 
 	public static void deleteDirectoryContents(Path dirPath) throws IOException {
 		Files.list(dirPath).forEach(p -> {
-            try {
-                Files.delete(p);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+			try {
+				Files.delete(p);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 }

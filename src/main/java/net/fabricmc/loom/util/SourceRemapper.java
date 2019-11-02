@@ -24,13 +24,11 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.mapping.tree.ClassDef;
-import net.fabricmc.mapping.tree.FieldDef;
-import net.fabricmc.mapping.tree.MethodDef;
-import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.stitch.util.StitchUtil;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
@@ -38,10 +36,14 @@ import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
-import org.gradle.api.Project;
 
-import java.io.*;
-import java.nio.file.*;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
 	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
@@ -68,6 +70,7 @@ public class SourceRemapper {
 
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
 			Mercury m = createMercuryWithClassPath(project, toNamed);
+
 			for (Path file : extension.getUnmappedMods()) {
 				if (Files.isRegularFile(file)) {
 					m.getClassPath().add(file);
@@ -152,6 +155,7 @@ public class SourceRemapper {
 		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
 			m.getClassPath().add(file.toPath());
 		}
+
 		if (!toNamed) {
 			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
 				m.getClassPath().add(file.toPath());
@@ -160,24 +164,11 @@ public class SourceRemapper {
 		return m;
 	}
 
-	private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {
-        Files.walk(from).forEach(path -> {
-            Path targetPath = to.resolve(from.relativize(path).toString());
-            if (!isJavaFile(path) && !Files.exists(targetPath)) {
-                try {
-                    Files.copy(path, targetPath);
-                } catch (IOException e) {
-                    project.getLogger().warn("Could not copy non-java sources '" + source.getName() + "' fully!", e);
-                }
-            }
-        });
-    }
-
-    private static boolean isJavaFile(Path path) {
-        String name = path.getFileName().toString();
-        // ".java" is not a valid java file
-        return name.endsWith(".java") && name.length() != 5;
-    }
+	private static boolean isJavaFile(Path path) {
+		String name = path.getFileName().toString();
+		// ".java" is not a valid java file
+		return name.endsWith(".java") && name.length() != 5;
+	}
 
 	public static class TinyReader extends MappingsReader {
 		private final TinyTree mappings;
@@ -192,24 +183,25 @@ public class SourceRemapper {
 		@Override
 		public MappingSet read(final MappingSet mappings) {
 			for (ClassDef classDef : this.mappings.getClasses()) {
-				ClassMapping classMapping =  mappings.getOrCreateClassMapping(classDef.getName(from))
-						.setDeobfuscatedName(classDef.getName(to));
+				ClassMapping classMapping = mappings.getOrCreateClassMapping(classDef.getName(from))
+								.setDeobfuscatedName(classDef.getName(to));
 
-				for(FieldDef field : classDef.getFields()){
-					classMapping.getOrCreateFieldMapping(field.getName(from),field.getDescriptor(from))
-							.setDeobfuscatedName(field.getName(to));
+				for (FieldDef field : classDef.getFields()) {
+					classMapping.getOrCreateFieldMapping(field.getName(from), field.getDescriptor(from))
+									.setDeobfuscatedName(field.getName(to));
 				}
 
-				for(MethodDef method : classDef.getMethods()){
-					classMapping.getOrCreateMethodMapping(method.getName(from),method.getDescriptor(from))
-							.setDeobfuscatedName(method.getName(to));
+				for (MethodDef method : classDef.getMethods()) {
+					classMapping.getOrCreateMethodMapping(method.getName(from), method.getDescriptor(from))
+									.setDeobfuscatedName(method.getName(to));
 				}
 			}
-			
+
 			return mappings;
 		}
 
 		@Override
-		public void close() throws IOException { }
+		public void close() throws IOException {
+		}
 	}
 }

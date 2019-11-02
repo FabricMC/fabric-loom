@@ -24,9 +24,13 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.mapping.tree.*;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.LocalVariableDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.ParameterDef;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
-
 
 public class TinyRemapperMappingsHelper {
 	private TinyRemapperMappingsHelper() { }
@@ -34,7 +38,6 @@ public class TinyRemapperMappingsHelper {
 	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {
 		return new IMappingProvider.Member(className, memberName, descriptor);
 	}
-
 
 	public static IMappingProvider create(TinyTree mappings, String from, String to, boolean remapLocalVariables) {
 		return (acceptor) -> {
@@ -57,11 +60,10 @@ public class TinyRemapperMappingsHelper {
 
 						for (LocalVariableDef localVariable : method.getLocalVariables()) {
 							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLocalVariableIndex(),
-									localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
-									localVariable.getName(to));
+											localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
+											localVariable.getName(to));
 						}
 					}
-
 				}
 			}
 		};

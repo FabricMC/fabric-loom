@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.6-9971'
+version = '0.2.6-9974'
 
 def build = "local"
 def ENV = System.getenv()
@@ -45,10 +45,10 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.2.0.43') {
+	implementation ('net.fabricmc:tiny-remapper:0.2.2') {
 		transitive = false
 	}
-	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+'){
+	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.2.0'){
 		exclude group :"net.fabricmc"
 	}
 

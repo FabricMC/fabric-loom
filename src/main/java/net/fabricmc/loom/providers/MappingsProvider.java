@@ -53,11 +53,8 @@ import net.fabricmc.loom.util.Version;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
-import net.fabricmc.stitch.commands.CommandMergeTiny;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
-import net.fabricmc.stitch.commands.CommandReorderTiny;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
-import net.fabricmc.stitch.commands.tinyv2.CommandProposeV2FieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
 
 public class MappingsProvider extends DependencyProvider {
@@ -93,7 +90,7 @@ public class MappingsProvider extends DependencyProvider {
 				return TinyMappingFactory.loadWithDetection(reader);
 			}
 		} else {
-			//TODO: download unmerged v2 mappings once they are on the maven (yarn-unmerged:v2)
+			//TODO: download unmerged v2 mappings once they are on the maven (v2-yarn)
 			String versionRelativePath = version.replace("+", "%2B").replace(" ", "%20");
 			String artifactUrl = "https://maven.fabricmc.net/net/fabricmc/yarn/" + versionRelativePath + "/yarn-" + versionRelativePath + ".jar";
 			File mappingsJar = File.createTempFile("migrateMappingsJar", ".jar");
@@ -149,8 +146,8 @@ public class MappingsProvider extends DependencyProvider {
 	private boolean containsV2Yarn(List<File> mappingsJars) {
 		if (mappingsJars.size() == 1) {
 			return false;
-		} else if (mappingsJars.size() == 3) {
-			return FilenameUtils.removeExtension(getUnmergedYarnJar(mappingsJars).getName()).endsWith("-v2");
+		} else if (mappingsJars.size() == 2 && getUnmergedYarnJar(mappingsJars).exists()) {
+			return true;
 		} else {
 			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size() + ". This is likely because your 'mappings' line in build.gradle is incorrect.");
 		}
@@ -158,36 +155,32 @@ public class MappingsProvider extends DependencyProvider {
 
 	private File getUnmergedYarnJar(List<File> mappingsJars) {
 		return mappingsJars.stream()
-						.filter(f -> f.getName().startsWith("yarn-unmerged")).findFirst()
+						.filter(f -> f.getName().startsWith("v2-yarn")).findFirst()
 						.orElseThrow(() -> new RuntimeException("Could not find unmerged yarn mappings. Mappings: " + mappingsJars));
 	}
 
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, List<File> mappingsJars) throws IOException {
-		if (mappingsJars.size() == 1) {
-			// These are merged v1 mappings
-			saveMergedV1Mappings(project, mappingsJars.get(0).toPath());
-		} else if (mappingsJars.size() == 3) {
-			// These are unmerged v1 mappings or v2 mappings
+		if (isV2) {
+			// These are unmerged v2 mappings
 			File unmergedYarn = getUnmergedYarnJar(mappingsJars);
 			File unmergedIntermediary = mappingsJars.stream()
-							.filter(f -> {
-								String name = FilenameUtils.removeExtension(f.getName());
-								boolean isV2Intermediary = name.endsWith("-v2");
-								return name.startsWith("intermediary") && isV2 == isV2Intermediary;
-							}).findFirst()
+							.filter(f -> FilenameUtils.removeExtension(f.getName()).startsWith("intermediary")).findFirst()
 							.orElseThrow(() -> new RuntimeException("Could not find unmerged intermediary mappings. Mappings: " + mappingsJars));
 
 			mergeAndSaveMappings(project, unmergedIntermediary.toPath(), unmergedYarn.toPath());
 		} else {
-			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size());
+			// These are merged v1 mappings
+			saveMergedV1Mappings(project, mappingsJars.get(0).toPath());
+
+			if (tinyMappings.exists()) {
+				tinyMappings.delete();
+			}
+
+			project.getLogger().lifecycle(":populating field names");
+			suggestFieldNames(minecraftProvider, tinyMappingsWithoutEnums, tinyMappings.toPath());
 		}
 
-		if (tinyMappings.exists()) {
-			tinyMappings.delete();
-		}
 
-		project.getLogger().lifecycle(":populating field names");
-		suggestFieldNames(minecraftProvider, tinyMappingsWithoutEnums, tinyMappings.toPath());
 	}
 
 	private void saveMergedV1Mappings(Project project, Path mappingsJar) throws IOException {
@@ -226,11 +219,11 @@ public class MappingsProvider extends DependencyProvider {
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged" + extension());
 		project.getLogger().lifecycle(":merging");
 		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
-		reorderMappings(unorderedMergedMappings, tinyMappingsWithoutEnums, "official", "intermediary", "named");
+		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "official", "intermediary", "named");
 	}
 
 	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
-		Command command = isV2 ? new CommandReorderTinyV2() : new CommandReorderTiny();
+		Command command = new CommandReorderTinyV2();
 		String[] args = new String[2 + newOrder.length];
 		args[0] = oldMappings.toAbsolutePath().toString();
 		args[1] = newMappings.toAbsolutePath().toString();
@@ -240,7 +233,7 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void mergeMappings(Path intermediaryMappings, Path yarnMappings, Path newMergedMappings) {
 		try {
-			Command command = isV2 ? new CommandMergeTinyV2() : new CommandMergeTiny();
+			Command command = new CommandMergeTinyV2();
 			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
 							yarnMappings.toAbsolutePath().toString(),
 							newMergedMappings.toAbsolutePath().toString(),
@@ -252,7 +245,7 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
-		Command command = isV2 ? new CommandProposeV2FieldNames() : new CommandProposeFieldNames();
+		Command command = new CommandProposeFieldNames();
 		runCommand(command, minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(),
 						oldMappings.toAbsolutePath().toString(),
 						newMappings.toAbsolutePath().toString());

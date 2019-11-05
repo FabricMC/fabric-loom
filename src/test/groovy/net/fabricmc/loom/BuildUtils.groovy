@@ -24,7 +24,7 @@ minecraft {
 dependencies {
 	//to change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:\${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:\${project.yarn_mappings}:v2"
+	mappings "net.fabricmc:yarn:\${project.yarn_mappings}"
 	modCompile "net.fabricmc:fabric-loader:\${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.

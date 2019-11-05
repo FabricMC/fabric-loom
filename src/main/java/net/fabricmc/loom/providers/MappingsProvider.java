@@ -115,7 +115,7 @@ public class MappingsProvider extends DependencyProvider {
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
 
 		// Hacky but seems like the easiest way to get the classifier
-		this.isV2 = mappingsJar.getName().endsWith("v2.jar");
+		this.isV2 = mappingsJar.getName().endsWith("-v2.jar");
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
 		if (this.isV2) mappingsName += "-v2";

@@ -3,6 +3,7 @@ package net.fabricmc.loom
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -35,7 +36,7 @@ class EmptyBuildFunctionalTest extends Specification {
 		when:
 		def result = GradleRunner.create()
 				.withProjectDir(testProjectDir.root)
-				.withArguments('build')
+				.withArguments('build',"--stacktrace")
 				.withPluginClasspath()
 				.withGradleVersion("4.9")
 				.build()

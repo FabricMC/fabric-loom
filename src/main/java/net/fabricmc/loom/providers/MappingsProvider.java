@@ -141,9 +141,9 @@ public class MappingsProvider extends DependencyProvider {
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, File yarnJar) throws IOException {
 		if (isV2) {
 			// These are unmerged v2 mappings
-			Dependency dep = project.getDependencies().add("compile", String.format("net.fabricmc:intermediary:%s:v2", minecraftProvider.minecraftVersion));
-			DependencyInfo depInfo = DependencyInfo.create(project, dep, project.getConfigurations().getByName("compile"));
-			File intermediaryJar = depInfo.resolveFile().orElseThrow(() -> new RuntimeException("Could not find intermediaries: " + depInfo));
+			Dependency intermediaryDep = project.getDependencies().add("compile", String.format("net.fabricmc:intermediary:%s:v2", minecraftProvider.minecraftVersion));
+			DependencyInfo intermediaryDepInfo = DependencyInfo.create(project, intermediaryDep, project.getConfigurations().getByName("compile"));
+			File intermediaryJar = intermediaryDepInfo.resolveFile().orElseThrow(() -> new RuntimeException("Could not find intermediaries: " + intermediaryDepInfo));
 
 			mergeAndSaveMappings(project, intermediaryJar.toPath(), yarnJar.toPath());
 		} else {

@@ -198,8 +198,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	 * Permit to add a Maven repository to a target project.
 	 *
 	 * @param target The garget project
-	 * @param name   The name of the repository
-	 * @param url    The URL of the repository
+	 * @param name The name of the repository
+	 * @param url The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {

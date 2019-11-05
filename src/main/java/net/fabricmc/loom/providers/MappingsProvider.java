@@ -131,8 +131,8 @@ public class MappingsProvider extends DependencyProvider {
 
 		initFiles(project);
 
-		PathUtils.createDirectoryWhenMissing(mappingsDir);
-		PathUtils.createDirectoryWhenMissing(mappingsStepsDir);
+		Files.createDirectories(mappingsDir);
+		Files.createDirectories(mappingsStepsDir);
 
 		if (!tinyMappings.exists()) {
 			storeMappings(project, minecraftProvider, mappingsJars);
@@ -179,8 +179,6 @@ public class MappingsProvider extends DependencyProvider {
 			project.getLogger().lifecycle(":populating field names");
 			suggestFieldNames(minecraftProvider, tinyMappingsWithoutEnums, tinyMappings.toPath());
 		}
-
-
 	}
 
 	private void saveMergedV1Mappings(Project project, Path mappingsJar) throws IOException {

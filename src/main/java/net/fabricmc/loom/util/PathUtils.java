@@ -29,10 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class PathUtils {
-	public static void createDirectoryWhenMissing(Path dirPath) throws IOException {
-		if (!Files.exists(dirPath)) Files.createDirectory(dirPath);
-	}
-
 	public static void deleteDirectoryContents(Path dirPath) throws IOException {
 		Files.list(dirPath).forEach(p -> {
 			try {

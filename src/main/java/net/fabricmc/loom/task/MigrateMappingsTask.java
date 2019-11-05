@@ -87,7 +87,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 			throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
 		}
 
-		if (!Files.exists(outputDirPath)) Files.createDirectory(outputDirPath);
+		Files.createDirectories(outputDirPath);
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
@@ -190,8 +190,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		}
 
 		@Override
-		public void close() throws IOException {
-		}
+		public void close() { }
 	}
 }
 

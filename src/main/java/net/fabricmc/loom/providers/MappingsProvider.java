@@ -48,7 +48,6 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
-import net.fabricmc.loom.util.PathUtils;
 import net.fabricmc.loom.util.Version;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
@@ -73,7 +72,7 @@ public class MappingsProvider extends DependencyProvider {
 
 	public void clean() throws IOException {
 		tinyMappings.delete();
-		PathUtils.deleteDirectoryContents(mappingsStepsDir);
+		FileUtils.deleteDirectory(mappingsStepsDir.toFile());
 	}
 
 	public TinyTree getMappings() throws IOException {

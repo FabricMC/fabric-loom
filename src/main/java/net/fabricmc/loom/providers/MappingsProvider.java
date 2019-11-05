@@ -193,28 +193,24 @@ public class MappingsProvider extends DependencyProvider {
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private String extension() {
-		return isV2 ? ".tiny2" : ".tiny";
-	}
-
 	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException {
-		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary" + extension());
+		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary.tiny");
 		project.getLogger().lifecycle(":extracting " + unmergedIntermediaryJar.getFileName().toString());
 
 		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, null)) {
 			extractMappings(unmergedIntermediaryFs, unmergedIntermediary);
 		}
 
-		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn" + extension());
+		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn.tiny");
 		project.getLogger().lifecycle(":extracting " + unmergedYarnJar.getFileName().toString());
 
 		try (FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, null)) {
 			extractMappings(unmergedYarnJarFs, unmergedYarn);
 		}
 
-		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary" + extension());
+		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
 		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
-		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged" + extension());
+		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
 		project.getLogger().lifecycle(":merging");
 		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
 		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "official", "intermediary", "named");
@@ -262,7 +258,7 @@ public class MappingsProvider extends DependencyProvider {
 		mappingsDir = extension.getUserCache().toPath().resolve("mappings");
 		mappingsStepsDir = mappingsDir.resolve("steps");
 
-		tinyMappingsWithoutEnums = mappingsStepsDir.resolve("merged-ordered" + extension());
+		tinyMappingsWithoutEnums = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
 		tinyMappings = mappingsDir.resolve(String.format("%s-tiny-%s-%s.tiny", mappingsName, minecraftVersion, mappingsVersion)).toFile();
 		mappingsMixinExport = new File(extension.getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}

@@ -43,7 +43,6 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.internal.impldep.aQute.lib.strings.Strings;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
@@ -110,7 +109,7 @@ public class ModProcessor {
 		JarEntry entry = parentJar.getJarEntry(fileName);
 
 		if (entry == null) {
-			throw new RuntimeException(Strings.format("%s was not found in %s", fileName, parentJar.getName()));
+			throw new RuntimeException(String.format("%s was not found in %s", fileName, parentJar.getName()));
 		}
 
 		File nestedFile = new File(extension.getNestedModCache(), fileName.substring(fileName.lastIndexOf("/")));

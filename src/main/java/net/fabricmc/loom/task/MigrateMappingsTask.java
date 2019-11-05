@@ -148,8 +148,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 			this.toNamespace = toNamespace;
 		}
 
-		private <T extends Descriptored> void mapDescriptored(Collection<T> fromDescriptored, Map<Pair<String, String>, T> targetDescriptored,
-															BiFunction<String, String, Mapping> mapper) {
+		private <T extends Descriptored> void mapMembers(Collection<T> fromDescriptored, Map<Pair<String, String>, T> targetDescriptored,
+														 BiFunction<String, String, Mapping> mapper) {
 			for (T fromEntry : fromDescriptored) {
 				String fromName = fromEntry.getName(toNamespace);
 				String fromDescriptor = fromEntry.getDescriptor(toNamespace);
@@ -183,14 +183,15 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 				ClassMapping classMapping = mappings.getOrCreateClassMapping(namedMappingOfSourceMapping).setDeobfuscatedName(namedMappingOfTargetMapping);
 
-				mapDescriptored(sourceClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
-				mapDescriptored(sourceClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
+				mapMembers(sourceClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
+				mapMembers(sourceClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
 			}
 			return mappings;
 		}
 
 		@Override
-		public void close() { }
+		public void close() {
+		}
 	}
 }
 

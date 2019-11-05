@@ -149,7 +149,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		}
 
 		private <T extends Descriptored> void mapMembers(Collection<T> fromDescriptored, Map<Pair<String, String>, T> targetDescriptored,
-														 BiFunction<String, String, Mapping> mapper) {
+														BiFunction<String, String, Mapping> mapper) {
 			for (T fromEntry : fromDescriptored) {
 				String fromName = fromEntry.getName(toNamespace);
 				String fromDescriptor = fromEntry.getDescriptor(toNamespace);

@@ -34,16 +34,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
@@ -114,12 +112,10 @@ public class MappingsProvider extends DependencyProvider {
 		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
-		List<File> mappingsJars = new ArrayList<>(dependency.resolve());
+		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
 
-		if (mappingsJars.isEmpty()) {
-			throw new RuntimeException("Could not find dependency " + dependency);
-		}
-		this.isV2 = containsV2Yarn(mappingsJars);
+		// Hacky but seems like the easiest way to get the classifier
+		this.isV2 = mappingsJar.getName().endsWith("v2.jar");
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
 		if (this.isV2) mappingsName += "-v2";
@@ -134,7 +130,7 @@ public class MappingsProvider extends DependencyProvider {
 		Files.createDirectories(mappingsStepsDir);
 
 		if (!tinyMappings.exists()) {
-			storeMappings(project, minecraftProvider, mappingsJars);
+			storeMappings(project, minecraftProvider, mappingsJar);
 		}
 
 		mappedProvider = new MinecraftMappedProvider();
@@ -142,34 +138,17 @@ public class MappingsProvider extends DependencyProvider {
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
 
-	private boolean containsV2Yarn(List<File> mappingsJars) {
-		if (mappingsJars.size() == 1) {
-			return false;
-		} else if (mappingsJars.size() == 2 && getUnmergedYarnJar(mappingsJars).exists()) {
-			return true;
-		} else {
-			throw new RuntimeException("Found an unexpected amount of mapping jars: " + mappingsJars.size() + ". This is likely because your 'mappings' line in build.gradle is incorrect.");
-		}
-	}
-
-	private File getUnmergedYarnJar(List<File> mappingsJars) {
-		return mappingsJars.stream()
-						.filter(f -> f.getName().startsWith("v2-yarn")).findFirst()
-						.orElseThrow(() -> new RuntimeException("Could not find unmerged yarn mappings. Mappings: " + mappingsJars));
-	}
-
-	private void storeMappings(Project project, MinecraftProvider minecraftProvider, List<File> mappingsJars) throws IOException {
+	private void storeMappings(Project project, MinecraftProvider minecraftProvider, File yarnJar) throws IOException {
 		if (isV2) {
 			// These are unmerged v2 mappings
-			File unmergedYarn = getUnmergedYarnJar(mappingsJars);
-			File unmergedIntermediary = mappingsJars.stream()
-							.filter(f -> FilenameUtils.removeExtension(f.getName()).startsWith("intermediary")).findFirst()
-							.orElseThrow(() -> new RuntimeException("Could not find unmerged intermediary mappings. Mappings: " + mappingsJars));
+			Dependency dep = project.getDependencies().add("compile", String.format("net.fabricmc:intermediary:%s:v2", minecraftProvider.minecraftVersion));
+			DependencyInfo depInfo = DependencyInfo.create(project, dep, project.getConfigurations().getByName("compile"));
+			File intermediaryJar = depInfo.resolveFile().orElseThrow(() -> new RuntimeException("Could not find intermediaries: " + depInfo));
 
-			mergeAndSaveMappings(project, unmergedIntermediary.toPath(), unmergedYarn.toPath());
+			mergeAndSaveMappings(project, intermediaryJar.toPath(), yarnJar.toPath());
 		} else {
 			// These are merged v1 mappings
-			saveMergedV1Mappings(project, mappingsJars.get(0).toPath());
+			saveMergedV1Mappings(project, yarnJar.toPath());
 
 			if (tinyMappings.exists()) {
 				tinyMappings.delete();

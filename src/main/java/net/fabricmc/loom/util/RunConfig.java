@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -96,7 +95,7 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.projectName = project.getName();
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
-		runConfig.vmArgs = "-Dfabric.development=true -Djava.library.path=\"" + extension.getNativesDirectory().getAbsolutePath() + "\"";
+		runConfig.vmArgs = "";
 
 		switch (extension.getLoaderLaunchMethod()) {
 		case "launchwrapper":
@@ -104,7 +103,7 @@ public class RunConfig {
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
 			break;
 		default:
-			runConfig.mainClass = "net.fabricmc.loader.launch.knot.Knot" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
+			runConfig.mainClass = "Launch" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
 			runConfig.programArgs = "";
 			break;
 		}
@@ -114,24 +113,6 @@ public class RunConfig {
 
 		if (installerJson != null) {
 			List<String> sideKeys = ImmutableList.of(mode, "common");
-
-			// copy main class
-			if (installerJson.has("mainClass")) {
-				JsonElement mainClassJson = installerJson.get("mainClass");
-
-				if (mainClassJson.isJsonObject()) {
-					JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
-
-					for (String s : sideKeys) {
-						if (mainClassesJson.has(s)) {
-							runConfig.mainClass = mainClassesJson.get(s).getAsString();
-							break;
-						}
-					}
-				} else {
-					runConfig.mainClass = mainClassJson.getAsString();
-				}
-			}
 
 			// copy launchwrapper tweakers
 			if (installerJson.has("launchwrapper")) {
@@ -163,7 +144,6 @@ public class RunConfig {
 		RunConfig ideaClient = new RunConfig();
 		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
-		ideaClient.programArgs += " --assetIndex \"" + minecraftVersionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion) + "\" --assetsDir \"" + new File(extension.getUserCache(), "assets").getAbsolutePath() + "\"";
 		ideaClient.vmArgs += getOSClientJVMArgs();
 
 		return ideaClient;

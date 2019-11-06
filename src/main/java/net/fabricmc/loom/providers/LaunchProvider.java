@@ -82,15 +82,14 @@ public class LaunchProvider extends DependencyProvider {
 			clientLaunchDetails
 					.setProperty("fabric.development", "true")
 					.setProperty("java.library.path", extension.getNativesDirectory().getAbsolutePath())
-					.setProperty("org.lwjgl.librarypath", extension.getNativesDirectory().getAbsolutePath());
-
-			clientLaunchDetails
+					.setProperty("org.lwjgl.librarypath", extension.getNativesDirectory().getAbsolutePath())
 					.argument("--assetIndex")
 					.argument(extension.getMinecraftProvider().versionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion))
 					.argument("--assetsDir")
 					.argument(new File(extension.getUserCache(), "assets").getAbsolutePath());
 
-			serverLaunchDetails.setProperty("fabric.development", "true");
+			serverLaunchDetails
+					.setProperty("fabric.development", "true");
 
 			final List<ZipEntrySource> entries = new ArrayList<>();
 			entries.add(generateZipEntry("LaunchClient", clientLaunchDetails));

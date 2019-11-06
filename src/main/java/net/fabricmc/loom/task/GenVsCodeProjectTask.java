@@ -90,7 +90,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 	private static class VsCodeConfiguration {
 		public String type = "java";
 		public String name;
-		public String request = "net/fabricmc/launch";
+		public String request = "launch";
 		public String cwd = "${workspaceFolder}/run";
 		public String console = "internalConsole";
 		public boolean stopOnEntry = false;

@@ -80,16 +80,16 @@ public class LaunchProvider extends DependencyProvider {
 			final LaunchDetails serverLaunchDetails = new LaunchDetails(getMainClass("server", extension));
 
 			clientLaunchDetails
-					.setProperty("fabric.development", "true")
-					.setProperty("java.library.path", extension.getNativesDirectory().getAbsolutePath())
-					.setProperty("org.lwjgl.librarypath", extension.getNativesDirectory().getAbsolutePath())
+					.property("fabric.development", "true")
+					.property("java.library.path", extension.getNativesDirectory().getAbsolutePath())
+					.property("org.lwjgl.librarypath", extension.getNativesDirectory().getAbsolutePath())
 					.argument("--assetIndex")
 					.argument(extension.getMinecraftProvider().versionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion))
 					.argument("--assetsDir")
 					.argument(new File(extension.getUserCache(), "assets").getAbsolutePath());
 
 			serverLaunchDetails
-					.setProperty("fabric.development", "true");
+					.property("fabric.development", "true");
 
 			final List<ZipEntrySource> entries = new ArrayList<>();
 			entries.add(generateZipEntry("LaunchClient", clientLaunchDetails));
@@ -99,18 +99,6 @@ public class LaunchProvider extends DependencyProvider {
 
 			addDependency(jarFile, project);
 		});
-	}
-
-	public static void main(String[] args) throws IOException {
-		LaunchDetails launchDetails = new LaunchDetails("net/fabricmc/loader/SomeClass");
-		launchDetails.argument("--test");
-		launchDetails.argument("123");
-
-		launchDetails.setProperty("123", "456");
-		launchDetails.setProperty("something", "else");
-
-		byte[] data = generateClass("ClientLaunch", launchDetails);
-		FileUtils.writeByteArrayToFile(new File("ClientLaunch.class"), data);
 	}
 
 	private static ZipEntrySource generateZipEntry(String className, LaunchDetails launchDetails) {
@@ -255,7 +243,7 @@ public class LaunchProvider extends DependencyProvider {
 			this.mainClass = mainClass;
 		}
 
-		public LaunchDetails setProperty(String key, String value) {
+		public LaunchDetails property(String key, String value) {
 			systemProperties.put(key, value);
 			return this;
 		}

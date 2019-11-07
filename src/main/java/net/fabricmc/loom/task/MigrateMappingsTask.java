@@ -24,8 +24,12 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +38,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import com.google.common.net.UrlEscapers;
+import org.apache.commons.io.FileUtils;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
@@ -51,8 +57,8 @@ import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.stitch.util.Pair;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
 	@TaskAction
@@ -63,23 +69,30 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		project.getLogger().lifecycle(":loading mappings");
 
-		File mappingsFile = null;
-
-		if (properties.containsKey("targetMappingsFile")) {
-			mappingsFile = new File((String) properties.get("targetMappingsFile"));
-		} else if (properties.containsKey("targetMappingsArtifact")) {
-			String[] artifactName = ((String) properties.get("targetMappingsArtifact")).split(":");
-		}
-
 		String inputDir = (String) properties.get("inputDir");
 		if (inputDir == null) inputDir = "src/main/java";
 		String outputDir = (String) properties.get("outputDir");
 		if (outputDir == null) outputDir = "remappedSrc";
-		String targetMappingsVersion = (String) properties.get("targetMappings");
+		String officialMappingsVersion = (String) properties.get("targetMappings");
+		String localMappingsPath = (String) properties.get("targetLocalMappings");
 
-		if (targetMappingsVersion == null) {
-			throw new IllegalArgumentException("You must specify a new mappings version with -PtargetMappings.");
+		if (officialMappingsVersion != null && localMappingsPath != null) {
+			throw new IllegalArgumentException("targetMappings and targetLocalMappings are mutually exclusive;"
+							+ " you either specify an official yarn mappings version with targetMappings, "
+							+ "or a local one with targetLocalMappings.");
 		}
+
+		if (officialMappingsVersion == null && localMappingsPath == null) {
+			throw new IllegalArgumentException("You must specify a new mappings version with -PtargetMappings (or local mappings with -PtargetLocalMappings).");
+		}
+
+		boolean useLocalMappings = localMappingsPath != null;
+
+		if (useLocalMappings && !Files.exists(Paths.get(localMappingsPath))) {
+			throw new IllegalArgumentException("Can't find local mappings in specified location: " + localMappingsPath);
+		}
+
+		String targetMappingsName = useLocalMappings ? localMappingsPath : officialMappingsVersion;
 
 		Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
 		Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
@@ -94,11 +107,37 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		try {
 			TinyTree currentMappings = mappingsProvider.getMappings();
-			TinyTree targetMappings = mappingsProvider.getMappingsOfVersion(project, targetMappingsVersion);
+			TinyTree targetMappings = getMappings(project, targetMappingsName, useLocalMappings);
 			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDirPath, outputDirPath, currentMappings, targetMappings, extension);
 			project.getLogger().lifecycle(":remapped project written to " + outputDirPath.toAbsolutePath());
 		} catch (IOException e) {
-			throw new IllegalArgumentException("Could not find mappings for version " + targetMappingsVersion, e);
+			throw new IllegalArgumentException("Could not find mappings for version " + officialMappingsVersion, e);
+		}
+	}
+
+	private TinyTree getMappings(Project project, String mappingsVersionOrPath, boolean useLocalMappings) throws IOException {
+		Path migrateMappingsDir = Files.createTempDirectory("migrate");
+		Path localMappingsOfVersion = migrateMappingsDir.resolve(mappingsVersionOrPath + ".tiny");
+
+		if (!Files.exists(localMappingsOfVersion)) {
+			if (useLocalMappings) {
+				Files.copy(Paths.get(mappingsVersionOrPath), localMappingsOfVersion);
+			} else {
+				String versionRelativePath = UrlEscapers.urlFragmentEscaper().escape(mappingsVersionOrPath);
+				String artifactUrl = "https://maven.fabricmc.net/net/fabricmc/yarn/" + versionRelativePath + "/yarn-" + versionRelativePath + ".jar";
+				File mappingsJar = File.createTempFile("migrateMappingsJar", ".jar");
+				project.getLogger().lifecycle(":downloading new mappings from " + artifactUrl);
+				FileUtils.copyURLToFile(new URL(artifactUrl), mappingsJar);
+
+				try (FileSystem jar = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
+					if (!Files.exists(migrateMappingsDir)) Files.createDirectory(migrateMappingsDir);
+					MappingsProvider.extractMappings(jar, localMappingsOfVersion);
+				}
+			}
+		}
+
+		try (BufferedReader reader = Files.newBufferedReader(localMappingsOfVersion)) {
+			return TinyMappingFactory.loadWithDetection(reader);
 		}
 	}
 
@@ -114,9 +153,6 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_MAPPED_JAR.toPath());
 		mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath());
-
-		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
-		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
 		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 
@@ -140,8 +176,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		 * It goes through all of the intermediary names of A, and for every such intermediary name, call it I,
 		 * matches the named mapping of I in A, with the named mapping of I in B.
 		 * As you might imagine, this requires intermediary mappings to be stable across all versions.
-		 * As far as individual intermediary names go, they will remain stable, so this works for things that maintain the same descriptor.
-		 * However, if the signature of a method changes, then the descriptor will not stay the same, and that method won't get migrated.
+		 * Since we only use intermediary names (and not descriptors) to match, and intermediary names are unique,
+		 * this will migrate methods that have had their signature changed too.
 		 */
 		public MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
 			this.sourceMappings = sourceMappings;
@@ -150,45 +186,46 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 			this.toNamespace = toNamespace;
 		}
 
-		private <T extends Descriptored> void mapMembers(Collection<T> fromDescriptored, Map<Pair<String, String>, T> targetDescriptored,
-														BiFunction<String, String, Mapping> mapper) {
-			for (T fromEntry : fromDescriptored) {
-				String fromName = fromEntry.getName(toNamespace);
-				String fromDescriptor = fromEntry.getDescriptor(toNamespace);
-				String toName = targetDescriptored.getOrDefault(Pair.of(fromName, fromDescriptor), fromEntry).getName(toNamespace);
-
-				mapper.apply(fromName, fromDescriptor).setDeobfuscatedName(toName);
-			}
-		}
-
 		@Override
 		public MappingSet read(MappingSet mappings) {
 			Map<String, ClassDef> targetClasses = new HashMap<>();
-			Map<Pair<String, String>, FieldDef> targetFields = new HashMap<>();
-			Map<Pair<String, String>, MethodDef> targetMethods = new HashMap<>();
+			Map<String, FieldDef> targetFields = new HashMap<>();
+			Map<String, MethodDef> targetMethods = new HashMap<>();
 
-			for (ClassDef classDef : targetMappings.getClasses()) {
-				targetClasses.put(classDef.getName(fromNamespace), classDef);
+			for (ClassDef newClass : targetMappings.getClasses()) {
+				targetClasses.put(newClass.getName(fromNamespace), newClass);
 
-				for (FieldDef field : classDef.getFields()) {
-					targetFields.put(Pair.of(field.getName(fromNamespace), field.getDescriptor(fromNamespace)), field);
+				for (FieldDef field : newClass.getFields()) {
+					targetFields.put(field.getName(fromNamespace), field);
 				}
 
-				for (MethodDef method : classDef.getMethods()) {
-					targetMethods.put(Pair.of(method.getName(fromNamespace), method.getDescriptor(fromNamespace)), method);
+				for (MethodDef method : newClass.getMethods()) {
+					targetMethods.put(method.getName(fromNamespace), method);
 				}
 			}
 
-			for (ClassDef sourceClass : sourceMappings.getClasses()) {
-				String namedMappingOfSourceMapping = sourceClass.getName(toNamespace);
-				String namedMappingOfTargetMapping = targetClasses.getOrDefault(sourceClass.getName(fromNamespace), sourceClass).getName(toNamespace);
+			for (ClassDef oldClass : sourceMappings.getClasses()) {
+				String namedMappingOfSourceMapping = oldClass.getName(toNamespace);
+				String namedMappingOfTargetMapping = targetClasses.getOrDefault(oldClass.getName(fromNamespace), oldClass).getName(toNamespace);
 
 				ClassMapping classMapping = mappings.getOrCreateClassMapping(namedMappingOfSourceMapping).setDeobfuscatedName(namedMappingOfTargetMapping);
 
-				mapMembers(sourceClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
-				mapMembers(sourceClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
+				mapMembers(oldClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
+				mapMembers(oldClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
 			}
 			return mappings;
+		}
+
+		private <T extends Descriptored> void mapMembers(Collection<T> oldMembers, Map<String, T> newMembers,
+														BiFunction<String, String, Mapping> mapper) {
+			for (T oldMember : oldMembers) {
+				String oldName = oldMember.getName(toNamespace);
+				String oldDescriptor = oldMember.getDescriptor(toNamespace);
+				// We only use the intermediary name (and not the descriptor) because every method has a unique intermediary name
+				String newName = newMembers.getOrDefault(oldMember.getName(fromNamespace), oldMember).getName(toNamespace);
+
+				mapper.apply(oldName, oldDescriptor).setDeobfuscatedName(newName);
+			}
 		}
 
 		@Override

@@ -26,6 +26,9 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -33,7 +36,6 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -110,13 +112,11 @@ public class SourceRemapper {
 		}
 
 		Path srcPath = source.toPath();
-		boolean isSrcTmp = false;
+		FileSystem srcFs = null;
 
 		if (!source.isDirectory()) {
-			// create tmp directory
-			isSrcTmp = true;
-			srcPath = Files.createTempDirectory("fabric-loom-src");
-			ZipUtil.unpack(source, srcPath.toFile());
+			srcFs = FileSystems.getFileSystem(URI.create("jar:file:" + source.toURI().getPath()));
+			srcPath = srcFs.getPath("/");
 		}
 
 		if (!destination.isDirectory() && destination.exists()) {
@@ -140,8 +140,8 @@ public class SourceRemapper {
 			dstFs.close();
 		}
 
-		if (isSrcTmp) {
-			Files.walkFileTree(srcPath, new DeletingFileVisitor());
+		if (srcFs != null) {
+			srcFs.close();
 		}
 	}
 

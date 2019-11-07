@@ -39,6 +39,7 @@ import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
+import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
@@ -117,17 +118,16 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
 		mercury.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
 
-		try {
-			mercury.rewrite(inputDir, outputDir);
-		} catch (Exception e) {
-			project.getLogger().warn("Could not remap fully!", e);
-		}
+		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 
 		try {
 			mercury.rewrite(inputDir, outputDir);
 		} catch (Exception e) {
 			project.getLogger().warn("Could not remap fully!", e);
 		}
+
+		project.getLogger().lifecycle(":cleaning file descriptors");
+		System.gc();
 	}
 
 	public static class MappingsJoiner extends MappingsReader {
@@ -139,7 +139,9 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		 * It does not map from intermediary to named but rather maps from named-A to named-B, by matching intermediary names.
 		 * It goes through all of the intermediary names of A, and for every such intermediary name, call it I,
 		 * matches the named mapping of I in A, with the named mapping of I in B.
-		 * As you might imagine, this requires intermediary mappings to be static across all versions, which they are. :volderthonk:
+		 * As you might imagine, this requires intermediary mappings to be stable across all versions.
+		 * As far as individual intermediary names go, they will remain stable, so this works for things that maintain the same descriptor.
+		 * However, if the signature of a method changes, then the descriptor will not stay the same, and that method won't get migrated.
 		 */
 		public MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
 			this.sourceMappings = sourceMappings;

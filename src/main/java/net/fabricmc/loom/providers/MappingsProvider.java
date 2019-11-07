@@ -73,8 +73,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File mappingsMixinExport;
 
 	public void clean() throws IOException {
-		tinyMappings.delete();
-		FileUtils.deleteDirectory(mappingsStepsDir.toFile());
+		FileUtils.deleteDirectory(mappingsDir.toFile());
 	}
 
 	public TinyTree getMappings() throws IOException {
@@ -101,6 +100,8 @@ public class MappingsProvider extends DependencyProvider {
 		Files.createDirectories(mappingsDir);
 		Files.createDirectories(mappingsStepsDir);
 
+		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(),".jar") + ".tiny").toFile();
+
 		if (!tinyMappings.exists()) {
 			storeMappings(project, minecraftProvider, mappingsJar.toPath());
 		}
@@ -120,18 +121,19 @@ public class MappingsProvider extends DependencyProvider {
 		if (baseMappingsAreV2()) {
 			// These are unmerged v2 mappings
 
-			mappingsName += "-v2";
-			setMappingsLocation();
+			//TODO: check that v1 and v2 doesn't clash
+//			mappingsName += "-v2";
+//			setMappingsLocation();
 
 			// Download an extract intermediary
 			String encodedMinecraftVersion = URLEncoder.encode(minecraftVersion, StandardCharsets.UTF_8.toString());
-			String intermediaryArtifactUrl = "https://maven.fabricmc.net/net/fabricmc/intermediary/" + encodedMinecraftVersion + "/intermediary-" + encodedMinecraftVersion + ".jar";
+			String intermediaryArtifactUrl = "https://maven.fabricmc.net/net/fabricmc/intermediary/" + encodedMinecraftVersion + "/intermediary-" + encodedMinecraftVersion + "-v2.jar";
 			Path intermediaryJar = mappingsStepsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
 			DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), project.getLogger());
 
 			mergeAndSaveMappings(project, intermediaryJar, yarnJar);
 		} else {
-			setMappingsLocation();
+//			setMappingsLocation();
 
 			// These are merged v1 mappings
 			if (tinyMappings.exists()) {
@@ -144,7 +146,6 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private void setMappingsLocation() {
-		tinyMappings = mappingsDir.resolve(String.format("%s-tiny-%s-%s.tiny", mappingsName, minecraftVersion, mappingsVersion)).toFile();
 	}
 
 	private boolean baseMappingsAreV2() throws IOException {
@@ -163,14 +164,14 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException {
 		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary.tiny");
-		project.getLogger().info(":extracting " + unmergedIntermediaryJar.getFileName().toString());
+		project.getLogger().info(":extracting " + unmergedIntermediaryJar.getFileName());
 
 		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, null)) {
 			extractMappings(unmergedIntermediaryFs, unmergedIntermediary);
 		}
 
 		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn.tiny");
-		project.getLogger().info(":extracting " + unmergedYarnJar.getFileName().toString());
+		project.getLogger().info(":extracting " + unmergedYarnJar.getFileName());
 
 		try (FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, null)) {
 			extractMappings(unmergedYarnJarFs, unmergedYarn);

@@ -66,7 +66,7 @@ public class SourceRemapper {
 			}
 		});
 
-		project.getLogger().lifecycle(":remapping source jar");
+		project.getLogger().info(":remapping source jar");
 
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
 			Mercury m = createMercuryWithClassPath(project, toNamed);

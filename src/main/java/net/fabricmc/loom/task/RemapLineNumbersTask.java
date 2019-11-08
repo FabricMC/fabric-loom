@@ -46,7 +46,7 @@ public class RemapLineNumbersTask extends AbstractLoomTask {
 	public void doTask() throws Throwable {
 		Project project = getProject();
 
-		project.getLogger().lifecycle(":adjusting line numbers");
+		project.getLogger().info(":adjusting line numbers");
 		LineNumberRemapper remapper = new LineNumberRemapper();
 		remapper.readMappings(getLineMapFile());
 

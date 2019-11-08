@@ -114,6 +114,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
 		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
+		project.getConfigurations().maybeCreate(Constants.MAPPINGS_FINAL);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -136,8 +137,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
 		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
 
-		extendsFrom("compile", Constants.MAPPINGS);
-		extendsFrom("annotationProcessor", Constants.MAPPINGS);
+		extendsFrom("compile", Constants.MAPPINGS_FINAL);
+		extendsFrom("annotationProcessor", Constants.MAPPINGS_FINAL);
 
 		configureIDEs();
 		configureCompile();

@@ -40,6 +40,9 @@ import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.zeroturnaround.zip.FileSource;
+import org.zeroturnaround.zip.ZipEntrySource;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
@@ -66,6 +69,7 @@ public class MappingsProvider extends DependencyProvider {
 	private Path baseTinyMappings;
 	// The mappings we use in practice
 	public File tinyMappings;
+	public File tinyMappingsJar;
 	public File mappingsMixinExport;
 
 	public void clean() throws IOException {
@@ -87,22 +91,38 @@ public class MappingsProvider extends DependencyProvider {
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
 
+		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
+
 		Version mappingsVersion = new Version(version);
 		this.minecraftVersion = mappingsVersion.getMinecraftVersion();
-		this.mappingsVersion = mappingsVersion.getMappingsVersion();
+		this.mappingsVersion = mappingsVersion.getMappingsVersion() + (isV2 ? "-v2" : "");
 
 		initFiles(project);
 
 		Files.createDirectories(mappingsDir);
 		Files.createDirectories(mappingsStepsDir);
 
+		String[] depStringSplit = dependency.getDepString().split(":");
+		String jarClassifier = "final";
+
+		if (depStringSplit.length >= 4) {
+			jarClassifier = jarClassifier + depStringSplit[3];
+		}
+
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
+		tinyMappingsJar = new File(extension.getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists()) {
 			storeMappings(project, minecraftProvider, mappingsJar.toPath());
 		}
 
-		mappedProvider = new MinecraftMappedProvider(baseMappingsAreV2());
+		if (!tinyMappingsJar.exists()) {
+			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
+		}
+
+		addDependency(tinyMappingsJar, project, Constants.MAPPINGS_FINAL);
+
+		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
@@ -142,6 +162,17 @@ public class MappingsProvider extends DependencyProvider {
 		} catch (IllegalArgumentException e) {
 			// TODO: just check the mappings version when Parser supports V1 in readMetadata()
 			return false;
+		}
+	}
+
+	private boolean doesJarContainV2Mappings(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, null)) {
+			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+				TinyV2Factory.readMetadata(reader);
+				return true;
+			} catch (IllegalArgumentException e) {
+				return false;
+			}
 		}
 	}
 

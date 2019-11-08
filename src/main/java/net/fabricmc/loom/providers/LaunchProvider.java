@@ -92,12 +92,12 @@ public class LaunchProvider extends DependencyProvider {
 			serverLaunchDetails
 					.property("fabric.development", "true");
 
-			final List<ZipEntrySource> entries = new ArrayList<>();
-			entries.add(generateZipEntry("net/fabricmc/launch/LaunchClient", clientLaunchDetails));
-			entries.add(generateZipEntry("net/fabricmc/launch/LaunchServer", serverLaunchDetails));
+			ZipEntrySource[] entries = new ZipEntrySource[] {
+					generateZipEntry("net/fabricmc/launch/LaunchClient", clientLaunchDetails),
+					generateZipEntry("net/fabricmc/launch/LaunchServer", serverLaunchDetails)
+			};
 
-			ZipUtil.pack(entries.toArray(new ZipEntrySource[0]), jarFile);
-
+			ZipUtil.pack(entries, jarFile);
 			addDependency(jarFile, project);
 		});
 	}
@@ -126,13 +126,8 @@ public class LaunchProvider extends DependencyProvider {
 	private static void patchMethod(MethodNode method, LaunchDetails launchDetails) {
 		final InsnList insnList = new InsnList();
 
-		for (Map.Entry<String, String> entry : launchDetails.getSystemProperties().entrySet()) {
-			setProperty(insnList, entry.getKey(), entry.getValue());
-		}
-
-		for (String arg : launchDetails.getArgs()) {
-			addArg(insnList, arg);
-		}
+		launchDetails.getSystemProperties().forEach((key, value) -> setProperty(insnList, key, value));
+		launchDetails.getArgs().forEach(arg -> addArg(insnList, arg));
 
 		setMainClass(method, launchDetails.getMainClass());
 		injectInsnLists(method, insnList);
@@ -217,24 +212,22 @@ public class LaunchProvider extends DependencyProvider {
 	private static String getMainClass(String side, LoomGradleExtension extension) {
 		JsonObject installerJson = extension.getInstallerJson();
 
-		if (installerJson != null) {
-			if (installerJson.has("mainClass")) {
-				JsonElement mainClassJson = installerJson.get("mainClass");
+		if (installerJson != null && installerJson.has("mainClass")) {
+			JsonElement mainClassJson = installerJson.get("mainClass");
 
-				String mainClassName = "";
+			String mainClassName = "";
 
-				if (mainClassJson.isJsonObject()) {
-					JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
+			if (mainClassJson.isJsonObject()) {
+				JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
 
-					if (mainClassesJson.has(side)) {
-						mainClassName = mainClassesJson.get(side).getAsString();
-					}
-				} else {
-					mainClassName = mainClassJson.getAsString();
+				if (mainClassesJson.has(side)) {
+					mainClassName = mainClassesJson.get(side).getAsString();
 				}
-
-				return mainClassName.replaceAll("\\.", "/");
+			} else {
+				mainClassName = mainClassJson.getAsString();
 			}
+
+			return mainClassName.replaceAll("\\.", "/");
 		}
 
 		throw new RuntimeException("Failed to find mainclass");

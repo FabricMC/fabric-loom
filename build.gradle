@@ -44,7 +44,7 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.2.0.50') {
+	implementation ('net.fabricmc:tiny-remapper:0.2.0.51') {
 		transitive = false
 	}
 	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.2.0.3'){

@@ -161,6 +161,7 @@ public class SourceRemapper {
 				m.getClassPath().add(file.toPath());
 			}
 		}
+
 		return m;
 	}
 

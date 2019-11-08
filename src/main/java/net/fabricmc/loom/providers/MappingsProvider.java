@@ -102,7 +102,7 @@ public class MappingsProvider extends DependencyProvider {
 			storeMappings(project, minecraftProvider, mappingsJar.toPath());
 		}
 
-		mappedProvider = new MinecraftMappedProvider();
+		mappedProvider = new MinecraftMappedProvider(baseMappingsAreV2());
 		mappedProvider.initFiles(project, minecraftProvider, this);
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}

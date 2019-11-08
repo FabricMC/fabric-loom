@@ -213,6 +213,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 				mapMembers(oldClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
 				mapMembers(oldClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
 			}
+
 			return mappings;
 		}
 

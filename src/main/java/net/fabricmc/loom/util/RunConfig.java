@@ -103,7 +103,7 @@ public class RunConfig {
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
 			break;
 		default:
-			runConfig.mainClass = "Launch" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
+			runConfig.mainClass = "net.fabricmc.launch.Launch" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
 			runConfig.programArgs = "";
 			break;
 		}

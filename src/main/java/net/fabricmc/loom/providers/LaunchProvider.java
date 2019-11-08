@@ -27,6 +27,7 @@ package net.fabricmc.loom.providers;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ import java.util.function.Consumer;
 import com.google.common.io.ByteStreams;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -91,8 +93,8 @@ public class LaunchProvider extends DependencyProvider {
 					.property("fabric.development", "true");
 
 			final List<ZipEntrySource> entries = new ArrayList<>();
-			entries.add(generateZipEntry("LaunchClient", clientLaunchDetails));
-			entries.add(generateZipEntry("LaunchServer", serverLaunchDetails));
+			entries.add(generateZipEntry("net/fabricmc/launch/LaunchClient", clientLaunchDetails));
+			entries.add(generateZipEntry("net/fabricmc/launch/LaunchServer", serverLaunchDetails));
 
 			ZipUtil.pack(entries.toArray(new ZipEntrySource[0]), jarFile);
 
@@ -195,10 +197,16 @@ public class LaunchProvider extends DependencyProvider {
 		return classNode;
 	}
 
-	public static byte[] writeClassToBytes(ClassNode classNode) {
+	private static byte[] writeClassToBytes(ClassNode classNode) {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 		classNode.accept(writer);
 		return writer.toByteArray();
+	}
+
+	//This can be removed at somepoint, its not ideal but its the best solution I could thing of
+	public static boolean needsUpgrade(File file) throws IOException {
+		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+		return !(contents.contains("net.fabricmc.launch.LaunchClient") || contents.contains("net.fabricmc.launch.LaunchServer"));
 	}
 
 	@Override
@@ -206,7 +214,7 @@ public class LaunchProvider extends DependencyProvider {
 		return Constants.MINECRAFT_NAMED;
 	}
 
-	public static String getMainClass(String side, LoomGradleExtension extension) {
+	private static String getMainClass(String side, LoomGradleExtension extension) {
 		JsonObject installerJson = extension.getInstallerJson();
 
 		if (installerJson != null) {

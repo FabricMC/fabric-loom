@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
@@ -78,11 +79,11 @@ public class SetupIntelijRunConfigs {
 		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
 
-		if (!clientRunConfigs.exists()) {
+		if (!clientRunConfigs.exists() || LaunchProvider.needsUpgrade(clientRunConfigs)) {
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
 		}
 
-		if (!serverRunConfigs.exists()) {
+		if (!serverRunConfigs.exists() || LaunchProvider.needsUpgrade(serverRunConfigs)) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 		}
 	}

@@ -40,6 +40,9 @@ import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.zeroturnaround.zip.FileSource;
+import org.zeroturnaround.zip.ZipEntrySource;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
@@ -66,6 +69,7 @@ public class MappingsProvider extends DependencyProvider {
 	private Path baseTinyMappings;
 	// The mappings we use in practice
 	public File tinyMappings;
+	public File tinyMappingsJar;
 	public File mappingsMixinExport;
 
 	public void clean() throws IOException {
@@ -96,11 +100,25 @@ public class MappingsProvider extends DependencyProvider {
 		Files.createDirectories(mappingsDir);
 		Files.createDirectories(mappingsStepsDir);
 
+		String[] depStringSplit = dependency.getDepString().split(":");
+		String jarClassifier = "final";
+
+		if (depStringSplit.length >= 4) {
+			jarClassifier = jarClassifier + depStringSplit[3];
+		}
+
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
+		tinyMappingsJar = new File(extension.getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists()) {
 			storeMappings(project, minecraftProvider, mappingsJar.toPath());
 		}
+
+		if (!tinyMappingsJar.exists()) {
+			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
+		}
+
+		addDependency(tinyMappingsJar, project, Constants.MAPPINGS_FINAL);
 
 		mappedProvider = new MinecraftMappedProvider(baseMappingsAreV2());
 		mappedProvider.initFiles(project, minecraftProvider, this);

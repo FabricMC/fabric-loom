@@ -13,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.2.7.009'
+version = '0.2.7.014'
 
 def build = "local"
 def ENV = System.getenv()
@@ -27,8 +27,6 @@ repositories {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
 	}
-
-	mavenLocal()
 }
 
 dependencies {
@@ -49,7 +47,7 @@ dependencies {
 	implementation ('net.fabricmc:tiny-remapper:0.2.0.50') {
 		transitive = false
 	}
-	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.2.0'){
+	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.2.0.3'){
 		exclude group :"net.fabricmc"
 	}
 

@@ -16,7 +16,6 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-repositories { mavenLocal() }
 
 minecraft {
 }

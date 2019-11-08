@@ -39,10 +39,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public File MINECRAFT_MAPPED_JAR;
 	public File MINECRAFT_INTERMEDIARY_JAR;
 
-	private boolean mappedByV2;
-
-	public MinecraftMappedProvider(boolean mappedByV2) {
-		this.mappedByV2 = mappedByV2;
+	public MinecraftMappedProvider() {
 	}
 
 	private MinecraftProvider minecraftProvider;
@@ -73,28 +70,28 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mapped jar not found");
 		}
 
-		String mappingsName = extension.getMappingsProvider().mappingsName;
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		project.getDependencies().add(Constants.MINECRAFT_NAMED,
-						project.getDependencies().module("net.minecraft:minecraft:" + getNamedJarVersionString(mappingsName)));
+						project.getDependencies().module("net.minecraft:minecraft:" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
 		project.getDependencies().add(Constants.MINECRAFT_INTERMEDIARY,
-						project.getDependencies().module("net.minecraft:minecraft:" + getIntermediaryJarVersionString(mappingsName)));
+						project.getDependencies().module("net.minecraft:minecraft:" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
 	}
 
 	public void initFiles(Project project, MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		this.minecraftProvider = minecraftProvider;
 		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(),
-						"minecraft-" + getIntermediaryJarVersionString(mappingsProvider.mappingsName) + ".jar");
+						"minecraft-" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
 		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(),
-						"minecraft-" + getNamedJarVersionString(mappingsProvider.mappingsName) + ".jar");
+						"minecraft-" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
 	}
 
-	private String getNamedJarVersionString(String mappingsName) {
-		return minecraftProvider.minecraftVersion + "-mapped-" + mappingsName + (mappedByV2 ? "-v2" : "");
+	private String getNamedJarVersionString(String mappingsName, String mappingsVersion) {
+		return minecraftProvider.minecraftVersion + "-mapped-" + mappingsName + "-" + mappingsVersion;
 	}
 
-	private String getIntermediaryJarVersionString(String mappingsName) {
-		return minecraftProvider.minecraftVersion + "-intermediary-" + mappingsName + (mappedByV2 ? "-v2" : "");
+	private String getIntermediaryJarVersionString(String mappingsName, String mappingsVersion) {
+		return minecraftProvider.minecraftVersion + "-intermediary-" + mappingsName + "-" + mappingsVersion;
 	}
 
 	public Collection<File> getMapperPaths() {

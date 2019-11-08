@@ -91,9 +91,11 @@ public class MappingsProvider extends DependencyProvider {
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
 
+		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
+
 		Version mappingsVersion = new Version(version);
 		this.minecraftVersion = mappingsVersion.getMinecraftVersion();
-		this.mappingsVersion = mappingsVersion.getMappingsVersion();
+		this.mappingsVersion = mappingsVersion.getMappingsVersion() + (isV2 ? "-v2" : "");
 
 		initFiles(project);
 
@@ -120,7 +122,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		addDependency(tinyMappingsJar, project, Constants.MAPPINGS_FINAL);
 
-		mappedProvider = new MinecraftMappedProvider(baseMappingsAreV2());
+		mappedProvider = new MinecraftMappedProvider();
 		mappedProvider.initFiles(project, minecraftProvider, this);
 		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
 	}
@@ -160,6 +162,17 @@ public class MappingsProvider extends DependencyProvider {
 		} catch (IllegalArgumentException e) {
 			// TODO: just check the mappings version when Parser supports V1 in readMetadata()
 			return false;
+		}
+	}
+
+	private boolean doesJarContainV2Mappings(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, null)) {
+			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+				TinyV2Factory.readMetadata(reader);
+				return true;
+			} catch (IllegalArgumentException e) {
+				return false;
+			}
 		}
 	}
 

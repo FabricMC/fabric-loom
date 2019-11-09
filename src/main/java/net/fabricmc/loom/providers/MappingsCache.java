@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.ref.SoftReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,32 +33,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.mappings.Mappings;
+import net.fabricmc.mapping.tree.TinyMappingFactory;
+import net.fabricmc.mapping.tree.TinyTree;
 
 public final class MappingsCache {
 	public static final MappingsCache INSTANCE = new MappingsCache();
 
-	private final Map<Path, SoftReference<Mappings>> mappingsCache = new HashMap<>();
+	private final Map<Path, SoftReference<TinyTree>> mappingsCache = new HashMap<>();
 
-	public Mappings get(Path mappingsPath) {
+	//TODO: loom doesn't actually use new mappings when the mappings change until the gradle daemons are stopped
+	public TinyTree get(Path mappingsPath) throws IOException {
 		mappingsPath = mappingsPath.toAbsolutePath();
 
 		if (StaticPathWatcher.INSTANCE.hasFileChanged(mappingsPath)) {
 			mappingsCache.remove(mappingsPath);
 		}
 
-		SoftReference<Mappings> ref = mappingsCache.get(mappingsPath);
+		SoftReference<TinyTree> ref = mappingsCache.get(mappingsPath);
 
 		if (ref != null && ref.get() != null) {
 			return ref.get();
 		} else {
-			try (InputStream stream = Files.newInputStream(mappingsPath)) {
-				Mappings mappings = net.fabricmc.mappings.MappingsProvider.readTinyMappings(stream, false);
+			try (BufferedReader reader = Files.newBufferedReader(mappingsPath)) {
+				TinyTree mappings = TinyMappingFactory.loadWithDetection(reader);
 				ref = new SoftReference<>(mappings);
 				mappingsCache.put(mappingsPath, ref);
 				return mappings;
-			} catch (IOException e) {
-				throw new RuntimeException(e);
 			}
 		}
 	}

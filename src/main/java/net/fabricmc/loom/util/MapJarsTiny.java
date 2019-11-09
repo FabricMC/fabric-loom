@@ -56,7 +56,11 @@ public class MapJarsTiny {
 
 			project.getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-			TinyRemapper remapper = TinyRemapper.newRemapper().withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM)).renameInvalidLocals(true).rebuildSourceFilenames(true).build();
+			TinyRemapper remapper = TinyRemapper.newRemapper()
+							.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, true))
+							.renameInvalidLocals(true)
+							.rebuildSourceFilenames(true)
+							.build();
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);
@@ -64,7 +68,7 @@ public class MapJarsTiny {
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to remap JAR", e);
+				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
 			} finally {
 				remapper.finish();
 			}

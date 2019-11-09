@@ -35,7 +35,7 @@ class EmptyBuildFunctionalTest extends Specification {
 		when:
 		def result = GradleRunner.create()
 				.withProjectDir(testProjectDir.root)
-				.withArguments('build')
+				.withArguments('build',"--stacktrace")
 				.withPluginClasspath()
 				.withGradleVersion("4.9")
 				.build()

@@ -39,11 +39,14 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public File MINECRAFT_MAPPED_JAR;
 	public File MINECRAFT_INTERMEDIARY_JAR;
 
+	public MinecraftMappedProvider() {
+	}
+
 	private MinecraftProvider minecraftProvider;
 
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		if (!extension.getMappingsProvider().MAPPINGS_TINY.exists()) {
+		if (!extension.getMappingsProvider().tinyMappings.exists()) {
 			throw new RuntimeException("mappings file not found");
 		}
 
@@ -67,17 +70,28 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mapped jar not found");
 		}
 
-		String version = minecraftProvider.minecraftVersion + "-mapped-" + extension.getMappingsProvider().mappingsName + "-" + extension.getMappingsProvider().mappingsVersion;
-		project.getDependencies().add(Constants.MINECRAFT_NAMED, project.getDependencies().module("net.minecraft:minecraft:" + version));
-		version = minecraftProvider.minecraftVersion + "-intermediary-" + extension.getMappingsProvider().mappingsName;
-		project.getDependencies().add(Constants.MINECRAFT_INTERMEDIARY, project.getDependencies().module("net.minecraft:minecraft:" + version));
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		project.getDependencies().add(Constants.MINECRAFT_NAMED,
+						project.getDependencies().module("net.minecraft:minecraft:" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
+		project.getDependencies().add(Constants.MINECRAFT_INTERMEDIARY,
+						project.getDependencies().module("net.minecraft:minecraft:" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion)));
 	}
 
 	public void initFiles(Project project, MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		this.minecraftProvider = minecraftProvider;
-		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-intermediary-" + mappingsProvider.mappingsName + ".jar");
-		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(), "minecraft-" + minecraftProvider.minecraftVersion + "-mapped-" + mappingsProvider.mappingsName + "-" + mappingsProvider.mappingsVersion + ".jar");
+		MINECRAFT_INTERMEDIARY_JAR = new File(extension.getUserCache(),
+						"minecraft-" + getIntermediaryJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
+		MINECRAFT_MAPPED_JAR = new File(extension.getUserCache(),
+						"minecraft-" + getNamedJarVersionString(mappingsProvider.mappingsName, mappingsProvider.mappingsVersion) + ".jar");
+	}
+
+	private String getNamedJarVersionString(String mappingsName, String mappingsVersion) {
+		return minecraftProvider.minecraftVersion + "-mapped-" + mappingsName + "-" + mappingsVersion;
+	}
+
+	private String getIntermediaryJarVersionString(String mappingsName, String mappingsVersion) {
+		return minecraftProvider.minecraftVersion + "-intermediary-" + mappingsName + "-" + mappingsVersion;
 	}
 
 	public Collection<File> getMapperPaths() {

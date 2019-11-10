@@ -235,7 +235,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		// Add Mixin dependencies
-		project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, String.format("net.fabricmc:fabric-mixin-compile-extensions:$s", Constants.MIXIN_COMPILE_EXTENSIONS_VERSION));
+		project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, "net.fabricmc:fabric-mixin-compile-extensions:" + Constants.MIXIN_COMPILE_EXTENSIONS_VERSION);
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);

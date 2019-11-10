@@ -32,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.util.RunConfig;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
@@ -44,11 +43,11 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 
-		if (!clientRunConfigs.exists() || LaunchProvider.needsUpgrade(clientRunConfigs)) {
+		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
 		}
 
-		if (!serverRunConfigs.exists() || LaunchProvider.needsUpgrade(serverRunConfigs)) {
+		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 		}
 

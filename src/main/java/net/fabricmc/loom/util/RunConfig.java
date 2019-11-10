@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -103,34 +104,37 @@ public class RunConfig {
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
 			break;
 		default:
-			runConfig.mainClass = "net.fabricmc.launch.Launch" + mode.substring(0, 1).toUpperCase(Locale.ROOT) + mode.substring(1).toLowerCase(Locale.ROOT);
+			runConfig.mainClass = "net.fabricmc.devlaunchwrapper.Main";
 			runConfig.programArgs = "";
+			runConfig.vmArgs = "-Dfabric.dlw.config=\"" + extension.getDevLauncherConfig().getAbsolutePath() + "\" -Dfabric.dlw.env=" + mode.toLowerCase();
 			break;
 		}
 
-		// if installer.json found...
-		JsonObject installerJson = extension.getInstallerJson();
+		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {
+			// if installer.json found...
+			JsonObject installerJson = extension.getInstallerJson();
 
-		if (installerJson != null) {
-			List<String> sideKeys = ImmutableList.of(mode, "common");
+			if (installerJson != null) {
+				List<String> sideKeys = ImmutableList.of(mode, "common");
 
-			// copy launchwrapper tweakers
-			if (installerJson.has("launchwrapper")) {
-				JsonObject launchwrapperJson = installerJson.getAsJsonObject("launchwrapper");
+				// copy launchwrapper tweakers
+				if (installerJson.has("launchwrapper")) {
+					JsonObject launchwrapperJson = installerJson.getAsJsonObject("launchwrapper");
 
-				if (launchwrapperJson.has("tweakers")) {
-					JsonObject tweakersJson = launchwrapperJson.getAsJsonObject("tweakers");
-					StringBuilder builder = new StringBuilder();
+					if (launchwrapperJson.has("tweakers")) {
+						JsonObject tweakersJson = launchwrapperJson.getAsJsonObject("tweakers");
+						StringBuilder builder = new StringBuilder();
 
-					for (String s : sideKeys) {
-						if (tweakersJson.has(s)) {
-							for (JsonElement element : tweakersJson.getAsJsonArray(s)) {
-								builder.append(" --tweakClass ").append(element.getAsString());
+						for (String s : sideKeys) {
+							if (tweakersJson.has(s)) {
+								for (JsonElement element : tweakersJson.getAsJsonArray(s)) {
+									builder.append(" --tweakClass ").append(element.getAsString());
+								}
 							}
 						}
-					}
 
-					runConfig.programArgs += builder.toString();
+						runConfig.programArgs += builder.toString();
+					}
 				}
 			}
 		}
@@ -145,6 +149,7 @@ public class RunConfig {
 		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.vmArgs += getOSClientJVMArgs();
+		ideaClient.vmArgs += " -Dfabric.dlw.main=" + getMainClass("client", extension);
 
 		return ideaClient;
 	}
@@ -155,8 +160,15 @@ public class RunConfig {
 		RunConfig ideaServer = new RunConfig();
 		populate(project, extension, ideaServer, "server");
 		ideaServer.configName = "Minecraft Server";
+		ideaServer.vmArgs += " -Dfabric.dlw.main=" + getMainClass("server", extension);
 
 		return ideaServer;
+	}
+
+	//This can be removed at somepoint, its not ideal but its the best solution I could thing of
+	public static boolean needsUpgrade(File file) throws IOException {
+		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+		return !(contents.contains("net.fabricmc.devlaunchwrapper.Main"));
 	}
 
 	public String fromDummy(String dummy) throws IOException {
@@ -181,5 +193,29 @@ public class RunConfig {
 		}
 
 		return "";
+	}
+
+	private static String getMainClass(String side, LoomGradleExtension extension) {
+		JsonObject installerJson = extension.getInstallerJson();
+
+		if (installerJson != null && installerJson.has("mainClass")) {
+			JsonElement mainClassJson = installerJson.get("mainClass");
+
+			String mainClassName = "";
+
+			if (mainClassJson.isJsonObject()) {
+				JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
+
+				if (mainClassesJson.has(side)) {
+					mainClassName = mainClassesJson.get(side).getAsString();
+				}
+			} else {
+				mainClassName = mainClassJson.getAsString();
+			}
+
+			return mainClassName;
+		}
+
+		throw new RuntimeException("Failed to find mainclass");
 	}
 }

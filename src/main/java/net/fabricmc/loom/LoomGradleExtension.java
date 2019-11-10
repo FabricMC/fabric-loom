@@ -179,6 +179,10 @@ public class LoomGradleExtension {
 		return natives;
 	}
 
+	public File getDevLauncherConfig() {
+		return new File(getRootProjectPersistentCache(), "launch.cfg");
+	}
+
 	@Nullable
 	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
 		for (Configuration config : configs) {

@@ -24,8 +24,9 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import org.gradle.api.DefaultTask;
+
+import net.fabricmc.loom.LoomGradleExtension;
 
 public abstract class AbstractLoomTask extends DefaultTask {
 	public AbstractLoomTask() {

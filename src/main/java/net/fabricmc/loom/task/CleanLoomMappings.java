@@ -27,7 +27,6 @@ package net.fabricmc.loom.task;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;

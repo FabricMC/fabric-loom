@@ -24,8 +24,11 @@
 
 package net.fabricmc.loom;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +44,7 @@ import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedDependencyResult;
@@ -199,8 +203,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	 * Permit to add a Maven repository to a target project.
 	 *
 	 * @param target The garget project
-	 * @param name The name of the repository
-	 * @param url The URL of the repository
+	 * @param name   The name of the repository
+	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
@@ -275,20 +279,19 @@ public class AbstractPlugin implements Plugin<Project> {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		// Add Mixin dependencies
-		Project p = project;
+		final String apDepFileName = "/mixin-ap.txt";
 
-		while (true) {
-			boolean found = false;
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(AbstractPlugin.class.getResourceAsStream(apDepFileName), StandardCharsets.UTF_8))) {
+			DependencyHandler dependencies = project.getDependencies();
+			String line;
 
-			for (DependencyResult dep : p.getBuildscript().getConfigurations().getByName("classpath").getIncoming().getResolutionResult().getRoot().getDependencies()) {
-				found = findAndAddModule(project, "annotationProcessor", dep, (mci) -> ("net.fabricmc".equals(mci.getGroup()) && "fabric-mixin-compile-extensions".equals(mci.getModule())));
+			while ((line = reader.readLine()) != null) {
+				if (!line.isEmpty()) {
+					dependencies.add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, line);
+				}
 			}
-
-			if (found || AbstractPlugin.isRootProject(p)) {
-				break;
-			}
-
-			p = p.getRootProject();
+		} catch (IOException ex) {
+			project.getLogger().error("Cannot load shipped annotation processor configurations from {}", apDepFileName, ex);
 		}
 
 		project.afterEvaluate(project1 -> {

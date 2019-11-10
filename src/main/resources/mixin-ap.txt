@@ -1,1 +1,0 @@
-net.fabricmc:fabric-mixin-compile-extensions:0.2.0.3

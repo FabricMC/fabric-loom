@@ -24,11 +24,8 @@
 
 package net.fabricmc.loom;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +39,6 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -239,20 +235,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		// Add Mixin dependencies
-		final String apDepFileName = "/mixin-ap.txt";
-
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(AbstractPlugin.class.getResourceAsStream(apDepFileName), StandardCharsets.UTF_8))) {
-			DependencyHandler dependencies = project.getDependencies();
-			String line;
-
-			while ((line = reader.readLine()) != null) {
-				if (!line.isEmpty()) {
-					dependencies.add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, line);
-				}
-			}
-		} catch (IOException ex) {
-			project.getLogger().error("Cannot load shipped annotation processor configurations from {}", apDepFileName, ex);
-		}
+		project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, String.format("net.fabricmc:fabric-mixin-compile-extensions:$s", Constants.MIXIN_COMPILE_EXTENSIONS_VERSION));
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);

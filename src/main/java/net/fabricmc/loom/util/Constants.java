@@ -39,9 +39,13 @@ public class Constants {
 
 	public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
 	public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
-	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(new RemappedConfigurationEntry("modCompile", "compile", true, "compile"), new RemappedConfigurationEntry("modApi", "api", true, "compile"),
-																								new RemappedConfigurationEntry("modImplementation", "implementation", true, "runtime"), new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, ""),
-																								new RemappedConfigurationEntry("modCompileOnly", "compileOnly", true, ""));
+	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
+			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
+			new RemappedConfigurationEntry("modApi", "api", true, "compile"),
+			new RemappedConfigurationEntry("modImplementation", "implementation", true, "runtime"),
+			new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, ""),
+			new RemappedConfigurationEntry("modCompileOnly", "compileOnly", true, "")
+	);
 
 	public static final String INCLUDE = "include";
 	public static final String MINECRAFT = "minecraft";
@@ -51,4 +55,6 @@ public class Constants {
 	public static final String MINECRAFT_LINEMAPPED = "minecraftLinemapped";
 	public static final String MAPPINGS = "mappings";
 	public static final String MAPPINGS_FINAL = "mappingsFinal";
+
+	public static final String MIXIN_COMPILE_EXTENSIONS_VERSION = "0.2.0.3";
 }

@@ -37,7 +37,7 @@ public class DownloadAssetsTask extends AbstractLoomTask {
 	@TaskAction
 	public void downloadAssets() throws IOException {
 		Project project = this.getProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = getExtension();
 
 		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
 		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);

@@ -58,7 +58,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 			return;
 		}
 
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = getExtension();
 		project.getLogger().lifecycle(":Building idea workspace");
 
 		File file = project.file(project.getName() + ".iws");

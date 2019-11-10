@@ -64,7 +64,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	@TaskAction
 	public void doTask() throws Throwable {
 		Project project = getProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = getExtension();
 		Map<String, ?> properties = project.getProperties();
 
 		project.getLogger().lifecycle(":loading mappings");

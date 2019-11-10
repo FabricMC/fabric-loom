@@ -33,6 +33,7 @@ import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -45,8 +46,9 @@ import net.fabricmc.loom.util.RunConfig;
 public class GenVsCodeProjectTask extends AbstractLoomTask {
 	@TaskAction
 	public void genRuns() {
-		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
-		File projectDir = getProject().file(".vscode");
+		Project project = getProject();
+		LoomGradleExtension extension = getExtension();
+		File projectDir = project.file(".vscode");
 
 		if (!projectDir.exists()) {
 			projectDir.mkdir();
@@ -59,8 +61,8 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 
 		VsCodeLaunch launch = new VsCodeLaunch();
-		launch.add(RunConfig.clientRunConfig(getProject()));
-		launch.add(RunConfig.serverRunConfig(getProject()));
+		launch.add(RunConfig.clientRunConfig(project));
+		launch.add(RunConfig.serverRunConfig(project));
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		String json = gson.toJson(launch);
@@ -71,7 +73,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to write launch.json", e);
 		}
 
-		File runDir = new File(getProject().getRootDir(), extension.runDir);
+		File runDir = new File(project.getRootDir(), extension.runDir);
 
 		if (!runDir.exists()) {
 			runDir.mkdirs();

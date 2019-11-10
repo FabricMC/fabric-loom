@@ -35,8 +35,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 public class CleanLoomBinaries extends AbstractLoomTask {
 	@TaskAction
 	public void run() {
-		Project project = this.getProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = getExtension();
 		extension.getMinecraftProvider().getMergedJar().delete();
 		extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
 		extension.getMinecraftMappedProvider().getMappedJar().delete();

@@ -36,14 +36,17 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
+import com.google.common.collect.ImmutableMap;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
+import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
@@ -72,7 +75,35 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		String outputDir = (String) properties.get("outputDir");
 		if (outputDir == null) outputDir = "remappedSrc";
 
-		File mappings = project.getConfigurations().detachedConfiguration(project.getDependencies().module(properties.get("mappings"))).getSingleFile();
+		File mappings;
+
+		{
+			String notation = (String) properties.get("mappings");
+
+			if (notation == null || notation.isEmpty()) {
+				throw new IllegalAccessException("No mappings were specified. Use -Pmappings=\"\" to specify target mappings");
+			}
+
+			Set<File> files;
+
+			try {
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(notation)).resolve();
+			} catch (IllegalDependencyNotation ignored) {
+				project.getLogger().info("Could not locate mappings, presuming Yarn");
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", notation))).resolve();
+			}
+
+			if (files.isEmpty()) {
+				throw new IllegalAccessException("Mappings could not be found");
+			}
+
+			if (files.size() > 1) {
+				throw new IllegalAccessException("Multiple mappings were found");
+			}
+
+			mappings = files.iterator().next();
+		}
+
 		Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
 		Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
 

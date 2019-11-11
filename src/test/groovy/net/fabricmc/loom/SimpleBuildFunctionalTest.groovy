@@ -45,9 +45,10 @@ class SimpleBuildFunctionalTest extends Specification {
 		when:
 		def result = GradleRunner.create()
 				.withProjectDir(testProjectDir.root)
-				.withArguments('build')
+				.withArguments('build',"--stacktrace")
 				.withPluginClasspath()
 				.withGradleVersion("4.9")
+				.withDebug(true)
 				.build()
 
 		then:
@@ -55,6 +56,7 @@ class SimpleBuildFunctionalTest extends Specification {
 
 		where:
 		mcVersion | yarnVersion       | loaderVersion     | fabricVersion
+		'19w45a'  | '19w45a+build.2:v2'   | '0.6.2+build.166' | '0.4.9+build.258-1.15'
 		'1.14'    | '1.14+build.21'   | '0.4.8+build.155' | '0.3.0+build.184'
 		'1.14.1'  | '1.14.1+build.10' | '0.4.8+build.155' | '0.3.0+build.184'
 		'1.14.2'  | '1.14.2+build.7'  | '0.4.8+build.155' | '0.3.0+build.184'

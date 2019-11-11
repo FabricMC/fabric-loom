@@ -31,18 +31,18 @@ import java.nio.file.Path;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
+import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.mappings.ClassEntry;
-import net.fabricmc.mappings.EntryTriple;
-import net.fabricmc.mappings.FieldEntry;
-import net.fabricmc.mappings.Mappings;
-import net.fabricmc.mappings.MethodEntry;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
@@ -58,7 +58,7 @@ public class SourceRemapper {
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
-				Mappings m = mappingsProvider.getMappings();
+				TinyTree m = mappingsProvider.getMappings();
 				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
@@ -66,20 +66,10 @@ public class SourceRemapper {
 			}
 		});
 
-		project.getLogger().lifecycle(":remapping source jar");
+		project.getLogger().info(":remapping source jar");
 
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
-			Mercury m = new Mercury();
-
-			for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
-				m.getClassPath().add(file.toPath());
-			}
-
-			if (!toNamed) {
-				for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
-					m.getClassPath().add(file.toPath());
-				}
-			}
+			Mercury m = createMercuryWithClassPath(project, toNamed);
 
 			for (Path file : extension.getUnmappedMods()) {
 				if (Files.isRegularFile(file)) {
@@ -159,6 +149,22 @@ public class SourceRemapper {
 		});
 	}
 
+	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
+		Mercury m = new Mercury();
+
+		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
+			m.getClassPath().add(file.toPath());
+		}
+
+		if (!toNamed) {
+			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
+				m.getClassPath().add(file.toPath());
+			}
+		}
+
+		return m;
+	}
+
 	private static boolean isJavaFile(Path path) {
 		String name = path.getFileName().toString();
 		// ".java" is not a valid java file
@@ -166,39 +172,36 @@ public class SourceRemapper {
 	}
 
 	public static class TinyReader extends MappingsReader {
-		private final Mappings m;
+		private final TinyTree mappings;
 		private final String from, to;
 
-		public TinyReader(Mappings m, String from, String to) {
-			this.m = m;
+		public TinyReader(TinyTree m, String from, String to) {
+			this.mappings = m;
 			this.from = from;
 			this.to = to;
 		}
 
 		@Override
 		public MappingSet read(final MappingSet mappings) {
-			for (ClassEntry entry : m.getClassEntries()) {
-				mappings.getOrCreateClassMapping(entry.get(from)).setDeobfuscatedName(entry.get(to));
-			}
+			for (ClassDef classDef : this.mappings.getClasses()) {
+				ClassMapping classMapping = mappings.getOrCreateClassMapping(classDef.getName(from))
+								.setDeobfuscatedName(classDef.getName(to));
 
-			for (FieldEntry entry : m.getFieldEntries()) {
-				EntryTriple fromEntry = entry.get(from);
-				EntryTriple toEntry = entry.get(to);
+				for (FieldDef field : classDef.getFields()) {
+					classMapping.getOrCreateFieldMapping(field.getName(from), field.getDescriptor(from))
+									.setDeobfuscatedName(field.getName(to));
+				}
 
-				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateFieldMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
-			}
-
-			for (MethodEntry entry : m.getMethodEntries()) {
-				EntryTriple fromEntry = entry.get(from);
-				EntryTriple toEntry = entry.get(to);
-
-				mappings.getOrCreateClassMapping(fromEntry.getOwner()).getOrCreateMethodMapping(fromEntry.getName(), fromEntry.getDesc()).setDeobfuscatedName(toEntry.getName());
+				for (MethodDef method : classDef.getMethods()) {
+					classMapping.getOrCreateMethodMapping(method.getName(from), method.getDescriptor(from))
+									.setDeobfuscatedName(method.getName(to));
+				}
 			}
 
 			return mappings;
 		}
 
 		@Override
-		public void close() throws IOException { }
+		public void close() { }
 	}
 }

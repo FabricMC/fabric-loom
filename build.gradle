@@ -39,15 +39,14 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.2.1.60') {
+	implementation ('net.fabricmc:stitch:0.4.0.67') {
 		exclude module: 'enigma'
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.1.0.38') {
+	implementation ('net.fabricmc:tiny-remapper:0.2.0.56') {
 		transitive = false
 	}
-	implementation ('net.fabricmc:fabric-mixin-compile-extensions:0.1.0.+')
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
@@ -131,4 +130,9 @@ publishing {
 			}
 		}
 	}
+}
+configurations.all {
+    resolutionStrategy {
+        force 'org.codehaus.groovy:groovy-all:2.4.12'
+    }
 }

@@ -53,6 +53,7 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
+import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.task.RemapJarTask;
@@ -278,6 +279,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			dependencyManager.addProvider(new MinecraftProvider());
 			dependencyManager.addProvider(new MappingsProvider());
+			dependencyManager.addProvider(new LaunchProvider());
 
 			dependencyManager.handleDependencies(project1);
 

@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
@@ -40,10 +39,7 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.artifacts.result.DependencyResult;
-import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.publish.Publication;
@@ -199,8 +195,8 @@ public class AbstractPlugin implements Plugin<Project> {
 	 * Permit to add a Maven repository to a target project.
 	 *
 	 * @param target The garget project
-	 * @param name The name of the repository
-	 * @param url The URL of the repository
+	 * @param name   The name of the repository
+	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
@@ -226,42 +222,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
 	}
 
-	private void addModule(Project proj, String configuration, DependencyResult module) {
-		if (module instanceof ResolvedDependencyResult) {
-			if (module.getFrom().getId() instanceof ModuleComponentIdentifier) {
-				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) module.getFrom().getId());
-				String moduleId = mci.getGroup() + ":" + mci.getModule() + ":" + mci.getVersion();
-				proj.getDependencies().add(configuration, proj.getDependencies().module(moduleId));
-				proj.getLogger().debug("Loom addModule " + moduleId + " to " + configuration);
-			}
-
-			for (DependencyResult child : ((ResolvedDependencyResult) module).getSelected().getDependencies()) {
-				addModule(proj, configuration, child);
-			}
-		}
-	}
-
-	private boolean findAndAddModule(Project project, String configuration, DependencyResult dep, Predicate<ModuleComponentIdentifier> predicate) {
-		boolean found = false;
-
-		if (dep instanceof ResolvedDependencyResult) {
-			if (dep.getFrom().getId() instanceof ModuleComponentIdentifier) {
-				ModuleComponentIdentifier mci = ((ModuleComponentIdentifier) dep.getFrom().getId());
-
-				if (predicate.test(mci)) {
-					addModule(project, configuration, dep);
-					found = true;
-				}
-			}
-
-			for (DependencyResult child : ((ResolvedDependencyResult) dep).getSelected().getDependencies()) {
-				findAndAddModule(project, configuration, child, predicate);
-			}
-		}
-
-		return found;
-	}
-
 	/**
 	 * Add Minecraft dependencies to compile time.
 	 */
@@ -275,21 +235,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		// Add Mixin dependencies
-		Project p = project;
-
-		while (true) {
-			boolean found = false;
-
-			for (DependencyResult dep : p.getBuildscript().getConfigurations().getByName("classpath").getIncoming().getResolutionResult().getRoot().getDependencies()) {
-				found = findAndAddModule(project, "annotationProcessor", dep, (mci) -> ("net.fabricmc".equals(mci.getGroup()) && "fabric-mixin-compile-extensions".equals(mci.getModule())));
-			}
-
-			if (found || AbstractPlugin.isRootProject(p)) {
-				break;
-			}
-
-			p = p.getRootProject();
-		}
+		project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, "net.fabricmc:fabric-mixin-compile-extensions:" + Constants.MIXIN_COMPILE_EXTENSIONS_VERSION);
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);

@@ -44,9 +44,7 @@ import net.fabricmc.loom.util.DependencyProvider;
 public class LaunchProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws IOException {
-		final LaunchConfig launchConfig = new LaunchConfig();
-
-		launchConfig
+		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 
 				.property("client", "java.library.path", extension.getNativesDirectory().getAbsolutePath())
@@ -59,7 +57,7 @@ public class LaunchProvider extends DependencyProvider {
 
 		FileUtils.writeStringToFile(extension.getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency("net.fabricmc:dev-launch-wrapper:0.1.0+build.2", project, "runtimeOnly");
+		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, project, "runtimeOnly");
 	}
 
 	@Override

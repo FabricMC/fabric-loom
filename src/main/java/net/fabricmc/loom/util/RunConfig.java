@@ -104,9 +104,9 @@ public class RunConfig {
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
 			break;
 		default:
-			runConfig.mainClass = "net.fabricmc.devlaunchwrapper.Main";
+			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
-			runConfig.vmArgs = "-Dfabric.dlw.config=\"" + extension.getDevLauncherConfig().getAbsolutePath() + "\" -Dfabric.dlw.env=" + mode.toLowerCase();
+			runConfig.vmArgs = "-Dfabric.dli.config=\"" + extension.getDevLauncherConfig().getAbsolutePath() + "\" -Dfabric.dli.env=" + mode.toLowerCase();
 			break;
 		}
 
@@ -149,7 +149,7 @@ public class RunConfig {
 		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.vmArgs += getOSClientJVMArgs();
-		ideaClient.vmArgs += " -Dfabric.dlw.main=" + getMainClass("client", extension);
+		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
 
 		return ideaClient;
 	}
@@ -160,7 +160,7 @@ public class RunConfig {
 		RunConfig ideaServer = new RunConfig();
 		populate(project, extension, ideaServer, "server");
 		ideaServer.configName = "Minecraft Server";
-		ideaServer.vmArgs += " -Dfabric.dlw.main=" + getMainClass("server", extension);
+		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
 
 		return ideaServer;
 	}
@@ -168,7 +168,7 @@ public class RunConfig {
 	//This can be removed at somepoint, its not ideal but its the best solution I could thing of
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		return !(contents.contains("net.fabricmc.devlaunchwrapper.Main"));
+		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"));
 	}
 
 	public String fromDummy(String dummy) throws IOException {

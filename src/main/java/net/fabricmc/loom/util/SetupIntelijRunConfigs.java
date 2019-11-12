@@ -78,11 +78,11 @@ public class SetupIntelijRunConfigs {
 		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
 
-		if (!clientRunConfigs.exists()) {
+		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
 			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
 		}
 
-		if (!serverRunConfigs.exists()) {
+		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 		}
 	}

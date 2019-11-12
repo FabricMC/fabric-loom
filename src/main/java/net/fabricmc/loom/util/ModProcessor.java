@@ -165,6 +165,7 @@ public class ModProcessor {
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+						.renameInvalidLocals(true)
 						.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {

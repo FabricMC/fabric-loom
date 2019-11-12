@@ -73,10 +73,6 @@ public class ModProcessor {
 		stripNestedJars(output);
 	}
 
-	public static void acknowledgeMod(File input, File output, Project project, Configuration config) {
-		readInstallerJson(input, project);
-	}
-
 	private static void handleNestedJars(File input, Project project, Configuration config) throws IOException {
 		JarFile jarFile = new JarFile(input);
 		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
@@ -187,7 +183,7 @@ public class ModProcessor {
 		}
 	}
 
-	static void readInstallerJson(File file, Project project) {
+	static JsonObject readInstallerJson(File file, Project project) {
 		try {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			String launchMethod = extension.getLoaderLaunchMethod();
@@ -211,7 +207,7 @@ public class ModProcessor {
 					priority++;
 
 					if (entry == null) {
-						return;
+						return null;
 					}
 				}
 
@@ -221,9 +217,10 @@ public class ModProcessor {
 			}
 
 			JsonObject jsonObject = GSON.fromJson(jsonStr, JsonObject.class);
-			extension.setInstallerJson(jsonObject, priority);
+			return jsonObject;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return null;
 	}
 }

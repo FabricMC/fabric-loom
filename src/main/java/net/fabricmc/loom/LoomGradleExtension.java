@@ -64,7 +64,6 @@ public class LoomGradleExtension {
 	private Project project;
 	private LoomDependencyManager dependencyManager;
 	private JsonObject installerJson;
-	private int installerJsonPriority = Integer.MAX_VALUE; // 0+, higher = less prioritized
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 
@@ -88,11 +87,8 @@ public class LoomGradleExtension {
 		return Collections.unmodifiableList(unmappedModsBuilt);
 	}
 
-	public void setInstallerJson(JsonObject object, int priority) {
-		if (installerJson == null || priority <= installerJsonPriority) {
-			this.installerJson = object;
-			this.installerJsonPriority = priority;
-		}
+	public void setInstallerJson(JsonObject object) {
+		this.installerJson = object;
 	}
 
 	public JsonObject getInstallerJson() {

@@ -27,15 +27,12 @@ package net.fabricmc.loom.util;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
@@ -129,23 +126,20 @@ public class LoomDependencyManager {
 
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
-			project.getLogger().info("Didn't find installer JSON, searching through modCompileClasspath");
-			Configuration configuration = project.getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH);
+			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
+			final Configuration configuration = project.getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH);
 
-			Set<File> seenFiles = new HashSet<>();
+			for (File input : configuration.resolve()) {
+				JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
 
-			for (Dependency dependency : configuration.getDependencies()) {
-				DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-
-				for (File input : info.resolve()) {
-					if (seenFiles.add(input)) {
-						ModProcessor.readInstallerJson(input, project);
-
-						if (extension.getInstallerJson() != null) {
-							project.getLogger().info("Found installer JSON in " + info);
-							break; //Found it, probably don't need to look any further
-						}
+				if (jsonObject != null) {
+					if (extension.getInstallerJson() != null) {
+						project.getLogger().info("Found another installer JSON in, ignoring it! " + input);
+						continue;
 					}
+
+					project.getLogger().info("Found installer JSON in " + input);
+					extension.setInstallerJson(jsonObject);
 				}
 			}
 		}

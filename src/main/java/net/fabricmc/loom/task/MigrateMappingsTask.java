@@ -75,34 +75,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		String outputDir = (String) properties.get("outputDir");
 		if (outputDir == null) outputDir = "remappedSrc";
 
-		File mappings;
-
-		{
-			String notation = (String) properties.get("mappings");
-
-			if (notation == null || notation.isEmpty()) {
-				throw new IllegalAccessException("No mappings were specified. Use -Pmappings=\"\" to specify target mappings");
-			}
-
-			Set<File> files;
-
-			try {
-				files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(notation)).resolve();
-			} catch (IllegalDependencyNotation ignored) {
-				project.getLogger().info("Could not locate mappings, presuming Yarn");
-				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", notation))).resolve();
-			}
-
-			if (files.isEmpty()) {
-				throw new IllegalAccessException("Mappings could not be found");
-			}
-
-			if (files.size() > 1) {
-				throw new IllegalAccessException("Multiple mappings were found");
-			}
-
-			mappings = files.iterator().next();
-		}
+		File mappings = loadMappings(project);
 
 		Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
 		Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
@@ -123,6 +96,33 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error while loading mappings", e);
 		}
+	}
+
+	private static File loadMappings(Project project) {
+		String notation = (String) project.getProperties().get("mappings");
+
+		if (notation == null || notation.isEmpty()) {
+			throw new IllegalArgumentException("No mappings were specified. Use -Pmappings=\"\" to specify target mappings");
+		}
+
+		Set<File> files;
+
+		try {
+			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(notation)).resolve();
+		} catch (IllegalDependencyNotation ignored) {
+			project.getLogger().info("Could not locate mappings, presuming Yarn");
+			files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", notation))).resolve();
+		}
+
+		if (files.isEmpty()) {
+			throw new IllegalArgumentException("Mappings could not be found");
+		}
+
+		if (files.size() > 1) {
+			throw new IllegalArgumentException("Multiple mappings were found");
+		}
+
+		return files.iterator().next();
 	}
 
 	private static TinyTree getMappings(File mappings) throws IOException {

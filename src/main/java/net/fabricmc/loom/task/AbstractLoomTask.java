@@ -33,7 +33,7 @@ public abstract class AbstractLoomTask extends DefaultTask {
 		setGroup("fabric");
 	}
 
-	LoomGradleExtension getExtension() {
+	protected LoomGradleExtension getExtension() {
 		return getProject().getExtensions().getByType(LoomGradleExtension.class);
 	}
 }

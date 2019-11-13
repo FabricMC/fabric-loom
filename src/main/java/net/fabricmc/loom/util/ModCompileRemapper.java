@@ -128,7 +128,7 @@ public class ModCompileRemapper {
 		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
 			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
 			try {
-				ModProcessor.processMod(input, output, project, config);
+				ModProcessor.processMod(input, output, project, config, artifact);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to remap mod", e);
 			}
@@ -143,7 +143,7 @@ public class ModCompileRemapper {
 		}
 	}
 
-	private static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
+	public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
 		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
 				.forComponents(artifact.getId().getComponentIdentifier())//
 				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);

@@ -31,7 +31,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,6 +48,7 @@ import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -62,23 +62,44 @@ import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
+	private String inputDir = "src/main/java";
+	private String outputDir = "remappedSrc";
+	private String mappings;
+
+	@Option(option = "input", description = "Java source file directory")
+	public void setInputDir(String inputDir) {
+		this.inputDir = inputDir;
+	}
+
+	@Option(option = "output", description = "Remapped source output directory")
+	public void setOutputDir(String outputDir) {
+		this.outputDir = outputDir;
+	}
+
+	@Option(option = "mappings", description = "Target mappings")
+	public void setMappings(String mappings) {
+		this.mappings = mappings;
+	}
+
 	@TaskAction
 	public void doTask() throws Throwable {
 		Project project = getProject();
 		LoomGradleExtension extension = getExtension();
-		Map<String, ?> properties = project.getProperties();
 
 		project.getLogger().lifecycle(":loading mappings");
 
-		String inputDir = (String) properties.get("inputDir");
-		if (inputDir == null) inputDir = "src/main/java";
-		String outputDir = (String) properties.get("outputDir");
-		if (outputDir == null) outputDir = "remappedSrc";
+		if (inputDir == null) {
+			throw new IllegalArgumentException("Input directory was not specified");
+		}
 
-		File mappings = loadMappings(project);
+		if (outputDir == null) {
+			throw new IllegalArgumentException("Output directory was not specified");
+		}
 
-		Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
-		Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
+		File mappings = loadMappings();
+
+		Path inputDirPath = project.file(inputDir).toPath();
+		Path outputDirPath = project.file(outputDir).toPath();
 
 		if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
 			throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
@@ -98,20 +119,20 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		}
 	}
 
-	private static File loadMappings(Project project) {
-		String notation = (String) project.getProperties().get("mappings");
+	private File loadMappings() {
+		Project project = getProject();
 
-		if (notation == null || notation.isEmpty()) {
-			throw new IllegalArgumentException("No mappings were specified. Use -Pmappings=\"\" to specify target mappings");
+		if (mappings == null || mappings.isEmpty()) {
+			throw new IllegalArgumentException("No mappings were specified. Use --mappings=\"\" to specify target mappings");
 		}
 
 		Set<File> files;
 
 		try {
-			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(notation)).resolve();
+			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mappings)).resolve();
 		} catch (IllegalDependencyNotation ignored) {
 			project.getLogger().info("Could not locate mappings, presuming Yarn");
-			files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", notation))).resolve();
+			files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
 		}
 
 		if (files.isEmpty()) {
@@ -230,4 +251,3 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		}
 	}
 }
-

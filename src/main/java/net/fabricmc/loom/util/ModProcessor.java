@@ -43,6 +43,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
@@ -57,23 +58,23 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public class ModProcessor {
 	private static final Gson GSON = new Gson();
 
-	public static void processMod(File input, File output, Project project, Configuration config) throws IOException {
+	public static void processMod(File input, File output, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
 		if (output.exists()) {
 			output.delete();
 		}
 
-		remapJar(input, output, project);
+		remapJar(input, output, project, artifact);
 
 		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
 		if (project.getExtensions().getByType(LoomGradleExtension.class).extractJars) {
-			handleNestedJars(input, project, config);
+			handleNestedJars(input, project, config, artifact);
 		}
 
 		//Always strip the nested jars
 		stripNestedJars(output);
 	}
 
-	private static void handleNestedJars(File input, Project project, Configuration config) throws IOException {
+	private static void handleNestedJars(File input, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
 		JarFile jarFile = new JarFile(input);
 		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
 
@@ -94,12 +95,12 @@ public class ModProcessor {
 				JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
 				String fileName = jsonObject.get("file").getAsString();
 				project.getLogger().lifecycle(String.format("Found %s nested in %s", fileName, input.getName()));
-				processNestedJar(jarFile, fileName, project, config);
+				processNestedJar(jarFile, fileName, project, config, artifact);
 			}
 		}
 	}
 
-	private static void processNestedJar(JarFile parentJar, String fileName, Project project, Configuration config) throws IOException {
+	private static void processNestedJar(JarFile parentJar, String fileName, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		JarEntry entry = parentJar.getJarEntry(fileName);
@@ -116,7 +117,7 @@ public class ModProcessor {
 
 		File remappedFile = new File(extension.getRemappedModCache(), fileName.substring(fileName.lastIndexOf("/")));
 
-		processMod(nestedFile, remappedFile, project, config);
+		processMod(nestedFile, remappedFile, project, config, artifact);
 
 		if (!remappedFile.exists()) {
 			throw new RuntimeException("Failed to find processed nested jar");
@@ -138,7 +139,7 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static void remapJar(File input, File output, Project project) throws IOException {
+	private static void remapJar(File input, File output, Project project, ResolvedArtifact artifact) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";
@@ -163,9 +164,14 @@ public class ModProcessor {
 
 		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
 
+		// If the sources don't exist, we want remapper to give nicer names to the missing variable names.
+		// However, if the sources do exist, if remapper gives names to the parameters that prevents IDEs (at least IDEA)
+		// from replacing the parameters with the actual names from the sources.
+		boolean sourcesExist = ModCompileRemapper.findSources(project.getDependencies(), artifact) != null;
+
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-						.renameInvalidLocals(true)
+						.renameInvalidLocals(!sourcesExist)
 						.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {

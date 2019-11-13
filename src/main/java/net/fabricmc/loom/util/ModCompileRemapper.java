@@ -137,8 +137,6 @@ public class ModCompileRemapper {
 		} else {
 			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
 		}
-
-		ModProcessor.acknowledgeMod(input, output, project, config);
 	}
 
 	private static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {

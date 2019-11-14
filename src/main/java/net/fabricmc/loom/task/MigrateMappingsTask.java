@@ -45,6 +45,7 @@ import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
+import org.gradle.api.GradleException;
 import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
@@ -131,8 +132,14 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		try {
 			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mappings)).resolve();
 		} catch (IllegalDependencyNotation ignored) {
-			project.getLogger().info("Could not locate mappings, presuming Yarn");
-			files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
+			project.getLogger().info("Could not locate mappings, presuming Yarn V2");
+
+			try {
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2"))).resolve();
+			} catch (GradleException ignored2) {
+				project.getLogger().info("Could not locate mappings, presuming Yarn");
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
+			}
 		}
 
 		if (files.isEmpty()) {

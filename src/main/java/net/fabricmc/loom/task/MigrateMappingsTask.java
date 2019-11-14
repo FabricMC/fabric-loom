@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
@@ -63,18 +64,23 @@ import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
-	private String inputDir = "src/main/java";
-	private String outputDir = "remappedSrc";
+	private Path inputDir;
+	private Path outputDir;
 	private String mappings;
+
+	public MigrateMappingsTask() {
+		inputDir = getProject().file("src/main/java").toPath();
+		outputDir = getProject().file("remappedSrc").toPath();
+	}
 
 	@Option(option = "input", description = "Java source file directory")
 	public void setInputDir(String inputDir) {
-		this.inputDir = inputDir;
+		this.inputDir = getProject().file(inputDir).toPath();
 	}
 
 	@Option(option = "output", description = "Remapped source output directory")
 	public void setOutputDir(String outputDir) {
-		this.outputDir = outputDir;
+		this.outputDir = getProject().file(outputDir).toPath();
 	}
 
 	@Option(option = "mappings", description = "Target mappings")
@@ -89,32 +95,20 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		project.getLogger().lifecycle(":loading mappings");
 
-		if (inputDir == null) {
-			throw new IllegalArgumentException("Input directory was not specified");
+		if (!Files.exists(inputDir) || !Files.isDirectory(inputDir)) {
+			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
 		}
 
-		if (outputDir == null) {
-			throw new IllegalArgumentException("Output directory was not specified");
-		}
+		Files.createDirectories(outputDir);
 
 		File mappings = loadMappings();
-
-		Path inputDirPath = project.file(inputDir).toPath();
-		Path outputDirPath = project.file(outputDir).toPath();
-
-		if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
-			throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
-		}
-
-		Files.createDirectories(outputDirPath);
-
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		try {
 			TinyTree currentMappings = mappingsProvider.getMappings();
 			TinyTree targetMappings = getMappings(mappings);
-			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDirPath, outputDirPath, currentMappings, targetMappings);
-			project.getLogger().lifecycle(":remapped project written to " + outputDirPath.toAbsolutePath());
+			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDir, outputDir, currentMappings, targetMappings);
+			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error while loading mappings", e);
 		}
@@ -132,12 +126,12 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		try {
 			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mappings)).resolve();
 		} catch (IllegalDependencyNotation ignored) {
-			project.getLogger().info("Could not locate mappings, presuming Yarn V2");
+			project.getLogger().info("Could not locate mappings, presuming V2 Yarn");
 
 			try {
 				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2"))).resolve();
 			} catch (GradleException ignored2) {
-				project.getLogger().info("Could not locate mappings, presuming Yarn");
+				project.getLogger().info("Could not locate mappings, presuming V1 Yarn");
 				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
 			}
 		}
@@ -146,11 +140,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 			throw new IllegalArgumentException("Mappings could not be found");
 		}
 
-		if (files.size() > 1) {
-			throw new IllegalArgumentException("Multiple mappings were found");
-		}
-
-		return files.iterator().next();
+		return Iterables.getOnlyElement(files);
 	}
 
 	private static TinyTree getMappings(File mappings) throws IOException {
@@ -190,7 +180,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		System.gc();
 	}
 
-	public static class MappingsJoiner extends MappingsReader {
+	private static class MappingsJoiner extends MappingsReader {
 		private final TinyTree sourceMappings, targetMappings;
 		private final String fromNamespace, toNamespace;
 
@@ -203,7 +193,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		 * Since we only use intermediary names (and not descriptors) to match, and intermediary names are unique,
 		 * this will migrate methods that have had their signature changed too.
 		 */
-		MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
+		private MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
 			this.sourceMappings = sourceMappings;
 			this.targetMappings = targetMappings;
 			this.fromNamespace = fromNamespace;

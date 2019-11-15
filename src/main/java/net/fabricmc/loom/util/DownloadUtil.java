@@ -85,7 +85,7 @@ public class DownloadUtil {
 
 		if ((code < 200 || code > 299) && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
 			//Didn't get what we expected
-			throw new IOException(connection.getResponseMessage());
+			throw new IOException(connection.getResponseMessage() + " for " + from);
 		}
 
 		long modifyTime = connection.getHeaderFieldDate("Last-Modified", -1);

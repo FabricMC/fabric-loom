@@ -48,7 +48,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.Version;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
@@ -93,9 +92,8 @@ public class MappingsProvider extends DependencyProvider {
 
 		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
 
-		Version mappingsVersion = new Version(version);
-		this.minecraftVersion = mappingsVersion.getMinecraftVersion();
-		this.mappingsVersion = mappingsVersion.getMappingsVersion() + (isV2 ? "-v2" : "");
+		this.minecraftVersion = minecraftProvider.minecraftVersion;
+		this.mappingsVersion = version + (isV2 ? "-v2" : "");
 
 		initFiles(project);
 

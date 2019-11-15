@@ -39,13 +39,13 @@ import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FilenameUtils;
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.SelfResolvingDependency;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 
@@ -154,7 +154,7 @@ public abstract class DependencyProvider {
 
 	public static class FileDependencyInfo extends DependencyInfo {
 		protected final Map<String, File> classifierToFile = new HashMap<>();
-		protected final String group = "net.fabricmc.synthetic", name, version;
+		protected final String group, name, version;
 
 		FileDependencyInfo(Project project, SelfResolvingDependency dependency, Configuration configuration) {
 			super(project, dependency, configuration);
@@ -196,27 +196,34 @@ public abstract class DependencyProvider {
 				}
 			}
 
-			File root = classifierToFile.get(""); //We've built the classifierToFile map, now to try find a name and version for our dependency
-
-			if ("jar".equals(FilenameUtils.getExtension(root.getName())) && ZipUtil.containsEntry(root, "fabric.mod.json")) {
-				//It's a Fabric mod, see how much we can extract out
-				JsonObject json = new Gson().fromJson(new String(ZipUtil.unpackEntry(root, "fabric.mod.json"), StandardCharsets.UTF_8), JsonObject.class);
-
-				if (json == null || !json.has("id") || !json.has("version")) {
-					throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
-				}
-
-				if (json.has("name")) { //Go for the name field if it's got one
-					name = json.get("name").getAsString();
-				} else {
-					name = json.get("id").getAsString();
-				}
-
-				version = json.get("version").getAsString();
+			if (dependency.getGroup() != null && dependency.getVersion() != null) {
+				group = dependency.getGroup();
+				name = dependency.getName();
+				version = dependency.getVersion();
 			} else {
-				//Not a Fabric mod, just have to make something up
-				name = FilenameUtils.removeExtension(root.getName());
-				version = "1.0";
+				group = "net.fabricmc.synthetic";
+				File root = classifierToFile.get(""); //We've built the classifierToFile map, now to try find a name and version for our dependency
+
+				if ("jar".equals(FilenameUtils.getExtension(root.getName())) && ZipUtil.containsEntry(root, "fabric.mod.json")) {
+					//It's a Fabric mod, see how much we can extract out
+					JsonObject json = new Gson().fromJson(new String(ZipUtil.unpackEntry(root, "fabric.mod.json"), StandardCharsets.UTF_8), JsonObject.class);
+
+					if (json == null || !json.has("id") || !json.has("version")) {
+						throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
+					}
+
+					if (json.has("name")) { //Go for the name field if it's got one
+						name = json.get("name").getAsString();
+					} else {
+						name = json.get("id").getAsString();
+					}
+
+					version = json.get("version").getAsString();
+				} else {
+					//Not a Fabric mod, just have to make something up
+					name = FilenameUtils.removeExtension(root.getName());
+					version = "1.0";
+				}
 			}
 		}
 

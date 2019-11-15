@@ -106,7 +106,7 @@ public class RunConfig {
 		default:
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
-			runConfig.vmArgs = "-Dfabric.dli.config=\"" + extension.getDevLauncherConfig().getAbsolutePath() + "\" -Dfabric.dli.env=" + mode.toLowerCase();
+			runConfig.vmArgs = "-Dfabric.dli.config=" + quoteIfNeeded(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
 			break;
 		}
 
@@ -217,5 +217,13 @@ public class RunConfig {
 		}
 
 		throw new RuntimeException("Failed to find mainclass");
+	}
+
+	private static String quoteIfNeeded(String input) {
+		if (!input.contains(" ")) {
+			return input;
+		}
+
+		return String.format("\"%s\"", input);
 	}
 }

@@ -106,7 +106,7 @@ public class RunConfig {
 		default:
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
-			runConfig.vmArgs = "-Dfabric.dli.config=" + quoteIfNeeded(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
+			runConfig.vmArgs = quoteIfNeeded("-Dfabric.dli.config=" + extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
 			break;
 		}
 

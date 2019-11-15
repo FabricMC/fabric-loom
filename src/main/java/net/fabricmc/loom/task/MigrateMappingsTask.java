@@ -27,27 +27,30 @@ package net.fabricmc.loom.task;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
-import com.google.common.net.UrlEscapers;
-import org.apache.commons.io.FileUtils;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
 import org.cadixdev.lorenz.model.Mapping;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
+import org.gradle.api.GradleException;
+import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -61,88 +64,99 @@ import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
+	private Path inputDir;
+	private Path outputDir;
+	private String mappings;
+
+	public MigrateMappingsTask() {
+		inputDir = getProject().file("src/main/java").toPath();
+		outputDir = getProject().file("remappedSrc").toPath();
+	}
+
+	@Option(option = "input", description = "Java source file directory")
+	public void setInputDir(String inputDir) {
+		this.inputDir = getProject().file(inputDir).toPath();
+	}
+
+	@Option(option = "output", description = "Remapped source output directory")
+	public void setOutputDir(String outputDir) {
+		this.outputDir = getProject().file(outputDir).toPath();
+	}
+
+	@Option(option = "mappings", description = "Target mappings")
+	public void setMappings(String mappings) {
+		this.mappings = mappings;
+	}
+
 	@TaskAction
 	public void doTask() throws Throwable {
 		Project project = getProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		Map<String, ?> properties = project.getProperties();
+		LoomGradleExtension extension = getExtension();
 
 		project.getLogger().lifecycle(":loading mappings");
 
-		String inputDir = (String) properties.get("inputDir");
-		if (inputDir == null) inputDir = "src/main/java";
-		String outputDir = (String) properties.get("outputDir");
-		if (outputDir == null) outputDir = "remappedSrc";
-		String officialMappingsVersion = (String) properties.get("targetMappings");
-		String localMappingsPath = (String) properties.get("targetLocalMappings");
-
-		if (officialMappingsVersion != null && localMappingsPath != null) {
-			throw new IllegalArgumentException("targetMappings and targetLocalMappings are mutually exclusive;"
-							+ " you either specify an official yarn mappings version with targetMappings, "
-							+ "or a local one with targetLocalMappings.");
+		if (!Files.exists(inputDir) || !Files.isDirectory(inputDir)) {
+			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
 		}
 
-		if (officialMappingsVersion == null && localMappingsPath == null) {
-			throw new IllegalArgumentException("You must specify a new mappings version with -PtargetMappings (or local mappings with -PtargetLocalMappings).");
-		}
+		Files.createDirectories(outputDir);
 
-		boolean useLocalMappings = localMappingsPath != null;
-
-		if (useLocalMappings && !Files.exists(Paths.get(localMappingsPath))) {
-			throw new IllegalArgumentException("Can't find local mappings in specified location: " + localMappingsPath);
-		}
-
-		String targetMappingsName = useLocalMappings ? localMappingsPath : officialMappingsVersion;
-
-		Path inputDirPath = Paths.get(System.getProperty("user.dir"), inputDir);
-		Path outputDirPath = Paths.get(System.getProperty("user.dir"), outputDir);
-
-		if (!Files.exists(inputDirPath) || !Files.isDirectory(inputDirPath)) {
-			throw new IllegalArgumentException("Could not find input directory: " + inputDirPath.toAbsolutePath());
-		}
-
-		Files.createDirectories(outputDirPath);
-
+		File mappings = loadMappings();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		try {
 			TinyTree currentMappings = mappingsProvider.getMappings();
-			TinyTree targetMappings = getMappings(project, targetMappingsName, useLocalMappings);
-			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDirPath, outputDirPath, currentMappings, targetMappings, extension);
-			project.getLogger().lifecycle(":remapped project written to " + outputDirPath.toAbsolutePath());
+			TinyTree targetMappings = getMappings(mappings);
+			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDir, outputDir, currentMappings, targetMappings);
+			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());
 		} catch (IOException e) {
-			throw new IllegalArgumentException("Could not find mappings for version " + officialMappingsVersion, e);
+			throw new IllegalArgumentException("Error while loading mappings", e);
 		}
 	}
 
-	private TinyTree getMappings(Project project, String mappingsVersionOrPath, boolean useLocalMappings) throws IOException {
-		Path migrateMappingsDir = Files.createTempDirectory("migrate");
-		Path localMappingsOfVersion = migrateMappingsDir.resolve(mappingsVersionOrPath + ".tiny");
+	private File loadMappings() {
+		Project project = getProject();
 
-		if (!Files.exists(localMappingsOfVersion)) {
-			if (useLocalMappings) {
-				Files.copy(Paths.get(mappingsVersionOrPath), localMappingsOfVersion);
-			} else {
-				String versionRelativePath = UrlEscapers.urlFragmentEscaper().escape(mappingsVersionOrPath);
-				String artifactUrl = "https://maven.fabricmc.net/net/fabricmc/yarn/" + versionRelativePath + "/yarn-" + versionRelativePath + ".jar";
-				File mappingsJar = File.createTempFile("migrateMappingsJar", ".jar");
-				project.getLogger().lifecycle(":downloading new mappings from " + artifactUrl);
-				FileUtils.copyURLToFile(new URL(artifactUrl), mappingsJar);
+		if (mappings == null || mappings.isEmpty()) {
+			throw new IllegalArgumentException("No mappings were specified. Use --mappings=\"\" to specify target mappings");
+		}
 
-				try (FileSystem jar = FileSystems.newFileSystem(mappingsJar.toPath(), null)) {
-					if (!Files.exists(migrateMappingsDir)) Files.createDirectory(migrateMappingsDir);
-					MappingsProvider.extractMappings(jar, localMappingsOfVersion);
-				}
+		Set<File> files;
+
+		try {
+			files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mappings)).resolve();
+		} catch (IllegalDependencyNotation ignored) {
+			project.getLogger().info("Could not locate mappings, presuming V2 Yarn");
+
+			try {
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2"))).resolve();
+			} catch (GradleException ignored2) {
+				project.getLogger().info("Could not locate mappings, presuming V1 Yarn");
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
 			}
 		}
 
-		try (BufferedReader reader = Files.newBufferedReader(localMappingsOfVersion)) {
+		if (files.isEmpty()) {
+			throw new IllegalArgumentException("Mappings could not be found");
+		}
+
+		return Iterables.getOnlyElement(files);
+	}
+
+	private static TinyTree getMappings(File mappings) throws IOException {
+		Path temp = Files.createTempFile("mappings", ".tiny");
+
+		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), null)) {
+			Files.copy(fileSystem.getPath("mappings/mappings.tiny"), temp, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		try (BufferedReader reader = Files.newBufferedReader(temp)) {
 			return TinyMappingFactory.loadWithDetection(reader);
 		}
 	}
 
 	private static void migrateMappings(Project project, MinecraftMappedProvider minecraftMappedProvider,
-										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings, LoomGradleExtension extension
+										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings
 	) throws IOException {
 		project.getLogger().lifecycle(":joining mappings");
 		MappingSet mappingSet = new MappingsJoiner(currentMappings, targetMappings,
@@ -166,7 +180,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		System.gc();
 	}
 
-	public static class MappingsJoiner extends MappingsReader {
+	private static class MappingsJoiner extends MappingsReader {
 		private final TinyTree sourceMappings, targetMappings;
 		private final String fromNamespace, toNamespace;
 
@@ -179,7 +193,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		 * Since we only use intermediary names (and not descriptors) to match, and intermediary names are unique,
 		 * this will migrate methods that have had their signature changed too.
 		 */
-		public MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
+		private MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
 			this.sourceMappings = sourceMappings;
 			this.targetMappings = targetMappings;
 			this.fromNamespace = fromNamespace;
@@ -234,4 +248,3 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		}
 	}
 }
-

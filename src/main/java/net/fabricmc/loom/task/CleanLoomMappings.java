@@ -27,7 +27,6 @@ package net.fabricmc.loom.task;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -37,8 +36,7 @@ public class CleanLoomMappings extends AbstractLoomTask {
 	@TaskAction
 	public void run() {
 		try {
-			Project project = this.getProject();
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension extension = getExtension();
 			extension.getMappingsProvider().clean();
 			extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
 			extension.getMinecraftMappedProvider().getMappedJar().delete();

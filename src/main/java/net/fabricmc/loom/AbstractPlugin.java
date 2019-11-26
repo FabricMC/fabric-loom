@@ -326,13 +326,13 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
+					String oldClassifier = sourcesTask.getClassifier();
+					sourcesTask.setClassifier(Strings.isNullOrEmpty(oldClassifier) ? "dev" : oldClassifier + "-dev");
 
 					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().getByName("remapSourcesJar");
 					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.setDestinationDir(sourcesTask.getDestinationDir());
-					String oldClassifier = sourcesTask.getClassifier();
 					remapSourcesJarTask.setClassifier(oldClassifier);
-					sourcesTask.setClassifier(Strings.isNullOrEmpty(oldClassifier) ? "dev" : "dev-" + oldClassifier);
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask));
 					remapSourcesJarTask.dependsOn(sourcesTask);
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);

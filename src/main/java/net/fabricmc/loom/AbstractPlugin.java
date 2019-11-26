@@ -326,10 +326,12 @@ public class AbstractPlugin implements Plugin<Project> {
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
-					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
+					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().getByName("remapSourcesJar");
 					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
+					remapSourcesJarTask.setDestinationDir(sourcesTask.getDestinationDir());
+					String oldClassifier = sourcesTask.getClassifier();
+					remapSourcesJarTask.setClassifier(oldClassifier == null ? "dev" : "dev-" + oldClassifier);
+					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask));
 					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
 				} catch (UnknownTaskException e) {

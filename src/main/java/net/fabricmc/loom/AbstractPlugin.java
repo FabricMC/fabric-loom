@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
 import org.gradle.api.Plugin;
@@ -330,9 +331,10 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.setDestinationDir(sourcesTask.getDestinationDir());
 					String oldClassifier = sourcesTask.getClassifier();
-					remapSourcesJarTask.setClassifier(oldClassifier == null ? "dev" : "dev-" + oldClassifier);
+					remapSourcesJarTask.setClassifier(oldClassifier);
+					sourcesTask.setClassifier(Strings.isNullOrEmpty(oldClassifier) ? "dev" : "dev-" + oldClassifier);
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask));
-					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
+					remapSourcesJarTask.dependsOn(sourcesTask);
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
 				} catch (UnknownTaskException e) {
 					// pass

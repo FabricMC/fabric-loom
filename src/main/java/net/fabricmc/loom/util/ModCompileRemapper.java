@@ -47,7 +47,7 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public class ModCompileRemapper {
-	public static void remapDependencies(Project project, String mappingsPrefix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, Consumer<Runnable> postPopulationScheduler) {
+	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, Consumer<Runnable> postPopulationScheduler) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
 
@@ -76,9 +76,9 @@ public class ModCompileRemapper {
 
 			File sources = findSources(dependencies, artifact);
 
-			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsPrefix + ")";
-			String remappedNotation = "net.fabricmc.mapped:" + mappingsPrefix + "." + group + "." + name + ":" + version + classifierSuffix;
-			String remappedFilename = mappingsPrefix + "." + group + "." + name + "-" + version + classifierSuffix.replace(':', '-');
+			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
+			String remappedNotation = String.format("%s@%s", notation, mappingsSuffix);
+			String remappedFilename = String.format("%s-%s@%s", name, version + classifierSuffix.replace(':', '-'), mappingsSuffix);
 			project.getLogger().info(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();
@@ -145,8 +145,8 @@ public class ModCompileRemapper {
 
 	public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
 		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-				.forComponents(artifact.getId().getComponentIdentifier())//
-				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+						.forComponents(artifact.getId().getComponentIdentifier())//
+						.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
 		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
 			for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {

@@ -145,8 +145,8 @@ public class ModCompileRemapper {
 
 	public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
 		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-						.forComponents(artifact.getId().getComponentIdentifier())//
-						.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+					.forComponents(artifact.getId().getComponentIdentifier())//
+					.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
 		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
 			for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {

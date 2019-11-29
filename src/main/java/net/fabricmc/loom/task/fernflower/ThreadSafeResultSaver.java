@@ -42,9 +42,17 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.jetbrains.java.decompiler.struct.StructClass;
+import org.jetbrains.java.decompiler.struct.StructField;
+import org.jetbrains.java.decompiler.struct.StructMethod;
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.fernflower.api.IFabricResultSaver;
 
 /**
@@ -53,14 +61,21 @@ import net.fabricmc.fernflower.api.IFabricResultSaver;
 public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 	private final Supplier<File> output;
 	private final Supplier<File> lineMapFile;
+	private final TinyTree mappings;
+
+	private final Map<String, String> classComments = new HashMap<>();
+	private final Map<EntryTriple, String> fieldComments = new HashMap<>();
+	private final Map<EntryTriple, String> methodComments = new HashMap<>();
 
 	public Map<String, ZipOutputStream> outputStreams = new HashMap<>();
 	public Map<String, ExecutorService> saveExecutors = new HashMap<>();
 	public PrintWriter lineMapWriter;
 
-	public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile) {
+	public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile, TinyTree mappings) {
 		this.output = output;
 		this.lineMapFile = lineMapFile;
+		this.mappings = mappings;
+		populateClassMap("named");
 	}
 
 	@Override
@@ -173,5 +188,35 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 
 	@Override
 	public void copyEntry(String source, String path, String archiveName, String entry) {
+	}
+
+	private void populateClassMap(String to) {
+		for (ClassDef classDef : mappings.getClasses()) {
+			String className = classDef.getName(to);
+			classComments.put(className, classDef.getComment());
+
+			for (FieldDef fieldDef : classDef.getFields()) {
+				fieldComments.put(new EntryTriple(className, fieldDef.getName(to), fieldDef.getDescriptor(to)), fieldDef.getComment());
+			}
+
+			for (MethodDef methodDef : classDef.getMethods()) {
+				methodComments.put(new EntryTriple(className, methodDef.getName(to), methodDef.getDescriptor(to)), methodDef.getComment());
+			}
+		}
+	}
+
+	@Override
+	public String getClassDoc(StructClass structClass) {
+		return classComments.getOrDefault(structClass.qualifiedName, null);
+	}
+
+	@Override
+	public String getFieldDoc(StructClass structClass, StructField structField) {
+		return fieldComments.getOrDefault(new EntryTriple(structClass.qualifiedName, structField.getName(), structField.getDescriptor()), null);
+	}
+
+	@Override
+	public String getMethodDoc(StructClass structClass, StructMethod structMethod) {
+		return methodComments.getOrDefault(new EntryTriple(structClass.qualifiedName, structMethod.getName(), structMethod.getDescriptor()), null);
 	}
 }

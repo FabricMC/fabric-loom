@@ -73,14 +73,12 @@ public class LoomGradlePlugin extends AbstractPlugin {
     public void apply(Project target) {
         super.apply(target);
 
-        final Attribute<Boolean> stripped = Attribute.of("stripped", Boolean.class);
         final Attribute<Boolean> sourcesRemapped = Attribute.of("sourcesRemapped", Boolean.class);
         final Attribute<Boolean> artifactRemapped = Attribute.of("artifactRemapped", Boolean.class);
 
         TransformerProjectManager.getInstance().register(target);
 
         target.getDependencies().attributesSchema(schema -> {
-            schema.attribute(stripped);
             schema.attribute(sourcesRemapped);
             schema.attribute(artifactRemapped);
         });
@@ -91,7 +89,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
             });
 
             types.getByName("jar", jarType -> {
-                jarType.getAttributes().attribute(stripped, false);
                 jarType.getAttributes().attribute(sourcesRemapped, false);
                 jarType.getAttributes().attribute(artifactRemapped, false);
             });
@@ -152,7 +149,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
         project.getConfigurations().all(config -> {
             if (config.isCanBeResolved()) {
                 config.attributes(container -> {
-                    container.attribute(stripped, true);
                     container.attribute(sourcesRemapped, true);
                     container.attribute(artifactRemapped, true);
                 });

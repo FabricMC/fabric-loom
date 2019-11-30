@@ -38,10 +38,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
+import org.apache.tools.ant.util.StreamUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -59,9 +61,9 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public class ModProcessor {
 	private static final Gson GSON = new Gson();
 
-	public static void processMod(Project project, File input, Function<String, File> outputFileProducer) throws IOException {
+	public static void processMod(Project project, File input, Function<String, File> outputFileProducer, Iterable<File> dependencies) throws IOException {
 		final File output = outputFileProducer.apply(input.getName());
-	    remapJar(input, output, outputFileProducer, project);
+	    remapJar(project, input, output, dependencies);
 
 		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
 		if (project.getExtensions().getByType(LoomGradleExtension.class).extractJars) {
@@ -119,7 +121,7 @@ public class ModProcessor {
             FileUtils.copy(jarStream, nestedFile);
         }
 
-        processMod(project, nestedFile, outputFileProducer);
+        processMod(project, nestedFile, outputFileProducer, Lists.newArrayList());
     }
 
 	private static void stripNestedJars(File file) {
@@ -134,7 +136,7 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static void remapJar(File input, File output, Function<String, File> outputFileProducer, Project project) throws IOException {
+	private static void remapJar(Project project, File input, File output, Iterable<File> dependencies) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";
@@ -145,19 +147,6 @@ public class ModProcessor {
 		Path inputPath = input.getAbsoluteFile().toPath();
 		Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
-		Set<Path> modCompiles = new HashSet<>();
-
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles().stream().filter((f) -> !f.equals(input)).map(p -> {
-				if (p.equals(input)) {
-					return inputPath;
-				} else {
-					return p.toPath();
-				}
-			}).forEach(modCompiles::add);
-		}
-
-		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
@@ -165,7 +154,7 @@ public class ModProcessor {
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
 			outputConsumer.addNonClassFiles(inputPath);
-			remapper.readClassPath(modCompiles.toArray(new Path[0]));
+			remapper.readClassPath(StreamUtils.iteratorAsStream(dependencies.iterator()).map(File::toPath).toArray(Path[]::new));
 			remapper.readClassPath(mc);
 			remapper.readClassPath(mcDeps);
 			remapper.readInputs(inputPath);

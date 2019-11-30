@@ -107,7 +107,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
         }
 
 		try {
-            ModProcessor.processMod(getProject(), inputFile, (fileName) -> outputs.file(String.format("remapped%s%s", File.separator, fileName)));
+            ModProcessor.processMod(getProject(), inputFile, (fileName) -> outputs.file(String.format("remapped%s%s", File.separator, fileName)), getDependencies());
 		} catch (IOException e) {
 			lifecycle("Failed to remap file.", e);
 		}

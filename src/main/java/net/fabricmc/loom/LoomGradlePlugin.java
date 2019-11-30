@@ -29,27 +29,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
-import java.util.Objects;
 
 import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
 import net.fabricmc.loom.transformers.ContainedZipStrippingTransformer;
 import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
 import net.fabricmc.loom.transformers.TransformerProjectManager;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.artifacts.*;
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
-import org.gradle.api.artifacts.result.ArtifactResult;
-import org.gradle.api.artifacts.result.ComponentArtifactsResult;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.attributes.Attribute;
-import org.gradle.api.component.Artifact;
-import org.gradle.api.internal.artifacts.dependencies.AbstractModuleDependency;
-import org.gradle.api.internal.project.DefaultProject;
 import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -69,11 +57,7 @@ import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
-import org.gradle.jvm.JvmLibrary;
-import org.gradle.language.base.artifact.SourcesArtifact;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
-
-import static net.fabricmc.loom.util.ModCompileRemapper.findSources;
+import static net.fabricmc.loom.util.SourceUtils.findSources;
 
 public class LoomGradlePlugin extends AbstractPlugin {
     private static File getMappedByproduct(Project project, String suffix) {

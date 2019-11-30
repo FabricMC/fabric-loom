@@ -49,6 +49,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.transformers.parameters.ProjectReferencingParameters;
 import net.fabricmc.loom.util.FabricModUtils;
+import net.fabricmc.loom.util.ModProcessor;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -105,9 +106,8 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
             return;
         }
 
-		final File outputFile = outputs.file("remapped" + File.separator + inputFile.getName());
 		try {
-			this.remapJar(inputFile, outputFile);
+            ModProcessor.processMod(getProject(), inputFile, (fileName) -> outputs.file(String.format("remapped%s%s", File.separator, fileName)));
 		} catch (IOException e) {
 			lifecycle("Failed to remap file.", e);
 		}
@@ -140,53 +140,5 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 	 */
 	private Project getProject() {
 		return TransformerProjectManager.getInstance().get(getParameters().getProjectPathParameter().get());
-	}
-
-	/**
-	 * Remaps the input file to the output file with the information stored in the project.
-	 *
-	 * @param input  The input file.
-	 * @param output The output file.
-	 * @throws IOException Thrown when the operation failed.
-	 */
-	private void remapJar(File input, File output) throws IOException {
-		final Project project = getProject();
-
-		final LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		final String inputMappingName = "intermediary";
-		final String outputMappingName = "named";
-
-		final MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-		final MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		final Path inputPath = input.getAbsoluteFile().toPath();
-		final Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
-		final Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
-
-		final TinyRemapper remapper = TinyRemapper.newRemapper()
-													  .withMappings(
-																	  TinyRemapperMappingsHelper.create(
-																					  mappingsProvider.getMappings(),
-																					  inputMappingName,
-																					  outputMappingName,
-																					  false
-																	  )
-													  )
-													  .build();
-
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
-			outputConsumer.addNonClassFiles(inputPath);
-			remapper.readClassPath(StreamUtils.iteratorAsStream(getDependencies().iterator()).map(File::toPath).toArray(Path[]::new));
-			remapper.readClassPath(mc);
-			remapper.readClassPath(mcDeps);
-			remapper.readInputs(inputPath);
-			remapper.apply(outputConsumer);
-		} finally {
-			remapper.finish();
-		}
-
-		if (!output.exists()) {
-			throw new IOException("Failed to remap JAR to " + outputMappingName + " file not found: " + output.getAbsolutePath());
-		}
 	}
 }

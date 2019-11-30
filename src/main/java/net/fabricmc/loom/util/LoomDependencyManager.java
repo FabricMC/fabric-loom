@@ -116,21 +116,13 @@ public class LoomDependencyManager {
 			});
 		}
 
-		{
-			String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
-
-			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				//ModCompileRemapper.remapDependencies(project, mappingsKey, extension, project.getConfigurations().getByName(entry.getSourceConfiguration()), project.getConfigurations().getByName(entry.getRemappedConfiguration()), project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations())), afterTasks::add);
-			}
-		}
-
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
 			final Configuration configuration = project.getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH);
 
 			for (File input : configuration.resolve()) {
-				JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
+				JsonObject jsonObject = InstallerUtils.readInstallerJson(input, project);
 
 				if (jsonObject != null) {
 					if (extension.getInstallerJson() != null) {

@@ -30,11 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
-import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
-import net.fabricmc.loom.transformers.ContainedZipStrippingTransformer;
-import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
-import net.fabricmc.loom.transformers.TransformerProjectManager;
-
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.attributes.Attribute;
@@ -56,8 +51,9 @@ import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
-
-import static net.fabricmc.loom.util.SourceUtils.findSources;
+import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
+import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
+import net.fabricmc.loom.transformers.TransformerProjectManager;
 
 public class LoomGradlePlugin extends AbstractPlugin {
     private static File getMappedByproduct(Project project, String suffix) {
@@ -100,17 +96,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
                 jarType.getAttributes().attribute(artifactRemapped, false);
             });
         });
-
-        target.getDependencies().registerTransform(
-                        ContainedZipStrippingTransformer.class,
-                        config -> {
-                            config.getFrom().attribute(stripped, false);
-                            config.getTo().attribute(stripped, true);
-                            config.parameters(parameters -> {
-                                parameters.getProjectPathParameter().set(target.getPath());
-                            });
-                        }
-        );
 
         target.getDependencies().registerTransform(
                         SourcesJarRemappingTransformer.class,

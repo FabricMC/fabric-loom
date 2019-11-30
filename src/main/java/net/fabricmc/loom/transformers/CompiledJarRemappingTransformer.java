@@ -120,7 +120,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 	 * @param objects The formatting parameters.
 	 */
 	private void lifecycle(String message, Object... objects) {
-		getProject().getLogger().lifecycle("[ContainedZipStripping]: " + message, objects);
+		getProject().getLogger().lifecycle("[ContainedJarRemapping]: " + message, objects);
 	}
 
 	/**
@@ -130,7 +130,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 	 * @param exception The exception to log.
 	 */
 	private void lifecycle(String message, Throwable exception) {
-		getProject().getLogger().lifecycle("[ContainedZipStripping]: " + message, exception);
+		getProject().getLogger().lifecycle("[ContainedJarRemapping]: " + message, exception);
 	}
 
 	/**

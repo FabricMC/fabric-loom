@@ -7,6 +7,7 @@ import net.fabricmc.loom.transformers.parameters.ProjectReferencingParameters;
 import net.fabricmc.loom.util.*;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import org.apache.tools.ant.util.StreamUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.transform.*;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @CacheableTransform
 public abstract class CompiledJarRemappingTransformer implements TransformAction<ProjectReferencingParameters>
@@ -113,14 +115,6 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
         Path inputPath = input.getAbsoluteFile().toPath();
         Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
         Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
-        Set<Path> modCompiles = new HashSet<>();
-
-        getDependencies().forEach(f -> {
-            if (f != input)
-            {
-                modCompiles.add(f.toPath());
-            }
-        });
 
         TinyRemapper remapper = TinyRemapper.newRemapper()
                                   .withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
@@ -128,7 +122,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 
         try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
             outputConsumer.addNonClassFiles(inputPath);
-            remapper.readClassPath(modCompiles.toArray(new Path[0]));
+            remapper.readClassPath(StreamUtils.iteratorAsStream(getDependencies().iterator()).map(File::toPath).collect(Collectors.toCollection()));
             remapper.readClassPath(mc);
             remapper.readClassPath(mcDeps);
             remapper.readInputs(inputPath);

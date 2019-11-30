@@ -53,7 +53,6 @@ public abstract class ContainedZipStrippingTransformer implements TransformActio
             return;
         }
 
-        lifecycle("Transforming: " + resolvedInput.toString());
         final File inputFile = resolvedInput.getAsFile();
         if (!inputFile.exists())
         {
@@ -73,20 +72,6 @@ public abstract class ContainedZipStrippingTransformer implements TransformActio
         }
 
         stripNestedJars(outputFile);
-
-        lifecycle("Finished transforming: " + outputFile.getName());
-
-        lifecycle("Detecting sources jar: " + inputFile.getAbsolutePath());
-        final File sourceJar = new File(inputFile.getParentFile().getAbsoluteFile() + File.separator + inputFileNameBase + "-sources.jar");
-        if (sourceJar.exists())
-        {
-            lifecycle("Successfully detected source jar: " + sourceJar.getAbsolutePath());
-        }
-        else
-        {
-            lifecycle("No source jar exists for: " + sourceJar.getAbsolutePath());
-        }
-
     }
 
     /**

@@ -26,7 +26,6 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.gradle.api.Project;
@@ -69,7 +68,7 @@ public class ModCompileRemapper {
 
 			final String notation = group + ":" + name + ":" + version + classifierSuffix;
 
-			if (!isFabricMod(project, logger, artifact, notation)) {
+			if (!FabricModUtils.isFabricMod(project, logger, artifact.getFile(), notation)) {
 				addToRegularCompile(project, regularCompile, notation);
 				continue;
 			}
@@ -93,23 +92,7 @@ public class ModCompileRemapper {
 		}
 	}
 
-	/**
-	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
-	 */
-	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
-		File input = artifact.getFile();
-		AtomicBoolean fabricMod = new AtomicBoolean(false);
-		project.zipTree(input).visit(f -> {
-			if (f.getName().endsWith("fabric.mod.json")) {
-				logger.info("Found Fabric mod in modCompile: {}", notation);
-				fabricMod.set(true);
-				f.stopVisiting();
-			}
-		});
-		return fabricMod.get();
-	}
-
-	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
+    private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
 		project.getLogger().info(":providing " + notation);
 		DependencyHandler dependencies = project.getDependencies();
 		Dependency dep = dependencies.module(notation);
@@ -158,6 +141,22 @@ public class ModCompileRemapper {
 
 		return null;
 	}
+
+    public static File findSources(DependencyHandler dependencies, Dependency artifact) {
+        @SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
+                                                                         .forModule(artifact.getGroup(), artifact.getName(), artifact.getVersion())//
+                                                                         .withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+
+        for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
+            for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {
+                if (srcArtifact instanceof ResolvedArtifactResult) {
+                    return ((ResolvedArtifactResult) srcArtifact).getFile();
+                }
+            }
+        }
+
+        return null;
+    }
 
 	private static void scheduleSourcesRemapping(Project project, Consumer<Runnable> postPopulationScheduler, File sources, String remappedLog, String remappedFilename, File modStore) {
 		postPopulationScheduler.accept(() -> {

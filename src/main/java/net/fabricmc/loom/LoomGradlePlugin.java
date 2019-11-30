@@ -29,13 +29,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Objects;
 
 import net.fabricmc.loom.transformers.ContainedZipStrippingTransformer;
 import net.fabricmc.loom.transformers.TransformerProjectManager;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.*;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
+import org.gradle.api.artifacts.result.ArtifactResult;
+import org.gradle.api.artifacts.result.ComponentArtifactsResult;
+import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.component.Artifact;
+import org.gradle.api.internal.artifacts.dependencies.AbstractModuleDependency;
 import org.gradle.api.internal.project.DefaultProject;
 import org.gradle.api.tasks.TaskContainer;
 
@@ -55,6 +64,11 @@ import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
+import org.gradle.jvm.JvmLibrary;
+import org.gradle.language.base.artifact.SourcesArtifact;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
+
+import static net.fabricmc.loom.util.ModCompileRemapper.findSources;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	private static File getMappedByproduct(Project project, String suffix) {
@@ -132,19 +146,64 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.setGroup("fabric");
 		});
 
+        //final Configuration sourcesConfig = project.getConfigurations().maybeCreate("sources");
         project.getConfigurations().all(config -> {
             if (config.isCanBeResolved())
             {
                 config.attributes(container -> {
                     container.attribute(stripped, true);
                 });
+
+                /*if (config == sourcesConfig)
+                    return;
+
+                //Execute sources linking only for none sources source sets
+                config.getDependencies().all(dependency -> {
+                    if (dependency instanceof AbstractModuleDependency)
+                    {
+                        if (findSources(project.getDependencies(), dependency) != null)
+                        {
+                            final AbstractModuleDependency abstractModuleDependency = (AbstractModuleDependency) dependency;
+                            if (abstractModuleDependency.getArtifacts().size() > 0)
+                            {
+                                abstractModuleDependency.getArtifacts().forEach(dependencyArtifact -> {
+                                    String classifierAppendix = "sources";
+                                    dependencyArtifact.getClassifier();
+                                    if (!dependencyArtifact.getClassifier().isEmpty())
+                                    {
+                                        classifierAppendix = dependencyArtifact.getClassifier() + "-" + classifierAppendix;
+                                    }
+
+                                    final String dependencyId =
+                                      String.format("%s:%s:%s:%s", dependency.getGroup(), dependency.getName(), dependency.getVersion(), classifierAppendix);
+
+                                    project.getDependencies().add("sources", dependencyId);
+
+                                    project.getLogger().lifecycle("[SourceAnalysis]: Added: " + dependencyId + " as sources dependency.");
+                                });
+                            }
+                            else
+                            {
+                                final String dependencyId =
+                                  String.format("%s:%s:%s:%s", dependency.getGroup(), dependency.getName(), dependency.getVersion(), "sources");
+
+                                project.getDependencies().add("sources", dependencyId);
+
+                                project.getLogger().lifecycle("[SourceAnalysis]: Added: " + dependencyId + " as sources dependency.");
+                            }
+
+                        }
+                        else
+                        {
+                            project.getLogger().lifecycle("[SourceAnalysis]: Could not add " + dependency.toString() + " as there are no sources available.");
+                        }
+                    }
+                });*/
             }
         });
 
-        project.getLogger().lifecycle("ServiceRegistryType: " + ((DefaultProject) project).getServices().getClass().getName());
-
 		project.afterEvaluate((p) -> {
-			AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
+    		AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
 			RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
 			Task genSourcesTask = p.getTasks().getByName("genSources");
 

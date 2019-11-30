@@ -122,16 +122,8 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
             }
         });
 
-        project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
-
-        // If the sources don't exist, we want remapper to give nicer names to the missing variable names.
-        // However, if the sources do exist, if remapper gives names to the parameters that prevents IDEs (at least IDEA)
-        // from replacing the parameters with the actual names from the sources.
-        boolean sourcesExist = true;//TODO: Fix me: ModCompileRemapper.findSources(project.getDependencies(), artifact) != null;
-
         TinyRemapper remapper = TinyRemapper.newRemapper()
                                   .withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-                                  .renameInvalidLocals(!sourcesExist)
                                   .build();
 
         try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {

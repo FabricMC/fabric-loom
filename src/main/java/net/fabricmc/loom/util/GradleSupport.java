@@ -34,24 +34,6 @@ import org.gradle.api.model.ObjectFactory;
 //This is used to bridge the gap over large gradle api changes.
 public class GradleSupport {
 	public static RegularFileProperty getfileProperty(Project project) {
-		try {
-			//First try the new method, if that fails fall back.
-			return getfilePropertyModern(project);
-		} catch (Exception e) {
-			//Nope
-		}
-
-		return getfilePropertyLegacy(project);
-	}
-
-	private static RegularFileProperty getfilePropertyModern(Project project) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-		ObjectFactory objectFactory = project.getObjects();
-		Method method = objectFactory.getClass().getDeclaredMethod("fileProperty");
-		method.setAccessible(true);
-		return (RegularFileProperty) method.invoke(objectFactory);
-	}
-
-	private static RegularFileProperty getfilePropertyLegacy(Project project) {
-		return project.getLayout().fileProperty();
+		return project.getObjects().fileProperty();
 	}
 }

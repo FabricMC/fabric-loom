@@ -30,8 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
+import net.fabricmc.loom.transformers.ContainedZipStrippingTransformer;
+import net.fabricmc.loom.transformers.TransformerProjectManager;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.internal.project.DefaultProject;
 import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -69,6 +74,35 @@ public class LoomGradlePlugin extends AbstractPlugin {
 	public void apply(Project target) {
 		super.apply(target);
 
+		final Attribute<Boolean> stripped = Attribute.of("stripped", Boolean.class);
+
+        TransformerProjectManager.getInstance().register(target);
+
+		target.getDependencies().attributesSchema(schema -> {
+		    schema.attribute(stripped);
+        });
+
+		target.getDependencies().artifactTypes(types -> {
+		    types.all(type -> {
+		        target.getLogger().lifecycle("[Loom]: Available: " + type.getName());
+            });
+
+		    types.getByName("jar", jarType -> {
+		        jarType.getAttributes().attribute(stripped, false);
+            });
+        });
+
+		target.getDependencies().registerTransform(
+          ContainedZipStrippingTransformer.class,
+          config -> {
+              config.getFrom().attribute(stripped, false);
+              config.getTo().attribute(stripped, true);
+              config.parameters(parameters -> {
+                  parameters.getProjectPathParameter().set(target.getPath());
+              });
+          }
+        );
+
 		TaskContainer tasks = target.getTasks();
 
 		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
@@ -97,6 +131,17 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.getOutputs().upToDateWhen((o) -> false);
 			t.setGroup("fabric");
 		});
+
+        project.getConfigurations().all(config -> {
+            if (config.isCanBeResolved())
+            {
+                config.attributes(container -> {
+                    container.attribute(stripped, true);
+                });
+            }
+        });
+
+        project.getLogger().lifecycle("ServiceRegistryType: " + ((DefaultProject) project).getServices().getClass().getName());
 
 		project.afterEvaluate((p) -> {
 			AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");

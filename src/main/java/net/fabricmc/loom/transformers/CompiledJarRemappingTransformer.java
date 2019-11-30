@@ -63,8 +63,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
           inputFile.getName()
         ))
         {
-            final String inputFileNameBase = inputFile.getName().substring(0, inputFile.getName().length() - 4);
-            final File outputFile = outputs.file(inputFileNameBase + "-not_remapped.jar");
+            final File outputFile = outputs.file("not-remapped" + File.separator + inputFile.getName());
             try
             {
                 FileUtils.copyFile(inputFile, outputFile);
@@ -74,6 +73,16 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
             {
                 lifecycle("Failed to copy not remappable file to output.", e);
             }
+        }
+
+        final File outputFile = outputs.file("remapped" + File.separator + inputFile.getName());
+        try
+        {
+            this.remapJar(inputFile, outputFile);
+        }
+        catch (IOException e)
+        {
+            lifecycle("Failed to remap file.", e);
         }
     }
 
@@ -87,10 +96,11 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
     {
         getProject().getLogger().lifecycle("[ContainedZipStripping]: " + message, objects);
     }
+
     /**
      * Short circuit method to handle logging a lifecycle message to the projects logger.
      *
-     * @param message The message to log, formatted.
+     * @param message   The message to log, formatted.
      * @param exception The exception to log.
      */
     private void lifecycle(String message, Throwable exception)
@@ -98,42 +108,66 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
         getProject().getLogger().lifecycle("[ContainedZipStripping]: " + message, exception);
     }
 
-    private Project getProject() {
+    /**
+     * Returns the project that is referenced by the parameters.
+     *
+     * @return The project that this transformer is operating on.
+     */
+    private Project getProject()
+    {
         return TransformerProjectManager.getInstance().get(getParameters().getProjectPathParameter().get());
     }
 
-    private void remapJar(File input, File output) throws IOException {
+    /**
+     * Remaps the input file to the output file with the information stored in the project.
+     *
+     * @param input The input file.
+     * @param output The output file.
+     * @throws IOException Thrown when the operation failed.
+     */
+    private void remapJar(File input, File output) throws IOException
+    {
         final Project project = getProject();
 
-        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-        String fromM = "intermediary";
-        String toM = "named";
+        final LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        final String inputMappingName = "intermediary";
+        final String outputMappingName = "named";
 
-        MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-        MappingsProvider mappingsProvider = extension.getMappingsProvider();
+        final MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
+        final MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-        Path inputPath = input.getAbsoluteFile().toPath();
-        Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
-        Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
+        final Path inputPath = input.getAbsoluteFile().toPath();
+        final Path mc = mappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath();
+        final Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
-        TinyRemapper remapper = TinyRemapper.newRemapper()
-                                  .withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-                                  .build();
+        final TinyRemapper remapper = TinyRemapper.newRemapper()
+                                        .withMappings(
+                                          TinyRemapperMappingsHelper.create(
+                                            mappingsProvider.getMappings(),
+                                            inputMappingName,
+                                            outputMappingName,
+                                            false
+                                          )
+                                        )
+                                        .build();
 
-        try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
+        try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build())
+        {
             outputConsumer.addNonClassFiles(inputPath);
-            remapper.readClassPath(StreamUtils.iteratorAsStream(getDependencies().iterator()).map(File::toPath).collect(Collectors.toCollection()));
+            remapper.readClassPath(StreamUtils.iteratorAsStream(getDependencies().iterator()).map(File::toPath).toArray(Path[]::new));
             remapper.readClassPath(mc);
             remapper.readClassPath(mcDeps);
             remapper.readInputs(inputPath);
             remapper.apply(outputConsumer);
-        } finally {
+        }
+        finally
+        {
             remapper.finish();
         }
 
-        if (!output.exists()) {
-            throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
+        if (!output.exists())
+        {
+            throw new IOException("Failed to remap JAR to " + outputMappingName + " file not found: " + output.getAbsolutePath());
         }
     }
-
 }

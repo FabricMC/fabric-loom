@@ -84,10 +84,10 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 			final File outputFile = outputs.file("not-remapped" + File.separator + inputFile.getName());
 			try {
 				FileUtils.copyFile(inputFile, outputFile);
-				return;
 			} catch (IOException e) {
 				lifecycle("Failed to copy not remappable file to output.", e);
 			}
+            return;
 		}
 
 		final File outputFile = outputs.file("remapped" + File.separator + inputFile.getName());

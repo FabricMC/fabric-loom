@@ -28,7 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.gradle.api.artifacts.transform.CacheableTransform;
 import org.gradle.api.artifacts.transform.InputArtifact;
@@ -81,7 +83,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 						inputFile,
 						inputFile.getName()
 		)) {
-			final File outputFile = outputs.file("not-remapped" + File.separator + inputFile.getName());
+			final File outputFile = outputs.file("not-remapped-no-mod" + File.separator + inputFile.getName());
 			try {
 				FileUtils.copyFile(inputFile, outputFile);
 			} catch (IOException e) {
@@ -89,6 +91,19 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 			}
             return;
 		}
+
+		//Rudimentary check for sources. Which need to be remapped separately.
+        //Potentially we need to check zip file contents.
+		if (inputFile.getName().contains("-sources"))
+        {
+            final File outputFile = outputs.file("not-remapped-sources" + File.separator + inputFile.getName());
+            try {
+                FileUtils.copyFile(inputFile, outputFile);
+            } catch (IOException e) {
+                lifecycle("Failed to copy not remappable file to output.", e);
+            }
+            return;
+        }
 
 		final File outputFile = outputs.file("remapped" + File.separator + inputFile.getName());
 		try {

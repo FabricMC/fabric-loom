@@ -84,8 +84,7 @@ public abstract class ContainedZipStrippingTransformer implements TransformActio
             return;
         }
 
-        final String inputFileNameBase = inputFile.getName().substring(0, inputFile.getName().length() - 4);
-        final File outputFile = outputs.file(inputFileNameBase + "-stripped.jar");
+        final File outputFile = outputs.file("stripped" + File.separator + inputFile.getName());
         try
         {
             FileUtils.copyFile(inputFile, outputFile);

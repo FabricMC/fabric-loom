@@ -31,8 +31,12 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
 
+import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
 import net.fabricmc.loom.transformers.ContainedZipStrippingTransformer;
+import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
 import net.fabricmc.loom.transformers.TransformerProjectManager;
+
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.*;
@@ -64,6 +68,7 @@ import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
+
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
@@ -71,205 +76,189 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 import static net.fabricmc.loom.util.ModCompileRemapper.findSources;
 
 public class LoomGradlePlugin extends AbstractPlugin {
-	private static File getMappedByproduct(Project project, String suffix) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-		String path = mappedJar.getAbsolutePath();
+    private static File getMappedByproduct(Project project, String suffix) {
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+        MappingsProvider mappingsProvider = extension.getMappingsProvider();
+        File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+        String path = mappedJar.getAbsolutePath();
 
-		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
-			throw new RuntimeException("Invalid mapped JAR path: " + path);
-		}
+        if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
+            throw new RuntimeException("Invalid mapped JAR path: " + path);
+        }
 
-		return new File(path.substring(0, path.length() - 4) + suffix);
-	}
+        return new File(path.substring(0, path.length() - 4) + suffix);
+    }
 
-	@Override
-	public void apply(Project target) {
-		super.apply(target);
+    @Override
+    public void apply(Project target) {
+        super.apply(target);
 
-		final Attribute<Boolean> stripped = Attribute.of("stripped", Boolean.class);
+        final Attribute<Boolean> stripped = Attribute.of("stripped", Boolean.class);
+        final Attribute<Boolean> sourcesRemapped = Attribute.of("sourcesRemapped", Boolean.class);
+        final Attribute<Boolean> artifactRemapped = Attribute.of("artifactRemapped", Boolean.class);
 
         TransformerProjectManager.getInstance().register(target);
 
-		target.getDependencies().attributesSchema(schema -> {
-		    schema.attribute(stripped);
+        target.getDependencies().attributesSchema(schema -> {
+            schema.attribute(stripped);
+            schema.attribute(sourcesRemapped);
+            schema.attribute(artifactRemapped);
         });
 
-		target.getDependencies().artifactTypes(types -> {
-		    types.all(type -> {
-		        target.getLogger().lifecycle("[Loom]: Available: " + type.getName());
+        target.getDependencies().artifactTypes(types -> {
+            types.all(type -> {
+                target.getLogger().lifecycle("[Loom]: Available: " + type.getName());
             });
 
-		    types.getByName("jar", jarType -> {
-		        jarType.getAttributes().attribute(stripped, false);
+            types.getByName("jar", jarType -> {
+                jarType.getAttributes().attribute(stripped, false);
+                jarType.getAttributes().attribute(sourcesRemapped, false);
+                jarType.getAttributes().attribute(artifactRemapped, false);
             });
         });
 
-		target.getDependencies().registerTransform(
-          ContainedZipStrippingTransformer.class,
-          config -> {
-              config.getFrom().attribute(stripped, false);
-              config.getTo().attribute(stripped, true);
-              config.parameters(parameters -> {
-                  parameters.getProjectPathParameter().set(target.getPath());
-              });
-          }
+        target.getDependencies().registerTransform(
+                        ContainedZipStrippingTransformer.class,
+                        config -> {
+                            config.getFrom().attribute(stripped, false);
+                            config.getTo().attribute(stripped, true);
+                            config.parameters(parameters -> {
+                                parameters.getProjectPathParameter().set(target.getPath());
+                            });
+                        }
         );
 
-		TaskContainer tasks = target.getTasks();
+        target.getDependencies().registerTransform(
+                        SourcesJarRemappingTransformer.class,
+                        config -> {
+                            config.getFrom().attribute(sourcesRemapped, false);
+                            config.getTo().attribute(sourcesRemapped, true);
+                            config.parameters(parameters -> {
+                                parameters.getProjectPathParameter().set(target.getPath());
+                            });
+                        }
+        );
 
-		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
-		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
+        target.getDependencies().registerTransform(
+                        CompiledJarRemappingTransformer.class,
+                        config -> {
+                            config.getFrom().attribute(artifactRemapped, false);
+                            config.getTo().attribute(artifactRemapped, true);
+                            config.parameters(parameters -> {
+                                parameters.getProjectPathParameter().set(target.getPath());
+                            });
+                        }
+        );
 
-		tasks.register("cleanLoom").configure(task -> {
-			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
-			task.dependsOn(tasks.getByName("cleanLoomMappings"));
-		});
+        TaskContainer tasks = target.getTasks();
 
-		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+        tasks.register("cleanLoomBinaries", CleanLoomBinaries.class);
+        tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
-		tasks.register("remapJar", RemapJarTask.class);
+        tasks.register("cleanLoom").configure(task -> {
+            task.dependsOn(tasks.getByName("cleanLoomBinaries"));
+            task.dependsOn(tasks.getByName("cleanLoomMappings"));
+        });
 
-		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+        tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
+            t.getOutputs().upToDateWhen((o) -> false);
+        });
 
-		tasks.register("genSourcesRemapLineNumbers", RemapLineNumbersTask.class, t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
+        tasks.register("remapJar", RemapJarTask.class);
 
-		tasks.register("genSources", t -> {
-			t.getOutputs().upToDateWhen((o) -> false);
-			t.setGroup("fabric");
-		});
+        tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
+            t.getOutputs().upToDateWhen((o) -> false);
+        });
+
+        tasks.register("genSourcesRemapLineNumbers", RemapLineNumbersTask.class, t -> {
+            t.getOutputs().upToDateWhen((o) -> false);
+        });
+
+        tasks.register("genSources", t -> {
+            t.getOutputs().upToDateWhen((o) -> false);
+            t.setGroup("fabric");
+        });
 
         //final Configuration sourcesConfig = project.getConfigurations().maybeCreate("sources");
         project.getConfigurations().all(config -> {
-            if (config.isCanBeResolved())
-            {
+            if (config.isCanBeResolved()) {
                 config.attributes(container -> {
                     container.attribute(stripped, true);
+                    container.attribute(sourcesRemapped, true);
+                    container.attribute(artifactRemapped, true);
                 });
-
-                /*if (config == sourcesConfig)
-                    return;
-
-                //Execute sources linking only for none sources source sets
-                config.getDependencies().all(dependency -> {
-                    if (dependency instanceof AbstractModuleDependency)
-                    {
-                        if (findSources(project.getDependencies(), dependency) != null)
-                        {
-                            final AbstractModuleDependency abstractModuleDependency = (AbstractModuleDependency) dependency;
-                            if (abstractModuleDependency.getArtifacts().size() > 0)
-                            {
-                                abstractModuleDependency.getArtifacts().forEach(dependencyArtifact -> {
-                                    String classifierAppendix = "sources";
-                                    dependencyArtifact.getClassifier();
-                                    if (!dependencyArtifact.getClassifier().isEmpty())
-                                    {
-                                        classifierAppendix = dependencyArtifact.getClassifier() + "-" + classifierAppendix;
-                                    }
-
-                                    final String dependencyId =
-                                      String.format("%s:%s:%s:%s", dependency.getGroup(), dependency.getName(), dependency.getVersion(), classifierAppendix);
-
-                                    project.getDependencies().add("sources", dependencyId);
-
-                                    project.getLogger().lifecycle("[SourceAnalysis]: Added: " + dependencyId + " as sources dependency.");
-                                });
-                            }
-                            else
-                            {
-                                final String dependencyId =
-                                  String.format("%s:%s:%s:%s", dependency.getGroup(), dependency.getName(), dependency.getVersion(), "sources");
-
-                                project.getDependencies().add("sources", dependencyId);
-
-                                project.getLogger().lifecycle("[SourceAnalysis]: Added: " + dependencyId + " as sources dependency.");
-                            }
-
-                        }
-                        else
-                        {
-                            project.getLogger().lifecycle("[SourceAnalysis]: Could not add " + dependency.toString() + " as there are no sources available.");
-                        }
-                    }
-                });*/
             }
         });
 
-		project.afterEvaluate((p) -> {
-    		AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
-			RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
-			Task genSourcesTask = p.getTasks().getByName("genSources");
+        project.afterEvaluate((p) -> {
+            AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
+            RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
+            Task genSourcesTask = p.getTasks().getByName("genSources");
 
-			genSourcesTask.dependsOn(remapLineNumbersTask);
-			remapLineNumbersTask.dependsOn(decompileTask);
+            genSourcesTask.dependsOn(remapLineNumbersTask);
+            remapLineNumbersTask.dependsOn(decompileTask);
 
-			Project project = this.getProject();
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
-			MappingsProvider mappingsProvider = extension.getMappingsProvider();
-			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-			File linemappedJar = getMappedByproduct(project, "-linemapped.jar");
-			File sourcesJar = getMappedByproduct(project, "-sources.jar");
-			File linemapFile = getMappedByproduct(project, "-sources.lmap");
+            Project project = this.getProject();
+            LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+            MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
+            MappingsProvider mappingsProvider = extension.getMappingsProvider();
+            File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+            File linemappedJar = getMappedByproduct(project, "-linemapped.jar");
+            File sourcesJar = getMappedByproduct(project, "-sources.jar");
+            File linemapFile = getMappedByproduct(project, "-sources.lmap");
 
-			decompileTask.setInput(mappedJar);
-			decompileTask.setOutput(sourcesJar);
-			decompileTask.setLineMapFile(linemapFile);
-			decompileTask.setLibraries(libraryProvider.getLibraries());
+            decompileTask.setInput(mappedJar);
+            decompileTask.setOutput(sourcesJar);
+            decompileTask.setLineMapFile(linemapFile);
+            decompileTask.setLibraries(libraryProvider.getLibraries());
 
-			remapLineNumbersTask.setInput(mappedJar);
-			remapLineNumbersTask.setLineMapFile(linemapFile);
-			remapLineNumbersTask.setOutput(linemappedJar);
+            remapLineNumbersTask.setInput(mappedJar);
+            remapLineNumbersTask.setLineMapFile(linemapFile);
+            remapLineNumbersTask.setOutput(linemappedJar);
 
-			Path mappedJarPath = mappedJar.toPath();
-			Path linemappedJarPath = linemappedJar.toPath();
+            Path mappedJarPath = mappedJar.toPath();
+            Path linemappedJarPath = linemappedJar.toPath();
 
-			genSourcesTask.doLast((tt) -> {
-				if (Files.exists(linemappedJarPath)) {
-					try {
-						Files.deleteIfExists(mappedJarPath);
-						Files.copy(linemappedJarPath, mappedJarPath);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-			});
-		});
+            genSourcesTask.doLast((tt) -> {
+                if (Files.exists(linemappedJarPath)) {
+                    try {
+                        Files.deleteIfExists(mappedJarPath);
+                        Files.copy(linemappedJarPath, mappedJarPath);
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        });
 
-		tasks.register("downloadAssets", DownloadAssetsTask.class);
+        tasks.register("downloadAssets", DownloadAssetsTask.class);
 
-		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
-			t.dependsOn("idea", "downloadAssets");
-			t.setGroup("ide");
-		});
+        tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
+            t.dependsOn("idea", "downloadAssets");
+            t.setGroup("ide");
+        });
 
-		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
-			t.dependsOn("downloadAssets");
-			t.setGroup("ide");
-		});
+        tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
+            t.dependsOn("downloadAssets");
+            t.setGroup("ide");
+        });
 
-		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
-			t.dependsOn("downloadAssets");
-			t.setGroup("ide");
-		});
+        tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
+            t.dependsOn("downloadAssets");
+            t.setGroup("ide");
+        });
 
-		tasks.register("remapSourcesJar", RemapSourcesJarTask.class);
+        tasks.register("remapSourcesJar", RemapSourcesJarTask.class);
 
-		tasks.register("runClient", RunClientTask.class, t -> {
-			t.dependsOn("assemble", "downloadAssets");
-			t.setGroup("minecraftMapped");
-		});
+        tasks.register("runClient", RunClientTask.class, t -> {
+            t.dependsOn("assemble", "downloadAssets");
+            t.setGroup("minecraftMapped");
+        });
 
-		tasks.register("runServer", RunServerTask.class, t -> {
-			t.dependsOn("assemble");
-			t.setGroup("minecraftMapped");
-		});
-	}
+        tasks.register("runServer", RunServerTask.class, t -> {
+            t.dependsOn("assemble");
+            t.setGroup("minecraftMapped");
+        });
+    }
 }

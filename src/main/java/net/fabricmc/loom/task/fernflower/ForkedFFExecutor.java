@@ -36,6 +36,8 @@ import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+
 /**
  * Entry point for Forked FernFlower task.
  * Takes one parameter, a single file, each line is treated as command line input.
@@ -49,6 +51,7 @@ public class ForkedFFExecutor {
 		File input = null;
 		File output = null;
 		File lineMap = null;
+		File mappings = null;
 		List<File> libraries = new ArrayList<>();
 		int numThreads = 0;
 
@@ -82,6 +85,12 @@ public class ForkedFFExecutor {
 					}
 
 					lineMap = new File(arg.substring(3));
+				} else if (arg.startsWith("-m=")) {
+					if (mappings != null) {
+						throw new RuntimeException("Unable to use more than one mappings file.");
+					}
+
+					mappings = new File(arg.substring(3));
 				} else if (arg.startsWith("-t=")) {
 					numThreads = Integer.parseInt(arg.substring(3));
 				} else {
@@ -96,7 +105,9 @@ public class ForkedFFExecutor {
 
 		Objects.requireNonNull(input, "Input not set.");
 		Objects.requireNonNull(output, "Output not set.");
+		Objects.requireNonNull(mappings, "Mappings not set.");
 
+		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
 		runFF(options, libraries, input, output, lineMap);
 	}
 

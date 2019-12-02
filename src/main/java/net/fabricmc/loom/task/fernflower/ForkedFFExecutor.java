@@ -24,10 +24,8 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +36,7 @@ import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
-import net.fabricmc.mapping.tree.TinyMappingFactory;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 
 /**
  * Entry point for Forked FernFlower task.
@@ -110,11 +107,13 @@ public class ForkedFFExecutor {
 		Objects.requireNonNull(output, "Output not set.");
 		Objects.requireNonNull(mappings, "Mappings not set.");
 
-		runFF(options, libraries, input, output, lineMap, mappings);
+		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
+		
+		runFF(options, libraries, input, output, lineMap);
 	}
 
-	public static void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap, File mappings) {
-		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap, readMappings(mappings));
+	public static void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
+		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
 		IFernflowerLogger logger = new ThreadIDFFLogger();
 		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
 
@@ -124,13 +123,5 @@ public class ForkedFFExecutor {
 
 		ff.addSource(input);
 		ff.decompileContext();
-	}
-
-	private static TinyTree readMappings(File input) {
-		try (BufferedReader reader = Files.newBufferedReader(input.toPath())) {
-			return TinyMappingFactory.loadWithDetection(reader);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read mappings", e);
-		}
 	}
 }

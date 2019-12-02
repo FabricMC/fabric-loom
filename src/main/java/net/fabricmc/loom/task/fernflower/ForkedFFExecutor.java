@@ -108,7 +108,6 @@ public class ForkedFFExecutor {
 		Objects.requireNonNull(mappings, "Mappings not set.");
 
 		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
-		
 		runFF(options, libraries, input, output, lineMap);
 	}
 

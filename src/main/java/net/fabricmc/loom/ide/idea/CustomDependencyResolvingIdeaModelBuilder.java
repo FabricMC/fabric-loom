@@ -106,7 +106,7 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
 
     private void buildDependencies(DefaultIdeaModule tapiModule, IdeaModule ideaModule) {
         ideaModule.setOffline(offlineDependencyResolution);
-        Set<Dependency> resolved = ideaModule.resolveDependencies();
+        Set<Dependency> resolved = this.resolveDependencies(ideaModule);
         List<DefaultIdeaDependency> dependencies = new LinkedList<DefaultIdeaDependency>();
         for (Dependency dependency : resolved) {
             if (dependency instanceof SingleEntryModuleLibrary) {

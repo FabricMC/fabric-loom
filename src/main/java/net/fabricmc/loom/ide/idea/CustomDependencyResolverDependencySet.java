@@ -18,6 +18,9 @@ import org.gradle.api.Action;
 import org.gradle.api.artifacts.ArtifactCollection;
 import org.gradle.api.artifacts.ArtifactView;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.LenientConfiguration;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ComponentSelector;
@@ -48,7 +51,7 @@ public class CustomDependencyResolverDependencySet {
         this.minusConfigurations = minusConfigurations;
     }
 
-    public void visit(IdeDependencyVisitor visitor) {
+    public void visit(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
         if (plusConfigurations.isEmpty()) {
             return;
         }
@@ -56,12 +59,12 @@ public class CustomDependencyResolverDependencySet {
     }
 
     private class CustomDependencyResolvingDependencyResult {
-        private final Map<ComponentArtifactIdentifier, ResolvedArtifactResult>                                 resolvedArtifacts      = Maps.newLinkedHashMap();
+        private final Map<ComponentArtifactIdentifier, ResolvedArtifact>                                 resolvedArtifacts      = Maps.newLinkedHashMap();
         private final SetMultimap<ComponentArtifactIdentifier, Configuration>                                  configurations         = MultimapBuilder.hashKeys().linkedHashSetValues().build();
         private final Map<ComponentSelector, UnresolvedDependencyResult>                                       unresolvedDependencies = Maps.newLinkedHashMap();
         private final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifactResult>> auxiliaryArtifacts     = HashBasedTable.create();
 
-        public void visit(IdeDependencyVisitor visitor) {
+        public void visit(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             resolvePlusConfigurations(visitor);
             resolveMinusConfigurations(visitor);
             resolveAuxiliaryArtifacts(visitor);
@@ -69,15 +72,14 @@ public class CustomDependencyResolverDependencySet {
             visitUnresolvedDependencies(visitor);
         }
 
-        private void resolvePlusConfigurations(IdeDependencyVisitor visitor) {
+        private void resolvePlusConfigurations(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (Configuration configuration : plusConfigurations) {
-                ArtifactCollection artifacts = getResolvedArtifacts(configuration, visitor);
-                for (ResolvedArtifactResult resolvedArtifact : artifacts) {
-                    resolvedArtifacts.put(resolvedArtifact.getId(), resolvedArtifact);
-                    configurations.put(resolvedArtifact.getId(), configuration);
-                }
-                if (artifacts.getFailures().isEmpty()) {
-                    continue;
+                Set<ResolvedDependency> artifacts = getResolvedArtifacts(configuration);
+                for (ResolvedDependency resolvedArtifact : artifacts) {
+                    for (final ResolvedArtifact allModuleArtifact : resolvedArtifact.getAllModuleArtifacts()) {
+                        resolvedArtifacts.put(allModuleArtifact.getId(), allModuleArtifact);
+                        configurations.put(allModuleArtifact.getId(), configuration);
+                    }
                 }
                 for (UnresolvedDependencyResult unresolvedDependency : getUnresolvedDependencies(configuration, visitor)) {
                     unresolvedDependencies.put(unresolvedDependency.getAttempted(), unresolvedDependency);
@@ -85,15 +87,14 @@ public class CustomDependencyResolverDependencySet {
             }
         }
 
-        private void resolveMinusConfigurations(IdeDependencyVisitor visitor) {
+        private void resolveMinusConfigurations(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (Configuration configuration : minusConfigurations) {
-                ArtifactCollection artifacts = getResolvedArtifacts(configuration, visitor);
-                for (ResolvedArtifactResult resolvedArtifact : artifacts) {
-                    resolvedArtifacts.remove(resolvedArtifact.getId());
-                    configurations.removeAll(resolvedArtifact.getId());
-                }
-                if (artifacts.getFailures().isEmpty()) {
-                    continue;
+                Set<ResolvedDependency> artifacts = getResolvedArtifacts(configuration);
+                for (ResolvedDependency resolvedArtifact : artifacts) {
+                    for (final ResolvedArtifact allModuleArtifact : resolvedArtifact.getAllModuleArtifacts()) {
+                        resolvedArtifacts.put(allModuleArtifact.getId(), allModuleArtifact);
+                        configurations.put(allModuleArtifact.getId(), configuration);
+                    }
                 }
                 for (UnresolvedDependencyResult unresolvedDependency : getUnresolvedDependencies(configuration, visitor)) {
                     unresolvedDependencies.remove(unresolvedDependency.getAttempted());
@@ -101,28 +102,23 @@ public class CustomDependencyResolverDependencySet {
             }
         }
 
-        private ArtifactCollection getResolvedArtifacts(Configuration configuration, final IdeDependencyVisitor visitor) {
-            return configuration.getIncoming().artifactView(new Action<ArtifactView.ViewConfiguration>() {
-                @Override
-                public void execute(ArtifactView.ViewConfiguration viewConfiguration) {
-                    viewConfiguration.lenient(true);
-                    viewConfiguration.componentFilter(getComponentFilter(visitor));
-                }
-            }).getArtifacts();
+        protected Set<ResolvedDependency> getResolvedArtifacts(Configuration configuration)
+        {
+            return configuration.getResolvedConfiguration().getLenientConfiguration().getAllModuleDependencies();
         }
 
         private Spec<ComponentIdentifier> getComponentFilter(IdeDependencyVisitor visitor) {
             return visitor.isOffline() ? NOT_A_MODULE : Specs.<ComponentIdentifier>satisfyAll();
         }
 
-        private Iterable<UnresolvedDependencyResult> getUnresolvedDependencies(Configuration configuration, IdeDependencyVisitor visitor) {
+        private Iterable<UnresolvedDependencyResult> getUnresolvedDependencies(Configuration configuration, CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             if (visitor.isOffline()) {
                 return Collections.emptySet();
             }
             return Iterables.filter(configuration.getIncoming().getResolutionResult().getRoot().getDependencies(), UnresolvedDependencyResult.class);
         }
 
-        private void resolveAuxiliaryArtifacts(IdeDependencyVisitor visitor) {
+        private void resolveAuxiliaryArtifacts(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             if (visitor.isOffline()) {
                 return;
             }
@@ -136,6 +132,8 @@ public class CustomDependencyResolverDependencySet {
             if (types.isEmpty()) {
                 return;
             }
+
+
 
             ArtifactResolutionResult result = dependencyHandler.createArtifactResolutionQuery()
                                                               .forComponents(componentIdentifiers)
@@ -167,7 +165,7 @@ public class CustomDependencyResolverDependencySet {
             return componentIdentifiers;
         }
 
-        private List<Class<? extends Artifact>> getAuxiliaryArtifactTypes(IdeDependencyVisitor visitor) {
+        private List<Class<? extends Artifact>> getAuxiliaryArtifactTypes(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             List<Class<? extends Artifact>> types = Lists.newArrayListWithCapacity(2);
             if (visitor.downloadSources()) {
                 types.add(SourcesArtifact.class);
@@ -178,8 +176,8 @@ public class CustomDependencyResolverDependencySet {
             return types;
         }
 
-        private void visitArtifacts(IdeDependencyVisitor visitor) {
-            for (ResolvedArtifactResult artifact : resolvedArtifacts.values()) {
+        private void visitArtifacts(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+            for (ResolvedArtifact artifact : resolvedArtifacts.values()) {
                 ComponentIdentifier componentIdentifier = artifact.getId().getComponentIdentifier();
                 ComponentArtifactIdentifier artifactIdentifier = artifact.getId();
                 if (componentIdentifier instanceof ProjectComponentIdentifier) {
@@ -205,7 +203,7 @@ public class CustomDependencyResolverDependencySet {
             return true;
         }
 
-        private void visitUnresolvedDependencies(IdeDependencyVisitor visitor) {
+        private void visitUnresolvedDependencies(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (UnresolvedDependencyResult unresolvedDependency : unresolvedDependencies.values()) {
                 visitor.visitUnresolvedDependency(unresolvedDependency);
             }

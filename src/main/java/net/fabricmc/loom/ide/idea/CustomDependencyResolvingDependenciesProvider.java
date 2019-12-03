@@ -17,6 +17,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
@@ -130,7 +131,7 @@ public class CustomDependencyResolvingDependenciesProvider {
         return file != null ? ideaModule.getPathFactory().path(file) : null;
     }
 
-    private class CustomDependencyResolvingDependenciesVisitor implements IdeDependencyVisitor {
+    public class CustomDependencyResolvingDependenciesVisitor {
         private final IdeaModule ideaModule;
         private final UnresolvedIdeDependencyHandler unresolvedIdeDependencyHandler = new UnresolvedIdeDependencyHandler();
         private final String scope;
@@ -145,31 +146,26 @@ public class CustomDependencyResolvingDependenciesProvider {
             this.scope = scope;
         }
 
-        @Override
         public boolean isOffline() {
             return ideaModule.isOffline();
         }
 
-        @Override
         public boolean downloadSources() {
             return ideaModule.isDownloadSources();
         }
 
-        @Override
         public boolean downloadJavaDoc() {
             return ideaModule.isDownloadJavadoc();
         }
 
-        @Override
-        public void visitProjectDependency(ResolvedArtifactResult artifact) {
+        public void visitProjectDependency(ResolvedArtifact artifact) {
             ProjectComponentIdentifier projectId = (ProjectComponentIdentifier) artifact.getId().getComponentIdentifier();
             if (!projectId.equals(currentProjectId)) {
                 projectDependencies.add(moduleDependencyBuilder.create(projectId, scope));
             }
         }
 
-        @Override
-        public void visitModuleDependency(ResolvedArtifactResult artifact, Set<ResolvedArtifactResult> sources, Set<ResolvedArtifactResult> javaDoc, boolean testDependency) {
+        public void visitModuleDependency(ResolvedArtifact artifact, Set<ResolvedArtifactResult> sources, Set<ResolvedArtifactResult> javaDoc, boolean testDependency) {
             ModuleComponentIdentifier moduleId = (ModuleComponentIdentifier) artifact.getId().getComponentIdentifier();
             SingleEntryModuleLibrary library = new SingleEntryModuleLibrary(toPath(ideaModule, artifact.getFile()), scope);
             library.setModuleVersion(DefaultModuleVersionIdentifier.newId(moduleId.getModuleIdentifier(), moduleId.getVersion()));
@@ -186,12 +182,10 @@ public class CustomDependencyResolvingDependenciesProvider {
             moduleDependencies.add(library);
         }
 
-        @Override
-        public void visitFileDependency(ResolvedArtifactResult artifact, boolean testDependency) {
+        public void visitFileDependency(ResolvedArtifact artifact, boolean testDependency) {
             fileDependencies.add(new SingleEntryModuleLibrary(toPath(ideaModule, artifact.getFile()), scope));
         }
         
-        @Override
         public void visitUnresolvedDependency(UnresolvedDependencyResult unresolvedDependency) {
             File unresolvedFile = unresolvedIdeDependencyHandler.asFile(unresolvedDependency, ideaModule.getContentRoot());
             fileDependencies.add(new SingleEntryModuleLibrary(toPath(ideaModule, unresolvedFile), scope));

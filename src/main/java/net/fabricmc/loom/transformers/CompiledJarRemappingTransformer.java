@@ -26,11 +26,7 @@ package net.fabricmc.loom.transformers;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.gradle.api.artifacts.transform.CacheableTransform;
 import org.gradle.api.artifacts.transform.InputArtifact;
@@ -42,17 +38,11 @@ import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.CompileClasspath;
-import org.apache.tools.ant.util.StreamUtils;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.transformers.parameters.ProjectReferencingParameters;
 import net.fabricmc.loom.util.FabricModUtils;
+import net.fabricmc.loom.util.FileNameUtils;
 import net.fabricmc.loom.util.ModProcessor;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 @CacheableTransform
 public abstract class CompiledJarRemappingTransformer implements TransformAction<ProjectReferencingParameters> {
@@ -62,7 +52,7 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 
 	@CompileClasspath
 	@InputArtifactDependencies
-	abstract FileCollection getDependencies();
+	public abstract FileCollection getDependencies();
 
 	@Override
 	public void transform(final TransformOutputs outputs) {
@@ -78,36 +68,39 @@ public abstract class CompiledJarRemappingTransformer implements TransformAction
 			return;
 		}
 
+        //Rudimentary check for sources. Which need to be remapped separately.
+        //Potentially we need to check zip file contents.
+        if (inputFile.getName().contains("-sources"))
+        {
+            getProject().getLogger().lifecycle("[Not remapping artifact, sources jar]: " + inputFile.getName());
+            final File outputFile = outputs.file("not-remapped-sources" + File.separator + FileNameUtils.appendToNameBeForeExtension(inputFile, "-compiled_remapped"));
+            try {
+                FileUtils.copyFile(inputFile, outputFile);
+            } catch (Exception e) {
+                lifecycle("Failed to copy not remappable file to output.", e);
+            }
+            return;
+        }
+
 		if (!FabricModUtils.isFabricMod(
 						getProject(),
 						getProject().getLogger(),
 						inputFile,
 						inputFile.getName()
 		)) {
-			final File outputFile = outputs.file("not-remapped-no-mod" + File.separator + inputFile.getName());
+            getProject().getLogger().lifecycle("[Not remapping artifact, no mod]: " + inputFile.getName());
+			final File outputFile = outputs.file("not-remapped-no-mod" + File.separator + FileNameUtils.appendToNameBeForeExtension(inputFile, "-compiled_remapped"));
 			try {
 				FileUtils.copyFile(inputFile, outputFile);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				lifecycle("Failed to copy not remappable file to output.", e);
 			}
             return;
 		}
 
-		//Rudimentary check for sources. Which need to be remapped separately.
-        //Potentially we need to check zip file contents.
-		if (inputFile.getName().contains("-sources"))
-        {
-            final File outputFile = outputs.file("not-remapped-sources" + File.separator + inputFile.getName());
-            try {
-                FileUtils.copyFile(inputFile, outputFile);
-            } catch (IOException e) {
-                lifecycle("Failed to copy not remappable file to output.", e);
-            }
-            return;
-        }
-
 		try {
-            ModProcessor.processMod(getProject(), inputFile, (fileName) -> outputs.file(String.format("remapped%s%s", File.separator, fileName)), getDependencies());
+		    getProject().getLogger().lifecycle("[Remapping artifact]: " + inputFile.getName());
+            ModProcessor.processMod(getProject(), inputFile, (fileName) -> outputs.file(String.format("remapped%s%s", File.separator, FileNameUtils.appendToNameBeForeExtension(fileName, "-compiled_remapped"))), getDependencies());
 		} catch (IOException e) {
 			lifecycle("Failed to remap file.", e);
 		}

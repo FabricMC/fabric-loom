@@ -28,26 +28,86 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.LenientConfiguration;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
 import org.gradle.api.artifacts.result.ArtifactResult;
 import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.internal.artifacts.dependencies.AbstractModuleDependency;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 
 public final class SourceUtils {
 
+    private static final String SOURCES_CONFIGURATION_NAME = "_sources_loom";
+
     private SourceUtils() {
         throw new IllegalStateException("Tried to initialize: SourceUtils but this is a Utility class.");
     }
 
-    public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
+    public static void handleSources(Project project) {
+        project.afterEvaluate(target -> {
+            final Configuration sourcesConfig = project.getConfigurations().maybeCreate(SOURCES_CONFIGURATION_NAME);
+            project.getConfigurations().all(config -> {
+                if (config.isCanBeResolved())
+                {
+                    if (config == sourcesConfig)
+                        return;
+
+                    final LenientConfiguration resolvedConfiguration = config.getResolvedConfiguration().getLenientConfiguration();
+
+                    //Execute sources linking only for none sources source sets
+                    resolvedConfiguration.getAllModuleDependencies().forEach(dependency -> {
+                        dependency.getAllModuleArtifacts().forEach(resolvedArtifact -> {
+                            final ComponentIdentifier identifier = resolvedArtifact.getId().getComponentIdentifier();
+
+                            if (identifier instanceof ModuleComponentIdentifier)
+                            {
+                                final ModuleComponentIdentifier moduleComponentIdentifier = (ModuleComponentIdentifier) identifier;
+                                if (findSources(project.getDependencies(), resolvedArtifact) != null)
+                                {
+                                    String classifierAppendix = "sources";
+                                    resolvedArtifact.getClassifier();
+                                    if (resolvedArtifact.getClassifier() != null && !resolvedArtifact.getClassifier().isEmpty())
+                                    {
+                                        classifierAppendix = resolvedArtifact.getClassifier() + "-" + classifierAppendix;
+                                    }
+
+                                    final String dependencyId =
+                                                    String.format("%s:%s:%s:%s", moduleComponentIdentifier.getGroup(), moduleComponentIdentifier.getModule(), moduleComponentIdentifier.getVersion(), classifierAppendix);
+
+                                    project.getDependencies().add(SOURCES_CONFIGURATION_NAME, dependencyId);
+                                    project.getLogger().lifecycle("[SourceAnalysis]: Adding: " + dependencyId + " as sources");
+                                }
+                                else
+                                {
+                                    project.getLogger().lifecycle("[SourceAnalysis]: Skipping: " + resolvedArtifact.toString() + " as no sources seem to exist!");
+                                }
+                            }
+                            else
+                            {
+                                project.getLogger().lifecycle("[SourceAnalysis]: Skipping: " + resolvedArtifact.toString() + " as it is not a module dependency but: "  + resolvedArtifact.getId().getComponentIdentifier().getClass().getName() + "!");
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    }
+
+    public static File findSources(DependencyHandler dependencies, Dependency artifact) {
         @SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-                                                                                       .forComponents(artifact.getId().getComponentIdentifier())//
+                                                                                       .forModule(artifact.getGroup(), artifact.getName(), artifact.getVersion())//
                                                                                        .withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
         for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
@@ -61,9 +121,9 @@ public final class SourceUtils {
         return null;
     }
 
-    public static File findSources(DependencyHandler dependencies, Dependency artifact) {
+    public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
         @SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-                                                                                       .forModule(artifact.getGroup(), artifact.getName(), artifact.getVersion())//
+                                                                                       .forComponents(artifact.getId().getComponentIdentifier())
                                                                                        .withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
         for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {

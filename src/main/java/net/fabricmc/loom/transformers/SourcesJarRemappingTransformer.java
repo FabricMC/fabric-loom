@@ -22,6 +22,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.transformers.parameters.ProjectReferencingParameters;
 import net.fabricmc.loom.util.FabricModUtils;
+import net.fabricmc.loom.util.FileNameUtils;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -35,7 +36,7 @@ public abstract class SourcesJarRemappingTransformer implements TransformAction<
 
     @CompileClasspath
     @InputArtifactDependencies
-    abstract FileCollection getDependencies();
+    public abstract FileCollection getDependencies();
 
     @Override
     public void transform(final TransformOutputs outputs) {
@@ -51,36 +52,39 @@ public abstract class SourcesJarRemappingTransformer implements TransformAction<
             return;
         }
 
+        //Rudimentary check for sources. Which need to be remapped separately.
+        //Potentially we need to check zip file contents.
+        if (!inputFile.getName().contains("-sources"))
+        {
+            getProject().getLogger().lifecycle("[Not remapping sources, no sources jar]: " + inputFile.getName());
+            final File outputFile = outputs.file("not-remapped-no-sources" + File.separator + FileNameUtils.appendToNameBeForeExtension(inputFile, "-sources_remapped"));
+            try {
+                FileUtils.copyFile(inputFile, outputFile);
+            } catch (Exception e) {
+                lifecycle("Failed to copy not remappable file to output.", e);
+            }
+            return;
+        }
+
         if (!FabricModUtils.isFabricMod(
                         getProject(),
                         getProject().getLogger(),
                         inputFile,
                         inputFile.getName()
         )) {
-            final File outputFile = outputs.file("not-remapped-no-mod" + File.separator + inputFile.getName());
+            getProject().getLogger().lifecycle("[Not remapping sources, no mod]: " + inputFile.getName());
+            final File outputFile = outputs.file("not-remapped-no-mod" + File.separator + FileNameUtils.appendToNameBeForeExtension(inputFile, "-sources_remapped"));
             try {
                 FileUtils.copyFile(inputFile, outputFile);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 lifecycle("Failed to copy not remappable file to output.", e);
             }
             return;
         }
 
-        //Rudimentary check for sources. Which need to be remapped separately.
-        //Potentially we need to check zip file contents.
-        if (!inputFile.getName().contains("-sources"))
-        {
-            final File outputFile = outputs.file("not-remapped-no-sources" + File.separator + inputFile.getName());
-            try {
-                FileUtils.copyFile(inputFile, outputFile);
-            } catch (IOException e) {
-                lifecycle("Failed to copy not remappable file to output.", e);
-            }
-            return;
-        }
-
-        final File outputFile = outputs.file("remapped" + File.separator + inputFile.getName());
+        final File outputFile = outputs.file(String.format("remapped%s%s", File.separator, FileNameUtils.appendToNameBeForeExtension(inputFile, "-sources_remapped")));
         try {
+            getProject().getLogger().lifecycle("[Remapping sources]: " + inputFile.getName());
             SourceRemapper.remapSources(getProject(), inputFile, outputFile, true);
         } catch (Exception e) {
             lifecycle("Failed to remap file.", e);

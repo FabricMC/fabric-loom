@@ -52,8 +52,10 @@ import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
+import net.fabricmc.loom.transformers.RemappingStep;
 import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
 import net.fabricmc.loom.transformers.TransformerProjectManager;
+import net.fabricmc.loom.util.SourceUtils;
 
 public class LoomGradlePlugin extends AbstractPlugin {
     private static File getMappedByproduct(Project project, String suffix) {
@@ -73,32 +75,25 @@ public class LoomGradlePlugin extends AbstractPlugin {
     public void apply(Project target) {
         super.apply(target);
 
-        final Attribute<Boolean> sourcesRemapped = Attribute.of("sourcesRemapped", Boolean.class);
-        final Attribute<Boolean> artifactRemapped = Attribute.of("artifactRemapped", Boolean.class);
+        final Attribute<RemappingStep> remappingStepAttribute = Attribute.of("remapping", RemappingStep.class);
 
         TransformerProjectManager.getInstance().register(target);
 
         target.getDependencies().attributesSchema(schema -> {
-            schema.attribute(sourcesRemapped);
-            schema.attribute(artifactRemapped);
+            schema.attribute(remappingStepAttribute);
         });
 
         target.getDependencies().artifactTypes(types -> {
-            types.all(type -> {
-                target.getLogger().lifecycle("[Loom]: Available: " + type.getName());
-            });
-
             types.getByName("jar", jarType -> {
-                jarType.getAttributes().attribute(sourcesRemapped, false);
-                jarType.getAttributes().attribute(artifactRemapped, false);
+                jarType.getAttributes().attribute(remappingStepAttribute, RemappingStep.NOT);
             });
         });
 
         target.getDependencies().registerTransform(
                         SourcesJarRemappingTransformer.class,
                         config -> {
-                            config.getFrom().attribute(sourcesRemapped, false);
-                            config.getTo().attribute(sourcesRemapped, true);
+                            config.getFrom().attribute(remappingStepAttribute, RemappingStep.ARTIFACT);
+                            config.getTo().attribute(remappingStepAttribute, RemappingStep.SOURCES);
                             config.parameters(parameters -> {
                                 parameters.getProjectPathParameter().set(target.getPath());
                             });
@@ -108,8 +103,8 @@ public class LoomGradlePlugin extends AbstractPlugin {
         target.getDependencies().registerTransform(
                         CompiledJarRemappingTransformer.class,
                         config -> {
-                            config.getFrom().attribute(artifactRemapped, false);
-                            config.getTo().attribute(artifactRemapped, true);
+                            config.getFrom().attribute(remappingStepAttribute, RemappingStep.NOT);
+                            config.getTo().attribute(remappingStepAttribute, RemappingStep.ARTIFACT);
                             config.parameters(parameters -> {
                                 parameters.getProjectPathParameter().set(target.getPath());
                             });
@@ -149,8 +144,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
         project.getConfigurations().all(config -> {
             if (config.isCanBeResolved()) {
                 config.attributes(container -> {
-                    container.attribute(sourcesRemapped, true);
-                    container.attribute(artifactRemapped, true);
+                    container.attribute(remappingStepAttribute, RemappingStep.SOURCES);
                 });
             }
         });

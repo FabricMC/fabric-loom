@@ -1,4 +1,4 @@
-package net.fabricmc.loom.idea;
+package net.fabricmc.loom.ide.idea;
 
 import java.io.File;
 import java.util.Collections;
@@ -11,6 +11,8 @@ import com.google.common.collect.Lists;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.initialization.IncludedBuild;
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.internal.project.ProjectStateRegistry;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.internal.build.IncludedBuildState;
 import org.gradle.internal.service.ServiceRegistry;
@@ -22,6 +24,8 @@ import org.gradle.plugins.ide.idea.model.IdeaModule;
 import org.gradle.plugins.ide.idea.model.IdeaProject;
 import org.gradle.plugins.ide.idea.model.ModuleDependency;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
+import org.gradle.plugins.ide.idea.model.internal.IdeaDependenciesProvider;
+import org.gradle.plugins.ide.internal.IdeArtifactRegistry;
 import org.gradle.plugins.ide.internal.tooling.GradleProjectBuilder;
 import org.gradle.plugins.ide.internal.tooling.IdeaModelBuilder;
 import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaCompilerOutput;
@@ -38,7 +42,6 @@ import org.gradle.plugins.ide.internal.tooling.idea.DefaultIdeaSourceDirectory;
 import org.gradle.plugins.ide.internal.tooling.java.DefaultInstalledJdk;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleModuleVersion;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleProject;
-import org.gradle.tooling.provider.model.ToolingModelBuilder;
 
 public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder {
     private final GradleProjectBuilder gradleProjectBuilder;
@@ -93,7 +96,7 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
         for (IdeaModule module : projectModel.getModules()) {
             ideaModules.add(createModule(module, out, rootGradleProject));
         }
-        out.setChildren(new LinkedList<DefaultIdeaModule>(ideaModules));
+        out.setChildren(new LinkedList<>(ideaModules));
         return out;
     }
 
@@ -193,4 +196,13 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
         return JavaVersion.valueOf(languageLevel.replaceFirst("JDK", "VERSION"));
     }
 
+    private Set<Dependency> resolveDependencies(IdeaModule ideaModule)
+    {
+        ProjectInternal projectInternal = (ProjectInternal) ideaModule.getProject();
+        IdeArtifactRegistry ideArtifactRegistry = projectInternal.getServices().get(IdeArtifactRegistry.class);
+        ProjectStateRegistry projectRegistry = projectInternal.getServices().get(ProjectStateRegistry.class);
+
+        CustomDependencyResolvingDependenciesProvider customDependencyResolvingDependenciesProvider = new CustomDependencyResolvingDependenciesProvider(projectInternal, ideArtifactRegistry, projectRegistry);
+        return customDependencyResolvingDependenciesProvider.provide(ideaModule);
+    }
 }

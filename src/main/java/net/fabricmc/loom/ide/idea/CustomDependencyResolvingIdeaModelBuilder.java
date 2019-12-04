@@ -106,6 +106,8 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
 
     private void buildDependencies(DefaultIdeaModule tapiModule, IdeaModule ideaModule) {
         ideaModule.setOffline(offlineDependencyResolution);
+
+        //This is adapted, normally this would call ideaModule.resolveDependencies()
         Set<Dependency> resolved = this.resolveDependencies(ideaModule);
         List<DefaultIdeaDependency> dependencies = new LinkedList<DefaultIdeaDependency>();
         for (Dependency dependency : resolved) {
@@ -196,8 +198,13 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
         return JavaVersion.valueOf(languageLevel.replaceFirst("JDK", "VERSION"));
     }
 
-    private Set<Dependency> resolveDependencies(IdeaModule ideaModule)
-    {
+    /**
+     * Identical implementation of {@link IdeaModule#resolveDependencies()} but using our custom logic to resolve artifacts and dependencies.
+     *
+     * @param ideaModule The module to get the dependencies for.
+     * @return The dependencies.
+     */
+    private Set<Dependency> resolveDependencies(IdeaModule ideaModule) {
         ProjectInternal projectInternal = (ProjectInternal) ideaModule.getProject();
         IdeArtifactRegistry ideArtifactRegistry = projectInternal.getServices().get(IdeArtifactRegistry.class);
         ProjectStateRegistry projectRegistry = projectInternal.getServices().get(ProjectStateRegistry.class);

@@ -102,6 +102,7 @@ public class CustomDependencyResolvingDependenciesProvider {
             @Nullable
             @Override
             public CustomDependencyResolvingDependenciesVisitor create() {
+                //Use the custom visitor here instead of the gradle internal generic one.
                 new CustomDependencyResolverDependencySet(handler, plusConfigurations, minusConfigurations).visit(visitor);
                 return visitor;
             }
@@ -131,6 +132,10 @@ public class CustomDependencyResolvingDependenciesProvider {
         return file != null ? ideaModule.getPathFactory().path(file) : null;
     }
 
+    /**
+     * Custom class does not inherit from {@link IdeDependencyVisitor} cause we resolve differently and as such have different parameters.
+     * Logic is identical though.
+     */
     public class CustomDependencyResolvingDependenciesVisitor {
         private final IdeaModule ideaModule;
         private final UnresolvedIdeDependencyHandler unresolvedIdeDependencyHandler = new UnresolvedIdeDependencyHandler();

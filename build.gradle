@@ -27,6 +27,10 @@ repositories {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
 	}
+    maven {
+        name = "Jetbrains IntelliJ"
+        url= "https://www.jetbrains.com/intellij-repository/releases"
+    }
 }
 
 dependencies {
@@ -54,6 +58,9 @@ dependencies {
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
+
+    //ide's
+    implementation ('com.jetbrains.intellij.gradle:gradle:193.5233.102')
 
 	// Testing
 	testImplementation(gradleTestKit())

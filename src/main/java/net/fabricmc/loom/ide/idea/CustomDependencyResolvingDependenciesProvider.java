@@ -170,17 +170,17 @@ public class CustomDependencyResolvingDependenciesProvider {
             }
         }
 
-        public void visitModuleDependency(ResolvedArtifact artifact, Set<ResolvedArtifactResult> sources, Set<ResolvedArtifactResult> javaDoc, boolean testDependency) {
+        public void visitModuleDependency(ResolvedArtifact artifact, Set<ResolvedArtifact> sources, Set<ResolvedArtifact> javaDoc, boolean testDependency) {
             ModuleComponentIdentifier moduleId = (ModuleComponentIdentifier) artifact.getId().getComponentIdentifier();
             SingleEntryModuleLibrary library = new SingleEntryModuleLibrary(toPath(ideaModule, artifact.getFile()), scope);
             library.setModuleVersion(DefaultModuleVersionIdentifier.newId(moduleId.getModuleIdentifier(), moduleId.getVersion()));
             Set<Path> sourcePaths = Sets.newLinkedHashSet();
-            for (ResolvedArtifactResult sourceArtifact : sources) {
+            for (ResolvedArtifact sourceArtifact : sources) {
                 sourcePaths.add(toPath(ideaModule, sourceArtifact.getFile()));
             }
             library.setSources(sourcePaths);
             Set<Path> javaDocPaths = Sets.newLinkedHashSet();
-            for (ResolvedArtifactResult javaDocArtifact : javaDoc) {
+            for (ResolvedArtifact javaDocArtifact : javaDoc) {
                 javaDocPaths.add(toPath(ideaModule, javaDocArtifact.getFile()));
             }
             library.setJavadoc(javaDocPaths);
@@ -207,6 +207,10 @@ public class CustomDependencyResolvingDependenciesProvider {
 
         public Map<ComponentSelector, UnresolvedDependencyResult> getUnresolvedDependencies() {
             return unresolvedDependencies;
+        }
+
+        public IdeaModule getIdeaModule() {
+            return ideaModule;
         }
     }
 

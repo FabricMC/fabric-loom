@@ -55,7 +55,6 @@ import net.fabricmc.loom.transformers.CompiledJarRemappingTransformer;
 import net.fabricmc.loom.transformers.RemappingStep;
 import net.fabricmc.loom.transformers.SourcesJarRemappingTransformer;
 import net.fabricmc.loom.transformers.TransformerProjectManager;
-import net.fabricmc.loom.util.SourceUtils;
 
 public class LoomGradlePlugin extends AbstractPlugin {
     private static File getMappedByproduct(Project project, String suffix) {

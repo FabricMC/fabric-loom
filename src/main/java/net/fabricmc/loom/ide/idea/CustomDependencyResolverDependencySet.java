@@ -4,9 +4,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -14,9 +16,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
-import org.gradle.api.Action;
-import org.gradle.api.artifacts.ArtifactCollection;
-import org.gradle.api.artifacts.ArtifactView;
+import org.codehaus.groovy.control.SourceUnit;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.LenientConfiguration;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -27,18 +27,13 @@ import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.artifacts.result.ArtifactResolutionResult;
-import org.gradle.api.artifacts.result.ArtifactResult;
-import org.gradle.api.artifacts.result.ComponentArtifactsResult;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult;
 import org.gradle.api.component.Artifact;
 import org.gradle.api.specs.Spec;
-import org.gradle.api.specs.Specs;
-import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.gradle.language.java.artifact.JavadocArtifact;
-import org.gradle.plugins.ide.internal.resolver.IdeDependencyVisitor;
+
+import net.fabricmc.loom.util.ArtifactIdUtils;
 
 public class CustomDependencyResolverDependencySet {
     private final DependencyHandler         dependencyHandler;
@@ -62,7 +57,7 @@ public class CustomDependencyResolverDependencySet {
         private final Map<ComponentArtifactIdentifier, ResolvedArtifact>                                 resolvedArtifacts      = Maps.newLinkedHashMap();
         private final SetMultimap<ComponentArtifactIdentifier, Configuration>                                  configurations         = MultimapBuilder.hashKeys().linkedHashSetValues().build();
         private final Map<ComponentSelector, UnresolvedDependencyResult>                                       unresolvedDependencies = Maps.newLinkedHashMap();
-        private final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifactResult>> auxiliaryArtifacts     = HashBasedTable.create();
+        private final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> auxiliaryArtifacts     = HashBasedTable.create();
 
         public void visit(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             resolvePlusConfigurations(visitor);
@@ -107,10 +102,6 @@ public class CustomDependencyResolverDependencySet {
             return configuration.getResolvedConfiguration().getLenientConfiguration().getAllModuleDependencies();
         }
 
-        private Spec<ComponentIdentifier> getComponentFilter(IdeDependencyVisitor visitor) {
-            return visitor.isOffline() ? NOT_A_MODULE : Specs.<ComponentIdentifier>satisfyAll();
-        }
-
         private Iterable<UnresolvedDependencyResult> getUnresolvedDependencies(Configuration configuration, CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             if (visitor.isOffline()) {
                 return Collections.emptySet();
@@ -123,57 +114,151 @@ public class CustomDependencyResolverDependencySet {
                 return;
             }
 
-            Set<ModuleComponentIdentifier> componentIdentifiers = getModuleComponentIdentifiers();
-            if (componentIdentifiers.isEmpty()) {
-                return;
+            final Map<String, ResolvedArtifact> dependencyIdsToLookup = Maps.newHashMap();
+            //Global dependencies are used when a module provides multiple different artifacts but only one source jar for all.
+            final Map<String, Set<ResolvedArtifact>> globalDependencyIdsToLookup = Maps.newHashMap();
+
+            for(final Configuration configuration : plusConfigurations) {
+                final Set<ResolvedDependency> dependencyToLookupSourcesFor = getResolvedArtifacts(configuration);
+                for(final ResolvedDependency dependency : dependencyToLookupSourcesFor)
+                {
+                    for(final ResolvedArtifact artifact : dependency.getAllModuleArtifacts())
+                    {
+                        if (!(artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                            continue;
+
+                        final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, true);
+                        dependencyIdsToLookup.put(dependencyId, artifact);
+
+                        final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, false);
+                        globalDependencyIdsToLookup.putIfAbsent(globalDependencyId, Sets.newHashSet());
+                        globalDependencyIdsToLookup.get(globalDependencyId).add(artifact);
+                    }
+                }
             }
 
-            List<Class<? extends Artifact>> types = getAuxiliaryArtifactTypes(visitor);
-            if (types.isEmpty()) {
-                return;
+            for(final Configuration configuration : minusConfigurations) {
+                final Set<ResolvedDependency> dependencyToLookupSourcesFor = getResolvedArtifacts(configuration);
+                for(final ResolvedDependency dependency : dependencyToLookupSourcesFor)
+                {
+                    for(final ResolvedArtifact artifact : dependency.getAllModuleArtifacts())
+                    {
+                        if (!(artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                            continue;
+
+                        final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, true);
+                        dependencyIdsToLookup.remove(dependencyId);
+
+                        final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, false);
+                        if (globalDependencyIdsToLookup.containsKey(globalDependencyId))
+                            globalDependencyIdsToLookup.get(globalDependencyId).remove(artifact);
+                    }
+                }
             }
 
+            if (visitor.downloadSources())
+            {
+                final Configuration sourcesToAttachConfiguration = visitor.getIdeaModule().getProject().getConfigurations().create("_______sources_idea_" + (new Random()).nextInt());
+                for (final String dependencyId :
+                                dependencyIdsToLookup.keySet()) {
+                    if (ArtifactIdUtils.doesArtifactExist(visitor.getIdeaModule().getProject().getDependencies(), dependencyIdsToLookup.get(dependencyId), SourcesArtifact.class))
+                    {
+                        visitor.getIdeaModule().getProject().getDependencies().add(sourcesToAttachConfiguration.getName(), ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(dependencyIdsToLookup.get(dependencyId), true, "sources"));
+                    }
+                }
 
-
-            ArtifactResolutionResult result = dependencyHandler.createArtifactResolutionQuery()
-                                                              .forComponents(componentIdentifiers)
-                                                              .withArtifacts(JvmLibrary.class, types)
-                                                              .execute();
-
-            for (ComponentArtifactsResult artifactsResult : result.getResolvedComponents()) {
-                for (Class<? extends Artifact> type : types) {
-                    Set<ResolvedArtifactResult> resolvedArtifactResults = Sets.newLinkedHashSet();
-
-                    for (ArtifactResult artifactResult : artifactsResult.getArtifacts(type)) {
-                        if (artifactResult instanceof ResolvedArtifactResult) {
-                            resolvedArtifactResults.add((ResolvedArtifactResult) artifactResult);
+                for(final String dependencyId :
+                                globalDependencyIdsToLookup.keySet())
+                {
+                    for (final ResolvedArtifact artifact : globalDependencyIdsToLookup.get(dependencyId)) {
+                        if (ArtifactIdUtils.doesArtifactExist(visitor.getIdeaModule().getProject().getDependencies(), artifact, SourcesArtifact.class))
+                        {
+                            visitor.getIdeaModule().getProject().getDependencies().add(sourcesToAttachConfiguration.getName(), ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(artifact, false, "sources"));
                         }
                     }
-                    auxiliaryArtifacts.put((ModuleComponentIdentifier) artifactsResult.getId(), type, resolvedArtifactResults);
+                }
+
+                final LenientConfiguration lenientSourcesConfiguration = sourcesToAttachConfiguration.getResolvedConfiguration().getLenientConfiguration();
+                for (final ResolvedDependency resolvedSourcesDependency :
+                                lenientSourcesConfiguration.getAllModuleDependencies()) {
+                    for (final ResolvedArtifact resolvedSourcesArtifact :
+                                    resolvedSourcesDependency.getAllModuleArtifacts()) {
+                        if (!(resolvedSourcesArtifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                            continue;
+
+                        final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedSourcesArtifact, true, "sources");
+                        if (dependencyIdsToLookup.containsKey(dependencyId))
+                        {
+                            final ResolvedArtifact originalArtifact = dependencyIdsToLookup.get(dependencyId);
+                            auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), SourcesArtifact.class, Sets.newHashSet(resolvedSourcesArtifact));
+                        }
+                        final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedSourcesArtifact, false, "sources");
+                        if (globalDependencyIdsToLookup.containsKey(globalDependencyId))
+                        {
+                            final Set<ResolvedArtifact> originalArtifacts = globalDependencyIdsToLookup.get(globalDependencyId);
+                            for (final ResolvedArtifact originalArtifact : originalArtifacts) {
+                                auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), SourcesArtifact.class, Sets.newHashSet(resolvedSourcesArtifact));
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        private Set<ModuleComponentIdentifier> getModuleComponentIdentifiers() {
-            Set<ModuleComponentIdentifier> componentIdentifiers = Sets.newLinkedHashSet();
-            for (ComponentArtifactIdentifier identifier : resolvedArtifacts.keySet()) {
-                ComponentIdentifier componentIdentifier = identifier.getComponentIdentifier();
-                if (componentIdentifier instanceof ModuleComponentIdentifier) {
-                    componentIdentifiers.add((ModuleComponentIdentifier) componentIdentifier);
+            if (visitor.downloadJavaDoc())
+            {
+                final Configuration javaDocsToAttachConfiguration = visitor.getIdeaModule().getProject().getConfigurations().create("_______javaDocs_idea_" + (new Random()).nextInt());
+                for (final String dependencyId :
+                                dependencyIdsToLookup.keySet()) {
+                    if (ArtifactIdUtils.doesArtifactExist(visitor.getIdeaModule().getProject().getDependencies(), dependencyIdsToLookup.get(dependencyId), JavadocArtifact.class)) {
+                        visitor.getIdeaModule()
+                                        .getProject()
+                                        .getDependencies()
+                                        .add(javaDocsToAttachConfiguration.getName(),
+                                                        ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(dependencyIdsToLookup.get(dependencyId),
+                                                                        true,
+                                                                        "javadoc"));
+                    }
+                }
+
+                for(final String dependencyId :
+                                globalDependencyIdsToLookup.keySet())
+                {
+                    for (final ResolvedArtifact artifact : globalDependencyIdsToLookup.get(dependencyId)) {
+                        if (ArtifactIdUtils.doesArtifactExist(visitor.getIdeaModule().getProject().getDependencies(), artifact, JavadocArtifact.class)) {
+                            visitor.getIdeaModule()
+                                            .getProject()
+                                            .getDependencies()
+                                            .add(javaDocsToAttachConfiguration.getName(),
+                                                            ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(artifact, false, "javadoc"));
+                        }
+                    }
+                }
+
+                final LenientConfiguration lenientJavaDocsConfiguration = javaDocsToAttachConfiguration.getResolvedConfiguration().getLenientConfiguration();
+                for (final ResolvedDependency resolvedJavaDocsDependency :
+                                lenientJavaDocsConfiguration.getAllModuleDependencies()) {
+                    for (final ResolvedArtifact resolvedJavaDocsArtifact :
+                                    resolvedJavaDocsDependency.getAllModuleArtifacts()) {
+                        if (!(resolvedJavaDocsArtifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                            continue;
+
+                        final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedJavaDocsArtifact, true, "javadoc");
+                        if (dependencyIdsToLookup.containsKey(dependencyId))
+                        {
+                            final ResolvedArtifact originalArtifact = dependencyIdsToLookup.get(dependencyId);
+                            auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), JavadocArtifact.class, Sets.newHashSet(resolvedJavaDocsArtifact));
+                        }
+                        final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedJavaDocsArtifact, false, "javadoc");
+                        if (globalDependencyIdsToLookup.containsKey(globalDependencyId))
+                        {
+                            final Set<ResolvedArtifact> originalArtifacts = globalDependencyIdsToLookup.get(globalDependencyId);
+                            for (final ResolvedArtifact originalArtifact : originalArtifacts) {
+                                auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), JavadocArtifact.class, Sets.newHashSet(resolvedJavaDocsArtifact));
+                            }
+                        }
+                    }
                 }
             }
-            return componentIdentifiers;
-        }
-
-        private List<Class<? extends Artifact>> getAuxiliaryArtifactTypes(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
-            List<Class<? extends Artifact>> types = Lists.newArrayListWithCapacity(2);
-            if (visitor.downloadSources()) {
-                types.add(SourcesArtifact.class);
-            }
-            if (visitor.downloadJavaDoc()) {
-                types.add(JavadocArtifact.class);
-            }
-            return types;
         }
 
         private void visitArtifacts(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
@@ -183,10 +268,10 @@ public class CustomDependencyResolverDependencySet {
                 if (componentIdentifier instanceof ProjectComponentIdentifier) {
                     visitor.visitProjectDependency(artifact);
                 } else if (componentIdentifier instanceof ModuleComponentIdentifier) {
-                    Set<ResolvedArtifactResult> sources = auxiliaryArtifacts.get(componentIdentifier, SourcesArtifact.class);
-                    sources = sources != null ? sources : Collections.<ResolvedArtifactResult>emptySet();
-                    Set<ResolvedArtifactResult> javaDoc = auxiliaryArtifacts.get(componentIdentifier, JavadocArtifact.class);
-                    javaDoc = javaDoc != null ? javaDoc : Collections.<ResolvedArtifactResult>emptySet();
+                    Set<ResolvedArtifact> sources = auxiliaryArtifacts.get(componentIdentifier, SourcesArtifact.class);
+                    sources = sources != null ? sources : ImmutableSet.of();
+                    Set<ResolvedArtifact> javaDoc = auxiliaryArtifacts.get(componentIdentifier, JavadocArtifact.class);
+                    javaDoc = javaDoc != null ? javaDoc : ImmutableSet.of();
                     visitor.visitModuleDependency(artifact, sources, javaDoc, isTestConfiguration(configurations.get(artifactIdentifier)));
                 } else {
                     visitor.visitFileDependency(artifact, isTestConfiguration(configurations.get(artifactIdentifier)));

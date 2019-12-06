@@ -11,7 +11,6 @@ import org.gradle.initialization.GradleLauncher;
 import org.gradle.internal.build.BuildState;
 import org.gradle.internal.build.NestedBuildState;
 import org.gradle.internal.build.RootBuildState;
-import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.service.scopes.BuildScopeServices;
 import org.gradle.plugins.ide.internal.tooling.GradleProjectBuilder;
@@ -19,7 +18,7 @@ import org.gradle.plugins.ide.internal.tooling.IdeaModelBuilder;
 import org.gradle.tooling.provider.model.ToolingModelBuilder;
 import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 
-import net.fabricmc.loom.ide.idea.CustomDependencyResolvingIdeaModelBuilder;
+import net.fabricmc.loom.ide.gradle.idea.IdeaResolvingIdeaModelBuilder;
 
 public final class ToolingModelBuilderOverrideHandler {
 
@@ -54,7 +53,7 @@ public final class ToolingModelBuilderOverrideHandler {
             final GradleProjectBuilder gradleProjectBuilder =
                             (GradleProjectBuilder) builders.stream().filter(builder -> builder instanceof GradleProjectBuilder).findFirst().orElse(new GradleProjectBuilder());
             builders.removeIf(builder -> builder instanceof IdeaModelBuilder);
-            builders.add(new CustomDependencyResolvingIdeaModelBuilder(gradleProjectBuilder, serviceRegistry));
+            builders.add(new IdeaResolvingIdeaModelBuilder(gradleProjectBuilder, serviceRegistry));
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();

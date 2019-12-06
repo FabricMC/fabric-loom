@@ -1,8 +1,7 @@
-package net.fabricmc.loom.ide.idea;
+package net.fabricmc.loom.ide.gradle.idea;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -10,13 +9,11 @@ import java.util.Set;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
-import org.codehaus.groovy.control.SourceUnit;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.LenientConfiguration;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -35,18 +32,18 @@ import org.gradle.language.java.artifact.JavadocArtifact;
 
 import net.fabricmc.loom.util.ArtifactIdUtils;
 
-public class CustomDependencyResolverDependencySet {
+public class IdeaResolverDependencySet {
     private final DependencyHandler         dependencyHandler;
     private final Collection<Configuration> plusConfigurations;
     private final Collection<Configuration> minusConfigurations;
 
-    public CustomDependencyResolverDependencySet(DependencyHandler dependencyHandler, Collection<Configuration> plusConfigurations, Collection<Configuration> minusConfigurations) {
+    public IdeaResolverDependencySet(DependencyHandler dependencyHandler, Collection<Configuration> plusConfigurations, Collection<Configuration> minusConfigurations) {
         this.dependencyHandler = dependencyHandler;
         this.plusConfigurations = plusConfigurations;
         this.minusConfigurations = minusConfigurations;
     }
 
-    public void visit(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+    public void visit(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
         if (plusConfigurations.isEmpty()) {
             return;
         }
@@ -59,7 +56,7 @@ public class CustomDependencyResolverDependencySet {
         private final Map<ComponentSelector, UnresolvedDependencyResult>                                       unresolvedDependencies = Maps.newLinkedHashMap();
         private final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> auxiliaryArtifacts     = HashBasedTable.create();
 
-        public void visit(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        public void visit(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             resolvePlusConfigurations(visitor);
             resolveMinusConfigurations(visitor);
             resolveAuxiliaryArtifacts(visitor);
@@ -67,7 +64,7 @@ public class CustomDependencyResolverDependencySet {
             visitUnresolvedDependencies(visitor);
         }
 
-        private void resolvePlusConfigurations(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private void resolvePlusConfigurations(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (Configuration configuration : plusConfigurations) {
                 Set<ResolvedDependency> artifacts = getResolvedArtifacts(configuration);
                 for (ResolvedDependency resolvedArtifact : artifacts) {
@@ -82,7 +79,7 @@ public class CustomDependencyResolverDependencySet {
             }
         }
 
-        private void resolveMinusConfigurations(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private void resolveMinusConfigurations(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (Configuration configuration : minusConfigurations) {
                 Set<ResolvedDependency> artifacts = getResolvedArtifacts(configuration);
                 for (ResolvedDependency resolvedArtifact : artifacts) {
@@ -102,14 +99,14 @@ public class CustomDependencyResolverDependencySet {
             return configuration.getResolvedConfiguration().getLenientConfiguration().getAllModuleDependencies();
         }
 
-        private Iterable<UnresolvedDependencyResult> getUnresolvedDependencies(Configuration configuration, CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private Iterable<UnresolvedDependencyResult> getUnresolvedDependencies(Configuration configuration, IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             if (visitor.isOffline()) {
                 return Collections.emptySet();
             }
             return Iterables.filter(configuration.getIncoming().getResolutionResult().getRoot().getDependencies(), UnresolvedDependencyResult.class);
         }
 
-        private void resolveAuxiliaryArtifacts(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private void resolveAuxiliaryArtifacts(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             if (visitor.isOffline()) {
                 return;
             }
@@ -261,7 +258,7 @@ public class CustomDependencyResolverDependencySet {
             }
         }
 
-        private void visitArtifacts(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private void visitArtifacts(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (ResolvedArtifact artifact : resolvedArtifacts.values()) {
                 ComponentIdentifier componentIdentifier = artifact.getId().getComponentIdentifier();
                 ComponentArtifactIdentifier artifactIdentifier = artifact.getId();
@@ -288,7 +285,7 @@ public class CustomDependencyResolverDependencySet {
             return true;
         }
 
-        private void visitUnresolvedDependencies(CustomDependencyResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
+        private void visitUnresolvedDependencies(IdeaResolvingDependenciesProvider.CustomDependencyResolvingDependenciesVisitor visitor) {
             for (UnresolvedDependencyResult unresolvedDependency : unresolvedDependencies.values()) {
                 visitor.visitUnresolvedDependency(unresolvedDependency);
             }

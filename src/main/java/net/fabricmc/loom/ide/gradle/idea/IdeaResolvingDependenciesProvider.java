@@ -1,4 +1,4 @@
-package net.fabricmc.loom.ide.idea;
+package net.fabricmc.loom.ide.gradle.idea;
 
 import java.io.File;
 import java.util.Collection;
@@ -22,7 +22,6 @@ import org.gradle.api.artifacts.component.ComponentSelector;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult;
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier;
 import org.gradle.api.internal.project.ProjectInternal;
@@ -37,11 +36,10 @@ import org.gradle.plugins.ide.idea.model.Path;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
 import org.gradle.plugins.ide.idea.model.internal.GeneratedIdeaScope;
 import org.gradle.plugins.ide.internal.IdeArtifactRegistry;
-import org.gradle.plugins.ide.internal.resolver.IdeDependencySet;
 import org.gradle.plugins.ide.internal.resolver.IdeDependencyVisitor;
 import org.gradle.plugins.ide.internal.resolver.UnresolvedIdeDependencyHandler;
 
-public class CustomDependencyResolvingDependenciesProvider {
+public class IdeaResolvingDependenciesProvider {
 
     public static final     String                     SCOPE_PLUS = "plus";
     public static final String                     SCOPE_MINUS = "minus";
@@ -49,7 +47,7 @@ public class CustomDependencyResolvingDependenciesProvider {
     private final CustomDependencyDependenciesOptimizer            optimizer;
     private final ProjectComponentIdentifier                       currentProjectId;
 
-    public CustomDependencyResolvingDependenciesProvider(Project project, IdeArtifactRegistry artifactRegistry, ProjectStateRegistry projectRegistry) {
+    public IdeaResolvingDependenciesProvider(Project project, IdeArtifactRegistry artifactRegistry, ProjectStateRegistry projectRegistry) {
         moduleDependencyBuilder = new CustomDependencyResolvingModuleDependencyBuilder(artifactRegistry);
         currentProjectId = projectRegistry.stateFor(project).getComponentIdentifier();
         optimizer = new CustomDependencyDependenciesOptimizer();
@@ -103,7 +101,7 @@ public class CustomDependencyResolvingDependenciesProvider {
             @Override
             public CustomDependencyResolvingDependenciesVisitor create() {
                 //Use the custom visitor here instead of the gradle internal generic one.
-                new CustomDependencyResolverDependencySet(handler, plusConfigurations, minusConfigurations).visit(visitor);
+                new IdeaResolverDependencySet(handler, plusConfigurations, minusConfigurations).visit(visitor);
                 return visitor;
             }
         });

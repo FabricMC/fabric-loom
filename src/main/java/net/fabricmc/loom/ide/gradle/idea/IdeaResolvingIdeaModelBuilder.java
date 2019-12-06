@@ -1,4 +1,4 @@
-package net.fabricmc.loom.ide.idea;
+package net.fabricmc.loom.ide.gradle.idea;
 
 import java.io.File;
 import java.util.Collections;
@@ -24,7 +24,6 @@ import org.gradle.plugins.ide.idea.model.IdeaModule;
 import org.gradle.plugins.ide.idea.model.IdeaProject;
 import org.gradle.plugins.ide.idea.model.ModuleDependency;
 import org.gradle.plugins.ide.idea.model.SingleEntryModuleLibrary;
-import org.gradle.plugins.ide.idea.model.internal.IdeaDependenciesProvider;
 import org.gradle.plugins.ide.internal.IdeArtifactRegistry;
 import org.gradle.plugins.ide.internal.tooling.GradleProjectBuilder;
 import org.gradle.plugins.ide.internal.tooling.IdeaModelBuilder;
@@ -43,12 +42,12 @@ import org.gradle.plugins.ide.internal.tooling.java.DefaultInstalledJdk;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleModuleVersion;
 import org.gradle.plugins.ide.internal.tooling.model.DefaultGradleProject;
 
-public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder {
+public class IdeaResolvingIdeaModelBuilder extends IdeaModelBuilder {
     private final GradleProjectBuilder gradleProjectBuilder;
 
     private boolean offlineDependencyResolution;
 
-    public CustomDependencyResolvingIdeaModelBuilder(GradleProjectBuilder gradleProjectBuilder, ServiceRegistry services) {
+    public IdeaResolvingIdeaModelBuilder(GradleProjectBuilder gradleProjectBuilder, ServiceRegistry services) {
         super(gradleProjectBuilder, services);
         this.gradleProjectBuilder = gradleProjectBuilder;
     }
@@ -209,7 +208,7 @@ public class CustomDependencyResolvingIdeaModelBuilder extends IdeaModelBuilder 
         IdeArtifactRegistry ideArtifactRegistry = projectInternal.getServices().get(IdeArtifactRegistry.class);
         ProjectStateRegistry projectRegistry = projectInternal.getServices().get(ProjectStateRegistry.class);
 
-        CustomDependencyResolvingDependenciesProvider customDependencyResolvingDependenciesProvider = new CustomDependencyResolvingDependenciesProvider(projectInternal, ideArtifactRegistry, projectRegistry);
-        return customDependencyResolvingDependenciesProvider.provide(ideaModule);
+        IdeaResolvingDependenciesProvider ideaResolvingDependenciesProvider = new IdeaResolvingDependenciesProvider(projectInternal, ideArtifactRegistry, projectRegistry);
+        return ideaResolvingDependenciesProvider.provide(ideaModule);
     }
 }

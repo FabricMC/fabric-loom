@@ -48,6 +48,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import org.gradle.api.plugins.BasePluginConvention;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -284,8 +285,9 @@ public class LoomGradleExtension {
 
 	public String getRefmapName() {
 		if (refmapName == null || refmapName.isEmpty()) {
-			project.getLogger().warn("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
-			refmapName = project.getName() + "-refmap.json";
+			String defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+			project.getLogger().warn("Could not find refmap definition, will be using default name: " + defaultRefmapName);
+			refmapName = defaultRefmapName;
 		}
 
 		return refmapName;

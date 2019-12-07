@@ -61,6 +61,7 @@ dependencies {
 
     //ide's
     implementation ('com.jetbrains.intellij.gradle:gradle:193.5233.102')
+    implementation ('com.jetbrains.intellij.gradle:gradle-tooling-extensions-impl:193.5233.102')
 
 	// Testing
 	testImplementation(gradleTestKit())

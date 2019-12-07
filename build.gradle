@@ -28,8 +28,12 @@ repositories {
 		url = 'https://maven.fabricmc.net/'
 	}
     maven {
-        name = "Jetbrains IntelliJ"
+        name = "Jetbrains IntelliJ - Modules"
         url= "https://www.jetbrains.com/intellij-repository/releases"
+    }
+    maven {
+        name = "Jetbrains IntelliJ - Third Party"
+        url = "https://jetbrains.bintray.com/intellij-third-party-dependencies"
     }
 }
 
@@ -60,8 +64,9 @@ dependencies {
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
 
     //ide's
-    implementation ('com.jetbrains.intellij.gradle:gradle:193.5233.102')
-    implementation ('com.jetbrains.intellij.gradle:gradle-tooling-extensions-impl:193.5233.102')
+    implementation ('com.jetbrains.intellij.gradle:gradle-tooling-extension:192.7142.36')
+    implementation ('com.jetbrains.intellij.gradle:gradle-tooling-extension-impl:192.7142.36')
+    implementation ('com.jetbrains.intellij.platform:external-system-rt:192.7142.36')
 
 	// Testing
 	testImplementation(gradleTestKit())

@@ -1,552 +1,537 @@
 package net.fabricmc.loom.ide.idea;
 
+import static org.jetbrains.plugins.gradle.tooling.builder.ExternalProjectBuilderImpl.getFilters;
+import static org.jetbrains.plugins.gradle.tooling.builder.ModelBuildersDataProviders.TASKS_PROVIDER;
+
 import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
-import com.google.gson.GsonBuilder;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.intellij.openapi.externalSystem.model.project.ExternalSystemSourceType;
 import com.intellij.openapi.externalSystem.model.project.IExternalSystemSourceType;
-import groovy.lang.Closure;
-import groovy.lang.MetaProperty;
-import groovy.lang.Reference;
 import org.codehaus.groovy.runtime.DefaultGroovyMethods;
-import org.codehaus.groovy.runtime.StringGroovyMethods;
-import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.ContentFilterable;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
-import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.gradle.plugins.ide.idea.model.IdeaModule;
 import org.gradle.plugins.ide.idea.model.IdeaProject;
-import org.gradle.plugins.ide.internal.tooling.TasksFactory;
 import org.gradle.tooling.provider.model.ToolingModelBuilder;
 import org.gradle.util.GUtil;
 import org.gradle.util.GradleVersion;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.plugins.gradle.model.ExternalFilter;
+import org.jetbrains.plugins.gradle.model.DefaultExternalFilter;
+import org.jetbrains.plugins.gradle.model.DefaultExternalProject;
+import org.jetbrains.plugins.gradle.model.DefaultExternalSourceDirectorySet;
+import org.jetbrains.plugins.gradle.model.DefaultExternalSourceSet;
+import org.jetbrains.plugins.gradle.model.DefaultExternalTask;
+import org.jetbrains.plugins.gradle.model.ExternalDependency;
 import org.jetbrains.plugins.gradle.model.ExternalProject;
 import org.jetbrains.plugins.gradle.model.ExternalProjectPreview;
 import org.jetbrains.plugins.gradle.model.ExternalSourceDirectorySet;
 import org.jetbrains.plugins.gradle.model.ExternalSourceSet;
-import org.jetbrains.plugins.gradle.tooling.ErrorMessageBuilder;
 import org.jetbrains.plugins.gradle.tooling.ModelBuilderContext;
+import org.jetbrains.plugins.gradle.tooling.builder.ExternalProjectBuilderImpl;
+import org.jetbrains.plugins.gradle.tooling.builder.ProjectExtensionsDataBuilderImpl;
+import org.jetbrains.plugins.gradle.tooling.builder.TasksFactory;
+import org.jetbrains.plugins.gradle.tooling.internal.ExtraModelBuilder;
+import org.jetbrains.plugins.gradle.tooling.util.JavaPluginUtil;
+import org.jetbrains.plugins.gradle.tooling.util.SourceSetCachedFinder;
+import org.jetbrains.plugins.gradle.tooling.util.resolve.DependencyResolverImpl;
 
 public class ExternalModelBuilder implements ToolingModelBuilder {
+
     @Override
     public boolean canBuild(String modelName) {
         return ExternalProject.class.getName().equals(modelName) || ExternalProjectPreview.class.getName().equals(modelName);
     }
 
-    @Nullable
     @Override
-    public Object buildAll(@NotNull final String modelName, @NotNull final Project project) {
+    public Object buildAll(final String modelName, final Project project) {
         if (!project.equals(project.getRootProject())) return null;
 
-        Map<Project, ExternalProject> cache = context.getData(PROJECTS_PROVIDER);
-        Object tasksFactory = context.getData(getProperty("TASKS_PROVIDER"));
-        SourceSetCachedFinder sourceSetFinder = new SourceSetCachedFinder(context);
-        return doBuild(modelName, project, cache, tasksFactory, sourceSetFinder);
+
+        final ModelBuilderContext context = new LoomModelBuilderContext(project);
+        final Map<Project, ExternalProject> cache = context.getData(PROJECTS_PROVIDER);
+        final TasksFactory tasksFactory = context.getData(TASKS_PROVIDER);
+        final LoomSourceSetCachedFinder sourceSetCachedFinder = new LoomSourceSetCachedFinder(context);
+        return doBuild(modelName, project, cache, tasksFactory, sourceSetCachedFinder);
     }
 
-    @Nullable
     private static Object doBuild(
             final String modelName,
-            final Project project,
-            Map<Project, ExternalProject> cache,
-            TasksFactory tasksFactory,
-            SourceSetCachedFinder sourceSetFinder) {
-        ExternalProject externalProject = cache.get(project);
-        if (externalProject != null) return externalProject;
+            final Project gradleProject,
+            final Map<Project, ExternalProject> cache,
+            final TasksFactory tasksFactory,
+            final LoomSourceSetCachedFinder sourceSetFinder) {
 
-        boolean resolveSourceSetDependencies = DefaultGroovyMethods.asType(System.getProperties().idea.resolveSourceSetDependencies, (Class<Object>) Boolean.class);
-        Boolean isPreview = ExternalProjectPreview.class.getName().equals(modelName);
+        boolean resolveSourceSetDependencies = Boolean.parseBoolean(System.getProperties().getProperty("idea.resolveSourceSetDependencies", "true"));
+        boolean isPreview = ExternalProjectPreview.class.getName().equals(modelName);
         DefaultExternalProject defaultExternalProject = new DefaultExternalProject();
-        defaultExternalProject.externalSystemId = "GRADLE";
-        defaultExternalProject.name = project.getName();
-        String qName = ":".equals(project.getPath()) ? project.getName() : project.getPath();
-        defaultExternalProject.QName = qName;
-        final IdeaPlugin ideaPlugin = project.getPlugins().findPlugin(IdeaPlugin.class);
+        defaultExternalProject.setExternalSystemId("GRADLE");
+        defaultExternalProject.setName(gradleProject.getName());
+        String qName = ":".equals(gradleProject.getPath()) ? gradleProject.getName() : gradleProject.getPath();
+        defaultExternalProject.setQName(qName);
+        final IdeaPlugin ideaPlugin = gradleProject.getPlugins().findPlugin(IdeaPlugin.class);
         final IdeaModel model = (ideaPlugin == null ? null : ideaPlugin.getModel());
         IdeaModule ideaPluginModule = (model == null ? null : model.getModule());
-        final Gradle parent = project.getGradle().getParent();
+        final Gradle parent = gradleProject.getGradle().getParent();
         Project parentBuildRootProject = (parent == null ? null : parent.getRootProject());
         final IdeaModel model1 = (ideaPlugin == null ? null : ideaPlugin.getModel());
-        final IdeaProject project = (model1 == null ? null : model1.getProject());
-        final String name = (project == null ? null : ((Project) project).getName());
-        String compositePrefix = parentBuildRootProject && !DefaultGroovyMethods.is(project.getRootProject(), parentBuildRootProject) && !":".equals(project.getPath()) ? (
-                StringGroovyMethods.asBoolean(name)
+        final IdeaProject ideaProject = (model1 == null ? null : model1.getProject());
+        final String name = (ideaProject == null ? null : ((Project) ideaProject).getName());
+        String compositePrefix = parentBuildRootProject != null && !DefaultGroovyMethods.is(gradleProject.getRootProject(), parentBuildRootProject) && !":".equals(gradleProject.getPath()) ? (
+                name != null
                         ? name
-                        : project.getRootProject().getName()) : "";
+                        : gradleProject.getRootProject().getName()) : "";
         final String name1 = (ideaPluginModule == null ? null : ideaPluginModule.getName());
-        String ideaModuleName = StringGroovyMethods.asBoolean(name1) ? name1 : project.getName();
-        defaultExternalProject.id = compositePrefix + (":".equals(project.getPath()) ? ideaModuleName : qName);
-        defaultExternalProject.version = wrap(project.getVersion());
-        defaultExternalProject.description = project.getDescription();
-        defaultExternalProject.buildDir = project.getBuildDir();
-        defaultExternalProject.buildFile = project.getBuildFile();
-        defaultExternalProject.group = wrap(project.getGroup());
-        defaultExternalProject.projectDir = project.getProjectDir();
-        defaultExternalProject.sourceSets = getSourceSets(project, isPreview, resolveSourceSetDependencies, sourceSetFinder);
-        defaultExternalProject.tasks = getTasks(project, tasksFactory);
+        String ideaModuleName = name1 != null ? name1 : ideaProject.getName();
+        defaultExternalProject.setId(compositePrefix + (":".equals(gradleProject.getPath()) ? ideaModuleName : qName));
+        defaultExternalProject.setVersion(wrap(gradleProject.getVersion()));
+        defaultExternalProject.setDescription(gradleProject.getDescription());
+        defaultExternalProject.setBuildDir(gradleProject.getBuildDir());
+        defaultExternalProject.setBuildFile(gradleProject.getBuildFile());
+        defaultExternalProject.setGroup(wrap(gradleProject.getGroup()));
+        defaultExternalProject.setProjectDir(gradleProject.getProjectDir());
+        defaultExternalProject.setSourceSets(getSourceSets(gradleProject, isPreview, resolveSourceSetDependencies, sourceSetFinder));
+        defaultExternalProject.setTasks(getTasks(gradleProject, tasksFactory));
 
-        addArtifactsData(project, defaultExternalProject);
+        addArtifactsData(gradleProject, defaultExternalProject);
 
-        final Map<String, DefaultExternalProject> childProjects = new TreeMap<String, DefaultExternalProject>();
-        for (Map.Entry<String, Project> projectEntry : project.getChildProjects().entrySet()) {
+        final Map<String, DefaultExternalProject> childProjects = new TreeMap<>();
+        for (Map.Entry<String, Project> projectEntry : gradleProject.getChildProjects().entrySet()) {
             final Object externalProjectChild = doBuild(modelName, projectEntry.getValue(), cache, tasksFactory, sourceSetFinder);
             if (externalProjectChild instanceof DefaultExternalProject) {
-                childProjects.put.call(projectEntry.getKey(), (DefaultExternalProject) externalProjectChild);
+                childProjects.put(projectEntry.getKey(), (DefaultExternalProject) externalProjectChild);
             }
             else if (externalProjectChild instanceof ExternalProject) {
                 // convert from proxy to our model class
-                childProjects.put.call(projectEntry.getKey(), new DefaultExternalProject((ExternalProject) externalProjectChild));
+                childProjects.put(projectEntry.getKey(), new DefaultExternalProject((ExternalProject) externalProjectChild));
             }
         }
 
-        defaultExternalProject.invokeMethod("setChildProjects", new Object[] {childProjects});
-        cache.put.call(project, defaultExternalProject);
+        defaultExternalProject.setChildProjects(childProjects);
 
         return defaultExternalProject;
     }
 
-    public static void addArtifactsData(final Project project, DefaultExternalProject externalProject) {
-        final List<File> artifacts = new ArrayList<File>();
-        for (Jar jar : project.getTasks().withType(Jar.class)) {
+    public static void addArtifactsData(final Project gradleProject, DefaultExternalProject externalProject) {
+        final List<File> artifacts = new ArrayList<>();
+        for (Jar jar : gradleProject.getTasks().withType(Jar.class)) {
             try {
                 // TODO use getArchiveFile method since Gradle 5.1
                 artifacts.add(jar.getArchivePath());
             }
             catch (Exception e) {
                 // TODO add reporting for such issues
-                project.getLogger().error("warning: [task " + jar.getPath() + "] " + e.getMessage());
+                gradleProject.getLogger().error("warning: [task " + jar.getPath() + "] " + e.getMessage());
             }
         }
 
-        externalProject.invokeMethod("setArtifacts", new Object[] {artifacts});
+        externalProject.setArtifacts(artifacts);
 
-        SortedMap<String, Configuration> configurationsByName = project.getConfigurations().getAsMap();
-        Map<String, Set<File>> artifactsByConfiguration = new HashMap<String, Set<File>>();
+        SortedMap<String, Configuration> configurationsByName = gradleProject.getConfigurations().getAsMap();
+        Map<String, Set<File>> artifactsByConfiguration = new HashMap<>();
         for (Map.Entry<String, Configuration> configurationEntry : configurationsByName.entrySet()) {
             Set<File> files = configurationEntry.getValue().getArtifacts().getFiles().getFiles();
-            artifactsByConfiguration.put(configurationEntry.getKey(), new LinkedHashSet<File>(files));
+            artifactsByConfiguration.put(configurationEntry.getKey(), new LinkedHashSet<>(files));
         }
 
-        externalProject.invokeMethod("setArtifactsByConfiguration", new Object[] {artifactsByConfiguration});
+        externalProject.setArtifactsByConfiguration(artifactsByConfiguration);
     }
 
-    public static Map<String, DefaultExternalTask> getTasks(Project project, TasksFactory tasksFactory) {
-        Map<String, DefaultExternalTask> result = new Map<String, DefaultExternalTask>() {
-        };
+    public static Map<String, DefaultExternalTask> getTasks(Project gradleProject, TasksFactory tasksFactory) {
+        Map<String, DefaultExternalTask> result = Maps.newHashMap();
 
-        for (Task task : tasksFactory.invokeMethod("getTasks", new Object[] {project})) {
+        for (Task task : tasksFactory.getTasks(gradleProject)) {
             DefaultExternalTask externalTask = result.get(task.getName());
             if (externalTask == null) {
                 externalTask = new DefaultExternalTask();
-                externalTask.name = task.getName();
-                externalTask.QName = task.getName();
-                externalTask.description = task.getDescription();
-                final String group = task.getGroup();
-                externalTask.group = StringGroovyMethods.asBoolean(group) ? group : "other";
+                externalTask.setName(task.getName());
+                externalTask.setQName(task.getName());
+                externalTask.setDescription(task.getDescription());
+                externalTask.setGroup(task.getGroup() != null && !task.getGroup().isEmpty() ? task.getGroup() : "other");
                 final ExtensionContainer extensions = task.getExtensions();
                 ExtraPropertiesExtension ext = (extensions == null ? null : extensions.getExtraProperties());
-                externalTask.test = (task instanceof Test) || (ext.has("idea.internal.test") && Boolean.valueOf(ext.get("idea.internal.test").toString()));
-                externalTask.type = ProjectExtensionsDataBuilderImpl.invokeMethod("getType", new Object[] {task});
-                result.put(externalTask.name, externalTask);
+                externalTask.setTest((task instanceof Test) || (ext.has("idea.internal.test") && Boolean.parseBoolean(String.valueOf(ext.get("idea.internal.test")))));
+                externalTask.setType(ProjectExtensionsDataBuilderImpl.getType(task));
+                result.put(externalTask.getName(), externalTask);
             }
 
 
-            String projectTaskPath = (project.getPath().equals(":") ? ":" : project.getPath() + ":") + task.getName();
+            String projectTaskPath = (gradleProject.getPath().equals(":") ? ":" : gradleProject.getPath() + ":") + task.getName();
             if (projectTaskPath.equals(task.getPath())) {
-                externalTask.QName = task.getPath();
+                externalTask.setQName(task.getPath());
             }
         }
 
-        return ((Map<String, DefaultExternalTask>) (result));
+        return result;
     }
 
     private static Map<String, DefaultExternalSourceSet> getSourceSets(
-            final Project project,
+            final Project gradleProject,
             final boolean isPreview,
             final boolean resolveSourceSetDependencies,
-            final SourceSetCachedFinder sourceSetFinder) {
-        final IdeaPlugin ideaPlugin = project.getPlugins().findPlugin(IdeaPlugin.class);
+            final LoomSourceSetCachedFinder sourceSetFinder) {
+        final IdeaPlugin ideaPlugin = gradleProject.getPlugins().findPlugin(IdeaPlugin.class);
         final IdeaModel model = (ideaPlugin == null ? null : ideaPlugin.getModel());
         final IdeaModule ideaPluginModule = (model == null ? null : model.getModule());
-        final Boolean dirs = (ideaPluginModule == null ? null : ideaPluginModule.getInheritOutputDirs());
-        final boolean inheritOutputDirs = dirs ? dirs : false;
+        final boolean inheritOutputDirs = (ideaPluginModule == null ? null : ideaPluginModule.getInheritOutputDirs());
         final File ideaPluginOutDir = (ideaPluginModule == null ? null : ideaPluginModule.getOutputDir());
         final File ideaPluginTestOutDir = (ideaPluginModule == null ? null : ideaPluginModule.getTestOutputDir());
-        final Reference<Object> generatedSourceDirs = new Reference<Object>(null);
-        final Reference<Object> ideaSourceDirs = new Reference<Object>(null);
-        final Reference<Object> ideaResourceDirs = new Reference<Object>(null);
-        final Reference<Object> ideaTestSourceDirs = new Reference<Object>(null);
-        final Reference<Object> ideaTestResourceDirs = new Reference<Object>(null);
-        final Reference<Boolean> downloadJavadoc = new Reference<Boolean>(false);
-        final Reference<Boolean> downloadSources = new Reference<Boolean>(true);
+        final Set<File> generatedSourceDirs = ideaPluginModule == null ? null : ideaPluginModule.getGeneratedSourceDirs();
+        final Set<File> ideaSourceDirs = ideaPluginModule == null ? null : ideaPluginModule.getSourceDirs();
+        final Set<File> ideaResourceDirs = ideaPluginModule == null ? null : ideaPluginModule.getResourceDirs();
+        final Set<File> ideaTestSourceDirs = ideaPluginModule == null ? null : ideaPluginModule.getTestSourceDirs();
+        final Set<File> ideaTestResourceDirs = ideaPluginModule == null ? null : ideaPluginModule.getTestResourceDirs();
+        final boolean downloadJavadoc = ideaPluginModule != null && ideaPluginModule.isDownloadJavadoc();
+        final boolean downloadSources = ideaPluginModule != null && ideaPluginModule.isDownloadSources();
 
-        if (DefaultGroovyMethods.asBoolean(ideaPluginModule)) {
-            generatedSourceDirs.set(DefaultGroovyMethods.asBoolean(DefaultGroovyMethods.hasProperty(ideaPluginModule, "generatedSourceDirs")) ? new LinkedHashSet<File>(
-                    ideaPluginModule.getGeneratedSourceDirs()) : null);
-            ideaSourceDirs.set(new LinkedHashSet<File>(ideaPluginModule.getSourceDirs()));
-            ideaResourceDirs.set(DefaultGroovyMethods.asBoolean(DefaultGroovyMethods.hasProperty(ideaPluginModule, "resourceDirs"))
-                    ? new LinkedHashSet<File>(ideaPluginModule.getResourceDirs())
-                    : new ArrayList());
-            ideaTestSourceDirs.set(new LinkedHashSet<File>(ideaPluginModule.getTestSourceDirs()));
-            ideaTestResourceDirs.set(DefaultGroovyMethods.asBoolean(DefaultGroovyMethods.hasProperty(ideaPluginModule, "testResourceDirs")) ? new LinkedHashSet<File>(
-                    ideaPluginModule.getTestResourceDirs()) : new ArrayList());
-            downloadJavadoc.set(ideaPluginModule.isDownloadJavadoc());
-            downloadSources.set(ideaPluginModule.isDownloadSources());
-        }
+        JavaPluginConvention javaPluginConvention = JavaPluginUtil.getJavaPluginConvention(gradleProject);
+        final String projectSourceCompatibility = javaPluginConvention != null ? javaPluginConvention.getSourceCompatibility().toString() : "";
+        final String projectTargetCompatibility = javaPluginConvention != null ? javaPluginConvention.getTargetCompatibility().toString() : "";
 
 
-        final Reference<Object> projectSourceCompatibility;
-        final Reference<Object> projectTargetCompatibility;
-
-        Object javaPluginConvention = JavaPluginUtil.invokeMethod("getJavaPluginConvention", new Object[] {project});
-        if (javaPluginConvention != null) {
-            projectSourceCompatibility.set(javaPluginConvention.sourceCompatibility.toString());
-            projectTargetCompatibility.set(javaPluginConvention.targetCompatibility.toString());
-        }
-
-
-        final Map<String, DefaultExternalSourceSet> result = new Map<String, DefaultExternalSourceSet>() {
-        };
-        Object sourceSets = JavaPluginUtil.invokeMethod("getSourceSetContainer", new Object[] {project});
+        final Map<String, DefaultExternalSourceSet> result = Maps.newHashMap();
+        SourceSetContainer sourceSets = JavaPluginUtil.getSourceSetContainer(gradleProject);
         if (sourceSets == null) {
-            return ((Map<String, DefaultExternalSourceSet>) (result));
+            return result;
         }
-
 
         // ignore inherited source sets from parent project
-        Object parentProjectSourceSets = project.getParent() == null ? null : JavaPluginUtil.invokeMethod("getSourceSetContainer", new Object[] {project.getParent()});
-        if (parentProjectSourceSets && DefaultGroovyMethods.is(sourceSets, parentProjectSourceSets)) {
-            return ((Map<String, DefaultExternalSourceSet>) (result));
+        SourceSetContainer parentProjectSourceSets = gradleProject.getParent() == null ? null : JavaPluginUtil.getSourceSetContainer(gradleProject.getParent());
+        if (parentProjectSourceSets != null && sourceSets == parentProjectSourceSets) {
+            return result;
         }
 
+        final Iterator<List> iterator = getFilters(gradleProject, "processResources").iterator();
+        List<String> resourcesIncludes = iterator.hasNext() ? iterator.next() : null;
+        List<String> resourcesExcludes = iterator.hasNext() ? iterator.next() : null;
+        List<DefaultExternalFilter> filterReaders = iterator.hasNext() ? iterator.next() : null;
 
-        final Iterator<List> iterator = getFilters(project, "processResources").iterator();
-        Object resourcesIncludes = iterator.hasNext() ? iterator.next() : null;
-        Object resourcesExcludes = iterator.hasNext() ? iterator.next() : null;
-        Object filterReaders = iterator.hasNext() ? iterator.next() : null;
+        final Iterator<List> iterator1 = getFilters(gradleProject, "processTestResources").iterator();
+        List<String> testResourcesIncludes = iterator1.hasNext() ? iterator1.next() : null;
+        List<String> testResourcesExcludes = iterator1.hasNext() ? iterator1.next() : null;
+        List<DefaultExternalFilter> testFilterReaders = iterator1.hasNext() ? iterator1.next() : null;
 
-        final Iterator<List> iterator1 = getFilters(project, "processTestResources").iterator();
-        Object testResourcesIncludes = iterator1.hasNext() ? iterator1.next() : null;
-        Object testResourcesExcludes = iterator1.hasNext() ? iterator1.next() : null;
-        Object testFilterReaders = iterator1.hasNext() ? iterator1.next() : null;
-
+        //ORION: Commented out in original as well. Leaving here for clarity.
         //def (javaIncludes,javaExcludes) = getFilters(project,'compileJava')
 
-        final Collection<File> additionalIdeaGenDirs = DefaultGroovyMethods.asType(new ArrayList(), Collection.class);
-        if (generatedSourceDirs.get() && !((LinkedHashSet<File>) generatedSourceDirs.get()).isEmpty()) {
-            additionalIdeaGenDirs.addAll(generatedSourceDirs.get());
+        final Collection<File> additionalIdeaGenDirs = Lists.newArrayList();
+        if (generatedSourceDirs != null && !generatedSourceDirs.isEmpty()) {
+            additionalIdeaGenDirs.addAll(generatedSourceDirs);
         }
 
-        sourceSets.invokeMethod("all", new Object[] {new Closure<ExternalSourceSet>(this, this) {
-            public ExternalSourceSet doCall(SourceSet sourceSet) {
-                ExternalSourceSet externalSourceSet = (ExternalSourceSet) new DefaultExternalSourceSet();
-                externalSourceSet.name = sourceSet.getName();
+        sourceSets.all(sourceSet -> {
+            DefaultExternalSourceSet externalSourceSet = new DefaultExternalSourceSet();
+            externalSourceSet.setName(sourceSet.getName());
 
-                Task javaCompileTask = project.getTasks().findByName(sourceSet.getCompileJavaTaskName());
-                if (javaCompileTask instanceof JavaCompile) {
-                    final String compatibility = ((JavaCompile) javaCompileTask).getSourceCompatibility();
-                    externalSourceSet.sourceCompatibility = StringGroovyMethods.asBoolean(compatibility) ? compatibility : projectSourceCompatibility.get();
-                    final String compatibility1 = ((JavaCompile) javaCompileTask).getTargetCompatibility();
-                    externalSourceSet.targetCompatibility = StringGroovyMethods.asBoolean(compatibility1) ? compatibility1 : projectTargetCompatibility.get();
+            Task javaCompileTask = gradleProject.getTasks().findByName(sourceSet.getCompileJavaTaskName());
+            if (javaCompileTask instanceof JavaCompile) {
+                final String compileTaskSourceCompatibility = ((JavaCompile) javaCompileTask).getSourceCompatibility();
+                externalSourceSet.setSourceCompatibility(compileTaskSourceCompatibility != null ? compileTaskSourceCompatibility : projectSourceCompatibility);
+                final String compileTaskTargetCompatibility = ((JavaCompile) javaCompileTask).getTargetCompatibility();
+                externalSourceSet.setTargetCompatibility(compileTaskTargetCompatibility != null ? compileTaskTargetCompatibility : projectTargetCompatibility);
+            }
+            else {
+                externalSourceSet.setSourceCompatibility(projectSourceCompatibility);
+                externalSourceSet.setTargetCompatibility(projectTargetCompatibility);
+            }
+
+
+            Task jarTask = gradleProject.getTasks().findByName(sourceSet.getJarTaskName());
+            if (jarTask instanceof AbstractArchiveTask) {
+                externalSourceSet.setArtifacts(new ArrayList<>(Collections.singletonList(((AbstractArchiveTask) jarTask).getArchivePath())));
+            }
+
+
+            Map<ExternalSystemSourceType, DefaultExternalSourceDirectorySet> sources = Maps.newHashMap();
+            DefaultExternalSourceDirectorySet resourcesDirectorySet = new DefaultExternalSourceDirectorySet();
+            resourcesDirectorySet.setName(sourceSet.getResources().getName());
+            resourcesDirectorySet.setSrcDirs(sourceSet.getResources().getSrcDirs());
+            if (ideaPluginOutDir != null && SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                resourcesDirectorySet.addGradleOutputDir(ideaPluginOutDir);
+            }
+
+            if (ideaPluginTestOutDir != null && SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                resourcesDirectorySet.addGradleOutputDir(ideaPluginTestOutDir);
+            }
+
+            if (is4OrBetter) {
+                if (sourceSet.getOutput().getResourcesDir() != null) {
+                    resourcesDirectorySet.addGradleOutputDir(sourceSet.getOutput().getResourcesDir());
                 }
                 else {
-                    externalSourceSet.sourceCompatibility = projectSourceCompatibility.get();
-                    externalSourceSet.targetCompatibility = projectTargetCompatibility.get();
-                }
-
-
-                Task jarTask = project.getTasks().findByName(sourceSet.getJarTaskName());
-                if (jarTask instanceof AbstractArchiveTask) {
-                    externalSourceSet.artifacts = new ArrayList<File>(Arrays.asList(((AbstractArchiveTask) jarTask).getArchivePath()));
-                }
-
-
-                Map<ExternalSystemSourceType, DefaultExternalSourceDirectorySet> sources = new Map<ExternalSystemSourceType, DefaultExternalSourceDirectorySet>() {
-                };
-                ExternalSourceDirectorySet resourcesDirectorySet = (ExternalSourceDirectorySet) new DefaultExternalSourceDirectorySet();
-                resourcesDirectorySet.name = sourceSet.getResources().getName();
-                resourcesDirectorySet.srcDirs = sourceSet.getResources().getSrcDirs();
-                if (ideaPluginOutDir && SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                    DefaultGroovyMethods.invokeMethod(resourcesDirectorySet, "addGradleOutputDir", new Object[] {ideaPluginOutDir});
-                }
-
-                if (ideaPluginTestOutDir && SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                    DefaultGroovyMethods.invokeMethod(resourcesDirectorySet, "addGradleOutputDir", new Object[] {ideaPluginTestOutDir});
-                }
-
-                if (is4OrBetter) {
-                    if (DefaultGroovyMethods.asBoolean(sourceSet.getOutput().getResourcesDir())) {
-                        DefaultGroovyMethods.invokeMethod(resourcesDirectorySet, "addGradleOutputDir", new Object[] {sourceSet.getOutput().getResourcesDir()});
-                    }
-                    else {
-                        for (File outDir : sourceSet.getOutput().getClassesDirs().getFiles()) {
-                            DefaultGroovyMethods.invokeMethod(resourcesDirectorySet, "addGradleOutputDir", new Object[] {outDir});
-                        }
-
-                        if (resourcesDirectorySet.getGradleOutputDirs().isEmpty()) {
-                            DefaultGroovyMethods.invokeMethod(resourcesDirectorySet, "addGradleOutputDir", new Object[] {project.getBuildDir()});
-                        }
-                    }
-                }
-                else {
-                    DefaultGroovyMethods.invokeMethod(resourcesDirectorySet,
-                            "addGradleOutputDir",
-                            new Object[] {ExternalModelBuilder.chooseNotNull(sourceSet.getOutput().getResourcesDir(),
-                                    sourceSet.getOutput().classesDir,
-                                    project.getBuildDir())});
-                }
-
-
-                File ideaOutDir = new File(project.getProjectDir(),
-                        "out/" + (SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) || (!resolveSourceSetDependencies && !SourceSet.TEST_SOURCE_SET_NAME.equals(
-                                sourceSet.getName())) ? "production" : GUtil.toLowerCamelCase(sourceSet.getName())));
-                resourcesDirectorySet.outputDir = new File(ideaOutDir, "resources");
-                resourcesDirectorySet.inheritedCompilerOutput = inheritOutputDirs;
-
-                ExternalSourceDirectorySet javaDirectorySet = (ExternalSourceDirectorySet) new DefaultExternalSourceDirectorySet();
-                javaDirectorySet.name = sourceSet.getAllJava().getName();
-                javaDirectorySet.srcDirs = sourceSet.getAllJava().getSrcDirs();
-                if (ideaPluginOutDir && SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                    DefaultGroovyMethods.invokeMethod(javaDirectorySet, "addGradleOutputDir", new Object[] {ideaPluginOutDir});
-                }
-
-                if (ideaPluginTestOutDir && SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                    DefaultGroovyMethods.invokeMethod(javaDirectorySet, "addGradleOutputDir", new Object[] {ideaPluginTestOutDir});
-                }
-
-                if (is4OrBetter) {
                     for (File outDir : sourceSet.getOutput().getClassesDirs().getFiles()) {
-                        DefaultGroovyMethods.invokeMethod(javaDirectorySet, "addGradleOutputDir", new Object[] {outDir});
+                        resourcesDirectorySet.addGradleOutputDir(outDir);
                     }
 
-                    if (javaDirectorySet.getGradleOutputDirs().isEmpty()) {
-                        DefaultGroovyMethods.invokeMethod(javaDirectorySet, "addGradleOutputDir", new Object[] {project.getBuildDir()});
+                    if (resourcesDirectorySet.getGradleOutputDirs().isEmpty()) {
+                        resourcesDirectorySet.addGradleOutputDir(gradleProject.getBuildDir());
                     }
                 }
-                else {
-                    DefaultGroovyMethods.invokeMethod(javaDirectorySet,
-                            "addGradleOutputDir",
-                            new Object[] {ExternalModelBuilder.chooseNotNull(sourceSet.getOutput().classesDir, project.getBuildDir())});
+            }
+            else {
+                resourcesDirectorySet.addGradleOutputDir((File) ExternalProjectBuilderImpl.chooseNotNull(sourceSet.getOutput().getResourcesDir(),
+                                sourceSet.getOutput().getClassesDirs(),
+                                gradleProject.getBuildDir()));
+            }
+
+
+            File ideaOutDir = new File(gradleProject.getProjectDir(),
+                            "out/" + (SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) || (!resolveSourceSetDependencies && !SourceSet.TEST_SOURCE_SET_NAME.equals(
+                                            sourceSet.getName())) ? "production" : GUtil.toLowerCamelCase(sourceSet.getName())));
+            resourcesDirectorySet.setOutputDir(new File(ideaOutDir, "resources"));
+            resourcesDirectorySet.setInheritedCompilerOutput(inheritOutputDirs);
+
+            DefaultExternalSourceDirectorySet javaDirectorySet = new DefaultExternalSourceDirectorySet();
+            javaDirectorySet.setName(sourceSet.getAllJava().getName());
+            javaDirectorySet.setSrcDirs(sourceSet.getAllJava().getSrcDirs());
+            if (ideaPluginOutDir != null && SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                javaDirectorySet.addGradleOutputDir(ideaPluginOutDir);
+            }
+
+            if (ideaPluginTestOutDir != null && SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                javaDirectorySet.addGradleOutputDir(ideaPluginTestOutDir);
+            }
+
+            if (is4OrBetter) {
+                for (File outDir : sourceSet.getOutput().getClassesDirs().getFiles()) {
+                    javaDirectorySet.addGradleOutputDir(outDir);
                 }
 
+                if (javaDirectorySet.getGradleOutputDirs().isEmpty()) {
+                    javaDirectorySet.addGradleOutputDir(gradleProject.getBuildDir());
+                }
+            }
+            else {
+                javaDirectorySet.addGradleOutputDir(
+                                (File) ExternalProjectBuilderImpl.chooseNotNull(sourceSet.getOutput().getClassesDirs(), gradleProject.getBuildDir())
+                );
+            }
 
-                javaDirectorySet.outputDir = new File(ideaOutDir, "classes");
-                javaDirectorySet.inheritedCompilerOutput = inheritOutputDirs;
+
+            javaDirectorySet.setOutputDir(new File(ideaOutDir, "classes"));
+            javaDirectorySet.setInheritedCompilerOutput(inheritOutputDirs);
+            //ORION: Commented out in the original as well. Leaving here for clarity.
 //      javaDirectorySet.excludes = javaExcludes + sourceSet.java.excludes;
 //      javaDirectorySet.includes = javaIncludes + sourceSet.java.includes;
 
-                DefaultExternalSourceDirectorySet generatedDirectorySet = null;
-                Boolean hasExplicitlyDefinedGeneratedSources =
-                        generatedSourceDirs.get() && !DefaultGroovyMethods.asBoolean(generatedSourceDirs.get().invokeMethod("isEmpty", new Object[0]));
-                if (hasExplicitlyDefinedGeneratedSources) {
+            DefaultExternalSourceDirectorySet generatedDirectorySet = null;
+            boolean hasExplicitlyDefinedGeneratedSources =
+                            generatedSourceDirs != null && !generatedSourceDirs.isEmpty();
+            if (hasExplicitlyDefinedGeneratedSources) {
 
-                    HashSet<File> files = new HashSet<File>();
-                    for (File file : generatedSourceDirs.get()) {
-                        if (javaDirectorySet.getSrcDirs().contains(file)) {
-                            files.add(file);
-                        }
+                HashSet<File> files = new HashSet<>();
+                for (File file : generatedSourceDirs) {
+                    if (javaDirectorySet.getSrcDirs().contains(file)) {
+                        files.add(file);
                     }
-
-
-                    if (!files.isEmpty()) {
-                        javaDirectorySet.getSrcDirs().removeAll(files);
-                        generatedDirectorySet = new DefaultExternalSourceDirectorySet();
-                        generatedDirectorySet.name = "generated " + javaDirectorySet.getName();
-                        generatedDirectorySet.srcDirs = files;
-                        for (File file : javaDirectorySet.getGradleOutputDirs()) {
-                            generatedDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {file});
-                        }
-
-                        generatedDirectorySet.outputDir = javaDirectorySet.getOutputDir();
-                        generatedDirectorySet.inheritedCompilerOutput = javaDirectorySet.isCompilerOutputPathInherited();
-                    }
-
-                    additionalIdeaGenDirs.removeAll(files);
                 }
 
 
-                if (SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                    if (!inheritOutputDirs && ideaPluginTestOutDir != null) {
-                        javaDirectorySet.outputDir = ideaPluginTestOutDir;
-                        resourcesDirectorySet.outputDir = ideaPluginTestOutDir;
+                if (!files.isEmpty()) {
+                    javaDirectorySet.getSrcDirs().removeAll(files);
+                    generatedDirectorySet = new DefaultExternalSourceDirectorySet();
+                    generatedDirectorySet.setName("generated " + javaDirectorySet.getName());
+                    generatedDirectorySet.setSrcDirs(files);
+                    for (File file : javaDirectorySet.getGradleOutputDirs()) {
+                        generatedDirectorySet.addGradleOutputDir(file);
                     }
 
-                    resourcesDirectorySet.excludes = testResourcesExcludes + sourceSet.getResources().getExcludes();
-                    resourcesDirectorySet.includes = testResourcesIncludes + sourceSet.getResources().getIncludes();
-                    resourcesDirectorySet.filters = testFilterReaders;
+                    generatedDirectorySet.setOutputDir(javaDirectorySet.getOutputDir());
+                    generatedDirectorySet.setInheritedCompilerOutput(javaDirectorySet.isCompilerOutputPathInherited());
+                }
+
+                additionalIdeaGenDirs.removeAll(files);
+            }
+
+
+            if (SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                if (!inheritOutputDirs && ideaPluginTestOutDir != null) {
+                    javaDirectorySet.setOutputDir( ideaPluginTestOutDir);
+                    resourcesDirectorySet.setOutputDir(ideaPluginTestOutDir);
+                }
+
+                final Set<String> resourceDirectoryExcludes = Sets.newHashSet(testResourcesExcludes);
+                resourceDirectoryExcludes.addAll(sourceSet.getResources().getExcludes());
+                resourcesDirectorySet.setExcludes(resourceDirectoryExcludes);
+
+                final Set<String> resourceDirectoryIncludes = Sets.newHashSet(testResourcesIncludes);
+                resourceDirectoryIncludes.addAll(sourceSet.getResources().getIncludes());
+                resourcesDirectorySet.setIncludes(resourceDirectoryIncludes);
+
+                resourcesDirectorySet.setFilters(Lists.newArrayList(testFilterReaders));
+                sources.put(ExternalSystemSourceType.TEST, javaDirectorySet);
+                sources.put(ExternalSystemSourceType.TEST_RESOURCE, resourcesDirectorySet);
+                if (generatedDirectorySet != null) {
+                    sources.put(ExternalSystemSourceType.TEST_GENERATED, generatedDirectorySet);
+                }
+            }
+            else {
+                boolean isTestSourceSet = false;
+                if (!inheritOutputDirs && resolveSourceSetDependencies && !SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) && ideaTestSourceDirs != null
+                                    && ideaTestSourceDirs.containsAll(javaDirectorySet.getSrcDirs())) {
+                    javaDirectorySet.setOutputDir(
+                                    ideaPluginTestOutDir != null ? ideaPluginTestOutDir : new File(gradleProject.getProjectDir(), "out/test/classes"));
+                    resourcesDirectorySet.setOutputDir(
+                                    ideaPluginTestOutDir != null ? ideaPluginTestOutDir : new File(gradleProject.getProjectDir(), "out/test/resources"));
                     sources.put(ExternalSystemSourceType.TEST, javaDirectorySet);
                     sources.put(ExternalSystemSourceType.TEST_RESOURCE, resourcesDirectorySet);
-                    if (generatedDirectorySet.asBoolean()) {
-                        sources.put.call(ExternalSystemSourceType.TEST_GENERATED, generatedDirectorySet);
+                    isTestSourceSet = true;
+                }
+                else if (!inheritOutputDirs && ideaPluginOutDir != null) {
+                    javaDirectorySet.setOutputDir(ideaPluginOutDir);
+                    resourcesDirectorySet.setOutputDir(ideaPluginOutDir);
+                }
+
+                final Set<String> resourceDirectoryExcludes = Sets.newHashSet(resourcesExcludes);
+                resourceDirectoryExcludes.addAll(sourceSet.getResources().getExcludes());
+                resourcesDirectorySet.setExcludes(resourceDirectoryExcludes);
+
+                final Set<String> resourceDirectoryIncludes = Sets.newHashSet(resourcesIncludes);
+                resourceDirectoryIncludes.addAll(sourceSet.getResources().getIncludes());
+                resourcesDirectorySet.setIncludes(resourceDirectoryIncludes);
+
+                resourcesDirectorySet.setFilters(Lists.newArrayList(filterReaders));
+
+                if (!isTestSourceSet) {
+                    sources.put(ExternalSystemSourceType.SOURCE, javaDirectorySet);
+                    sources.put(ExternalSystemSourceType.RESOURCE, resourcesDirectorySet);
+                }
+
+
+                if (!resolveSourceSetDependencies && ideaTestSourceDirs != null) {
+                    Set<File> testDirs = javaDirectorySet.getSrcDirs().stream().filter(ideaTestSourceDirs::contains).collect(Collectors.toSet());
+                    if (!testDirs.isEmpty()) {
+                        javaDirectorySet.getSrcDirs().removeAll(ideaTestSourceDirs);
+                        DefaultExternalSourceDirectorySet testDirectorySet = new DefaultExternalSourceDirectorySet();
+                        testDirectorySet.setName(javaDirectorySet.getName());
+                        testDirectorySet.setSrcDirs(testDirs);
+                        testDirectorySet.addGradleOutputDir(javaDirectorySet.getOutputDir());
+                        testDirectorySet.setOutputDir(
+                                        ideaPluginTestOutDir != null ? ideaPluginTestOutDir : new File(gradleProject.getProjectDir(), "out/test/classes"));
+                        testDirectorySet.setInheritedCompilerOutput(javaDirectorySet.isCompilerOutputPathInherited());
+                        sources.put(ExternalSystemSourceType.TEST, testDirectorySet);
+                    }
+
+
+                    Set<File> testResourcesDirs = resourcesDirectorySet.getSrcDirs().stream().filter(ideaTestSourceDirs::contains).collect(Collectors.toSet());
+                    if (!testResourcesDirs.isEmpty()) {
+                        resourcesDirectorySet.getSrcDirs().removeAll(ideaTestSourceDirs);
+
+                        DefaultExternalSourceDirectorySet testResourcesDirectorySet = new DefaultExternalSourceDirectorySet();
+                        testResourcesDirectorySet.setName(resourcesDirectorySet.getName());
+                        testResourcesDirectorySet.setSrcDirs(testResourcesDirs);
+                        testResourcesDirectorySet.addGradleOutputDir(resourcesDirectorySet.getOutputDir());
+                        testResourcesDirectorySet.setOutputDir(
+                                        ideaPluginTestOutDir != null ? ideaPluginTestOutDir : new File(gradleProject.getProjectDir(), "out/test/resources"));
+                        testResourcesDirectorySet.setInheritedCompilerOutput(resourcesDirectorySet.isCompilerOutputPathInherited());
+                        sources.put(ExternalSystemSourceType.TEST_RESOURCE, testResourcesDirectorySet);
                     }
                 }
-                else {
-                    boolean isTestSourceSet = false;
-                    if (!inheritOutputDirs && resolveSourceSetDependencies && !SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) && ideaTestSourceDirs.get()
-                            && ((Collection) ideaTestSourceDirs.get()).containsAll(javaDirectorySet.getSrcDirs())) {
-                        javaDirectorySet.outputDir =
-                                DefaultGroovyMethods.asBoolean(ideaPluginTestOutDir) ? ideaPluginTestOutDir : new File(project.getProjectDir(), "out/test/classes");
-                        resourcesDirectorySet.outputDir =
-                                DefaultGroovyMethods.asBoolean(ideaPluginTestOutDir) ? ideaPluginTestOutDir : new File(project.getProjectDir(), "out/test/resources");
-                        sources.put(ExternalSystemSourceType.TEST, javaDirectorySet);
-                        sources.put(ExternalSystemSourceType.TEST_RESOURCE, resourcesDirectorySet);
-                        isTestSourceSet = true;
-                    }
-                    else if (!inheritOutputDirs && ideaPluginOutDir != null) {
-                        javaDirectorySet.outputDir = ideaPluginOutDir;
-                        resourcesDirectorySet.outputDir = ideaPluginOutDir;
-                    }
 
 
-                    resourcesDirectorySet.excludes = resourcesExcludes + sourceSet.getResources().getExcludes();
-                    resourcesDirectorySet.includes = resourcesIncludes + sourceSet.getResources().getIncludes();
-                    resourcesDirectorySet.filters = filterReaders;
-                    if (!isTestSourceSet) {
-                        sources.put(ExternalSystemSourceType.SOURCE, javaDirectorySet);
-                        sources.put(ExternalSystemSourceType.RESOURCE, resourcesDirectorySet);
-                    }
+                if (generatedDirectorySet != null) {
+                    sources.put(ExternalSystemSourceType.SOURCE_GENERATED, generatedDirectorySet);
+                    if (!resolveSourceSetDependencies && ideaTestSourceDirs != null) {
+                        Set<File> testGeneratedDirs = generatedDirectorySet.getSrcDirs().stream().filter(ideaTestSourceDirs::contains).collect(Collectors.toSet());
+                        if (!testGeneratedDirs.isEmpty()) {
+                            generatedDirectorySet.getSrcDirs().removeAll(ideaTestSourceDirs);
 
+                            DefaultExternalSourceDirectorySet testGeneratedDirectorySet = new DefaultExternalSourceDirectorySet();
+                            testGeneratedDirectorySet.setName(generatedDirectorySet.getName());
+                            testGeneratedDirectorySet.setSrcDirs(testGeneratedDirs);
+                            testGeneratedDirectorySet.addGradleOutputDir(generatedDirectorySet.getOutputDir());
+                            testGeneratedDirectorySet.setOutputDir(generatedDirectorySet.getOutputDir());
+                            testGeneratedDirectorySet.setInheritedCompilerOutput(generatedDirectorySet.isCompilerOutputPathInherited());
 
-                    if (!resolveSourceSetDependencies && ideaTestSourceDirs.get()) {
-                        Collection<File> testDirs = DefaultGroovyMethods.intersect(javaDirectorySet.getSrcDirs(), (Collection) ideaTestSourceDirs.get());
-                        if (!testDirs.isEmpty()) {
-                            javaDirectorySet.getSrcDirs().removeAll(ideaTestSourceDirs.get());
-
-                            DefaultExternalSourceDirectorySet testDirectorySet = new DefaultExternalSourceDirectorySet();
-                            testDirectorySet.name = javaDirectorySet.getName();
-                            testDirectorySet.srcDirs = testDirs;
-                            testDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {javaDirectorySet.getOutputDir()});
-                            testDirectorySet.outputDir =
-                                    DefaultGroovyMethods.asBoolean(ideaPluginTestOutDir) ? ideaPluginTestOutDir : new File(project.getProjectDir(), "out/test/classes");
-                            testDirectorySet.inheritedCompilerOutput = javaDirectorySet.isCompilerOutputPathInherited();
-                            sources.put.call(ExternalSystemSourceType.TEST, testDirectorySet);
-                        }
-
-
-                        Collection<File> testResourcesDirs = DefaultGroovyMethods.intersect(resourcesDirectorySet.getSrcDirs(), (Collection) ideaTestSourceDirs.get());
-                        if (!testResourcesDirs.isEmpty()) {
-                            resourcesDirectorySet.getSrcDirs().removeAll(ideaTestSourceDirs.get());
-
-                            DefaultExternalSourceDirectorySet testResourcesDirectorySet = new DefaultExternalSourceDirectorySet();
-                            testResourcesDirectorySet.name = resourcesDirectorySet.getName();
-                            testResourcesDirectorySet.srcDirs = testResourcesDirs;
-                            testResourcesDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {resourcesDirectorySet.getOutputDir()});
-                            testResourcesDirectorySet.outputDir =
-                                    DefaultGroovyMethods.asBoolean(ideaPluginTestOutDir) ? ideaPluginTestOutDir : new File(project.getProjectDir(), "out/test/resources");
-                            testResourcesDirectorySet.inheritedCompilerOutput = resourcesDirectorySet.isCompilerOutputPathInherited();
-                            sources.put.call(ExternalSystemSourceType.TEST_RESOURCE, testResourcesDirectorySet);
-                        }
-                    }
-
-
-                    if (generatedDirectorySet.asBoolean()) {
-                        sources.put.call(ExternalSystemSourceType.SOURCE_GENERATED, generatedDirectorySet);
-                        if (!resolveSourceSetDependencies && ideaTestSourceDirs.get()) {
-                            Object testGeneratedDirs = generatedDirectorySet.srcDirs.invokeMethod("intersect", new Object[] {(Collection) ideaTestSourceDirs.get()});
-                            if (!DefaultGroovyMethods.asBoolean(testGeneratedDirs.invokeMethod("isEmpty", new Object[0]))) {
-                                generatedDirectorySet.srcDirs.invokeMethod("removeAll", new Object[] {ideaTestSourceDirs.get()});
-
-                                DefaultExternalSourceDirectorySet testGeneratedDirectorySet = new DefaultExternalSourceDirectorySet();
-                                testGeneratedDirectorySet.name = generatedDirectorySet.name;
-                                testGeneratedDirectorySet.srcDirs = testGeneratedDirs;
-                                testGeneratedDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {generatedDirectorySet.outputDir});
-                                testGeneratedDirectorySet.outputDir = generatedDirectorySet.outputDir;
-                                testGeneratedDirectorySet.inheritedCompilerOutput = generatedDirectorySet.invokeMethod("isCompilerOutputPathInherited", new Object[0]);
-
-                                sources.put.call(ExternalSystemSourceType.TEST_GENERATED, testGeneratedDirectorySet);
-                            }
-                        }
-                    }
-
-
-                    if (ideaPluginModule && !SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) && !SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-                        for (DefaultExternalSourceDirectorySet sourceDirectorySet : sources.values()) {
-                            ideaSourceDirs.get().invokeMethod("removeAll", new Object[] {sourceDirectorySet.srcDirs});
-                            ideaResourceDirs.get().invokeMethod("removeAll", new Object[] {sourceDirectorySet.srcDirs});
-                            ideaTestSourceDirs.get().invokeMethod("removeAll", new Object[] {sourceDirectorySet.srcDirs});
-                            ideaTestResourceDirs.get().invokeMethod("removeAll", new Object[] {sourceDirectorySet.srcDirs});
+                            sources.put(ExternalSystemSourceType.TEST_GENERATED, testGeneratedDirectorySet);
                         }
                     }
                 }
 
 
-                if (resolveSourceSetDependencies) {
-                    Object dependencies = new DependencyResolverImpl(project,
-                            isPreview,
-                            downloadJavadoc.get(),
-                            downloadSources.get(),
-                            sourceSetFinder).invokeMethod("resolveDependencies", new Object[] {sourceSet});
-                    DefaultGroovyMethods.invokeMethod(externalSourceSet.getDependencies(), "addAll", new Object[] {dependencies});
+                if (ideaPluginModule != null && !SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName()) && !SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+                    for (DefaultExternalSourceDirectorySet sourceDirectorySet : sources.values()) {
+                        ideaSourceDirs.removeAll(sourceDirectorySet.getSrcDirs());
+                        ideaResourceDirs.removeAll(sourceDirectorySet.getSrcDirs());
+                        ideaTestSourceDirs.removeAll(sourceDirectorySet.getSrcDirs());
+                        ideaTestResourceDirs.removeAll(sourceDirectorySet.getSrcDirs());
+                    }
                 }
-
-
-                externalSourceSet.sources = sources;
-                result.put(sourceSet.getName(), externalSourceSet);
-                return externalSourceSet;
             }
-        }});
+
+
+            if (resolveSourceSetDependencies) {
+                Collection<ExternalDependency> dependencies = new DependencyResolverImpl(gradleProject,
+                                isPreview,
+                                downloadJavadoc,
+                                downloadSources,
+                                sourceSetFinder).resolveDependencies(sourceSet);
+                externalSourceSet.getDependencies().addAll(dependencies);
+            }
+
+
+            externalSourceSet.setSources(sources);
+            result.put(sourceSet.getName(), externalSourceSet);
+        });
 
         DefaultExternalSourceSet mainSourceSet = result.get(SourceSet.MAIN_SOURCE_SET_NAME);
-        if (ideaPluginModule && mainSourceSet && ideaSourceDirs.get() && !((LinkedHashSet<File>) ideaSourceDirs.get()).isEmpty()) {
-            Object mainGradleSourceSet = sourceSets.invokeMethod("findByName", new Object[] {SourceSet.MAIN_SOURCE_SET_NAME});
-            if (mainGradleSourceSet.asBoolean()) {
-                Object mainSourceDirectorySet = mainSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.SOURCE});
-                if (mainSourceDirectorySet.asBoolean()) {
-                    mainSourceDirectorySet.srcDirs.invokeMethod("addAll",
-                            new Object[] {ideaSourceDirs.get() - (mainGradleSourceSet.resources.srcDirs + generatedSourceDirs.get())});
+        if (ideaPluginModule != null && mainSourceSet != null && ideaSourceDirs != null && !ideaSourceDirs.isEmpty()) {
+            SourceSet mainGradleSourceSet = sourceSets.findByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            if (mainGradleSourceSet != null) {
+                ExternalSourceDirectorySet mainSourceDirectorySet = mainSourceSet.getSources().get(ExternalSystemSourceType.SOURCE);
+                if (mainSourceDirectorySet!= null) {
+                    mainSourceDirectorySet.getSrcDirs().addAll(ideaSourceDirs.stream().filter(file -> !mainGradleSourceSet.getResources().getSrcDirs().contains(file)).filter(file -> generatedSourceDirs == null || !generatedSourceDirs.contains(file)).collect(
+                                    Collectors.toSet()));
                 }
 
-                Object mainResourceDirectorySet = mainSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.RESOURCE});
-                if (mainResourceDirectorySet.asBoolean()) {
-                    mainResourceDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {ideaResourceDirs.get()});
+                ExternalSourceDirectorySet mainResourceDirectorySet = mainSourceSet.getSources().get(ExternalSystemSourceType.RESOURCE);
+                if (mainResourceDirectorySet != null) {
+                    mainResourceDirectorySet.getSrcDirs().addAll(ideaResourceDirs);
                 }
 
 
                 if (!additionalIdeaGenDirs.isEmpty()) {
-                    Collection<File> mainAdditionalGenDirs = DefaultGroovyMethods.intersect(additionalIdeaGenDirs, ideaSourceDirs.get());
-                    Object mainGenSourceDirectorySet = mainSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.SOURCE_GENERATED});
-                    if (mainGenSourceDirectorySet.asBoolean()) {
-                        mainGenSourceDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {mainAdditionalGenDirs});
+                    Collection<File> mainAdditionalGenDirs = additionalIdeaGenDirs.stream().filter(ideaSourceDirs::contains).collect(Collectors.toSet());
+                    ExternalSourceDirectorySet mainGenSourceDirectorySet = mainSourceSet.getSources().get(ExternalSystemSourceType.SOURCE_GENERATED);
+                    if (mainGenSourceDirectorySet != null) {
+                        mainGenSourceDirectorySet.getSrcDirs().addAll(mainAdditionalGenDirs);
                     }
                     else {
                         DefaultExternalSourceDirectorySet generatedDirectorySet = new DefaultExternalSourceDirectorySet();
-                        generatedDirectorySet.name = "generated " + mainSourceSet.name;
-                        generatedDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {mainAdditionalGenDirs});
-                        generatedDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {mainSourceDirectorySet.outputDir});
-                        generatedDirectorySet.outputDir = mainSourceDirectorySet.outputDir;
-                        generatedDirectorySet.inheritedCompilerOutput = mainSourceDirectorySet.invokeMethod("isCompilerOutputPathInherited", new Object[0]);
-                        mainSourceSet.sources.invokeMethod("put", new Object[] {ExternalSystemSourceType.SOURCE_GENERATED, generatedDirectorySet});
+                        generatedDirectorySet.setName("generated " + mainSourceSet.getName());
+                        generatedDirectorySet.getSrcDirs().addAll(mainAdditionalGenDirs);
+                        generatedDirectorySet.addGradleOutputDir(mainSourceDirectorySet.getOutputDir());
+                        generatedDirectorySet.setOutputDir(mainSourceDirectorySet.getOutputDir());
+                        generatedDirectorySet.setInheritedCompilerOutput(mainSourceDirectorySet.isCompilerOutputPathInherited());
+
+                        ((Map) mainSourceSet.getSources()).put(ExternalSystemSourceType.SOURCE_GENERATED, generatedDirectorySet);
                     }
                 }
             }
@@ -554,73 +539,64 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
 
 
         DefaultExternalSourceSet testSourceSet = result.get(SourceSet.TEST_SOURCE_SET_NAME);
-        if (ideaPluginModule && testSourceSet && ideaTestSourceDirs.get() && !((LinkedHashSet<File>) ideaTestSourceDirs.get()).isEmpty()) {
-            Object testGradleSourceSet = sourceSets.invokeMethod("findByName", new Object[] {SourceSet.TEST_SOURCE_SET_NAME});
-            if (testGradleSourceSet.asBoolean()) {
-                Object testSourceDirectorySet = testSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.TEST});
-                if (testSourceDirectorySet.asBoolean()) {
-                    testSourceDirectorySet.srcDirs.invokeMethod("addAll",
-                            new Object[] {ideaTestSourceDirs.get() - (testGradleSourceSet.resources.srcDirs + generatedSourceDirs.get())});
+        if (ideaPluginModule != null && testSourceSet != null && ideaTestSourceDirs != null && !ideaTestSourceDirs.isEmpty()) {
+            SourceSet testGradleSourceSet = sourceSets.findByName(SourceSet.TEST_SOURCE_SET_NAME);
+            if (testGradleSourceSet != null) {
+                ExternalSourceDirectorySet testSourceDirectorySet = testSourceSet.getSources().get(ExternalSystemSourceType.TEST);
+                if (testSourceDirectorySet != null) {
+                    testSourceDirectorySet.getSrcDirs().addAll(ideaTestSourceDirs.stream().filter(file -> !testGradleSourceSet.getResources().getSrcDirs().contains(file)).filter(file -> generatedSourceDirs == null || !generatedSourceDirs.contains(file)).collect(
+                                    Collectors.toSet()));
                 }
 
-                Object testResourceDirectorySet = testSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.TEST_RESOURCE});
-                if (testResourceDirectorySet.asBoolean()) {
-                    testResourceDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {ideaTestResourceDirs.get()});
+                ExternalSourceDirectorySet testResourceDirectorySet = testSourceSet.getSources().get(ExternalSystemSourceType.TEST_RESOURCE);
+                if (testResourceDirectorySet != null) {
+                    testResourceDirectorySet.getSrcDirs().addAll(ideaTestResourceDirs);
                 }
 
 
                 if (!additionalIdeaGenDirs.isEmpty()) {
-                    Collection<File> testAdditionalGenDirs = DefaultGroovyMethods.intersect(additionalIdeaGenDirs, ideaTestSourceDirs.get());
-                    Object testGenSourceDirectorySet = testSourceSet.sources.invokeMethod("get", new Object[] {ExternalSystemSourceType.TEST_GENERATED});
-                    if (testGenSourceDirectorySet.asBoolean()) {
-                        testGenSourceDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {testAdditionalGenDirs});
+                    Set<File> testAdditionalGenDirs = additionalIdeaGenDirs.stream().filter(ideaTestSourceDirs::contains).collect(Collectors.toSet());
+                    ExternalSourceDirectorySet testGenSourceDirectorySet = testSourceSet.getSources().get(ExternalSystemSourceType.TEST_GENERATED);
+                    if (testGenSourceDirectorySet != null) {
+                        testGenSourceDirectorySet.getSrcDirs().addAll(testAdditionalGenDirs);
                     }
                     else {
                         DefaultExternalSourceDirectorySet generatedDirectorySet = new DefaultExternalSourceDirectorySet();
-                        generatedDirectorySet.name = "generated " + testSourceSet.name;
-                        generatedDirectorySet.srcDirs.invokeMethod("addAll", new Object[] {testAdditionalGenDirs});
-                        generatedDirectorySet.invokeMethod("addGradleOutputDir", new Object[] {testSourceDirectorySet.outputDir});
-                        generatedDirectorySet.outputDir = testSourceDirectorySet.outputDir;
-                        generatedDirectorySet.inheritedCompilerOutput = testSourceDirectorySet.invokeMethod("isCompilerOutputPathInherited", new Object[0]);
-                        testSourceSet.sources.invokeMethod("put", new Object[] {ExternalSystemSourceType.TEST_GENERATED, generatedDirectorySet});
+                        generatedDirectorySet.setName("generated " + testSourceSet.getName());
+                        generatedDirectorySet.getSrcDirs().addAll(testAdditionalGenDirs);
+                        generatedDirectorySet.addGradleOutputDir(testSourceDirectorySet.getOutputDir());
+                        generatedDirectorySet.setOutputDir(testSourceDirectorySet.getOutputDir());
+                        generatedDirectorySet.setInheritedCompilerOutput(testSourceDirectorySet.isCompilerOutputPathInherited());
+
+
+                        ((Map) testSourceSet.getSources()).put(ExternalSystemSourceType.TEST_GENERATED, generatedDirectorySet);
                     }
                 }
             }
         }
 
-
         cleanupSharedSourceFolders(result);
 
-        return ((Map<String, DefaultExternalSourceSet>) (result));
+        return result;
     }
 
-    private static boolean isEmpty(FileCollection collection) {
-        try {
-            return collection.isEmpty();
-        }
-        catch (Throwable ignored) {
-        }
 
-        return true;
-    }
-
-    private static void cleanupSharedSourceFolders(Map<String, ExternalSourceSet> map) {
+    private static void cleanupSharedSourceFolders(Map<String, DefaultExternalSourceSet> map) {
         ExternalSourceSet mainSourceSet = map.get(SourceSet.MAIN_SOURCE_SET_NAME);
         cleanupSharedSourceFolders(map, mainSourceSet, null);
         cleanupSharedSourceFolders(map, map.get(SourceSet.TEST_SOURCE_SET_NAME), mainSourceSet);
     }
 
-    private static void cleanupSharedSourceFolders(Map<String, ExternalSourceSet> result, ExternalSourceSet sourceSet, ExternalSourceSet toIgnore) {
-        if (!DefaultGroovyMethods.asBoolean(sourceSet)) return;
+    private static void cleanupSharedSourceFolders(Map<String, DefaultExternalSourceSet> result, ExternalSourceSet sourceSet, ExternalSourceSet toIgnore) {
+        if (sourceSet == null) return;
 
-
-        for (Map.Entry<String, ExternalSourceSet> sourceSetEntry : result.entrySet()) {
+        for (Map.Entry<String, DefaultExternalSourceSet> sourceSetEntry : result.entrySet()) {
             if (!DefaultGroovyMethods.is(sourceSetEntry.getValue(), sourceSet) && !DefaultGroovyMethods.is(sourceSetEntry.getValue(), toIgnore)) {
                 ExternalSourceSet customSourceSet = sourceSetEntry.getValue();
                 for (ExternalSystemSourceType sourceType : ExternalSystemSourceType.values()) {
                     ExternalSourceDirectorySet customSourceDirectorySet =
                             DefaultGroovyMethods.asType(customSourceSet.getSources().get(sourceType), ExternalSourceDirectorySet.class);
-                    if (DefaultGroovyMethods.asBoolean(customSourceDirectorySet)) {
+                    if (customSourceDirectorySet != null) {
                         for (Map.Entry<? extends IExternalSystemSourceType, ? extends ExternalSourceDirectorySet> sourceDirEntry : sourceSet.getSources().entrySet()) {
                             customSourceDirectorySet.getSrcDirs().removeAll(sourceDirEntry.getValue().getSrcDirs());
                         }
@@ -630,131 +606,8 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
         }
     }
 
-    public static <T> T chooseNotNull(T... params) {
-        //noinspection GrUnresolvedAccess
-        return ((T) (DefaultGroovyMethods.findResult(params, "", new Closure<T>(null, null) {
-            public T doCall(T it) {return it;}
-
-            public T doCall() {
-                return doCall(null);
-            }
-        })));
-    }
-
-    public static List<List> getFilters(Project project, String taskName) {
-        List<Object> includes = new ArrayList();
-        List<Object> excludes = new ArrayList();
-        final List<ExternalFilter> filterReaders = DefaultGroovyMethods.asType(new ArrayList(), List.class);
-        Task filterableTask = project.getTasks().findByName(taskName);
-        if (filterableTask instanceof PatternFilterable) {
-            includes = DefaultGroovyMethods.plus(includes, ((PatternFilterable) filterableTask).getIncludes());
-            excludes = DefaultGroovyMethods.plus(excludes, ((PatternFilterable) filterableTask).getExcludes());
-        }
-
-
-        if (StringGroovyMethods.toBoolean(System.getProperty("idea.disable.gradle.resource.filtering", "false"))) {
-            return new ArrayList<List<? extends Serializable>>(Arrays.asList(includes, excludes, filterReaders));
-        }
-
-
-        try {
-            if (filterableTask instanceof ContentFilterable && DefaultGroovyMethods.getMetaClass(filterableTask).respondsTo(filterableTask, "getMainSpec")) {
-                //noinspection GrUnresolvedAccess
-                Object properties = DefaultGroovyMethods.invokeMethod(filterableTask, "getMainSpec", new Object[0]).properties;
-                final Object actions = (properties == null ? null : properties.allCopyActions);
-                Object copyActions = actions ? actions : (properties == null ? null : properties.copyActions);
-
-                if (copyActions.asBoolean()) {
-                    DefaultGroovyMethods.each(copyActions, new Closure<List<DefaultExternalFilter>>(null, null) {
-                        public List<DefaultExternalFilter> doCall(Action<? super FileCopyDetails> action) {
-                            Class filterClass = findPropertyWithType(action, Class.class, "val$filterType", "arg$2", "arg$1");
-                            if (filterClass != null) {
-                                //noinspection GrUnresolvedAccess
-                                String filterType = filterClass.getName();
-                                DefaultExternalFilter filter = new DefaultExternalFilter() {
-                                };
-
-                                Map props = findPropertyWithType(action, Map.class, "val$properties", "arg$1");
-                                if (props != null) {
-                                    if ("org.apache.tools.ant.filters.ExpandProperties".equals(filterType) && props.get("project")) {
-                                        if (DefaultGroovyMethods.asBoolean(props.get("project"))) {
-                                            filter.propertiesAsJsonMap = new GsonBuilder().create().toJson(DefaultGroovyMethods.getProperties(props.get("project")));
-                                        }
-                                    }
-                                    else {
-                                        filter.propertiesAsJsonMap = new GsonBuilder().create().toJson(props);
-                                    }
-                                }
-
-                                return DefaultGroovyMethods.leftShift(filterReaders, filter);
-                            }
-                            else if (action.getClass().getSimpleName().equals("RenamingCopyAction") && DefaultGroovyMethods.hasProperty(action, "transformer")) {
-                                //noinspection GrUnresolvedAccess
-                                if (DefaultGroovyMethods.hasProperty(action.transformer, "matcher") && DefaultGroovyMethods.hasProperty((action == null
-                                                ? null
-                                                : action.transformer),
-                                        "replacement")) {
-                                    //noinspection GrUnresolvedAccess
-                                    final Object transformer = (action == null ? null : action.transformer);
-                                    final Object pattern1 = (transformer == null ? null : transformer.matcher).invokeMethod("pattern", new Object[0]);
-                                    String pattern = (pattern1 == null ? null : pattern1.pattern);
-                                    //noinspection GrUnresolvedAccess
-                                    final Object transformer1 = (action == null ? null : action.transformer);
-                                    String replacement = (transformer1 == null ? null : transformer1.replacement);
-                                    DefaultExternalFilter filter = new DefaultExternalFilter() {
-                                    };
-                                    if (pattern && replacement) {
-                                        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>(2);
-                                        map.put("pattern", pattern);
-                                        map.put("replacement", replacement);
-                                        filter.propertiesAsJsonMap = new GsonBuilder().create().toJson(map);
-                                        return DefaultGroovyMethods.leftShift(filterReaders, filter);
-                                    }
-                                }
-                            }
-
-//          else {
-//            project.logger.error(
-//              ErrorMessageBuilder.create(project, "Resource configuration errors")
-//                .withDescription("Unsupported copy action found: " + action.class.name).build())
-//          }
-                        }
-                    });
-                }
-            }
-        }
-        catch (Exception ignore) {
-//      project.logger.error(
-//        ErrorMessageBuilder.create(project, e, "Resource configuration errors")
-//          .withDescription("Unable to resolve resources filtering configuration").build())
-        }
-
-
-        return new ArrayList<List<? extends Serializable>>(Arrays.asList(includes, excludes, filterReaders));
-    }
-
-    public static <T> T findPropertyWithType(Object self, Class<T> type, String... propertyNames) {
-        for (String name : propertyNames) {
-            MetaProperty property = DefaultGroovyMethods.hasProperty(self, name);
-            if (property != null) {
-                Object value = property.getProperty(self);
-                if (type.isAssignableFrom(value.getClass())) {
-                    return (DefaultGroovyMethods.asType(value, getProperty("T")));
-                }
-            }
-        }
-
-        return null;
-    }
-
     private static String wrap(Object o) {
         return o instanceof CharSequence ? o.toString() : "";
-    }
-
-    @NotNull
-    @Override
-    public ErrorMessageBuilder getErrorMessageBuilder(@NotNull Project project, @NotNull Exception e) {
-        return ErrorMessageBuilder.create(project, e, "Project resolve errors").withDescription("Unable to resolve additional project configuration.");
     }
 
     public static ModelBuilderContext.DataProvider<Map<Project, ExternalProject>> getPROJECTS_PROVIDER() {
@@ -764,10 +617,9 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
     private static final boolean                                                         is4OrBetter       =
             GradleVersion.current().getBaseVersion().compareTo(GradleVersion.version("4.0")) >= 0;
     private static final ModelBuilderContext.DataProvider<Map<Project, ExternalProject>> PROJECTS_PROVIDER = new ModelBuilderContext.DataProvider<Map<Project, ExternalProject>>() {
-        @NotNull
         @Override
-        public Map<Project, ExternalProject> create(@NotNull Gradle gradle) {
-            return new HashMap<Project, ExternalProject>();
+        public Map<Project, ExternalProject> create(Gradle gradle) {
+            return new HashMap<>();
         }
     };
 }

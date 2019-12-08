@@ -58,12 +58,12 @@ import org.jetbrains.plugins.gradle.tooling.ModelBuilderContext;
 import org.jetbrains.plugins.gradle.tooling.builder.ExternalProjectBuilderImpl;
 import org.jetbrains.plugins.gradle.tooling.builder.ProjectExtensionsDataBuilderImpl;
 import org.jetbrains.plugins.gradle.tooling.builder.TasksFactory;
-import org.jetbrains.plugins.gradle.tooling.internal.ExtraModelBuilder;
 import org.jetbrains.plugins.gradle.tooling.util.JavaPluginUtil;
-import org.jetbrains.plugins.gradle.tooling.util.SourceSetCachedFinder;
-import org.jetbrains.plugins.gradle.tooling.util.resolve.DependencyResolverImpl;
 
-public class ExternalModelBuilder implements ToolingModelBuilder {
+import net.fabricmc.loom.ide.idea.resolving.IdeaLoomDependencyResolver;
+import net.fabricmc.loom.ide.idea.resolving.IdeaLoomSourceSetCachedFinder;
+
+public class IdeaLoomExternalProjectModelBuilder implements ToolingModelBuilder {
 
     @Override
     public boolean canBuild(String modelName) {
@@ -75,10 +75,10 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
         if (!project.equals(project.getRootProject())) return null;
 
 
-        final ModelBuilderContext context = new LoomModelBuilderContext(project);
+        final ModelBuilderContext context = new IdeaLoomModelBuilderContext(project);
         final Map<Project, ExternalProject> cache = context.getData(PROJECTS_PROVIDER);
         final TasksFactory tasksFactory = context.getData(TASKS_PROVIDER);
-        final LoomSourceSetCachedFinder sourceSetCachedFinder = new LoomSourceSetCachedFinder(context);
+        final IdeaLoomSourceSetCachedFinder sourceSetCachedFinder = new IdeaLoomSourceSetCachedFinder(context);
         return doBuild(modelName, project, cache, tasksFactory, sourceSetCachedFinder);
     }
 
@@ -87,7 +87,9 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
             final Project gradleProject,
             final Map<Project, ExternalProject> cache,
             final TasksFactory tasksFactory,
-            final LoomSourceSetCachedFinder sourceSetFinder) {
+            final IdeaLoomSourceSetCachedFinder sourceSetFinder) {
+        final ExternalProject externalProject = cache.get(gradleProject);
+        if (externalProject != null) return externalProject;
 
         boolean resolveSourceSetDependencies = Boolean.parseBoolean(System.getProperties().getProperty("idea.resolveSourceSetDependencies", "true"));
         boolean isPreview = ExternalProjectPreview.class.getName().equals(modelName);
@@ -196,7 +198,7 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
             final Project gradleProject,
             final boolean isPreview,
             final boolean resolveSourceSetDependencies,
-            final LoomSourceSetCachedFinder sourceSetFinder) {
+            final IdeaLoomSourceSetCachedFinder sourceSetFinder) {
         final IdeaPlugin ideaPlugin = gradleProject.getPlugins().findPlugin(IdeaPlugin.class);
         final IdeaModel model = (ideaPlugin == null ? null : ideaPlugin.getModel());
         final IdeaModule ideaPluginModule = (model == null ? null : model.getModule());
@@ -488,7 +490,7 @@ public class ExternalModelBuilder implements ToolingModelBuilder {
 
 
             if (resolveSourceSetDependencies) {
-                Collection<ExternalDependency> dependencies = new DependencyResolverImpl(gradleProject,
+                Collection<ExternalDependency> dependencies = new IdeaLoomDependencyResolver(gradleProject,
                                 isPreview,
                                 downloadJavadoc,
                                 downloadSources,

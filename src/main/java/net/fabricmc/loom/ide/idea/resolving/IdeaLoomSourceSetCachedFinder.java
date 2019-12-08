@@ -1,4 +1,4 @@
-package net.fabricmc.loom.ide.idea;
+package net.fabricmc.loom.ide.idea.resolving;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,9 +25,9 @@ import org.jetbrains.plugins.gradle.tooling.ModelBuilderContext;
 import org.jetbrains.plugins.gradle.tooling.internal.ExtraModelBuilder;
 import org.jetbrains.plugins.gradle.tooling.util.JavaPluginUtil;
 
-public class LoomSourceSetCachedFinder {
+public class IdeaLoomSourceSetCachedFinder {
 
-    public LoomSourceSetCachedFinder(ModelBuilderContext context) {
+    public IdeaLoomSourceSetCachedFinder(ModelBuilderContext context) {
         init(context);
     }
 

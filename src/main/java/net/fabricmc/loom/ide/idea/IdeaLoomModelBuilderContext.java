@@ -7,11 +7,11 @@ import org.gradle.api.Project;
 import org.gradle.api.invocation.Gradle;
 import org.jetbrains.plugins.gradle.tooling.ModelBuilderContext;
 
-public class LoomModelBuilderContext implements ModelBuilderContext {
+public class IdeaLoomModelBuilderContext implements ModelBuilderContext {
     private final Map<DataProvider, Object> myMap = new IdentityHashMap<DataProvider, Object>();
     private final Gradle                    myGradle;
 
-    public LoomModelBuilderContext(Project project) {
+    public IdeaLoomModelBuilderContext(Project project) {
         myGradle = determineRootGradle(project.getGradle());
     }
 

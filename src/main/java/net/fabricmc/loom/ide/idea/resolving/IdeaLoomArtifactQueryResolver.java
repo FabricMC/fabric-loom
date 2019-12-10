@@ -4,12 +4,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.LenientConfiguration;
@@ -20,8 +22,6 @@ import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.UnresolvedDependency;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolutionResult;
 import org.gradle.api.component.Artifact;
 import org.gradle.api.component.Component;
@@ -33,9 +33,10 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 import org.gradle.language.java.artifact.JavadocArtifact;
 import org.jetbrains.plugins.gradle.model.DefaultFileCollectionDependency;
 import org.jetbrains.plugins.gradle.model.ExternalDependency;
-import org.jetbrains.plugins.gradle.tooling.util.SourceSetCachedFinder;
 import org.jetbrains.plugins.gradle.tooling.util.resolve.DependencyResolverImpl;
 import org.jetbrains.plugins.gradle.tooling.util.resolve.ExternalDepsResolutionResult;
+
+import net.fabricmc.loom.util.ArtifactIdUtils;
 
 public class IdeaLoomArtifactQueryResolver {
     private final Configuration         myConfiguration;
@@ -63,12 +64,6 @@ public class IdeaLoomArtifactQueryResolver {
     public ExternalDepsResolutionResult resolve() {
         final Collection<ExternalDependency> extDependencies = new LinkedHashSet<ExternalDependency>();
 
-        Class<? extends Component> jvmLibrary = tryLoadingJvmLibraryClass();
-
-        if (jvmLibrary == null) {
-            return ExternalDepsResolutionResult.EMPTY;
-        }
-
         LenientConfiguration lenientConfiguration = myConfiguration.getResolvedConfiguration().getLenientConfiguration();
         Set<UnresolvedDependency> unresolvedModuleDependencies = lenientConfiguration.getUnresolvedModuleDependencies();
         Set<ResolvedArtifact> resolvedArtifacts;
@@ -91,8 +86,8 @@ public class IdeaLoomArtifactQueryResolver {
 
         final Multimap<ModuleVersionIdentifier, ResolvedArtifact> artifactMap =
                         groupByModuleVersionId(resolvedArtifacts);
-        final Map<ComponentIdentifier, ComponentArtifactsResult> auxiliaryArtifactsMap =
-                        buildAuxiliaryArtifactsMap(jvmLibrary, resolvedArtifacts);
+        final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> auxiliaryArtifactsMap =
+                        buildAuxiliaryArtifactsMap(resolvedArtifacts);
 
         final Multimap<ModuleComponentIdentifier, ProjectDependency> configurationProjectDependencies =
                         IdeaLoomDependencyResolver.collectProjectDeps(myConfiguration);
@@ -115,24 +110,6 @@ public class IdeaLoomArtifactQueryResolver {
                         new ArrayList<File>(dependencyResultsTransformer.getResolvedDepsFiles()));
     }
 
-    protected Class<? extends Component> tryLoadingJvmLibraryClass() {
-        Class<? extends Component> jvmLibrary = null;
-        try {
-            jvmLibrary = (Class<? extends Component>) Class.forName("org.gradle.jvm.JvmLibrary");
-        }
-        catch (ClassNotFoundException ignored) {
-        }
-
-        if (jvmLibrary == null) {
-            try {
-                jvmLibrary = (Class<? extends Component>) Class.forName("org.gradle.runtime.jvm.JvmLibrary");
-            }
-            catch (ClassNotFoundException ignored) {
-            }
-        }
-        return jvmLibrary;
-    }
-
     public Multimap<ModuleVersionIdentifier, ResolvedArtifact> groupByModuleVersionId(Set<ResolvedArtifact> resolvedArtifacts) {
         Multimap<ModuleVersionIdentifier, ResolvedArtifact> artifactMap = ArrayListMultimap.create();
         for (ResolvedArtifact artifact : resolvedArtifacts) {
@@ -142,33 +119,134 @@ public class IdeaLoomArtifactQueryResolver {
         return artifactMap;
     }
 
-    public Map<ComponentIdentifier, ComponentArtifactsResult> buildAuxiliaryArtifactsMap(
-                    final Class<? extends Component> jvmLibrary,
+    public Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> buildAuxiliaryArtifactsMap(
                     final Set<ResolvedArtifact> resolvedArtifacts) {
-        List<ComponentIdentifier> components = new ArrayList<ComponentIdentifier>();
-        for (ResolvedArtifact artifact : resolvedArtifacts) {
-            final ModuleVersionIdentifier moduleVersionId = artifact.getModuleVersion().getId();
-            if (!DependencyResolverImpl.isProjectDependencyArtifact(artifact)) {
-                components.add(DependencyResolverImpl.toComponentIdentifier(moduleVersionId));
+        final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> auxiliaryArtifacts     = HashBasedTable.create();
+
+        final Map<String, ResolvedArtifact> dependencyIdsToLookup = Maps.newHashMap();
+        //Global dependencies are used when a module provides multiple different artifacts but only one source jar for all.
+        final Map<String, Set<ResolvedArtifact>> globalDependencyIdsToLookup = Maps.newHashMap();
+
+        for(final ResolvedArtifact artifact : resolvedArtifacts)
+        {
+            if (!(artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                continue;
+
+            final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, true);
+            dependencyIdsToLookup.put(dependencyId, artifact);
+
+            final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromRawArtifact(artifact, false);
+            globalDependencyIdsToLookup.putIfAbsent(globalDependencyId, com.google.common.collect.Sets.newHashSet());
+            globalDependencyIdsToLookup.get(globalDependencyId).add(artifact);
+        }
+
+        if (myDownloadSources)
+        {
+            final Configuration sourcesToAttachConfiguration = myProject.getConfigurations().create("_______sources_idea_external_" + myConfiguration.getName() + "_" + (new Random()).nextInt());
+            for (final String dependencyId :
+                            dependencyIdsToLookup.keySet()) {
+                if (ArtifactIdUtils.doesArtifactExist(myProject.getDependencies(), dependencyIdsToLookup.get(dependencyId), SourcesArtifact.class))
+                {
+                    myProject.getDependencies().add(sourcesToAttachConfiguration.getName(), ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(dependencyIdsToLookup.get(dependencyId), true, "sources"));
+                }
+            }
+
+            for(final String dependencyId :
+                            globalDependencyIdsToLookup.keySet())
+            {
+                for (final ResolvedArtifact artifact : globalDependencyIdsToLookup.get(dependencyId)) {
+                    if (ArtifactIdUtils.doesArtifactExist(myProject.getDependencies(), artifact, SourcesArtifact.class))
+                    {
+                        myProject.getDependencies().add(sourcesToAttachConfiguration.getName(), ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(artifact, false, "sources"));
+                    }
+                }
+            }
+
+            final LenientConfiguration lenientSourcesConfiguration = sourcesToAttachConfiguration.getResolvedConfiguration().getLenientConfiguration();
+            for (final ResolvedDependency resolvedSourcesDependency :
+                            lenientSourcesConfiguration.getAllModuleDependencies()) {
+                for (final ResolvedArtifact resolvedSourcesArtifact :
+                                resolvedSourcesDependency.getAllModuleArtifacts()) {
+                    if (!(resolvedSourcesArtifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                        continue;
+
+                    final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedSourcesArtifact, true, "sources");
+                    if (dependencyIdsToLookup.containsKey(dependencyId))
+                    {
+                        final ResolvedArtifact originalArtifact = dependencyIdsToLookup.get(dependencyId);
+                        auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), SourcesArtifact.class, com.google.common.collect.Sets
+                                                                                                                                                                     .newHashSet(resolvedSourcesArtifact));
+                    }
+                    final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedSourcesArtifact, false, "sources");
+                    if (globalDependencyIdsToLookup.containsKey(globalDependencyId))
+                    {
+                        final Set<ResolvedArtifact> originalArtifacts = globalDependencyIdsToLookup.get(globalDependencyId);
+                        for (final ResolvedArtifact originalArtifact : originalArtifacts) {
+                            auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), SourcesArtifact.class, com.google.common.collect.Sets
+                                                                                                                                                                         .newHashSet(resolvedSourcesArtifact));
+                        }
+                    }
+                }
             }
         }
 
-        boolean isBuildScriptConfiguration = myProject.getBuildscript().getConfigurations().contains(myConfiguration);
-        DependencyHandler dependencyHandler = isBuildScriptConfiguration ? myProject.getBuildscript().getDependencies() : myProject.getDependencies();
+        if (myDownloadJavadoc)
+        {
+            final Configuration javaDocsToAttachConfiguration = myProject.getConfigurations().create("_______javaDocs_idea_external_" + myConfiguration.getName() + "_" + (new Random()).nextInt());
+            for (final String dependencyId :
+                            dependencyIdsToLookup.keySet()) {
+                if (ArtifactIdUtils.doesArtifactExist(myProject.getDependencies(), dependencyIdsToLookup.get(dependencyId), JavadocArtifact.class)) {
+                    myProject
+                                    .getDependencies()
+                                    .add(javaDocsToAttachConfiguration.getName(),
+                                                    ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(dependencyIdsToLookup.get(dependencyId),
+                                                                    true,
+                                                                    "javadoc"));
+                }
+            }
 
-        Set<ComponentArtifactsResult> componentResults = dependencyHandler.createArtifactResolutionQuery()
-                                                                         .forComponents(components)
-                                                                         .withArtifacts(jvmLibrary, additionalArtifactsTypes().toArray(new Class[0]))
-                                                                         .execute()
-                                                                         .getResolvedComponents();
+            for(final String dependencyId :
+                            globalDependencyIdsToLookup.keySet())
+            {
+                for (final ResolvedArtifact artifact : globalDependencyIdsToLookup.get(dependencyId)) {
+                    if (ArtifactIdUtils.doesArtifactExist(myProject.getDependencies(), artifact, JavadocArtifact.class)) {
+                        myProject
+                                        .getDependencies()
+                                        .add(javaDocsToAttachConfiguration.getName(),
+                                                        ArtifactIdUtils.createDependencyIdentifierFromRawArtifactWithAppendix(artifact, false, "javadoc"));
+                    }
+                }
+            }
 
-        Map<ComponentIdentifier, ComponentArtifactsResult> componentResultsMap =
-                        new HashMap<ComponentIdentifier, ComponentArtifactsResult>();
+            final LenientConfiguration lenientJavaDocsConfiguration = javaDocsToAttachConfiguration.getResolvedConfiguration().getLenientConfiguration();
+            for (final ResolvedDependency resolvedJavaDocsDependency :
+                            lenientJavaDocsConfiguration.getAllModuleDependencies()) {
+                for (final ResolvedArtifact resolvedJavaDocsArtifact :
+                                resolvedJavaDocsDependency.getAllModuleArtifacts()) {
+                    if (!(resolvedJavaDocsArtifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier))
+                        continue;
 
-        for (ComponentArtifactsResult artifactsResult : componentResults) {
-            componentResultsMap.put(artifactsResult.getId(), artifactsResult);
+                    final String dependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedJavaDocsArtifact, true, "javadoc");
+                    if (dependencyIdsToLookup.containsKey(dependencyId))
+                    {
+                        final ResolvedArtifact originalArtifact = dependencyIdsToLookup.get(dependencyId);
+                        auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), JavadocArtifact.class, com.google.common.collect.Sets
+                                                                                                                                                                     .newHashSet(resolvedJavaDocsArtifact));
+                    }
+                    final String globalDependencyId = ArtifactIdUtils.createDependencyIdentifierFromAppendedArtifact(resolvedJavaDocsArtifact, false, "javadoc");
+                    if (globalDependencyIdsToLookup.containsKey(globalDependencyId))
+                    {
+                        final Set<ResolvedArtifact> originalArtifacts = globalDependencyIdsToLookup.get(globalDependencyId);
+                        for (final ResolvedArtifact originalArtifact : originalArtifacts) {
+                            auxiliaryArtifacts.put((ModuleComponentIdentifier) originalArtifact.getId().getComponentIdentifier(), JavadocArtifact.class, com.google.common.collect.Sets
+                                                                                                                                                                         .newHashSet(resolvedJavaDocsArtifact));
+                        }
+                    }
+                }
+            }
         }
-        return componentResultsMap;
+
+        return auxiliaryArtifacts;
     }
 
     protected Collection<ExternalDependency> buildFileCollectionDeps(
@@ -204,16 +282,5 @@ public class IdeaLoomArtifactQueryResolver {
         }
 
         return result;
-    }
-
-    protected List<Class<? extends Artifact>> additionalArtifactsTypes() {
-        List<Class<? extends Artifact>> artifactTypes = new ArrayList<Class<? extends Artifact>>();
-        if (myDownloadSources) {
-            artifactTypes.add(SourcesArtifact.class);
-        }
-        if (myDownloadJavadoc) {
-            artifactTypes.add(JavadocArtifact.class);
-        }
-        return artifactTypes;
     }
 }

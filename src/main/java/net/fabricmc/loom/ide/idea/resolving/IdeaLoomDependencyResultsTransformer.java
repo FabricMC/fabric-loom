@@ -15,9 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Table;
 import groovy.lang.MetaMethod;
 import groovy.lang.MetaProperty;
 import org.codehaus.groovy.runtime.DefaultGroovyMethods;
+import org.eclipse.jdt.core.dom.Javadoc;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -62,9 +64,9 @@ public class IdeaLoomDependencyResultsTransformer {
 
     private final Project                                                myProject;
     private final IdeaLoomSourceSetCachedFinder                                  mySourceSetFinder;
-    private final Multimap<ModuleVersionIdentifier, ResolvedArtifact>    artifactMap;
-    private final Map<ComponentIdentifier, ComponentArtifactsResult>     componentResultsMap;
-    private final Multimap<ModuleComponentIdentifier, ProjectDependency> configurationProjectDependencies;
+    private final Multimap<ModuleVersionIdentifier, ResolvedArtifact>                                artifactMap;
+    private final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> componentResultsMap;
+    private final Multimap<ModuleComponentIdentifier, ProjectDependency>                             configurationProjectDependencies;
     private final String                                                 scope;
     private final Set<File>                                              resolvedDepsFiles = new HashSet<File>();
 
@@ -74,14 +76,14 @@ public class IdeaLoomDependencyResultsTransformer {
     public IdeaLoomDependencyResultsTransformer(final Project project,
                     final IdeaLoomSourceSetCachedFinder sourceSetFinder,
                     final Multimap<ModuleVersionIdentifier, ResolvedArtifact> artifactMap,
-                    final Map<ComponentIdentifier, ComponentArtifactsResult> auxiliaryArtifactsMap,
+                    final Table<ModuleComponentIdentifier, Class<? extends Artifact>, Set<ResolvedArtifact>> auxiliaryArtifactsMap,
                     final Multimap<ModuleComponentIdentifier, ProjectDependency> configurationProjectDependencies,
                     final String scope) {
         myProject = project;
         mySourceSetFinder = sourceSetFinder;
 
         this.artifactMap = artifactMap;
-        componentResultsMap = auxiliaryArtifactsMap;
+        this.componentResultsMap = auxiliaryArtifactsMap;
         this.configurationProjectDependencies = configurationProjectDependencies;
         this.scope = scope;
     }
@@ -299,17 +301,14 @@ public class IdeaLoomDependencyResultsTransformer {
                         dDep.setSelectionReason(selectionReason);
                         dDep.setFile(artifact.getFile());
 
-                        ComponentArtifactsResult artifactsResult = componentResultsMap.get(componentIdentifier);
-                        if (artifactsResult != null) {
-                            ResolvedArtifactResult sourcesResult = findMatchingArtifact(artifact, artifactsResult, SourcesArtifact.class);
-                            if (sourcesResult != null) {
-                                ((DefaultExternalLibraryDependency)dependency).setSource(sourcesResult.getFile());
-                            }
+                        Set<ResolvedArtifact> resolvedSourceArtifacts = componentResultsMap.get(componentIdentifier, SourcesArtifact.class);
+                        if (resolvedSourceArtifacts != null && !resolvedSourceArtifacts.isEmpty()) {
+                            ((DefaultExternalLibraryDependency)dependency).setSource(resolvedSourceArtifacts.iterator().next().getFile());
+                        }
 
-                            ResolvedArtifactResult javadocResult = findMatchingArtifact(artifact, artifactsResult, JavadocArtifact.class);
-                            if (javadocResult != null) {
-                                ((DefaultExternalLibraryDependency)dependency).setJavadoc(javadocResult.getFile());
-                            }
+                        Set<ResolvedArtifact> resolvedJavaDocArtifacts = componentResultsMap.get(componentIdentifier, JavadocArtifact.class);
+                        if (resolvedJavaDocArtifacts != null && !resolvedJavaDocArtifacts.isEmpty()) {
+                            ((DefaultExternalLibraryDependency)dependency).setJavadoc(resolvedJavaDocArtifacts.iterator().next().getFile());
                         }
                     }
 

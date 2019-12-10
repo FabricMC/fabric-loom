@@ -105,7 +105,7 @@ public class IdeaLoomExternalProjectModelBuilder implements ToolingModelBuilder 
         Project parentBuildRootProject = (parent == null ? null : parent.getRootProject());
         final IdeaModel model1 = (ideaPlugin == null ? null : ideaPlugin.getModel());
         final IdeaProject ideaProject = (model1 == null ? null : model1.getProject());
-        final String name = (ideaProject == null ? null : ((Project) ideaProject).getName());
+        final String name = (ideaProject == null ? null : ideaProject.getName());
         String compositePrefix = parentBuildRootProject != null && !DefaultGroovyMethods.is(gradleProject.getRootProject(), parentBuildRootProject) && !":".equals(gradleProject.getPath()) ? (
                 name != null
                         ? name

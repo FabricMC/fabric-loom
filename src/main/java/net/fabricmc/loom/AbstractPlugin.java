@@ -54,7 +54,6 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-import net.fabricmc.loom.ide.ToolingModelBuilderOverrideHandler;
 import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -80,7 +79,6 @@ public class AbstractPlugin implements Plugin<Project> {
 	@Override
 	public void apply(Project target) {
 		this.project = target;
-        ToolingModelBuilderOverrideHandler.apply(project);
 
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
 

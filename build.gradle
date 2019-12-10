@@ -110,6 +110,11 @@ gradlePlugin {
 			id = "fabric-loom"
 			implementationClass = "net.fabricmc.loom.LoomGradlePlugin"
 		}
+
+        fabricLoomIde {
+            id = "fabric-loom-ide"
+            implementationClass = "net.fabricmc.loom.ide.LoomIdePlugin"
+        }
 	}
 }
 

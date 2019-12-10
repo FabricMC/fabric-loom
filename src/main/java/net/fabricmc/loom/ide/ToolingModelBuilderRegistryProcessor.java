@@ -18,27 +18,21 @@ import org.jetbrains.plugins.gradle.tooling.internal.ExtraModelBuilder;
 
 import net.fabricmc.loom.ide.gradle.idea.IdeaResolvingIdeaModelBuilder;
 import net.fabricmc.loom.ide.idea.IdeaLoomExternalProjectModelBuilder;
+import net.fabricmc.loom.ide.idea.classloading.ClassLoadingHandler;
 
 /**
  * Adds a single extra model builder instance for each root of ToolingModelBuilderRegistry hierarchy<br>
  * Thread safe.
  */
-public class ToolingModelBuilderRegistryProcessor implements ProjectEvaluationListener {
-    final IdeaLoomExternalProjectModelBuilder                                               extraModelBuilderInstance = new IdeaLoomExternalProjectModelBuilder();
-    final CopyOnWriteArrayList<ToolingModelBuilderRegistry> processedRegistries       = new CopyOnWriteArrayList<ToolingModelBuilderRegistry>();
+public class ToolingModelBuilderRegistryProcessor {
 
-    @Override
-    public void beforeEvaluate(Project project) {
-        final ToolingModelBuilderRegistry registry = ((ProjectInternal)project).getServices().get(ToolingModelBuilderRegistry.class);
-        process(registry, ((ProjectInternal) project).getServices());
+    public static void attach(Project project)
+    {
+        project.afterEvaluate(ToolingModelBuilderRegistryProcessor::afterEvaluate);
     }
 
-    public void process(ToolingModelBuilderRegistry registry, ServiceRegistry serviceRegistry) {
-        boolean alreadySeen = !processedRegistries.addIfAbsent(registry);
-        if (alreadySeen) {
-            return;
-        }
-
+    public static void process(Project project, ToolingModelBuilderRegistry registry, ServiceRegistry serviceRegistry) {
+        ClassLoadingHandler.setupClassLoading(registry, project);
         final List<ToolingModelBuilder> builders = getFieldValue(registry, "builders");
         if (builders == null) {
             return;
@@ -51,11 +45,13 @@ public class ToolingModelBuilderRegistryProcessor implements ProjectEvaluationLi
                         (GradleProjectBuilder) builders.stream().filter(builder -> builder instanceof GradleProjectBuilder).findFirst().orElse(new GradleProjectBuilder());
         builders.removeIf(builder -> builder instanceof IdeaModelBuilder);
         builders.add(new IdeaResolvingIdeaModelBuilder(gradleProjectBuilder, serviceRegistry));
-        builders.add(extraModelBuilderInstance);
+        builders.add(new IdeaLoomExternalProjectModelBuilder());
     }
 
-    @Override
-    public void afterEvaluate(Project project, ProjectState state) {  }
+    public static void afterEvaluate(Project project) {
+        final ToolingModelBuilderRegistry registry = ((ProjectInternal)project).getServices().get(ToolingModelBuilderRegistry.class);
+        process(project, registry, ((ProjectInternal) project).getServices());
+    }
 
     private static <T> T getFieldValue(final Object object, final String fieldName) {
         try {

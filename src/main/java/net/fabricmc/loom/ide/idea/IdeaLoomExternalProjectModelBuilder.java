@@ -4,6 +4,8 @@ import static org.jetbrains.plugins.gradle.tooling.builder.ExternalProjectBuilde
 import static org.jetbrains.plugins.gradle.tooling.builder.ModelBuildersDataProviders.TASKS_PROVIDER;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,6 +62,7 @@ import org.jetbrains.plugins.gradle.tooling.builder.ProjectExtensionsDataBuilder
 import org.jetbrains.plugins.gradle.tooling.builder.TasksFactory;
 import org.jetbrains.plugins.gradle.tooling.util.JavaPluginUtil;
 
+import net.fabricmc.loom.ide.idea.classloading.ClassLoadingTransferer;
 import net.fabricmc.loom.ide.idea.resolving.IdeaLoomDependencyResolver;
 import net.fabricmc.loom.ide.idea.resolving.IdeaLoomSourceSetCachedFinder;
 
@@ -79,7 +82,13 @@ public class IdeaLoomExternalProjectModelBuilder implements ToolingModelBuilder 
         final Map<Project, ExternalProject> cache = context.getData(PROJECTS_PROVIDER);
         final TasksFactory tasksFactory = context.getData(TASKS_PROVIDER);
         final IdeaLoomSourceSetCachedFinder sourceSetCachedFinder = new IdeaLoomSourceSetCachedFinder(context);
-        return doBuild(modelName, project, cache, tasksFactory, sourceSetCachedFinder);
+        final DefaultExternalProject externalProject = (DefaultExternalProject) doBuild(modelName, project, cache, tasksFactory, sourceSetCachedFinder);
+        try {
+            return ClassLoadingTransferer.transferToOtherClassLoader(externalProject);
+        }
+        catch (IOException | InvocationTargetException | IllegalAccessException e) {
+            throw new IllegalStateException("Failed to transfer: " + project.getName() + " to the IDEA class loader.", e);
+        }
     }
 
     private static Object doBuild(

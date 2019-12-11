@@ -59,10 +59,9 @@ public class SetupIntelijRunConfigs {
 	}
 
 	private static void generate(Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-
-		if (extension.ideSync()) {
-			//Ensures the assets are downloaded when idea is syncing a project
+		//Ensures the assets are downloaded when idea is syncing a project
+		if (Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))) {
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
 			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 		}

@@ -290,8 +290,4 @@ public class LoomGradleExtension {
 
 		return refmapName;
 	}
-
-	public boolean ideSync() {
-		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
-	}
 }

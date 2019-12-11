@@ -156,6 +156,7 @@ public class LoomDependencyManager {
 	}
 
 	private static void handleInstallerJson(JsonObject jsonObject, Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
 		Configuration mcDepsConfig = project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES);
 		Configuration apDepsConfig = project.getConfigurations().getByName("annotationProcessor");
@@ -166,7 +167,10 @@ public class LoomDependencyManager {
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
 			modDep.setTransitive(false);
 			mcDepsConfig.getDependencies().add(modDep);
-			apDepsConfig.getDependencies().add(modDep);
+
+			if (!extension.ideSync()) {
+				apDepsConfig.getDependencies().add(modDep);
+			}
 
 			project.getLogger().debug("Loom adding " + name + " from installer JSON");
 

@@ -80,7 +80,7 @@ public class RemapJarTask extends Jar {
 		String toM = "intermediary";
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
-				project.getConfigurations().getByName("compileClasspath").getFiles()
+						project.getConfigurations().getByName("compileClasspath").getFiles()
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 

@@ -241,7 +241,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
-		if (!Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"))) {
+		if (!project.getExtensions().getByType(LoomGradleExtension.class).ideSync()) {
 			// Add Mixin dependencies
 			project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, "net.fabricmc:fabric-mixin-compile-extensions:" + Constants.MIXIN_COMPILE_EXTENSIONS_VERSION);
 		}

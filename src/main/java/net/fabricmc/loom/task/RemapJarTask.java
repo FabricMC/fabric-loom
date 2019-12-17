@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -126,7 +127,7 @@ public class RemapJarTask extends Jar {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
 
-		if (NestedJars.addNestedJars(project, output, getForcedNestedDependencies().getOrElse(new ArrayList<>()),
+		if (NestedJars.addNestedJars(project, output, getForcedNestedDependencies().getOrElse(Collections.emptyList()),
 				getAddNestedDependencies().getOrElse(false))) {
 			project.getLogger().debug("Added nested jar paths to mod json");
 		}

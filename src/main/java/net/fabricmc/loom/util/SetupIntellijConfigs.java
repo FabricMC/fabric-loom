@@ -93,6 +93,7 @@ public class SetupIntellijConfigs {
 
 	private static void turnOffAnnotationProcessing(File projectDir) throws IOException {
 		File compilerConfigs = new File(projectDir, "compiler.xml");
+		if (!compilerConfigs.exists()) return;
 		String compilerConfigsContent = FileUtils.readFileToString(compilerConfigs, StandardCharsets.UTF_8);
 		String turnedOff = compilerConfigsContent.replace("\"Gradle Imported\" enabled=\"true\"", "\"Gradle Imported\"");
 		FileUtils.writeStringToFile(compilerConfigs, turnedOff, StandardCharsets.UTF_8);

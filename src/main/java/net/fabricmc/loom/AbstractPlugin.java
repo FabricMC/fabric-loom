@@ -63,7 +63,7 @@ import net.fabricmc.loom.util.GroovyXmlUtil;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
-import net.fabricmc.loom.util.SetupIntelijConfigs;
+import net.fabricmc.loom.util.SetupIntellijConfigs;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -295,7 +295,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 
 			if (extension.autoGenIDERuns && isRootProject(project1)) {
-				SetupIntelijConfigs.setup(project1);
+				SetupIntellijConfigs.setup(project1);
 			}
 
 			// Enables the default mod remapper

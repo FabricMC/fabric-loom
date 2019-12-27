@@ -35,7 +35,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
-public class SetupIntelijRunConfigs {
+public class SetupIntelijConfigs {
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
@@ -61,12 +61,6 @@ public class SetupIntelijRunConfigs {
 	private static void generate(Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		if (extension.ideSync()) {
-			//Ensures the assets are downloaded when idea is syncing a project
-			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
-		}
-
 		File projectDir = project.file(".idea");
 		File runConfigsDir = new File(projectDir, "runConfigurations");
 		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
@@ -86,5 +80,21 @@ public class SetupIntelijRunConfigs {
 		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
 		}
+
+		if (extension.ideSync()) {
+			//Ensures the assets are downloaded when idea is syncing a project
+			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+
+			// IDEA refuses to build when you have any mixins when annotation processing is enabled
+			turnOffAnnotationProcessing(projectDir);
+		}
+	}
+
+	private static void turnOffAnnotationProcessing(File projectDir) throws IOException {
+		File compilerConfigs = new File(projectDir, "compiler.xml");
+		String compilerConfigsContent = FileUtils.readFileToString(compilerConfigs, StandardCharsets.UTF_8);
+		String turnedOff = compilerConfigsContent.replace("\"Gradle Imported\" enabled=\"true\"", "\"Gradle Imported\"");
+		FileUtils.writeStringToFile(compilerConfigs, turnedOff, StandardCharsets.UTF_8);
 	}
 }

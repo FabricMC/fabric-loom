@@ -175,7 +175,7 @@ public class RunConfig {
 	public String fromDummy(String dummy) throws IOException {
 		String dummyConfig;
 
-		try (InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy)) {
+		try (InputStream input = SetupIntelijConfigs.class.getClassLoader().getResourceAsStream(dummy)) {
 			dummyConfig = IOUtils.toString(input, StandardCharsets.UTF_8);
 		}
 

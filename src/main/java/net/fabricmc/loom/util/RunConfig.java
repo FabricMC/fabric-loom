@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -216,7 +217,12 @@ public class RunConfig {
 			return mainClassName;
 		}
 
-		throw new RuntimeException("Failed to find mainclass");
+		// Fallback to default class names, happens when in a loader dev env
+		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
+			return "net.minecraft.launchwrapper.Launch";
+		}
+
+		return "net.fabricmc.loader.launch.knot.Knot" + side.substring(0, 1).toUpperCase(Locale.ROOT) + side.substring(1).toLowerCase(Locale.ROOT);
 	}
 
 	private static String quoteIfNeeded(String input) {

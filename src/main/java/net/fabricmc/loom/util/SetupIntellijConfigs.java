@@ -35,7 +35,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
-public class SetupIntelijConfigs {
+public class SetupIntellijConfigs {
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 

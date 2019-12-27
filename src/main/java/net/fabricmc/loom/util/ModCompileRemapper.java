@@ -77,8 +77,8 @@ public class ModCompileRemapper {
 			File sources = findSources(dependencies, artifact);
 
 			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
-			String remappedNotation = String.format("%s@%s", notation, mappingsSuffix);
-			String remappedFilename = String.format("%s-%s@%s", name, version + classifierSuffix.replace(':', '-'), mappingsSuffix);
+			String remappedNotation = String.format("%s:%s:%s@%s%s", group, name, version, mappingsSuffix, classifierSuffix);
+			String remappedFilename = String.format("%s-%s@%s", name, version, mappingsSuffix + classifierSuffix.replace(':', '-'));
 			project.getLogger().info(":providing " + remappedLog);
 
 			File modStore = extension.getRemappedModCache();

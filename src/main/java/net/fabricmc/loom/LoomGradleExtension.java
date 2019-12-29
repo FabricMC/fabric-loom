@@ -43,6 +43,7 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
@@ -284,8 +285,9 @@ public class LoomGradleExtension {
 
 	public String getRefmapName() {
 		if (refmapName == null || refmapName.isEmpty()) {
-			project.getLogger().warn("Could not find refmap definition, will be using default name: " + project.getName() + "-refmap.json");
-			refmapName = project.getName() + "-refmap.json";
+			String defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+			project.getLogger().warn("Could not find refmap definition, will be using default name: " + defaultRefmapName);
+			refmapName = defaultRefmapName;
 		}
 
 		return refmapName;

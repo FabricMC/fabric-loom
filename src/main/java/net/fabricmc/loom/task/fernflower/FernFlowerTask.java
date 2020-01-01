@@ -52,6 +52,7 @@ import net.fabricmc.loom.util.ConsumingOutputStream;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MixinTargetScanner;
+import net.fabricmc.loom.util.RemappedConfigurationEntry;
 
 /**
  * Created by covers1624 on 9/02/19.
@@ -66,8 +67,12 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 			throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
 		}
 
-		MixinTargetScanner mixinTargetScanner = new MixinTargetScanner(getProject(), getProject().getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH_MAPPED));
-		mixinTargetScanner.scan();
+		MixinTargetScanner mixinTargetScanner = new MixinTargetScanner(getProject());
+
+		for (RemappedConfigurationEntry modCompileEntry : Constants.MOD_COMPILE_ENTRIES) {
+			mixinTargetScanner.scan(getProject().getConfigurations().getByName(modCompileEntry.getRemappedConfiguration()));
+		}
+
 		String mixinTargetJson = mixinTargetScanner.getClassMixinsJson();
 		File mixinTargetFile = new File(getExtension().getProjectBuildCache(), "mixin_targets.json");
 		FileUtils.writeStringToFile(mixinTargetFile, mixinTargetJson, StandardCharsets.UTF_8);

@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import com.google.common.reflect.TypeToken;
@@ -54,26 +55,20 @@ public class MixinTargetScanner {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	private final Project project;
-	private final Configuration configuration;
 
-	private HashMap<String, List<MixinTargetInfo>> classMixins;
+	private HashMap<String, List<MixinTargetInfo>> classMixins = new HashMap<>();
+	private List<String> scannedMods = new ArrayList<>();
 
-	public MixinTargetScanner(Project project, Configuration configuration) {
+	public MixinTargetScanner(Project project) {
 		this.project = project;
-		this.configuration = configuration;
 	}
 
-	public void scan() {
-		classMixins = new HashMap<>();
-
+	public void scan(Configuration configuration) {
 		Set<File> filesToScan = configuration.getResolvedConfiguration().getFiles();
 		filesToScan.forEach(this::scanFile);
 	}
 
 	private void scanFile(File file) {
-		//is this enough?
-		if (!file.getName().endsWith(".jar")) return;
-
 		try (ZipFile zipFile = new ZipFile(file)) {
 			ZipEntry modJsonEntry = zipFile.getEntry("fabric.mod.json");
 
@@ -85,6 +80,8 @@ public class MixinTargetScanner {
 			} else {
 				project.getLogger().lifecycle("Could not find mod json in " + file.getName());
 			}
+		} catch (ZipException e) {
+			// Ignore this, most likely an invalid zip
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to scan zip file ", e);
 		}
@@ -97,6 +94,10 @@ public class MixinTargetScanner {
 		String modId = modInfo.get("id").getAsString();
 		List<String> mixins = new ArrayList<>();
 		List<String> mixinClasses = new ArrayList<>();
+
+		//Make sure we dont scan the same mod twice, I dont think this is possible just want to be sure
+		if (scannedMods.contains(modId)) return;
+		scannedMods.add(modId);
 
 		for (int i = 0; i < mixinsJsonArray.size(); i++) {
 			mixins.add(mixinsJsonArray.get(i).getAsString());

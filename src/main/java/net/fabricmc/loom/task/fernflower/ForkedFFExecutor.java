@@ -52,7 +52,6 @@ public class ForkedFFExecutor {
 		File output = null;
 		File lineMap = null;
 		File mappings = null;
-		File mixins = null;
 		List<File> libraries = new ArrayList<>();
 		int numThreads = 0;
 
@@ -92,12 +91,6 @@ public class ForkedFFExecutor {
 					}
 
 					mappings = new File(arg.substring(3));
-				} else if (arg.startsWith("-j=")) {
-					if (mixins != null) {
-						throw new RuntimeException("Unable to use more than one mixin file.");
-					}
-
-					mixins = new File(arg.substring(3));
 				} else if (arg.startsWith("-t=")) {
 					numThreads = Integer.parseInt(arg.substring(3));
 				} else {
@@ -114,7 +107,7 @@ public class ForkedFFExecutor {
 		Objects.requireNonNull(output, "Output not set.");
 		Objects.requireNonNull(mappings, "Mappings not set.");
 
-		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings, mixins));
+		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
 		runFF(options, libraries, input, output, lineMap);
 	}
 

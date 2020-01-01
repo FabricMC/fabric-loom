@@ -100,7 +100,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 			comment.append("Mixins:");
 
 			for (MixinTargetScanner.MixinTargetInfo info : mixinList) {
-				comment.append(String.format("\n\t%s - {@link %s}", info.getModid(), info.getMixinClass()));
+				comment.append(String.format("\n\t%s - {@link %s}", info.getModid(), info.getMixinClass().replaceAll("\\$", ".")));
 			}
 		}
 

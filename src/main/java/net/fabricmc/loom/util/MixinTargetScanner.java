@@ -163,7 +163,6 @@ public class MixinTargetScanner {
 
 		for (AnnotationNode annotationNode : classNode.invisibleAnnotations) {
 			if (annotationNode.desc.equals("Lorg/spongepowered/asm/mixin/Mixin;")) {
-				project.getLogger().lifecycle(classNode.name + ":" + annotationNode.desc);
 				List<Object> values = annotationNode.values;
 
 				for (int i = 0; i < values.size(); i++) {

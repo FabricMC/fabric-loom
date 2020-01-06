@@ -112,6 +112,10 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			remapLineNumbersTask.setLineMapFile(linemapFile);
 			remapLineNumbersTask.setOutput(linemappedJar);
 
+			ApplyLinemappedJarTask applyLinemappedJarTask = (ApplyLinemappedJarTask) p.getTasks().getByName("genSources");
+			applyLinemappedJarTask.setLinemappedJar(linemappedJar);
+			applyLinemappedJarTask.setMappedJar(mappedJar);
+
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class);

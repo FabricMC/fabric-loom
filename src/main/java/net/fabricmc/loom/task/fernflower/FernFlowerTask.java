@@ -24,16 +24,12 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import static java.text.MessageFormat.format;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
-import java.util.function.Supplier;
-
-import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
+import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.ApplyLinemappedJarTask;
+import net.fabricmc.loom.task.ForkingJavaExecTask;
+import net.fabricmc.loom.util.ConsumingOutputStream;
+import net.fabricmc.loom.util.OperatingSystem;
+import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
@@ -42,11 +38,16 @@ import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import net.fabricmc.loom.task.AbstractDecompileTask;
-import net.fabricmc.loom.task.ForkingJavaExecTask;
-import net.fabricmc.loom.util.ConsumingOutputStream;
-import net.fabricmc.loom.util.OperatingSystem;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import static java.text.MessageFormat.format;
 
 /**
  * Created by covers1624 on 9/02/19.
@@ -55,11 +56,17 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 	private boolean noFork = false;
 	private int numThreads = Runtime.getRuntime().availableProcessors();
 
+
 	@TaskAction
 	public void doTask() throws Throwable {
 		if (!OperatingSystem.is64Bit()) {
 			throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
 		}
+
+		IncrementalDecompilation incrementalDecompilation = new IncrementalDecompilation(getInput().toPath(), getClosestCompiledJar().orElse(null),
+				getLogger());
+
+		Path toDecompile = incrementalDecompilation.diffCompiledJars();
 
 		Map<String, Object> options = new HashMap<>();
 		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
@@ -71,7 +78,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		List<String> args = new ArrayList<>();
 
 		options.forEach((k, v) -> args.add(format("-{0}={1}", k, v)));
-		args.add(getInput().getAbsolutePath());
+		args.add(toDecompile.toAbsolutePath().toString());
 		args.add("-o=" + getOutput().getAbsolutePath());
 
 		if (getLineMapFile() != null) {
@@ -143,6 +150,59 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 
 		result.rethrowFailure();
 		result.assertNormalExitValue();
+
+		finishIncrementalDecompilation(incrementalDecompilation);
+	}
+
+	private void finishIncrementalDecompilation(IncrementalDecompilation incrementalDecompilation) throws IOException {
+		Path closestCompiledJar = incrementalDecompilation.getOldCompiledJar();
+		if (closestCompiledJar == null) return;
+		Optional<Path> closestSourceJar = getSourceFileOf(closestCompiledJar);
+		if (!closestSourceJar.isPresent()) {
+			getLogger().error("Could not find sources jar of previously decompiled jar: " + closestCompiledJar);
+			return;
+		}
+		Optional<Path> oldLinemappedJar = getLinemappedJarOf(closestCompiledJar);
+		if (!oldLinemappedJar.isPresent()) {
+			getLogger().error("Could not find linemapped jar of previously decompiled jar: " + oldLinemappedJar);
+			return;
+		}
+
+		incrementalDecompilation.addUnchangedSourceFiles(getOutput().toPath(), closestSourceJar.get());
+		incrementalDecompilation.useUnchangedLinemappedClassFiles(oldLinemappedJar.get());
+	}
+
+	private Optional<Path> getClosestCompiledJar() throws IOException {
+		Stream<Path> candidateJars = Files.list(ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension()));
+
+		// Return the newest of available jars
+		return candidateJars.max((pathA, pathB) -> {
+			try {
+				//TODO: this algorithm can probably be improved
+				return Files.getLastModifiedTime(pathA).compareTo(Files.getLastModifiedTime(pathB));
+			} catch (IOException e) {
+				throw new RuntimeException("Could not get last modified time of compiled jar", e);
+			}
+		});
+
+	}
+
+	private Optional<Path> getSourceFileOf(Path compiledJar) throws IOException {
+		String compiledName = compiledJar.getFileName().toString();
+		String sourcesName = StringUtils.removeSuffix(compiledName, ".jar") + "-sources.jar";
+
+		return Files.list(getExtension().getUserCache().toPath())
+				.filter(path -> path.getFileName().toString().equals(sourcesName))
+				.findAny();
+	}
+
+	private Optional<Path> getLinemappedJarOf(Path compiledJar) throws IOException {
+		// Note we don't use the normal mapped jar in the top-level user cache and not the so called 'linemapped' jar because
+		// during the last phase of genSources the normal mapped jar gets overwritten with the linemapped one, and this way linemap changes
+		// applied with incremental decompilation are also taken into account.
+		return Files.list(getExtension().getUserCache().toPath())
+				.filter(path -> path.getFileName().toString().equals(compiledJar.getFileName().toString()))
+				.findAny();
 	}
 
 	@Input

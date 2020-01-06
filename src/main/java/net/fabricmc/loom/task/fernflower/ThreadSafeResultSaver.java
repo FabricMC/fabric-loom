@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import net.fabricmc.fernflower.api.IFabricResultSaver;
+import org.jetbrains.java.decompiler.main.DecompilerContext;
+import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,11 +42,6 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.jetbrains.java.decompiler.main.DecompilerContext;
-import org.jetbrains.java.decompiler.main.extern.IResultSaver;
-
-import net.fabricmc.fernflower.api.IFabricResultSaver;
-
 /**
  * Created by covers1624 on 18/02/19.
  */
@@ -54,13 +49,19 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 	private final Supplier<File> output;
 	private final Supplier<File> lineMapFile;
 
+	private boolean closed = false;
+	private boolean opened = false;
+
+	private final boolean usingDirectory;
+
 	public Map<String, ZipOutputStream> outputStreams = new HashMap<>();
 	public Map<String, ExecutorService> saveExecutors = new HashMap<>();
 	public PrintWriter lineMapWriter;
 
-	public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile) {
+	public ThreadSafeResultSaver(Supplier<File> output, Supplier<File> lineMapFile, boolean usingDirectory) {
 		this.output = output;
 		this.lineMapFile = lineMapFile;
+		this.usingDirectory = usingDirectory;
 	}
 
 	@Override
@@ -99,7 +100,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 			ZipOutputStream zos = outputStreams.get(key);
 
 			try {
-				zos.putNextEntry(new ZipEntry(entryName));
+				zos.putNextEntry(new ZipEntry(usingDirectory ? qualifiedName + ".java" : entryName));
 
 				if (content != null) {
 					zos.write(content.getBytes(StandardCharsets.UTF_8));
@@ -127,6 +128,9 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 
 	@Override
 	public void closeArchive(String path, String archiveName) {
+
+		if (closed) return;
+
 		String key = path + "/" + archiveName;
 		ExecutorService executor = saveExecutors.get(key);
 		Future<?> closeFuture = executor.submit(() -> {
@@ -153,10 +157,15 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 			lineMapWriter.flush();
 			lineMapWriter.close();
 		}
+
+		closed = true;
 	}
 
 	@Override
 	public void saveFolder(String path) {
+		if (opened) return;
+		this.createArchive("", output.get().getName(), null);
+		opened = true;
 	}
 
 	@Override
@@ -165,6 +174,7 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 
 	@Override
 	public void saveClassFile(String path, String qualifiedName, String entryName, String content, int[] mapping) {
+		this.saveClassEntry("", output.get().getName(), qualifiedName, entryName, content, mapping);
 	}
 
 	@Override

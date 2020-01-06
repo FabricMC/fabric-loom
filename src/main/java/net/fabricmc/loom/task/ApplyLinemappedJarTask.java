@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 public class ApplyLinemappedJarTask extends AbstractLoomTask {
 	private Object mappedJar;
@@ -48,8 +49,7 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 			try {
 				// The original jars without the linemapping needs to be saved for incremental decompilation
 				Files.copy(mappedJarPath, jarsBeforeLinemapping(getExtension()));
-				Files.deleteIfExists(mappedJarPath);
-				Files.copy(linemappedJarPath, mappedJarPath);
+				Files.copy(linemappedJarPath, mappedJarPath, StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

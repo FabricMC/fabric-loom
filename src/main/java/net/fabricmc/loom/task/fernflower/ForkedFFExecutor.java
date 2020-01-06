@@ -24,19 +24,14 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
-import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Entry point for Forked FernFlower task.
@@ -112,7 +107,7 @@ public class ForkedFFExecutor {
 	}
 
 	public static void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
-		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
+		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap, input.isDirectory());
 		IFernflowerLogger logger = new ThreadIDFFLogger();
 		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
 
@@ -122,5 +117,7 @@ public class ForkedFFExecutor {
 
 		ff.addSource(input);
 		ff.decompileContext();
+
+		saver.closeArchive("", output.getName());
 	}
 }

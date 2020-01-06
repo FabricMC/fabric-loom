@@ -46,8 +46,9 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 
 		if (Files.exists(linemappedJarPath)) {
 			try {
+				Files.createDirectories(jarsBeforeLinemapping(getExtension()));
 				// The original jars without the linemapping needs to be saved for incremental decompilation
-				Files.copy(mappedJarPath, jarsBeforeLinemapping(getExtension()));
+				Files.copy(mappedJarPath, jarsBeforeLinemapping(getExtension()).resolve(mappedJarPath.getFileName()));
 				Files.deleteIfExists(mappedJarPath);
 				Files.copy(linemappedJarPath, mappedJarPath);
 			} catch (IOException e) {

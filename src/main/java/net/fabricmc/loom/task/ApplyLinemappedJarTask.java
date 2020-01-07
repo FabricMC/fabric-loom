@@ -30,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Optional;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;

@@ -42,8 +42,10 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 		this.incrementalDecompilation = incrementalDecompilation;
 	}
 
-	public static Path jarsBeforeLinemapping(LoomGradleExtension extension) {
-		return Paths.get(extension.getUserCache().getPath(), "jarsBeforeLinemapping");
+	public static Path jarsBeforeLinemapping(LoomGradleExtension extension) throws IOException {
+		Path path = Paths.get(extension.getUserCache().getPath(), "jarsBeforeLinemapping");
+		Files.createDirectories(path);
+		return path;
 	}
 
 
@@ -54,14 +56,12 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 
 		if (Files.exists(linemappedJarPath)) {
 			try {
-
 				Files.createDirectories(jarsBeforeLinemapping(getExtension()));
 				Path notLinemappedJar = jarsBeforeLinemapping(getExtension()).resolve(mappedJarPath.getFileName());
 				// The original jars without the linemapping needs to be saved for incremental decompilation
 				if (!Files.exists(notLinemappedJar)) Files.copy(mappedJarPath, notLinemappedJar);
 				Files.copy(linemappedJarPath, mappedJarPath, StandardCopyOption.REPLACE_EXISTING);
-
-				addUnchangedLinemappedFiles(linemappedJarPath);
+				addUnchangedLinemappedFiles(mappedJarPath);
 
 			} catch (IOException e) {
 				throw new RuntimeException(e);

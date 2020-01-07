@@ -123,7 +123,7 @@ public class IncrementalDecompilation {
 					oldCompiledJar.getFileName(), unchangedClasses.size(), changedClasses.size()
 			));
 		} else {
-			logger.lifecycle("There are no older named minecraft jars that have been decompiled in store; The sources jar will be decompiled from scratch");
+			logger.lifecycle("Minecraft jar was not decompiled before; The sources jar will be decompiled from scratch");
 		}
 	}
 

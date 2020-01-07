@@ -24,11 +24,19 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import net.fabricmc.loom.task.AbstractDecompileTask;
-import net.fabricmc.loom.task.ApplyLinemappedJarTask;
-import net.fabricmc.loom.task.ForkingJavaExecTask;
-import net.fabricmc.loom.util.ConsumingOutputStream;
-import net.fabricmc.loom.util.OperatingSystem;
+import static java.text.MessageFormat.format;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Stack;
+import java.util.function.Supplier;
+
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
@@ -40,13 +48,11 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Supplier;
-
-import static java.text.MessageFormat.format;
+import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.ApplyLinemappedJarTask;
+import net.fabricmc.loom.task.ForkingJavaExecTask;
+import net.fabricmc.loom.util.ConsumingOutputStream;
+import net.fabricmc.loom.util.OperatingSystem;
 
 /**
  * Created by covers1624 on 9/02/19.
@@ -55,20 +61,20 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 	private boolean noFork = false;
 	private int numThreads = Runtime.getRuntime().availableProcessors();
 
-
 	@TaskAction
 	public void doTask() throws Throwable {
 		if (!OperatingSystem.is64Bit()) {
 			throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
 		}
+
 		Path input = getInput().toPath();
 
 		IncrementalDecompilation incrementalDecompilation = new IncrementalDecompilation(input,
-				IncrementalDecompilation.getClosestCompiledJar(
-						input,
-						ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension())
-				).orElse(null),
-				getLogger());
+						IncrementalDecompilation.getClosestCompiledJar(
+										input,
+										ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension())
+						).orElse(null),
+						getLogger());
 
 		Path toDecompile = incrementalDecompilation.getChangedClassfilesFile();
 
@@ -168,6 +174,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		Path closestCompiledJar = incrementalDecompilation.getOldCompiledJar();
 		if (closestCompiledJar == null) return;
 		Optional<Path> closestSourceJar = getSourceFileOf(closestCompiledJar);
+
 		if (!closestSourceJar.isPresent()) {
 			getLogger().error("Could not find sources jar of previously decompiled jar: " + closestCompiledJar);
 			return;
@@ -181,10 +188,9 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		String sourcesName = StringUtils.removeSuffix(compiledName, ".jar") + "-sources.jar";
 
 		return Files.list(getExtension().getUserCache().toPath())
-				.filter(path -> path.getFileName().toString().equals(sourcesName))
-				.findAny();
+						.filter(path -> path.getFileName().toString().equals(sourcesName))
+						.findAny();
 	}
-
 
 	@Input
 	public int getNumThreads() {

@@ -25,18 +25,28 @@
 package net.fabricmc.loom;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Locale;
 
-import net.fabricmc.loom.task.*;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
+import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.ApplyLinemappedJarTask;
+import net.fabricmc.loom.task.CleanLoomBinaries;
+import net.fabricmc.loom.task.CleanLoomMappings;
+import net.fabricmc.loom.task.DownloadAssetsTask;
+import net.fabricmc.loom.task.GenEclipseRunsTask;
+import net.fabricmc.loom.task.GenIdeaProjectTask;
+import net.fabricmc.loom.task.GenVsCodeProjectTask;
+import net.fabricmc.loom.task.MigrateMappingsTask;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapLineNumbersTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.task.RunClientTask;
+import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
@@ -115,7 +125,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			ApplyLinemappedJarTask applyLinemappedJarTask = (ApplyLinemappedJarTask) p.getTasks().getByName("genSources");
 			applyLinemappedJarTask.setLinemappedJar(linemappedJar);
 			applyLinemappedJarTask.setMappedJar(mappedJar);
-
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class);

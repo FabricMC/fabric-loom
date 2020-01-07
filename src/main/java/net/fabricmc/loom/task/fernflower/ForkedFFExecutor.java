@@ -24,14 +24,19 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 
 /**
  * Entry point for Forked FernFlower task.

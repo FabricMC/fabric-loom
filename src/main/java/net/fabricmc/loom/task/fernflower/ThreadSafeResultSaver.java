@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.task.fernflower;
 
-import net.fabricmc.fernflower.api.IFabricResultSaver;
-import org.jetbrains.java.decompiler.main.DecompilerContext;
-import org.jetbrains.java.decompiler.main.extern.IResultSaver;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +41,11 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import org.jetbrains.java.decompiler.main.DecompilerContext;
+import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+
+import net.fabricmc.fernflower.api.IFabricResultSaver;
 
 /**
  * Created by covers1624 on 18/02/19.
@@ -128,7 +133,6 @@ public class ThreadSafeResultSaver implements IResultSaver, IFabricResultSaver {
 
 	@Override
 	public void closeArchive(String path, String archiveName) {
-
 		if (closed) return;
 
 		String key = path + "/" + archiveName;

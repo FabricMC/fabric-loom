@@ -45,7 +45,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static java.text.MessageFormat.format;
 
@@ -62,11 +61,16 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		if (!OperatingSystem.is64Bit()) {
 			throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
 		}
+		Path input = getInput().toPath();
 
-		IncrementalDecompilation incrementalDecompilation = new IncrementalDecompilation(getInput().toPath(), getClosestCompiledJar().orElse(null),
+		IncrementalDecompilation incrementalDecompilation = new IncrementalDecompilation(input,
+				IncrementalDecompilation.getClosestCompiledJar(
+						input,
+						ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension())
+				).orElse(null),
 				getLogger());
 
-		Path toDecompile = incrementalDecompilation.diffCompiledJars();
+		Path toDecompile = incrementalDecompilation.getChangedClassfilesFile();
 
 		Map<String, Object> options = new HashMap<>();
 		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
@@ -151,10 +155,16 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		result.rethrowFailure();
 		result.assertNormalExitValue();
 
-		finishIncrementalDecompilation(incrementalDecompilation);
+		addUnchangedSourceFiles(incrementalDecompilation);
+		passIncrementalDecompilation(incrementalDecompilation);
 	}
 
-	private void finishIncrementalDecompilation(IncrementalDecompilation incrementalDecompilation) throws IOException {
+	private void passIncrementalDecompilation(IncrementalDecompilation ic) {
+		ApplyLinemappedJarTask applyLinemappedJarTask = (ApplyLinemappedJarTask) getProject().getTasks().getByName("genSources");
+		applyLinemappedJarTask.setIncrementalDecompilation(ic);
+	}
+
+	private void addUnchangedSourceFiles(IncrementalDecompilation incrementalDecompilation) throws IOException {
 		Path closestCompiledJar = incrementalDecompilation.getOldCompiledJar();
 		if (closestCompiledJar == null) return;
 		Optional<Path> closestSourceJar = getSourceFileOf(closestCompiledJar);
@@ -162,29 +172,8 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 			getLogger().error("Could not find sources jar of previously decompiled jar: " + closestCompiledJar);
 			return;
 		}
-		Optional<Path> oldLinemappedJar = getLinemappedJarOf(closestCompiledJar);
-		if (!oldLinemappedJar.isPresent()) {
-			getLogger().error("Could not find linemapped jar of previously decompiled jar: " + oldLinemappedJar);
-			return;
-		}
 
 		incrementalDecompilation.addUnchangedSourceFiles(getOutput().toPath(), closestSourceJar.get());
-		incrementalDecompilation.useUnchangedLinemappedClassFiles(oldLinemappedJar.get());
-	}
-
-	private Optional<Path> getClosestCompiledJar() throws IOException {
-		Stream<Path> candidateJars = Files.list(ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension()));
-
-		// Return the newest of available jars
-		return candidateJars.max((pathA, pathB) -> {
-			try {
-				//TODO: this algorithm can probably be improved
-				return Files.getLastModifiedTime(pathA).compareTo(Files.getLastModifiedTime(pathB));
-			} catch (IOException e) {
-				throw new RuntimeException("Could not get last modified time of compiled jar", e);
-			}
-		});
-
 	}
 
 	private Optional<Path> getSourceFileOf(Path compiledJar) throws IOException {
@@ -196,14 +185,6 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 				.findAny();
 	}
 
-	private Optional<Path> getLinemappedJarOf(Path compiledJar) throws IOException {
-		// Note we don't use the normal mapped jar in the top-level user cache and not the so called 'linemapped' jar because
-		// during the last phase of genSources the normal mapped jar gets overwritten with the linemapped one, and this way linemap changes
-		// applied with incremental decompilation are also taken into account.
-		return Files.list(getExtension().getUserCache().toPath())
-				.filter(path -> path.getFileName().toString().equals(compiledJar.getFileName().toString()))
-				.findAny();
-	}
 
 	@Input
 	public int getNumThreads() {

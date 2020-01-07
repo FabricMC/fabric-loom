@@ -9,13 +9,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class IncrementalDecompilationTest {
 	private static final Path NEW_COMPILED_JAR = Paths.get("minecraft-1.15.1-build.23-not-linemapped.jar");
+	private static final Path NEW_COMPILED_JAR_UNMODIFIED = Paths.get("save/minecraft-1.15.1-build.23-not-linemapped.jar");
 	private static final Path OLD_COMPILED_JAR = Paths.get("minecraft-1.15.1-build.17-not-linemapped.jar");
 	private static final Path OLD_SOURCES_JAR = Paths.get("minecraft-1.15.1-build.17-sources.jar");
 	private static final Path OLD_LINEMAPPED_JAR = Paths.get("minecraft-1.15.1-build.17-linemapped.jar");
@@ -28,14 +31,15 @@ public class IncrementalDecompilationTest {
 	@Ignore
 	@Test
 	public void test() throws IOException {
-		Path toDecompile = ic.diffCompiledJars();
+		Files.copy(NEW_COMPILED_JAR_UNMODIFIED, NEW_COMPILED_JAR, StandardCopyOption.REPLACE_EXISTING);
+		Path toDecompile = ic.getChangedClassfilesFile();
 
 		decompile(toDecompile);
 
 		remapLineNumbers();
 
 		ic.addUnchangedSourceFiles(OUT_SOURCES, OLD_SOURCES_JAR);
-		ic.useUnchangedLinemappedClassFiles(OLD_LINEMAPPED_JAR);
+		ic.useUnchangedLinemappedClassFiles(OLD_LINEMAPPED_JAR, OUT_LINEMAPPED_JAR);
 	}
 
 	private void remapLineNumbers() throws IOException {

@@ -1,5 +1,6 @@
 package net.fabricmc.loom.task.fernflower;
 
+import net.fabricmc.loom.task.ApplyLinemappedJarTask;
 import org.apache.tools.ant.util.StringUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -10,14 +11,31 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class IncrementalDecompilation {
 
+	public static Optional<Path> getClosestCompiledJar(Path closestTo,Path compiledJarsDir) throws IOException {
+		Stream<Path> candidateJars = Files.list(compiledJarsDir);
+
+		// Return the newest of available jars
+		return candidateJars.filter(p -> !p.getFileName().equals(closestTo.getFileName())).max((pathA, pathB) -> {
+			try {
+				//TODO: this algorithm can probably be improved
+				return Files.getLastModifiedTime(pathA).compareTo(Files.getLastModifiedTime(pathB));
+			} catch (IOException e) {
+				throw new RuntimeException("Could not get last modified time of compiled jar", e);
+			}
+		});
+
+	}
+
 	private final Path newCompiledJar;
 	private final @Nullable Path oldCompiledJar;
-	private final List<String> unchangedClasses = new ArrayList<>();
-	private final List<String> changedClasses = new ArrayList<>();
+	private final List<String> unchangedClasses;
+	private final List<String> changedClasses;
 	private final Logger logger;
 
 	public @Nullable Path getOldCompiledJar() {
@@ -28,15 +46,40 @@ public class IncrementalDecompilation {
 		this.newCompiledJar = newCompiledJar;
 		this.oldCompiledJar = oldCompiledJar;
 		this.logger = logger;
+
+		unchangedClasses = new ArrayList<>();
+		changedClasses = new ArrayList<>();
+		diffCompiledJars(unchangedClasses, changedClasses);
+	}
+
+	/**
+	 * @return A directory that contains the changed classfiles
+	 */
+	public Path getChangedClassfilesFile() throws IOException {
+		logStatus();
+		if (unchangedClasses.isEmpty()) return newCompiledJar;
+
+		// copy over the classfiles we want to be decompiled to a normal directory
+		Path changedClassfilesDir = Files.createTempDirectory("compiled");
+
+		try (FileSystem compiledJarFs = FileSystems.newFileSystem(newCompiledJar, null)) {
+			for (String changedClass : changedClasses) {
+				String path = changedClass + ".class";
+				Path tempClassfileForFF = Paths.get(changedClassfilesDir.toString(), path);
+				Files.createDirectories(tempClassfileForFF.getParent());
+				Files.copy(compiledJarFs.getPath(path), tempClassfileForFF);
+			}
+		}
+		return changedClassfilesDir;
 	}
 
 	/**
 	 * Since we don't decompile the entire jar then the line mapping is not complete,
 	 * however we can reuse the old linemapped jar and copy the unchanged parts over to the new partially linemapped jar
 	 */
-	public void useUnchangedLinemappedClassFiles(Path oldLinemappedJar) throws IOException {
+	public void useUnchangedLinemappedClassFiles(Path oldLinemappedJar, Path newLinemappedJar) throws IOException {
 		try (FileSystem oldLinemappedFs = FileSystems.newFileSystem(oldLinemappedJar, null);
-			 FileSystem newCompiledFs = FileSystems.newFileSystem(newCompiledJar, null)
+			 FileSystem newCompiledFs = FileSystems.newFileSystem(newLinemappedJar, null)
 		) {
 			for (String unchangedClass : unchangedClasses) {
 				String path = unchangedClass + ".class";
@@ -61,19 +104,16 @@ public class IncrementalDecompilation {
 		}
 	}
 
-	/**
-	 * @return A directory that contains the changed classfiles, or just the compiled jar if there's nothing to compare against
-	 */
-	public Path diffCompiledJars() throws IOException {
-		if (oldCompiledJar == null) return newCompiledJar;
-		Path changedDir;
+
+	private void diffCompiledJars(List<String> unchangedClasses, List<String> changedClasses) {
+		if (oldCompiledJar == null) return;
 		try (FileSystem newFs = FileSystems.newFileSystem(newCompiledJar, null)) {
 			try (FileSystem oldFs = FileSystems.newFileSystem(oldCompiledJar, null)) {
-				changedDir = addClassfiles(newFs, oldFs);
+				addClassfiles(newFs, oldFs, unchangedClasses, changedClasses);
 			}
+		} catch (IOException e) {
+			throw new RuntimeException("Cannot diff compiled jars", e);
 		}
-		logStatus();
-		return changedDir;
 	}
 
 
@@ -91,10 +131,7 @@ public class IncrementalDecompilation {
 	/**
 	 * @return A directory that contains the changed classfiles
 	 */
-	private Path addClassfiles(FileSystem jarFs, @Nullable FileSystem closestJarFs) throws IOException {
-		// copy over the classfiles we want to be decompiled to a normal directory
-		Path changedClassfilesDir = Files.createTempDirectory("compiled");
-
+	private static void addClassfiles(FileSystem jarFs, @Nullable FileSystem closestJarFs, List<String> unchanged, List<String> changed) throws IOException {
 		for (Path rootDir : jarFs.getRootDirectories()) {
 			Files.walk(rootDir).forEach(newJarPath -> {
 				if (Files.isDirectory(newJarPath) || !newJarPath.toString().endsWith(".class")) return;
@@ -103,15 +140,10 @@ public class IncrementalDecompilation {
 
 					if (outerOrInnerClassesChanged(closestJarFs, newJarPath)) {
 						// Nothing to reuse from an old jar, decompile it
-
-						Path tempClassfileForFF = Paths.get(changedClassfilesDir.toString(), newJarPath.toString());
-						Files.createDirectories(tempClassfileForFF.getParent());
-						Files.copy(newJarPath, tempClassfileForFF);
-
-						changedClasses.add(pathString);
+						changed.add(pathString);
 					} else {
 						//TODO: filter out inner classes
-						unchangedClasses.add(pathString);
+						unchanged.add(pathString);
 					}
 
 				} catch (IOException e) {
@@ -120,8 +152,9 @@ public class IncrementalDecompilation {
 
 			});
 		}
-		return changedClassfilesDir;
 	}
+
+
 
 	private static boolean changed(@Nullable FileSystem oldJarFs, Path classFile) throws IOException {
 		Path classFileInOldJar = oldJarFs != null ? oldJarFs.getPath(classFile.toString()) : null;

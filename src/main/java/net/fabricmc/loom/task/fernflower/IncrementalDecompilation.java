@@ -152,9 +152,6 @@ public class IncrementalDecompilation {
 		}
 	}
 
-	/**
-	 * @return A directory that contains the changed classfiles
-	 */
 	private static void addClassfiles(FileSystem jarFs, @Nullable FileSystem closestJarFs, List<String> unchanged, List<String> changed) throws IOException {
 		for (Path rootDir : jarFs.getRootDirectories()) {
 			Files.walk(rootDir).forEach(newJarPath -> {
@@ -167,7 +164,6 @@ public class IncrementalDecompilation {
 						// Nothing to reuse from an old jar, decompile it
 						changed.add(pathString);
 					} else {
-						//TODO: filter out inner classes
 						unchanged.add(pathString);
 					}
 				} catch (IOException e) {

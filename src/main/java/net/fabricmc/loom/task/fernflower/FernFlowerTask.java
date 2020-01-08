@@ -33,11 +33,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Stack;
 import java.util.function.Supplier;
 
 import org.apache.tools.ant.util.StringUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Input;
@@ -59,6 +59,7 @@ import net.fabricmc.loom.util.OperatingSystem;
  */
 public class FernFlowerTask extends AbstractDecompileTask implements ForkingJavaExecTask {
 	private boolean noFork = false;
+	private boolean enableIncrementalDecompilation = true;
 	private int numThreads = Runtime.getRuntime().availableProcessors();
 
 	@TaskAction
@@ -69,14 +70,9 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 
 		Path input = getInput().toPath();
 
-		IncrementalDecompilation incrementalDecompilation = new IncrementalDecompilation(input,
-						IncrementalDecompilation.getClosestCompiledJar(
-										input,
-										ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension())
-						).orElse(null),
-						getLogger());
+		IncrementalDecompilation incrementalDecompilation = getIncrementalDecompilation(getNonLinemappedJarOf(input));
 
-		Path toDecompile = incrementalDecompilation.getChangedClassfilesFile();
+		Path toDecompile = incrementalDecompilation == null ? input : incrementalDecompilation.getChangedClassfilesFile();
 
 		Map<String, Object> options = new HashMap<>();
 		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
@@ -161,11 +157,29 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		result.rethrowFailure();
 		result.assertNormalExitValue();
 
-		addUnchangedSourceFiles(incrementalDecompilation);
+		if (incrementalDecompilation != null) addUnchangedSourceFiles(incrementalDecompilation);
 		passIncrementalDecompilation(incrementalDecompilation);
 	}
 
-	private void passIncrementalDecompilation(IncrementalDecompilation ic) {
+	@Nullable
+	private IncrementalDecompilation getIncrementalDecompilation(Path input) throws IOException {
+		Path closestCompiledJar = IncrementalDecompilation.getClosestCompiledJar(
+						input,
+						ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension())
+		).orElse(null);
+
+		Path closestSourceJar = getSourceFileOf(closestCompiledJar);
+
+		if (closestSourceJar == null) {
+			getLogger().warn("Could not find sources jar of previously decompiled jar: " + closestCompiledJar + ", jar will be decompiled from scratch");
+		}
+
+		return enableIncrementalDecompilation && closestCompiledJar != null && closestSourceJar != null
+						? new IncrementalDecompilation(input, closestCompiledJar, getLogger())
+						: null;
+	}
+
+	private void passIncrementalDecompilation(@Nullable IncrementalDecompilation ic) {
 		ApplyLinemappedJarTask applyLinemappedJarTask = (ApplyLinemappedJarTask) getProject().getTasks().getByName("genSources");
 		applyLinemappedJarTask.setIncrementalDecompilation(ic);
 	}
@@ -173,23 +187,31 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 	private void addUnchangedSourceFiles(IncrementalDecompilation incrementalDecompilation) throws IOException {
 		Path closestCompiledJar = incrementalDecompilation.getOldCompiledJar();
 		if (closestCompiledJar == null) return;
-		Optional<Path> closestSourceJar = getSourceFileOf(closestCompiledJar);
+		Path closestSourceJar = getSourceFileOf(closestCompiledJar);
 
-		if (!closestSourceJar.isPresent()) {
-			getLogger().error("Could not find sources jar of previously decompiled jar: " + closestCompiledJar);
+		if (closestSourceJar == null) {
+			getLogger().warn("Could not find sources jar of previously decompiled jar: " + closestCompiledJar);
 			return;
 		}
 
-		incrementalDecompilation.addUnchangedSourceFiles(getOutput().toPath(), closestSourceJar.get());
+		incrementalDecompilation.addUnchangedSourceFiles(getOutput().toPath(), closestSourceJar);
 	}
 
-	private Optional<Path> getSourceFileOf(Path compiledJar) throws IOException {
+	private Path getNonLinemappedJarOf(Path compiledJar) throws IOException {
+		Path savedNonLinemappedPath = ApplyLinemappedJarTask.jarsBeforeLinemapping(getExtension()).resolve(compiledJar.getFileName());
+		// Before genSources runs on a jar, the non-linemapped jar is the one stored in the top-level loom cache and is used in the IDE.
+		// Afterwards, the one in the top-level gets linemapped and the non-linemapped one is stored in ApplyLinemappedJarTask.jarsBeforeLinemapping.
+		return Files.exists(savedNonLinemappedPath) ? savedNonLinemappedPath : compiledJar;
+	}
+
+	private @Nullable Path getSourceFileOf(@Nullable Path compiledJar) {
+		if (compiledJar == null) return null;
 		String compiledName = compiledJar.getFileName().toString();
 		String sourcesName = StringUtils.removeSuffix(compiledName, ".jar") + "-sources.jar";
 
-		return Files.list(getExtension().getUserCache().toPath())
-						.filter(path -> path.getFileName().toString().equals(sourcesName))
-						.findAny();
+		Path sourceFile = getExtension().getUserCache().toPath().resolve(sourcesName);
+
+		return Files.exists(sourceFile) ? sourceFile : null;
 	}
 
 	@Input
@@ -200,6 +222,15 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 	@Input
 	public boolean isNoFork() {
 		return noFork;
+	}
+
+	@Input
+	public boolean isEnableIncrementalDecompilation() {
+		return enableIncrementalDecompilation;
+	}
+
+	public void setEnableIncrementalDecompilation(boolean enableIncrementalDecompilation) {
+		this.enableIncrementalDecompilation = enableIncrementalDecompilation;
 	}
 
 	public void setNoFork(boolean noFork) {

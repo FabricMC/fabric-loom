@@ -32,6 +32,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -42,7 +43,7 @@ import net.fabricmc.loom.task.fernflower.IncrementalDecompilation;
 public class ApplyLinemappedJarTask extends AbstractLoomTask {
 	private Object mappedJar;
 	private Object linemappedJar;
-	private IncrementalDecompilation incrementalDecompilation;
+	private @Nullable IncrementalDecompilation incrementalDecompilation;
 
 	@InputFile
 	public File getMappedJar() {
@@ -62,7 +63,7 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 		this.linemappedJar = linemappedJar;
 	}
 
-	public void setIncrementalDecompilation(IncrementalDecompilation incrementalDecompilation) {
+	public void setIncrementalDecompilation(@Nullable IncrementalDecompilation incrementalDecompilation) {
 		this.incrementalDecompilation = incrementalDecompilation;
 	}
 
@@ -92,6 +93,7 @@ public class ApplyLinemappedJarTask extends AbstractLoomTask {
 	}
 
 	private void addUnchangedLinemappedFiles(Path linemappedJarPath) throws IOException {
+		if (incrementalDecompilation == null) return;
 		Path closestCompiledJar = incrementalDecompilation.getOldCompiledJar();
 		if (closestCompiledJar == null) return;
 

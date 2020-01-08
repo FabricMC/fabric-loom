@@ -37,6 +37,7 @@ import net.fabricmc.loom.task.AbstractDecompileTask;
 import net.fabricmc.loom.task.ApplyLinemappedJarTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
 import net.fabricmc.loom.task.CleanLoomMappings;
+import net.fabricmc.loom.task.CleanSourcesTask;
 import net.fabricmc.loom.task.DownloadAssetsTask;
 import net.fabricmc.loom.task.GenEclipseRunsTask;
 import net.fabricmc.loom.task.GenIdeaProjectTask;
@@ -95,6 +96,8 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.getOutputs().upToDateWhen((o) -> false);
 			t.setGroup("fabric");
 		});
+
+		tasks.register("cleanMinecraftSources", CleanSourcesTask.class);
 
 		project.afterEvaluate((p) -> {
 			AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");

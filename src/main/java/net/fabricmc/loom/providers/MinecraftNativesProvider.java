@@ -28,8 +28,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
+import org.zeroturnaround.zip.ZipException;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -50,7 +51,11 @@ public class MinecraftNativesProvider {
 				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
 
 				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
-				ZipUtil.unpack(libJarFile, nativesDir);
+				try {
+					ZipUtil.unpack(libJarFile, nativesDir);
+				} catch (ZipException e) {
+					project.getLogger().info("Could not copy native library into natives directory; this is normal while the game is running.", e);
+				}
 			}
 		}
 	}

@@ -48,8 +48,8 @@ import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 public class ForkedFFExecutor {
 	public static void main(String[] args) throws IOException {
 		Map<String, Object> options = new HashMap<>();
-		File input = null;
 		File output = null;
+		File input = null;
 		File lineMap = null;
 		File mappings = null;
 		List<File> libraries = new ArrayList<>();

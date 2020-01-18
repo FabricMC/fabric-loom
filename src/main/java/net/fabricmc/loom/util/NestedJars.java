@@ -194,7 +194,7 @@ public class NestedJars {
 	private static String getMod(Dependency dependency) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
-		jsonObject.addProperty("id", (dependency.getGroup().replaceAll("\\.", "_") + "_" + dependency.getName()).toLowerCase(Locale.ENGLISH));
+		jsonObject.addProperty("id", (dependency.getGroup() + "_" + dependency.getName()).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
 		jsonObject.addProperty("version", dependency.getVersion());
 		jsonObject.addProperty("name", dependency.getName());
 

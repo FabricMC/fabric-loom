@@ -38,6 +38,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
@@ -56,7 +57,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	public static void processMod(File input, File output, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
 		if (output.exists()) {

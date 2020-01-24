@@ -59,13 +59,15 @@ public class NestedJars {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	public static boolean addNestedJars(Project project, Path modJarPath) {
-		if (getContainedJars(project).isEmpty()) {
+		List<File> containedJars = getContainedJars(project);
+
+		if (containedJars.isEmpty()) {
 			return false;
 		}
 
 		File modJar = modJarPath.toFile();
 
-		ZipUtil.addOrReplaceEntries(modJar, getContainedJars(project).stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
+		ZipUtil.addOrReplaceEntries(modJar, containedJars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
 
 		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
@@ -77,7 +79,7 @@ public class NestedJars {
 					nestedJars = new JsonArray();
 				}
 
-				for (File file : getContainedJars(project)) {
+				for (File file : containedJars) {
 					JsonObject jsonObject = new JsonObject();
 					jsonObject.addProperty("file", "META-INF/jars/" + file.getName());
 					nestedJars.add(jsonObject);

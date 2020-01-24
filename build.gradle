@@ -39,7 +39,7 @@ dependencies {
 	implementation ('com.google.guava:guava:28.0-jre')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.4.1.68') {
+	implementation ('net.fabricmc:stitch:0.4.2.70') {
 		exclude module: 'enigma'
 	}
 

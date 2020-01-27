@@ -83,7 +83,7 @@ public class MinecraftAssetsProvider {
 		project.getLogger().lifecycle(":downloading assets...");
 
 		Stack<ProgressLogger> loggers = new Stack<>();
-		ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() / 2);
+		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
 
 		AssetIndex index;
 

@@ -127,7 +127,7 @@ public class MinecraftAssetsProvider {
 						}
 
 						project.getLogger().debug(":downloading asset " + assetName);
-						progressLogger.progress(assetName + " - " + sha1);
+						progressLogger.progress(String.format("%-30.30s", assetName) + " - " + sha1);
 
 						try {
 							DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);

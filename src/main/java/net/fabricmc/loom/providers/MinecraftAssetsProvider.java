@@ -28,8 +28,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Deque;
 import java.util.Map;
-import java.util.Stack;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -82,7 +83,7 @@ public class MinecraftAssetsProvider {
 
 		project.getLogger().lifecycle(":downloading assets...");
 
-		Stack<ProgressLogger> loggers = new Stack<>();
+		Deque<ProgressLogger> loggers = new ConcurrentLinkedDeque<>();
 		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
 
 		AssetIndex index;

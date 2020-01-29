@@ -28,7 +28,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Deque;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import org.gradle.api.GradleException;
@@ -76,8 +81,11 @@ public class MinecraftAssetsProvider {
 			}
 		}
 
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
-		progressLogger.start("Downloading assets...", "assets");
+		project.getLogger().lifecycle(":downloading assets...");
+
+		Deque<ProgressLogger> loggers = new ConcurrentLinkedDeque<>();
+		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
+
 		AssetIndex index;
 
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
@@ -85,9 +93,6 @@ public class MinecraftAssetsProvider {
 		}
 
 		Map<String, AssetObject> parent = index.getFileMap();
-		final int totalSize = parent.size();
-		int position = 0;
-		project.getLogger().lifecycle(":downloading assets...");
 
 		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
 			AssetObject object = entry.getValue();
@@ -103,22 +108,52 @@ public class MinecraftAssetsProvider {
 						throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
 					}
 				} else {
-					project.getLogger().debug(":downloading asset " + entry.getKey());
-					DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
+					executor.execute(() -> {
+						ProgressLogger progressLogger;
+
+						if (loggers.isEmpty()) {
+							//Create a new logger if we need one
+							progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
+							progressLogger.start("Downloading assets...", "assets");
+						} else {
+							// use a free logger if we can
+							progressLogger = loggers.pop();
+						}
+
+						String assetName = entry.getKey();
+						int end = assetName.lastIndexOf("/") + 1;
+
+						if (end > 0) {
+							assetName = assetName.substring(end);
+						}
+
+						project.getLogger().debug(":downloading asset " + assetName);
+						progressLogger.progress(String.format("%-30.30s", assetName) + " - " + sha1);
+
+						try {
+							DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to download: " + assetName, e);
+						}
+
+						//Give this logger back
+						loggers.add(progressLogger);
+					});
 				}
 			}
-
-			String assetName = entry.getKey();
-			int end = assetName.lastIndexOf("/") + 1;
-
-			if (end > 0) {
-				assetName = assetName.substring(end);
-			}
-
-			progressLogger.progress(assetName + " - " + position + "/" + totalSize + " (" + (int) ((position / (double) totalSize) * 100) + "%) assets downloaded");
-			position++;
 		}
 
-		progressLogger.completed();
+		//Wait for the assets to all download
+		executor.shutdown();
+
+		try {
+			if (executor.awaitTermination(2, TimeUnit.HOURS)) {
+				executor.shutdownNow();
+			}
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+
+		loggers.forEach(ProgressLogger::completed);
 	}
 }

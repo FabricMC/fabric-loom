@@ -110,7 +110,7 @@ public class LoomDependencyManager {
 					try {
 						provider.provide(info, project, extension, afterTasks::add);
 					} catch (Exception e) {
-						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion(), e);
+						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.getMessage(), e);
 					}
 				}
 			});

@@ -129,10 +129,8 @@ public class MinecraftProvider extends DependencyProvider {
 				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
 			}
 		} else {
-			if (StaticPathWatcher.INSTANCE.hasFileChanged(manifests.toPath())) {
-				project.getLogger().debug("Downloading version manifests");
-				DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
-			}
+			project.getLogger().debug("Downloading version manifests");
+			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
 		}
 
 		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();

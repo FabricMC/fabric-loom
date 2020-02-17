@@ -165,8 +165,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		project.getLogger().lifecycle(":remapping");
 		Mercury mercury = SourceRemapper.createMercuryWithClassPath(project, false);
 
-		mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_MAPPED_JAR.toPath());
-		mercury.getClassPath().add(minecraftMappedProvider.MINECRAFT_INTERMEDIARY_JAR.toPath());
+		mercury.getClassPath().add(minecraftMappedProvider.getMappedJar().toPath());
+		mercury.getClassPath().add(minecraftMappedProvider.getIntermediaryJar().toPath());
 
 		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 

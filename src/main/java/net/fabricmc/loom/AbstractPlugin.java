@@ -50,7 +50,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.scala.ScalaCompile;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
@@ -224,9 +223,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModel.getModule().setDownloadJavadoc(true);
 		ideaModel.getModule().setDownloadSources(true);
 		ideaModel.getModule().setInheritOutputDirs(true);
-
-		// ECLIPSE
-		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
 	}
 
 	/**
@@ -236,7 +232,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-		SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
@@ -264,15 +259,15 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
 			});
 
+			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+				flatDirectoryArtifactRepository.dir(extension.getProjectJarCache());
+				flatDirectoryArtifactRepository.setName("ProjectCacheFiles");
+			});
+
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Fabric");
 				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
 			});
-
-			/* project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("SpongePowered");
-				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
-			}); */
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Mojang");
@@ -285,9 +280,9 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new MinecraftProvider());
-			dependencyManager.addProvider(new MappingsProvider());
-			dependencyManager.addProvider(new LaunchProvider());
+			dependencyManager.addProvider(new MinecraftProvider(getProject()));
+			dependencyManager.addProvider(new MappingsProvider(getProject()));
+			dependencyManager.addProvider(new LaunchProvider(getProject()));
 
 			dependencyManager.handleDependencies(project1);
 

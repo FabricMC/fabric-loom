@@ -22,36 +22,56 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.providers;
+package net.fabricmc.loom.processors;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
 
-public class MinecraftNativesProvider {
-	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
+public class JarProcessorManager {
+	private final Project project;
+	private final LoomGradleExtension extension;
 
-		File nativesDir = extension.getNativesDirectory();
-		File jarStore = extension.getNativesJarStore();
+	private final List<JarProcessor> jarProcessors;
 
-		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
-			File libJarFile = library.getFile(jarStore);
+	public JarProcessorManager(Project project) {
+		this.project = project;
+		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		jarProcessors = setupProcessors();
+	}
 
-			if (library.allowed() && library.isNative() && libJarFile != null) {
-				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
+	//TODO possibly expand via an API?
+	private List<JarProcessor> setupProcessors() {
+		List<JarProcessor> jarProcessors = new ArrayList<>();
 
-				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
-				ZipUtil.unpack(libJarFile, nativesDir);
-			}
+		if (extension.accessEscalator != null) {
+			jarProcessors.add(new AccessEscalator());
+		}
+
+		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));
+		return Collections.unmodifiableList(jarProcessors);
+	}
+
+	public boolean active() {
+		return !jarProcessors.isEmpty();
+	}
+
+	public boolean isInvalid(File file) {
+		if (!file.exists()) {
+			return true;
+		}
+
+		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+	}
+
+	public void process(File file) {
+		for (JarProcessor jarProcessor : jarProcessors) {
+			jarProcessor.process(file);
 		}
 	}
 }

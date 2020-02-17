@@ -77,8 +77,8 @@ public class SourceRemapper {
 				}
 			}
 
-			m.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_MAPPED_JAR.toPath());
-			m.getClassPath().add(extension.getMinecraftMappedProvider().MINECRAFT_INTERMEDIARY_JAR.toPath());
+			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
+			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
 
 			m.getProcessors().add(MercuryRemapper.create(mappings));
 

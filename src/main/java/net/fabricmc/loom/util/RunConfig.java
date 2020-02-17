@@ -144,7 +144,7 @@ public class RunConfig {
 	public static RunConfig clientRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
-		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.versionInfo;
+		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
 
 		RunConfig ideaClient = new RunConfig();
 		populate(project, extension, ideaClient, "client");

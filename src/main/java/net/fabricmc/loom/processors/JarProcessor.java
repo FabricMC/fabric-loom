@@ -22,36 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.providers;
+package net.fabricmc.loom.processors;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 
-import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
+public interface JarProcessor {
+	void setup(Project project);
 
-public class MinecraftNativesProvider {
-	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
+	void process(File file);
 
-		File nativesDir = extension.getNativesDirectory();
-		File jarStore = extension.getNativesJarStore();
-
-		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
-			File libJarFile = library.getFile(jarStore);
-
-			if (library.allowed() && library.isNative() && libJarFile != null) {
-				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
-
-				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
-				ZipUtil.unpack(libJarFile, nativesDir);
-			}
-		}
-	}
+	boolean isInvalid(File file);
 }

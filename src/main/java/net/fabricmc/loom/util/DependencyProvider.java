@@ -51,16 +51,23 @@ import net.fabricmc.loom.LoomGradleExtension;
 
 public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
+	private final Project project;
+	private final LoomGradleExtension extension;
 
-	public abstract void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception;
+	public DependencyProvider(Project project) {
+		this.project = project;
+		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+	}
+
+	public abstract void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception;
 
 	public abstract String getTargetConfig();
 
-	public void addDependency(Object object, Project project) {
-		addDependency(object, project, "compile");
+	public void addDependency(Object object) {
+		addDependency(object, "compile");
 	}
 
-	public void addDependency(Object object, Project project, String target) {
+	public void addDependency(Object object, String target) {
 		if (object instanceof File) {
 			object = project.files(object);
 		}
@@ -74,6 +81,14 @@ public abstract class DependencyProvider {
 
 	public LoomDependencyManager getDependencyManager() {
 		return dependencyManager;
+	}
+
+	public Project getProject() {
+		return project;
+	}
+
+	public LoomGradleExtension getExtension() {
+		return extension;
 	}
 
 	public static class DependencyInfo {

@@ -52,7 +52,7 @@ import net.fabricmc.loom.task.RunServerTask;
 import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
-	private static File getMappedByproduct(Project project, String suffix) {
+	public static File getMappedByproduct(Project project, String suffix) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
@@ -108,7 +108,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 			Project project = this.getProject();
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
+			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().getLibraryProvider();
 			MappingsProvider mappingsProvider = extension.getMappingsProvider();
 			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 			File linemappedJar = getMappedByproduct(project, "-linemapped.jar");

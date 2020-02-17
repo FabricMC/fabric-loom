@@ -96,7 +96,7 @@ public class MinecraftVersionInfo {
 					return "";
 				}
 
-				return "-" + element.getAsString().replace("\"", "");
+				return "-" + element.getAsString().replace("\"", "").replace("${arch}", OperatingSystem.getArch());
 			}
 		}
 

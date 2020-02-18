@@ -50,7 +50,7 @@ public class JarProcessorManager {
 		List<JarProcessor> jarProcessors = new ArrayList<>();
 
 		if (extension.accessEscalator != null) {
-			jarProcessors.add(new AccessEscalator());
+			jarProcessors.add(new AccessEscalatorJarProcessor());
 		}
 
 		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));
@@ -73,5 +73,10 @@ public class JarProcessorManager {
 		for (JarProcessor jarProcessor : jarProcessors) {
 			jarProcessor.process(file);
 		}
+	}
+
+	public <T extends JarProcessor> T getByType(Class<T> tClass) {
+		//noinspection unchecked
+		return (T) jarProcessors.stream().filter(jarProcessor -> jarProcessor.getClass().equals(tClass)).findFirst().orElse(null);
 	}
 }

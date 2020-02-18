@@ -45,6 +45,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -65,6 +66,7 @@ public class LoomGradleExtension {
 	//Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
+	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
@@ -302,6 +304,14 @@ public class LoomGradleExtension {
 
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {
 		this.dependencyManager = dependencyManager;
+	}
+
+	public JarProcessorManager getJarProcessorManager() {
+		return jarProcessorManager;
+	}
+
+	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
+		this.jarProcessorManager = jarProcessorManager;
 	}
 
 	public String getRefmapName() {

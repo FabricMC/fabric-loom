@@ -24,113 +24,205 @@
 
 package net.fabricmc.loom.processors;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.ZipEntry;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
-import org.gradle.api.Project;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.mappings.EntryTriple;
 
-public class AccessEscalator implements JarProcessor {
-	private File accessEscalatorFile;
-	private Project project;
+public class AccessEscalator {
+	public String namespace;
+	public Map<String, Access> classAccess = new HashMap<>();
+	public Map<EntryTriple, Access> methodAccess = new HashMap<>();
+	public Map<EntryTriple, Access> fieldAccess = new HashMap<>();
 
-	@Override
-	public void setup(Project project) {
-		this.project = project;
-		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
-		accessEscalatorFile = loomGradleExtension.accessEscalator;
+	public void read(BufferedReader reader) throws IOException {
+		String[] header = reader.readLine().split("\t");
 
-		if (accessEscalatorFile == null || !accessEscalatorFile.exists()) {
-			throw new RuntimeException("Failed to find accessEscalator file specified");
+		if (!header[0].equals("ae")) {
+			throw new UnsupportedOperationException("Unsupported access escalator file format: " + header[0]);
+		}
+
+		if (namespace != null) {
+			if (!namespace.equals(header[2])) {
+				throw new RuntimeException("Namespace mismatch");
+			}
+		}
+
+		namespace = header[2];
+
+		String line;
+
+		while ((line = reader.readLine()) != null) {
+			if (line.isEmpty()) continue;
+
+			//Comment handling
+			int commentPos = line.indexOf('#');
+
+			if (commentPos >= 0) {
+				line = line.substring(0, commentPos);
+			}
+
+			String[] split = line.split("\t");
+			Access access = parseAccess(split[0]);
+
+			switch (split[1]) {
+			case "class":
+				if (classAccess.containsKey(split[2])) {
+					classAccess.put(split[2], mergeAccess(access, classAccess.get(split[2])));
+				} else {
+					classAccess.put(split[2], access);
+				}
+
+				break;
+			case "field":
+				addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				break;
+			case "method":
+				addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				break;
+			default:
+				throw new UnsupportedOperationException("Unsupported type " + split[1]);
+			}
 		}
 	}
 
-	@Override
-	public void process(File file) {
-		project.getLogger().lifecycle("Processing file: " + file.getName());
+	//Could possibly be cleaner but should do its job for now
+	public void write(StringWriter writer) {
+		writer.write("ea\\v1\t");
+		writer.write(namespace);
+		writer.write("\n");
 
-		//Example code used for testing
-		List<String> classes = new ArrayList<>();
-		ZipUtil.iterate(file, zipEntry -> {
-			if (zipEntry.getName().endsWith(".class")) {
-				classes.add(zipEntry.getName());
-			}
-		});
-
-		ZipUtil.transformEntries(file, getTransformers(classes));
-	}
-
-	private ZipEntryTransformerEntry[] getTransformers(List<String> classes) {
-		return classes.stream()
-				.map(string -> new ZipEntryTransformerEntry(string, getTransformer(string)))
-				.toArray(ZipEntryTransformerEntry[]::new);
-	}
-
-	private ZipEntryTransformer getTransformer(String className) {
-		return new ByteArrayZipEntryTransformer() {
-			@Override
-			protected byte[] transform(ZipEntry zipEntry, byte[] input) {
-				ClassReader reader = new ClassReader(input);
-				ClassWriter writer = new ClassWriter(0);
-
-				project.getLogger().lifecycle("Applying access escalator to " + className);
-
-				reader.accept(new AccessTransformer(writer), 0);
-				return writer.toByteArray();
-			}
-		};
-	}
-
-	@Override
-	public boolean isInvalid(File file) {
-		return true; //TODO how do we know if the current jar as the correct access applied? save the hash of the input
-	}
-
-	//Example to make everything public
-	private static class AccessTransformer extends ClassVisitor {
-		private AccessTransformer(ClassVisitor classVisitor) {
-			super(Opcodes.ASM7, classVisitor);
+		for (Map.Entry<String, Access> entry : classAccess.entrySet()) {
+			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
+			writer.write("\tclass\t");
+			writer.write(entry.getKey());
+			writer.write("\n");
 		}
 
-		private static int modAccess(int access) {
-			if ((access & 0x7) != Opcodes.ACC_PRIVATE) {
-				return (access & (~0x7)) | Opcodes.ACC_PUBLIC;
+		for (Map.Entry<EntryTriple, Access> entry : methodAccess.entrySet()) {
+			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
+			writer.write("\tmethod\t");
+			writer.write(entry.getKey().getOwner());
+			writer.write("\t");
+			writer.write(entry.getKey().getName());
+			writer.write("\t");
+			writer.write(entry.getKey().getDesc());
+			writer.write("\n");
+		}
+
+		for (Map.Entry<EntryTriple, Access> entry : fieldAccess.entrySet()) {
+			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
+			writer.write("\tfield\t");
+			writer.write(entry.getKey().getOwner());
+			writer.write("\t");
+			writer.write(entry.getKey().getName());
+			writer.write("\t");
+			writer.write(entry.getKey().getDesc());
+			writer.write("\n");
+		}
+	}
+
+	void addOrMerge(Map<EntryTriple, Access> map, EntryTriple entry, Access access) {
+		if (entry == null || access == null) {
+			throw new RuntimeException("Input entry or access is null");
+		}
+
+		if (map.containsKey(entry)) {
+			map.replace(entry, mergeAccess(map.get(entry), access));
+		} else {
+			map.put(entry, access);
+		}
+	}
+
+	public void merge(AccessEscalator other) {
+		if (namespace == null) {
+			namespace = other.namespace;
+		} else if (!namespace.equals(other.namespace)) {
+			throw new RuntimeException("Namespace mismatch");
+		}
+
+		for (Map.Entry<String, Access> entry : other.classAccess.entrySet()) {
+			if (classAccess.containsKey(entry.getKey())) {
+				classAccess.replace(entry.getKey(), mergeAccess(classAccess.get(entry.getKey()), entry.getValue()));
 			} else {
-				return access;
+				classAccess.put(entry.getKey(), entry.getValue());
 			}
 		}
 
-		@Override
-		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-			super.visit(version, modAccess(access), name, signature, superName, interfaces);
+		for (Map.Entry<EntryTriple, Access> entry : other.methodAccess.entrySet()) {
+			addOrMerge(methodAccess, entry.getKey(), entry.getValue());
 		}
 
-		@Override
-		public void visitInnerClass(String name, String outerName, String innerName, int access) {
-			super.visitInnerClass(name, outerName, innerName, modAccess(access));
+		for (Map.Entry<EntryTriple, Access> entry : other.fieldAccess.entrySet()) {
+			addOrMerge(fieldAccess, entry.getKey(), entry.getValue());
 		}
+	}
 
-		@Override
-		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-			return super.visitField(modAccess(access), name, descriptor, signature, value);
+	private Access parseAccess(String input) {
+		switch (input.toLowerCase(Locale.ROOT)) {
+		case "public":
+			return Access.PUBLIC;
+		case "protected":
+			return Access.PROTECTED;
+		default:
+			throw new UnsupportedOperationException("Unknown access:" + input);
 		}
+	}
 
-		@Override
-		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-			return super.visitMethod(modAccess(access), name, descriptor, signature, exceptions);
+	private Access mergeAccess(Access a, Access b) {
+		return Access.values()[Math.max(a.ordinal(), b.ordinal())];
+	}
+
+	public Access getClassAccess(String className) {
+		return classAccess.getOrDefault(className, Access.DEFAULT);
+	}
+
+	public Access getFieldAccess(EntryTriple entryTriple) {
+		return fieldAccess.getOrDefault(entryTriple, Access.DEFAULT);
+	}
+
+	public Access getMethodAccess(EntryTriple entryTriple) {
+		return methodAccess.getOrDefault(entryTriple, Access.DEFAULT);
+	}
+
+	public Set<String> getTargets() {
+		Set<String> classes = new LinkedHashSet<>(classAccess.keySet());
+		methodAccess.keySet().stream()
+				.map(EntryTriple::getName).forEach(classes::add);
+		fieldAccess.keySet().stream()
+				.map(EntryTriple::getName).forEach(classes::add);
+		return classes;
+	}
+
+	public enum Access {
+		DEFAULT,
+		PROTECTED,
+		PUBLIC;
+
+		public int apply(int access) {
+			if (this == DEFAULT) { //Do nothing
+				return access;
+			} else if (this == PROTECTED) {
+				if ((access & (Opcodes.ACC_PROTECTED | Opcodes.ACC_PUBLIC)) != 0) { //Either public or protected already, do nothing
+					return access;
+				}
+
+				return (access & ~Opcodes.ACC_PRIVATE) | Opcodes.ACC_PROTECTED; //Remove private and add protected
+			} else {
+				if ((access & Opcodes.ACC_PUBLIC) != 0) { //Already public do nothing.
+					return access;
+				}
+
+				return (access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC; //Remove private or protected and add public
+			}
 		}
 	}
 }

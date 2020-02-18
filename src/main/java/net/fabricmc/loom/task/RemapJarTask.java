@@ -45,6 +45,7 @@ import net.fabricmc.loom.util.GradleSupport;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.processors.AccessEscalatorJarProcessor;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -126,6 +127,10 @@ public class RemapJarTask extends Jar {
 			if (NestedJars.addNestedJars(project, output)) {
 				project.getLogger().debug("Added nested jar paths to mod json");
 			}
+		}
+
+		if (extension.accessEscalator != null) {
+			extension.getJarProcessorManager().getByType(AccessEscalatorJarProcessor.class).addAccessEscalatorFile(output);
 		}
 
 		/*try {

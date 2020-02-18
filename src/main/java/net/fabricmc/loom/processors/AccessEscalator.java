@@ -44,9 +44,9 @@ public class AccessEscalator {
 	public Map<EntryTriple, Access> fieldAccess = new HashMap<>();
 
 	public void read(BufferedReader reader) throws IOException {
-		String[] header = reader.readLine().split("\t");
+		String[] header = reader.readLine().split("\\s+");
 
-		if (!header[0].equals("ae")) {
+		if (!header[0].equals("ae\\v1")) {
 			throw new UnsupportedOperationException("Unsupported access escalator file format: " + header[0]);
 		}
 
@@ -70,7 +70,7 @@ public class AccessEscalator {
 				line = line.substring(0, commentPos);
 			}
 
-			String[] split = line.split("\t");
+			String[] split = line.split("\\s+");
 			Access access = parseAccess(split[0]);
 
 			switch (split[1]) {
@@ -96,7 +96,7 @@ public class AccessEscalator {
 
 	//Could possibly be cleaner but should do its job for now
 	public void write(StringWriter writer) {
-		writer.write("ea\\v1\t");
+		writer.write("ae\\v1\t");
 		writer.write(namespace);
 		writer.write("\n");
 

@@ -95,6 +95,6 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	public File getMappedJar() {
-		return super.getMappedJar();
+		return projectMappedJar;
 	}
 }

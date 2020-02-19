@@ -235,6 +235,15 @@ public class AccessEscalator {
 				.map(EntryTriple::getName).forEach(classes::add);
 		fieldAccess.keySet().stream()
 				.map(EntryTriple::getName).forEach(classes::add);
+
+		//Also transform all parent classes
+		for (String clazz : classes) {
+			while (clazz.contains("$")) {
+				clazz = clazz.substring(0, clazz.lastIndexOf("$"));
+				classes.add(clazz);
+			}
+		}
+
 		return classes;
 	}
 

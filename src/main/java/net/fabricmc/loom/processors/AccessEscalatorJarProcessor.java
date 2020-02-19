@@ -30,6 +30,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
@@ -47,15 +48,19 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Checksum;
 
 public class AccessEscalatorJarProcessor implements JarProcessor {
 	private AccessEscalator accessEscalator = new AccessEscalator();
 	private Project project;
+	private byte[] inputHash;
 
 	@Override
 	public void setup(Project project) {
 		this.project = project;
 		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
+
+		inputHash = Checksum.sha256(loomGradleExtension.accessEscalator);
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.accessEscalator))) {
 			accessEscalator.read(reader);
@@ -78,6 +83,7 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 	public void process(File file) {
 		project.getLogger().lifecycle("Processing file: " + file.getName());
 		ZipUtil.transformEntries(file, getTransformers(accessEscalator.getTargets()));
+		ZipUtil.addEntry(file, "ae.sha256", inputHash);
 	}
 
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
@@ -117,7 +123,13 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
-		return true; //TODO how do we know if the current jar as the correct access applied? save the hash of the input?
+		byte[] hash = ZipUtil.unpackEntry(file, "ae.sha256");
+
+		if (hash == null) {
+			return true;
+		}
+
+		return !Arrays.equals(inputHash, hash); //TODO how do we know if the current jar as the correct access applied? save the hash of the input?
 	}
 
 	private class AccessTransformer extends ClassVisitor {

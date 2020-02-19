@@ -58,4 +58,13 @@ public class Checksum {
 
 		return false;
 	}
+
+	public static byte[] sha256(File file) {
+		try {
+			HashCode hash = Files.asByteSource(file).hash(Hashing.sha256());
+			return hash.asBytes();
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to get file hash");
+		}
+	}
 }

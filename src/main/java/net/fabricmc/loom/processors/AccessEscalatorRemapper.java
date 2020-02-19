@@ -49,6 +49,14 @@ public class AccessEscalatorRemapper {
 	}
 
 	private void populateMappings(TinyTree tinyTree) {
+		if (!tinyTree.getMetadata().getNamespaces().contains(from)) {
+			throw new UnsupportedOperationException("Unknown namespace: " + from);
+		}
+
+		if (!tinyTree.getMetadata().getNamespaces().contains(to)) {
+			throw new UnsupportedOperationException("Unknown namespace: " + to);
+		}
+
 		for (ClassDef classDef : tinyTree.getClasses()) {
 			classNames.put(classDef.getName(from), classDef.getName(to));
 
@@ -85,11 +93,11 @@ public class AccessEscalatorRemapper {
 			remapped.classAccess.put(remappedName, entry.getValue());
 		}
 
-		for (Map.Entry<EntryTriple, AccessEscalator.Access> entry : input.methodAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, AccessEscalator.ChangeList> entry : input.methodAccess.entrySet()) {
 			remapped.addOrMerge(remapped.methodAccess, methodNames.get(entry.getKey()), entry.getValue());
 		}
 
-		for (Map.Entry<EntryTriple, AccessEscalator.Access> entry : input.fieldAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, AccessEscalator.ChangeList> entry : input.fieldAccess.entrySet()) {
 			remapped.addOrMerge(remapped.fieldAccess, fieldNames.get(entry.getKey()), entry.getValue());
 		}
 

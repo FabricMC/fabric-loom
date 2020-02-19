@@ -27,8 +27,10 @@ package net.fabricmc.loom.processors;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -40,41 +42,55 @@ import net.fabricmc.mappings.EntryTriple;
 public class AccessEscalator {
 	public String namespace;
 	public Map<String, Access> classAccess = new HashMap<>();
-	public Map<EntryTriple, Access> methodAccess = new HashMap<>();
-	public Map<EntryTriple, Access> fieldAccess = new HashMap<>();
+	public Map<EntryTriple, ChangeList> methodAccess = new HashMap<>();
+	public Map<EntryTriple, ChangeList> fieldAccess = new HashMap<>();
 
 	public void read(BufferedReader reader) throws IOException {
-		String[] header = reader.readLine().split("\\s+");
+		String[] header = reader.readLine().split("\t");
 
-		if (!header[0].equals("ae\\v1")) {
-			throw new UnsupportedOperationException("Unsupported access escalator file format: " + header[0]);
+		if (header.length != 2 || !header[0].equals("ae\\v1")) {
+			throw new UnsupportedOperationException("Unsupported or invalid access escalator file");
 		}
 
 		if (namespace != null) {
-			if (!namespace.equals(header[2])) {
+			if (!namespace.equals(header[1])) {
 				throw new RuntimeException("Namespace mismatch");
 			}
 		}
 
-		namespace = header[2];
+		namespace = header[1];
 
 		String line;
 
 		while ((line = reader.readLine()) != null) {
-			if (line.isEmpty()) continue;
-
 			//Comment handling
 			int commentPos = line.indexOf('#');
 
 			if (commentPos >= 0) {
-				line = line.substring(0, commentPos);
+				line = line.substring(0, commentPos).trim();
 			}
 
-			String[] split = line.split("\\s+");
+			if (line.isEmpty()) continue;
+
+			//Will be a common issue, make it clear.
+			if (line.contains(" ")) {
+				throw new RuntimeException("Access escalator contains spaces, tabs are required on line: " + line);
+			}
+
+			String[] split = line.split("\t");
+
+			if (split.length != 3 && split.length != 5) {
+				throw new RuntimeException("Failed to parse access escalator. at line:" + line);
+			}
+
 			Access access = parseAccess(split[0]);
 
 			switch (split[1]) {
 			case "class":
+				if (split.length != 3) {
+					throw new RuntimeException("Failed to parse access escalator. at line:" + line);
+				}
+
 				if (classAccess.containsKey(split[2])) {
 					classAccess.put(split[2], mergeAccess(access, classAccess.get(split[2])));
 				} else {
@@ -83,9 +99,17 @@ public class AccessEscalator {
 
 				break;
 			case "field":
+				if (split.length != 5) {
+					throw new RuntimeException("Failed to parse access escalator. at line:" + line);
+				}
+
 				addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access);
 				break;
 			case "method":
+				if (split.length != 5) {
+					throw new RuntimeException("Failed to parse access escalator. at line:" + line);
+				}
+
 				addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access);
 				break;
 			default:
@@ -107,38 +131,48 @@ public class AccessEscalator {
 			writer.write("\n");
 		}
 
-		for (Map.Entry<EntryTriple, Access> entry : methodAccess.entrySet()) {
-			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
-			writer.write("\tmethod\t");
-			writer.write(entry.getKey().getOwner());
-			writer.write("\t");
-			writer.write(entry.getKey().getName());
-			writer.write("\t");
-			writer.write(entry.getKey().getDesc());
-			writer.write("\n");
+		for (Map.Entry<EntryTriple, ChangeList> entry : methodAccess.entrySet()) {
+			for (Access access : entry.getValue().getChanges()) {
+				writer.write(access.name().toLowerCase(Locale.ROOT));
+				writer.write("\tmethod\t");
+				writer.write(entry.getKey().getOwner());
+				writer.write("\t");
+				writer.write(entry.getKey().getName());
+				writer.write("\t");
+				writer.write(entry.getKey().getDesc());
+				writer.write("\n");
+			}
 		}
 
-		for (Map.Entry<EntryTriple, Access> entry : fieldAccess.entrySet()) {
-			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
-			writer.write("\tfield\t");
-			writer.write(entry.getKey().getOwner());
-			writer.write("\t");
-			writer.write(entry.getKey().getName());
-			writer.write("\t");
-			writer.write(entry.getKey().getDesc());
-			writer.write("\n");
+		for (Map.Entry<EntryTriple, ChangeList> entry : fieldAccess.entrySet()) {
+			for (Access access : entry.getValue().getChanges()) {
+				writer.write(access.name().toLowerCase(Locale.ROOT));
+				writer.write("\tfield\t");
+				writer.write(entry.getKey().getOwner());
+				writer.write("\t");
+				writer.write(entry.getKey().getName());
+				writer.write("\t");
+				writer.write(entry.getKey().getDesc());
+				writer.write("\n");
+			}
 		}
 	}
 
-	void addOrMerge(Map<EntryTriple, Access> map, EntryTriple entry, Access access) {
+	void addOrMerge(Map<EntryTriple, ChangeList> map, EntryTriple entry, ChangeList changeList) {
+		for (Access access : changeList.getChanges()) {
+			addOrMerge(map, entry, access);
+		}
+	}
+
+	void addOrMerge(Map<EntryTriple, ChangeList> map, EntryTriple entry, Access access) {
 		if (entry == null || access == null) {
 			throw new RuntimeException("Input entry or access is null");
 		}
 
 		if (map.containsKey(entry)) {
-			map.replace(entry, mergeAccess(map.get(entry), access));
+			map.get(entry).add(access);
 		} else {
-			map.put(entry, access);
+			map.put(entry, new ChangeList(access));
 		}
 	}
 
@@ -157,11 +191,11 @@ public class AccessEscalator {
 			}
 		}
 
-		for (Map.Entry<EntryTriple, Access> entry : other.methodAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, ChangeList> entry : other.methodAccess.entrySet()) {
 			addOrMerge(methodAccess, entry.getKey(), entry.getValue());
 		}
 
-		for (Map.Entry<EntryTriple, Access> entry : other.fieldAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, ChangeList> entry : other.fieldAccess.entrySet()) {
 			addOrMerge(fieldAccess, entry.getKey(), entry.getValue());
 		}
 	}
@@ -172,12 +206,14 @@ public class AccessEscalator {
 			return Access.PUBLIC;
 		case "protected":
 			return Access.PROTECTED;
+		case "mutable":
+			return Access.MUTABLE;
 		default:
 			throw new UnsupportedOperationException("Unknown access:" + input);
 		}
 	}
 
-	private Access mergeAccess(Access a, Access b) {
+	private static Access mergeAccess(Access a, Access b) {
 		return Access.values()[Math.max(a.ordinal(), b.ordinal())];
 	}
 
@@ -185,12 +221,12 @@ public class AccessEscalator {
 		return classAccess.getOrDefault(className, Access.DEFAULT);
 	}
 
-	public Access getFieldAccess(EntryTriple entryTriple) {
-		return fieldAccess.getOrDefault(entryTriple, Access.DEFAULT);
+	public ChangeList getFieldAccess(EntryTriple entryTriple) {
+		return fieldAccess.getOrDefault(entryTriple, ChangeList.EMPTY);
 	}
 
-	public Access getMethodAccess(EntryTriple entryTriple) {
-		return methodAccess.getOrDefault(entryTriple, Access.DEFAULT);
+	public ChangeList getMethodAccess(EntryTriple entryTriple) {
+		return methodAccess.getOrDefault(entryTriple, ChangeList.EMPTY);
 	}
 
 	public Set<String> getTargets() {
@@ -205,24 +241,98 @@ public class AccessEscalator {
 	public enum Access {
 		DEFAULT,
 		PROTECTED,
-		PUBLIC;
+		PUBLIC,
+
+		MUTABLE(true);
+
+		private final boolean exclusive;
+
+		Access(boolean exclusive) {
+			this.exclusive = exclusive;
+		}
+
+		Access() {
+			this(false);
+		}
 
 		public int apply(int access) {
-			if (this == DEFAULT) { //Do nothing
+			switch (this) {
+			case DEFAULT:
 				return access;
-			} else if (this == PROTECTED) {
-				if ((access & (Opcodes.ACC_PROTECTED | Opcodes.ACC_PUBLIC)) != 0) { //Either public or protected already, do nothing
+			case PUBLIC:
+				return (access & ~7) | Opcodes.ACC_PUBLIC;
+			case PROTECTED:
+				if ((access & Opcodes.ACC_PUBLIC) != 0) { //Already public
 					return access;
 				}
 
-				return (access & ~Opcodes.ACC_PRIVATE) | Opcodes.ACC_PROTECTED; //Remove private and add protected
-			} else {
-				if ((access & Opcodes.ACC_PUBLIC) != 0) { //Already public do nothing.
-					return access;
-				}
-
-				return (access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC; //Remove private or protected and add public
+				return (access & ~7) | Opcodes.ACC_PROTECTED;
+			case MUTABLE:
+				return access & ~Opcodes.ACC_FINAL; //Remove final
+			default:
+				throw new RuntimeException("Something bad happened");
 			}
+		}
+	}
+
+	public static class ChangeList {
+		public static final ChangeList EMPTY = new ChangeList();
+
+		private final List<Access> changes = new ArrayList<>();
+
+		public ChangeList() {
+		}
+
+		public ChangeList(Access access) {
+			this();
+			add(access);
+		}
+
+		public void add(Access access) {
+			if (access.exclusive && !changes.contains(access)) {
+				changes.add(access);
+			} else {
+				if (changes.isEmpty() || changes.stream().allMatch(a -> a.exclusive)) {
+					changes.add(access);
+				} else {
+					Access existing = null;
+
+					for (Access change : changes) {
+						if (!change.exclusive) {
+							if (existing != null) {
+								throw new RuntimeException("More than one change");
+							}
+
+							existing = change;
+						}
+					}
+
+					if (existing == null) {
+						throw new RuntimeException("Failed to find existing, something has gone wrong");
+					}
+
+					changes.remove(existing);
+					changes.add(mergeAccess(existing, access));
+				}
+			}
+		}
+
+		public void merge(ChangeList changeList) {
+			for (Access change : changeList.getChanges()) {
+				add(change);
+			}
+		}
+
+		public int apply(int access) {
+			for (Access change : getChanges()) {
+				access = change.apply(access);
+			}
+
+			return access;
+		}
+
+		public List<Access> getChanges() {
+			return changes;
 		}
 	}
 }

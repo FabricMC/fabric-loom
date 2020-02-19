@@ -62,6 +62,16 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read project access escalator file");
 		}
+
+		//Remap accessEscalator if its not named, allows for AE's to be written in intermediary
+		if (!accessEscalator.namespace.equals("named")) {
+			try {
+				AccessEscalatorRemapper remapper = new AccessEscalatorRemapper(accessEscalator, loomGradleExtension.getMappingsProvider().getMappings(), "named");
+				accessEscalator = remapper.remap();
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to remap access escalator", e);
+			}
+		}
 	}
 
 	@Override

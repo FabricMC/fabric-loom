@@ -50,8 +50,8 @@ import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
 
-public class AccessEscalatorJarProcessor implements JarProcessor {
-	private AccessEscalator accessEscalator = new AccessEscalator();
+public class AccessWidenerJarProcessor implements JarProcessor {
+	private AccessWidener accessWidener = new AccessWidener();
 	private Project project;
 	private byte[] inputHash;
 
@@ -60,21 +60,21 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 		this.project = project;
 		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		inputHash = Checksum.sha256(loomGradleExtension.accessEscalator);
+		inputHash = Checksum.sha256(loomGradleExtension.accessWidener);
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.accessEscalator))) {
-			accessEscalator.read(reader);
+		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.accessWidener))) {
+			accessWidener.read(reader);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to read project access escalator file");
+			throw new RuntimeException("Failed to read project access widener file");
 		}
 
-		//Remap accessEscalator if its not named, allows for AE's to be written in intermediary
-		if (!accessEscalator.namespace.equals("named")) {
+		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
+		if (!accessWidener.namespace.equals("named")) {
 			try {
-				AccessEscalatorRemapper remapper = new AccessEscalatorRemapper(accessEscalator, loomGradleExtension.getMappingsProvider().getMappings(), "named");
-				accessEscalator = remapper.remap();
+				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, loomGradleExtension.getMappingsProvider().getMappings(), "named");
+				accessWidener = remapper.remap();
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap access escalator", e);
+				throw new RuntimeException("Failed to remap access widener", e);
 			}
 		}
 	}
@@ -82,8 +82,8 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 	@Override
 	public void process(File file) {
 		project.getLogger().lifecycle("Processing file: " + file.getName());
-		ZipUtil.transformEntries(file, getTransformers(accessEscalator.getTargets()));
-		ZipUtil.addEntry(file, "ae.sha256", inputHash);
+		ZipUtil.transformEntries(file, getTransformers(accessWidener.getTargets()));
+		ZipUtil.addEntry(file, "aw.sha256", inputHash);
 	}
 
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
@@ -99,7 +99,7 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 				ClassReader reader = new ClassReader(input);
 				ClassWriter writer = new ClassWriter(0);
 
-				project.getLogger().lifecycle("Applying access escalator to " + className);
+				project.getLogger().lifecycle("Applying access widener to " + className);
 
 				reader.accept(new AccessTransformer(writer), 0);
 				return writer.toByteArray();
@@ -108,22 +108,22 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 	}
 
 	//Called when remapping the mod
-	public void addAccessEscalatorFile(Path modJarPath) throws IOException {
+	public void addAccessWidenerFile(Path modJarPath) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		AccessEscalatorRemapper remapper = new AccessEscalatorRemapper(accessEscalator, extension.getMappingsProvider().getMappings(), "intermediary");
-		AccessEscalator remapped = remapper.remap();
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, extension.getMappingsProvider().getMappings(), "intermediary");
+		AccessWidener remapped = remapper.remap();
 
 		StringWriter writer = new StringWriter();
 		remapped.write(writer);
 		byte[] bytes = writer.toString().getBytes();
 		writer.close();
 
-		ZipUtil.addEntry(modJarPath.toFile(), "META-INF/access.ea", bytes);
+		ZipUtil.addEntry(modJarPath.toFile(), "META-INF/accessWidener.aw", bytes);
 	}
 
 	@Override
 	public boolean isInvalid(File file) {
-		byte[] hash = ZipUtil.unpackEntry(file, "ae.sha256");
+		byte[] hash = ZipUtil.unpackEntry(file, "aw.sha256");
 
 		if (hash == null) {
 			return true;
@@ -144,7 +144,7 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 			className = name;
 			super.visit(
 					version,
-					accessEscalator.getClassAccess(name).apply(access),
+					accessWidener.getClassAccess(name).apply(access),
 					name,
 					signature,
 					superName,
@@ -158,14 +158,14 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 					name,
 					outerName,
 					innerName,
-					accessEscalator.getClassAccess(name).apply(access)
+					accessWidener.getClassAccess(name).apply(access)
 			);
 		}
 
 		@Override
 		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 			return super.visitField(
-					accessEscalator.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access),
+					accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access),
 					name,
 					descriptor,
 					signature,
@@ -176,7 +176,7 @@ public class AccessEscalatorJarProcessor implements JarProcessor {
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			return super.visitMethod(
-					accessEscalator.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access),
+					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access),
 					name,
 					descriptor,
 					signature,

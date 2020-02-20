@@ -33,15 +33,15 @@ import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.mappings.EntryTriple;
 
-public class AccessEscalatorRemapper {
-	private final AccessEscalator input;
+public class AccessWidenerRemapper {
+	private final AccessWidener input;
 	private final String from, to;
 
 	private Map<String, String> classNames = new HashMap<>();
 	private Map<EntryTriple, EntryTriple> fieldNames = new HashMap<>();
 	private Map<EntryTriple, EntryTriple> methodNames = new HashMap<>();
 
-	public AccessEscalatorRemapper(AccessEscalator input, TinyTree tinyTree, String to) {
+	public AccessWidenerRemapper(AccessWidener input, TinyTree tinyTree, String to) {
 		this.input = input;
 		this.from = input.namespace;
 		this.to = to;
@@ -74,30 +74,30 @@ public class AccessEscalatorRemapper {
 		}
 	}
 
-	public AccessEscalator remap() {
+	public AccessWidener remap() {
 		//Dont remap if we dont need to
 		if (input.namespace.equals(to)) {
 			return input;
 		}
 
-		AccessEscalator remapped = new AccessEscalator();
+		AccessWidener remapped = new AccessWidener();
 		remapped.namespace = to;
 
-		for (Map.Entry<String, AccessEscalator.Access> entry : input.classAccess.entrySet()) {
+		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
 			String remappedName = classNames.get(entry.getKey());
 
 			if (remappedName == null) {
-				throw new RuntimeException("Failed to remap access escalator file, missing class mapping for: " + entry.getKey());
+				throw new RuntimeException("Failed to remap access widener file, missing class mapping for: " + entry.getKey());
 			}
 
 			remapped.classAccess.put(remappedName, entry.getValue());
 		}
 
-		for (Map.Entry<EntryTriple, AccessEscalator.ChangeList> entry : input.methodAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
 			remapped.addOrMerge(remapped.methodAccess, methodNames.get(entry.getKey()), entry.getValue());
 		}
 
-		for (Map.Entry<EntryTriple, AccessEscalator.ChangeList> entry : input.fieldAccess.entrySet()) {
+		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
 			remapped.addOrMerge(remapped.fieldAccess, fieldNames.get(entry.getKey()), entry.getValue());
 		}
 

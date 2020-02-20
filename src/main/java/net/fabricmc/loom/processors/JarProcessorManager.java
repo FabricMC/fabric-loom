@@ -49,8 +49,8 @@ public class JarProcessorManager {
 	private List<JarProcessor> setupProcessors() {
 		List<JarProcessor> jarProcessors = new ArrayList<>();
 
-		if (extension.accessEscalator != null) {
-			jarProcessors.add(new AccessEscalatorJarProcessor());
+		if (extension.accessWidener != null) {
+			jarProcessors.add(new AccessWidenerJarProcessor());
 		}
 
 		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));

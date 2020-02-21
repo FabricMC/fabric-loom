@@ -27,8 +27,10 @@ package net.fabricmc.loom.processors;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +63,6 @@ public class AccessWidener {
 		Set<String> targets = new LinkedHashSet<>();
 		String line;
 
-
 		while ((line = reader.readLine()) != null) {
 			//Comment handling
 			int commentPos = line.indexOf('#');
@@ -88,29 +89,29 @@ public class AccessWidener {
 			targets.add(split[2].replaceAll("/", "."));
 
 			switch (split[1]) {
-				case "class":
-					if (split.length != 3) {
-						throw new RuntimeException(String.format("Expected (<access>\tclass\t<className>) got (%s)", line));
-					}
+			case "class":
+				if (split.length != 3) {
+					throw new RuntimeException(String.format("Expected (<access>\tclass\t<className>) got (%s)", line));
+				}
 
-					classAccess.put(split[2], applyAccess(access, classAccess.getOrDefault(split[2], Access.DEFAULT)));
-					break;
-				case "field":
-					if (split.length != 5) {
-						throw new RuntimeException(String.format("Expected (<access>\tfield\t<className>\t<fieldName>\t<fieldDesc>) got (%s)", line));
-					}
+				classAccess.put(split[2], applyAccess(access, classAccess.getOrDefault(split[2], Access.DEFAULT)));
+				break;
+			case "field":
+				if (split.length != 5) {
+					throw new RuntimeException(String.format("Expected (<access>\tfield\t<className>\t<fieldName>\t<fieldDesc>) got (%s)", line));
+				}
 
-					addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access);
-					break;
-				case "method":
-					if (split.length != 5) {
-						throw new RuntimeException(String.format("Expected (<access>\tmethod\t<className>\t<methodName>\t<methodDesc>) got (%s)", line));
-					}
+				addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				break;
+			case "method":
+				if (split.length != 5) {
+					throw new RuntimeException(String.format("Expected (<access>\tmethod\t<className>\t<methodName>\t<methodDesc>) got (%s)", line));
+				}
 
-					addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access);
-					break;
-				default:
-					throw new UnsupportedOperationException("Unsupported type " + split[1]);
+				addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				break;
+			default:
+				throw new UnsupportedOperationException("Unsupported type " + split[1]);
 			}
 		}
 
@@ -142,24 +143,37 @@ public class AccessWidener {
 		}
 
 		for (Map.Entry<EntryTriple, Access> entry : methodAccess.entrySet()) {
-			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
-			writer.write("\tmethod\t");
-			writer.write(entry.getKey().getOwner());
-			writer.write("\t");
-			writer.write(entry.getKey().getName());
-			writer.write("\t");
-			writer.write(entry.getKey().getDesc());
-			writer.write("\n");
+			writeEntry(writer, "method", entry.getKey(), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, Access> entry : fieldAccess.entrySet()) {
-			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
-			writer.write("\tfield\t");
-			writer.write(entry.getKey().getOwner());
+			writeEntry(writer, "field", entry.getKey(), entry.getValue());
+		}
+	}
+
+	private void writeEntry(StringWriter writer, String type, EntryTriple entryTriple, Access access) {
+		List<String> accesses = new ArrayList<>();
+
+		if (access.makePublic) {
+			accesses.add("public");
+		} else if (access.makeProtected) {
+			accesses.add("protected");
+		}
+
+		if (access.stripFinal) {
+			accesses.add("stripfinal");
+		}
+
+		for (String s : accesses) {
+			writer.write(s);
 			writer.write("\t");
-			writer.write(entry.getKey().getName());
+			writer.write(type);
 			writer.write("\t");
-			writer.write(entry.getKey().getDesc());
+			writer.write(entryTriple.getOwner());
+			writer.write("\t");
+			writer.write(entryTriple.getName());
+			writer.write("\t");
+			writer.write(entryTriple.getDesc());
 			writer.write("\n");
 		}
 	}
@@ -170,12 +184,15 @@ public class AccessWidener {
 		}
 
 		Access merged = Access.DEFAULT;
+
 		if (access.makeProtected) {
 			merged = merged.makeProtected();
 		}
+
 		if (access.makePublic) {
 			merged = merged.makePublic();
 		}
+
 		if (access.stripFinal) {
 			merged = merged.stripFinal();
 		}
@@ -217,14 +234,14 @@ public class AccessWidener {
 
 	private Access applyAccess(String input, Access access) {
 		switch (input.toLowerCase(Locale.ROOT)) {
-			case "public":
-				return access.makePublic();
-			case "protected":
-				return access.makeProtected();
-			case "stripfinal":
-				return access.stripFinal();
-			default:
-				throw new UnsupportedOperationException("Unknown access type:" + input);
+		case "public":
+			return access.makePublic();
+		case "protected":
+			return access.makeProtected();
+		case "stripfinal":
+			return access.stripFinal();
+		default:
+			throw new UnsupportedOperationException("Unknown access type:" + input);
 		}
 	}
 
@@ -251,9 +268,9 @@ public class AccessWidener {
 	public enum Access {
 		DEFAULT(false, false, false),
 		PROTECTED(true, false, false),
-		PROTECTED_STRIP_FINAL(true,false, true),
+		PROTECTED_STRIP_FINAL(true, false, true),
 		PUBLIC(false, true, false),
-		PUBLIC_STRIP_FINAL(false,true, true),
+		PUBLIC_STRIP_FINAL(false, true, true),
 		STRIP_FINAL(false, false, true);
 
 		private final boolean makeProtected;
@@ -281,6 +298,7 @@ public class AccessWidener {
 			} else if (makeProtected) {
 				return PROTECTED_STRIP_FINAL;
 			}
+
 			return STRIP_FINAL;
 		}
 

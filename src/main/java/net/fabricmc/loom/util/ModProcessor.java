@@ -44,8 +44,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.fabricmc.loom.processors.AccessWidener;
-import net.fabricmc.loom.processors.AccessWidenerRemapper;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -59,6 +57,8 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
+import net.fabricmc.loom.processors.AccessWidener;
+import net.fabricmc.loom.processors.AccessWidenerRemapper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -157,27 +157,31 @@ public class ModProcessor {
 		}
 
 		String accessWidenerPath;
+
 		try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
 			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+
 			if (!json.has("accessWidener")) {
 				return;
 			}
+
 			accessWidenerPath = json.get("accessWidener").getAsString();
 		}
+
 		if (accessWidenerPath == null) {
 			return;
 		}
+
 		ZipUtil.transformEntry(input, accessWidenerPath, new ByteArrayZipEntryTransformer() {
 			@Override
 			protected byte[] transform(ZipEntry zipEntry, byte[] input) throws IOException {
 				return remapaccessWidener(input, project);
 			}
 		});
-
 	}
 
 	private static byte[] remapaccessWidener(byte[] input, Project project) {
-		try(BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input)))) {
+		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input)))) {
 			AccessWidener accessWidener = new AccessWidener();
 			accessWidener.read(bufferedReader);
 

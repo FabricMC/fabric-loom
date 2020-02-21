@@ -131,7 +131,7 @@ public class AccessWidener {
 
 	//Could possibly be cleaner but should do its job for now
 	public void write(StringWriter writer) {
-		writer.write("ae\\v1\t");
+		writer.write("accessWidener\\v1\t");
 		writer.write(namespace);
 		writer.write("\n");
 

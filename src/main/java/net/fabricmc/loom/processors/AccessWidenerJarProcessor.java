@@ -29,11 +29,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -88,7 +91,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
 		return classes.stream()
-				.map(string -> new ZipEntryTransformerEntry(string + ".class", getTransformer(string)))
+				.map(string -> new ZipEntryTransformerEntry(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
 				.toArray(ZipEntryTransformerEntry[]::new);
 	}
 
@@ -108,7 +111,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	//Called when remapping the mod
-	public void addAccessWidenerFile(Path modJarPath) throws IOException {
+	public void remapAccessWidener(Path modJarPath) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, extension.getMappingsProvider().getMappings(), "intermediary");
 		AccessWidener remapped = remapper.remap();
@@ -118,7 +121,33 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		byte[] bytes = writer.toString().getBytes();
 		writer.close();
 
-		ZipUtil.addEntry(modJarPath.toFile(), "META-INF/accessWidener.aw", bytes);
+		String path = getAccessWidenerPath(modJarPath);
+
+		if (path == null) {
+			return;
+		}
+
+		boolean replaced = ZipUtil.replaceEntry(modJarPath.toFile(), path, bytes);
+
+		if (!replaced) {
+			project.getLogger().warn("Failed to replace access widener file at " + path);
+		}
+	}
+
+	private String getAccessWidenerPath(Path modJarPath) {
+		byte[] modJsonBytes = ZipUtil.unpackEntry(modJarPath.toFile(), "fabric.mod.json");
+
+		if (modJsonBytes == null) {
+			return null;
+		}
+
+		JsonObject jsonObject = new Gson().fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
+
+		if (!jsonObject.has("accessWidener")) {
+			return null;
+		}
+
+		return jsonObject.get("accessWidener").getAsString();
 	}
 
 	@Override

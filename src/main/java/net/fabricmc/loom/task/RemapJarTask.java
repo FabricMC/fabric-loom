@@ -130,7 +130,7 @@ public class RemapJarTask extends Jar {
 		}
 
 		if (extension.accessWidener != null) {
-			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).addAccessWidenerFile(output);
+			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output);
 		}
 
 		/*try {

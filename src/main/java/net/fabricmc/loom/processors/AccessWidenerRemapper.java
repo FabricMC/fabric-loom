@@ -84,23 +84,27 @@ public class AccessWidenerRemapper {
 		remapped.namespace = to;
 
 		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
-			String remappedName = classNames.get(entry.getKey());
-
-			if (remappedName == null) {
-				throw new RuntimeException("Failed to remap access widener file, missing class mapping for: " + entry.getKey());
-			}
-
-			remapped.classAccess.put(remappedName, entry.getValue());
+			remapped.classAccess.put(findMapping(classNames, entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
-			remapped.addOrMerge(remapped.methodAccess, methodNames.get(entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.methodAccess, findMapping(methodNames, entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
-			remapped.addOrMerge(remapped.fieldAccess, fieldNames.get(entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.fieldAccess, findMapping(fieldNames, entry.getKey()), entry.getValue());
 		}
 
 		return remapped;
+	}
+
+	private static <K, V> V findMapping(Map<K, V> map, K key) {
+		V value = map.get(key);
+
+		if (value == null) {
+			throw new RuntimeException("Failed to find mapping for " + key.toString());
+		}
+
+		return value;
 	}
 }

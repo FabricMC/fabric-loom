@@ -54,16 +54,18 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("input merged jar not found");
 		}
 
-		if (!getMappedJar().exists() || !getIntermediaryJar().exists()) {
-			if (getMappedJar().exists()) {
-				getMappedJar().delete();
+		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists()) {
+			if (minecraftMappedJar.exists()) {
+				minecraftMappedJar.delete();
 			}
 
-			if (getIntermediaryJar().exists()) {
-				getIntermediaryJar().delete();
+			minecraftMappedJar.getParentFile().mkdirs();
+
+			if (minecraftIntermediaryJar.exists()) {
+				minecraftIntermediaryJar.delete();
 			}
 
-			new MapJarsTiny().mapJars(minecraftProvider, this, getProject());
+			new MapJarsTiny().mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
 		}
 
 		if (!minecraftMappedJar.exists()) {
@@ -83,7 +85,11 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
-		minecraftMappedJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserJarCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+	}
+
+	protected File getJarDirectory(File parentDirectory, String type) {
+		return new File(parentDirectory, String.format("net/minecraft/minecraft/%s/", getJarVersionString(type)));
 	}
 
 	protected String getJarVersionString(String type) {

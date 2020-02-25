@@ -245,11 +245,6 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getUserCache());
-				flatDirectoryArtifactRepository.setName("UserCacheFiles");
-			});
-
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
@@ -259,9 +254,14 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
 			});
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getProjectJarCache());
-				flatDirectoryArtifactRepository.setName("ProjectCacheFiles");
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setUrl(extension.getUserJarCache());
+				mavenArtifactRepository.setName("UserCacheFiles");
+			});
+
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setUrl(extension.getProjectJarCache());
+				mavenArtifactRepository.setName("ProjectCacheFiles");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {

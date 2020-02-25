@@ -109,6 +109,16 @@ public class LoomGradleExtension {
 		return userCache;
 	}
 
+	public File getUserJarCache() {
+		File jarCache = new File(getUserCache(), "jars");
+
+		if (!jarCache.exists()) {
+			jarCache.mkdirs();
+		}
+
+		return jarCache;
+	}
+
 	public File getRootProjectPersistentCache() {
 		File projectCache = new File(project.getRootProject().file(".gradle"), "loom-cache");
 
@@ -150,7 +160,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getProjectJarCache() {
-		File projectCache = new File(getProjectPersistentCache(), "loom-cache");
+		File projectCache = new File(getProjectPersistentCache(), "jars");
 
 		if (!projectCache.exists()) {
 			projectCache.mkdirs();

@@ -90,7 +90,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	@Override
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
-		projectMappedJar = new File(getExtension().getProjectJarCache(), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		projectMappedJar = new File(getJarDirectory(getExtension().getProjectJarCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
 	}
 
 	@Override

@@ -76,20 +76,20 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
+		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getUserCache(), "mapped")));
+
 		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
-		getProject().getDependencies().add(Constants.MINECRAFT_INTERMEDIARY,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("intermediary")));
 	}
 
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
-		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserJarCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
 	}
 
 	protected File getJarDirectory(File parentDirectory, String type) {
-		return new File(parentDirectory, String.format("net/minecraft/minecraft/%s/", getJarVersionString(type)));
+		return new File(parentDirectory, getJarVersionString(type));
 	}
 
 	protected String getJarVersionString(String type) {

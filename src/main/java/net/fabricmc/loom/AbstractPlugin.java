@@ -99,8 +99,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
-		minecraftIntermediaryConfig.setTransitive(false);
 		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
@@ -134,7 +132,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		}
 
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
-		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.MAPPINGS_FINAL);
 
@@ -252,16 +249,6 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(extension.getRemappedModCache());
 				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
-			});
-
-			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setUrl(extension.getUserJarCache());
-				mavenArtifactRepository.setName("UserCacheFiles");
-			});
-
-			project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setUrl(extension.getProjectJarCache());
-				mavenArtifactRepository.setName("ProjectCacheFiles");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {

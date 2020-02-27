@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -64,25 +63,22 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 			jarProcessorManager.process(projectMappedJar);
 		}
 
+		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
+
 		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
-
-		getProject().getDependencies().add(Constants.MINECRAFT_INTERMEDIARY,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("intermediary")));
 	}
 
 	private void invalidateJars() {
-		if (projectMappedJar.exists()) {
-			projectMappedJar.delete();
-		}
+		File dir = getJarDirectory(getExtension().getUserCache(), PROJECT_MAPPED_CLASSIFIER);
 
-		String[] byProducts = new String[]{"-linemapped.jar", "-sources.jar", "-sources.lmap"};
+		if (dir.exists()) {
+			getProject().getLogger().warn("Invalidating project jars");
 
-		for (String byProduct : byProducts) {
-			File file = LoomGradlePlugin.getMappedByproduct(getProject(), byProduct);
-
-			if (file.exists()) {
-				file.delete();
+			try {
+				FileUtils.cleanDirectory(dir);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to invalidate jars, try stopping gradle daemon or closing the game", e);
 			}
 		}
 	}
@@ -90,7 +86,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	@Override
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
-		projectMappedJar = new File(getJarDirectory(getExtension().getProjectJarCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+
+		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
 	}
 
 	@Override

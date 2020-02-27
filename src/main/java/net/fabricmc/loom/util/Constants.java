@@ -50,9 +50,7 @@ public class Constants {
 	public static final String INCLUDE = "include";
 	public static final String MINECRAFT = "minecraft";
 	public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
-	public static final String MINECRAFT_INTERMEDIARY = "minecraftIntermediary";
 	public static final String MINECRAFT_NAMED = "minecraftNamed";
-	public static final String MINECRAFT_LINEMAPPED = "minecraftLinemapped";
 	public static final String MAPPINGS = "mappings";
 	public static final String MAPPINGS_FINAL = "mappingsFinal";
 

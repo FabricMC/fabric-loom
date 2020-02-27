@@ -40,6 +40,7 @@ import java.util.function.BiFunction;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import net.fabricmc.lorenztiny.LorenzTiny;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
 import org.cadixdev.lorenz.model.ClassMapping;
@@ -159,7 +160,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings
 	) throws IOException {
 		project.getLogger().lifecycle(":joining mappings");
-		MappingSet mappingSet = new MappingsJoiner(currentMappings, targetMappings,
+		MappingSet mappingSet = LorenzTiny.readMappings(currentMappings, targetMappings,
 						"intermediary", "named").read();
 
 		project.getLogger().lifecycle(":remapping");
@@ -178,73 +179,5 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		project.getLogger().lifecycle(":cleaning file descriptors");
 		System.gc();
-	}
-
-	private static class MappingsJoiner extends MappingsReader {
-		private final TinyTree sourceMappings, targetMappings;
-		private final String fromNamespace, toNamespace;
-
-		/**
-		 * Say A is the source mappings and B is the target mappings.
-		 * It does not map from intermediary to named but rather maps from named-A to named-B, by matching intermediary names.
-		 * It goes through all of the intermediary names of A, and for every such intermediary name, call it I,
-		 * matches the named mapping of I in A, with the named mapping of I in B.
-		 * As you might imagine, this requires intermediary mappings to be stable across all versions.
-		 * Since we only use intermediary names (and not descriptors) to match, and intermediary names are unique,
-		 * this will migrate methods that have had their signature changed too.
-		 */
-		private MappingsJoiner(TinyTree sourceMappings, TinyTree targetMappings, String fromNamespace, String toNamespace) {
-			this.sourceMappings = sourceMappings;
-			this.targetMappings = targetMappings;
-			this.fromNamespace = fromNamespace;
-			this.toNamespace = toNamespace;
-		}
-
-		@Override
-		public MappingSet read(MappingSet mappings) {
-			Map<String, ClassDef> targetClasses = new HashMap<>();
-			Map<String, FieldDef> targetFields = new HashMap<>();
-			Map<String, MethodDef> targetMethods = new HashMap<>();
-
-			for (ClassDef newClass : targetMappings.getClasses()) {
-				targetClasses.put(newClass.getName(fromNamespace), newClass);
-
-				for (FieldDef field : newClass.getFields()) {
-					targetFields.put(field.getName(fromNamespace), field);
-				}
-
-				for (MethodDef method : newClass.getMethods()) {
-					targetMethods.put(method.getName(fromNamespace), method);
-				}
-			}
-
-			for (ClassDef oldClass : sourceMappings.getClasses()) {
-				String namedMappingOfSourceMapping = oldClass.getName(toNamespace);
-				String namedMappingOfTargetMapping = targetClasses.getOrDefault(oldClass.getName(fromNamespace), oldClass).getName(toNamespace);
-
-				ClassMapping classMapping = mappings.getOrCreateClassMapping(namedMappingOfSourceMapping).setDeobfuscatedName(namedMappingOfTargetMapping);
-
-				mapMembers(oldClass.getFields(), targetFields, classMapping::getOrCreateFieldMapping);
-				mapMembers(oldClass.getMethods(), targetMethods, classMapping::getOrCreateMethodMapping);
-			}
-
-			return mappings;
-		}
-
-		private <T extends Descriptored> void mapMembers(Collection<T> oldMembers, Map<String, T> newMembers,
-														BiFunction<String, String, Mapping> mapper) {
-			for (T oldMember : oldMembers) {
-				String oldName = oldMember.getName(toNamespace);
-				String oldDescriptor = oldMember.getDescriptor(toNamespace);
-				// We only use the intermediary name (and not the descriptor) because every method has a unique intermediary name
-				String newName = newMembers.getOrDefault(oldMember.getName(fromNamespace), oldMember).getName(toNamespace);
-
-				mapper.apply(oldName, oldDescriptor).setDeobfuscatedName(newName);
-			}
-		}
-
-		@Override
-		public void close() {
-		}
 	}
 }

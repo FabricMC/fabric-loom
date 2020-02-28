@@ -57,8 +57,8 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.processors.AccessWidener;
-import net.fabricmc.loom.processors.AccessWidenerRemapper;
+import net.fabricmc.loom.util.accesswidener.AccessWidener;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 

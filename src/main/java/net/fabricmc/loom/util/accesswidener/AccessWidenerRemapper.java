@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.processors;
+package net.fabricmc.loom.util.accesswidener;
 
 import java.util.HashMap;
 import java.util.Map;

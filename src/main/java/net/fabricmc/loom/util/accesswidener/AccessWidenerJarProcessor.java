@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.processors;
+package net.fabricmc.loom.util.accesswidener;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,6 +52,7 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.processors.JarProcessor;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();

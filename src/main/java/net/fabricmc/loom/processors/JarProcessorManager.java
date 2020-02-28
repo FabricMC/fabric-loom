@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public class JarProcessorManager {

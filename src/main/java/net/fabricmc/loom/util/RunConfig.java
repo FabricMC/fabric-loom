@@ -107,7 +107,7 @@ public class RunConfig {
 		default:
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
-			runConfig.vmArgs = "-Dfabric.dli.config=" + quoteIfNeeded(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
+			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
 			break;
 		}
 
@@ -225,11 +225,20 @@ public class RunConfig {
 		return "net.fabricmc.loader.launch.knot.Knot" + side.substring(0, 1).toUpperCase(Locale.ROOT) + side.substring(1).toLowerCase(Locale.ROOT);
 	}
 
-	private static String quoteIfNeeded(String input) {
-		if (!input.contains(" ")) {
-			return input;
+	private static String encodeEscaped(String s) {
+		StringBuilder ret = new StringBuilder();
+
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+
+			if (c == '@' && i > 0 && s.charAt(i - 1) == '@' || c == ' ') {
+				ret.append("@@");
+				ret.append(Integer.toString(c, 16));
+			} else {
+				ret.append(c);
+			}
 		}
 
-		return String.format("\"%s\"", input);
+		return ret.toString();
 	}
 }

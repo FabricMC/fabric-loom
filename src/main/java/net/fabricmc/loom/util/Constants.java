@@ -57,5 +57,5 @@ public class Constants {
 	public static final String MAPPINGS_FINAL = "mappingsFinal";
 
 	public static final String MIXIN_COMPILE_EXTENSIONS_VERSION = "0.3.0.4";
-	public static final String DEV_LAUNCH_INJECTOR_VERSION = "0.1.0+build.3";
+	public static final String DEV_LAUNCH_INJECTOR_VERSION = "0.2.0+build.6";
 }

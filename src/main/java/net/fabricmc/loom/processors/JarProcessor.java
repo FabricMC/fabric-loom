@@ -22,49 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.processors;
 
 import java.io.File;
-import java.io.IOException;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
+import org.gradle.api.Project;
 
-public class Checksum {
-	private static final Logger log = Logging.getLogger(Checksum.class);
+public interface JarProcessor {
+	void setup(Project project);
 
-	public static boolean equals(File file, String checksum) {
-		if (file == null) {
-			return false;
-		}
+	void process(File file);
 
-		try {
-			//noinspection deprecation
-			HashCode hash = Files.asByteSource(file).hash(Hashing.sha1());
-			StringBuilder builder = new StringBuilder();
-
-			for (Byte hashBytes : hash.asBytes()) {
-				builder.append(Integer.toString((hashBytes & 0xFF) + 0x100, 16).substring(1));
-			}
-
-			log.debug("Checksum check: '" + builder.toString() + "' == '" + checksum + "'?");
-			return builder.toString().equals(checksum);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return false;
-	}
-
-	public static byte[] sha256(File file) {
-		try {
-			HashCode hash = Files.asByteSource(file).hash(Hashing.sha256());
-			return hash.asBytes();
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to get file hash");
-		}
-	}
+	boolean isInvalid(File file);
 }

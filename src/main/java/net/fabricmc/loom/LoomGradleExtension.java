@@ -45,6 +45,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -58,12 +59,14 @@ public class LoomGradleExtension {
 	public boolean autoGenIDERuns = true;
 	public boolean extractJars = false;
 	public String customManifest = null;
+	public File accessWidener = null;
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
 	//Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
+	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
@@ -108,6 +111,16 @@ public class LoomGradleExtension {
 
 	public File getRootProjectPersistentCache() {
 		File projectCache = new File(project.getRootProject().file(".gradle"), "loom-cache");
+
+		if (!projectCache.exists()) {
+			projectCache.mkdirs();
+		}
+
+		return projectCache;
+	}
+
+	public File getProjectPersistentCache() {
+		File projectCache = new File(project.file(".gradle"), "loom-cache");
 
 		if (!projectCache.exists()) {
 			projectCache.mkdirs();
@@ -167,7 +180,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getNativesDirectory() {
-		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().minecraftVersion);
+		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().getMinecraftVersion());
 
 		if (!natives.exists()) {
 			natives.mkdirs();
@@ -281,6 +294,14 @@ public class LoomGradleExtension {
 
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {
 		this.dependencyManager = dependencyManager;
+	}
+
+	public JarProcessorManager getJarProcessorManager() {
+		return jarProcessorManager;
+	}
+
+	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
+		this.jarProcessorManager = jarProcessorManager;
 	}
 
 	public String getRefmapName() {

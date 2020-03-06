@@ -39,7 +39,7 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MapJarsTiny {
-	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, Project project) throws IOException {
+	public void mapJars(MinecraftProvider jarProvider, MinecraftMappedProvider mapProvider, File mappedJar, File intermediaryJar, Project project) throws IOException {
 		String fromM = "official";
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
@@ -48,8 +48,8 @@ public class MapJarsTiny {
 		Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
 		Path input = jarProvider.getMergedJar().toPath();
-		Path outputMapped = mapProvider.getMappedJar().toPath();
-		Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
+		Path outputMapped = mappedJar.toPath();
+		Path outputIntermediary = intermediaryJar.toPath();
 
 		for (String toM : Arrays.asList("named", "intermediary")) {
 			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;

@@ -108,7 +108,7 @@ public class LoomDependencyManager {
 					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
 
 					try {
-						provider.provide(info, project, extension, afterTasks::add);
+						provider.provide(info, afterTasks::add);
 					} catch (Exception e) {
 						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.getMessage(), e);
 					}

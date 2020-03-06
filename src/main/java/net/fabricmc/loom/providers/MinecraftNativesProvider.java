@@ -38,7 +38,7 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 public class MinecraftNativesProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
+		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
 
 		File nativesDir = extension.getNativesDirectory();
 		File jarStore = extension.getNativesJarStore();

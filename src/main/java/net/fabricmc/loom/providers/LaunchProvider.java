@@ -37,27 +37,30 @@ import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class LaunchProvider extends DependencyProvider {
+	public LaunchProvider(Project project) {
+		super(project);
+	}
+
 	@Override
-	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws IOException {
+	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 
-				.property("client", "java.library.path", extension.getNativesDirectory().getAbsolutePath())
-				.property("client", "org.lwjgl.librarypath", extension.getNativesDirectory().getAbsolutePath())
+				.property("client", "java.library.path", getExtension().getNativesDirectory().getAbsolutePath())
+				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
 
 				.argument("client", "--assetIndex")
-				.argument("client", extension.getMinecraftProvider().versionInfo.assetIndex.getFabricId(extension.getMinecraftProvider().minecraftVersion))
+				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex.getFabricId(getExtension().getMinecraftProvider().getMinecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", new File(extension.getUserCache(), "assets").getAbsolutePath());
+				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
-		FileUtils.writeStringToFile(extension.getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
+		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, project, "runtimeOnly");
+		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, "runtimeOnly");
 	}
 
 	@Override

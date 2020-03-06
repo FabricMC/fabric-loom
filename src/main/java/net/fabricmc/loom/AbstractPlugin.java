@@ -50,7 +50,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.scala.ScalaCompile;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
@@ -100,8 +99,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftIntermediaryConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_INTERMEDIARY);
-		minecraftIntermediaryConfig.setTransitive(false);
 		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
@@ -135,7 +132,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		}
 
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
-		extendsFrom(Constants.MINECRAFT_INTERMEDIARY, Constants.MINECRAFT_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.MAPPINGS_FINAL);
 
@@ -224,9 +220,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		ideaModel.getModule().setDownloadJavadoc(true);
 		ideaModel.getModule().setDownloadSources(true);
 		ideaModel.getModule().setInheritOutputDirs(true);
-
-		// ECLIPSE
-		EclipseModel eclipseModel = (EclipseModel) project.getExtensions().getByName("eclipse");
 	}
 
 	/**
@@ -236,7 +229,6 @@ public class AbstractPlugin implements Plugin<Project> {
 		JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
 
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-		SourceSet test = javaModule.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
@@ -248,11 +240,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
-
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getUserCache());
-				flatDirectoryArtifactRepository.setName("UserCacheFiles");
-			});
 
 			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
@@ -269,11 +256,6 @@ public class AbstractPlugin implements Plugin<Project> {
 				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
 			});
 
-			/* project1.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("SpongePowered");
-				mavenArtifactRepository.setUrl("http://repo.spongepowered.org/maven");
-			}); */
-
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Mojang");
 				mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
@@ -285,9 +267,9 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new MinecraftProvider());
-			dependencyManager.addProvider(new MappingsProvider());
-			dependencyManager.addProvider(new LaunchProvider());
+			dependencyManager.addProvider(new MinecraftProvider(getProject()));
+			dependencyManager.addProvider(new MappingsProvider(getProject()));
+			dependencyManager.addProvider(new LaunchProvider(getProject()));
 
 			dependencyManager.handleDependencies(project1);
 

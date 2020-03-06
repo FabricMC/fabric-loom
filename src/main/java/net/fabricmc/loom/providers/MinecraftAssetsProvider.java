@@ -53,7 +53,7 @@ public class MinecraftAssetsProvider {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 
-		MinecraftVersionInfo versionInfo = minecraftProvider.versionInfo;
+		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
 		MinecraftVersionInfo.AssetIndex assetIndex = versionInfo.assetIndex;
 
 		// get existing cache files
@@ -63,7 +63,7 @@ public class MinecraftAssetsProvider {
 			assets.mkdirs();
 		}
 
-		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.minecraftVersion) + ".json");
+		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.getMinecraftVersion()) + ".json");
 
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");

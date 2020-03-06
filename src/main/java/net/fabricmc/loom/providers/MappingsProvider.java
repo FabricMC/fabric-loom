@@ -44,7 +44,6 @@ import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -54,6 +53,8 @@ import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
+import net.fabricmc.loom.processors.JarProcessorManager;
+import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -71,6 +72,10 @@ public class MappingsProvider extends DependencyProvider {
 	public File tinyMappingsJar;
 	public File mappingsMixinExport;
 
+	public MappingsProvider(Project project) {
+		super(project);
+	}
+
 	public void clean() throws IOException {
 		FileUtils.deleteDirectory(mappingsDir.toFile());
 	}
@@ -80,10 +85,10 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	@Override
-	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
+	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
-		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
+		getProject().getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
@@ -92,10 +97,10 @@ public class MappingsProvider extends DependencyProvider {
 
 		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
 
-		this.minecraftVersion = minecraftProvider.minecraftVersion;
+		this.minecraftVersion = minecraftProvider.getMinecraftVersion();
 		this.mappingsVersion = version + (isV2 ? "-v2" : "");
 
-		initFiles(project);
+		initFiles();
 
 		Files.createDirectories(mappingsDir);
 		Files.createDirectories(mappingsStepsDir);
@@ -108,21 +113,30 @@ public class MappingsProvider extends DependencyProvider {
 		}
 
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
-		tinyMappingsJar = new File(extension.getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
+		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists()) {
-			storeMappings(project, minecraftProvider, mappingsJar.toPath());
+			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
 		}
 
 		if (!tinyMappingsJar.exists()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
 		}
 
-		addDependency(tinyMappingsJar, project, Constants.MAPPINGS_FINAL);
+		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
 
-		mappedProvider = new MinecraftMappedProvider();
-		mappedProvider.initFiles(project, minecraftProvider, this);
-		mappedProvider.provide(dependency, project, extension, postPopulationScheduler);
+		JarProcessorManager processorManager = new JarProcessorManager(getProject());
+		getExtension().setJarProcessorManager(processorManager);
+
+		if (processorManager.active()) {
+			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
+			getProject().getLogger().lifecycle("Using project based jar storage");
+		} else {
+			mappedProvider = new MinecraftMappedProvider(getProject());
+		}
+
+		mappedProvider.initFiles(minecraftProvider, this);
+		mappedProvider.provide(dependency, postPopulationScheduler);
 	}
 
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
@@ -225,7 +239,7 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
-		runCommand(command, minecraftProvider.MINECRAFT_MERGED_JAR.getAbsolutePath(),
+		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
 						oldMappings.toAbsolutePath().toString(),
 						newMappings.toAbsolutePath().toString());
 	}
@@ -238,13 +252,12 @@ public class MappingsProvider extends DependencyProvider {
 		}
 	}
 
-	private void initFiles(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		mappingsDir = extension.getUserCache().toPath().resolve("mappings");
+	private void initFiles() {
+		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
 		mappingsStepsDir = mappingsDir.resolve("steps");
 
 		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
-		mappingsMixinExport = new File(extension.getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
+		mappingsMixinExport = new File(getExtension().getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 
 	@Override

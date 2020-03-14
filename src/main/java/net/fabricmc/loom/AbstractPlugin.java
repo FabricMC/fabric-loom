@@ -63,6 +63,7 @@ import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
+import net.fabricmc.loom.util.FabricApiExtension;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -87,6 +88,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		// Force add Mojang repository

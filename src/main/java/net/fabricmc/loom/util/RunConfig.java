@@ -232,8 +232,7 @@ public class RunConfig {
 			char c = s.charAt(i);
 
 			if (c == '@' && i > 0 && s.charAt(i - 1) == '@' || c == ' ') {
-				ret.append("@@");
-				ret.append(Integer.toString(c, 16));
+				ret.append(String.format("@@%04x", (int) c));
 			} else {
 				ret.append(c);
 			}

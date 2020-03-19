@@ -59,12 +59,12 @@ public class AccessWidener {
 		}
 
 		if (namespace != null) {
-			if (!namespace.equals(header[1])) {
-				throw new RuntimeException(String.format("Namespace mismatch, expected %s got %s", namespace, header[1]));
+			if (!namespace.equals(header[2])) {
+				throw new RuntimeException(String.format("Namespace mismatch, expected %s got %s", namespace, header[2]));
 			}
 		}
 
-		namespace = header[1];
+		namespace = header[2];
 
 		String line;
 
@@ -133,7 +133,7 @@ public class AccessWidener {
 
 	//Could possibly be cleaner but should do its job for now
 	public void write(StringWriter writer) {
-		writer.write("accessWidener\\v1\t");
+		writer.write("accessWidener\tv1\t");
 		writer.write(namespace);
 		writer.write("\n");
 

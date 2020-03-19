@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 
 import org.objectweb.asm.Opcodes;
 
@@ -47,10 +48,14 @@ public class AccessWidener {
 	private Set<String> classes = new LinkedHashSet<>();
 
 	public void read(BufferedReader reader) throws IOException {
-		String[] header = reader.readLine().split("\t");
+		String[] header = reader.readLine().split("\\s+");
 
-		if (header.length != 2 || !header[0].equals("accessWidener\\v1")) {
-			throw new UnsupportedOperationException("Unsupported or invalid access accessWidener file, expected: accessWidener\\v1 <namespace>");
+		if (header.length != 3 || !header[0].equals("accessWidener")) {
+			throw new UnsupportedOperationException("Invalid access access widener file");
+		}
+
+		if (!header[1].equals("v1")) {
+			throw new RuntimeException(String.format("Unsupported access widener format (%s)", header[1]));
 		}
 
 		if (namespace != null) {
@@ -60,8 +65,10 @@ public class AccessWidener {
 		}
 
 		namespace = header[1];
-		Set<String> targets = new LinkedHashSet<>();
+
 		String line;
+
+		Set<String> targets = new LinkedHashSet<>();
 
 		while ((line = reader.readLine()) != null) {
 			//Comment handling
@@ -73,12 +80,7 @@ public class AccessWidener {
 
 			if (line.isEmpty()) continue;
 
-			//Will be a common issue, make it clear.
-			if (line.contains(" ")) {
-				throw new RuntimeException("AccessWidener contains one or more space character, tabs are required on line: " + line);
-			}
-
-			String[] split = line.split("\t");
+			String[] split = line.split("\\s+");
 
 			if (split.length != 3 && split.length != 5) {
 				throw new RuntimeException(String.format("Invalid line (%s)", line));
@@ -94,21 +96,21 @@ public class AccessWidener {
 					throw new RuntimeException(String.format("Expected (<access>\tclass\t<className>) got (%s)", line));
 				}
 
-				classAccess.put(split[2], applyAccess(access, classAccess.getOrDefault(split[2], Access.DEFAULT)));
+				classAccess.put(split[2], applyAccess(access, classAccess.getOrDefault(split[2], ClassAccess.DEFAULT), null));
 				break;
 			case "field":
 				if (split.length != 5) {
 					throw new RuntimeException(String.format("Expected (<access>\tfield\t<className>\t<fieldName>\t<fieldDesc>) got (%s)", line));
 				}
 
-				addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				addOrMerge(fieldAccess, new EntryTriple(split[2], split[3], split[4]), access, FieldAccess.DEFAULT);
 				break;
 			case "method":
 				if (split.length != 5) {
 					throw new RuntimeException(String.format("Expected (<access>\tmethod\t<className>\t<methodName>\t<methodDesc>) got (%s)", line));
 				}
 
-				addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access);
+				addOrMerge(methodAccess, new EntryTriple(split[2], split[3], split[4]), access, MethodAccess.DEFAULT);
 				break;
 			default:
 				throw new UnsupportedOperationException("Unsupported type " + split[1]);
@@ -136,10 +138,12 @@ public class AccessWidener {
 		writer.write("\n");
 
 		for (Map.Entry<String, Access> entry : classAccess.entrySet()) {
-			writer.write(entry.getValue().name().toLowerCase(Locale.ROOT));
-			writer.write("\tclass\t");
-			writer.write(entry.getKey());
-			writer.write("\n");
+			for (String s : getAccesses(entry.getValue())) {
+				writer.write(s);
+				writer.write("\tclass\t");
+				writer.write(entry.getKey());
+				writer.write("\n");
+			}
 		}
 
 		for (Map.Entry<EntryTriple, Access> entry : methodAccess.entrySet()) {
@@ -152,19 +156,7 @@ public class AccessWidener {
 	}
 
 	private void writeEntry(StringWriter writer, String type, EntryTriple entryTriple, Access access) {
-		List<String> accesses = new ArrayList<>();
-
-		if (access.makePublic) {
-			accesses.add("public");
-		} else if (access.makeProtected) {
-			accesses.add("protected");
-		}
-
-		if (access.stripFinal) {
-			accesses.add("stripfinal");
-		}
-
-		for (String s : accesses) {
+		for (String s : getAccesses(access)) {
 			writer.write(s);
 			writer.write("\t");
 			writer.write(type);
@@ -178,34 +170,50 @@ public class AccessWidener {
 		}
 	}
 
+	private List<String> getAccesses(Access access) {
+		List<String> accesses = new ArrayList<>();
+
+		if (access == ClassAccess.ACCESSIBLE || access == MethodAccess.ACCESSIBLE || access == FieldAccess.ACCESSIBLE || access == MethodAccess.ACCESSIBLE_EXTENDABLE || access == ClassAccess.ACCESSIBLE_EXTENDABLE || access == FieldAccess.ACCESSIBLE_MUTABLE) {
+			accesses.add("accessible");
+		}
+
+		if (access == ClassAccess.EXTENDABLE || access == MethodAccess.EXTENDABLE || access == MethodAccess.ACCESSIBLE_EXTENDABLE || access == ClassAccess.ACCESSIBLE_EXTENDABLE) {
+			accesses.add("extendable");
+		}
+
+		if (access == FieldAccess.MUTABLE || access == FieldAccess.ACCESSIBLE_MUTABLE) {
+			accesses.add("mutable");
+		}
+
+		return accesses;
+	}
+
 	void addOrMerge(Map<EntryTriple, Access> map, EntryTriple entry, Access access) {
 		if (entry == null || access == null) {
 			throw new RuntimeException("Input entry or access is null");
 		}
 
-		Access merged = Access.DEFAULT;
+		Access merged = null;
 
-		if (access.makeProtected) {
-			merged = merged.makeProtected();
+		if (access instanceof ClassAccess) {
+			merged = ClassAccess.DEFAULT;
+		} else if (access instanceof MethodAccess) {
+			merged = MethodAccess.DEFAULT;
+		} else if (access instanceof FieldAccess) {
+			merged = FieldAccess.DEFAULT;
 		}
 
-		if (access.makePublic) {
-			merged = merged.makePublic();
-		}
-
-		if (access.stripFinal) {
-			merged = merged.stripFinal();
-		}
+		merged = mergeAccess(merged, access);
 
 		map.put(entry, merged);
 	}
 
-	void addOrMerge(Map<EntryTriple, Access> map, EntryTriple entry, String access) {
+	void addOrMerge(Map<EntryTriple, Access> map, EntryTriple entry, String access, Access defaultAccess) {
 		if (entry == null || access == null) {
 			throw new RuntimeException("Input entry or access is null");
 		}
 
-		map.put(entry, applyAccess(access, map.getOrDefault(entry, Access.DEFAULT)));
+		map.put(entry, applyAccess(access, map.getOrDefault(entry, defaultAccess), entry));
 	}
 
 	public void merge(AccessWidener other) {
@@ -232,91 +240,220 @@ public class AccessWidener {
 		}
 	}
 
-	private Access applyAccess(String input, Access access) {
+	private Access applyAccess(String input, Access access, EntryTriple entryTriple) {
 		switch (input.toLowerCase(Locale.ROOT)) {
-		case "public":
-			return access.makePublic();
-		case "protected":
-			return access.makeProtected();
-		case "stripfinal":
-			return access.stripFinal();
+		case "accessible":
+			makeClassAccessible(entryTriple);
+			return access.makeAccessible();
+		case "extendable":
+			makeClassExtendable(entryTriple);
+			return access.makeExtendable();
+		case "mutable":
+			return access.makeMutable();
 		default:
 			throw new UnsupportedOperationException("Unknown access type:" + input);
 		}
 	}
 
+	private void makeClassAccessible(EntryTriple entryTriple) {
+		if (entryTriple == null) return;
+		classAccess.put(entryTriple.getOwner(), applyAccess("accessible", classAccess.getOrDefault(entryTriple.getOwner(), ClassAccess.DEFAULT), null));
+	}
+
+	private void makeClassExtendable(EntryTriple entryTriple) {
+		if (entryTriple == null) return;
+		classAccess.put(entryTriple.getOwner(), applyAccess("extendable", classAccess.getOrDefault(entryTriple.getOwner(), ClassAccess.DEFAULT), null));
+	}
+
 	private static Access mergeAccess(Access a, Access b) {
-		return Access.values()[Math.max(a.ordinal(), b.ordinal())];
+		Access access = a;
+
+		if (b == ClassAccess.ACCESSIBLE || b == MethodAccess.ACCESSIBLE || b == FieldAccess.ACCESSIBLE || b == MethodAccess.ACCESSIBLE_EXTENDABLE || b == ClassAccess.ACCESSIBLE_EXTENDABLE || b == FieldAccess.ACCESSIBLE_MUTABLE) {
+			access = access.makeAccessible();
+		}
+
+		if (b == ClassAccess.EXTENDABLE || b == MethodAccess.EXTENDABLE || b == MethodAccess.ACCESSIBLE_EXTENDABLE || b == ClassAccess.ACCESSIBLE_EXTENDABLE) {
+			access = access.makeExtendable();
+		}
+
+		if (b == FieldAccess.MUTABLE || b == FieldAccess.ACCESSIBLE_MUTABLE) {
+			access = access.makeMutable();
+		}
+
+		return access;
 	}
 
 	public Access getClassAccess(String className) {
-		return classAccess.getOrDefault(className, Access.DEFAULT);
+		return classAccess.getOrDefault(className, ClassAccess.DEFAULT);
 	}
 
 	public Access getFieldAccess(EntryTriple entryTriple) {
-		return fieldAccess.getOrDefault(entryTriple, Access.DEFAULT);
+		return fieldAccess.getOrDefault(entryTriple, FieldAccess.DEFAULT);
 	}
 
 	public Access getMethodAccess(EntryTriple entryTriple) {
-		return methodAccess.getOrDefault(entryTriple, Access.DEFAULT);
+		return methodAccess.getOrDefault(entryTriple, MethodAccess.DEFAULT);
 	}
 
 	public Set<String> getTargets() {
 		return classes;
 	}
 
-	public enum Access {
-		DEFAULT(false, false, false),
-		PROTECTED(true, false, false),
-		PROTECTED_STRIP_FINAL(true, false, true),
-		PUBLIC(false, true, false),
-		PUBLIC_STRIP_FINAL(false, true, true),
-		STRIP_FINAL(false, false, true);
+	private static int makePublic(int i) {
+		return (i & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED)) | Opcodes.ACC_PUBLIC;
+	}
 
-		private final boolean makeProtected;
-		private final boolean makePublic;
-		private final boolean stripFinal;
-
-		Access(boolean makeProtected, boolean makePublic, boolean stripFinal) {
-			this.makeProtected = makeProtected;
-			this.makePublic = makePublic;
-			this.stripFinal = stripFinal;
+	private static int makeProtected(int i) {
+		if ((i & Opcodes.ACC_PUBLIC) != 0) {
+			//Return i if public
+			return i;
 		}
 
-		public Access makePublic() {
-			return stripFinal ? PUBLIC_STRIP_FINAL : PUBLIC;
+		return (i & ~(Opcodes.ACC_PRIVATE)) | Opcodes.ACC_PROTECTED;
+	}
+
+	private static int makeFinalIfPrivate(int i) {
+		if ((i & Opcodes.ACC_PRIVATE) != 0) {
+			return i | Opcodes.ACC_FINAL;
 		}
 
-		public Access makeProtected() {
-			if (makePublic) return this;
-			return stripFinal ? PROTECTED_STRIP_FINAL : PROTECTED;
+		return i;
+	}
+
+	private static int removeFinal(int i) {
+		return i & ~Opcodes.ACC_FINAL;
+	}
+
+	public interface Access {
+		Access makeAccessible();
+
+		Access makeExtendable();
+
+		Access makeMutable();
+
+		int apply(int i);
+	}
+
+	public enum ClassAccess implements Access {
+		DEFAULT(i -> i),
+		ACCESSIBLE(i -> makePublic(makeFinalIfPrivate(i))),
+		EXTENDABLE(i -> makePublic(removeFinal(i))),
+		ACCESSIBLE_EXTENDABLE(i -> makePublic(removeFinal(i)));
+
+		private final IntUnaryOperator operator;
+
+		ClassAccess(IntUnaryOperator operator) {
+			this.operator = operator;
 		}
 
-		public Access stripFinal() {
-			if (makePublic) {
-				return PUBLIC_STRIP_FINAL;
-			} else if (makeProtected) {
-				return PROTECTED_STRIP_FINAL;
+		@Override
+		public Access makeAccessible() {
+			if (this == EXTENDABLE || this == ACCESSIBLE_EXTENDABLE) {
+				return ACCESSIBLE_EXTENDABLE;
 			}
 
-			return STRIP_FINAL;
+			return ACCESSIBLE;
 		}
 
-		public int apply(int access) {
-			if (makePublic) {
-				access = (access & ~7) | Opcodes.ACC_PUBLIC;
-			} else if (makeProtected) {
-				if ((access & Opcodes.ACC_PUBLIC) == 0) {
-					//Only make it protected if not public
-					access = (access & ~7) | Opcodes.ACC_PROTECTED;
-				}
+		@Override
+		public Access makeExtendable() {
+			if (this == ACCESSIBLE || this == ACCESSIBLE_EXTENDABLE) {
+				return ACCESSIBLE_EXTENDABLE;
 			}
 
-			if (stripFinal) {
-				access = access & ~Opcodes.ACC_FINAL;;
+			return EXTENDABLE;
+		}
+
+		@Override
+		public Access makeMutable() {
+			throw new UnsupportedOperationException("Classes cannot be made mutable");
+		}
+
+		@Override
+		public int apply(int i) {
+			return operator.applyAsInt(i);
+		}
+	}
+
+	public enum MethodAccess implements Access {
+		DEFAULT(i -> i),
+		ACCESSIBLE(i -> makePublic(makeFinalIfPrivate(i))), //Make public, add final if private
+		EXTENDABLE(i -> makeProtected(removeFinal(i))), //Make protected and strip final
+		ACCESSIBLE_EXTENDABLE(i -> makePublic(removeFinal(i))); //Make public and strip final
+
+		private final IntUnaryOperator operator;
+
+		MethodAccess(IntUnaryOperator operator) {
+			this.operator = operator;
+		}
+
+		@Override
+		public Access makeAccessible() {
+			if (this == EXTENDABLE || this == ACCESSIBLE_EXTENDABLE) {
+				return ACCESSIBLE_EXTENDABLE;
 			}
 
-			return access;
+			return ACCESSIBLE;
+		}
+
+		@Override
+		public Access makeExtendable() {
+			if (this == ACCESSIBLE || this == ACCESSIBLE_EXTENDABLE) {
+				return ACCESSIBLE_EXTENDABLE;
+			}
+
+			return EXTENDABLE;
+		}
+
+		@Override
+		public Access makeMutable() {
+			throw new UnsupportedOperationException("Methods cannot be made mutable");
+		}
+
+		@Override
+		public int apply(int i) {
+			return operator.applyAsInt(i);
+		}
+	}
+
+	public enum FieldAccess implements Access {
+		DEFAULT(i -> i),
+		ACCESSIBLE(i -> makePublic(i)),
+		MUTABLE(i -> removeFinal(i)),
+		ACCESSIBLE_MUTABLE(i -> makePublic(removeFinal(i)));
+
+		private final IntUnaryOperator operator;
+
+		FieldAccess(IntUnaryOperator operator) {
+			this.operator = operator;
+		}
+
+		@Override
+		public Access makeAccessible() {
+			if (this == MUTABLE || this == ACCESSIBLE_MUTABLE) {
+				return ACCESSIBLE_MUTABLE;
+			}
+
+			return ACCESSIBLE;
+		}
+
+		@Override
+		public Access makeExtendable() {
+			throw new UnsupportedOperationException("Fields cannot be made extendable");
+		}
+
+		@Override
+		public Access makeMutable() {
+			if (this == ACCESSIBLE || this == ACCESSIBLE_MUTABLE) {
+				return ACCESSIBLE_MUTABLE;
+			}
+
+			return MUTABLE;
+		}
+
+		@Override
+		public int apply(int i) {
+			return operator.applyAsInt(i);
 		}
 	}
 }

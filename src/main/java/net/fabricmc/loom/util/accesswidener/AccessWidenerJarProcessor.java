@@ -205,13 +205,32 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-			return super.visitMethod(
+			return new AccessWidenerMethodVisitor(super.visitMethod(
 					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access),
 					name,
 					descriptor,
 					signature,
 					exceptions
-			);
+			));
+		}
+
+		private class AccessWidenerMethodVisitor extends MethodVisitor {
+			AccessWidenerMethodVisitor(MethodVisitor methodVisitor) {
+				super(Opcodes.ASM7, methodVisitor);
+			}
+
+			@Override
+			public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+				if (opcode == Opcodes.INVOKESPECIAL && owner.equals(className) && !name.equals("<init>")) {
+					AccessWidener.Access methodAccess = accessWidener.getMethodAccess(new EntryTriple(owner, name, descriptor));
+
+					if (methodAccess != AccessWidener.MethodAccess.DEFAULT) {
+						opcode = Opcodes.INVOKEVIRTUAL;
+					}
+				}
+
+				super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+			}
 		}
 	}
 }

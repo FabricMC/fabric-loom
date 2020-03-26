@@ -60,6 +60,7 @@ public class LoomGradleExtension {
 	public boolean extractJars = false;
 	public String customManifest = null;
 	public File accessWidener = null;
+	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
@@ -316,5 +317,11 @@ public class LoomGradleExtension {
 
 	public boolean ideSync() {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
+	}
+
+	// Ideally this should use maven, but this is a lot easier
+	public Function<String, String> getIntermediaryUrl() {
+		//Done like this to work around this possibly not being a java string...
+		return s -> intermediaryUrl.apply(s).toString();
 	}
 }

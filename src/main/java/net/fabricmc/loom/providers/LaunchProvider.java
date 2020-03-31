@@ -61,9 +61,9 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
-		//Disable ansi color output for eclipse users
-		if (!getExtension().forceAnsiConsole && (new File(getProject().getRootDir(), ".project").exists() || new File(getProject().getRootDir(), ".classpath").exists())) {
-			launchConfig.property("fabric.log.disableAnsi", "true");
+		//Enable ansi by default for none eclipse users
+		if (!(new File(getProject().getRootDir(), ".project").exists() || new File(getProject().getRootDir(), ".classpath").exists())) {
+			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 
 		writeLog4jConfig();

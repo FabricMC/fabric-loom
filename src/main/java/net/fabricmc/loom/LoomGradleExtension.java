@@ -60,7 +60,6 @@ public class LoomGradleExtension {
 	public boolean extractJars = false;
 	public String customManifest = null;
 	public File accessWidener = null;
-	public boolean forceAnsiConsole = false;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();

@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +62,10 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
-		//Enable ansi by default for none eclipse users
-		if (!(new File(getProject().getRootDir(), ".project").exists() || new File(getProject().getRootDir(), ".classpath").exists())) {
+		//Enable ansi by default for idea and vscode
+		if (new File(getProject().getRootDir(), ".vscode").exists()
+				|| new File(getProject().getRootDir(), ".idea").exists()
+				|| (Arrays.stream(getProject().getRootDir().listFiles()).anyMatch(file -> file.getName().endsWith(".iws")))) {
 			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 

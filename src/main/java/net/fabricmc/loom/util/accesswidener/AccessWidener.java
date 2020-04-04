@@ -51,7 +51,7 @@ public class AccessWidener {
 		String[] header = reader.readLine().split("\\s+");
 
 		if (header.length != 3 || !header[0].equals("accessWidener")) {
-			throw new UnsupportedOperationException("Invalid access access widener file");
+			throw new UnsupportedOperationException("Invalid access access widener header");
 		}
 
 		if (!header[1].equals("v1")) {

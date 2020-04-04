@@ -26,8 +26,11 @@ package net.fabricmc.loom.providers;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,7 @@ public class LaunchProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
+				.property("log4j.configurationFile", getLog4jConfigFile().getAbsolutePath())
 
 				.property("client", "java.library.path", getExtension().getNativesDirectory().getAbsolutePath())
 				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
@@ -58,9 +62,31 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
+		//Enable ansi by default for idea and vscode
+		if (new File(getProject().getRootDir(), ".vscode").exists()
+				|| new File(getProject().getRootDir(), ".idea").exists()
+				|| (Arrays.stream(getProject().getRootDir().listFiles()).anyMatch(file -> file.getName().endsWith(".iws")))) {
+			launchConfig.property("fabric.log.disableAnsi", "false");
+		}
+
+		writeLog4jConfig();
 		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
 		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, "runtimeOnly");
+		addDependency("net.minecrell:terminalconsoleappender:" + Constants.TERMINAL_CONSOLE_APPENDER_VERSION, "runtimeOnly");
+	}
+
+	private File getLog4jConfigFile() {
+		return new File(getExtension().getDevLauncherConfig().getParentFile(), "log4j.xml");
+	}
+
+	private void writeLog4jConfig() {
+		try (InputStream is = LaunchProvider.class.getClassLoader().getResourceAsStream("log4j2.fabric.xml")) {
+			Files.deleteIfExists(getLog4jConfigFile().toPath());
+			Files.copy(is, getLog4jConfigFile().toPath());
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to generate log4j config", e);
+		}
 	}
 
 	@Override

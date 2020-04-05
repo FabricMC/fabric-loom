@@ -65,7 +65,15 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				minecraftIntermediaryJar.delete();
 			}
 
-			new MapJarsTiny().mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
+			try {
+				new MapJarsTiny().mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
+			} catch (Throwable t) {
+				//Cleanup some some things that may be in a bad state now
+				minecraftMappedJar.delete();
+				minecraftIntermediaryJar.delete();
+				getExtension().getMappingsProvider().cleanFiles();
+				throw new RuntimeException("Failed to remap minecraft", t);
+			}
 		}
 
 		if (!minecraftMappedJar.exists()) {

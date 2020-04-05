@@ -55,6 +55,7 @@ import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.processors.MinecraftProcessedProvider;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -258,6 +259,18 @@ public class MappingsProvider extends DependencyProvider {
 
 		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
 		mappingsMixinExport = new File(getExtension().getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
+	}
+
+	public void cleanFiles() {
+		try {
+			Files.walkFileTree(mappingsStepsDir, new DeletingFileVisitor());
+			Files.deleteIfExists(baseTinyMappings);
+			mappingsMixinExport.delete();
+			tinyMappings.delete();
+			tinyMappingsJar.delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override

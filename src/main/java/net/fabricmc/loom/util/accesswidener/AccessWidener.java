@@ -312,19 +312,29 @@ public class AccessWidener {
 		return (i & ~(Opcodes.ACC_PRIVATE)) | Opcodes.ACC_PROTECTED;
 	}
 
-	private static int makeFinalIfPrivate(int i) {
-		if ((i & Opcodes.ACC_PRIVATE) != 0) {
-			return i | Opcodes.ACC_FINAL;
+	private static int makeFinalIfPrivate(int access, String name, int ownerAccess) {
+		// Dont make constructors final
+		if (name.equals("<init>")) {
+			return access;
 		}
 
-		return i;
+		// Skip interface and static methods
+		if ((ownerAccess & (Opcodes.ACC_INTERFACE | Opcodes.ACC_STATIC)) != 0) {
+			return access;
+		}
+
+		if ((access & Opcodes.ACC_PRIVATE) != 0) {
+			return access | Opcodes.ACC_FINAL;
+		}
+
+		return access;
 	}
 
 	private static int removeFinal(int i) {
 		return i & ~Opcodes.ACC_FINAL;
 	}
 
-	public interface Access extends IntUnaryOperator {
+	public interface Access extends AccessOperator {
 		Access makeAccessible();
 
 		Access makeExtendable();
@@ -333,14 +343,14 @@ public class AccessWidener {
 	}
 
 	public enum ClassAccess implements Access {
-		DEFAULT(i -> i),
-		ACCESSIBLE(i -> makePublic(i)),
-		EXTENDABLE(i -> makePublic(removeFinal(i))),
-		ACCESSIBLE_EXTENDABLE(i -> makePublic(removeFinal(i)));
+		DEFAULT((access, name, ownerAccess) -> access),
+		ACCESSIBLE((access, name, ownerAccess) -> makePublic(access)),
+		EXTENDABLE((access, name, ownerAccess) -> makePublic(removeFinal(access))),
+		ACCESSIBLE_EXTENDABLE((access, name, ownerAccess) -> makePublic(removeFinal(access)));
 
-		private final IntUnaryOperator operator;
+		private final AccessOperator operator;
 
-		ClassAccess(IntUnaryOperator operator) {
+		ClassAccess(AccessOperator operator) {
 			this.operator = operator;
 		}
 
@@ -368,20 +378,20 @@ public class AccessWidener {
 		}
 
 		@Override
-		public int applyAsInt(int operand) {
-			return operator.applyAsInt(operand);
+		public int apply(int access, String targetName, int ownerAccess) {
+			return operator.apply(access, targetName, ownerAccess);
 		}
 	}
 
 	public enum MethodAccess implements Access {
-		DEFAULT(i -> i),
-		ACCESSIBLE(i -> makePublic(makeFinalIfPrivate(i))),
-		EXTENDABLE(i -> makeProtected(removeFinal(i))),
-		ACCESSIBLE_EXTENDABLE(i -> makePublic(removeFinal(i)));
+		DEFAULT((access, name, ownerAccess) -> access),
+		ACCESSIBLE((access, name, ownerAccess) -> makePublic(makeFinalIfPrivate(access, name, ownerAccess))),
+		EXTENDABLE((access, name, ownerAccess) -> makeProtected(removeFinal(access))),
+		ACCESSIBLE_EXTENDABLE((access, name, owner) -> makePublic(removeFinal(access)));
 
-		private final IntUnaryOperator operator;
+		private final AccessOperator operator;
 
-		MethodAccess(IntUnaryOperator operator) {
+		MethodAccess(AccessOperator operator) {
 			this.operator = operator;
 		}
 
@@ -409,20 +419,20 @@ public class AccessWidener {
 		}
 
 		@Override
-		public int applyAsInt(int operand) {
-			return operator.applyAsInt(operand);
+		public int apply(int access, String targetName, int ownerAccess) {
+			return operator.apply(access, targetName, ownerAccess);
 		}
 	}
 
 	public enum FieldAccess implements Access {
-		DEFAULT(i -> i),
-		ACCESSIBLE(i -> makePublic(i)),
-		MUTABLE(i -> removeFinal(i)),
-		ACCESSIBLE_MUTABLE(i -> makePublic(removeFinal(i)));
+		DEFAULT((access, name, ownerAccess) -> access),
+		ACCESSIBLE((access, name, ownerAccess) -> makePublic(access)),
+		MUTABLE((access, name, ownerAccess) -> removeFinal(access)),
+		ACCESSIBLE_MUTABLE((access, name, ownerAccess) -> makePublic(removeFinal(access)));
 
-		private final IntUnaryOperator operator;
+		private final AccessOperator operator;
 
-		FieldAccess(IntUnaryOperator operator) {
+		FieldAccess(AccessOperator operator) {
 			this.operator = operator;
 		}
 
@@ -450,8 +460,13 @@ public class AccessWidener {
 		}
 
 		@Override
-		public int applyAsInt(int operand) {
-			return operator.applyAsInt(operand);
+		public int apply(int access, String targetName, int ownerAccess) {
+			return operator.apply(access, targetName, ownerAccess);
 		}
+	}
+
+	@FunctionalInterface
+	public interface AccessOperator {
+		int apply(int access, String targetName, int ownerAccess);
 	}
 }

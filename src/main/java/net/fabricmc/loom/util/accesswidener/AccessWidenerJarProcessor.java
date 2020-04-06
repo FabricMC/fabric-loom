@@ -168,6 +168,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	private class AccessTransformer extends ClassVisitor {
 		private String className;
+		private int classAccess;
 
 		private AccessTransformer(ClassVisitor classVisitor) {
 			super(Opcodes.ASM7, classVisitor);
@@ -176,9 +177,10 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			className = name;
+			classAccess = access;
 			super.visit(
 					version,
-					accessWidener.getClassAccess(name).applyAsInt(access),
+					accessWidener.getClassAccess(name).apply(access, name, classAccess),
 					name,
 					signature,
 					superName,
@@ -192,14 +194,14 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 					name,
 					outerName,
 					innerName,
-					accessWidener.getClassAccess(name).applyAsInt(access)
+					accessWidener.getClassAccess(name).apply(access, name, classAccess)
 			);
 		}
 
 		@Override
 		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 			return super.visitField(
-					accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).applyAsInt(access),
+					accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
 					name,
 					descriptor,
 					signature,
@@ -210,7 +212,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			return new AccessWidenerMethodVisitor(super.visitMethod(
-					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).applyAsInt(access),
+					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
 					name,
 					descriptor,
 					signature,

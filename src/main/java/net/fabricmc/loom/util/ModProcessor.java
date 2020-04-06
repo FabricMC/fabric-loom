@@ -24,10 +24,13 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,12 +50,15 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
+import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
+import net.fabricmc.loom.util.accesswidener.AccessWidener;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -70,6 +76,8 @@ public class ModProcessor {
 		if (project.getExtensions().getByType(LoomGradleExtension.class).extractJars) {
 			handleNestedJars(input, project, config, artifact);
 		}
+
+		remapaccessWidener(input, project);
 
 		//Always strip the nested jars
 		stripNestedJars(output);
@@ -138,6 +146,57 @@ public class ModProcessor {
 				return GSON.toJson(json);
 			}
 		}))});
+	}
+
+	private static void remapaccessWidener(File input, Project project) throws IOException {
+		JarFile jarFile = new JarFile(input);
+		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
+
+		if (modJsonEntry == null) {
+			return;
+		}
+
+		String accessWidenerPath;
+
+		try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
+			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+
+			if (!json.has("accessWidener")) {
+				return;
+			}
+
+			accessWidenerPath = json.get("accessWidener").getAsString();
+		}
+
+		if (accessWidenerPath == null) {
+			return;
+		}
+
+		ZipUtil.transformEntry(input, accessWidenerPath, new ByteArrayZipEntryTransformer() {
+			@Override
+			protected byte[] transform(ZipEntry zipEntry, byte[] input) throws IOException {
+				return remapaccessWidener(input, project);
+			}
+		});
+	}
+
+	private static byte[] remapaccessWidener(byte[] input, Project project) {
+		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input)))) {
+			AccessWidener accessWidener = new AccessWidener();
+			accessWidener.read(bufferedReader);
+
+			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, project.getExtensions().getByType(LoomGradleExtension.class).getMappingsProvider().getMappings(), "named");
+			AccessWidener remapped = accessWidenerRemapper.remap();
+
+			StringWriter writer = new StringWriter();
+			remapped.write(writer);
+			byte[] bytes = writer.toString().getBytes();
+			writer.close();
+
+			return bytes;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static void remapJar(File input, File output, Project project, ResolvedArtifact artifact) throws IOException {

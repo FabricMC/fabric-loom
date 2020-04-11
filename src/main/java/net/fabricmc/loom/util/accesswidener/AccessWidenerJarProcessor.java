@@ -129,7 +129,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		String path = getAccessWidenerPath(modJarPath);
 
 		if (path == null) {
-			return;
+			throw new RuntimeException("Failed to find accessWidener in fabric.mod.json");
 		}
 
 		boolean replaced = ZipUtil.replaceEntry(modJarPath.toFile(), path, bytes);

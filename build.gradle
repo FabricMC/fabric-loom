@@ -22,11 +22,11 @@ if (ENV.BUILD_NUMBER) {
 }
 
 repositories {
-	mavenCentral()
 	maven {
 		name = "Fabric"
 		url = 'https://maven.fabricmc.net/'
 	}
+	mavenCentral()
 }
 
 dependencies {
@@ -53,7 +53,7 @@ dependencies {
 	}
 
 	// decompilers
-	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.+')
+	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.13')
 	implementation ('org.jetbrains:intellij-fernflower:1.1.0.11')
 
 	// source code remapping

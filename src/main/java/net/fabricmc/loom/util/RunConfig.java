@@ -48,7 +48,6 @@ import org.w3c.dom.Node;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
 
 public class RunConfig {
 	public String configName;
@@ -143,8 +142,6 @@ public class RunConfig {
 
 	public static RunConfig clientRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
-		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
 
 		RunConfig ideaClient = new RunConfig();
 		populate(project, extension, ideaClient, "client");

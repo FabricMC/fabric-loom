@@ -30,14 +30,16 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.util.RunConfig;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction
 	public void genRuns() throws IOException {
-		File clientRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_client.launch");
-		File serverRunConfigs = new File(getProject().getRootDir(), getProject().getName() + "_server.launch");
+		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
+		File clientRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_client.launch");
+		File serverRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_server.launch");
 
 		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");

@@ -25,11 +25,11 @@
 package net.fabricmc.loom.util;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -50,7 +50,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
-import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
@@ -77,7 +76,7 @@ public class ModProcessor {
 			handleNestedJars(input, project, config, artifact);
 		}
 
-		remapaccessWidener(input, project);
+		remapaccessWidener(output, project);
 
 		//Always strip the nested jars
 		stripNestedJars(output);
@@ -107,6 +106,8 @@ public class ModProcessor {
 				processNestedJar(jarFile, fileName, project, config, artifact);
 			}
 		}
+
+		jarFile.close();
 	}
 
 	private static void processNestedJar(JarFile parentJar, String fileName, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
@@ -168,32 +169,32 @@ public class ModProcessor {
 			accessWidenerPath = json.get("accessWidener").getAsString();
 		}
 
+		jarFile.close();
+
 		if (accessWidenerPath == null) {
 			return;
 		}
 
-		ZipUtil.transformEntry(input, accessWidenerPath, new ByteArrayZipEntryTransformer() {
+		ZipUtil.transformEntry(input, accessWidenerPath, new StringZipEntryTransformer() {
 			@Override
-			protected byte[] transform(ZipEntry zipEntry, byte[] input) throws IOException {
+			protected String transform(ZipEntry zipEntry, String input) throws IOException {
 				return remapaccessWidener(input, project);
 			}
 		});
 	}
 
-	private static byte[] remapaccessWidener(byte[] input, Project project) {
-		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input)))) {
+	private static String remapaccessWidener(String input, Project project) {
+		try (BufferedReader bufferedReader = new BufferedReader(new StringReader(input))) {
 			AccessWidener accessWidener = new AccessWidener();
 			accessWidener.read(bufferedReader);
 
 			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, project.getExtensions().getByType(LoomGradleExtension.class).getMappingsProvider().getMappings(), "named");
 			AccessWidener remapped = accessWidenerRemapper.remap();
 
-			StringWriter writer = new StringWriter();
-			remapped.write(writer);
-			byte[] bytes = writer.toString().getBytes();
-			writer.close();
-
-			return bytes;
+			try (StringWriter writer = new StringWriter()) {
+				remapped.write(writer);
+				return writer.toString();
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

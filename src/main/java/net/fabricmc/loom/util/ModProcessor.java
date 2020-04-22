@@ -83,31 +83,30 @@ public class ModProcessor {
 	}
 
 	private static void handleNestedJars(File input, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
-		JarFile jarFile = new JarFile(input);
-		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
+		try (JarFile jarFile = new JarFile(input)) {
+			JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
 
-		if (modJsonEntry == null) {
-			return;
-		}
-
-		try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
-			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
-
-			if (json == null || !json.has("jars")) {
+			if (modJsonEntry == null) {
 				return;
 			}
 
-			JsonArray jsonArray = json.getAsJsonArray("jars");
+			try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
+				JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
 
-			for (int i = 0; i < jsonArray.size(); i++) {
-				JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
-				String fileName = jsonObject.get("file").getAsString();
-				project.getLogger().lifecycle(String.format("Found %s nested in %s", fileName, input.getName()));
-				processNestedJar(jarFile, fileName, project, config, artifact);
+				if (json == null || !json.has("jars")) {
+					return;
+				}
+
+				JsonArray jsonArray = json.getAsJsonArray("jars");
+
+				for (int i = 0; i < jsonArray.size(); i++) {
+					JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
+					String fileName = jsonObject.get("file").getAsString();
+					project.getLogger().lifecycle(String.format("Found %s nested in %s", fileName, input.getName()));
+					processNestedJar(jarFile, fileName, project, config, artifact);
+				}
 			}
 		}
-
-		jarFile.close();
 	}
 
 	private static void processNestedJar(JarFile parentJar, String fileName, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
@@ -150,26 +149,25 @@ public class ModProcessor {
 	}
 
 	private static void remapaccessWidener(File input, Project project) throws IOException {
-		JarFile jarFile = new JarFile(input);
-		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
-
-		if (modJsonEntry == null) {
-			return;
-		}
-
 		String accessWidenerPath;
 
-		try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
-			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+		try (JarFile jarFile = new JarFile(input)) {
+			JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
 
-			if (!json.has("accessWidener")) {
+			if (modJsonEntry == null) {
 				return;
 			}
 
-			accessWidenerPath = json.get("accessWidener").getAsString();
-		}
+			try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
+				JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
 
-		jarFile.close();
+				if (!json.has("accessWidener")) {
+					return;
+				}
+
+				accessWidenerPath = json.get("accessWidener").getAsString();
+			}
+		}
 
 		if (accessWidenerPath == null) {
 			return;

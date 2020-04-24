@@ -66,6 +66,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 		options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 		options.put(IFernflowerPreferences.LOG_LEVEL, "trace");
+		options.put(IFernflowerPreferences.THREADS, getNumThreads());
 		getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
 
 		List<String> args = new ArrayList<>();
@@ -78,7 +79,6 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 			args.add("-l=" + getLineMapFile().getAbsolutePath());
 		}
 
-		args.add("-t=" + getNumThreads());
 		args.add("-m=" + getExtension().getMappingsProvider().tinyMappings.getAbsolutePath());
 
 		//TODO, Decompiler breaks on jemalloc, J9 module-info.class?

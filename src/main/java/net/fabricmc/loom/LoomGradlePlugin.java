@@ -37,6 +37,7 @@ import org.gradle.api.tasks.TaskContainer;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.CleanEclipseRunsTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
 import net.fabricmc.loom.task.CleanLoomMappings;
 import net.fabricmc.loom.task.DownloadAssetsTask;
@@ -148,6 +149,10 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.dependsOn("downloadAssets");
+			t.setGroup("ide");
+		});
+
+		tasks.register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
 			t.setGroup("ide");
 		});
 

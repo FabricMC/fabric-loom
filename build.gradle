@@ -13,15 +13,15 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-version = '0.4'
+version = '0.4.3'
 
 def build = "local"
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
 	build = "jenkins #${ENV.BUILD_NUMBER}"
-	version = version + "." + ENV.BUILD_NUMBER
+	version = version + "+build." + ENV.BUILD_NUMBER
 } else {
-	version = version + ".local"
+	version = version + "+build.local"
 }
 
 repositories {

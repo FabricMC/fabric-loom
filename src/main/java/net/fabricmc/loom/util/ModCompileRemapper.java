@@ -26,8 +26,8 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.zip.ZipFile;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -98,15 +98,17 @@ public class ModCompileRemapper {
 	 */
 	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
 		File input = artifact.getFile();
-		AtomicBoolean fabricMod = new AtomicBoolean(false);
-		project.zipTree(input).visit(f -> {
-			if (f.getName().endsWith("fabric.mod.json")) {
+
+		try (ZipFile zipFile = new ZipFile(input)) {
+			if (zipFile.getEntry("fabric.mod.json") != null) {
 				logger.info("Found Fabric mod in modCompile: {}", notation);
-				fabricMod.set(true);
-				f.stopVisiting();
+				return true;
 			}
-		});
-		return fabricMod.get();
+
+			return false;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {

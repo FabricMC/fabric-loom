@@ -124,7 +124,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 		}
 
-		extendsFrom("compile", Constants.MINECRAFT_NAMED);
+		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
 
 		if (!extension.ideSync()) {
 			extendsFrom("annotationProcessor", Constants.MINECRAFT_NAMED);

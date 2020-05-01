@@ -64,6 +64,7 @@ public class ModProcessor {
 			output.delete();
 		}
 
+		checkForAccessWidener(input, project);
 		remapJar(input, output, project, artifact);
 
 		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
@@ -73,6 +74,26 @@ public class ModProcessor {
 
 		//Always strip the nested jars
 		stripNestedJars(output);
+	}
+
+	//Access wideners are not supported in 0.2.6, this crashes if it finds a mod with one, prompting the user to update.
+	private static void checkForAccessWidener(File input, Project project) throws IOException {
+		try (JarFile jarFile = new JarFile(input)) {
+			JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
+
+			if (modJsonEntry == null) {
+				return;
+			}
+
+			try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
+				JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+
+				if (json.has("accessWidener")) {
+					project.getLogger().lifecycle(input.getName() + " contains an access widener. The current version of loom does not support this. Please update to loom 0.2.7 or higher.");
+					throw new UnsupportedOperationException(input.getName() + " contains an access widener. The current version of loom does not support this. Please update to loom 0.2.7 or higher.");
+				}
+			}
+		}
 	}
 
 	private static void handleNestedJars(File input, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {

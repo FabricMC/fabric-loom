@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016, 2017, 2018, 2020 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -95,6 +95,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.apply(ImmutableMap.of("plugin", "java"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
+		project.getPluginManager().apply("org.jetbrains.gradle.plugin.idea-ext");
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);

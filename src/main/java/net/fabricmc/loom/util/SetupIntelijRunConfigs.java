@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016, 2017, 2018, 2020 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,65 +26,73 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.io.FileUtils;
+import org.gradle.api.NamedDomainObjectCollection;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtensionAware;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.jetbrains.gradle.ext.Application;
+import org.jetbrains.gradle.ext.ProjectSettings;
+import org.jetbrains.gradle.ext.RunConfiguration;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
 public class SetupIntelijRunConfigs {
+
+	@SuppressWarnings("unchecked")
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File projectDir = project.file(".idea");
+		IdeaModel ideaModel = ((IdeaModel) project.getExtensions().findByName("idea"));
 
-		if (!projectDir.exists()) {
-			return;
-		}
+		if (ideaModel == null) return;
 
-		try {
-			generate(project);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to generate run configs", e);
-		}
+		if (ideaModel.getProject() != null) {
+			ProjectSettings settings = ((ExtensionAware) ideaModel.getProject()).getExtensions().getByType(ProjectSettings.class);
+			NamedDomainObjectContainer<RunConfiguration> runConfigurations = (NamedDomainObjectContainer<RunConfiguration>)
+					((ExtensionAware) settings).getExtensions().getByName("runConfigurations");
 
-		File runDir = new File(project.getRootDir(), extension.runDir);
+			try {
+				generate(project, runConfigurations);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to generate run configs", e);
+			}
 
-		if (!runDir.exists()) {
-			runDir.mkdirs();
+			File runDir = new File(project.getRootDir(), extension.runDir);
+
+			if (!runDir.exists()) {
+				runDir.mkdirs();
+			}
 		}
 	}
 
-	private static void generate(Project project) throws IOException {
+	private static void generate(Project project, NamedDomainObjectCollection<RunConfiguration> runConfigurations) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		if (extension.ideSync()) {
-			//Ensures the assets are downloaded when idea is syncing a project
+			// Ensures the assets are downloaded when idea is syncing a project
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
 			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 		}
 
-		File projectDir = project.file(".idea");
-		File runConfigsDir = new File(projectDir, "runConfigurations");
-		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
-		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");
+		Application clientRunConfig = createApplication(RunConfig.clientRunConfig(project), project);
+		Application serverRunConfig = createApplication(RunConfig.serverRunConfig(project), project);
 
-		if (!runConfigsDir.exists()) {
-			runConfigsDir.mkdirs();
-		}
-
-		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
-		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
-
-		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
-			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		}
-
-		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
-			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
-		}
+		runConfigurations.add(clientRunConfig);
+		runConfigurations.add(serverRunConfig);
 	}
+
+	private static Application createApplication(RunConfig template, Project project) {
+		Application a = new Application(template.configName, project);
+		a.setMainClass(template.mainClass);
+		a.setModuleName(String.format("%s.main", template.projectName));
+		a.setProgramParameters(template.programArgs);
+		a.setJvmArgs(template.vmArgs);
+		a.setWorkingDirectory("$PROJECT_DIR$/run/");
+		return a;
+	}
+
 }

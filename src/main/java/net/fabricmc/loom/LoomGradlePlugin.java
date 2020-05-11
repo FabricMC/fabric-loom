@@ -164,7 +164,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class);
 
 		tasks.register("runClient", RunClientTask.class, t -> {
-			t.dependsOn("assemble", "downloadAssets");
+			t.dependsOn("classes", "downloadAssets");
 			t.setGroup("minecraftMapped");
 		});
 

@@ -53,11 +53,13 @@ import net.fabricmc.tinyremapper.TinyUtils;
 public class RemapJarTask extends Jar {
 	private RegularFileProperty input;
 	private Property<Boolean> addNestedDependencies;
+	private Property<Boolean> remapAccessWidener;
 
 	public RemapJarTask() {
 		super();
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+		remapAccessWidener = getProject().getObjects().property(Boolean.class);
 	}
 
 	@TaskAction
@@ -129,7 +131,7 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
-		if (extension.accessWidener != null) {
+		if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
 			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output);
 		}
 
@@ -153,5 +155,10 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getAddNestedDependencies() {
 		return addNestedDependencies;
+	}
+
+	@Input
+	public Property<Boolean> getRemapAccessWidener() {
+		return remapAccessWidener;
 	}
 }

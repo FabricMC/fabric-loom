@@ -60,6 +60,8 @@ public class RemapJarTask extends Jar {
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);
+		// false by default, I have no idea why I have to do it for this property and not the other one
+		remapAccessWidener.set(false);
 	}
 
 	@TaskAction

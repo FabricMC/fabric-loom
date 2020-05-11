@@ -49,22 +49,22 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
+import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.FabricApiExtension;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
-import net.fabricmc.loom.util.SetupIntelijRunConfigs;
+import net.fabricmc.loom.util.SetupIdeaSettings;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
-import net.fabricmc.loom.util.FabricApiExtension;
-import net.fabricmc.loom.util.DownloadUtil;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -231,8 +231,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
 
-			if (extension.autoGenIDERuns && isRootProject(project1)) {
-				SetupIntelijRunConfigs.setup(project1);
+			if (isRootProject(project1)) {
+				SetupIdeaSettings.setup(project1, extension.autoGenIDERuns);
 			}
 
 			// Enables the default mod remapper

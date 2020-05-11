@@ -32,6 +32,7 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
+import org.jetbrains.gradle.ext.ActionDelegationConfig;
 import org.jetbrains.gradle.ext.Application;
 import org.jetbrains.gradle.ext.ProjectSettings;
 import org.jetbrains.gradle.ext.RunConfiguration;
@@ -40,10 +41,10 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftAssetsProvider;
 import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
-public class SetupIntelijRunConfigs {
+public class SetupIdeaSettings {
 
 	@SuppressWarnings("unchecked")
-	public static void setup(Project project) {
+	public static void setup(Project project, boolean generateRuns) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		IdeaModel ideaModel = ((IdeaModel) project.getExtensions().findByName("idea"));
@@ -54,18 +55,34 @@ public class SetupIntelijRunConfigs {
 			ProjectSettings settings = ((ExtensionAware) ideaModel.getProject()).getExtensions().getByType(ProjectSettings.class);
 			NamedDomainObjectContainer<RunConfiguration> runConfigurations = (NamedDomainObjectContainer<RunConfiguration>)
 					((ExtensionAware) settings).getExtensions().getByName("runConfigurations");
+			ActionDelegationConfig delegateActions = ((ExtensionAware) settings).getExtensions().getByType(ActionDelegationConfig.class);
 
-			try {
-				generate(project, runConfigurations);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to generate run configs", e);
+			// Only apply these if no values are set
+			if (delegateActions.getDelegateBuildRunToGradle() == null) {
+				delegateActions.setDelegateBuildRunToGradle(false);
+			}
+			if (delegateActions.getTestRunner() == null) {
+				delegateActions.setTestRunner(ActionDelegationConfig.TestRunner.PLATFORM);
 			}
 
-			File runDir = new File(project.getRootDir(), extension.runDir);
-
-			if (!runDir.exists()) {
-				runDir.mkdirs();
+			if (generateRuns) {
+				setupRunConfigurations(project, extension, runConfigurations);
 			}
+
+		}
+	}
+
+	private static void setupRunConfigurations(Project project, LoomGradleExtension extension, NamedDomainObjectContainer<RunConfiguration> runConfigurations) {
+		try {
+			generate(project, runConfigurations);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to generate run configs", e);
+		}
+
+		File runDir = new File(project.getRootDir(), extension.runDir);
+
+		if (!runDir.exists()) {
+			runDir.mkdirs();
 		}
 	}
 

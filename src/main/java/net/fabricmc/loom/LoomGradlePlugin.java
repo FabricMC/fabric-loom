@@ -169,7 +169,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
-			t.dependsOn("assemble");
+			t.dependsOn("classes");
 			t.setGroup("minecraftMapped");
 		});
 	}

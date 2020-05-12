@@ -48,6 +48,7 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
@@ -75,8 +76,6 @@ public class ModProcessor {
 		if (project.getExtensions().getByType(LoomGradleExtension.class).extractJars) {
 			handleNestedJars(input, project, config, artifact);
 		}
-
-		remapaccessWidener(output, project);
 
 		//Always strip the nested jars
 		stripNestedJars(output);
@@ -148,7 +147,7 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static void remapaccessWidener(File input, Project project) throws IOException {
+	private static void remapaccessWidener(File input, Remapper remapper) throws IOException {
 		String accessWidenerPath;
 
 		try (JarFile jarFile = new JarFile(input)) {
@@ -176,17 +175,17 @@ public class ModProcessor {
 		ZipUtil.transformEntry(input, accessWidenerPath, new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) throws IOException {
-				return remapaccessWidener(input, project);
+				return remapaccessWidener(input, remapper);
 			}
 		});
 	}
 
-	private static String remapaccessWidener(String input, Project project) {
+	private static String remapaccessWidener(String input, Remapper remapper) {
 		try (BufferedReader bufferedReader = new BufferedReader(new StringReader(input))) {
 			AccessWidener accessWidener = new AccessWidener();
 			accessWidener.read(bufferedReader);
 
-			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, project.getExtensions().getByType(LoomGradleExtension.class).getMappingsProvider().getMappings(), "named");
+			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, "named");
 			AccessWidener remapped = accessWidenerRemapper.remap();
 
 			try (StringWriter writer = new StringWriter()) {
@@ -240,9 +239,13 @@ public class ModProcessor {
 			remapper.readClassPath(mcDeps);
 			remapper.readInputs(inputPath);
 			remapper.apply(outputConsumer);
-		} finally {
+		} catch (Exception e) {
 			remapper.finish();
+			throw e;
 		}
+
+		remapaccessWidener(output, remapper.getRemapper());
+		remapper.finish();
 
 		if (!output.exists()) {
 			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());

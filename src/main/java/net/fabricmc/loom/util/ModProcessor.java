@@ -132,8 +132,8 @@ public class ModProcessor {
 						.renameInvalidLocals(false)
 						.build();
 
-		remapper.readClassPath(mc);
-		remapper.readClassPath(mcDeps);
+		remapper.readClassPathAsync(mc);
+		remapper.readClassPathAsync(mcDeps);
 
 		final Map<ModDependencyInfo, InputTag> tagMap = new HashMap<>();
 		final Map<ModDependencyInfo, OutputConsumerPath> outputConsumerMap = new HashMap<>();

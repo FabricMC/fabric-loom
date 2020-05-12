@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
@@ -52,7 +51,7 @@ import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.processors.dependency.RemapData;
 
 public class ModCompileRemapper {
-	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, Consumer<Runnable> postPopulationScheduler) {
+	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, SourceRemapper sourceRemapper) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
 
@@ -94,7 +93,7 @@ public class ModCompileRemapper {
 			project.getLogger().info(":providing " + remappedLog);
 
 			if (sources != null) {
-				scheduleSourcesRemapping(project, postPopulationScheduler, sources, remappedLog, remappedFilename, modStore);
+				scheduleSourcesRemapping(project, sourceRemapper, sources, remappedLog, remappedFilename, modStore);
 			}
 		}
 
@@ -160,23 +159,21 @@ public class ModCompileRemapper {
 		return null;
 	}
 
-	private static void scheduleSourcesRemapping(Project project, Consumer<Runnable> postPopulationScheduler, File sources, String remappedLog, String remappedFilename, File modStore) {
-		postPopulationScheduler.accept(() -> {
-			project.getLogger().info(":providing " + remappedLog + " sources");
-			File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
+	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, String remappedFilename, File modStore) {
+		project.getLogger().info(":providing " + remappedLog + " sources");
+		File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
 
-			if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {
-				try {
-					SourceRemapper.remapSources(project, sources, remappedSources, true);
+		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {
+			try {
+				sourceRemapper.scheduleRemapSources(sources, remappedSources);
 
-					//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
-					remappedSources.setLastModified(sources.lastModified());
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else {
-				project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
+				//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+				remappedSources.setLastModified(sources.lastModified());
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		});
+		} else {
+			project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
+		}
 	}
 }

@@ -26,7 +26,10 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 import org.gradle.api.Project;
@@ -45,11 +48,18 @@ import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
+import net.fabricmc.loom.processors.dependency.RemapData;
 
 public class ModCompileRemapper {
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, Configuration modCompile, Configuration modCompileRemapped, Configuration regularCompile, Consumer<Runnable> postPopulationScheduler) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
+
+		final File modStore = extension.getRemappedModCache();
+		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
+
+		final List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
 		for (ResolvedArtifact artifact : modCompile.getResolvedConfiguration().getResolvedArtifacts()) {
 			String group;
@@ -76,20 +86,31 @@ public class ModCompileRemapper {
 
 			File sources = findSources(dependencies, artifact);
 
+			ModDependencyInfo info = new ModDependencyInfo(group, name, version, classifierSuffix, artifact.getFile(), remapData);
+			modDependencies.add(info);
+
 			String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
-			String remappedNotation = String.format("%s:%s:%s@%s%s", group, name, version, mappingsSuffix, classifierSuffix);
 			String remappedFilename = String.format("%s-%s@%s", name, version, mappingsSuffix + classifierSuffix.replace(':', '-'));
 			project.getLogger().info(":providing " + remappedLog);
-
-			File modStore = extension.getRemappedModCache();
-
-			remapArtifact(project, modCompileRemapped, artifact, remappedFilename, modStore);
-
-			project.getDependencies().add(modCompileRemapped.getName(), project.getDependencies().module(remappedNotation));
 
 			if (sources != null) {
 				scheduleSourcesRemapping(project, postPopulationScheduler, sources, remappedLog, remappedFilename, modStore);
 			}
+		}
+
+		List<ModDependencyInfo> processList = modDependencies.stream()
+				.filter(ModDependencyInfo::requiresRemapping)
+				.collect(Collectors.toList());
+
+		try {
+			ModProcessor.processMods(project, processList);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to remap mods", e);
+		}
+
+		// Add all of the remapped mods onto the config
+		for (ModDependencyInfo modDependency : modDependencies) {
+			project.getDependencies().add(modCompileRemapped.getName(), project.getDependencies().module(modDependency.getRemappedNotation()));
 		}
 	}
 
@@ -121,28 +142,6 @@ public class ModCompileRemapper {
 		}
 
 		dependencies.add(regularCompile.getName(), dep);
-	}
-
-	private static void remapArtifact(Project project, Configuration config, ResolvedArtifact artifact, String remappedFilename, File modStore) {
-		File input = artifact.getFile();
-		File output = new File(modStore, remappedFilename + ".jar");
-
-		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified()) {
-			//If the output doesn't exist, or appears to be outdated compared to the input we'll remap it
-			try {
-				ModProcessor.processMod(input, output, project, config, artifact);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap mod", e);
-			}
-
-			if (!output.exists()) {
-				throw new RuntimeException("Failed to remap mod");
-			}
-
-			output.setLastModified(input.lastModified());
-		} else {
-			project.getLogger().info(output.getName() + " is up to date with " + input.getName());
-		}
 	}
 
 	public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {

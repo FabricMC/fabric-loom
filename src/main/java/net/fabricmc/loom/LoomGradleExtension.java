@@ -99,6 +99,10 @@ public class LoomGradleExtension {
 		return installerJson;
 	}
 
+	public void accessWidener(Object file) {
+		this.accessWidener = project.file(file);
+	}
+
 	public File getUserCache() {
 		File userCache = new File(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
 

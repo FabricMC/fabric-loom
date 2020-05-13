@@ -24,54 +24,21 @@
 
 package net.fabricmc.loom.util.accesswidener;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import net.fabricmc.mapping.tree.ClassDef;
-import net.fabricmc.mapping.tree.FieldDef;
-import net.fabricmc.mapping.tree.MethodDef;
-import net.fabricmc.mapping.tree.TinyTree;
+import org.objectweb.asm.commons.Remapper;
+
 import net.fabricmc.mappings.EntryTriple;
 
 public class AccessWidenerRemapper {
 	private final AccessWidener input;
-	private final String from, to;
+	private final String to;
+	private final Remapper remapper;
 
-	private Map<String, String> classNames = new HashMap<>();
-	private Map<EntryTriple, EntryTriple> fieldNames = new HashMap<>();
-	private Map<EntryTriple, EntryTriple> methodNames = new HashMap<>();
-
-	public AccessWidenerRemapper(AccessWidener input, TinyTree tinyTree, String to) {
+	public AccessWidenerRemapper(AccessWidener input, Remapper remapper, String to) {
 		this.input = input;
-		this.from = input.namespace;
 		this.to = to;
-		populateMappings(tinyTree);
-	}
-
-	private void populateMappings(TinyTree tinyTree) {
-		if (!tinyTree.getMetadata().getNamespaces().contains(from)) {
-			throw new UnsupportedOperationException("Unknown namespace: " + from);
-		}
-
-		if (!tinyTree.getMetadata().getNamespaces().contains(to)) {
-			throw new UnsupportedOperationException("Unknown namespace: " + to);
-		}
-
-		for (ClassDef classDef : tinyTree.getClasses()) {
-			classNames.put(classDef.getName(from), classDef.getName(to));
-
-			for (FieldDef fieldDef : classDef.getFields()) {
-				EntryTriple fromEntry = new EntryTriple(classDef.getName(from), fieldDef.getName(from), fieldDef.getDescriptor(from));
-				EntryTriple toEntry = new EntryTriple(classDef.getName(to), fieldDef.getName(to), fieldDef.getDescriptor(to));
-				fieldNames.put(fromEntry, toEntry);
-			}
-
-			for (MethodDef methodDef : classDef.getMethods()) {
-				EntryTriple fromEntry = new EntryTriple(classDef.getName(from), methodDef.getName(from), methodDef.getDescriptor(from));
-				EntryTriple toEntry = new EntryTriple(classDef.getName(to), methodDef.getName(to), methodDef.getDescriptor(to));
-				methodNames.put(fromEntry, toEntry);
-			}
-		}
+		this.remapper = remapper;
 	}
 
 	public AccessWidener remap() {
@@ -84,27 +51,33 @@ public class AccessWidenerRemapper {
 		remapped.namespace = to;
 
 		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
-			remapped.classAccess.put(findMapping(classNames, entry.getKey()), entry.getValue());
+			remapped.classAccess.put(remapper.map(entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
-			remapped.addOrMerge(remapped.methodAccess, findMapping(methodNames, entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.methodAccess, remapMethod(entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
-			remapped.addOrMerge(remapped.fieldAccess, findMapping(fieldNames, entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.fieldAccess, remapField(entry.getKey()), entry.getValue());
 		}
 
 		return remapped;
 	}
 
-	private static <K, V> V findMapping(Map<K, V> map, K key) {
-		V value = map.get(key);
+	private EntryTriple remapMethod(EntryTriple entryTriple) {
+		return new EntryTriple(
+					remapper.map(entryTriple.getName()),
+					remapper.mapMethodName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
+					remapper.mapDesc(entryTriple.getDesc())
+				);
+	}
 
-		if (value == null) {
-			throw new RuntimeException("Failed to find mapping for " + key.toString());
-		}
-
-		return value;
+	private EntryTriple remapField(EntryTriple entryTriple) {
+		return new EntryTriple(
+				remapper.map(entryTriple.getName()),
+				remapper.mapFieldName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
+				remapper.mapDesc(entryTriple.getDesc())
+		);
 	}
 }

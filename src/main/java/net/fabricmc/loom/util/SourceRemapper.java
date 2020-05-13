@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.MappingsReader;
@@ -46,44 +48,46 @@ import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
-	public static void remapSources(Project project, File source, File destination, boolean toNamed) throws Exception {
-		remapSourcesInner(project, source, destination, toNamed);
+	private final Project project;
+	private final boolean toNamed;
+	private final List<Runnable> remapTasks = new ArrayList<>();
+
+	private Mercury mercury;
+
+	public SourceRemapper(Project project, boolean toNamed) {
+		this.project = project;
+		this.toNamed = toNamed;
+	}
+
+	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
+		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
+		sourceRemapper.scheduleRemapSources(input, output);
+		sourceRemapper.remapAll();
+	}
+
+	public void scheduleRemapSources(File source, File destination) throws Exception {
+		remapTasks.add(() -> {
+			try {
+				remapSourcesInner(source, destination);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to remap sources for " + source, e);
+			}
+		});
+	}
+
+	public void remapAll() {
+		if (!remapTasks.isEmpty()) {
+			project.getLogger().lifecycle(":remapping sources");
+		}
+
+		remapTasks.forEach(Runnable::run);
 		// TODO: FIXME - WORKAROUND https://github.com/FabricMC/fabric-loom/issues/45
 		System.gc();
 	}
 
-	private static void remapSourcesInner(Project project, File source, File destination, boolean toNamed) throws Exception {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
-			try {
-				TinyTree m = mappingsProvider.getMappings();
-				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
-				return new TinyReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
-
+	private void remapSourcesInner(File source, File destination) throws Exception {
 		project.getLogger().info(":remapping source jar");
-
-		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
-			Mercury m = createMercuryWithClassPath(project, toNamed);
-
-			for (Path file : extension.getUnmappedMods()) {
-				if (Files.isRegularFile(file)) {
-					m.getClassPath().add(file);
-				}
-			}
-
-			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
-			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
-
-			m.getProcessors().add(MercuryRemapper.create(mappings));
-
-			return m;
-		});
+		Mercury mercury = getMercuryInstance();
 
 		if (source.equals(destination)) {
 			if (source.isDirectory()) {
@@ -133,6 +137,45 @@ public class SourceRemapper {
 		if (isSrcTmp) {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
+	}
+
+	private Mercury getMercuryInstance() {
+		if (this.mercury != null) {
+			return this.mercury;
+		}
+
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+
+		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
+			try {
+				TinyTree m = mappingsProvider.getMappings();
+				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
+				return new TinyReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
+
+		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
+			Mercury m = createMercuryWithClassPath(project, toNamed);
+
+			for (Path file : extension.getUnmappedMods()) {
+				if (Files.isRegularFile(file)) {
+					m.getClassPath().add(file);
+				}
+			}
+
+			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
+			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+
+			m.getProcessors().add(MercuryRemapper.create(mappings));
+
+			return m;
+		});
+
+		this.mercury = mercury;
+		return mercury;
 	}
 
 	private static void copyNonJavaFiles(Path from, Path to, Project project, File source) throws IOException {

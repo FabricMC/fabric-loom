@@ -25,14 +25,19 @@
 package net.fabricmc.loom.providers;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
-import net.fabricmc.loom.util.MapJarsTiny;
 
 public class MinecraftMappedProvider extends DependencyProvider {
 	private File minecraftMappedJar;
@@ -66,7 +71,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			}
 
 			try {
-				new MapJarsTiny().mapJars(minecraftProvider, this, this.minecraftMappedJar, this.minecraftIntermediaryJar, getProject());
+				mapMinecraftJar();
 			} catch (Throwable t) {
 				//Cleanup some some things that may be in a bad state now
 				minecraftMappedJar.delete();
@@ -81,6 +86,47 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		}
 
 		addDependencies(dependency, postPopulationScheduler);
+	}
+
+	private void mapMinecraftJar() throws IOException {
+		String fromM = "official";
+
+		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
+
+		Path input = minecraftProvider.getMergedJar().toPath();
+		Path outputMapped = minecraftMappedJar.toPath();
+		Path outputIntermediary = minecraftIntermediaryJar.toPath();
+
+		for (String toM : Arrays.asList("named", "intermediary")) {
+			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+
+			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+			TinyRemapper remapper = getTinyRemapper(fromM, toM);
+
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
+				outputConsumer.addNonClassFiles(input);
+				remapper.readClassPath(getRemapClasspath());
+				remapper.readInputs(input);
+				remapper.apply(outputConsumer);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
+			} finally {
+				remapper.finish();
+			}
+		}
+	}
+
+	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
+		return TinyRemapper.newRemapper()
+				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
+				.renameInvalidLocals(true)
+				.rebuildSourceFilenames(true)
+				.build();
+	}
+
+	public Path[] getRemapClasspath() {
+		return getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 	}
 
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {

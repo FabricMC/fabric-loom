@@ -44,6 +44,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformer;
@@ -53,6 +54,7 @@ import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.processors.JarProcessor;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();
@@ -79,8 +81,13 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
 		if (!accessWidener.namespace.equals("named")) {
 			try {
-				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, loomGradleExtension.getMappingsProvider().getMappings(), "named");
+				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper("official", "named");
+				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
+
+				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "named");
 				accessWidener = remapper.remap();
+
+				tinyRemapper.finish();
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to remap access widener", e);
 			}
@@ -116,9 +123,8 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	//Called when remapping the mod
-	public void remapAccessWidener(Path modJarPath) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, extension.getMappingsProvider().getMappings(), "intermediary");
+	public void remapAccessWidener(Path modJarPath, Remapper asmRemapper) throws IOException {
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
 		AccessWidener remapped = remapper.remap();
 
 		StringWriter writer = new StringWriter();

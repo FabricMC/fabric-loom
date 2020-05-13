@@ -95,10 +95,20 @@ public class MappingsProvider extends DependencyProvider {
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
+		this.minecraftVersion = minecraftProvider.getMinecraftVersion();
+
+		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
+		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
+			String yarnVersion = dependency.getDependency().getVersion();
+			char separator = yarnVersion.contains("+build.") ? '+' : yarnVersion.contains("-") ? '-' : '.';
+			String yarnMinecraftVersion = yarnVersion.substring(0, yarnVersion.lastIndexOf(separator));
+
+			if (!yarnMinecraftVersion.equalsIgnoreCase(minecraftVersion)) {
+				throw new RuntimeException(String.format("Minecraft Version (%s) does not match yarn's minecraft version (%s)", minecraftVersion, yarnMinecraftVersion));
+			}
+		}
 
 		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
-
-		this.minecraftVersion = minecraftProvider.getMinecraftVersion();
 		this.mappingsVersion = version + (isV2 ? "-v2" : "");
 
 		initFiles();

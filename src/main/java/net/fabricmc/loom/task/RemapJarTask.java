@@ -110,10 +110,15 @@ public class RemapJarTask extends Jar {
 			remapper.readInputs(input);
 			remapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
-		} finally {
 			remapper.finish();
+			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
 		}
+
+		if (extension.accessWidener != null) {
+			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper());
+		}
+
+		remapper.finish();
 
 		if (!Files.exists(output)) {
 			throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
@@ -127,10 +132,6 @@ public class RemapJarTask extends Jar {
 			if (NestedJars.addNestedJars(project, output)) {
 				project.getLogger().debug("Added nested jar paths to mod json");
 			}
-		}
-
-		if (extension.accessWidener != null) {
-			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output);
 		}
 
 		/*try {

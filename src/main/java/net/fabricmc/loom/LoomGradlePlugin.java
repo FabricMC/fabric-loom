@@ -76,6 +76,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
 		tasks.register("cleanLoom").configure(task -> {
+			task.setGroup("fabric");
 			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
 			task.dependsOn(tasks.getByName("cleanLoomMappings"));
 		});
@@ -84,7 +85,9 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.getOutputs().upToDateWhen((o) -> false);
 		});
 
-		tasks.register("remapJar", RemapJarTask.class);
+		tasks.register("remapJar", RemapJarTask.class, t -> {
+			t.setGroup("fabric");
+		});
 
 		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
 			t.getOutputs().upToDateWhen((o) -> false);
@@ -165,12 +168,12 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("runClient", RunClientTask.class, t -> {
 			t.dependsOn("jar", "downloadAssets");
-			t.setGroup("minecraftMapped");
+			t.setGroup("fabric");
 		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
 			t.dependsOn("jar");
-			t.setGroup("minecraftMapped");
+			t.setGroup("fabric");
 		});
 	}
 }

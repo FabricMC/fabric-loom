@@ -126,7 +126,8 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 		}
 
-		extendsFrom("compile", Constants.MINECRAFT_NAMED);
+		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
 
 		if (!extension.ideSync()) {
 			extendsFrom("annotationProcessor", Constants.MINECRAFT_NAMED);
@@ -277,6 +278,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
+			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
 
 			if (extension.autoGenIDERuns && isRootProject(project1)) {
 				SetupIntelijRunConfigs.setup(project1);
@@ -297,6 +299,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
 				remapJarTask.getAddNestedDependencies().set(true);
+				remapJarTask.getRemapAccessWidener().set(true);
 
 				project1.getArtifacts().add("archives", remapJarTask);
 				remapJarTask.dependsOn(jarTask);

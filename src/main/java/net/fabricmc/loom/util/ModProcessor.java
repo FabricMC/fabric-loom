@@ -24,108 +24,64 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.jar.JarEntry;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ResolvedArtifact;
+import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.commons.FileUtils;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.loom.util.accesswidener.AccessWidener;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerRemapper;
+import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.InputTag;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
 
 public class ModProcessor {
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-	public static void processMod(File input, File output, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
-		if (output.exists()) {
-			output.delete();
-		}
-
-		remapJar(input, output, project, artifact);
-
-		//Enable this if you want your nested jars to be extracted, this will extract **all** jars
-		if (project.getExtensions().getByType(LoomGradleExtension.class).extractJars) {
-			handleNestedJars(input, project, config, artifact);
-		}
-
-		//Always strip the nested jars
-		stripNestedJars(output);
-	}
-
-	private static void handleNestedJars(File input, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
-		JarFile jarFile = new JarFile(input);
-		JarEntry modJsonEntry = jarFile.getJarEntry("fabric.mod.json");
-
-		if (modJsonEntry == null) {
+	public static void processMods(Project project, List<ModDependencyInfo> processList) throws IOException {
+		if (processList.isEmpty()) {
 			return;
 		}
 
-		try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
-			JsonObject json = GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
-
-			if (json == null || !json.has("jars")) {
-				return;
-			}
-
-			JsonArray jsonArray = json.getAsJsonArray("jars");
-
-			for (int i = 0; i < jsonArray.size(); i++) {
-				JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
-				String fileName = jsonObject.get("file").getAsString();
-				project.getLogger().lifecycle(String.format("Found %s nested in %s", fileName, input.getName()));
-				processNestedJar(jarFile, fileName, project, config, artifact);
+		for (ModDependencyInfo info : processList) {
+			if (info.getRemappedOutput().exists()) {
+				info.getRemappedOutput().delete();
 			}
 		}
-	}
 
-	private static void processNestedJar(JarFile parentJar, String fileName, Project project, Configuration config, ResolvedArtifact artifact) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		remapJars(project, processList);
 
-		JarEntry entry = parentJar.getJarEntry(fileName);
+		for (ModDependencyInfo info : processList) {
+			if (!info.getRemappedOutput().exists()) {
+				throw new RuntimeException("Failed to remap mod" + info);
+			}
 
-		if (entry == null) {
-			throw new RuntimeException(String.format("%s was not found in %s", fileName, parentJar.getName()));
+			stripNestedJars(info.getRemappedOutput());
 		}
-
-		File nestedFile = new File(extension.getNestedModCache(), fileName.substring(fileName.lastIndexOf("/")));
-
-		try (InputStream jarStream = parentJar.getInputStream(entry)) {
-			FileUtils.copy(jarStream, nestedFile);
-		}
-
-		File remappedFile = new File(extension.getRemappedModCache(), fileName.substring(fileName.lastIndexOf("/")));
-
-		processMod(nestedFile, remappedFile, project, config, artifact);
-
-		if (!remappedFile.exists()) {
-			throw new RuntimeException("Failed to find processed nested jar");
-		}
-
-		//Add the project right onto the remapped mods, hopefully this works
-		project.getDependencies().add(config.getName(), project.files(remappedFile));
 	}
 
 	private static void stripNestedJars(File file) {
@@ -140,7 +96,24 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static void remapJar(File input, File output, Project project, ResolvedArtifact artifact) throws IOException {
+	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
+		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
+			AccessWidener accessWidener = new AccessWidener();
+			accessWidener.read(bufferedReader);
+
+			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, "named");
+			AccessWidener remapped = accessWidenerRemapper.remap();
+
+			try (StringWriter writer = new StringWriter()) {
+				remapped.write(writer);
+				return writer.toString().getBytes(StandardCharsets.UTF_8);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String fromM = "intermediary";
 		String toM = "named";
@@ -148,46 +121,52 @@ public class ModProcessor {
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		Path inputPath = input.getAbsoluteFile().toPath();
 		Path mc = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
-		Set<Path> modCompiles = new HashSet<>();
 
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles().stream().filter((f) -> !f.equals(input)).map(p -> {
-				if (p.equals(input)) {
-					return inputPath;
-				} else {
-					return p.toPath();
-				}
-			}).forEach(modCompiles::add);
-		}
-
-		project.getLogger().lifecycle(":remapping " + input.getName() + " (TinyRemapper, " + fromM + " -> " + toM + ")");
-
-		// If the sources don't exist, we want remapper to give nicer names to the missing variable names.
-		// However, if the sources do exist, if remapper gives names to the parameters that prevents IDEs (at least IDEA)
-		// from replacing the parameters with the actual names from the sources.
-		boolean sourcesExist = ModCompileRemapper.findSources(project.getDependencies(), artifact) != null;
+		project.getLogger().lifecycle(":remapping " + processList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-						.renameInvalidLocals(!sourcesExist)
+						.renameInvalidLocals(false)
 						.build();
 
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(Paths.get(output.getAbsolutePath())).build()) {
-			outputConsumer.addNonClassFiles(inputPath);
-			remapper.readClassPath(modCompiles.toArray(new Path[0]));
-			remapper.readClassPath(mc);
-			remapper.readClassPath(mcDeps);
-			remapper.readInputs(inputPath);
-			remapper.apply(outputConsumer);
-		} finally {
-			remapper.finish();
+		remapper.readClassPathAsync(mc);
+		remapper.readClassPathAsync(mcDeps);
+
+		final Map<ModDependencyInfo, InputTag> tagMap = new HashMap<>();
+		final Map<ModDependencyInfo, OutputConsumerPath> outputConsumerMap = new HashMap<>();
+		final Map<ModDependencyInfo, byte[]> accessWidenerMap = new HashMap<>();
+
+		for (ModDependencyInfo info : processList) {
+			InputTag tag = remapper.createInputTag();
+			remapper.readInputsAsync(tag, info.getInputFile().toPath());
+			tagMap.put(info, tag);
 		}
 
-		if (!output.exists()) {
-			throw new RuntimeException("Failed to remap JAR to " + toM + " file not found: " + output.getAbsolutePath());
+		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
+		for (ModDependencyInfo info : processList) {
+			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+			outputConsumer.addNonClassFiles(info.getInputFile().toPath());
+			outputConsumerMap.put(info, outputConsumer);
+			String accessWidener = info.getAccessWidener();
+
+			if (accessWidener != null) {
+				accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
+			}
+
+			remapper.apply(outputConsumer, tagMap.get(info));
+		}
+
+		remapper.finish();
+
+		for (ModDependencyInfo info : processList) {
+			outputConsumerMap.get(info).close();
+			byte[] accessWidener = accessWidenerMap.get(info);
+
+			if (accessWidener != null) {
+				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
+			}
 		}
 	}
 

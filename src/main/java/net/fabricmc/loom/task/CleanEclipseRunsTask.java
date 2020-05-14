@@ -26,36 +26,23 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.util.RunConfig;
-
-public class GenEclipseRunsTask extends AbstractLoomTask {
+public class CleanEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction
-	public void genRuns() throws IOException {
+	public void cleanRuns() throws IOException {
 		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
 		File clientRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_client.launch");
 		File serverRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_server.launch");
 
-		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
-		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
-
-		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
-			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
+		if (clientRunConfigs.exists()) {
+			clientRunConfigs.delete();
 		}
 
-		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
-			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
-		}
-
-		File runDir = new File(getProject().getRootDir(), getExtension().runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
+		if (serverRunConfigs.exists()) {
+			serverRunConfigs.delete();
 		}
 	}
 }

@@ -22,28 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.processors.dependency;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.File;
 
-import org.gradle.api.tasks.TaskAction;
+public class RemapData {
+	public final String mappingsSuffix;
+	public final File modStore;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DeletingFileVisitor;
-
-public class CleanLoomMappings extends AbstractLoomTask {
-	@TaskAction
-	public void run() {
-		try {
-			LoomGradleExtension extension = getExtension();
-			extension.getMappingsProvider().clean();
-			extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
-			extension.getMinecraftMappedProvider().getMappedJar().delete();
-			Files.walkFileTree(extension.getRootProjectBuildCache().toPath(), new DeletingFileVisitor());
-			getExtension().getMappingsProvider().cleanFiles();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+	public RemapData(String mappingsSuffix, File modStore) {
+		this.mappingsSuffix = mappingsSuffix;
+		this.modStore = modStore;
 	}
 }

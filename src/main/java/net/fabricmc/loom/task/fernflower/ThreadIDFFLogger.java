@@ -92,15 +92,11 @@ public class ThreadIDFFLogger extends IFernflowerLogger {
 
 	@Override
 	public void startMethod(String methodName) {
-		String className = workingClass.get().peek();
-		line.get().push("Decompiling " + className + "." + methodName.substring(0, methodName.indexOf(" ")));
-		print();
+		//No need to print out methods
 	}
 
 	@Override
 	public void endMethod() {
-		line.get().pop();
-		print();
 	}
 
 	@Override

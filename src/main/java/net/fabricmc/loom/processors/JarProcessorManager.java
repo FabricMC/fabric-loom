@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public class JarProcessorManager {
@@ -48,6 +49,10 @@ public class JarProcessorManager {
 	//TODO possibly expand via an API?
 	private List<JarProcessor> setupProcessors() {
 		List<JarProcessor> jarProcessors = new ArrayList<>();
+
+		if (extension.accessWidener != null) {
+			jarProcessors.add(new AccessWidenerJarProcessor());
+		}
 
 		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));
 		return Collections.unmodifiableList(jarProcessors);

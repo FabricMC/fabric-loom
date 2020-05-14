@@ -53,7 +53,6 @@ public class ForkedFFExecutor {
 		File lineMap = null;
 		File mappings = null;
 		List<File> libraries = new ArrayList<>();
-		int numThreads = 0;
 
 		boolean isOption = true;
 
@@ -91,8 +90,6 @@ public class ForkedFFExecutor {
 					}
 
 					mappings = new File(arg.substring(3));
-				} else if (arg.startsWith("-t=")) {
-					numThreads = Integer.parseInt(arg.substring(3));
 				} else {
 					if (input != null) {
 						throw new RuntimeException("Unable to set more than one input.");

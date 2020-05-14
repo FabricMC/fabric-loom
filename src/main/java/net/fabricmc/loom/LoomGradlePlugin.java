@@ -37,6 +37,7 @@ import org.gradle.api.tasks.TaskContainer;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftLibraryProvider;
 import net.fabricmc.loom.task.AbstractDecompileTask;
+import net.fabricmc.loom.task.CleanEclipseRunsTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
 import net.fabricmc.loom.task.CleanLoomMappings;
 import net.fabricmc.loom.task.DownloadAssetsTask;
@@ -75,6 +76,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("cleanLoomMappings", CleanLoomMappings.class);
 
 		tasks.register("cleanLoom").configure(task -> {
+			task.setGroup("fabric");
 			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
 			task.dependsOn(tasks.getByName("cleanLoomMappings"));
 		});
@@ -83,7 +85,9 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.getOutputs().upToDateWhen((o) -> false);
 		});
 
-		tasks.register("remapJar", RemapJarTask.class);
+		tasks.register("remapJar", RemapJarTask.class, t -> {
+			t.setGroup("fabric");
+		});
 
 		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
 			t.getOutputs().upToDateWhen((o) -> false);
@@ -151,6 +155,10 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.setGroup("ide");
 		});
 
+		tasks.register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
+			t.setGroup("ide");
+		});
+
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.dependsOn("downloadAssets");
 			t.setGroup("ide");
@@ -159,13 +167,13 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class);
 
 		tasks.register("runClient", RunClientTask.class, t -> {
-			t.dependsOn("assemble", "downloadAssets");
-			t.setGroup("minecraftMapped");
+			t.dependsOn("jar", "downloadAssets");
+			t.setGroup("fabric");
 		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
-			t.dependsOn("assemble");
-			t.setGroup("minecraftMapped");
+			t.dependsOn("jar");
+			t.setGroup("fabric");
 		});
 	}
 }

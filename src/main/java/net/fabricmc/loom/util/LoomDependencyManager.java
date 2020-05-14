@@ -116,11 +116,13 @@ public class LoomDependencyManager {
 			});
 		}
 
+		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
+
 		{
 			String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
 
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				ModCompileRemapper.remapDependencies(project, mappingsKey, extension, project.getConfigurations().getByName(entry.getSourceConfiguration()), project.getConfigurations().getByName(entry.getRemappedConfiguration()), project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations())), afterTasks::add);
+				ModCompileRemapper.remapDependencies(project, mappingsKey, extension, project.getConfigurations().getByName(entry.getSourceConfiguration()), project.getConfigurations().getByName(entry.getRemappedConfiguration()), project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations())), sourceRemapper);
 			}
 		}
 
@@ -149,6 +151,8 @@ public class LoomDependencyManager {
 		} else {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
+
+		sourceRemapper.remapAll();
 
 		for (Runnable runnable : afterTasks) {
 			runnable.run();

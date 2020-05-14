@@ -45,6 +45,7 @@ import net.fabricmc.loom.util.GradleSupport;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -52,11 +53,15 @@ import net.fabricmc.tinyremapper.TinyUtils;
 public class RemapJarTask extends Jar {
 	private RegularFileProperty input;
 	private Property<Boolean> addNestedDependencies;
+	private Property<Boolean> remapAccessWidener;
 
 	public RemapJarTask() {
 		super();
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+		remapAccessWidener = getProject().getObjects().property(Boolean.class);
+		// false by default, I have no idea why I have to do it for this property and not the other one
+		remapAccessWidener.set(false);
 	}
 
 	@TaskAction
@@ -109,10 +114,15 @@ public class RemapJarTask extends Jar {
 			remapper.readInputs(input);
 			remapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
-		} finally {
 			remapper.finish();
+			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
 		}
+
+		if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
+			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper());
+		}
+
+		remapper.finish();
 
 		if (!Files.exists(output)) {
 			throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
@@ -148,5 +158,10 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getAddNestedDependencies() {
 		return addNestedDependencies;
+	}
+
+	@Input
+	public Property<Boolean> getRemapAccessWidener() {
+		return remapAccessWidener;
 	}
 }

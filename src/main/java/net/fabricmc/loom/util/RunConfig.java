@@ -46,6 +46,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.gradle.api.Project;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -95,7 +96,7 @@ public class RunConfig {
 	}
 
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
-		runConfig.projectName = project.getName();
+		runConfig.projectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
@@ -232,8 +233,7 @@ public class RunConfig {
 			char c = s.charAt(i);
 
 			if (c == '@' && i > 0 && s.charAt(i - 1) == '@' || c == ' ') {
-				ret.append("@@");
-				ret.append(Integer.toString(c, 16));
+				ret.append(String.format("@@%04x", (int) c));
 			} else {
 				ret.append(c);
 			}

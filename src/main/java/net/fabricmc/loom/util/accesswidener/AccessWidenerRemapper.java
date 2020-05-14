@@ -67,7 +67,7 @@ public class AccessWidenerRemapper {
 
 	private EntryTriple remapMethod(EntryTriple entryTriple) {
 		return new EntryTriple(
-					remapper.map(entryTriple.getName()),
+					remapper.map(entryTriple.getOwner()),
 					remapper.mapMethodName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
 					remapper.mapDesc(entryTriple.getDesc())
 				);
@@ -75,7 +75,7 @@ public class AccessWidenerRemapper {
 
 	private EntryTriple remapField(EntryTriple entryTriple) {
 		return new EntryTriple(
-				remapper.map(entryTriple.getName()),
+				remapper.map(entryTriple.getOwner()),
 				remapper.mapFieldName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
 				remapper.mapDesc(entryTriple.getDesc())
 		);

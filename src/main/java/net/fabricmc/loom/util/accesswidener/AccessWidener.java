@@ -47,7 +47,13 @@ public class AccessWidener {
 	private Set<String> classes = new LinkedHashSet<>();
 
 	public void read(BufferedReader reader) throws IOException {
-		String[] header = reader.readLine().split("\\s+");
+		String headerStr = reader.readLine();
+
+		if (headerStr == null) {
+			throw new RuntimeException("Cannot read empty or invalid access widener");
+		}
+
+		String[] header = headerStr.split("\\s+");
 
 		if (header.length != 3 || !header[0].equals("accessWidener")) {
 			throw new UnsupportedOperationException("Invalid access access widener header");

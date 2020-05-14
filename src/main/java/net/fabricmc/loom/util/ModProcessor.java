@@ -36,7 +36,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -97,7 +96,7 @@ public class ModProcessor {
 		}))});
 	}
 
-	private static byte[] remapaccessWidener(byte[] input, Remapper remapper) {
+	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
 			AccessWidener accessWidener = new AccessWidener();
 			accessWidener.read(bufferedReader);
@@ -137,6 +136,7 @@ public class ModProcessor {
 
 		final Map<ModDependencyInfo, InputTag> tagMap = new HashMap<>();
 		final Map<ModDependencyInfo, OutputConsumerPath> outputConsumerMap = new HashMap<>();
+		final Map<ModDependencyInfo, byte[]> accessWidenerMap = new HashMap<>();
 
 		for (ModDependencyInfo info : processList) {
 			InputTag tag = remapper.createInputTag();
@@ -151,28 +151,23 @@ public class ModProcessor {
 			outputConsumerMap.put(info, outputConsumer);
 			String accessWidener = info.getAccessWidener();
 
-			if (accessWidener == null) {
-				remapper.apply(outputConsumer, tagMap.get(info));
-			} else {
-				remapper.apply(remapAccessWidener(remapper.getRemapper(), accessWidener, outputConsumer), tagMap.get(info));
+			if (accessWidener != null) {
+				accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
 			}
+
+			remapper.apply(outputConsumer, tagMap.get(info));
 		}
 
 		remapper.finish();
 
 		for (ModDependencyInfo info : processList) {
 			outputConsumerMap.get(info).close();
-		}
-	}
+			byte[] accessWidener = accessWidenerMap.get(info);
 
-	static BiConsumer<String, byte[]> remapAccessWidener(Remapper remapper, String accessWidener, BiConsumer<String, byte[]> output) {
-		return (s, bytes) -> {
-			if (s.equals(accessWidener)) {
-				output.accept(s, remapaccessWidener(bytes, remapper));
-			} else {
-				output.accept(s, bytes);
+			if (accessWidener != null) {
+				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
 			}
-		};
+		}
 	}
 
 	static JsonObject readInstallerJson(File file, Project project) {

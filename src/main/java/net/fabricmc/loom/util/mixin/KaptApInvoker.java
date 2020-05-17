@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import kotlin.Unit;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.tasks.TaskCollection;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin;
@@ -45,10 +44,11 @@ import net.fabricmc.loom.LoomGradleExtension;
 
 public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	private final KaptExtension kaptExtension = project.getExtensions().getByType(KaptExtension.class);
+	// Refmap will be written to here with mixin, then moved after JavaCompile to the correct place
 	private final File dummyRefmapDirectory;
 
 	public KaptApInvoker(Project project) {
-		super(project, getConfigurations(project), kaptTasks(project));
+		super(project, getConfigurations(project), project.getTasks().withType(JavaCompile.class));
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();
@@ -85,11 +85,6 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 				}
 			});
 		}
-	}
-
-	// This accounts for all source sets
-	private static TaskCollection<JavaCompile> kaptTasks(Project project) {
-		return project.getTasks().withType(JavaCompile.class);
 	}
 
 	@NotNull

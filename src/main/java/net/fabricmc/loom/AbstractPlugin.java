@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -47,9 +45,7 @@ import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.api.tasks.scala.ScalaCompile;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
@@ -63,6 +59,9 @@ import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
+import net.fabricmc.loom.util.mixin.JavaApInvoker;
+import net.fabricmc.loom.util.mixin.KaptApInvoker;
+import net.fabricmc.loom.util.mixin.ScalaApInvoker;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -88,7 +87,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
 
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
@@ -127,72 +125,41 @@ public class AbstractPlugin implements Plugin<Project> {
 		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
 		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
 
-		if (!extension.ideSync()) {
-			extendsFrom("annotationProcessor", Constants.MINECRAFT_NAMED);
-			extendsFrom("annotationProcessor", Constants.MOD_COMPILE_CLASSPATH_MAPPED);
-		}
-
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.MAPPINGS_FINAL);
 
-		if (!extension.ideSync()) {
-			extendsFrom("annotationProcessor", Constants.MAPPINGS_FINAL);
-		}
-
 		configureIDEs();
 		configureCompile();
-		configureScala();
+		configureMixin();
+		configureMaven();
+	}
 
-		Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
-
-		for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
-			Project project = entry.getKey();
-			Set<Task> taskSet = entry.getValue();
-
-			for (Task task : taskSet) {
-				if (task instanceof JavaCompile && !(task.getName().contains("Test")) && !(task.getName().contains("test"))) {
-					JavaCompile javaCompileTask = (JavaCompile) task;
-					javaCompileTask.doFirst(task1 -> {
-						project.getLogger().lifecycle(":setting java compiler args");
-
-						try {
-							javaCompileTask.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-							javaCompileTask.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					});
-				}
-			}
+	private void configureMixin() {
+		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
+			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
 		}
 
-		configureMaven();
+		// Full plugin and mappings information is only available after evaluation
+		project.afterEvaluate((project) -> {
+			project.getLogger().lifecycle("Configuring mixins for Java plugin");
+			new JavaApInvoker(project).configureMixin();
+
+			if (project.getPluginManager().hasPlugin("scala")) {
+				project.getLogger().lifecycle("Configuring mixins for Scala plugin");
+				new ScalaApInvoker(project).configureMixin();
+			}
+
+			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+				project.getLogger().lifecycle("Configuring mixins for Kapt plugin");
+				new KaptApInvoker(project).configureMixin();
+			}
+		});
 	}
 
 	public Project getProject() {
 		return project;
-	}
-
-	protected void configureScala() {
-		project.afterEvaluate(proj -> {
-			if (project.getPluginManager().hasPlugin("scala")) {
-				ScalaCompile task = (ScalaCompile) project.getTasks().getByName("compileScala");
-				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-				project.getLogger().warn(":configuring scala compilation processing");
-
-				try {
-					task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
-					task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-					task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
 	}
 
 	/**
@@ -233,11 +200,6 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
-
-		if (!project.getExtensions().getByType(LoomGradleExtension.class).ideSync()) {
-			// Add Mixin dependencies
-			project.getDependencies().add(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, "net.fabricmc:fabric-mixin-compile-extensions:" + Constants.MIXIN_COMPILE_EXTENSIONS_VERSION);
-		}
 
 		project.afterEvaluate(project1 -> {
 			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);

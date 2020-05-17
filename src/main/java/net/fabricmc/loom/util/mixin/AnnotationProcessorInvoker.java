@@ -60,8 +60,9 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		this.invokerTasks = invokerTasks;
 	}
 
-	//TODO: this needs to be more generic to not depend on CompileOptions
 	protected abstract void passArgument(T compileTask, String key, String value);
+
+	protected abstract File getDestinationDir(T task);
 
 	protected final String getRefmapDestination(T task, LoomGradleExtension extension) throws IOException {
 		return new File(getDestinationDir(task), extension.getRefmapName()).getCanonicalPath();
@@ -83,8 +84,6 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 			project.getLogger().error("Could not configure mixin annotation processors", e);
 		}
 	}
-
-	protected abstract File getDestinationDir(T task);
 
 	public void configureMixin() {
 		ConfigurationContainer configs = project.getConfigurations();

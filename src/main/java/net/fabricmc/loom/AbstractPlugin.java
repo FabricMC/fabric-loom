@@ -143,16 +143,16 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		// Full plugin and mappings information is only available after evaluation
 		project.afterEvaluate((project) -> {
-			project.getLogger().lifecycle("Configuring mixins for Java plugin");
+			project.getLogger().lifecycle("Configuring compiler arguments for Java");
 			new JavaApInvoker(project).configureMixin();
 
 			if (project.getPluginManager().hasPlugin("scala")) {
-				project.getLogger().lifecycle("Configuring mixins for Scala plugin");
+				project.getLogger().lifecycle("Configuring compiler arguments for Scala");
 				new ScalaApInvoker(project).configureMixin();
 			}
 
 			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-				project.getLogger().lifecycle("Configuring mixins for Kapt plugin");
+				project.getLogger().lifecycle("Configuring compiler arguments for Kapt plugin");
 				new KaptApInvoker(project).configureMixin();
 			}
 		});

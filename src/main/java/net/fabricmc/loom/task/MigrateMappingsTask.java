@@ -49,7 +49,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.lorenztiny.LorenzTiny;
+import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
@@ -136,7 +136,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	private static TinyTree getMappings(File mappings) throws IOException {
 		Path temp = Files.createTempFile("mappings", ".tiny");
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), (ClassLoader) null)) {
 			Files.copy(fileSystem.getPath("mappings/mappings.tiny"), temp, StandardCopyOption.REPLACE_EXISTING);
 		}
 
@@ -149,8 +149,12 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings
 	) throws IOException {
 		project.getLogger().lifecycle(":joining mappings");
-		MappingSet mappingSet = LorenzTiny.readMappings(currentMappings, targetMappings,
-						"intermediary", "named").read();
+
+		MappingSet mappingSet = new TinyMappingsJoiner(
+				currentMappings, "named",
+				targetMappings, "named",
+				"intermediary"
+		).read();
 
 		project.getLogger().lifecycle(":remapping");
 		Mercury mercury = SourceRemapper.createMercuryWithClassPath(project, false);

@@ -51,7 +51,7 @@ dependencies {
 		transitive = false
 	}
 
-	implementation ('net.fabricmc:lorenz-tiny:1.0.0+build.1') {
+	implementation ('net.fabricmc:lorenz-tiny:2.0.0+build.2') {
 		transitive = false
 	}
 

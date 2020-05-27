@@ -50,12 +50,12 @@ public class FabricApiExtension {
 
 	private static HashMap<String, Map<String, String>> moduleVersionCache = new HashMap<>();
 
-	public Dependency getModuleDependency(String moduleName, String fabricApiVersion) {
+	public Dependency module(String moduleName, String fabricApiVersion) {
 		return project.getDependencies()
 				.create(getDependencyNotation(moduleName, fabricApiVersion));
 	}
 
-	public String getModuleVersion(String moduleName, String fabricApiVersion) {
+	public String moduleVersion(String moduleName, String fabricApiVersion) {
 		String moduleVersion = moduleVersionCache
 				.computeIfAbsent(fabricApiVersion, this::populateModuleVersionMap)
 				.get(moduleName);
@@ -68,7 +68,7 @@ public class FabricApiExtension {
 	}
 
 	private String getDependencyNotation(String moduleName, String fabricApiVersion) {
-		return String.format("net.fabricmc.fabric-api:%s:%s", moduleName, getModuleVersion(moduleName, fabricApiVersion));
+		return String.format("net.fabricmc.fabric-api:%s:%s", moduleName, moduleVersion(moduleName, fabricApiVersion));
 	}
 
 	private Map<String, String> populateModuleVersionMap(String fabricApiVersion) {

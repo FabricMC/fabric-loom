@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task.fernflower;
+package net.fabricmc.loom.decompilers.fernflower;
 
 import java.io.File;
 import java.io.FileOutputStream;

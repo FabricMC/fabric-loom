@@ -22,18 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task.fernflower;
+package net.fabricmc.loom.decompilers.fernflower;
 
-import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+import org.gradle.api.Action;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
+import org.gradle.process.ExecResult;
+import org.gradle.process.JavaExecSpec;
 
 /**
- * Literally does nothing.
- * Created by covers1624 on 11/02/19.
+ * Simple utility class for a Task that wishes to execute a java process
+ * with the classpath of the gradle plugin plus groovy.
+ *
+ * <p>Created by covers1624 on 11/02/19.
  */
-public class NoopFFLogger extends IFernflowerLogger {
-	@Override
-	public void writeMessage(String message, Severity severity) { }
+public class ForkingJavaExec {
+	public static ExecResult javaexec(Project project, Action<? super JavaExecSpec> action) {
+		ConfigurationContainer configurations = project.getBuildscript().getConfigurations();
+		DependencyHandler handler = project.getDependencies();
+		FileCollection classpath = configurations.getByName("classpath")//
+						.plus(configurations.detachedConfiguration(handler.localGroovy()));
 
-	@Override
-	public void writeMessage(String message, Severity severity, Throwable t) { }
+		return project.javaexec(spec -> {
+			spec.classpath(classpath);
+			action.execute(spec);
+		});
+	}
 }

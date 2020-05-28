@@ -39,9 +39,9 @@ import net.fabricmc.fernflower.api.IFabricJavadocProvider;
  * Forces one input file.
  * Forces one output file using '-o=/path/to/output'
  * Created by covers1624 on 11/02/19.
- *
- * Extending classes MUST have a standard "public static void main(args)".
+ * <p>Extending classes MUST have a standard "public static void main(args)".
  * They may then call AbstractForkedFFExecutor#decompile for it to use the overridden AbstractForkedFFExecutor#runFF
+ * </p>
  */
 public abstract class AbstractForkedFFExecutor {
 	public static void decompile(String[] args, AbstractForkedFFExecutor ffExecutor) {

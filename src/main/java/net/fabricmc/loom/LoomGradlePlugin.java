@@ -127,6 +127,5 @@ public class LoomGradlePlugin extends AbstractPlugin {
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}
 		});
-
 	}
 }

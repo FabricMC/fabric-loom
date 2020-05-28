@@ -64,7 +64,7 @@ public class LoomGradleExtension {
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
-	 final List<LoomDecompiler> decompilers = new ArrayList<>();
+	final List<LoomDecompiler> decompilers = new ArrayList<>();
 
 	//Not to be set in the build.gradle
 	private Project project;

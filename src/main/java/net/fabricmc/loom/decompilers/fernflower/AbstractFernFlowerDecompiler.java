@@ -1,9 +1,31 @@
+/*
+ * This file is part of fabric-loom, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) 2016, 2017, 2018 FabricMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package net.fabricmc.loom.decompilers.fernflower;
 
 import static java.text.MessageFormat.format;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,14 +43,10 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.decompilers.LoomDecompiler;
 import net.fabricmc.loom.util.ConsumingOutputStream;
-import net.fabricmc.loom.util.LineNumberRemapper;
 import net.fabricmc.loom.util.OperatingSystem;
-import net.fabricmc.stitch.util.StitchUtil;
 
 public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 	private final Project project;
@@ -48,13 +66,12 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		project.getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
 
 		Map<String, Object> options = new HashMap<String, Object>() {{
-			put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
-			put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
-			put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
-			put(IFernflowerPreferences.LOG_LEVEL, "trace");
-			put(IFernflowerPreferences.THREADS, metaData.numberOfThreads);
-		}};
-
+				put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
+				put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
+				put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
+				put(IFernflowerPreferences.LOG_LEVEL, "trace");
+				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads);
+			}};
 
 		List<String> args = new ArrayList<>();
 
@@ -127,27 +144,6 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		result.rethrowFailure();
 		result.assertNormalExitValue();
 	}
-
-//	@Override
-//	public void generateSources(Path compiledJar, Path destination, DecompilationMetadata metaData) {
-//		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-//		try {
-//			Path unlinemappedJar = LoomGradlePlugin.getMappedByproduct(project, "unlinemapped-sources.jar").toPath();
-//			Path linemap = Files.createTempFile(extension.getUserCache().toPath(), "unlinemappedJar", ".lmap");
-//
-//			decompile(compiledJar, unlinemappedJar, linemap, metaData);
-//			remapLineNumbers(unlinemappedJar, linemap, destination);
-//
-//		} catch (IOException e) {
-//			project.getLogger().error("Could not generate sources", e);
-//		}
-//	}
-//
-//	private void decompile(Path compiledJar, Path unlinemappedDestination, Path linemapDestination, DecompilationMetadata metaData) {
-//
-//	}
-
-
 
 	private static String absolutePathOf(Path path) {
 		return path.toAbsolutePath().toString();

@@ -79,9 +79,9 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 			if (!Files.exists(unlinemappedJar)) {
 				Files.copy(compiledJar, unlinemappedJar);
 			}
+
 			Files.copy(linemappedJarDestination, compiledJar, StandardCopyOption.REPLACE_EXISTING);
 			Files.delete(linemappedJarDestination);
-
 		}
 	}
 
@@ -94,7 +94,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		progressLogger.start("Adjusting line numbers", "linemap");
 
 		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
-			 StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
+			StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
 			remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
 		}
 

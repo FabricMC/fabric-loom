@@ -38,7 +38,7 @@ public class FabricForkedFFExecutor extends AbstractForkedFFExecutor {
 	}
 
 	@Override
-	void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
+	public void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
 		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
 		IFernflowerLogger logger = new ThreadIDFFLogger();
 		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);

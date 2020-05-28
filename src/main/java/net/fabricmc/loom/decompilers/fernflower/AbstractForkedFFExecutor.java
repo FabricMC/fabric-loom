@@ -106,5 +106,5 @@ public abstract class AbstractForkedFFExecutor {
 		ffExecutor.runFF(options, libraries, input, output, lineMap);
 	}
 
-	abstract void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap);
+	public abstract void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap);
 }

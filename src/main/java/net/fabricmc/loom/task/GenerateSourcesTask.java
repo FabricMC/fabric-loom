@@ -40,6 +40,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.decompilers.LoomDecompiler;
 import net.fabricmc.loom.util.LineNumberRemapper;
+import net.fabricmc.loom.util.progress.ProgressLogger;
 import net.fabricmc.stitch.util.StitchUtil;
 
 public class GenerateSourcesTask extends AbstractLoomTask {
@@ -90,7 +91,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		LineNumberRemapper remapper = new LineNumberRemapper();
 		remapper.readMappings(linemap.toFile());
 
-		net.fabricmc.loom.util.progress.ProgressLogger progressLogger = net.fabricmc.loom.util.progress.ProgressLogger.getProgressFactory(getProject(), getClass().getName());
+		ProgressLogger progressLogger = net.fabricmc.loom.util.progress.ProgressLogger.getProgressFactory(getProject(), getClass().getName());
 		progressLogger.start("Adjusting line numbers", "linemap");
 
 		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);

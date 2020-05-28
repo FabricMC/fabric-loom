@@ -32,13 +32,17 @@ import org.jetbrains.java.decompiler.main.Fernflower;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+
 public class FabricForkedFFExecutor extends AbstractForkedFFExecutor {
 	public static void main(String[] args) {
 		AbstractForkedFFExecutor.decompile(args, new FabricForkedFFExecutor());
 	}
 
 	@Override
-	public void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap) {
+	public void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap, File mappings) {
+		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
+
 		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
 		IFernflowerLogger logger = new ThreadIDFFLogger();
 		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);

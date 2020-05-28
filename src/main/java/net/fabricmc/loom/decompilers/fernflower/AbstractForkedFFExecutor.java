@@ -102,9 +102,8 @@ public abstract class AbstractForkedFFExecutor {
 		Objects.requireNonNull(output, "Output not set.");
 		Objects.requireNonNull(mappings, "Mappings not set.");
 
-		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
-		ffExecutor.runFF(options, libraries, input, output, lineMap);
+		ffExecutor.runFF(options, libraries, input, output, lineMap, mappings);
 	}
 
-	public abstract void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap);
+	public abstract void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap, File mappings);
 }

@@ -72,23 +72,23 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		TaskContainer tasks = target.getTasks();
 
-		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class, t -> t.setDescription("Remove binary Jars created by loom."));
-		tasks.register("cleanLoomMappings", CleanLoomMappings.class, t -> t.setDescription("Remove mappings downloaded by loom."));
+		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class, t -> t.setDescription("Removes binary jars created by Loom."));
+		tasks.register("cleanLoomMappings", CleanLoomMappings.class, t -> t.setDescription("Removes mappings downloaded by Loom."));
 
 		tasks.register("cleanLoom").configure(task -> {
 			task.setGroup("fabric");
-			task.setDescription("Runs all loom cleanup tasks.");
+			task.setDescription("Runs all Loom cleanup tasks.");
 			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
 			task.dependsOn(tasks.getByName("cleanLoomMappings"));
 		});
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
-			t.setDescription("Migrate mappings to a new version.");
+			t.setDescription("Migrates mappings to a new version.");
 			t.getOutputs().upToDateWhen((o) -> false);
 		});
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
-			t.setDescription("Remaps a Jar file.");
+			t.setDescription("Remaps the built project jar to intermediary mappings.");
 			t.setGroup("fabric");
 		});
 
@@ -103,7 +103,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		});
 
 		tasks.register("genSources", t -> {
-			t.setDescription("Generate a human-readable version of the Minecraft source.");
+			t.setDescription("Generates a human-readable version of the Minecraft source.");
 			t.getOutputs().upToDateWhen((o) -> false);
 			t.setGroup("fabric");
 		});
@@ -152,38 +152,38 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
 
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
-			t.setDescription("Generate an IntelliJ IDEA workspace from this project.");
+			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
 			t.dependsOn("idea", "downloadAssets");
 			t.setGroup("ide");
 		});
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
-			t.setDescription("Generate Eclipse run configurations for this project.");
+			t.setDescription("Generates Eclipse run configurations for this project.");
 			t.dependsOn("downloadAssets");
 			t.setGroup("ide");
 		});
 
 		tasks.register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
-			t.setDescription("Remove Eclipse run configurations for this project.");
+			t.setDescription("Removes Eclipse run configurations for this project.");
 			t.setGroup("ide");
 		});
 
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
-			t.setDescription("Opens this project in VSCode.");
+			t.setDescription("Generates VSCode launch configurations.");
 			t.dependsOn("downloadAssets");
 			t.setGroup("ide");
 		});
 
-		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps a source Jar."));
+		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
 		tasks.register("runClient", RunClientTask.class, t -> {
-			t.setDescription("Starts a development version of the Fabric client.");
+			t.setDescription("Starts a development version of the Minecraft client.");
 			t.dependsOn("jar", "downloadAssets");
 			t.setGroup("fabric");
 		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
-			t.setDescription("Starts a development version of the Fabric server.");
+			t.setDescription("Starts a development version of the Minecraft server.");
 			t.dependsOn("jar");
 			t.setGroup("fabric");
 		});

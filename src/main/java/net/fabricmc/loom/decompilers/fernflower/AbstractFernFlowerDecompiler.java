@@ -82,7 +82,9 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		args.add("-m=" + absolutePathOf(metaData.javaDocs));
 
 		//TODO, Decompiler breaks on jemalloc, J9 module-info.class?
-		for (Path library : metaData.libraries) args.add("-e=" + absolutePathOf(library));
+		for (Path library : metaData.libraries) {
+			args.add("-e=" + absolutePathOf(library));
+		}
 
 		ServiceRegistry registry = ((ProjectInternal) project).getServices();
 		ProgressLoggerFactory factory = registry.get(ProgressLoggerFactory.class);

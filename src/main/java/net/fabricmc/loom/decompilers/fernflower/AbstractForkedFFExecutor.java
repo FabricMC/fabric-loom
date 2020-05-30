@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import net.fabricmc.fernflower.api.IFabricJavadocProvider;
-
 /**
  * Entry point for Forked FernFlower task.
  * Takes one parameter, a single file, each line is treated as command line input.

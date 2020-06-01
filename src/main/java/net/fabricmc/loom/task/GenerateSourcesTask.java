@@ -37,8 +37,8 @@ import javax.inject.Inject;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.decompilers.DecompilationMetadata;
-import net.fabricmc.loom.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.util.LineNumberRemapper;
 import net.fabricmc.loom.util.progress.ProgressLogger;
 import net.fabricmc.stitch.util.StitchUtil;

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.api.decompilers;
 
 import java.nio.file.Path;
 import java.util.Collection;

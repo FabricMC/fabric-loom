@@ -43,8 +43,8 @@ import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import net.fabricmc.loom.decompilers.DecompilationMetadata;
-import net.fabricmc.loom.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.util.ConsumingOutputStream;
 import net.fabricmc.loom.util.OperatingSystem;
 

@@ -45,6 +45,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
@@ -63,6 +64,8 @@ public class LoomGradleExtension {
 
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
+	final List<LoomDecompiler> decompilers = new ArrayList<>();
+
 	//Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
@@ -70,6 +73,14 @@ public class LoomGradleExtension {
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
+
+	/**
+	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
+	 * that uses the specified decompiler instead.
+	 */
+	public void addDecompiler(LoomDecompiler decompiler) {
+		decompilers.add(decompiler);
+	}
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
 		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());

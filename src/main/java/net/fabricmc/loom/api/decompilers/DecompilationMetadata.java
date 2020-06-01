@@ -22,18 +22,19 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task.fernflower;
+package net.fabricmc.loom.api.decompilers;
 
-import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+import java.nio.file.Path;
+import java.util.Collection;
 
-/**
- * Literally does nothing.
- * Created by covers1624 on 11/02/19.
- */
-public class NoopFFLogger extends IFernflowerLogger {
-	@Override
-	public void writeMessage(String message, Severity severity) { }
+public class DecompilationMetadata {
+	public final int numberOfThreads;
+	public final Path javaDocs;
+	public final Collection<Path> libraries;
 
-	@Override
-	public void writeMessage(String message, Severity severity, Throwable t) { }
+	public DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries) {
+		this.numberOfThreads = numberOfThreads;
+		this.javaDocs = javaDocs;
+		this.libraries = libraries;
+	}
 }

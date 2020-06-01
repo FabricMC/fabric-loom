@@ -22,10 +22,11 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task.fernflower;
+package net.fabricmc.loom.decompilers.fernflower;
 
 import static java.text.MessageFormat.format;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,58 +34,59 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.function.Supplier;
 
-import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
+import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
-import net.fabricmc.loom.task.AbstractDecompileTask;
-import net.fabricmc.loom.task.ForkingJavaExecTask;
+import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.util.ConsumingOutputStream;
 import net.fabricmc.loom.util.OperatingSystem;
 
-/**
- * Created by covers1624 on 9/02/19.
- */
-public class FernFlowerTask extends AbstractDecompileTask implements ForkingJavaExecTask {
-	private boolean noFork = false;
-	private int numThreads = Runtime.getRuntime().availableProcessors();
+public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
+	private final Project project;
 
-	@TaskAction
-	public void doTask() throws Throwable {
+	protected AbstractFernFlowerDecompiler(Project project) {
+		this.project = project;
+	}
+
+	public abstract Class<? extends AbstractForkedFFExecutor> fernFlowerExecutor();
+
+	@Override
+	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
 		if (!OperatingSystem.is64Bit()) {
-			throw new UnsupportedOperationException("FernFlowerTask requires a 64bit JVM to run due to the memory requirements");
+			throw new UnsupportedOperationException("FernFlower decompiler requires a 64bit JVM to run due to the memory requirements");
 		}
 
-		Map<String, Object> options = new HashMap<>();
-		options.put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
-		options.put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
-		options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
-		options.put(IFernflowerPreferences.LOG_LEVEL, "trace");
-		options.put(IFernflowerPreferences.THREADS, getNumThreads());
-		getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
+		project.getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
+
+		Map<String, Object> options = new HashMap<String, Object>() {{
+				put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
+				put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
+				put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
+				put(IFernflowerPreferences.LOG_LEVEL, "trace");
+				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads);
+			}};
 
 		List<String> args = new ArrayList<>();
 
 		options.forEach((k, v) -> args.add(format("-{0}={1}", k, v)));
-		args.add(getInput().getAbsolutePath());
-		args.add("-o=" + getOutput().getAbsolutePath());
-
-		if (getLineMapFile() != null) {
-			args.add("-l=" + getLineMapFile().getAbsolutePath());
-		}
-
-		args.add("-m=" + getExtension().getMappingsProvider().tinyMappings.getAbsolutePath());
+		args.add(absolutePathOf(compiledJar));
+		args.add("-o=" + absolutePathOf(sourcesDestination));
+		args.add("-l=" + absolutePathOf(linemapDestination));
+		args.add("-m=" + absolutePathOf(metaData.javaDocs));
 
 		//TODO, Decompiler breaks on jemalloc, J9 module-info.class?
-		getLibraries().forEach(f -> args.add("-e=" + f.getAbsolutePath()));
+		for (Path library : metaData.libraries) {
+			args.add("-e=" + absolutePathOf(library));
+		}
 
-		ServiceRegistry registry = ((ProjectInternal) getProject()).getServices();
+		ServiceRegistry registry = ((ProjectInternal) project).getServices();
 		ProgressLoggerFactory factory = registry.get(ProgressLoggerFactory.class);
 		ProgressLogger progressGroup = factory.newOperation(getClass()).setDescription("Decompile");
 		Supplier<ProgressLogger> loggerFactory = () -> {
@@ -97,8 +99,8 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		Map<String, ProgressLogger> inUseLoggers = new HashMap<>();
 
 		progressGroup.started();
-		ExecResult result = javaexec(spec -> {
-			spec.setMain(ForkedFFExecutor.class.getName());
+		ExecResult result = ForkingJavaExec.javaexec(project, spec -> {
+			spec.setMain(fernFlowerExecutor().getName());
 			spec.jvmArgs("-Xms200m", "-Xmx3G");
 			spec.setArgs(args);
 			spec.setErrorOutput(System.err);
@@ -145,21 +147,7 @@ public class FernFlowerTask extends AbstractDecompileTask implements ForkingJava
 		result.assertNormalExitValue();
 	}
 
-	@Input
-	public int getNumThreads() {
-		return numThreads;
-	}
-
-	@Input
-	public boolean isNoFork() {
-		return noFork;
-	}
-
-	public void setNoFork(boolean noFork) {
-		this.noFork = noFork;
-	}
-
-	public void setNumThreads(int numThreads) {
-		this.numThreads = numThreads;
+	private static String absolutePathOf(Path path) {
+		return path.toAbsolutePath().toString();
 	}
 }

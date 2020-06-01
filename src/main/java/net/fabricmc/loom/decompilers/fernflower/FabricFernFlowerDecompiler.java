@@ -22,54 +22,22 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.decompilers.fernflower;
 
-import java.io.File;
+import org.gradle.api.Project;
 
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.OutputFile;
-
-public abstract class AbstractDecompileTask extends AbstractLoomTask {
-	private Object input;
-	private Object output;
-	private Object lineMapFile;
-	private Object libraries;
-
-	@InputFile
-	public File getInput() {
-		return getProject().file(input);
+public class FabricFernFlowerDecompiler extends AbstractFernFlowerDecompiler {
+	public FabricFernFlowerDecompiler(Project project) {
+		super(project);
 	}
 
-	@OutputFile
-	public File getOutput() {
-		return getProject().file(output);
+	@Override
+	public String name() {
+		return "FabricFlower"; // Or something else?
 	}
 
-	@OutputFile
-	public File getLineMapFile() {
-		return getProject().file(lineMapFile);
-	}
-
-	@InputFiles
-	public FileCollection getLibraries() {
-		return getProject().files(libraries);
-	}
-
-	public void setInput(Object input) {
-		this.input = input;
-	}
-
-	public void setOutput(Object output) {
-		this.output = output;
-	}
-
-	public void setLineMapFile(Object lineMapFile) {
-		this.lineMapFile = lineMapFile;
-	}
-
-	public void setLibraries(Object libraries) {
-		this.libraries = libraries;
+	@Override
+	public Class<? extends AbstractForkedFFExecutor> fernFlowerExecutor() {
+		return FabricForkedFFExecutor.class;
 	}
 }

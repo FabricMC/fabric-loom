@@ -22,32 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.decompilers.fernflower;
 
-import org.gradle.api.Action;
-import org.gradle.api.Task;
-import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.file.FileCollection;
-import org.gradle.process.ExecResult;
-import org.gradle.process.JavaExecSpec;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Simple trait like interface for a Task that wishes to execute a java process
- * with the classpath of the gradle plugin plus groovy.
- *
- * <p>Created by covers1624 on 11/02/19.
- */
-public interface ForkingJavaExecTask extends Task {
-	default ExecResult javaexec(Action<? super JavaExecSpec> action) {
-		ConfigurationContainer configurations = getProject().getBuildscript().getConfigurations();
-		DependencyHandler handler = getProject().getDependencies();
-		FileCollection classpath = configurations.getByName("classpath")//
-				.plus(configurations.detachedConfiguration(handler.localGroovy()));
+import org.jetbrains.java.decompiler.main.Fernflower;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
-		return getProject().javaexec(spec -> {
-			spec.classpath(classpath);
-			action.execute(spec);
-		});
+import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+
+public class FabricForkedFFExecutor extends AbstractForkedFFExecutor {
+	public static void main(String[] args) {
+		AbstractForkedFFExecutor.decompile(args, new FabricForkedFFExecutor());
+	}
+
+	@Override
+	public void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap, File mappings) {
+		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
+
+		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
+		IFernflowerLogger logger = new ThreadIDFFLogger();
+		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
+
+		for (File library : libraries) {
+			ff.addLibrary(library);
+		}
+
+		ff.addSource(input);
+		ff.decompileContext();
 	}
 }

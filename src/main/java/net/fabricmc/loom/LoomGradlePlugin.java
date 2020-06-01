@@ -25,18 +25,14 @@
 package net.fabricmc.loom;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Locale;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskContainer;
 
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftLibraryProvider;
-import net.fabricmc.loom.task.AbstractDecompileTask;
 import net.fabricmc.loom.task.CleanEclipseRunsTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
 import net.fabricmc.loom.task.CleanLoomMappings;
@@ -44,13 +40,12 @@ import net.fabricmc.loom.task.DownloadAssetsTask;
 import net.fabricmc.loom.task.GenEclipseRunsTask;
 import net.fabricmc.loom.task.GenIdeaProjectTask;
 import net.fabricmc.loom.task.GenVsCodeProjectTask;
+import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.MigrateMappingsTask;
 import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.task.RemapLineNumbersTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
-import net.fabricmc.loom.task.fernflower.FernFlowerTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	public static File getMappedByproduct(Project project, String suffix) {
@@ -92,63 +87,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.setGroup("fabric");
 		});
 
-		tasks.register("genSourcesDecompile", FernFlowerTask.class, t -> {
-			t.setDescription("Decompiles sources for the genSources task.");
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
-
-		tasks.register("genSourcesRemapLineNumbers", RemapLineNumbersTask.class, t -> {
-			t.setDescription("Remaps line numbers for the genSources task.");
-			t.getOutputs().upToDateWhen((o) -> false);
-		});
-
-		tasks.register("genSources", t -> {
-			t.setDescription("Generates a human-readable version of the Minecraft source.");
-			t.getOutputs().upToDateWhen((o) -> false);
-			t.setGroup("fabric");
-		});
-
-		project.afterEvaluate((p) -> {
-			AbstractDecompileTask decompileTask = (AbstractDecompileTask) p.getTasks().getByName("genSourcesDecompile");
-			RemapLineNumbersTask remapLineNumbersTask = (RemapLineNumbersTask) p.getTasks().getByName("genSourcesRemapLineNumbers");
-			Task genSourcesTask = p.getTasks().getByName("genSources");
-
-			genSourcesTask.dependsOn(remapLineNumbersTask);
-			remapLineNumbersTask.dependsOn(decompileTask);
-
-			Project project = this.getProject();
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().getLibraryProvider();
-			MappingsProvider mappingsProvider = extension.getMappingsProvider();
-			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-			File linemappedJar = getMappedByproduct(project, "-linemapped.jar");
-			File sourcesJar = getMappedByproduct(project, "-sources.jar");
-			File linemapFile = getMappedByproduct(project, "-sources.lmap");
-
-			decompileTask.setInput(mappedJar);
-			decompileTask.setOutput(sourcesJar);
-			decompileTask.setLineMapFile(linemapFile);
-			decompileTask.setLibraries(libraryProvider.getLibraries());
-
-			remapLineNumbersTask.setInput(mappedJar);
-			remapLineNumbersTask.setLineMapFile(linemapFile);
-			remapLineNumbersTask.setOutput(linemappedJar);
-
-			Path mappedJarPath = mappedJar.toPath();
-			Path linemappedJarPath = linemappedJar.toPath();
-
-			genSourcesTask.doLast((tt) -> {
-				if (Files.exists(linemappedJarPath)) {
-					try {
-						Files.deleteIfExists(mappedJarPath);
-						Files.copy(linemappedJarPath, mappedJarPath);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-			});
-		});
-
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
 
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
@@ -186,6 +124,17 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.setDescription("Starts a development version of the Minecraft server.");
 			t.dependsOn("jar");
 			t.setGroup("fabric");
+		});
+
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
+
+		project.afterEvaluate((p) -> {
+			for (LoomDecompiler decompiler : extension.decompilers) {
+				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
+				// decompiler will be passed to the constructor of GenerateSourcesTask
+				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
+			}
 		});
 	}
 }

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
@@ -63,12 +64,12 @@ public class ModProcessor {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	public static void processMods(Project project, List<ModDependencyInfo> processList) throws IOException {
-		if (processList.isEmpty()) {
+		if (processList.stream().noneMatch(ModDependencyInfo::requiresRemapping)) {
 			return;
 		}
 
 		for (ModDependencyInfo info : processList) {
-			if (info.getRemappedOutput().exists()) {
+			if (info.requiresRemapping() && info.getRemappedOutput().exists()) {
 				info.getRemappedOutput().delete();
 			}
 		}
@@ -80,7 +81,9 @@ public class ModProcessor {
 				throw new RuntimeException("Failed to remap mod" + info);
 			}
 
-			stripNestedJars(info.getRemappedOutput());
+			if (info.requiresRemapping()) {
+				stripNestedJars(info.getRemappedOutput());
+			}
 		}
 	}
 
@@ -124,7 +127,9 @@ public class ModProcessor {
 		Path mc = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
-		project.getLogger().lifecycle(":remapping " + processList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
+		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());
+
+		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
@@ -138,14 +143,24 @@ public class ModProcessor {
 		final Map<ModDependencyInfo, OutputConsumerPath> outputConsumerMap = new HashMap<>();
 		final Map<ModDependencyInfo, byte[]> accessWidenerMap = new HashMap<>();
 
-		for (ModDependencyInfo info : processList) {
+		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+			for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
+				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
+					project.getLogger().info("Adding " + inputFile + " onto the remap classpath");
+					remapper.readClassPathAsync(inputFile.toPath());
+				}
+			}
+		}
+
+		for (ModDependencyInfo info : remapList) {
 			InputTag tag = remapper.createInputTag();
+			project.getLogger().info("Adding " + info.getInputFile() + " as a remap input");
 			remapper.readInputsAsync(tag, info.getInputFile().toPath());
 			tagMap.put(info, tag);
 		}
 
 		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
-		for (ModDependencyInfo info : processList) {
+		for (ModDependencyInfo info : remapList) {
 			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
 			outputConsumer.addNonClassFiles(info.getInputFile().toPath());
 			outputConsumerMap.put(info, outputConsumer);
@@ -160,7 +175,7 @@ public class ModProcessor {
 
 		remapper.finish();
 
-		for (ModDependencyInfo info : processList) {
+		for (ModDependencyInfo info : remapList) {
 			outputConsumerMap.get(info).close();
 			byte[] accessWidener = accessWidenerMap.get(info);
 

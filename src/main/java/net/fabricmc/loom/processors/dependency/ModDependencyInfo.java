@@ -32,6 +32,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import com.google.gson.JsonObject;
+import org.gradle.api.artifacts.Configuration;
 
 import net.fabricmc.loom.util.ModProcessor;
 
@@ -41,15 +42,19 @@ public class ModDependencyInfo {
 	public final String version;
 	public final String classifier;
 	public final File inputFile;
+	public final File sourcesFile;
+	public final Configuration targetConfig;
 
 	public final RemapData remapData;
 
-	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, RemapData remapData) {
+	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, File sourcesFile, Configuration targetConfig, RemapData remapData) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
 		this.classifier = classifier;
 		this.inputFile = inputFile;
+		this.sourcesFile = sourcesFile;
+		this.targetConfig = targetConfig;
 		this.remapData = remapData;
 	}
 

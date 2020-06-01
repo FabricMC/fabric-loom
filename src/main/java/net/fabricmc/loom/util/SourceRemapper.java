@@ -208,6 +208,12 @@ public class SourceRemapper {
 			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
 				m.getClassPath().add(file.toPath());
 			}
+		} else {
+			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+				for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
+					m.getClassPath().add(inputFile.toPath());
+				}
+			}
 		}
 
 		return m;

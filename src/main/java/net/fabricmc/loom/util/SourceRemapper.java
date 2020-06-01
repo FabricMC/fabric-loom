@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
@@ -39,6 +40,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.util.progress.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
@@ -46,7 +48,7 @@ import net.fabricmc.stitch.util.StitchUtil;
 public class SourceRemapper {
 	private final Project project;
 	private final boolean toNamed;
-	private final List<Runnable> remapTasks = new ArrayList<>();
+	private final List<Consumer<ProgressLogger>> remapTasks = new ArrayList<>();
 
 	private Mercury mercury;
 
@@ -62,8 +64,9 @@ public class SourceRemapper {
 	}
 
 	public void scheduleRemapSources(File source, File destination) throws Exception {
-		remapTasks.add(() -> {
+		remapTasks.add((logger) -> {
 			try {
+				logger.progress("remapping sources - " + source.getName());
 				remapSourcesInner(source, destination);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to remap sources for " + source, e);
@@ -76,7 +79,13 @@ public class SourceRemapper {
 			project.getLogger().lifecycle(":remapping sources");
 		}
 
-		remapTasks.forEach(Runnable::run);
+		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, SourceRemapper.class.getName());
+		progressLogger.start("Remapping dependency sources", "sources");
+
+		remapTasks.forEach(consumer -> consumer.accept(progressLogger));
+
+		progressLogger.completed();
+
 		// TODO: FIXME - WORKAROUND https://github.com/FabricMC/fabric-loom/issues/45
 		System.gc();
 	}
@@ -198,6 +207,12 @@ public class SourceRemapper {
 		if (!toNamed) {
 			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
 				m.getClassPath().add(file.toPath());
+			}
+		} else {
+			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+				for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
+					m.getClassPath().add(inputFile.toPath());
+				}
 			}
 		}
 

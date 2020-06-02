@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
+import org.gradle.api.GradleException;
 import org.zeroturnaround.zip.ZipUtil;
 import org.gradle.api.Project;
 
@@ -39,6 +40,7 @@ public class MinecraftNativesProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
+		boolean offline = project.getGradle().getStartParameter().isOffline();
 
 		File nativesDir = extension.getNativesDirectory();
 		File jarStore = extension.getNativesJarStore();
@@ -47,7 +49,13 @@ public class MinecraftNativesProvider {
 			File libJarFile = library.getFile(jarStore);
 
 			if (library.allowed() && library.isNative() && libJarFile != null) {
-				DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
+				if (!offline) {
+					DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
+				}
+
+				if (!libJarFile.exists()) {
+					throw new GradleException("Native jar not found at " + libJarFile.getAbsolutePath());
+				}
 
 				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
 				ZipUtil.unpack(libJarFile, nativesDir);

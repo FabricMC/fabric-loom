@@ -37,7 +37,7 @@ class EmptyBuildFunctionalTest extends Specification {
 				.withProjectDir(testProjectDir.root)
 				.withArguments('build',"--stacktrace")
 				.withPluginClasspath()
-				.withGradleVersion("4.9")
+				.forwardOutput()
 				.build()
 
 		then:

@@ -62,7 +62,7 @@ class MixinBuildFunctionalTest extends Specification {
 				.withProjectDir(testProjectDir.root)
 				.withArguments('build')
 				.withPluginClasspath()
-				.withGradleVersion("4.9")
+				.forwardOutput()
 				.build()
 
 		then:

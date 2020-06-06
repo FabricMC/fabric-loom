@@ -21,6 +21,6 @@ jobs:
         with:
           java-version: ${{ matrix.java-version }}
       - name: Set gradle version
-          run: ./gradlew wrapper --gradle-version=${{ matrix.gradle-version }}
+        run: ./gradlew wrapper --gradle-version=${{ matrix.gradle-version }}
       - name: Build and Test
-          run: ./gradlew build check test --stacktrace
+        run: ./gradlew build check test --stacktrace

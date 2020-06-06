@@ -27,4 +27,4 @@ jobs:
       - uses: eskatos/gradle-command-action@v1
         with:
           gradle-version: ${{ matrix.gradle-version }}
-          arguments: check build test --stacktrace
+          arguments: build check test --stacktrace

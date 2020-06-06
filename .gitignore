@@ -19,5 +19,4 @@
 !/README.md
 !/settings.gradle
 !/Jenkinsfile
-!/.travis.yml
 !/checkstyle.xml

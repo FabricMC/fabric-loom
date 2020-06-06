@@ -9,7 +9,7 @@ jobs:
         java-version: [1.8, 11, 14]
         exclude: # Dont run older gradle versions on newer java
           - java-version: 14
-            gradle-version: 4.9
+              gradle-version: 4.9
           - java-version: 14
               gradle-version: 4.10.2
           - java-version: 14

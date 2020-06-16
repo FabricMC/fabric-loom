@@ -162,8 +162,10 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		Mercury mercury = SourceRemapper.createMercuryWithClassPath(project, false);
 
 		final JavaPluginConvention convention = project.getConvention().findPlugin(JavaPluginConvention.class);
-		final JavaVersion javaVersion = convention != null ?
-				convention.getSourceCompatibility() :
+		final JavaVersion javaVersion = convention != null
+				?
+				convention.getSourceCompatibility()
+				:
 				JavaVersion.current();
 		mercury.setSourceCompatibility(javaVersion.toString());
 

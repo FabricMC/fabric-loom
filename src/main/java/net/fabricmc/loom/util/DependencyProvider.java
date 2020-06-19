@@ -91,6 +91,10 @@ public abstract class DependencyProvider {
 		return extension;
 	}
 
+	public boolean isRefreshDeps() {
+		return getProject().getGradle().getStartParameter().isRefreshDependencies();
+	}
+
 	public static class DependencyInfo {
 		final Project project;
 		final Dependency dependency;

@@ -113,6 +113,10 @@ public class MappingsProvider extends DependencyProvider {
 
 		initFiles();
 
+		if (isRefreshDeps()) {
+			cleanFiles();
+		}
+
 		Files.createDirectories(mappingsDir);
 		Files.createDirectories(mappingsStepsDir);
 
@@ -126,11 +130,11 @@ public class MappingsProvider extends DependencyProvider {
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
-		if (!tinyMappings.exists()) {
+		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
 		}
 
-		if (!tinyMappingsJar.exists()) {
+		if (!tinyMappingsJar.exists() || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
 		}
 
@@ -273,11 +277,23 @@ public class MappingsProvider extends DependencyProvider {
 
 	public void cleanFiles() {
 		try {
-			Files.walkFileTree(mappingsStepsDir, new DeletingFileVisitor());
-			Files.deleteIfExists(baseTinyMappings);
+			if (Files.exists(mappingsStepsDir)) {
+				Files.walkFileTree(mappingsStepsDir, new DeletingFileVisitor());
+			}
+
+			if (Files.exists(baseTinyMappings)) {
+				Files.deleteIfExists(baseTinyMappings);
+			}
+
 			mappingsMixinExport.delete();
-			tinyMappings.delete();
-			tinyMappingsJar.delete();
+
+			if (tinyMappings != null) {
+				tinyMappings.delete();
+			}
+
+			if (tinyMappingsJar != null) {
+				tinyMappingsJar.delete();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -47,6 +47,8 @@ public class ModDependencyInfo {
 
 	public final RemapData remapData;
 
+	private boolean forceRemap = false;
+
 	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, File sourcesFile, Configuration targetConfig, RemapData remapData) {
 		this.group = group;
 		this.name = name;
@@ -75,11 +77,15 @@ public class ModDependencyInfo {
 	}
 
 	public boolean requiresRemapping() {
-		return !getRemappedOutput().exists() || inputFile.lastModified() <= 0 || inputFile.lastModified() > getRemappedOutput().lastModified();
+		return !getRemappedOutput().exists() || inputFile.lastModified() <= 0 || inputFile.lastModified() > getRemappedOutput().lastModified() || forceRemap;
 	}
 
 	public void finaliseRemapping() {
 		getRemappedOutput().setLastModified(inputFile.lastModified());
+	}
+
+	public void forceRemap() {
+		forceRemap = true;
 	}
 
 	@Override

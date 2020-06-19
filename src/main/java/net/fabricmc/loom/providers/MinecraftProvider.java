@@ -97,7 +97,7 @@ public class MinecraftProvider extends DependencyProvider {
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
 
-		if (!minecraftMergedJar.exists()) {
+		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
@@ -160,7 +160,7 @@ public class MinecraftProvider extends DependencyProvider {
 					throw new GradleException("Minecraft " + minecraftVersion + " manifest not found at " + minecraftJson.getAbsolutePath());
 				}
 			} else {
-				if (StaticPathWatcher.INSTANCE.hasFileChanged(minecraftJson.toPath())) {
+				if (StaticPathWatcher.INSTANCE.hasFileChanged(minecraftJson.toPath()) || isRefreshDeps()) {
 					getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
 					DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), minecraftJson, getProject().getLogger());
 				}

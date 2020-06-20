@@ -3,6 +3,7 @@ package net.fabricmc.loom.api.processors;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import org.gradle.api.Project;
@@ -41,7 +42,7 @@ public class JarProcessorManager {
 			}
 
 			Files.createDirectories(output.getParent());
-			Files.copy(in, output);
+			Files.copy(in, output, StandardCopyOption.REPLACE_EXISTING);
 		}
 
 		return true;

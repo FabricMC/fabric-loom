@@ -93,6 +93,10 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		AccessWidener widener;
 
+		if (extension.accessWidener == null) {
+			return;
+		}
+
 		try (BufferedReader reader = new BufferedReader(new FileReader(extension.accessWidener))) {
 			widener = new AccessWidener(reader);
 		} catch (IOException e) {

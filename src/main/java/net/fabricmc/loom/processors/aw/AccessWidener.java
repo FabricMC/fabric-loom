@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.accesswidener;
+package net.fabricmc.loom.processors.aw;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,13 +40,17 @@ import org.objectweb.asm.Opcodes;
 import net.fabricmc.mappings.EntryTriple;
 
 public class AccessWidener {
-	public String namespace;
-	public Map<String, Access> classAccess = new HashMap<>();
-	public Map<EntryTriple, Access> methodAccess = new HashMap<>();
-	public Map<EntryTriple, Access> fieldAccess = new HashMap<>();
-	private Set<String> classes = new LinkedHashSet<>();
+	public final String namespace;
+	public final Map<String, Access> classAccess = new HashMap<>();
+	public final Map<EntryTriple, Access> methodAccess = new HashMap<>();
+	public final Map<EntryTriple, Access> fieldAccess = new HashMap<>();
+	private final Set<String> classes = new LinkedHashSet<>();
 
-	public void read(BufferedReader reader) throws IOException {
+	public AccessWidener(String namespace) {
+		this.namespace = namespace;
+	}
+
+	public AccessWidener(BufferedReader reader) throws IOException {
 		String headerStr = reader.readLine();
 
 		if (headerStr == null) {
@@ -61,12 +65,6 @@ public class AccessWidener {
 
 		if (!header[1].equals("v1")) {
 			throw new RuntimeException(String.format("Unsupported access widener format (%s)", header[1]));
-		}
-
-		if (namespace != null) {
-			if (!namespace.equals(header[2])) {
-				throw new RuntimeException(String.format("Namespace mismatch, expected %s got %s", namespace, header[2]));
-			}
 		}
 
 		namespace = header[2];
@@ -136,7 +134,7 @@ public class AccessWidener {
 		classes.addAll(parentClasses);
 	}
 
-	//Could possibly be cleaner but should do its job for now
+	// Could possibly be cleaner but should do its job for now
 	public void write(StringWriter writer) {
 		writer.write("accessWidener\tv1\t");
 		writer.write(namespace);
@@ -219,30 +217,6 @@ public class AccessWidener {
 		}
 
 		map.put(entry, applyAccess(access, map.getOrDefault(entry, defaultAccess), entry));
-	}
-
-	public void merge(AccessWidener other) {
-		if (namespace == null) {
-			namespace = other.namespace;
-		} else if (!namespace.equals(other.namespace)) {
-			throw new RuntimeException("Namespace mismatch");
-		}
-
-		for (Map.Entry<String, Access> entry : other.classAccess.entrySet()) {
-			if (classAccess.containsKey(entry.getKey())) {
-				classAccess.replace(entry.getKey(), mergeAccess(classAccess.get(entry.getKey()), entry.getValue()));
-			} else {
-				classAccess.put(entry.getKey(), entry.getValue());
-			}
-		}
-
-		for (Map.Entry<EntryTriple, Access> entry : other.methodAccess.entrySet()) {
-			addOrMerge(methodAccess, entry.getKey(), entry.getValue());
-		}
-
-		for (Map.Entry<EntryTriple, Access> entry : other.fieldAccess.entrySet()) {
-			addOrMerge(fieldAccess, entry.getKey(), entry.getValue());
-		}
 	}
 
 	private Access applyAccess(String input, Access access, EntryTriple entryTriple) {

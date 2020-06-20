@@ -33,20 +33,27 @@ import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.api.processors.JarProcessorManager;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.DependencyProvider;
 
 public class MinecraftMappedProvider extends DependencyProvider {
+	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
+
+	private final JarProcessorManager jarProcessorManager;
+	private boolean useProjectMappedJar;
+	private File projectMappedJar;
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
 	private MinecraftProvider minecraftProvider;
 
-	public MinecraftMappedProvider(Project project) {
+	public MinecraftMappedProvider(Project project, JarProcessorManager jarProcessorManager) {
 		super(project);
+		this.jarProcessorManager = jarProcessorManager;
 	}
 
 	@Override
@@ -85,7 +92,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mapped jar not found");
 		}
 
-		addDependencies(dependency, postPopulationScheduler);
+		addDependencies();
 	}
 
 	private void mapMinecraftJar() throws IOException {
@@ -129,17 +136,26 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		return getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 	}
 
-	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getUserCache(), "mapped")));
-
-		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
+	private void addDependencies() {
+		try {
+			if (useProjectMappedJar = jarProcessorManager.process(minecraftMappedJar.toPath(), projectMappedJar.toPath())) {
+				getProject().getLogger().lifecycle("Using project based jar storage");
+				getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
+				getProject().getDependencies().add(Constants.MINECRAFT_NAMED, getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
+			} else {
+				getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getUserCache(), "mapped")));
+				getProject().getDependencies().add(Constants.MINECRAFT_NAMED, getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
+			}
+		} catch (IOException exception) {
+			throw new RuntimeException("Failed to process project jar", exception);
+		}
 	}
 
-	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
+	public void initFiles(MinecraftProvider minecraftProvider) {
 		this.minecraftProvider = minecraftProvider;
-		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
-		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		this.minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
+		this.minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		this.projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
 	}
 
 	protected File getJarDirectory(File parentDirectory, String type) {
@@ -159,7 +175,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public File getMappedJar() {
-		return minecraftMappedJar;
+		return useProjectMappedJar ? projectMappedJar : minecraftMappedJar;
 	}
 
 	@Override

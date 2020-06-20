@@ -46,7 +46,9 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.processors.JarProcessorManager;
+import net.fabricmc.loom.api.processors.JarProcessor;
+import net.fabricmc.loom.api.processors.JarProcessorManager;
+import net.fabricmc.loom.processors.aw.AccessWidenerJarProcessor;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -62,6 +64,8 @@ public class LoomGradleExtension {
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 
+	public final List<JarProcessor> processors = new ArrayList<>();
+
 	private List<Path> unmappedModsBuilt = new ArrayList<>();
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
@@ -74,12 +78,24 @@ public class LoomGradleExtension {
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 
+	{
+		processors.add(new AccessWidenerJarProcessor());
+	}
+
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
 	 * that uses the specified decompiler instead.
 	 */
 	public void addDecompiler(LoomDecompiler decompiler) {
 		decompilers.add(decompiler);
+	}
+
+	/**
+	 * Adds a jar processor which is able to transform Minecraft and built jars after remapping.
+	 * @param processor The processor to add
+	 */
+	public void addProcessor(JarProcessor processor) {
+		processors.add(processor);
 	}
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {

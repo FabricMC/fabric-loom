@@ -51,14 +51,14 @@ import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.aw.AccessWidener;
+import net.fabricmc.loom.processors.aw.AccessWidenerRemapper;
+import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.util.accesswidener.AccessWidener;
-import net.fabricmc.loom.util.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
-import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -101,11 +101,8 @@ public class ModProcessor {
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
-			AccessWidener accessWidener = new AccessWidener();
-			accessWidener.read(bufferedReader);
-
-			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, "named");
-			AccessWidener remapped = accessWidenerRemapper.remap();
+			AccessWidener accessWidener = new AccessWidener(bufferedReader);
+			AccessWidener remapped = AccessWidenerRemapper.remap(accessWidener, remapper, "named");
 
 			try (StringWriter writer = new StringWriter()) {
 				remapped.write(writer);
@@ -132,9 +129,9 @@ public class ModProcessor {
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-						.renameInvalidLocals(false)
-						.build();
+				.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+				.renameInvalidLocals(false)
+				.build();
 
 		remapper.readClassPathAsync(mc);
 		remapper.readClassPathAsync(mcDeps);

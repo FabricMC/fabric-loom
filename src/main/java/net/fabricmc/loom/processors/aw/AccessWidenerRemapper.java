@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.accesswidener;
+package net.fabricmc.loom.processors.aw;
 
 import java.util.Map;
 
@@ -31,49 +31,37 @@ import org.objectweb.asm.commons.Remapper;
 import net.fabricmc.mappings.EntryTriple;
 
 public class AccessWidenerRemapper {
-	private final AccessWidener input;
-	private final String to;
-	private final Remapper remapper;
-
-	public AccessWidenerRemapper(AccessWidener input, Remapper remapper, String to) {
-		this.input = input;
-		this.to = to;
-		this.remapper = remapper;
-	}
-
-	public AccessWidener remap() {
-		//Dont remap if we dont need to
-		if (input.namespace.equals(to)) {
+	public static AccessWidener remap(AccessWidener input, Remapper remapper, String namespace) {
+		if (input.namespace.equals(namespace)) {
 			return input;
 		}
 
-		AccessWidener remapped = new AccessWidener();
-		remapped.namespace = to;
+		AccessWidener remapped = new AccessWidener(namespace);
 
 		for (Map.Entry<String, AccessWidener.Access> entry : input.classAccess.entrySet()) {
 			remapped.classAccess.put(remapper.map(entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.methodAccess.entrySet()) {
-			remapped.addOrMerge(remapped.methodAccess, remapMethod(entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.methodAccess, remapMethod(remapper, entry.getKey()), entry.getValue());
 		}
 
 		for (Map.Entry<EntryTriple, AccessWidener.Access> entry : input.fieldAccess.entrySet()) {
-			remapped.addOrMerge(remapped.fieldAccess, remapField(entry.getKey()), entry.getValue());
+			remapped.addOrMerge(remapped.fieldAccess, remapField(remapper, entry.getKey()), entry.getValue());
 		}
 
 		return remapped;
 	}
 
-	private EntryTriple remapMethod(EntryTriple entryTriple) {
+	private static EntryTriple remapMethod(Remapper remapper, EntryTriple entryTriple) {
 		return new EntryTriple(
-					remapper.map(entryTriple.getOwner()),
-					remapper.mapMethodName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
-					remapper.mapDesc(entryTriple.getDesc())
-				);
+				remapper.map(entryTriple.getOwner()),
+				remapper.mapMethodName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),
+				remapper.mapDesc(entryTriple.getDesc())
+		);
 	}
 
-	private EntryTriple remapField(EntryTriple entryTriple) {
+	private static EntryTriple remapField(Remapper remapper, EntryTriple entryTriple) {
 		return new EntryTriple(
 				remapper.map(entryTriple.getOwner()),
 				remapper.mapFieldName(entryTriple.getOwner(), entryTriple.getName(), entryTriple.getDesc()),

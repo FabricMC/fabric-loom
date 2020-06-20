@@ -45,7 +45,6 @@ import net.fabricmc.loom.util.GradleSupport;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -118,9 +117,7 @@ public class RemapJarTask extends Jar {
 			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
 		}
 
-		if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
-			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper());
-		}
+		extension.getJarProcessorManager().processRemapped(this, remapper.getRemapper(), output);
 
 		remapper.finish();
 

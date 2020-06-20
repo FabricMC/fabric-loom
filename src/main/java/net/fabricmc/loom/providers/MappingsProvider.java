@@ -44,7 +44,9 @@ import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
+import net.fabricmc.loom.api.processors.JarProcessorManager;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
@@ -53,9 +55,6 @@ import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
-import net.fabricmc.loom.processors.JarProcessorManager;
-import net.fabricmc.loom.processors.MinecraftProcessedProvider;
-import net.fabricmc.loom.util.DeletingFileVisitor;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -136,17 +135,12 @@ public class MappingsProvider extends DependencyProvider {
 
 		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
 
-		JarProcessorManager processorManager = new JarProcessorManager(getProject());
+		JarProcessorManager processorManager = new JarProcessorManager(getProject(), getExtension().processors, getExtension().getProjectPersistentCache().toPath().resolve("work"));
 		getExtension().setJarProcessorManager(processorManager);
 
-		if (processorManager.active()) {
-			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-			getProject().getLogger().lifecycle("Using project based jar storage");
-		} else {
-			mappedProvider = new MinecraftMappedProvider(getProject());
-		}
+		mappedProvider = new MinecraftMappedProvider(getProject(), processorManager);
 
-		mappedProvider.initFiles(minecraftProvider, this);
+		mappedProvider.initFiles(minecraftProvider);
 		mappedProvider.provide(dependency, postPopulationScheduler);
 	}
 
@@ -239,20 +233,20 @@ public class MappingsProvider extends DependencyProvider {
 		try {
 			Command command = new CommandMergeTinyV2();
 			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
-							yarnMappings.toAbsolutePath().toString(),
-							newMergedMappings.toAbsolutePath().toString(),
-							"intermediary", "official");
+					yarnMappings.toAbsolutePath().toString(),
+					newMergedMappings.toAbsolutePath().toString(),
+					"intermediary", "official");
 		} catch (Exception e) {
 			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
-							+ " with mappings from " + yarnMappings, e);
+					+ " with mappings from " + yarnMappings, e);
 		}
 	}
 
 	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
 		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
-						oldMappings.toAbsolutePath().toString(),
-						newMappings.toAbsolutePath().toString());
+				oldMappings.toAbsolutePath().toString(),
+				newMappings.toAbsolutePath().toString());
 	}
 
 	private void runCommand(Command command, String... args) {

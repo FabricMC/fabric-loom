@@ -126,6 +126,8 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
 		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("testCompileClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("testRuntimeClasspath", Constants.MINECRAFT_NAMED);
 
 		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
 

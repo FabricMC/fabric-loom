@@ -1,0 +1,30 @@
+name: Run Tests
+on: [push, pull_request]
+jobs:
+  gradle:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-latest]
+        gradle-version: [4.9, 4.10.2, 5.6.4, 6.5]
+        java-version: [1.8, 11, 14]
+        exclude: # Dont run older gradle versions on newer java
+          - java-version: 14
+            gradle-version: 4.9
+          - java-version: 14
+            gradle-version: 4.10.2
+          - java-version: 14
+            gradle-version: 5.6.4
+          - java-version: 11
+            gradle-version: 4.9
+          - java-version: 11
+            gradle-version: 4.10.2
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java-version }}
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: ${{ matrix.gradle-version }}
+          arguments: build check test --stacktrace

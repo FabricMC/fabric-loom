@@ -4,6 +4,7 @@
 # Folders
 !/gradle
 !/src
+!/.github
 
 # Files
 !/.gitattributes
@@ -18,5 +19,4 @@
 !/README.md
 !/settings.gradle
 !/Jenkinsfile
-!/.travis.yml
 !/checkstyle.xml

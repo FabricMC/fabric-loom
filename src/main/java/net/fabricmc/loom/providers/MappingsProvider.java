@@ -135,7 +135,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
 
-		JarProcessorManager processorManager = new JarProcessorManager(getProject(), getExtension().processors, getExtension().getProjectPersistentCache().toPath().resolve("work"));
+		JarProcessorManager processorManager = new JarProcessorManager(getProject(), getExtension().jarProcessors, getExtension().getProjectPersistentCache().toPath().resolve("work"));
 		getExtension().setJarProcessorManager(processorManager);
 
 		mappedProvider = new MinecraftMappedProvider(getProject(), processorManager);

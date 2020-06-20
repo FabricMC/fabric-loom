@@ -32,6 +32,7 @@ import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.processors.aw.AccessWidenerJarProcessor;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.CleanEclipseRunsTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
@@ -127,6 +128,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		});
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		extension.addProcessor(new AccessWidenerJarProcessor());
 		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
 
 		project.afterEvaluate((p) -> {

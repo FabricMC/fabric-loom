@@ -38,12 +38,12 @@ import net.fabricmc.loom.task.RemapJarTask;
 public class JarProcessorManager {
 	private final Project project;
 	private final List<JarProcessor> processors;
-	private final Path work;
+	private final Path workingDirectory;
 
-	public JarProcessorManager(Project project, List<JarProcessor> processors, Path work) {
+	public JarProcessorManager(Project project, List<JarProcessor> processors, Path workingDirectory) {
 		this.project = project;
 		this.processors = processors;
-		this.work = work;
+		this.workingDirectory = workingDirectory;
 	}
 
 	public boolean process(Path input, Path output) throws IOException {
@@ -57,7 +57,7 @@ public class JarProcessorManager {
 
 			for (int processorCount = processors.size(), i = 0; i < processorCount; i++) {
 				project.getLogger().lifecycle(":processing mapped jar [" + (i + 1) + " of " + processorCount + "]");
-				Path out = work.resolve("work-" + i + ".jar");
+				Path out = workingDirectory.resolve("work-" + i + ".jar");
 				Files.deleteIfExists(out);
 
 				if (!processors.get(i).processInput(project, in, out)) {

@@ -35,9 +35,9 @@ import net.fabricmc.loom.task.RemapJarTask;
 public interface JarProcessor {
 	/**
 	 * Checks if the processed file is up to date.
-	 * @param project This project
+	 * @param project The project
 	 * @param path The jar which was processed last
-	 * @return Is this processor happy with this (potentially unprocessed) processed jar
+	 * @return Is this processor up to date with this (potentially unprocessed) jar
 	 */
 	boolean isUpToDate(Project project, Path path);
 

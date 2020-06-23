@@ -53,6 +53,7 @@ public class ModCompileRemapper {
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
+		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		final File modStore = extension.getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
@@ -90,6 +91,11 @@ public class ModCompileRemapper {
 				File sources = findSources(dependencies, artifact);
 
 				ModDependencyInfo info = new ModDependencyInfo(group, name, version, classifierSuffix, artifact.getFile(), sources, remappedConfig, remapData);
+
+				if (refreshDeps) {
+					info.forceRemap();
+				}
+
 				modDependencies.add(info);
 
 				String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
@@ -162,8 +168,9 @@ public class ModCompileRemapper {
 	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, String remappedFilename, File modStore) {
 		project.getLogger().info(":providing " + remappedLog + " sources");
 		File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
+		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
-		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified()) {
+		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified() || refreshDeps) {
 			try {
 				sourceRemapper.scheduleRemapSources(sources, remappedSources);
 

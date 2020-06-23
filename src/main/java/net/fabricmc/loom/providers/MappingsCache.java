@@ -62,4 +62,8 @@ public final class MappingsCache {
 			}
 		}
 	}
+
+	public void invalidate() {
+		mappingsCache.clear();
+	}
 }

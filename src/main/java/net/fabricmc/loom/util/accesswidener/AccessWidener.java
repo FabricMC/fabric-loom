@@ -76,7 +76,7 @@ public class AccessWidener {
 		Set<String> targets = new LinkedHashSet<>();
 
 		while ((line = reader.readLine()) != null) {
-			//Comment handling
+			// Comment handling
 			int commentPos = line.indexOf('#');
 
 			if (commentPos >= 0) {

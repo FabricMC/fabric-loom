@@ -56,13 +56,13 @@ public class ProgressLogger {
 		Class<?> progressLoggerFactoryClass = null;
 
 		try {
-			//Gradle 2.14 and higher
+			// Gradle 2.14 and higher
 			progressLoggerFactoryClass = Class.forName("org.gradle.internal.logging.progress.ProgressLoggerFactory");
 		} catch (ClassNotFoundException e) {
-			//prior to Gradle 2.14
+			// prior to Gradle 2.14
 			try {
 				progressLoggerFactoryClass = Class.forName("org.gradle.logging.ProgressLoggerFactory");
-			} catch (ClassNotFoundException e1) {
+			} catch (ClassNotFoundException ignored) {
 				// Unsupported Gradle version
 			}
 		}
@@ -75,7 +75,7 @@ public class ProgressLogger {
 			try {
 				return logger.getClass().getMethod(methodName, args);
 			} catch (NoSuchMethodException ignored) {
-				//Nope
+				// Nope
 			}
 		}
 
@@ -88,7 +88,7 @@ public class ProgressLogger {
 				method.setAccessible(true);
 				return method.invoke(logger, args);
 			} catch (IllegalAccessException | InvocationTargetException ignored) {
-				//Nope
+				// Nope
 			}
 		}
 

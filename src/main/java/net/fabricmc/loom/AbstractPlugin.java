@@ -155,7 +155,7 @@ public class AbstractPlugin implements Plugin<Project> {
 	/**
 	 * Permit to add a Maven repository to a target project.
 	 *
-	 * @param target The garget project
+	 * @param target The target project
 	 * @param name   The name of the repository
 	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
@@ -277,7 +277,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
 					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
 					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
-				} catch (UnknownTaskException e) {
+				} catch (UnknownTaskException ignored) {
 					// pass
 				}
 			} else {

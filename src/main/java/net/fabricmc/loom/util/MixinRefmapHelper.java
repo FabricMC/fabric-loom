@@ -112,7 +112,7 @@ public final class MixinRefmapHelper {
 					if (json != null && json.has("refmap")) {
 						mixinRefmapFilenames.add(json.get("refmap").getAsString());
 					}
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 					// ...
 				}
 			}

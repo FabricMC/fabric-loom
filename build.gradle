@@ -15,18 +15,18 @@ group = 'net.fabricmc'
 archivesBaseName = project.name
 def baseVersion = '0.4'
 
-def build = "local"
+def build = 'local'
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
-	build = "jenkins #${ENV.BUILD_NUMBER}"
-	version = baseVersion + "." + ENV.BUILD_NUMBER
+	build = 'jenkins #${ENV.BUILD_NUMBER}'
+	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + ".local"
+	version = baseVersion + '.local'
 }
 
 repositories {
 	maven {
-		name = "Fabric"
+		name = 'Fabric'
 		url = 'https://maven.fabricmc.net/'
 	}
 	mavenCentral()
@@ -62,18 +62,18 @@ dependencies {
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
 
 	// Kapt integration
-	compileOnly("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72")
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72')
 
 	// Testing
 	testImplementation(gradleTestKit())
-	testImplementation("org.spockframework:spock-core:1.3-groovy-2.4") {
+	testImplementation('org.spockframework:spock-core:1.3-groovy-2.4') {
 		exclude module: 'groovy-all'
 	}
 }
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': version + " Build(" + build + ")"
+		attributes 'Implementation-Version': version + ' Build(' + build + ')'
 	}
 }
 
@@ -94,7 +94,7 @@ license {
 }
 
 checkstyle {
-	configFile = file("checkstyle.xml")
+	configFile = file('checkstyle.xml')
 	toolVersion = '8.25'
 }
 
@@ -105,8 +105,8 @@ checkstyleMain {
 gradlePlugin {
 	plugins {
 		fabricLoom {
-			id = "fabric-loom"
-			implementationClass = "net.fabricmc.loom.LoomGradlePlugin"
+			id = 'fabric-loom'
+			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 	}
 }
@@ -122,48 +122,48 @@ publishing {
 			artifactId project.archivesBaseName
 			version project.version
 
-			from components["java"]
+			from components['java']
 
 			artifact sourcesJar
 			artifact javadocJar
 		}
 
-		//Also publish a snapshot so people can use the latest version if they wish
+		// Also publish a snapshot so people can use the latest version if they wish
 		snapshot(MavenPublication) { publication ->
 			groupId project.group
 			artifactId project.archivesBaseName
-			version baseVersion + "-SNAPSHOT"
+			version baseVersion + '-SNAPSHOT'
 
-			from components["java"]
+			from components['java']
 
 			artifact sourcesJar
 			artifact javadocJar
 		}
 
-		//Manually crate the plugin marker for snapshot versions
+		// Manually crate the plugin marker for snapshot versions
 		snapshotPlugin(MavenPublication) { publication ->
-			groupId "fabric-loom"
-			artifactId "fabric-loom.gradle.plugin"
-			version baseVersion + "-SNAPSHOT"
+			groupId 'fabric-loom'
+			artifactId 'fabric-loom.gradle.plugin'
+			version baseVersion + '-SNAPSHOT'
 
 			pom.withXml({
-				//Based of org.gradle.plugin.devel.plugins.MavenPluginPublishPlugin
+				// Based off org.gradle.plugin.devel.plugins.MavenPluginPublishPlugin
 				Element root = asElement()
 				Document document = root.getOwnerDocument()
-				Node dependencies = root.appendChild(document.createElement("dependencies"))
-				Node dependency = dependencies.appendChild(document.createElement("dependency"))
-				Node groupId = dependency.appendChild(document.createElement("groupId"))
-				groupId.setTextContent("net.fabricmc")
-				Node artifactId = dependency.appendChild(document.createElement("artifactId"))
-				artifactId.setTextContent("fabric-loom")
-				Node version = dependency.appendChild(document.createElement("version"))
-				version.setTextContent(baseVersion + "-SNAPSHOT")
+				Node dependencies = root.appendChild(document.createElement('dependencies'))
+				Node dependency = dependencies.appendChild(document.createElement('dependency'))
+				Node groupId = dependency.appendChild(document.createElement('groupId'))
+				groupId.setTextContent('net.fabricmc')
+				Node artifactId = dependency.appendChild(document.createElement('artifactId'))
+				artifactId.setTextContent('fabric-loom')
+				Node version = dependency.appendChild(document.createElement('version'))
+				version.setTextContent(baseVersion + '-SNAPSHOT')
 			})
 		}
 	}
 	repositories {
 		maven {
-			url "http://mavenupload.modmuss50.me/"
+			url 'http://mavenupload.modmuss50.me/'
 			if (project.hasProperty('mavenPass')) {
 				credentials {
 					username 'buildslave'

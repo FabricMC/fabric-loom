@@ -146,7 +146,10 @@ public class ModProcessor {
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
-					project.getLogger().info("Adding " + inputFile + " onto the remap classpath");
+					if (extension.isVerbose()) {
+						project.getLogger().info("Adding " + inputFile + " onto the remap classpath");
+					}
+
 					remapper.readClassPathAsync(inputFile.toPath());
 				}
 			}
@@ -154,7 +157,11 @@ public class ModProcessor {
 
 		for (ModDependencyInfo info : remapList) {
 			InputTag tag = remapper.createInputTag();
-			project.getLogger().info("Adding " + info.getInputFile() + " as a remap input");
+
+			if (extension.isVerbose()) {
+				project.getLogger().info("Adding " + info.getInputFile() + " as a remap input");
+			}
+
 			remapper.readInputsAsync(tag, info.getInputFile().toPath());
 			tagMap.put(info, tag);
 		}

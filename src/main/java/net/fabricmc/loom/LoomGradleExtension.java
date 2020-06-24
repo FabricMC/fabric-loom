@@ -58,6 +58,7 @@ public class LoomGradleExtension {
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
 	public boolean autoGenIDERuns = true;
+	public boolean verbose = true;
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
@@ -66,7 +67,7 @@ public class LoomGradleExtension {
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 
-	//Not to be set in the build.gradle
+	// Not to be set in the build.gradle
 	private Project project;
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
@@ -311,12 +312,20 @@ public class LoomGradleExtension {
 		this.dependencyManager = dependencyManager;
 	}
 
+	public boolean isVerbose() {
+		return this.verbose;
+	}
+
 	public JarProcessorManager getJarProcessorManager() {
 		return jarProcessorManager;
 	}
 
 	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
 		this.jarProcessorManager = jarProcessorManager;
+	}
+
+	public void setVerbose(boolean verbose) {
+		this.verbose = verbose;
 	}
 
 	public String getRefmapName() {

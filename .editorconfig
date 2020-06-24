@@ -1,5 +1,2 @@
-[*.kt]
-indent_style = tab
-
-[*.gradle]
+[*.{gradle,java}]
 indent_style = tab

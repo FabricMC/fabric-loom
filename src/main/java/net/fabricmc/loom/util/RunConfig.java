@@ -167,7 +167,7 @@ public class RunConfig {
 		return ideaServer;
 	}
 
-	//This can be removed at somepoint, its not ideal but its the best solution I could thing of
+	// This can be removed at somepoint, its not ideal but its the best solution I could thing of
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"));

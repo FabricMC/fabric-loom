@@ -58,7 +58,6 @@ public class LoomGradleExtension {
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
 	public boolean autoGenIDERuns = true;
-	public boolean verbose = true;
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
@@ -312,20 +311,12 @@ public class LoomGradleExtension {
 		this.dependencyManager = dependencyManager;
 	}
 
-	public boolean isVerbose() {
-		return this.verbose;
-	}
-
 	public JarProcessorManager getJarProcessorManager() {
 		return jarProcessorManager;
 	}
 
 	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
 		this.jarProcessorManager = jarProcessorManager;
-	}
-
-	public void setVerbose(boolean verbose) {
-		this.verbose = verbose;
 	}
 
 	public String getRefmapName() {
@@ -344,7 +335,7 @@ public class LoomGradleExtension {
 
 	// Ideally this should use maven, but this is a lot easier
 	public Function<String, String> getIntermediaryUrl() {
-		//Done like this to work around this possibly not being a java string...
+		// Done like this to work around this possibly not being a java string...
 		return s -> intermediaryUrl.apply(s).toString();
 	}
 }

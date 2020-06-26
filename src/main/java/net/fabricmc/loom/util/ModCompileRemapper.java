@@ -166,11 +166,7 @@ public class ModCompileRemapper {
 	}
 
 	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, String remappedFilename, File modStore) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-
-		if (extension.isVerbose()) {
-			project.getLogger().info(":providing " + remappedLog + " sources");
-		}
+		project.getLogger().debug(":providing " + remappedLog + " sources");
 
 		File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
 		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();

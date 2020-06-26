@@ -88,7 +88,7 @@ public class ModProcessor {
 	}
 
 	private static void stripNestedJars(File file) {
-		//Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
+		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
 		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) throws IOException {
@@ -146,9 +146,7 @@ public class ModProcessor {
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
-					if (extension.isVerbose()) {
-						project.getLogger().info("Adding " + inputFile + " onto the remap classpath");
-					}
+					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 
 					remapper.readClassPathAsync(inputFile.toPath());
 				}
@@ -158,9 +156,7 @@ public class ModProcessor {
 		for (ModDependencyInfo info : remapList) {
 			InputTag tag = remapper.createInputTag();
 
-			if (extension.isVerbose()) {
-				project.getLogger().info("Adding " + info.getInputFile() + " as a remap input");
-			}
+			project.getLogger().debug("Adding " + info.getInputFile() + " as a remap input");
 
 			remapper.readInputsAsync(tag, info.getInputFile().toPath());
 			tagMap.put(info, tag);

@@ -91,7 +91,7 @@ public final class MixinRefmapHelper {
 							}
 						}
 					}
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 					// ...
 				}
 			}

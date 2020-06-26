@@ -92,7 +92,7 @@ public class ThreadIDFFLogger extends IFernflowerLogger {
 
 	@Override
 	public void startMethod(String methodName) {
-		//No need to print out methods
+		// No need to print out methods
 	}
 
 	@Override

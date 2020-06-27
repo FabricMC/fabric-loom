@@ -28,6 +28,7 @@ import java.io.File;
 
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -37,10 +38,34 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
 	private Object output;
 	private String direction = "intermediary";
+	private SourceRemapper sourceRemapper = null;
 
 	@TaskAction
 	public void remap() throws Exception {
-		SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
+		if (sourceRemapper == null) {
+			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
+		} else {
+			sourceRemapper.scheduleRemapSources(getInput(), getOutput());
+		}
+	}
+
+	public String getDirection() {
+		return direction;
+	}
+
+	public RemapSourcesJarTask setDirection(String direction) {
+		this.direction = direction;
+		return this;
+	}
+
+	@Internal
+	public SourceRemapper getSourceRemapper() {
+		return sourceRemapper;
+	}
+
+	public RemapSourcesJarTask setSourceRemapper(SourceRemapper sourceRemapper) {
+		this.sourceRemapper = sourceRemapper;
+		return this;
 	}
 
 	@InputFile

@@ -120,6 +120,10 @@ public class MinecraftProvider extends DependencyProvider {
 	private void downloadMcJson(boolean offline) throws IOException {
 		File manifests = new File(getExtension().getUserCache(), "version_manifest.json");
 
+		if (getExtension().isShareCaches() && !getExtension().isRootProject() && manifests.exists() && !isRefreshDeps()) {
+			return;
+		}
+
 		if (offline) {
 			if (manifests.exists()) {
 				//If there is the manifests already we'll presume that's good enough
@@ -171,6 +175,10 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
+		if (getExtension().isShareCaches() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
+			return;
+		}
+
 		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), minecraftClientJar, logger);
 		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), minecraftServerJar, logger);
 	}

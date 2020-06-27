@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
@@ -38,6 +39,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -46,6 +48,8 @@ import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.util.JarRemapper;
+import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -54,6 +58,7 @@ public class RemapJarTask extends Jar {
 	private RegularFileProperty input;
 	private Property<Boolean> addNestedDependencies;
 	private Property<Boolean> remapAccessWidener;
+	public JarRemapper jarRemapper;
 
 	public RemapJarTask() {
 		super();
@@ -66,6 +71,14 @@ public class RemapJarTask extends Jar {
 
 	@TaskAction
 	public void doTask() throws Throwable {
+		if (jarRemapper == null) {
+			doSingleRemap();
+		} else {
+			scheduleRemap();
+		}
+	}
+
+	public void doSingleRemap() throws Throwable {
 		Project project = getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Path input = this.getInput().getAsFile().get().toPath();
@@ -148,6 +161,81 @@ public class RemapJarTask extends Jar {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}*/
+	}
+
+	public void scheduleRemap() throws Throwable {
+		Project project = getProject();
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		Path input = this.getInput().getAsFile().get().toPath();
+		Path output = this.getArchivePath().toPath();
+
+		if (!Files.exists(input)) {
+			throw new FileNotFoundException(input.toString());
+		}
+
+		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+
+		String fromM = "named";
+		String toM = "intermediary";
+
+		if (extension.isRootProject()) {
+			Set<File> classpathFiles = new LinkedHashSet<>(
+					project.getConfigurations().getByName("compileClasspath").getFiles()
+			);
+
+			Path[] classpath = classpathFiles.stream()
+					.map(File::toPath)
+					.filter(Files::exists)
+					.toArray(Path[]::new);
+
+			jarRemapper.addToClasspath(classpath);
+
+			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+		}
+
+		File mixinMapFile = mappingsProvider.mappingsMixinExport;
+		Path mixinMapPath = mixinMapFile.toPath();
+
+		if (mixinMapFile.exists()) {
+			jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+		}
+
+		jarRemapper.scheduleRemap(input, output)
+				.supplyAccessWidener((remapData, remapper) -> {
+					if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
+						AccessWidenerJarProcessor accessWidenerJarProcessor = extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class);
+						byte[] data;
+
+						try {
+							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper);
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to remap access widener");
+						}
+
+						return Pair.of(accessWidenerJarProcessor.getAccessWidenerPath(remapData.output), data);
+					}
+
+					return null;
+				})
+				.complete((data, accessWidener) -> {
+					if (!Files.exists(output)) {
+						throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
+					}
+
+					if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), output)) {
+						project.getLogger().debug("Transformed mixin reference maps in output JAR!");
+					}
+
+					if (getAddNestedDependencies().getOrElse(false)) {
+						if (NestedJars.addNestedJars(project, output)) {
+							project.getLogger().debug("Added nested jar paths to mod json");
+						}
+					}
+
+					if (accessWidener != null) {
+						ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
+					}
+				});
 	}
 
 	@InputFile

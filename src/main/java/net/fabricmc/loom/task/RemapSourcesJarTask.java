@@ -49,15 +49,6 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 		}
 	}
 
-	public String getDirection() {
-		return direction;
-	}
-
-	public RemapSourcesJarTask setDirection(String direction) {
-		this.direction = direction;
-		return this;
-	}
-
 	@Internal
 	public SourceRemapper getSourceRemapper() {
 		return sourceRemapper;

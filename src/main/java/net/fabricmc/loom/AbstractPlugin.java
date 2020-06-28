@@ -53,10 +53,10 @@ import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.MappingsCache;
+import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.task.shared.RemapAllJarsTask;
-import net.fabricmc.loom.task.shared.RemapAllSourcesTask;
+import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 import net.fabricmc.loom.util.LoomDependencyManager;
@@ -292,7 +292,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 						parentTask = rootProject.getTasks().getByName("remapAllSources");
 
-						rootProject.getTasks().register("remapAllJars", RemapAllJarsTask.class, task -> {
+						rootProject.getTasks().register("remapAllJars", AbstractLoomTask.class, task -> {
 							task.doLast(t -> {
 								try {
 									jarRemapper.remap();

@@ -37,8 +37,6 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.JavaExec;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.RunConfig;
 
 public abstract class AbstractRunTask extends JavaExec {
@@ -58,22 +56,15 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo minecraftVersionInfo = extension.getMinecraftProvider().getVersionInfo();
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		List<String> libs = new ArrayList<>();
-
-		for (File file : getProject().getConfigurations().getByName("runtimeClasspath").getFiles()) {
-			libs.add(file.getAbsolutePath());
-		}
+		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
 
 		for (Path file : extension.getUnmappedMods()) {
 			if (Files.isRegularFile(file)) {
-				libs.add(file.toFile().getAbsolutePath());
+				classpath(file);
 			}
 		}
 
-		classpath(libs);
 		List<String> argsSplit = new ArrayList<>();
 		String[] args = config.programArgs.split(" ");
 		int partPos = -1;
@@ -136,7 +127,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			config = configProvider.apply(getProject());
 		}
 
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		List<String> superArgs = super.getJvmArgs();
 		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
 		args.addAll(Arrays.asList(config.vmArgs.split(" ")));

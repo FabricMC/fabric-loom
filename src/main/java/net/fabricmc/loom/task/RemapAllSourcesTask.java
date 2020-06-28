@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import org.gradle.api.tasks.Internal;
 
-import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapAllSourcesTask extends AbstractLoomTask {

@@ -165,9 +165,11 @@ public class SourceRemapper {
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
 			Mercury m = createMercuryWithClassPath(project, toNamed);
 
-			for (Path file : extension.getUnmappedMods()) {
-				if (Files.isRegularFile(file)) {
-					m.getClassPath().add(file);
+			for (File file : extension.getUnmappedModCollection()) {
+				Path path = file.toPath();
+
+				if (Files.isRegularFile(path)) {
+					m.getClassPath().add(path);
 				}
 			}
 

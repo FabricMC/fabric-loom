@@ -28,12 +28,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -43,6 +43,7 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -62,12 +63,12 @@ public class LoomGradleExtension {
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 
-	private List<Path> unmappedModsBuilt = new ArrayList<>();
+	private final ConfigurableFileCollection unmappedMods;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 
 	//Not to be set in the build.gradle
-	private Project project;
+	private final Project project;
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
@@ -92,14 +93,30 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
+		this.unmappedMods = project.files();
 	}
 
+	/**
+	 * @see ConfigurableFileCollection#from(Object...)
+	 * @deprecated use {@link #getUnmappedModCollection()}{@code .from()} instead
+	 */
+	@Deprecated
 	public void addUnmappedMod(Path file) {
-		unmappedModsBuilt.add(file);
+		getUnmappedModCollection().from(file);
 	}
 
+	/**
+	 * @deprecated use {@link #getUnmappedModCollection()} instead
+	 */
+	@Deprecated
 	public List<Path> getUnmappedMods() {
-		return Collections.unmodifiableList(unmappedModsBuilt);
+		return unmappedMods.getFiles().stream()
+			.map(File::toPath)
+			.collect(Collectors.toList());
+	}
+
+	public ConfigurableFileCollection getUnmappedModCollection() {
+		return unmappedMods;
 	}
 
 	public void setInstallerJson(JsonObject object) {

@@ -25,8 +25,6 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,22 +45,15 @@ public abstract class AbstractRunTask extends JavaExec {
 		super();
 		setGroup("fabric");
 		this.configProvider = config;
+
+		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
+		classpath(this.getProject().getExtensions().getByType(LoomGradleExtension.class).getUnmappedModCollection());
 	}
 
 	@Override
 	public void exec() {
 		if (config == null) {
 			config = configProvider.apply(getProject());
-		}
-
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-
-		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
-
-		for (Path file : extension.getUnmappedMods()) {
-			if (Files.isRegularFile(file)) {
-				classpath(file);
-			}
 		}
 
 		List<String> argsSplit = new ArrayList<>();
@@ -94,6 +85,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		args(argsSplit);
+		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
 		setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
 
 		super.exec();

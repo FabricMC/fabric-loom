@@ -49,12 +49,14 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
+import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.FabricApiExtension;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
@@ -63,8 +65,6 @@ import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
-import net.fabricmc.loom.util.FabricApiExtension;
-import net.fabricmc.loom.util.DownloadUtil;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -247,7 +247,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapJarTask.getInput().set(jarTask.getArchivePath());
 				}
 
-				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+				extension.getUnmappedModCollection().from(jarTask);
 				remapJarTask.getAddNestedDependencies().set(true);
 				remapJarTask.getRemapAccessWidener().set(true);
 
@@ -282,7 +282,7 @@ public class AbstractPlugin implements Plugin<Project> {
 				}
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+				extension.getUnmappedModCollection().from(jarTask);
 			}
 
 			project.getLogger().lifecycle("Configuring compiler arguments for Java");

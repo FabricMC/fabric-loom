@@ -53,7 +53,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
 		Project project = this.getProject();
 
-		//Only generate the idea runs on the root project
+		// Only generate the idea runs on the root project
 		if (!AbstractPlugin.isRootProject(project)) {
 			return;
 		}
@@ -79,7 +79,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 		}
 
 		if (runManager == null) {
-			throw new RuntimeException("Failed to generate intellij run configurations (runManager was not found)");
+			throw new RuntimeException("Failed to generate IntelliJ run configurations (runManager was not found)");
 		}
 
 		runManager.appendChild(RunConfig.clientRunConfig(project).genRuns(runManager));

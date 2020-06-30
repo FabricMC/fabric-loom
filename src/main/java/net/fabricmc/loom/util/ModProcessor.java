@@ -91,7 +91,7 @@ public class ModProcessor {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
 		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
-			protected String transform(ZipEntry zipEntry, String input) throws IOException {
+			protected String transform(ZipEntry zipEntry, String input) {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
 				json.remove("jars");
 				return GSON.toJson(json);
@@ -194,7 +194,6 @@ public class ModProcessor {
 			String launchMethod = extension.getLoaderLaunchMethod();
 
 			String jsonStr;
-			int priority = 0;
 
 			try (JarFile jarFile = new JarFile(file)) {
 				ZipEntry entry = null;
@@ -209,7 +208,6 @@ public class ModProcessor {
 
 				if (entry == null) {
 					entry = jarFile.getEntry("fabric-installer.json");
-					priority++;
 
 					if (entry == null) {
 						return null;
@@ -221,8 +219,7 @@ public class ModProcessor {
 				}
 			}
 
-			JsonObject jsonObject = GSON.fromJson(jsonStr, JsonObject.class);
-			return jsonObject;
+			return GSON.fromJson(jsonStr, JsonObject.class);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

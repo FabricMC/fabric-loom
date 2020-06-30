@@ -39,7 +39,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
 
-//Recommended vscode plugins:
+// Recommended vscode plugins:
 // https://marketplace.visualstudio.com/items?itemName=redhat.java
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-debug
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
@@ -89,6 +89,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static class VsCodeConfiguration {
 		public String type = "java";
 		public String name;

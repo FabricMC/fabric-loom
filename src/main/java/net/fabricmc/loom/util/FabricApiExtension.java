@@ -42,13 +42,13 @@ import org.w3c.dom.NodeList;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public class FabricApiExtension {
-	private Project project;
+	private final Project project;
 
 	public FabricApiExtension(Project project) {
 		this.project = project;
 	}
 
-	private static HashMap<String, Map<String, String>> moduleVersionCache = new HashMap<>();
+	private static final HashMap<String, Map<String, String>> moduleVersionCache = new HashMap<>();
 
 	public Dependency module(String moduleName, String fabricApiVersion) {
 		return project.getDependencies()

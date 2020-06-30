@@ -321,33 +321,31 @@ public class AbstractPlugin implements Plugin<Project> {
 					mavenPublish.publications((publications) -> {
 						for (Publication publication : publications) {
 							if (publication instanceof MavenPublication) {
-								((MavenPublication) publication).pom((pom) -> {
-									pom.withXml((xml) -> {
-										Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
-										Set<String> foundArtifacts = new HashSet<>();
+								((MavenPublication) publication).pom((pom) -> pom.withXml((xml) -> {
+									Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
+									Set<String> foundArtifacts = new HashSet<>();
 
-										GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
-											Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
-											Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
+									GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
+										Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
+										Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
 
-											if (groupId.isPresent() && artifactId.isPresent()) {
-												foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
-											}
-										});
-
-										for (Dependency dependency : compileModsConfig.getAllDependencies()) {
-											if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
-												continue;
-											}
-
-											Node depNode = dependencies.appendNode("dependency");
-											depNode.appendNode("groupId", dependency.getGroup());
-											depNode.appendNode("artifactId", dependency.getName());
-											depNode.appendNode("version", dependency.getVersion());
-											depNode.appendNode("scope", entry.getMavenScope());
+										if (groupId.isPresent() && artifactId.isPresent()) {
+											foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
 										}
 									});
-								});
+
+									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+										if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
+											continue;
+										}
+
+										Node depNode = dependencies.appendNode("dependency");
+										depNode.appendNode("groupId", dependency.getGroup());
+										depNode.appendNode("artifactId", dependency.getName());
+										depNode.appendNode("version", dependency.getVersion());
+										depNode.appendNode("scope", entry.getMavenScope());
+									}
+								}));
 							}
 						}
 					});

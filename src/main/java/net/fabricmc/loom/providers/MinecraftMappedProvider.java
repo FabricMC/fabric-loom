@@ -73,7 +73,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			try {
 				mapMinecraftJar();
 			} catch (Throwable t) {
-				//Cleanup some some things that may be in a bad state now
+				// Cleanup some some things that may be in a bad state now
 				minecraftMappedJar.delete();
 				minecraftIntermediaryJar.delete();
 				getExtension().getMappingsProvider().cleanFiles();

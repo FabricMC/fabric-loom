@@ -51,9 +51,9 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 public class RemapJarTask extends Jar {
-	private RegularFileProperty input;
-	private Property<Boolean> addNestedDependencies;
-	private Property<Boolean> remapAccessWidener;
+	private final RegularFileProperty input;
+	private final Property<Boolean> addNestedDependencies;
+	private final Property<Boolean> remapAccessWidener;
 
 	public RemapJarTask() {
 		super();

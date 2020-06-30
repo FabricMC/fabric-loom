@@ -83,7 +83,7 @@ public class ModCompileRemapper {
 
 				final String notation = group + ":" + name + ":" + version + classifierSuffix;
 
-				if (!isFabricMod(project, logger, artifact, notation)) {
+				if (!isFabricMod(logger, artifact, notation)) {
 					addToRegularCompile(project, regularConfig, notation);
 					continue;
 				}
@@ -122,7 +122,7 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
+	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact, String notation) {
 		File input = artifact.getFile();
 
 		try (ZipFile zipFile = new ZipFile(input)) {

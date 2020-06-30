@@ -169,7 +169,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 			return true;
 		}
 
-		return !Arrays.equals(inputHash, hash); //TODO how do we know if the current jar as the correct access applied? save the hash of the input?
+		return !Arrays.equals(inputHash, hash); // TODO how do we know if the current jar as the correct access applied? save the hash of the input?
 	}
 
 	private class AccessTransformer extends ClassVisitor {

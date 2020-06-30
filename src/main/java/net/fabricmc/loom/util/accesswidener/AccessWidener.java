@@ -44,7 +44,7 @@ public class AccessWidener {
 	public Map<String, Access> classAccess = new HashMap<>();
 	public Map<EntryTriple, Access> methodAccess = new HashMap<>();
 	public Map<EntryTriple, Access> fieldAccess = new HashMap<>();
-	private Set<String> classes = new LinkedHashSet<>();
+	private final Set<String> classes = new LinkedHashSet<>();
 
 	public void read(BufferedReader reader) throws IOException {
 		String headerStr = reader.readLine();
@@ -136,7 +136,7 @@ public class AccessWidener {
 		classes.addAll(parentClasses);
 	}
 
-	//Could possibly be cleaner but should do its job for now
+	// Could possibly be cleaner but should do its job for now
 	public void write(StringWriter writer) {
 		writer.write("accessWidener\tv1\t");
 		writer.write(namespace);
@@ -310,7 +310,7 @@ public class AccessWidener {
 
 	private static int makeProtected(int i) {
 		if ((i & Opcodes.ACC_PUBLIC) != 0) {
-			//Return i if public
+			// Return i if public
 			return i;
 		}
 

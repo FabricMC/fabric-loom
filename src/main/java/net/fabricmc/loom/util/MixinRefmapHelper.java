@@ -98,25 +98,4 @@ public final class MixinRefmapHelper {
 		});
 		return mixinFilename;
 	}
-
-	private static Set<String> findRefmaps(File output) {
-		// first, identify all of the mixin refmaps
-		Set<String> mixinRefmapFilenames = new HashSet<>();
-		// TODO: this is also a lovely hack
-		ZipUtil.iterate(output, (stream, entry) -> {
-			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
-				// JSON file in root directory
-				try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
-					JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
-
-					if (json != null && json.has("refmap")) {
-						mixinRefmapFilenames.add(json.get("refmap").getAsString());
-					}
-				} catch (Exception ignored) {
-					// ...
-				}
-			}
-		});
-		return mixinRefmapFilenames;
-	}
 }

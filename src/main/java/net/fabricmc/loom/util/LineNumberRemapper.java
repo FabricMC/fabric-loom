@@ -174,7 +174,7 @@ public class LineNumberRemapper {
 		private final String name;
 		private int maxLine;
 		private int maxLineDest;
-		private Map<Integer, Integer> lineMap = new HashMap<>();
+		private final Map<Integer, Integer> lineMap = new HashMap<>();
 
 		private RClass(String name) {
 			this.name = name;

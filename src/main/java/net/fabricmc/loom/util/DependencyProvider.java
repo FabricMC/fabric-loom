@@ -132,8 +132,6 @@ public abstract class DependencyProvider {
 			return sourceConfiguration;
 		}
 
-		// TODO: Can this be done with stable APIs only?
-		@SuppressWarnings("UnstableApiUsage")
 		public Set<File> resolve() {
 			return sourceConfiguration.files(dependency);
 		}

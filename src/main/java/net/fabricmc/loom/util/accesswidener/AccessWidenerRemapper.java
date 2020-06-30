@@ -42,7 +42,7 @@ public class AccessWidenerRemapper {
 	}
 
 	public AccessWidener remap() {
-		//Dont remap if we dont need to
+		// Dont remap if we dont need to
 		if (input.namespace.equals(to)) {
 			return input;
 		}

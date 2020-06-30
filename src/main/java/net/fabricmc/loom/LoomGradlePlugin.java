@@ -117,13 +117,12 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("runClient", RunClientTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft client.");
-			t.dependsOn("jar", "downloadAssets");
+			t.dependsOn("downloadAssets");
 			t.setGroup("fabric");
 		});
 
 		tasks.register("runServer", RunServerTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft server.");
-			t.dependsOn("jar");
 			t.setGroup("fabric");
 		});
 

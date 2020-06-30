@@ -66,7 +66,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("input merged jar not found");
 		}
 
-		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists()) {
+		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || isRefreshDeps()) {
 			if (minecraftMappedJar.exists()) {
 				minecraftMappedJar.delete();
 			}
@@ -138,7 +138,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	private void addDependencies() {
 		try {
-			if (useProjectMappedJar = jarProcessorManager.process(minecraftMappedJar.toPath(), projectMappedJar.toPath())) {
+			if (useProjectMappedJar = jarProcessorManager.process(minecraftMappedJar.toPath(), projectMappedJar.toPath()) || isRefreshDeps()) {
 				getProject().getLogger().lifecycle("Using project based jar storage");
 				getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 				getProject().getDependencies().add(Constants.MINECRAFT_NAMED, getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));

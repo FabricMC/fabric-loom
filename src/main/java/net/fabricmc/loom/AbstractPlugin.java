@@ -49,11 +49,14 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.LaunchProvider;
+import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.FabricApiExtension;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
@@ -62,7 +65,6 @@ import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
-import net.fabricmc.loom.util.FabricApiExtension;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -80,6 +82,14 @@ public class AbstractPlugin implements Plugin<Project> {
 		this.project = target;
 
 		project.getLogger().lifecycle("Fabric Loom: " + AbstractPlugin.class.getPackage().getImplementationVersion());
+
+		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
+		DownloadUtil.refreshDeps = refreshDeps;
+
+		if (refreshDeps) {
+			MappingsCache.INSTANCE.invalidate();
+			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
+		}
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));
@@ -135,31 +145,7 @@ public class AbstractPlugin implements Plugin<Project> {
 
 		configureIDEs();
 		configureCompile();
-		configureMixin();
 		configureMaven();
-	}
-
-	private void configureMixin() {
-		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
-			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
-		}
-
-		// Full plugin and mappings information is only available after evaluation
-		project.afterEvaluate((project) -> {
-			project.getLogger().lifecycle("Configuring compiler arguments for Java");
-			new JavaApInvoker(project).configureMixin();
-
-			if (project.getPluginManager().hasPlugin("scala")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Scala");
-				new ScalaApInvoker(project).configureMixin();
-			}
-
-			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Kapt plugin");
-				new KaptApInvoker(project).configureMixin();
-			}
-		});
 	}
 
 	public Project getProject() {
@@ -261,7 +247,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapJarTask.getInput().set(jarTask.getArchivePath());
 				}
 
-				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+				extension.getUnmappedModCollection().from(jarTask);
 				remapJarTask.getAddNestedDependencies().set(true);
 				remapJarTask.getRemapAccessWidener().set(true);
 
@@ -296,9 +282,27 @@ public class AbstractPlugin implements Plugin<Project> {
 				}
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				extension.addUnmappedMod(jarTask.getArchivePath().toPath());
+				extension.getUnmappedModCollection().from(jarTask);
+			}
+
+			project.getLogger().lifecycle("Configuring compiler arguments for Java");
+			new JavaApInvoker(project).configureMixin();
+
+			if (project.getPluginManager().hasPlugin("scala")) {
+				project.getLogger().lifecycle("Configuring compiler arguments for Scala");
+				new ScalaApInvoker(project).configureMixin();
+			}
+
+			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+				project.getLogger().lifecycle("Configuring compiler arguments for Kapt plugin");
+				new KaptApInvoker(project).configureMixin();
 			}
 		});
+
+		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
+			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
+		}
 	}
 
 	protected void configureMaven() {

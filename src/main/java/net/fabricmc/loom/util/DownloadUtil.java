@@ -36,6 +36,8 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 public class DownloadUtil {
+	public static boolean refreshDeps = false;
+
 	/**
 	 * Download from the given {@link URL} to the given {@link File} so long as there are differences between them.
 	 *
@@ -59,6 +61,11 @@ public class DownloadUtil {
 	 */
 	public static void downloadIfChanged(URL from, File to, Logger logger, boolean quiet) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
+
+		if (refreshDeps) {
+			getETagFile(to).delete();
+			to.delete();
+		}
 
 		//If the output already exists we'll use it's last modified time
 		if (to.exists()) {

@@ -60,10 +60,6 @@ public class Checksum {
 	}
 
 	public static byte[] sha256(File file) {
-		if (file == null) {
-			return null;
-		}
-
 		try {
 			HashCode hash = Files.asByteSource(file).hash(Hashing.sha256());
 			return hash.asBytes();

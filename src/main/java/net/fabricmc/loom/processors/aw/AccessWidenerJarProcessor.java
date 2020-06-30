@@ -61,7 +61,9 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	@Override
 	public boolean isUpToDate(Project project, Path path) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		return Arrays.equals(ZipUtil.unpackEntry(path.toFile(), "aw.sha256"), Checksum.sha256(extension.accessWidener));
+		File projectAccessWidener = extension.accessWidener;
+		byte[] bytes = ZipUtil.unpackEntry(path.toFile(), "aw.sha256");
+		return (projectAccessWidener == null) == (bytes == null) || Arrays.equals(bytes, Checksum.sha256(projectAccessWidener));
 	}
 
 	@Override

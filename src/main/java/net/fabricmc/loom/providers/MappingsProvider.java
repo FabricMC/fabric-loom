@@ -157,7 +157,7 @@ public class MappingsProvider extends DependencyProvider {
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
 		project.getLogger().lifecycle(":extracting " + yarnJar.getFileName());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
 		}
 
@@ -193,7 +193,7 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private boolean doesJarContainV2Mappings(Path path) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(path, null)) {
+		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
 			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
 				TinyV2Factory.readMetadata(reader);
 				return true;
@@ -211,14 +211,14 @@ public class MappingsProvider extends DependencyProvider {
 		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary.tiny");
 		project.getLogger().info(":extracting " + unmergedIntermediaryJar.getFileName());
 
-		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, null)) {
+		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, (ClassLoader) null)) {
 			extractMappings(unmergedIntermediaryFs, unmergedIntermediary);
 		}
 
 		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn.tiny");
 		project.getLogger().info(":extracting " + unmergedYarnJar.getFileName());
 
-		try (FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, null)) {
+		try (FileSystem unmergedYarnJarFs = FileSystems.newFileSystem(unmergedYarnJar, (ClassLoader) null)) {
 			extractMappings(unmergedYarnJarFs, unmergedYarn);
 		}
 

@@ -10,7 +10,7 @@
     <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.buildship.core.classpathprovider"/>
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="%MAIN_CLASS%"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="%PROGRAM_ARGS%"/>
-    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="%MODULE%"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="%ECLIPSE_PROJECT%"/>
     <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="%VM_ARGS%"/>
     <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${project_loc:%MODULE%}/run"/>
 </launchConfiguration>

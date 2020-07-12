@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util;
 
+import static net.fabricmc.loom.AbstractPlugin.isRootProject;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -107,6 +109,7 @@ public class RunConfig {
 	}
 
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
+		runConfig.configName += isRootProject(project) ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = getIdeaModuleName(project);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
@@ -160,8 +163,8 @@ public class RunConfig {
 		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
 
 		RunConfig ideaClient = new RunConfig();
-		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
+		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
 
@@ -172,8 +175,8 @@ public class RunConfig {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		RunConfig ideaServer = new RunConfig();
-		populate(project, extension, ideaServer, "server");
 		ideaServer.configName = "Minecraft Server";
+		populate(project, extension, ideaServer, "server");
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
 
 		return ideaServer;

@@ -223,7 +223,7 @@ public class LoomGradleExtension {
 	}
 
 	public File getDevLauncherConfig() {
-		return new File(getRootProjectPersistentCache(), "launch.cfg");
+		return new File(getProjectPersistentCache(), "launch.cfg");
 	}
 
 	@Nullable

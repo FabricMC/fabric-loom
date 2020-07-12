@@ -230,7 +230,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
 
-			if (extension.autoGenIDERuns && isRootProject(project1)) {
+			if (extension.autoGenIDERuns) {
 				SetupIntelijRunConfigs.setup(project1);
 			}
 

@@ -30,6 +30,7 @@ repositories {
 		url = 'https://maven.fabricmc.net/'
 	}
 	mavenCentral()
+	mavenLocal()
 }
 
 dependencies {
@@ -57,6 +58,7 @@ dependencies {
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.13')
 	implementation ('org.jetbrains:intellij-fernflower:1.2.1.16')
+	implementation ('org.benf:cfr:0.151-SNAPSHOT')
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')

@@ -24,7 +24,9 @@
 
 package net.fabricmc.loom.decompilers.cfr;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,12 +40,18 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 import org.benf.cfr.reader.api.CfrDriver;
+import org.benf.cfr.reader.api.ClassFileSource;
 import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.benf.cfr.reader.api.SinkReturns;
+import org.benf.cfr.reader.bytecode.analysis.parse.utils.Pair;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
@@ -73,12 +81,40 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		Set<String> addedDirectories = new HashSet<>();
 
-		try (OutputStream fos = Files.newOutputStream(sourcesDestination); JarOutputStream jos = new JarOutputStream(fos, manifest)) {
+		try (OutputStream fos = Files.newOutputStream(sourcesDestination); JarOutputStream jos = new JarOutputStream(fos, manifest); ZipFile inputZip = new ZipFile(compiledJar.toFile())) {
 			CfrDriver driver = new CfrDriver.Builder()
 					.withOptions(ImmutableMap.of(
 							"renameillegalidents", "true",
 							"trackbytecodeloc", "true"
 					))
+					.withClassFileSource(new ClassFileSource() {
+						@Override
+						public void informAnalysisRelativePathDetail(String usePath, String classFilePath) {
+						}
+
+						@Override
+						public Collection<String> addJar(String jarPath) {
+							return null;
+						}
+
+						@Override
+						public String getPossiblyRenamedPath(String path) {
+							return path;
+						}
+
+						@Override
+						public synchronized Pair<byte[], String> getClassFileContent(String path) throws IOException {
+							ZipEntry zipEntry = inputZip.getEntry(path);
+
+							if (zipEntry == null) {
+								throw new FileNotFoundException(path);
+							}
+
+							try (InputStream inputStream = inputZip.getInputStream(zipEntry)) {
+								return Pair.make(ByteStreams.toByteArray(inputStream), path);
+							}
+						}
+					})
 					.withOutputSink(new OutputSinkFactory() {
 						@Override
 						public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> available) {
@@ -104,6 +140,8 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 									return (Sink<T>) decompiledSink(jos, addedDirectories);
 								case LINENUMBER:
 									return (Sink<T>) lineNumberMappingsSink();
+								case EXCEPTION:
+									return (e) -> project.getLogger().error((String) e);
 							}
 
 							return null;
@@ -111,7 +149,12 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 					})
 					.build();
 
-			driver.analyse(Collections.singletonList(compiledJar.toAbsolutePath().toString()));
+			List<String> classes = Collections.list(inputZip.entries()).stream()
+									.map(ZipEntry::getName)
+									.filter(input -> input.endsWith(".class"))
+									.collect(Collectors.toList());
+
+			driver.analyse(classes);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to decompile", e);
 		}

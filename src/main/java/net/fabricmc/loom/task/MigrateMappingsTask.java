@@ -41,7 +41,9 @@ import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.GradleException;
 import org.gradle.api.IllegalDependencyNotation;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -158,6 +160,14 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 
 		project.getLogger().lifecycle(":remapping");
 		Mercury mercury = SourceRemapper.createMercuryWithClassPath(project, false);
+
+		final JavaPluginConvention convention = project.getConvention().findPlugin(JavaPluginConvention.class);
+		final JavaVersion javaVersion = convention != null
+				?
+				convention.getSourceCompatibility()
+				:
+				JavaVersion.current();
+		mercury.setSourceCompatibility(javaVersion.toString());
 
 		mercury.getClassPath().add(minecraftMappedProvider.getMappedJar().toPath());
 		mercury.getClassPath().add(minecraftMappedProvider.getIntermediaryJar().toPath());

@@ -68,6 +68,11 @@ public class MinecraftProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		minecraftVersion = dependency.getDependency().getVersion();
+
+		if (minecraftVersion == null) {
+			throw new IllegalArgumentException("The version provided to the 'minecraft' dependency is not valid.");
+		}
+
 		boolean offline = getProject().getGradle().getStartParameter().isOffline();
 
 		initFiles();

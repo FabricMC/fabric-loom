@@ -34,8 +34,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -53,10 +61,13 @@ import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.benf.cfr.reader.api.SinkReturns;
 import org.benf.cfr.reader.bytecode.analysis.parse.utils.Pair;
 import org.gradle.api.Project;
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.internal.logging.progress.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLoggerFactory;
+import org.gradle.internal.service.ServiceRegistry;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.util.progress.ProgressLogger;
 
 public class FabricCFRDecompiler implements LoomDecompiler {
 	private final Project project;
@@ -72,10 +83,20 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		project.getLogger().lifecycle(sourcesDestination.toString());
+		// Setups the multi threaded logger, the thread id is used as the key to the ProgressLogger's
+		ServiceRegistry registry = ((ProjectInternal) project).getServices();
+		ProgressLoggerFactory factory = registry.get(ProgressLoggerFactory.class);
+		ProgressLogger progressGroup = factory.newOperation(getClass()).setDescription("Decompile");
 
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, getClass().getName());
-		progressLogger.start("Decompiling using CFR", "cfr");
+		Map<Long, ProgressLogger> loggerMap = new ConcurrentHashMap<>();
+		Function<Long, ProgressLogger> createLogger = (threadId) -> {
+			ProgressLogger pl = factory.newOperation(getClass(), progressGroup);
+			pl.setDescription("decompile worker");
+			pl.started();
+			return pl;
+		};
+
+		progressGroup.started();
 
 		Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -103,7 +124,7 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 						}
 
 						@Override
-						public synchronized Pair<byte[], String> getClassFileContent(String path) throws IOException {
+						public Pair<byte[], String> getClassFileContent(String path) throws IOException {
 							ZipEntry zipEntry = inputZip.getEntry(path);
 
 							if (zipEntry == null) {
@@ -135,7 +156,7 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 						public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
 							switch (sinkType) {
 								case PROGRESS:
-									return (p) -> progressLogger.progress((String) p);
+									return (p) -> project.getLogger().debug((String) p);
 								case JAVA:
 									return (Sink<T>) decompiledSink(jos, addedDirectories);
 								case LINENUMBER:
@@ -154,9 +175,23 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 									.filter(input -> input.endsWith(".class"))
 									.collect(Collectors.toList());
 
-			driver.analyse(classes);
-		} catch (IOException e) {
+			ExecutorService executorService = Executors.newFixedThreadPool(metaData.numberOfThreads);
+			List<Future<?>> futures = new LinkedList<>();
+
+			for (String clazz : classes) {
+				futures.add(executorService.submit(() -> {
+					loggerMap.computeIfAbsent(Thread.currentThread().getId(), createLogger).progress(clazz);
+					driver.analyse(Collections.singletonList(clazz));
+				}));
+			}
+
+			for (Future<?> future : futures) {
+				future.get();
+			}
+		} catch (IOException | InterruptedException | ExecutionException e) {
 			throw new RuntimeException("Failed to decompile", e);
+		} finally {
+			loggerMap.forEach((threadId, progressLogger) -> progressLogger.completed());
 		}
 	}
 
@@ -166,44 +201,49 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 			if (!filename.isEmpty()) filename += "/";
 			filename += decompiled.getClassName() + ".java";
 
-			String[] path = filename.split("/");
-			String pathPart = "";
+			byte[] data = decompiled.getJava().getBytes(Charsets.UTF_8);
 
-			for (int i = 0; i < path.length - 1; i++) {
-				pathPart += path[i] + "/";
+			writeToJar(filename, data, jos, addedDirectories);
+		};
+	}
 
-				if (addedDirectories.add(pathPart)) {
-					JarEntry entry = new JarEntry(pathPart);
-					entry.setTime(new Date().getTime());
+	// TODO move to task queue?
+	private static synchronized void writeToJar(String filename, byte[] data, JarOutputStream jos, Set<String> addedDirectories) {
+		String[] path = filename.split("/");
+		String pathPart = "";
 
-					try {
-						jos.putNextEntry(entry);
-						jos.closeEntry();
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
+		for (int i = 0; i < path.length - 1; i++) {
+			pathPart += path[i] + "/";
+
+			if (addedDirectories.add(pathPart)) {
+				JarEntry entry = new JarEntry(pathPart);
+				entry.setTime(new Date().getTime());
+
+				try {
+					jos.putNextEntry(entry);
+					jos.closeEntry();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
 			}
+		}
 
-			byte[] data = decompiled.getJava().getBytes(Charsets.UTF_8);
-			JarEntry entry = new JarEntry(filename);
-			entry.setTime(new Date().getTime());
-			entry.setSize(data.length);
+		JarEntry entry = new JarEntry(filename);
+		entry.setTime(new Date().getTime());
+		entry.setSize(data.length);
 
-			try {
-				jos.putNextEntry(entry);
-				jos.write(data);
-				jos.closeEntry();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		};
+		try {
+			jos.putNextEntry(entry);
+			jos.write(data);
+			jos.closeEntry();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static OutputSinkFactory.Sink<SinkReturns.LineNumberMapping_DO_NOT_USE> lineNumberMappingsSink() {
 		return lineNumberMappings -> {
-			System.out.println(lineNumberMappings);
-			System.out.println(lineNumberMappings.getMapping());
+			//TODO
 		};
 	}
 }

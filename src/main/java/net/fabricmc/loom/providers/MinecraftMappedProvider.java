@@ -24,8 +24,10 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +38,8 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.mapping.tree.TinyMappingFactory;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
@@ -118,8 +122,15 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
+		TinyTree annotationMappingsTree;
+
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(MinecraftMappedProvider.class.getClassLoader().getResourceAsStream("jsrToJetbrains.tiny")))) {
+			annotationMappingsTree = TinyMappingFactory.loadWithDetection(reader);
+		}
+
 		return TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
+				.withMappings(TinyRemapperMappingsHelper.create(annotationMappingsTree, "jsr", "jetbrains", false))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.build();

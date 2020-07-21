@@ -1,4 +1,0 @@
-tiny	2	0	jsr	jetbrains
-c	javax/annotation/Nullable	org/jetbrains/annotations/Nullable
-c	javax/annotation/Nonnull	org/jetbrains/annotations/NotNull
-c	javax/annotation/concurrent/Immutable	org/jetbrains/annotations/Unmodifiable

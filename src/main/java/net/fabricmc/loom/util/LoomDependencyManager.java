@@ -33,6 +33,8 @@ import java.util.Map;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
@@ -103,7 +105,20 @@ public class LoomDependencyManager {
 
 		for (ProviderList list : targetProviders) {
 			Configuration configuration = project.getConfigurations().getByName(list.key);
-			configuration.getDependencies().forEach(dependency -> {
+			DependencySet dependencies = configuration.getDependencies();
+
+			if (dependencies.isEmpty()) {
+				throw new IllegalArgumentException(String.format("No '%s' dependency was specified!", list.key));
+			}
+
+			if (dependencies.size() > 1) {
+				throw new IllegalArgumentException(String.format("Only one '%s' dependency should be specified, but %d were!",
+												list.key,
+												dependencies.size())
+				);
+			}
+
+			for (Dependency dependency : dependencies) {
 				for (DependencyProvider provider : list.providers) {
 					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
 
@@ -113,7 +128,7 @@ public class LoomDependencyManager {
 						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.getMessage(), e);
 					}
 				}
-			});
+			}
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);

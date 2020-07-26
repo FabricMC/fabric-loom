@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util;
 
+import static net.fabricmc.loom.AbstractPlugin.isRootProject;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,7 +55,8 @@ import net.fabricmc.loom.providers.MinecraftProvider;
 
 public class RunConfig {
 	public String configName;
-	public String projectName;
+	public String eclipseProjectName;
+	public String ideaModuleName;
 	public String mainClass;
 	public String runDir;
 	public String vmArgs;
@@ -63,7 +66,7 @@ public class RunConfig {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
 		root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
 
-		this.addXml(root, "module", ImmutableMap.of("name", projectName));
+		this.addXml(root, "module", ImmutableMap.of("name", ideaModuleName));
 		this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
 		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
 
@@ -95,8 +98,20 @@ public class RunConfig {
 		return e;
 	}
 
+	private static String getIdeaModuleName(Project project) {
+		String module = project.getName() + ".main";
+
+		while ((project = project.getParent()) != null) {
+			module = project.getName() + "." + module;
+		}
+
+		return module;
+	}
+
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
-		runConfig.projectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
+		runConfig.configName += isRootProject(project) ? "" : " (" + project.getPath() + ")";
+		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
+		runConfig.ideaModuleName = getIdeaModuleName(project);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
@@ -148,8 +163,8 @@ public class RunConfig {
 		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
 
 		RunConfig ideaClient = new RunConfig();
-		populate(project, extension, ideaClient, "client");
 		ideaClient.configName = "Minecraft Client";
+		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
 
@@ -160,8 +175,8 @@ public class RunConfig {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		RunConfig ideaServer = new RunConfig();
-		populate(project, extension, ideaServer, "server");
 		ideaServer.configName = "Minecraft Server";
+		populate(project, extension, ideaServer, "server");
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
 
 		return ideaServer;
@@ -182,7 +197,8 @@ public class RunConfig {
 
 		dummyConfig = dummyConfig.replace("%NAME%", configName);
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
-		dummyConfig = dummyConfig.replace("%MODULE%", projectName);
+		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
+		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", programArgs.replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
 

@@ -39,7 +39,7 @@ public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File projectDir = project.file(".idea");
+		File projectDir = project.getRootProject().file(".idea");
 
 		if (!projectDir.exists()) {
 			return;
@@ -59,6 +59,7 @@ public class SetupIntelijRunConfigs {
 	}
 
 	private static void generate(Project project) throws IOException {
+		Project rootProject = project.getRootProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		if (extension.ideSync()) {
@@ -67,10 +68,12 @@ public class SetupIntelijRunConfigs {
 			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
 		}
 
-		File projectDir = project.file(".idea");
+		String projectPath = project == rootProject ? "" : project.getPath().replace(':', '_');
+
+		File projectDir = rootProject.file(".idea");
 		File runConfigsDir = new File(projectDir, "runConfigurations");
-		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
-		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");
+		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client" + projectPath + ".xml");
+		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server" + projectPath + ".xml");
 
 		if (!runConfigsDir.exists()) {
 			runConfigsDir.mkdirs();

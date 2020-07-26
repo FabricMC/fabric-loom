@@ -74,6 +74,7 @@ public class LaunchProvider extends DependencyProvider {
 
 		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, "runtimeOnly");
 		addDependency("net.minecrell:terminalconsoleappender:" + Constants.TERMINAL_CONSOLE_APPENDER_VERSION, "runtimeOnly");
+		addDependency("org.jetbrains:annotations:" + Constants.JETBRAINS_ANNOTATIONS_VERSION, "compileOnly");
 	}
 
 	private File getLog4jConfigFile() {

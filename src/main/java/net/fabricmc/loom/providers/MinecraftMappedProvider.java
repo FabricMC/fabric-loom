@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Consumer;
 
+import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
@@ -40,6 +42,12 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class MinecraftMappedProvider extends DependencyProvider {
+	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
+			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
+			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
+			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
+			.build();
+
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
@@ -120,6 +128,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
 		return TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
+				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.build();

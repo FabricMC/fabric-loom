@@ -53,7 +53,6 @@ import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
@@ -69,9 +68,7 @@ import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
-import net.fabricmc.loom.util.FabricApiExtension;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.JarRemapper;
 
 public class AbstractPlugin implements Plugin<Project> {

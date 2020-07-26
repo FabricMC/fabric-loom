@@ -4,28 +4,24 @@ jobs:
   gradle:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest]
-        gradle-version: [4.9, 4.10.2, 6.5, 6.6-rc-1]
-        java-version: [1.8, 11, 14]
+        gradle: [4.9, 4.10.2, 6.5.1]
+        java: [jdk8, jdk11, jdk14]
         exclude: # Dont run older gradle versions on newer java
-          - java-version: 14
-            gradle-version: 4.9
-          - java-version: 14
-            gradle-version: 4.10.2
-          - java-version: 14
-            gradle-version: 5.6.4
-          - java-version: 11
-            gradle-version: 4.9
-          - java-version: 11
-            gradle-version: 4.10.2
-    runs-on: ${{ matrix.os }}
+          - java: jdk14
+            gradle: 4.9
+          - java: jdk14
+            gradle: 4.10.2
+          - java: jdk14
+            gradle: 5.6.4
+          - java: jdk11
+            gradle: 4.9
+          - java: jdk11
+            gradle: 4.10.2
+    runs-on: ubuntu-20.04
+    container:
+      image: gradle:${{ matrix.gradle }}-${{ matrix.java }}
+      options: --user root
     steps:
       - uses: actions/checkout@v1
       - uses: gradle/wrapper-validation-action@v1
-      - uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java-version }}
-      - uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: ${{ matrix.gradle-version }}
-          arguments: build check test --stacktrace
+      - run: gradle build check test --stacktrace

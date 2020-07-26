@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
@@ -39,6 +40,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.DependencySet;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -46,10 +54,6 @@ import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
-import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -95,10 +99,10 @@ public class NestedJars {
 	private static List<File> getContainedJars(Project project) {
 		List<File> fileList = new ArrayList<>();
 
-		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
-		DependencySet dependencies = configuration.getDependencies();
+		ResolvedConfiguration configuration = project.getConfigurations().getByName(Constants.INCLUDE).getResolvedConfiguration();
+		Set<ResolvedDependency> dependencies = configuration.getFirstLevelModuleDependencies();
 
-		for (Dependency dependency : dependencies) {
+		for (ResolvedDependency dependency : dependencies) {
 			if (dependency instanceof ProjectDependency) {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
 				Project dependencyProject = projectDependency.getDependencyProject();
@@ -115,7 +119,14 @@ public class NestedJars {
 					}
 				}
 			} else {
-				fileList.addAll(prepareForNesting(configuration.files(dependency), dependency, project));
+				fileList.addAll(prepareForNesting(
+						dependency
+								.getModuleArtifacts()
+								.stream()
+								.map(ResolvedArtifact::getFile)
+								.collect(Collectors.toSet()),
+						dependency, project)
+				);
 			}
 		}
 
@@ -156,7 +167,7 @@ public class NestedJars {
 	}
 
 	//This is a good place to do pre-nesting operations, such as adding a fabric.mod.json to a library
-	private static List<File> prepareForNesting(Set<File> files, Dependency dependency, Project project) {
+	private static List<File> prepareForNesting(Set<File> files, ResolvedDependency dependency, Project project) {
 		List<File> fileList = new ArrayList<>();
 
 		for (File file : files) {
@@ -193,12 +204,12 @@ public class NestedJars {
 	}
 
 	//Generates a barebones mod for a dependency
-	private static String getMod(Dependency dependency) {
+	private static String getMod(ResolvedDependency dependency) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
-		jsonObject.addProperty("id", (dependency.getGroup() + "_" + dependency.getName()).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
-		jsonObject.addProperty("version", dependency.getVersion());
-		jsonObject.addProperty("name", dependency.getName());
+		jsonObject.addProperty("id", (dependency.getModuleGroup() + "_" + dependency.getModuleName()).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
+		jsonObject.addProperty("version", dependency.getModuleVersion());
+		jsonObject.addProperty("name", dependency.getModuleName());
 
 		return GSON.toJson(jsonObject);
 	}

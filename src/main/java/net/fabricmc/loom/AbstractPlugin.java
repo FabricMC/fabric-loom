@@ -97,6 +97,7 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
 		// Force add Mojang repository

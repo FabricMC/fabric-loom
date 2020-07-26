@@ -124,13 +124,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	//Called when remapping the mod
 	public void remapAccessWidener(Path modJarPath, Remapper asmRemapper) throws IOException {
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
-		AccessWidener remapped = remapper.remap();
-
-		StringWriter writer = new StringWriter();
-		remapped.write(writer);
-		byte[] bytes = writer.toString().getBytes();
-		writer.close();
+		byte[] bytes = getRemappedAccessWidener(asmRemapper);
 
 		String path = getAccessWidenerPath(modJarPath);
 
@@ -145,7 +139,17 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		}
 	}
 
-	private String getAccessWidenerPath(Path modJarPath) {
+	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
+		AccessWidener remapped = remapper.remap();
+
+		try (StringWriter writer = new StringWriter()) {
+			remapped.write(writer);
+			return writer.toString().getBytes();
+		}
+	}
+
+	public String getAccessWidenerPath(Path modJarPath) {
 		byte[] modJsonBytes = ZipUtil.unpackEntry(modJarPath.toFile(), "fabric.mod.json");
 
 		if (modJsonBytes == null) {

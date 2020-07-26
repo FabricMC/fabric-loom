@@ -62,6 +62,7 @@ public class LoomGradleExtension {
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
+	public boolean shareCaches = false;
 
 	private final ConfigurableFileCollection unmappedMods;
 
@@ -355,5 +356,25 @@ public class LoomGradleExtension {
 	public Function<String, String> getIntermediaryUrl() {
 		//Done like this to work around this possibly not being a java string...
 		return s -> intermediaryUrl.apply(s).toString();
+	}
+
+	public boolean isRootProject() {
+		return project.getRootProject() == project;
+	}
+
+	public LoomGradleExtension getRootGradleExtension() {
+		if (isRootProject()) {
+			return this;
+		}
+
+		return project.getRootProject().getExtensions().getByType(LoomGradleExtension.class);
+	}
+
+	public LoomGradleExtension getSharedGradleExtension() {
+		return isShareCaches() ? getRootGradleExtension() : this;
+	}
+
+	public boolean isShareCaches() {
+		return shareCaches;
 	}
 }

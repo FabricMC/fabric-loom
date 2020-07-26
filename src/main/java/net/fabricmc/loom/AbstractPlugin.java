@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -52,8 +53,11 @@ import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.MappingsCache;
+import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.FabricApiExtension;
@@ -65,6 +69,10 @@ import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
+import net.fabricmc.loom.util.FabricApiExtension;
+import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.JarRemapper;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -269,6 +277,48 @@ public class AbstractPlugin implements Plugin<Project> {
 					}
 				}
 
+				SourceRemapper remapper = null;
+				Task parentTask = project1.getTasks().getByName("build");
+
+				if (extension.isShareCaches()) {
+					Project rootProject = project.getRootProject();
+
+					if (extension.isRootProject()) {
+						SourceRemapper sourceRemapper = new SourceRemapper(rootProject, false);
+						JarRemapper jarRemapper = new JarRemapper();
+
+						remapJarTask.jarRemapper = jarRemapper;
+
+						rootProject.getTasks().register("remapAllSources", RemapAllSourcesTask.class, task -> {
+							task.sourceRemapper = sourceRemapper;
+							task.doLast(t -> sourceRemapper.remapAll());
+						});
+
+						parentTask = rootProject.getTasks().getByName("remapAllSources");
+
+						rootProject.getTasks().register("remapAllJars", AbstractLoomTask.class, task -> {
+							task.doLast(t -> {
+								try {
+									jarRemapper.remap();
+								} catch (IOException e) {
+									throw new RuntimeException("Failed to remap jars", e);
+								}
+							});
+						});
+
+						for (Project subProject : rootProject.getAllprojects()) {
+							subProject.getTasks().getByName("build").dependsOn(parentTask);
+							subProject.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
+							rootProject.getTasks().getByName("remapAllJars").dependsOn(subProject.getTasks().getByName("remapJar"));
+						}
+					} else {
+						parentTask = rootProject.getTasks().getByName("remapAllSources");
+						remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
+
+						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
+					}
+				}
+
 				try {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
@@ -277,7 +327,12 @@ public class AbstractPlugin implements Plugin<Project> {
 					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
 					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
-					project1.getTasks().getByName("build").dependsOn(remapSourcesJarTask);
+
+					if (extension.isShareCaches()) {
+						remapSourcesJarTask.setSourceRemapper(remapper);
+					}
+
+					parentTask.dependsOn(remapSourcesJarTask);
 				} catch (UnknownTaskException e) {
 					// pass
 				}

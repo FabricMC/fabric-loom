@@ -127,10 +127,10 @@ public class MinecraftProvider extends DependencyProvider {
 
 		if (offline) {
 			if (manifests.exists()) {
-				//If there is the manifests already we'll presume that's good enough
+				// If there is the manifests already we'll presume that's good enough
 				getProject().getLogger().debug("Found version manifests, presuming up-to-date");
 			} else {
-				//If we don't have the manifests then there's nothing more we can do
+				// If we don't have the manifests then there's nothing more we can do
 				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
 			}
 		} else {

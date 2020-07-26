@@ -68,7 +68,7 @@ public class LoomGradleExtension {
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 
-	//Not to be set in the build.gradle
+	// Not to be set in the build.gradle
 	private final Project project;
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
@@ -354,7 +354,7 @@ public class LoomGradleExtension {
 
 	// Ideally this should use maven, but this is a lot easier
 	public Function<String, String> getIntermediaryUrl() {
-		//Done like this to work around this possibly not being a java string...
+		// Done like this to work around this possibly not being a java string...
 		return s -> intermediaryUrl.apply(s).toString();
 	}
 

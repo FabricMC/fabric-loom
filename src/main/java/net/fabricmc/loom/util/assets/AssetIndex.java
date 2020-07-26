@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 public class AssetIndex {
 	private final Map<String, AssetObject> objects;
 	private boolean virtual;

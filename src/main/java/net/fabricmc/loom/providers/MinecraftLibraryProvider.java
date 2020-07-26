@@ -25,7 +25,6 @@
 package net.fabricmc.loom.providers;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -38,10 +37,9 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 public class MinecraftLibraryProvider {
 	public File MINECRAFT_LIBS;
 
-	private Collection<File> libs = new HashSet<>();
+	private final Collection<File> libs = new HashSet<>();
 
-	public void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+	public void provide(MinecraftProvider minecraftProvider, Project project) {
 		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
 
 		initFiles(project, minecraftProvider);

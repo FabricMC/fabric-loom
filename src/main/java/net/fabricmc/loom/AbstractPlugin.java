@@ -161,7 +161,7 @@ public class AbstractPlugin implements Plugin<Project> {
 	/**
 	 * Permit to add a Maven repository to a target project.
 	 *
-	 * @param target The garget project
+	 * @param target The target project
 	 * @param name   The name of the repository
 	 * @param url    The URL of the repository
 	 * @return An object containing the name and the URL of the repository that can be modified later
@@ -330,7 +330,7 @@ public class AbstractPlugin implements Plugin<Project> {
 					}
 
 					parentTask.dependsOn(remapSourcesJarTask);
-				} catch (UnknownTaskException e) {
+				} catch (UnknownTaskException ignored) {
 					// pass
 				}
 			} else {
@@ -374,33 +374,31 @@ public class AbstractPlugin implements Plugin<Project> {
 					mavenPublish.publications((publications) -> {
 						for (Publication publication : publications) {
 							if (publication instanceof MavenPublication) {
-								((MavenPublication) publication).pom((pom) -> {
-									pom.withXml((xml) -> {
-										Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
-										Set<String> foundArtifacts = new HashSet<>();
+								((MavenPublication) publication).pom((pom) -> pom.withXml((xml) -> {
+									Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
+									Set<String> foundArtifacts = new HashSet<>();
 
-										GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
-											Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
-											Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
+									GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
+										Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
+										Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
 
-											if (groupId.isPresent() && artifactId.isPresent()) {
-												foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
-											}
-										});
-
-										for (Dependency dependency : compileModsConfig.getAllDependencies()) {
-											if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
-												continue;
-											}
-
-											Node depNode = dependencies.appendNode("dependency");
-											depNode.appendNode("groupId", dependency.getGroup());
-											depNode.appendNode("artifactId", dependency.getName());
-											depNode.appendNode("version", dependency.getVersion());
-											depNode.appendNode("scope", entry.getMavenScope());
+										if (groupId.isPresent() && artifactId.isPresent()) {
+											foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
 										}
 									});
-								});
+
+									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+										if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
+											continue;
+										}
+
+										Node depNode = dependencies.appendNode("dependency");
+										depNode.appendNode("groupId", dependency.getGroup());
+										depNode.appendNode("artifactId", dependency.getName());
+										depNode.appendNode("version", dependency.getVersion());
+										depNode.appendNode("scope", entry.getMavenScope());
+									}
+								}));
 							}
 						}
 					});

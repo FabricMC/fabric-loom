@@ -81,7 +81,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		args.add("-l=" + absolutePathOf(linemapDestination));
 		args.add("-m=" + absolutePathOf(metaData.javaDocs));
 
-		//TODO, Decompiler breaks on jemalloc, J9 module-info.class?
+		// TODO, Decompiler breaks on jemalloc, J9 module-info.class?
 		for (Path library : metaData.libraries) {
 			args.add("-e=" + absolutePathOf(library));
 		}

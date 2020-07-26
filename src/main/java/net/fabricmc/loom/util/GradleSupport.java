@@ -29,14 +29,14 @@ import java.lang.reflect.Method;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 
-//This is used to bridge the gap over large gradle api changes.
+// This is used to bridge the gap over large gradle api changes.
 public class GradleSupport {
 	public static RegularFileProperty getfileProperty(Project project) {
 		try {
-			//First try the new method, if that fails fall back.
+			// First try the new method, if that fails fall back.
 			return getfilePropertyModern(project);
 		} catch (Exception e) {
-			//Nope
+			// Nope
 		}
 
 		try {

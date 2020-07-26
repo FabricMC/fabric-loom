@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Consumer;
 
@@ -41,7 +40,7 @@ public class ConsumingOutputStream extends OutputStream {
 	}
 
 	@Override
-	public void write(int b) throws IOException {
+	public void write(int b) {
 		char ch = (char) (b & 0xFF);
 		buffer.append(ch);
 
@@ -51,7 +50,7 @@ public class ConsumingOutputStream extends OutputStream {
 	}
 
 	@Override
-	public void flush() throws IOException {
+	public void flush() {
 		String str = buffer.toString();
 
 		if (str.endsWith("\r") || str.endsWith("\n")) {

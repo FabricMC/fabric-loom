@@ -52,7 +52,7 @@ public class LoomDependencyManager {
 		}
 	}
 
-	private List<DependencyProvider> dependencyProviderList = new ArrayList<>();
+	private final List<DependencyProvider> dependencyProviderList = new ArrayList<>();
 
 	public void addProvider(DependencyProvider provider) {
 		if (dependencyProviderList.contains(provider)) {

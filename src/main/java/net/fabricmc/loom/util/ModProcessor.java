@@ -88,10 +88,10 @@ public class ModProcessor {
 	}
 
 	private static void stripNestedJars(File file) {
-		//Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
+		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
 		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
-			protected String transform(ZipEntry zipEntry, String input) throws IOException {
+			protected String transform(ZipEntry zipEntry, String input) {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
 				json.remove("jars");
 				return GSON.toJson(json);
@@ -146,7 +146,8 @@ public class ModProcessor {
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
-					project.getLogger().info("Adding " + inputFile + " onto the remap classpath");
+					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
+
 					remapper.readClassPathAsync(inputFile.toPath());
 				}
 			}
@@ -154,7 +155,9 @@ public class ModProcessor {
 
 		for (ModDependencyInfo info : remapList) {
 			InputTag tag = remapper.createInputTag();
-			project.getLogger().info("Adding " + info.getInputFile() + " as a remap input");
+
+			project.getLogger().debug("Adding " + info.getInputFile() + " as a remap input");
+
 			remapper.readInputsAsync(tag, info.getInputFile().toPath());
 			tagMap.put(info, tag);
 		}
@@ -191,7 +194,6 @@ public class ModProcessor {
 			String launchMethod = extension.getLoaderLaunchMethod();
 
 			String jsonStr;
-			int priority = 0;
 
 			try (JarFile jarFile = new JarFile(file)) {
 				ZipEntry entry = null;
@@ -206,7 +208,6 @@ public class ModProcessor {
 
 				if (entry == null) {
 					entry = jarFile.getEntry("fabric-installer.json");
-					priority++;
 
 					if (entry == null) {
 						return null;
@@ -218,8 +219,7 @@ public class ModProcessor {
 				}
 			}
 
-			JsonObject jsonObject = GSON.fromJson(jsonStr, JsonObject.class);
-			return jsonObject;
+			return GSON.fromJson(jsonStr, JsonObject.class);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

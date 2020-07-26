@@ -78,7 +78,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 					put("defaultObfuscationEnv", "named:intermediary");
 				}};
 
-			project.getLogger().info("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);
+			project.getLogger().debug("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);
 			args.forEach((k, v) -> passArgument(task, k, v));
 		} catch (IOException e) {
 			project.getLogger().error("Could not configure mixin annotation processors", e);

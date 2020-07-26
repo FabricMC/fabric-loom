@@ -67,7 +67,7 @@ public class DownloadUtil {
 			to.delete();
 		}
 
-		//If the output already exists we'll use it's last modified time
+		// If the output already exists we'll use it's last modified time
 		if (to.exists()) {
 			connection.setIfModifiedSince(to.lastModified());
 		}
@@ -79,13 +79,10 @@ public class DownloadUtil {
 			connection.setRequestProperty("If-None-Match", etag);
 		}
 
-		//We want to download gzip compressed stuff
+		// We want to download gzip compressed stuff
 		connection.setRequestProperty("Accept-Encoding", "gzip");
 
-		//We shouldn't need to set a user agent, but it's here just in case
-		//connection.setRequestProperty("User-Agent", null);
-
-		//Try make the connection, it will hang here if the connection is bad
+		// Try make the connection, it will hang here if the connection is bad
 		connection.connect();
 
 		int code = connection.getResponseCode();
@@ -111,10 +108,10 @@ public class DownloadUtil {
 			logger.info("'{}' Changed, downloading {}", to, toNiceSize(contentLength));
 		}
 
-		try { //Try download to the output
+		try { // Try download to the output
 			FileUtils.copyInputStreamToFile(connection.getInputStream(), to);
 		} catch (IOException e) {
-			to.delete(); //Probably isn't good if it fails to copy/save
+			to.delete(); // Probably isn't good if it fails to copy/save
 			throw e;
 		}
 

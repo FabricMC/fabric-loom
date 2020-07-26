@@ -26,7 +26,6 @@ package net.fabricmc.loom.util;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import groovy.util.Node;
@@ -57,9 +56,5 @@ public final class GroovyXmlUtil {
 	public static Stream<Node> childrenNodesStream(Node node) {
 		//noinspection unchecked
 		return (Stream<Node>) (Stream) (((List<Object>) node.children()).stream().filter((i) -> i instanceof Node));
-	}
-
-	public static Iterable<Node> childrenNodes(Node node) {
-		return childrenNodesStream(node).collect(Collectors.toList());
 	}
 }

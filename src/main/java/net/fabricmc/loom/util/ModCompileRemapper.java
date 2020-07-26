@@ -83,7 +83,7 @@ public class ModCompileRemapper {
 
 				final String notation = group + ":" + name + ":" + version + classifierSuffix;
 
-				if (!isFabricMod(project, logger, artifact, notation)) {
+				if (!isFabricMod(logger, artifact, notation)) {
 					addToRegularCompile(project, regularConfig, notation);
 					continue;
 				}
@@ -122,7 +122,7 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Project project, Logger logger, ResolvedArtifact artifact, String notation) {
+	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact, String notation) {
 		File input = artifact.getFile();
 
 		try (ZipFile zipFile = new ZipFile(input)) {
@@ -166,7 +166,8 @@ public class ModCompileRemapper {
 	}
 
 	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, String remappedFilename, File modStore) {
-		project.getLogger().info(":providing " + remappedLog + " sources");
+		project.getLogger().debug(":providing " + remappedLog + " sources");
+
 		File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
 		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
@@ -174,7 +175,7 @@ public class ModCompileRemapper {
 			try {
 				sourceRemapper.scheduleRemapSources(sources, remappedSources);
 
-				//Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
 				remappedSources.setLastModified(sources.lastModified());
 			} catch (Exception e) {
 				e.printStackTrace();

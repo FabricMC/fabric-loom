@@ -57,7 +57,7 @@ public class MinecraftNativesProvider {
 					throw new GradleException("Native jar not found at " + libJarFile.getAbsolutePath());
 				}
 
-				//TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
+				// TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
 				ZipUtil.unpack(libJarFile, nativesDir);
 			}
 		}

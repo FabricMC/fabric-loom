@@ -75,7 +75,7 @@ public class NestedJars {
 
 		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
-			protected String transform(ZipEntry zipEntry, String input) throws IOException {
+			protected String transform(ZipEntry zipEntry, String input) {
 				JsonObject json = GSON.fromJson(input, JsonObject.class);
 				JsonArray nestedJars = json.getAsJsonArray("jars");
 
@@ -107,7 +107,7 @@ public class NestedJars {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
 				Project dependencyProject = projectDependency.getDependencyProject();
 
-				//TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
+				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
 				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
 				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
 
@@ -143,7 +143,7 @@ public class NestedJars {
 		return fileList;
 	}
 
-	//Looks for any deps that require a sub project to be built first
+	// Looks for any deps that require a sub project to be built first
 	public static List<RemapJarTask> getRequiredTasks(Project project) {
 		List<RemapJarTask> remapTasks = new ArrayList<>();
 
@@ -195,7 +195,7 @@ public class NestedJars {
 				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency).getBytes());
 				fileList.add(tempFile);
 			} else {
-				//Default copy the jar right in
+				// Default copy the jar right in
 				fileList.add(file);
 			}
 		}
@@ -203,7 +203,7 @@ public class NestedJars {
 		return fileList;
 	}
 
-	//Generates a barebones mod for a dependency
+	// Generates a barebones mod for a dependency
 	private static String getMod(ResolvedDependency dependency) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);

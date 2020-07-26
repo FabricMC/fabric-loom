@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util.assets;
 
+@SuppressWarnings("unused")
 public class AssetObject {
 	private String hash;
 	private long size;

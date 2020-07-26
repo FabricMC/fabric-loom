@@ -41,7 +41,7 @@ public final class MappingsCache {
 
 	private final Map<Path, SoftReference<TinyTree>> mappingsCache = new HashMap<>();
 
-	//TODO: loom doesn't actually use new mappings when the mappings change until the gradle daemons are stopped
+	// TODO: loom doesn't actually use new mappings when the mappings change until the gradle daemons are stopped
 	public TinyTree get(Path mappingsPath) throws IOException {
 		mappingsPath = mappingsPath.toAbsolutePath();
 

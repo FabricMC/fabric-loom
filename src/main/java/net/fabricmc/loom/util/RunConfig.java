@@ -34,9 +34,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -51,7 +48,6 @@ import org.gradle.api.Project;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftProvider;
 
 public class RunConfig {
 	public String configName;
@@ -62,7 +58,7 @@ public class RunConfig {
 	public String vmArgs;
 	public String programArgs;
 
-	public Element genRuns(Element doc) throws IOException, ParserConfigurationException, TransformerException {
+	public Element genRuns(Element doc) {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
 		root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
 
@@ -115,16 +111,13 @@ public class RunConfig {
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
-		switch (extension.getLoaderLaunchMethod()) {
-		case "launchwrapper":
+		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
-			break;
-		default:
+		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
 			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
-			break;
 		}
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {
@@ -159,8 +152,6 @@ public class RunConfig {
 
 	public static RunConfig clientRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
-		MinecraftVersionInfo minecraftVersionInfo = minecraftProvider.getVersionInfo();
 
 		RunConfig ideaClient = new RunConfig();
 		ideaClient.configName = "Minecraft Client";
@@ -182,7 +173,7 @@ public class RunConfig {
 		return ideaServer;
 	}
 
-	//This can be removed at somepoint, its not ideal but its the best solution I could thing of
+	// This can be removed at somepoint, its not ideal but its the best solution I could thing of
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"));

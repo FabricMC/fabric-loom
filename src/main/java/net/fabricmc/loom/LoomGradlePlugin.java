@@ -31,6 +31,7 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.CleanEclipseRunsTask;
@@ -127,6 +128,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
+		extension.addDecompiler(new FabricCFRDecompiler(project));
 
 		project.afterEvaluate((p) -> {
 			for (LoomDecompiler decompiler : extension.decompilers) {

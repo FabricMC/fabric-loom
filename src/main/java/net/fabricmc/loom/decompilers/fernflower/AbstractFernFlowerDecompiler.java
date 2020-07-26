@@ -99,7 +99,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		Map<String, ProgressLogger> inUseLoggers = new HashMap<>();
 
 		progressGroup.started();
-		ExecResult result = ForkingJavaExec.javaexec(project, spec -> {
+		ExecResult result = ForkingJavaExec.javaexec(project.getRootProject(), spec -> {
 			spec.setMain(fernFlowerExecutor().getName());
 			spec.jvmArgs("-Xms200m", "-Xmx3G");
 			spec.setArgs(args);

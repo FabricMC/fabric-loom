@@ -42,7 +42,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class MinecraftMappedProvider extends DependencyProvider {
-	private static final Map<String, String> jsrToJetbrains = new ImmutableMap.Builder<String, String>()
+	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
 			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
 			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
 			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
@@ -128,7 +128,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
 		return TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
-				.withMappings(out -> jsrToJetbrains.forEach(out::acceptClass))
+				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.build();

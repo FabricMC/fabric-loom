@@ -25,6 +25,7 @@
 package net.fabricmc.loom.providers;
 
 import java.io.File;
+import java.io.FileReader;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -33,6 +34,11 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableMap;
+import cuchaz.enigma.command.ConvertMappingsCommand;
+import cuchaz.enigma.command.InvertMappingsCommand;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.lorenz.io.enigma.EnigmaWriter;
+import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.Constants;
@@ -41,6 +47,8 @@ import net.fabricmc.loom.util.DependencyProvider;
 public class McpConfigProvider extends DependencyProvider {
 	private File mcp;
 	private File srg;
+	private File srgTiny;
+	private File invertedSrgTiny;
 
 	public McpConfigProvider(Project project) {
 		super(project);
@@ -50,7 +58,7 @@ public class McpConfigProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		init(dependency.getDependency().getVersion());
 
-		if (mcp.exists() && srg.exists()) {
+		if (mcp.exists() && srg.exists() && srgTiny.exists() && invertedSrgTiny.exists()) {
 			return; // No work for us to do here
 		}
 
@@ -65,11 +73,28 @@ public class McpConfigProvider extends DependencyProvider {
 				Files.copy(fs.getPath("config", "joined.tsrg"), srg.toPath());
 			}
 		}
+
+		if (!srgTiny.exists()) {
+			Path enigma = Files.createTempFile(null, "-srg.enigma");
+
+			try (TSrgReader reader = new TSrgReader(new FileReader(srg))) {
+				MappingSet mappings = reader.read();
+
+				try (EnigmaWriter writer = new EnigmaWriter(Files.newBufferedWriter(enigma))) {
+					writer.write(mappings);
+				}
+			}
+
+			new ConvertMappingsCommand().run("enigma_file", enigma.toString(), "tinyv2:official:srg", srgTiny.getAbsolutePath());
+			new InvertMappingsCommand().run("tinyv2", srgTiny.getAbsolutePath(), "tinyv2:srg:official", invertedSrgTiny.getAbsolutePath());
+		}
 	}
 
 	private void init(String version) {
 		mcp = new File(getExtension().getUserCache(), "mcp-" + version + ".zip");
 		srg = new File(getExtension().getUserCache(), "srg-" + version + ".tsrg");
+		srgTiny = new File(getExtension().getUserCache(), "srg-" + version + ".tiny");
+		invertedSrgTiny = new File(getExtension().getUserCache(), "srg-" + version + "-inverted.tiny");
 	}
 
 	public File getMcp() {
@@ -78,6 +103,14 @@ public class McpConfigProvider extends DependencyProvider {
 
 	public File getSrg() {
 		return srg;
+	}
+
+	public File getSrgTiny() {
+		return srgTiny;
+	}
+
+	public File getInvertedSrgTiny() {
+		return invertedSrgTiny;
 	}
 
 	@Override

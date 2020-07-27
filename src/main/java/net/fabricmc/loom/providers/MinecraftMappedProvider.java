@@ -63,7 +63,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mappings file not found");
 		}
 
-		if (!getExtension().getMinecraftProvider().getMergedJar().exists()) {
+		if (!getExtension().getMinecraftProvider().getMergedSrgJar().exists()) {
 			throw new RuntimeException("input merged jar not found");
 		}
 
@@ -97,11 +97,11 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	private void mapMinecraftJar() throws IOException {
-		String fromM = "official";
+		String fromM = "srg";
 
 		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
 
-		Path input = minecraftProvider.getMergedJar().toPath();
+		Path input = minecraftProvider.getMergedSrgJar().toPath();
 		Path outputMapped = minecraftMappedJar.toPath();
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 

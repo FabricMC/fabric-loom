@@ -28,14 +28,20 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.zip.ZipError;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -58,7 +64,6 @@ import net.fabricmc.loom.util.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
@@ -76,6 +81,7 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftClientPatchedJar;
 	private File minecraftServerPatchedJar;
 	private File minecraftMergedJar;
+	private File minecraftMergedSrgJar;
 
 	Gson gson = new Gson();
 
@@ -128,7 +134,7 @@ public class MinecraftProvider extends DependencyProvider {
 			createPatchedJars(getProject().getLogger());
 		}
 
-		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
+		if (!minecraftMergedJar.exists() || !minecraftMergedSrgJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
@@ -136,6 +142,10 @@ public class MinecraftProvider extends DependencyProvider {
 				DownloadUtil.delete(minecraftServerJar);
 				DownloadUtil.delete(minecraftClientPatchedJar);
 				DownloadUtil.delete(minecraftServerPatchedJar);
+				DownloadUtil.delete(minecraftClientSrgJar);
+				DownloadUtil.delete(minecraftServerSrgJar);
+				DownloadUtil.delete(minecraftClientPatchedSrgJar);
+				DownloadUtil.delete(minecraftServerPatchedSrgJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -155,6 +165,7 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftClientPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-srg-" + patchProvider.forgeVersion + ".jar");
 		minecraftServerPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-srg-" + patchProvider.forgeVersion + ".jar");
 		minecraftMergedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + ".jar");
+		minecraftMergedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + "-srg.jar");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -294,14 +305,46 @@ public class MinecraftProvider extends DependencyProvider {
 
 		// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
 		Files.copy(minecraftClientPatchedJar, minecraftMergedJar);
+		Files.copy(minecraftClientPatchedSrgJar, minecraftMergedSrgJar);
+
+		// Copy resources
+		copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
+		copyNonClassFiles(minecraftClientJar, minecraftMergedSrgJar);
+		copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
+		copyNonClassFiles(minecraftServerJar, minecraftMergedSrgJar);
+
 		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}*/
 	}
 
+	private void copyNonClassFiles(File source, File target) throws IOException {
+		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
+				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false))) {
+			for (Path rootDirectory : sourceFs.getRootDirectories()) {
+				java.nio.file.Files.walk(rootDirectory)
+						.filter(java.nio.file.Files::isRegularFile)
+						.filter(it -> !it.toString().endsWith(".class"))
+						.forEach(it -> {
+							try {
+								java.nio.file.Files.copy(it, targetFs.getPath(it.toString()));
+							} catch (IOException e) {
+								throw new UncheckedIOException(e);
+							}
+						});
+			}
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+	}
+
 	public File getMergedJar() {
 		return minecraftMergedJar;
+	}
+
+	public File getMergedSrgJar() {
+		return minecraftMergedSrgJar;
 	}
 
 	public String getMinecraftVersion() {

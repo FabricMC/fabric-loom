@@ -37,6 +37,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
 import com.google.common.net.UrlEscapers;
+import cuchaz.enigma.command.ComposeMappingsCommand;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -121,13 +122,13 @@ public class MappingsProvider extends DependencyProvider {
 		Files.createDirectories(mappingsStepsDir);
 
 		String[] depStringSplit = dependency.getDepString().split(":");
-		String jarClassifier = "final";
+		String jarClassifier = "final-srg";
 
 		if (depStringSplit.length >= 4) {
 			jarClassifier = jarClassifier + depStringSplit[3];
 		}
 
-		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
+		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
@@ -172,6 +173,8 @@ public class MappingsProvider extends DependencyProvider {
 
 			mergeAndSaveMappings(project, intermediaryJar, yarnJar);
 		} else {
+			project.getLogger().warn(":forge not supported with v1 mappings");
+
 			// These are merged v1 mappings
 			if (tinyMappings.exists()) {
 				tinyMappings.delete();
@@ -225,9 +228,21 @@ public class MappingsProvider extends DependencyProvider {
 		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
 		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
+		Path intermediaryToSrg = Paths.get(mappingsStepsDir.toString(), "intermediary-to-srg.tiny");
+		Path srgToYarn = Paths.get(mappingsStepsDir.toString(), "srg-to-yarn.tiny");
+		composeMappings(invertedIntermediary, getExtension().getMcpConfigProvider().getSrgTiny().toPath(), "tinyv2:intermediary:srg", intermediaryToSrg);
+		composeMappings(getExtension().getMcpConfigProvider().getInvertedSrgTiny().toPath(), unmergedYarn, "tinyv2:srg:named", srgToYarn);
 		project.getLogger().info(":merging");
-		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
-		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "official", "intermediary", "named");
+		mergeMappings(intermediaryToSrg, srgToYarn, unorderedMergedMappings);
+		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "srg", "intermediary", "named");
+	}
+
+	private void composeMappings(Path a, Path b, String outputFormat, Path output) {
+		try {
+			new ComposeMappingsCommand().run("tinyv2", a.toString(), "tinyv2", b.toString(), outputFormat, output.toString(), "right");
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {

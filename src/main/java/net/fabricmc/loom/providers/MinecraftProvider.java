@@ -321,7 +321,7 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void copyNonClassFiles(File source, File target) throws IOException {
 		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
-				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false))) {
+				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toURI()), ImmutableMap.of("create", false))) {
 			for (Path rootDirectory : sourceFs.getRootDirectories()) {
 				java.nio.file.Files.walk(rootDirectory)
 						.filter(java.nio.file.Files::isRegularFile)

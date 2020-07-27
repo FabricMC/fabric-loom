@@ -233,6 +233,11 @@ public class AbstractPlugin implements Plugin<Project> {
 				mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
 			});
 
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setName("Forge");
+				mavenArtifactRepository.setUrl("https://files.minecraftforge.net/maven/");
+			});
+
 			project1.getRepositories().mavenCentral();
 			project1.getRepositories().jcenter();
 

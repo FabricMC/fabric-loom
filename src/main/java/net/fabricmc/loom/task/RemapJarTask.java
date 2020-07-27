@@ -93,6 +93,7 @@ public class RemapJarTask extends Jar {
 		String fromM = "named";
 		String toM = "official";
 		//           ^ This is passed to SrgRemapJarTask.
+		// FIXME: The task crashes because it's passed the int -> named mappings instead of full mappings
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
 						project.getConfigurations().getByName("compileClasspath").getFiles()

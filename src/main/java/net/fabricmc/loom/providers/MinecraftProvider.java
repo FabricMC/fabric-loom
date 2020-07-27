@@ -26,26 +26,27 @@ package net.fabricmc.loom.providers;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import cuchaz.enigma.command.ConvertMappingsCommand;
+import cuchaz.enigma.translation.mapping.serde.MappingParseException;
 import net.minecraftforge.binarypatcher.ConsoleTool;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
-import org.cadixdev.atlas.Atlas;
-import org.cadixdev.bombe.asm.jar.JarEntryRemappingTransformer;
 import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.lorenz.asm.LorenzRemapper;
+import org.cadixdev.lorenz.io.enigma.EnigmaWriter;
 import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -54,11 +55,13 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.StaticPathWatcher;
-import net.fabricmc.stitch.merge.JarMerger;
+import net.fabricmc.stitch.util.Pair;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.TinyUtils;
 
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
@@ -125,7 +128,7 @@ public class MinecraftProvider extends DependencyProvider {
 				patchJars(getProject().getLogger());
 			}
 
-			createPatchedJars(getProject().getLogger());
+			remapPatchedJars(getProject().getLogger());
 		}
 
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
@@ -246,30 +249,40 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
-	private void createPatchedJars(Logger logger) throws IOException {
-		logger.lifecycle(":remapping minecraft (Atlas, srg -> official)");
+	private void remapPatchedJars(Logger logger) throws IOException, MappingParseException {
+		logger.lifecycle(":remapping minecraft (TinyRemapper, srg -> official)");
 
-		useAtlas(MappingSet::reverse, atlas -> {
-			atlas.run(minecraftClientPatchedSrgJar.toPath(), minecraftClientPatchedJar.toPath());
-			atlas.run(minecraftServerPatchedSrgJar.toPath(), minecraftServerPatchedJar.toPath());
-		});
-	}
+		Path enigmaTemp = java.nio.file.Files.createTempFile(null, ".enigma");
+		Path tinyTemp = java.nio.file.Files.createTempFile(null, ".tiny");
 
-	private void useAtlas(UnaryOperator<MappingSet> mappingOp, IoConsumer<Atlas> action) throws IOException {
-		try (Reader mappingReader = new FileReader(getExtension().getMcpConfigProvider().getSrg());
-				TSrgReader reader = new TSrgReader(mappingReader);
-				Atlas atlas = new Atlas()) {
-			MappingSet mappings = mappingOp.apply(reader.read());
+		try (TSrgReader reader = new TSrgReader(new FileReader(getExtension().getMcpConfigProvider().getSrg()))) {
+			MappingSet mappings = reader.read().reverse();
 
-			atlas.install(ctx -> new JarEntryRemappingTransformer(
-					new LorenzRemapper(mappings, ctx.inheritanceProvider())
-			));
-
-			for (File library : getLibraryProvider().getLibraries()) {
-				atlas.use(library.toPath());
+			try (EnigmaWriter writer = new EnigmaWriter(new FileWriter(enigmaTemp.toFile()))) {
+				writer.write(mappings);
 			}
+		}
 
-			action.accept(atlas);
+		new ConvertMappingsCommand().run("enigma_file", enigmaTemp.toString(), "tinyv2:srg:official", tinyTemp.toString());
+
+		TinyRemapper remapper = TinyRemapper.newRemapper()
+				.withMappings(TinyUtils.createTinyMappingProvider(tinyTemp, "srg", "official"))
+				.build();
+
+		List<Pair<Path, Path>> jars = new ArrayList<>();
+		jars.add(Pair.of(minecraftClientPatchedSrgJar.toPath(), minecraftClientPatchedJar.toPath()));
+		jars.add(Pair.of(minecraftServerPatchedSrgJar.toPath(), minecraftServerPatchedJar.toPath()));
+
+		try {
+			for (Pair<Path, Path> io : jars) {
+				try (OutputConsumerPath consumer = new OutputConsumerPath.Builder(io.getRight()).build()) {
+					consumer.addNonClassFiles(io.getLeft());
+					remapper.readInputs(io.getLeft());
+					remapper.apply(consumer);
+				}
+			}
+		} finally {
+			remapper.finish();
 		}
 	}
 

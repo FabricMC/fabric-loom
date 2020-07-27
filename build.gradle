@@ -21,7 +21,7 @@ if (ENV.BUILD_NUMBER) {
 	build = 'jenkins #${ENV.BUILD_NUMBER}'
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + '-forge.8'
+	version = baseVersion + '-forge.9'
 }
 
 repositories {
@@ -72,8 +72,8 @@ dependencies {
 	// Forge patches
 	implementation ('net.minecraftforge:binarypatcher:1.1.1')
 	implementation ('org.cadixdev:lorenz:0.5.3')
-	implementation ('org.cadixdev:lorenz-asm:0.5.3')
-	implementation ('org.cadixdev:atlas:0.2.0')
+	implementation ('org.cadixdev:lorenz-io-enigma:0.5.3')
+	implementation ('cuchaz:enigma-cli:0.21+build.213')
 	implementation ('net.minecraftforge.gradle:ForgeGradle:3.0.179')
 
 	// Testing

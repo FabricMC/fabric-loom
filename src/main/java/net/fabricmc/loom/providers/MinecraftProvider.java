@@ -224,7 +224,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void createSrgJars(Logger logger) throws Exception {
-		logger.info(":remapping minecraft: official->srg");
+		logger.lifecycle(":remapping minecraft (MCP, official -> srg)");
 
 		McpConfigProvider volde = getExtension().getMcpConfigProvider();
 		File root = new File(getExtension().getUserCache(), "mcp_root");
@@ -247,7 +247,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void createPatchedJars(Logger logger) throws IOException {
-		logger.info(":remapping minecraft: srg->official");
+		logger.lifecycle(":remapping minecraft (Atlas, srg -> official)");
 
 		useAtlas(MappingSet::reverse, atlas -> {
 			atlas.run(minecraftClientPatchedSrgJar.toPath(), minecraftClientPatchedJar.toPath());
@@ -274,7 +274,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void patchJars(Logger logger) throws IOException {
-		logger.info(":patching jars");
+		logger.lifecycle(":patching jars");
 
 		PatchProvider patchProvider = getExtension().getPatchProvider();
 		patchJars(minecraftClientSrgJar, minecraftClientPatchedSrgJar, patchProvider.clientPatches);
@@ -292,10 +292,12 @@ public class MinecraftProvider extends DependencyProvider {
 	private void mergeJars(Logger logger) throws IOException {
 		logger.lifecycle(":merging jars");
 
-		try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
+		// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
+		Files.copy(minecraftClientPatchedJar, minecraftMergedJar);
+		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
-		}
+		}*/
 	}
 
 	public File getMergedJar() {

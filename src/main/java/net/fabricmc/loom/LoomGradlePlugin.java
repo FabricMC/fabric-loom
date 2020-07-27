@@ -47,6 +47,7 @@ import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.task.RunClientTask;
 import net.fabricmc.loom.task.RunServerTask;
+import net.fabricmc.loom.task.SrgRemapJarTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	public static File getMappedByproduct(Project project, String suffix) {
@@ -86,6 +87,12 @@ public class LoomGradlePlugin extends AbstractPlugin {
 		tasks.register("remapJar", RemapJarTask.class, t -> {
 			t.setDescription("Remaps the built project jar to intermediary mappings.");
 			t.setGroup("fabric");
+		});
+
+		tasks.register("srgRemapJar", SrgRemapJarTask.class, t -> {
+			t.setDescription("Remaps the built project jar to intermediary mappings.");
+			t.setGroup("fabric");
+			t.dependsOn("remapJar");
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));

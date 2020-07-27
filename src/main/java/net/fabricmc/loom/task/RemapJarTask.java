@@ -91,7 +91,8 @@ public class RemapJarTask extends Jar {
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		String fromM = "named";
-		String toM = "intermediary";
+		String toM = "official";
+		//           ^ This is passed to SrgRemapJarTask.
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
 						project.getConfigurations().getByName("compileClasspath").getFiles()

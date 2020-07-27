@@ -61,6 +61,7 @@ import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.task.SrgRemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.FabricApiExtension;
@@ -266,13 +267,18 @@ public class AbstractPlugin implements Plugin<Project> {
 			if (extension.remapMod) {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
 				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
+				SrgRemapJarTask srgRemapJarTask = (SrgRemapJarTask) project1.getTasks().findByName("srgRemapJar");
 
 				assert remapJarTask != null;
+				assert srgRemapJarTask != null;
 
 				if (!remapJarTask.getInput().isPresent()) {
 					jarTask.setClassifier("dev");
-					remapJarTask.setClassifier("");
+					remapJarTask.setClassifier("official");
 					remapJarTask.getInput().set(jarTask.getArchivePath());
+					srgRemapJarTask.setClassifier("");
+					srgRemapJarTask.getInput().set(remapJarTask.getArchivePath());
+					srgRemapJarTask.getMappings().set(extension.getMcpConfigProvider().getSrg());
 				}
 
 				extension.getUnmappedModCollection().from(jarTask);
@@ -280,8 +286,10 @@ public class AbstractPlugin implements Plugin<Project> {
 				remapJarTask.getRemapAccessWidener().set(true);
 
 				project1.getArtifacts().add("archives", remapJarTask);
+				project1.getArtifacts().add("archives", srgRemapJarTask);
 				remapJarTask.dependsOn(jarTask);
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+				project1.getTasks().getByName("build").dependsOn(srgRemapJarTask);
 
 				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
 

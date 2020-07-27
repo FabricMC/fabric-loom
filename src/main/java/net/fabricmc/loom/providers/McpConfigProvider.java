@@ -30,6 +30,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableMap;
@@ -50,19 +51,19 @@ public class McpConfigProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		init(dependency.getDependency().getVersion());
 
-		if (mcp.exists() && srg.exists()) {
+		if (mcp.exists() && srg.exists() && !isRefreshDeps()) {
 			return; // No work for us to do here
 		}
 
 		Path mcpZip = dependency.resolveFile().orElseThrow(() -> new IllegalStateException("Could not resolve MCPConfig")).toPath();
 
-		if (!mcp.exists()) {
-			Files.copy(mcpZip, mcp.toPath());
+		if (!mcp.exists() || isRefreshDeps()) {
+			Files.copy(mcpZip, mcp.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
 
-		if (!srg.exists()) {
+		if (!srg.exists() || isRefreshDeps()) {
 			try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + mcpZip.toUri()), ImmutableMap.of("create", false))) {
-				Files.copy(fs.getPath("config", "joined.tsrg"), srg.toPath());
+				Files.copy(fs.getPath("config", "joined.tsrg"), srg.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
 	}

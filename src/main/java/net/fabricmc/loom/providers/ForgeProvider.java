@@ -24,53 +24,26 @@
 
 package net.fabricmc.loom.providers;
 
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
-import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
-public class PatchProvider extends DependencyProvider {
-	public Path clientPatches;
-	public Path serverPatches;
-	public String forgeVersion;
-
-	public PatchProvider(Project project) {
+public class ForgeProvider extends DependencyProvider {
+	public ForgeProvider(Project project) {
 		super(project);
 	}
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		init(dependency.getDependency().getVersion());
-
-		if (Files.notExists(clientPatches) || Files.notExists(serverPatches) || isRefreshDeps()) {
-			getProject().getLogger().info(":extracting forge patches");
-
-			Path installerJar = dependency.resolveFile().orElseThrow(() -> new IllegalStateException("Could not resolve Forge installer")).toPath();
-
-			try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + installerJar.toUri()), ImmutableMap.of("create", false))) {
-				Files.copy(fs.getPath("data", "client.lzma"), clientPatches, StandardCopyOption.REPLACE_EXISTING);
-				Files.copy(fs.getPath("data", "server.lzma"), serverPatches, StandardCopyOption.REPLACE_EXISTING);
-			}
-		}
-	}
-
-	private void init(String forgeVersion) {
-		this.forgeVersion = forgeVersion;
-		clientPatches = getExtension().getProjectPersistentCache().toPath().resolve("patches-" + forgeVersion + "-client.lzma");
-		serverPatches = getExtension().getProjectPersistentCache().toPath().resolve("patches-" + forgeVersion + "-server.lzma");
+		addDependency(dependency.getDepString() + ":universal", Constants.FORGE_UNIVERSAL);
+		addDependency(dependency.getDepString() + ":installer", Constants.FORGE_INSTALLER);
 	}
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE_INSTALLER;
+		return Constants.FORGE;
 	}
 }

@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.zip.ZipError;
 
@@ -61,6 +62,7 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.FsPathConsumer;
 import net.fabricmc.loom.util.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
@@ -289,6 +291,10 @@ public class MinecraftProvider extends DependencyProvider {
 		PatchProvider patchProvider = getExtension().getPatchProvider();
 		patchJars(minecraftClientSrgJar, minecraftClientPatchedSrgJar, patchProvider.clientPatches);
 		patchJars(minecraftServerSrgJar, minecraftServerPatchedSrgJar, patchProvider.serverPatches);
+
+		logger.lifecycle(":copying missing classes into patched jars");
+		copyMissingClasses(minecraftClientSrgJar, minecraftClientPatchedSrgJar);
+		copyMissingClasses(minecraftServerSrgJar, minecraftServerPatchedSrgJar);
 	}
 
 	private void patchJars(File clean, File output, Path patches) throws IOException {
@@ -311,29 +317,25 @@ public class MinecraftProvider extends DependencyProvider {
 		copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
 		copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
 
+		logger.lifecycle(":adding forge classes");
+		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftMergedJar);
+
 		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}*/
 	}
 
-	private void copyNonClassFiles(File source, File target) throws IOException {
+	private void walkFileSystems(File source, File target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
 		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
 				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toURI()), ImmutableMap.of("create", false))) {
 			for (Path rootDirectory : sourceFs.getRootDirectories()) {
 				java.nio.file.Files.walk(rootDirectory)
 						.filter(java.nio.file.Files::isRegularFile)
-						.filter(it -> !it.toString().endsWith(".class"))
+						.filter(filter)
 						.forEach(it -> {
 							try {
-								Path targetFile = targetFs.getPath(it.toString());
-								Path parent = targetFile.getParent();
-
-								if (parent != null) {
-									java.nio.file.Files.createDirectories(parent);
-								}
-
-								java.nio.file.Files.copy(it, targetFile, StandardCopyOption.REPLACE_EXISTING);
+								action.accept(sourceFs, targetFs, it);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -342,6 +344,40 @@ public class MinecraftProvider extends DependencyProvider {
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private void copyAll(File source, File target) throws IOException {
+		walkFileSystems(source, target, it -> true, this::copyReplacing);
+	}
+
+	private void copyMissingClasses(File source, File target) throws IOException {
+		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, it) -> {
+			Path targetFile = targetFs.getPath(it.toString());
+
+			if (java.nio.file.Files.exists(targetFile)) return;
+			Path parent = targetFile.getParent();
+
+			if (parent != null) {
+				java.nio.file.Files.createDirectories(parent);
+			}
+
+			java.nio.file.Files.copy(it, targetFile);
+		});
+	}
+
+	private void copyNonClassFiles(File source, File target) throws IOException {
+		walkFileSystems(source, target, it -> !it.toString().endsWith(".class"), this::copyReplacing);
+	}
+
+	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path it) throws IOException {
+		Path targetFile = targetFs.getPath(it.toString());
+		Path parent = targetFile.getParent();
+
+		if (parent != null) {
+			java.nio.file.Files.createDirectories(parent);
+		}
+
+		java.nio.file.Files.copy(it, targetFile, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public File getMergedJar() {

@@ -32,7 +32,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
-import net.fabricmc.loom.providers.*;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -50,23 +49,31 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
+import net.fabricmc.loom.providers.ForgeProvider;
+import net.fabricmc.loom.providers.ForgeUniversalProvider;
+import net.fabricmc.loom.providers.LaunchProvider;
+import net.fabricmc.loom.providers.MappingsCache;
+import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.McpConfigProvider;
+import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.providers.PatchProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.FabricApiExtension;
 import net.fabricmc.loom.util.GroovyXmlUtil;
+import net.fabricmc.loom.util.JarRemapper;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.SetupIntelijRunConfigs;
+import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.mixin.JavaApInvoker;
 import net.fabricmc.loom.util.mixin.KaptApInvoker;
 import net.fabricmc.loom.util.mixin.ScalaApInvoker;
-import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.JarRemapper;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -102,8 +109,9 @@ public class AbstractPlugin implements Plugin<Project> {
 		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
-		// Force add Mojang repository
+		// Force add Mojang and Forge repositories
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
+		addMavenRepo(target, "Forge", "https://files.minecraftforge.net/maven/");
 
 		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
@@ -118,6 +126,10 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftConfig.setTransitive(false);
 		Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
 		forgeConfig.setTransitive(false);
+		Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.FORGE_INSTALLER);
+		forgeInstallerConfig.setTransitive(false);
+		Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.FORGE_UNIVERSAL);
+		forgeUniversalConfig.setTransitive(false);
 		Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
 		mcpConfig.setTransitive(false);
 
@@ -228,7 +240,9 @@ public class AbstractPlugin implements Plugin<Project> {
 			extension.setDependencyManager(dependencyManager);
 
 			dependencyManager.addProvider(new McpConfigProvider(getProject()));
+			dependencyManager.addProvider(new ForgeProvider(getProject()));
 			dependencyManager.addProvider(new PatchProvider(getProject()));
+			dependencyManager.addProvider(new ForgeUniversalProvider(getProject()));
 			dependencyManager.addProvider(new MinecraftProvider(getProject()));
 			dependencyManager.addProvider(new MappingsProvider(getProject()));
 			dependencyManager.addProvider(new LaunchProvider(getProject()));

@@ -133,7 +133,8 @@ public class MinecraftProvider extends DependencyProvider {
 				patchJars(getProject().getLogger());
 			}
 
-			createPatchedJars(getProject().getLogger());
+			injectForgeClasses(getProject().getLogger());
+			remapPatchedJars(getProject().getLogger());
 		}
 
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
@@ -258,7 +259,13 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
-	private void createPatchedJars(Logger logger) throws IOException {
+	private void injectForgeClasses(Logger logger) throws IOException {
+		logger.lifecycle(":adding forge classes");
+		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftClientPatchedSrgJar);
+		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftServerPatchedSrgJar);
+	}
+
+	private void remapPatchedJars(Logger logger) throws IOException {
 		logger.lifecycle(":remapping minecraft (Atlas, srg -> official)");
 
 		useAtlas(MappingSet::reverse, atlas -> {
@@ -316,9 +323,6 @@ public class MinecraftProvider extends DependencyProvider {
 		// Copy resources
 		copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
 		copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
-
-		logger.lifecycle(":adding forge classes");
-		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftMergedJar);
 
 		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();

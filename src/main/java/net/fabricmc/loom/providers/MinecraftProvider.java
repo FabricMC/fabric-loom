@@ -27,17 +27,26 @@ package net.fabricmc.loom.providers;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraftforge.binarypatcher.ConsoleTool;
+import net.minecraftforge.gradle.mcp.util.MCPRuntime;
+import net.minecraftforge.gradle.mcp.util.MCPWrapper;
+import org.cadixdev.atlas.Atlas;
+import org.cadixdev.bombe.asm.jar.JarEntryRemappingTransformer;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.lorenz.asm.LorenzRemapper;
+import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -45,6 +54,7 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.StaticPathWatcher;
@@ -59,6 +69,10 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftJson;
 	private File minecraftClientJar;
 	private File minecraftServerJar;
+	private File minecraftClientSrgJar;
+	private File minecraftServerSrgJar;
+	private File minecraftClientPatchedSrgJar;
+	private File minecraftServerPatchedSrgJar;
 	private File minecraftClientPatchedJar;
 	private File minecraftServerPatchedJar;
 	private File minecraftMergedJar;
@@ -103,7 +117,15 @@ public class MinecraftProvider extends DependencyProvider {
 		libraryProvider.provide(this, getProject());
 
 		if (!minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists()) {
-			patchJars(getProject().getLogger());
+			if (!minecraftClientSrgJar.exists() || !minecraftServerSrgJar.exists()) {
+				createSrgJars(getProject().getLogger());
+			}
+
+			if (!minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
+				patchJars(getProject().getLogger());
+			}
+
+			createPatchedJars(getProject().getLogger());
 		}
 
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
@@ -128,7 +150,11 @@ public class MinecraftProvider extends DependencyProvider {
 		PatchProvider patchProvider = getExtension().getPatchProvider();
 		minecraftClientPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-" + patchProvider.forgeVersion + ".jar");
 		minecraftServerPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-" + patchProvider.forgeVersion + ".jar");
-		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
+		minecraftClientSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client-srg.jar");
+		minecraftServerSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server-srg.jar");
+		minecraftClientPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-srg-" + patchProvider.forgeVersion + ".jar");
+		minecraftServerPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-srg-" + patchProvider.forgeVersion + ".jar");
+		minecraftMergedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + ".jar");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -197,16 +223,66 @@ public class MinecraftProvider extends DependencyProvider {
 		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), minecraftServerJar, logger);
 	}
 
+	private void createSrgJars(Logger logger) throws Exception {
+		logger.info(":remapping minecraft: official->srg");
+
+		McpConfigProvider volde = getExtension().getMcpConfigProvider();
+		File root = new File(getExtension().getUserCache(), "mcp_root");
+		root.mkdirs();
+		MCPWrapper wrapper = new MCPWrapper(volde.getMcp(), root);
+
+		// Client
+		{
+			MCPRuntime runtime = wrapper.getRuntime(getProject(), "client");
+			File output = runtime.execute(logger, "rename");
+			Files.copy(output, minecraftClientSrgJar);
+		}
+
+		// Server
+		{
+			MCPRuntime runtime = wrapper.getRuntime(getProject(), "server");
+			File output = runtime.execute(logger, "rename");
+			Files.copy(output, minecraftServerSrgJar);
+		}
+	}
+
+	private void createPatchedJars(Logger logger) throws IOException {
+		logger.info(":remapping minecraft: srg->official");
+
+		useAtlas(MappingSet::reverse, atlas -> {
+			atlas.run(minecraftClientPatchedSrgJar.toPath(), minecraftClientPatchedJar.toPath());
+			atlas.run(minecraftServerPatchedSrgJar.toPath(), minecraftServerPatchedJar.toPath());
+		});
+	}
+
+	private void useAtlas(UnaryOperator<MappingSet> mappingOp, IoConsumer<Atlas> action) throws IOException {
+		try (Reader mappingReader = new FileReader(getExtension().getMcpConfigProvider().getSrg());
+				TSrgReader reader = new TSrgReader(mappingReader);
+				Atlas atlas = new Atlas()) {
+			MappingSet mappings = mappingOp.apply(reader.read());
+
+			atlas.install(ctx -> new JarEntryRemappingTransformer(
+					new LorenzRemapper(mappings, ctx.inheritanceProvider())
+			));
+
+			for (File library : getLibraryProvider().getLibraries()) {
+				atlas.use(library.toPath());
+			}
+
+			action.accept(atlas);
+		}
+	}
+
 	private void patchJars(Logger logger) throws IOException {
 		logger.info(":patching jars");
 
 		PatchProvider patchProvider = getExtension().getPatchProvider();
-		patchJars(minecraftClientJar, minecraftClientPatchedJar, patchProvider.clientPatches);
-		patchJars(minecraftServerJar, minecraftServerPatchedJar, patchProvider.serverPatches);
+		patchJars(minecraftClientSrgJar, minecraftClientPatchedSrgJar, patchProvider.clientPatches);
+		patchJars(minecraftServerSrgJar, minecraftServerPatchedSrgJar, patchProvider.serverPatches);
 	}
 
 	private void patchJars(File clean, File output, Path patches) throws IOException {
-		ConsoleTool.main(new String[] {
+		ConsoleTool.main(new String[]{
 				"--clean", clean.getAbsolutePath(),
 				"--output", output.getAbsolutePath(),
 				"--apply", patches.toAbsolutePath().toString()

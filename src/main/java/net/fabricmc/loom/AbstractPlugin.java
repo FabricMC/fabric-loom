@@ -32,6 +32,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
+import net.fabricmc.loom.providers.*;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -49,11 +50,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-import net.fabricmc.loom.providers.LaunchProvider;
-import net.fabricmc.loom.providers.MappingsCache;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.PatchProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
@@ -122,6 +118,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftConfig.setTransitive(false);
 		Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
 		forgeConfig.setTransitive(false);
+		Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
+		mcpConfig.setTransitive(false);
 
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
@@ -229,6 +227,7 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
+			dependencyManager.addProvider(new McpConfigProvider(getProject()));
 			dependencyManager.addProvider(new PatchProvider(getProject()));
 			dependencyManager.addProvider(new MinecraftProvider(getProject()));
 			dependencyManager.addProvider(new MappingsProvider(getProject()));

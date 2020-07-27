@@ -52,6 +52,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PatchProvider;
+import net.fabricmc.loom.providers.McpConfigProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 
 public class LoomGradleExtension {
@@ -329,6 +330,10 @@ public class LoomGradleExtension {
 
 	public MappingsProvider getMappingsProvider() {
 		return getDependencyManager().getProvider(MappingsProvider.class);
+	}
+
+	public McpConfigProvider getMcpConfigProvider() {
+		return getDependencyManager().getProvider(McpConfigProvider.class);
 	}
 
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {

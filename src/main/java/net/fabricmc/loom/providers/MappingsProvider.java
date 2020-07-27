@@ -225,15 +225,15 @@ public class MappingsProvider extends DependencyProvider {
 			extractMappings(unmergedYarnJarFs, unmergedYarn);
 		}
 
-		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
-		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
+		//Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
+		//reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
-		Path intermediaryToSrg = Paths.get(mappingsStepsDir.toString(), "intermediary-to-srg.tiny");
+		Path srgToIntermediary = Paths.get(mappingsStepsDir.toString(), "srg-to-intermediary.tiny");
 		Path srgToYarn = Paths.get(mappingsStepsDir.toString(), "srg-to-yarn.tiny");
-		composeMappings(invertedIntermediary, getExtension().getMcpConfigProvider().getSrgTiny().toPath(), "tinyv2:intermediary:srg", intermediaryToSrg);
-		composeMappings(getExtension().getMcpConfigProvider().getInvertedSrgTiny().toPath(), unmergedYarn, "tinyv2:srg:named", srgToYarn);
+		composeMappings(getExtension().getMcpConfigProvider().getSrgTiny().toPath(), unmergedIntermediary, "tinyv2:srg:intermediary", srgToIntermediary);
+		composeMappings(srgToIntermediary, unmergedYarn, "tinyv2:srg:named", srgToYarn);
 		project.getLogger().info(":merging");
-		mergeMappings(intermediaryToSrg, srgToYarn, unorderedMergedMappings);
+		mergeMappings(srgToIntermediary, srgToYarn, unorderedMergedMappings);
 		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "srg", "intermediary", "named");
 	}
 

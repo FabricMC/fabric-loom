@@ -34,8 +34,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -328,7 +331,14 @@ public class MinecraftProvider extends DependencyProvider {
 						.filter(it -> !it.toString().endsWith(".class"))
 						.forEach(it -> {
 							try {
-								java.nio.file.Files.copy(it, targetFs.getPath(it.toString()));
+								Path targetFile = targetFs.getPath(it.toString());
+								Path parent = targetFile.getParent();
+
+								if (parent != null) {
+									java.nio.file.Files.createDirectories(parent);
+								}
+
+								java.nio.file.Files.copy(it, targetFile, StandardCopyOption.REPLACE_EXISTING);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}

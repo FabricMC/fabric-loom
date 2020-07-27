@@ -37,7 +37,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
 import com.google.common.net.UrlEscapers;
-import cuchaz.enigma.command.ComposeMappingsCommand;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -122,13 +121,13 @@ public class MappingsProvider extends DependencyProvider {
 		Files.createDirectories(mappingsStepsDir);
 
 		String[] depStringSplit = dependency.getDepString().split(":");
-		String jarClassifier = "final-srg";
+		String jarClassifier = "final";
 
 		if (depStringSplit.length >= 4) {
 			jarClassifier = jarClassifier + depStringSplit[3];
 		}
 
-		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny").toFile();
+		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
@@ -173,8 +172,6 @@ public class MappingsProvider extends DependencyProvider {
 
 			mergeAndSaveMappings(project, intermediaryJar, yarnJar);
 		} else {
-			project.getLogger().warn(":forge not supported with v1 mappings");
-
 			// These are merged v1 mappings
 			if (tinyMappings.exists()) {
 				tinyMappings.delete();
@@ -225,24 +222,12 @@ public class MappingsProvider extends DependencyProvider {
 			extractMappings(unmergedYarnJarFs, unmergedYarn);
 		}
 
-		//Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
-		//reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
+		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
+		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
-		Path srgToIntermediary = Paths.get(mappingsStepsDir.toString(), "srg-to-intermediary.tiny");
-		Path srgToYarn = Paths.get(mappingsStepsDir.toString(), "srg-to-yarn.tiny");
-		composeMappings(getExtension().getMcpConfigProvider().getSrgTiny().toPath(), unmergedIntermediary, "tinyv2:srg:intermediary", srgToIntermediary);
-		composeMappings(srgToIntermediary, unmergedYarn, "tinyv2:srg:named", srgToYarn);
 		project.getLogger().info(":merging");
-		mergeMappings(srgToIntermediary, srgToYarn, unorderedMergedMappings);
-		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "srg", "intermediary", "named");
-	}
-
-	private void composeMappings(Path a, Path b, String outputFormat, Path output) {
-		try {
-			new ComposeMappingsCommand().run("tinyv2", a.toString(), "tinyv2", b.toString(), outputFormat, output.toString(), "right");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
+		reorderMappings(unorderedMergedMappings, tinyMappings.toPath(), "official", "intermediary", "named");
 	}
 
 	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
@@ -258,20 +243,20 @@ public class MappingsProvider extends DependencyProvider {
 		try {
 			Command command = new CommandMergeTinyV2();
 			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
-							yarnMappings.toAbsolutePath().toString(),
-							newMergedMappings.toAbsolutePath().toString(),
-							"intermediary", "official");
+					yarnMappings.toAbsolutePath().toString(),
+					newMergedMappings.toAbsolutePath().toString(),
+					"intermediary", "official");
 		} catch (Exception e) {
 			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
-							+ " with mappings from " + yarnMappings, e);
+					+ " with mappings from " + yarnMappings, e);
 		}
 	}
 
 	private void suggestFieldNames(MinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
 		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
-						oldMappings.toAbsolutePath().toString(),
-						newMappings.toAbsolutePath().toString());
+				oldMappings.toAbsolutePath().toString(),
+				newMappings.toAbsolutePath().toString());
 	}
 
 	private void runCommand(Command command, String... args) {

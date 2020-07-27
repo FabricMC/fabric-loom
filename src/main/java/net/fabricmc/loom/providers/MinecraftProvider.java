@@ -34,11 +34,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -84,7 +82,6 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftClientPatchedJar;
 	private File minecraftServerPatchedJar;
 	private File minecraftMergedJar;
-	private File minecraftMergedSrgJar;
 
 	Gson gson = new Gson();
 
@@ -137,7 +134,7 @@ public class MinecraftProvider extends DependencyProvider {
 			createPatchedJars(getProject().getLogger());
 		}
 
-		if (!minecraftMergedJar.exists() || !minecraftMergedSrgJar.exists() || isRefreshDeps()) {
+		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
@@ -168,7 +165,6 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftClientPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-srg-" + patchProvider.forgeVersion + ".jar");
 		minecraftServerPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-srg-" + patchProvider.forgeVersion + ".jar");
 		minecraftMergedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + ".jar");
-		minecraftMergedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + "-srg.jar");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -308,13 +304,12 @@ public class MinecraftProvider extends DependencyProvider {
 
 		// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
 		Files.copy(minecraftClientPatchedJar, minecraftMergedJar);
-		Files.copy(minecraftClientPatchedSrgJar, minecraftMergedSrgJar);
+
+		logger.lifecycle(":copying resources");
 
 		// Copy resources
 		copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
-		copyNonClassFiles(minecraftClientJar, minecraftMergedSrgJar);
 		copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
-		copyNonClassFiles(minecraftServerJar, minecraftMergedSrgJar);
 
 		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
@@ -351,10 +346,6 @@ public class MinecraftProvider extends DependencyProvider {
 
 	public File getMergedJar() {
 		return minecraftMergedJar;
-	}
-
-	public File getMergedSrgJar() {
-		return minecraftMergedSrgJar;
 	}
 
 	public String getMinecraftVersion() {

@@ -392,4 +392,8 @@ public class LoomGradleExtension {
 	public boolean isShareCaches() {
 		return shareCaches;
 	}
+
+	public boolean isProjectBasedJarStorageForced() {
+		return true;
+	}
 }

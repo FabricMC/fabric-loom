@@ -143,7 +143,7 @@ public class MappingsProvider extends DependencyProvider {
 		JarProcessorManager processorManager = new JarProcessorManager(getProject());
 		getExtension().setJarProcessorManager(processorManager);
 
-		if (processorManager.active()) {
+		if (processorManager.active() || getExtension().isProjectBasedJarStorageForced()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
 			getProject().getLogger().lifecycle("Using project based jar storage");
 		} else {

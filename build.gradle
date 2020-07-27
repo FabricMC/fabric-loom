@@ -74,7 +74,7 @@ dependencies {
 	implementation ('org.cadixdev:lorenz:0.5.3')
 	implementation ('org.cadixdev:lorenz-asm:0.5.3')
 	implementation ('org.cadixdev:atlas:0.2.0')
-	implementation ('net.md-5:SpecialSource:1.8.6')
+	implementation ('net.minecraftforge.gradle:ForgeGradle:3.0.179')
 
 	// Testing
 	testImplementation(gradleTestKit())

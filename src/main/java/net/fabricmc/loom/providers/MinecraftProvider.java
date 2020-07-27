@@ -47,8 +47,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.md_5.specialsource.SpecialSource;
 import net.minecraftforge.binarypatcher.ConsoleTool;
+import net.minecraftforge.gradle.mcp.util.MCPRuntime;
+import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import org.cadixdev.atlas.Atlas;
 import org.cadixdev.bombe.asm.jar.JarEntryRemappingTransformer;
 import org.cadixdev.lorenz.MappingSet;
@@ -236,10 +237,26 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void createSrgJars(Logger logger) throws Exception {
-		logger.lifecycle(":remapping minecraft (SpecialSource, official -> srg)");
-		String mappings = getExtension().getMcpConfigProvider().getSrg().getAbsolutePath();
-		SpecialSource.main(new String[] { "--in-jar", minecraftClientJar.getAbsolutePath(), "--out-jar", minecraftClientSrgJar.getAbsolutePath(), "--srg-in", mappings });
-		SpecialSource.main(new String[] { "--in-jar", minecraftServerJar.getAbsolutePath(), "--out-jar", minecraftServerSrgJar.getAbsolutePath(), "--srg-in", mappings });
+		logger.lifecycle(":remapping minecraft (MCP, official -> srg)");
+
+		McpConfigProvider volde = getExtension().getMcpConfigProvider();
+		File root = new File(getExtension().getUserCache(), "mcp_root");
+		root.mkdirs();
+		MCPWrapper wrapper = new MCPWrapper(volde.getMcp(), root);
+
+		// Client
+		{
+			MCPRuntime runtime = wrapper.getRuntime(getProject(), "client");
+			File output = runtime.execute(logger, "rename");
+			Files.copy(output, minecraftClientSrgJar);
+		}
+
+		// Server
+		{
+			MCPRuntime runtime = wrapper.getRuntime(getProject(), "server");
+			File output = runtime.execute(logger, "rename");
+			Files.copy(output, minecraftServerSrgJar);
+		}
 	}
 
 	private void injectForgeClasses(Logger logger) throws IOException {

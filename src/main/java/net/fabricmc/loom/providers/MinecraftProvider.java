@@ -29,6 +29,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipError;
@@ -36,6 +37,7 @@ import java.util.zip.ZipError;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraftforge.binarypatcher.ConsoleTool;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -57,6 +59,8 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftJson;
 	private File minecraftClientJar;
 	private File minecraftServerJar;
+	private File minecraftClientPatchedJar;
+	private File minecraftServerPatchedJar;
 	private File minecraftMergedJar;
 
 	Gson gson = new Gson();
@@ -98,12 +102,18 @@ public class MinecraftProvider extends DependencyProvider {
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
 
+		if (!minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists()) {
+			patchJars(getProject().getLogger());
+		}
+
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
 				DownloadUtil.delete(minecraftClientJar);
 				DownloadUtil.delete(minecraftServerJar);
+				DownloadUtil.delete(minecraftClientPatchedJar);
+				DownloadUtil.delete(minecraftServerPatchedJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -115,6 +125,9 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftJson = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-info.json");
 		minecraftClientJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
 		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
+		PatchProvider patchProvider = getExtension().getPatchProvider();
+		minecraftClientPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-" + patchProvider.forgeVersion + ".jar");
+		minecraftServerPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-" + patchProvider.forgeVersion + ".jar");
 		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
 	}
 
@@ -184,10 +197,26 @@ public class MinecraftProvider extends DependencyProvider {
 		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), minecraftServerJar, logger);
 	}
 
+	private void patchJars(Logger logger) throws IOException {
+		logger.info(":patching jars");
+
+		PatchProvider patchProvider = getExtension().getPatchProvider();
+		patchJars(minecraftClientJar, minecraftClientPatchedJar, patchProvider.clientPatches);
+		patchJars(minecraftServerJar, minecraftServerPatchedJar, patchProvider.serverPatches);
+	}
+
+	private void patchJars(File clean, File output, Path patches) throws IOException {
+		ConsoleTool.main(new String[] {
+				"--clean", clean.getAbsolutePath(),
+				"--output", output.getAbsolutePath(),
+				"--apply", patches.toAbsolutePath().toString()
+		});
+	}
+
 	private void mergeJars(Logger logger) throws IOException {
 		logger.lifecycle(":merging jars");
 
-		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
+		try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}

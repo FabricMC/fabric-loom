@@ -21,13 +21,17 @@ if (ENV.BUILD_NUMBER) {
 	build = 'jenkins #${ENV.BUILD_NUMBER}'
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + '.local'
+	version = baseVersion + '-forge.2'
 }
 
 repositories {
 	maven {
 		name = 'Fabric'
 		url = 'https://maven.fabricmc.net/'
+	}
+	maven {
+		name = 'Forge'
+		url = 'https://files.minecraftforge.net/maven/'
 	}
 	mavenCentral()
 }
@@ -64,6 +68,9 @@ dependencies {
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72')
+
+	// Forge patches
+	implementation ('net.minecraftforge:binarypatcher:1.1.1')
 
 	// Testing
 	testImplementation(gradleTestKit())

@@ -39,7 +39,11 @@ public class ForgeProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		addDependency(dependency.getDepString() + ":universal", Constants.FORGE_UNIVERSAL);
+		addDependency(dependency.getDepString() + ":launcher", Constants.MINECRAFT_DEPENDENCIES);
 		addDependency(dependency.getDepString() + ":installer", Constants.FORGE_INSTALLER);
+
+		addDependency("net.minecraftforge:eventbus:3.0.2", Constants.MINECRAFT_DEPENDENCIES);
+		addDependency("net.minecraftforge:forgespi:3.0.0", Constants.MINECRAFT_DEPENDENCIES);
 	}
 
 	@Override

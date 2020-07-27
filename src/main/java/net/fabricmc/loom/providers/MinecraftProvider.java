@@ -131,9 +131,9 @@ public class MinecraftProvider extends DependencyProvider {
 
 			if (!minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
 				patchJars(getProject().getLogger());
+				injectForgeClasses(getProject().getLogger());
 			}
 
-			injectForgeClasses(getProject().getLogger());
 			remapPatchedJars(getProject().getLogger());
 		}
 
@@ -260,7 +260,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void injectForgeClasses(Logger logger) throws IOException {
-		logger.lifecycle(":adding forge classes");
+		logger.lifecycle(":injecting forge classes into minecraft");
 		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftClientPatchedSrgJar);
 		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftServerPatchedSrgJar);
 	}

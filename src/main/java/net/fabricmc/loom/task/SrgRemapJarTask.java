@@ -34,7 +34,6 @@ import org.cadixdev.lorenz.asm.LorenzRemapper;
 import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
 

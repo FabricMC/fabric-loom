@@ -54,9 +54,12 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PatchProvider;
 import net.fabricmc.loom.providers.McpConfigProvider;
+import net.fabricmc.loom.util.LazyBool;
 import net.fabricmc.loom.util.LoomDependencyManager;
 
 public class LoomGradleExtension {
+	private static final String FORGE_PROPERTY = "loom.forge";
+
 	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;
@@ -78,6 +81,7 @@ public class LoomGradleExtension {
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
+	private final LazyBool forge;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -99,6 +103,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
 		this.unmappedMods = project.files();
+		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.getProperties().get(FORGE_PROPERTY))));
 	}
 
 	/**
@@ -394,6 +399,6 @@ public class LoomGradleExtension {
 	}
 
 	public boolean isForge() {
-		return true; // TODO
+		return forge.getAsBoolean();
 	}
 }

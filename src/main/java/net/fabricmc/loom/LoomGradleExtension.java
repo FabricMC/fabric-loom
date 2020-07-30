@@ -49,6 +49,7 @@ import org.gradle.api.plugins.BasePluginConvention;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.ForgeUniversalProvider;
+import net.fabricmc.loom.providers.ForgeUserdevProvider;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
@@ -344,6 +345,10 @@ public class LoomGradleExtension {
 
 	public ForgeUniversalProvider getForgeUniversalProvider() {
 		return getDependencyManager().getProvider(ForgeUniversalProvider.class);
+	}
+
+	public ForgeUserdevProvider getForgeUserdevProvider() {
+		return getDependencyManager().getProvider(ForgeUserdevProvider.class);
 	}
 
 	public void setDependencyManager(LoomDependencyManager dependencyManager) {

@@ -43,19 +43,24 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class ForgeUserdevProvider extends DependencyProvider {
+	private File userdevJar;
+
 	public ForgeUserdevProvider(Project project) {
 		super(project);
 	}
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		userdevJar = new File(getExtension().getProjectPersistentCache(), "forge-" + dependency.getDependency().getVersion() + "-userdev.jar");
+
 		Path configJson = getExtension()
 				.getProjectPersistentCache()
 				.toPath()
 				.resolve("forge-config-" + dependency.getDependency().getVersion() + ".json");
 
-		if (Files.notExists(configJson) || isRefreshDeps()) {
+		if (!userdevJar.exists() || Files.notExists(configJson) || isRefreshDeps()) {
 			File resolved = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge userdev"));
+			Files.copy(resolved.toPath(), userdevJar.toPath());
 
 			try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + resolved.toURI()), ImmutableMap.of("create", false))) {
 				Files.copy(fs.getPath("config.json"), configJson);
@@ -78,6 +83,10 @@ public class ForgeUserdevProvider extends DependencyProvider {
 		// TODO: Read launch configs from the JSON too
 		// TODO: Should I copy the patches from here as well?
 		//       That'd require me to run the "MCP environment" fully up to merging.
+	}
+
+	public File getUserdevJar() {
+		return userdevJar;
 	}
 
 	@Override

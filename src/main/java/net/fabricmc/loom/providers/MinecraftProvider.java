@@ -275,6 +275,9 @@ public class MinecraftProvider extends DependencyProvider {
 		logger.lifecycle(":injecting forge classes into minecraft");
 		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftClientPatchedSrgJar);
 		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftServerPatchedSrgJar);
+
+		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar(), minecraftClientPatchedSrgJar);
+		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar(), minecraftServerPatchedSrgJar);
 	}
 
 	private void remapPatchedJars(Logger logger) throws IOException {
@@ -352,10 +355,8 @@ public class MinecraftProvider extends DependencyProvider {
 						.filter(java.nio.file.Files::isRegularFile)
 						.filter(filter)
 						.forEach(it -> {
-							Path targetPath = targetFs.getPath(it.toString());
-
 							try {
-								action.accept(sourceFs, targetFs, it, targetPath);
+								action.accept(sourceFs, targetFs, it);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -371,7 +372,9 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void copyMissingClasses(File source, File target) throws IOException {
-		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, sourcePath, targetPath) -> {
+		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, it) -> {
+			Path targetPath = targetFs.getPath(it.toString());
+
 			if (java.nio.file.Files.exists(targetPath)) return;
 			Path parent = targetPath.getParent();
 
@@ -379,7 +382,7 @@ public class MinecraftProvider extends DependencyProvider {
 				java.nio.file.Files.createDirectories(parent);
 			}
 
-			java.nio.file.Files.copy(sourcePath, targetPath);
+			java.nio.file.Files.copy(it, targetPath);
 		});
 	}
 
@@ -387,14 +390,32 @@ public class MinecraftProvider extends DependencyProvider {
 		walkFileSystems(source, target, it -> !it.toString().endsWith(".class"), this::copyReplacing);
 	}
 
-	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path sourcePath, Path targetPath) throws IOException {
+	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path it) throws IOException {
+		Path targetPath = targetFs.getPath(it.toString());
 		Path parent = targetPath.getParent();
 
 		if (parent != null) {
 			java.nio.file.Files.createDirectories(parent);
 		}
 
-		java.nio.file.Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+		java.nio.file.Files.copy(it, targetPath, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	private void copyUserdevFiles(File source, File target) throws IOException {
+		walkFileSystems(source, target, java.nio.file.Files::isRegularFile, (sourceFs, targetFs, it) -> {
+			Path inject = sourceFs.getPath("inject");
+
+			if (it.startsWith(inject)) {
+				Path targetPath = targetFs.getPath(inject.relativize(it).toString());
+				Path parent = targetPath.getParent();
+
+				if (parent != null) {
+					java.nio.file.Files.createDirectories(parent);
+				}
+
+				java.nio.file.Files.copy(it, targetPath);
+			}
+		});
 	}
 
 	public File getMergedJar() {

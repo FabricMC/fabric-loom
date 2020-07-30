@@ -29,11 +29,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 
 /**
- * Consumes two file systems and an equivalent path object for both of them.
+ * Consumes two file systems and a path object in the first one.
  *
  * @author Juuz
  */
 @FunctionalInterface
 public interface FsPathConsumer {
-	void accept(FileSystem sourceFs, FileSystem targetFs, Path sourcePath, Path targetPath) throws IOException;
+	void accept(FileSystem sourceFs, FileSystem targetFs, Path it) throws IOException;
 }

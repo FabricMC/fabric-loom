@@ -103,7 +103,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
 		this.unmappedMods = project.files();
-		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.getProperties().get(FORGE_PROPERTY))));
+		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
 	}
 
 	/**

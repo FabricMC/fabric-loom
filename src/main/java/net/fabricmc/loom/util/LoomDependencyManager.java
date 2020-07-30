@@ -158,7 +158,7 @@ public class LoomDependencyManager {
 
 		if (extension.getInstallerJson() != null) {
 			handleInstallerJson(extension.getInstallerJson(), project);
-		} else {
+		} else if (!extension.isForge()) {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
 

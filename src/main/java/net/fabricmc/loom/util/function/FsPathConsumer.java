@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.util.function;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;

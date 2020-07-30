@@ -54,7 +54,7 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.providers.PatchProvider;
 import net.fabricmc.loom.providers.McpConfigProvider;
-import net.fabricmc.loom.util.LazyBool;
+import net.fabricmc.loom.util.function.LazyBool;
 import net.fabricmc.loom.util.LoomDependencyManager;
 
 public class LoomGradleExtension {

@@ -1,10 +1,12 @@
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.util.function;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 /**
  * A lazily computed boolean value.
+ *
+ * @author Juuz
  */
 public final class LazyBool implements BooleanSupplier {
 	private BooleanSupplier supplier;

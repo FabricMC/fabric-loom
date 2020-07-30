@@ -93,7 +93,6 @@ public class RemapJarTask extends Jar {
 		String fromM = "named";
 		String toM = "official";
 		//           ^ This is passed to SrgRemapJarTask.
-		// FIXME: The task crashes because it's passed the int -> named mappings instead of full mappings
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
 						project.getConfigurations().getByName("compileClasspath").getFiles()
@@ -107,8 +106,13 @@ public class RemapJarTask extends Jar {
 
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 
+		// FIXME: The mixin map is named->intermediary, but I think we need named->srg?
 		if (mixinMapFile.exists()) {
-			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+			project.getLogger().error("Mixins in Forge projects are currently not supported.");
+
+			if (false) {
+				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+			}
 		}
 
 		project.getLogger().lifecycle(":remapping " + input.getFileName());

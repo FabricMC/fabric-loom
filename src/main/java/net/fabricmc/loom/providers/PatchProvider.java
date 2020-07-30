@@ -54,7 +54,7 @@ public class PatchProvider extends DependencyProvider {
 		if (Files.notExists(clientPatches) || Files.notExists(serverPatches) || isRefreshDeps()) {
 			getProject().getLogger().info(":extracting forge patches");
 
-			Path installerJar = dependency.resolveFile().orElseThrow(() -> new IllegalStateException("Could not resolve Forge installer")).toPath();
+			Path installerJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge installer")).toPath();
 
 			try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + installerJar.toUri()), ImmutableMap.of("create", false))) {
 				Files.copy(fs.getPath("data", "client.lzma"), clientPatches, StandardCopyOption.REPLACE_EXISTING);

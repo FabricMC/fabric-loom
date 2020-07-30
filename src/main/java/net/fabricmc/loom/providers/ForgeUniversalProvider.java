@@ -45,7 +45,7 @@ public class ForgeUniversalProvider extends DependencyProvider {
 		forge = new File(getExtension().getProjectPersistentCache(), "forge-" + dependency.getDependency().getVersion() + ".jar");
 
 		if (!forge.exists() || isRefreshDeps()) {
-			File dep = dependency.resolveFile().orElseThrow(() -> new IllegalStateException("Could not resolve Forge"));
+			File dep = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge"));
 			Files.copy(dep, forge);
 		}
 	}

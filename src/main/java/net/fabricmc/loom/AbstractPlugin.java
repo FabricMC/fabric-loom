@@ -51,6 +51,7 @@ import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.providers.ForgeProvider;
 import net.fabricmc.loom.providers.ForgeUniversalProvider;
+import net.fabricmc.loom.providers.ForgeUserdevProvider;
 import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.providers.MappingsCache;
 import net.fabricmc.loom.providers.MappingsProvider;
@@ -128,12 +129,18 @@ public class AbstractPlugin implements Plugin<Project> {
 		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
 			Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
 			forgeConfig.setTransitive(false);
+			Configuration forgeUserdevConfig = project.getConfigurations().maybeCreate(Constants.FORGE_USERDEV);
+			forgeUserdevConfig.setTransitive(false);
 			Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.FORGE_INSTALLER);
 			forgeInstallerConfig.setTransitive(false);
 			Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.FORGE_UNIVERSAL);
 			forgeUniversalConfig.setTransitive(false);
+			Configuration forgeDependencies = project.getConfigurations().maybeCreate(Constants.FORGE_DEPENDENCIES);
+			forgeDependencies.setTransitive(false);
 			Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
 			mcpConfig.setTransitive(false);
+
+			extendsFrom(Constants.MINECRAFT_DEPENDENCIES, Constants.FORGE_DEPENDENCIES);
 		}
 
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
@@ -248,8 +255,9 @@ public class AbstractPlugin implements Plugin<Project> {
 			extension.setDependencyManager(dependencyManager);
 
 			if (extension.isForge()) {
-				dependencyManager.addProvider(new McpConfigProvider(getProject()));
 				dependencyManager.addProvider(new ForgeProvider(getProject()));
+				dependencyManager.addProvider(new ForgeUserdevProvider(getProject()));
+				dependencyManager.addProvider(new McpConfigProvider(getProject()));
 				dependencyManager.addProvider(new PatchProvider(getProject()));
 				dependencyManager.addProvider(new ForgeUniversalProvider(getProject()));
 			}

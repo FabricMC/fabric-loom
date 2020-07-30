@@ -24,26 +24,57 @@
 
 package net.fabricmc.loom.providers;
 
+import java.io.File;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
-public class ForgeProvider extends DependencyProvider {
-	public ForgeProvider(Project project) {
+public class ForgeUserdevProvider extends DependencyProvider {
+	public ForgeUserdevProvider(Project project) {
 		super(project);
 	}
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		addDependency(dependency.getDepString() + ":userdev", Constants.FORGE_USERDEV);
-		addDependency(dependency.getDepString() + ":installer", Constants.FORGE_INSTALLER);
+		Path configJson = getExtension()
+				.getProjectPersistentCache()
+				.toPath()
+				.resolve("forge-config-" + dependency.getDependency().getVersion() + ".json");
+
+		if (Files.notExists(configJson) || isRefreshDeps()) {
+			File resolved = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge userdev"));
+			Files.copy(resolved.toPath(), configJson);
+		}
+
+		JsonObject json;
+
+		try (Reader reader = Files.newBufferedReader(configJson)) {
+			json = new Gson().fromJson(reader, JsonObject.class);
+		}
+
+		addDependency(json.get("mcp").getAsString(), Constants.MCP_CONFIG);
+		addDependency(json.get("universal").getAsString(), Constants.FORGE_UNIVERSAL);
+
+		for (JsonElement lib : json.get("libraries").getAsJsonArray()) {
+			addDependency(lib.getAsString(), Constants.FORGE_DEPENDENCIES);
+		}
+
+		// TODO: Read launch configs from the JSON too
+		// TODO: Should I copy the patches from here as well?
+		//       That'd require me to run the "MCP environment" fully up to merging.
 	}
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE;
+		return Constants.FORGE_USERDEV;
 	}
 }

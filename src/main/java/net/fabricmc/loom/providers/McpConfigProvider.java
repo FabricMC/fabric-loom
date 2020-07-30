@@ -55,7 +55,7 @@ public class McpConfigProvider extends DependencyProvider {
 			return; // No work for us to do here
 		}
 
-		Path mcpZip = dependency.resolveFile().orElseThrow(() -> new IllegalStateException("Could not resolve MCPConfig")).toPath();
+		Path mcpZip = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve MCPConfig")).toPath();
 
 		if (!mcp.exists() || isRefreshDeps()) {
 			Files.copy(mcpZip, mcp.toPath(), StandardCopyOption.REPLACE_EXISTING);

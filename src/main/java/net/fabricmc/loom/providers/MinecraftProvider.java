@@ -37,8 +37,10 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.zip.ZipError;
@@ -347,16 +349,18 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
-	private void walkFileSystems(File source, File target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
+	private void walkFileSystems(File source, File target, Predicate<Path> filter, Function<FileSystem, Iterable<Path>> toWalk, FsPathConsumer action) throws IOException {
 		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
 				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toURI()), ImmutableMap.of("create", false))) {
-			for (Path rootDirectory : sourceFs.getRootDirectories()) {
+			for (Path rootDirectory : toWalk.apply(sourceFs)) {
 				java.nio.file.Files.walk(rootDirectory)
 						.filter(java.nio.file.Files::isRegularFile)
 						.filter(filter)
 						.forEach(it -> {
+							boolean actuallyRoot = rootDirectory.getParent() == null;
+
 							try {
-								action.accept(sourceFs, targetFs, it);
+								action.accept(sourceFs, targetFs, actuallyRoot ? it : rootDirectory.relativize(it));
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -365,6 +369,10 @@ public class MinecraftProvider extends DependencyProvider {
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
+	}
+
+	private void walkFileSystems(File source, File target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
+		walkFileSystems(source, target, filter, FileSystem::getRootDirectories, action);
 	}
 
 	private void copyAll(File source, File target) throws IOException {
@@ -402,19 +410,15 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void copyUserdevFiles(File source, File target) throws IOException {
-		walkFileSystems(source, target, java.nio.file.Files::isRegularFile, (sourceFs, targetFs, it) -> {
-			Path inject = sourceFs.getPath("inject");
+		walkFileSystems(source, target, java.nio.file.Files::isRegularFile, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, it) -> {
+			Path targetPath = targetFs.getPath(it.toString());
+			Path parent = targetPath.getParent();
 
-			if (it.toString().startsWith(inject.toString())) {
-				Path targetPath = targetFs.getPath(inject.relativize(it).toString());
-				Path parent = targetPath.getParent();
-
-				if (parent != null) {
-					java.nio.file.Files.createDirectories(parent);
-				}
-
-				java.nio.file.Files.copy(it, targetPath);
+			if (parent != null) {
+				java.nio.file.Files.createDirectories(parent);
 			}
+
+			java.nio.file.Files.copy(it, targetPath);
 		});
 	}
 

@@ -405,7 +405,7 @@ public class MinecraftProvider extends DependencyProvider {
 		walkFileSystems(source, target, java.nio.file.Files::isRegularFile, (sourceFs, targetFs, it) -> {
 			Path inject = sourceFs.getPath("inject");
 
-			if (it.startsWith(inject)) {
+			if (it.toString().startsWith(inject.toString())) {
 				Path targetPath = targetFs.getPath(inject.relativize(it).toString());
 				Path parent = targetPath.getParent();
 

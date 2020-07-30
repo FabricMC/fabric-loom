@@ -147,8 +147,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
-		minecraftIntermediaryJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
-		minecraftMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
+		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
 	}
 
 	protected File getJarDirectory(File parentDirectory, String type) {
@@ -156,7 +156,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	protected String getJarVersionString(String type) {
-		return String.format("%s-%s-%s-%s-patched-%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion, getExtension().getPatchProvider().forgeVersion);
+		return String.format("%s-%s-%s-%s%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion, minecraftProvider.getJarSuffix());
 	}
 
 	public Collection<File> getMapperPaths() {

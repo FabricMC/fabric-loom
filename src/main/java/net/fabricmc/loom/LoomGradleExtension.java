@@ -393,7 +393,7 @@ public class LoomGradleExtension {
 		return shareCaches;
 	}
 
-	public boolean isProjectBasedJarStorageForced() {
-		return true;
+	public boolean isForge() {
+		return true; // TODO
 	}
 }

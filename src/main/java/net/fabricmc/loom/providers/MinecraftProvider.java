@@ -67,6 +67,7 @@ import net.fabricmc.loom.util.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
 import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.loom.util.StaticPathWatcher;
+import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
@@ -84,6 +85,7 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftClientPatchedJar;
 	private File minecraftServerPatchedJar;
 	private File minecraftMergedJar;
+	private String jarSuffix = "";
 
 	Gson gson = new Gson();
 
@@ -124,7 +126,7 @@ public class MinecraftProvider extends DependencyProvider {
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
 
-		if (!minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists()) {
+		if (getExtension().isForge() && (!minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists())) {
 			if (!minecraftClientSrgJar.exists() || !minecraftServerSrgJar.exists()) {
 				createSrgJars(getProject().getLogger());
 			}
@@ -143,12 +145,15 @@ public class MinecraftProvider extends DependencyProvider {
 			} catch (ZipError e) {
 				DownloadUtil.delete(minecraftClientJar);
 				DownloadUtil.delete(minecraftServerJar);
-				DownloadUtil.delete(minecraftClientPatchedJar);
-				DownloadUtil.delete(minecraftServerPatchedJar);
-				DownloadUtil.delete(minecraftClientSrgJar);
-				DownloadUtil.delete(minecraftServerSrgJar);
-				DownloadUtil.delete(minecraftClientPatchedSrgJar);
-				DownloadUtil.delete(minecraftServerPatchedSrgJar);
+
+				if (getExtension().isForge()) {
+					DownloadUtil.delete(minecraftClientPatchedJar);
+					DownloadUtil.delete(minecraftServerPatchedJar);
+					DownloadUtil.delete(minecraftClientSrgJar);
+					DownloadUtil.delete(minecraftServerSrgJar);
+					DownloadUtil.delete(minecraftClientPatchedSrgJar);
+					DownloadUtil.delete(minecraftServerPatchedSrgJar);
+				}
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -160,14 +165,21 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftJson = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-info.json");
 		minecraftClientJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
 		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
-		PatchProvider patchProvider = getExtension().getPatchProvider();
-		minecraftClientPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-" + patchProvider.forgeVersion + ".jar");
-		minecraftServerPatchedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-" + patchProvider.forgeVersion + ".jar");
-		minecraftClientSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client-srg.jar");
-		minecraftServerSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server-srg.jar");
-		minecraftClientPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-client-patched-srg-" + patchProvider.forgeVersion + ".jar");
-		minecraftServerPatchedSrgJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-server-patched-srg-" + patchProvider.forgeVersion + ".jar");
-		minecraftMergedJar = new File(getExtension().getProjectPersistentCache(), "minecraft-" + minecraftVersion + "-merged-patched-" + patchProvider.forgeVersion + ".jar");
+
+		if (getExtension().isForge()) {
+			// Forge-related JARs
+			PatchProvider patchProvider = getExtension().getPatchProvider();
+			jarSuffix = "-patched-forge-" + patchProvider.forgeVersion;
+
+			minecraftClientPatchedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client" + jarSuffix + ".jar");
+			minecraftServerPatchedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server" + jarSuffix + ".jar");
+			minecraftClientSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client-srg.jar");
+			minecraftServerSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server-srg.jar");
+			minecraftClientPatchedSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client-srg" + jarSuffix + ".jar");
+			minecraftServerPatchedSrgJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server-srg" + jarSuffix + ".jar");
+		}
+
+		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged" + jarSuffix + ".jar");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -313,21 +325,23 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void mergeJars(Logger logger) throws IOException {
-		logger.lifecycle(":merging jars");
+		if (getExtension().isForge()) {
+			// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
+			Files.copy(minecraftClientPatchedJar, minecraftMergedJar);
 
-		// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
-		Files.copy(minecraftClientPatchedJar, minecraftMergedJar);
+			logger.lifecycle(":copying resources");
 
-		logger.lifecycle(":copying resources");
+			// Copy resources
+			copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
+			copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
+		} else {
+			logger.lifecycle(":merging jars");
 
-		// Copy resources
-		copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
-		copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
-
-		/*try (JarMerger jarMerger = new JarMerger(minecraftClientPatchedJar, minecraftServerPatchedJar, minecraftMergedJar)) {
-			jarMerger.enableSyntheticParamsOffset();
-			jarMerger.merge();
-		}*/
+			try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
+				jarMerger.enableSyntheticParamsOffset();
+				jarMerger.merge();
+			}
+		}
 	}
 
 	private void walkFileSystems(File source, File target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
@@ -398,6 +412,10 @@ public class MinecraftProvider extends DependencyProvider {
 
 	public MinecraftLibraryProvider getLibraryProvider() {
 		return libraryProvider;
+	}
+
+	public String getJarSuffix() {
+		return jarSuffix;
 	}
 
 	@Override

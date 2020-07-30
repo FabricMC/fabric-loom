@@ -42,7 +42,7 @@ public class ForgeUniversalProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		forge = new File(getExtension().getProjectPersistentCache(), "forge-" + dependency.getDependency().getVersion() + ".jar");
+		forge = new File(getExtension().getProjectPersistentCache(), "forge-" + dependency.getDependency().getVersion() + "-universal.jar");
 
 		if (!forge.exists() || isRefreshDeps()) {
 			File dep = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge"));

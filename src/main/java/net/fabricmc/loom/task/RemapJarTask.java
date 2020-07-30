@@ -58,6 +58,8 @@ public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
+	private final Property<String> fromM;
+	private final Property<String> toM;
 	public JarRemapper jarRemapper;
 
 	public RemapJarTask() {
@@ -65,6 +67,10 @@ public class RemapJarTask extends Jar {
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);
+		fromM = getProject().getObjects().property(String.class);
+		toM = getProject().getObjects().property(String.class);
+		fromM.set("named");
+		toM.set("intermediary");
 		// false by default, I have no idea why I have to do it for this property and not the other one
 		remapAccessWidener.set(false);
 	}
@@ -90,12 +96,11 @@ public class RemapJarTask extends Jar {
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "official";
-		//           ^ This is passed to SrgRemapJarTask.
+		String fromM = this.fromM.get();
+		String toM = this.toM.get();
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
-						project.getConfigurations().getByName("compileClasspath").getFiles()
+				project.getConfigurations().getByName("compileClasspath").getFiles()
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
@@ -104,14 +109,14 @@ public class RemapJarTask extends Jar {
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
-		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 
 		// FIXME: The mixin map is named->intermediary, but I think we need named->srg?
 		if (mixinMapFile.exists()) {
-			project.getLogger().error("Mixins in Forge projects are currently not supported.");
-
-			if (false) {
+			if ("intermediary".equals(toM)) {
 				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+			} else {
+				project.getLogger().error("Mixins in Forge projects are currently not supported.");
 			}
 		}
 
@@ -181,8 +186,8 @@ public class RemapJarTask extends Jar {
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = this.fromM.get();
+		String toM = this.toM.get();
 
 		if (extension.isRootProject()) {
 			Set<File> classpathFiles = new LinkedHashSet<>(
@@ -196,14 +201,18 @@ public class RemapJarTask extends Jar {
 
 			jarRemapper.addToClasspath(classpath);
 
-			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
 		File mixinMapFile = mappingsProvider.mappingsMixinExport;
 		Path mixinMapPath = mixinMapFile.toPath();
 
 		if (mixinMapFile.exists()) {
-			jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+			if ("intermediary".equals(toM)) {
+				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+			} else {
+				project.getLogger().error("Mixins in Forge projects are currently not supported.");
+			}
 		}
 
 		jarRemapper.scheduleRemap(input, output)
@@ -257,5 +266,15 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
+	}
+
+	@Input
+	public Property<String> getFromM() {
+		return fromM;
+	}
+
+	@Input
+	public Property<String> getToM() {
+		return toM;
 	}
 }

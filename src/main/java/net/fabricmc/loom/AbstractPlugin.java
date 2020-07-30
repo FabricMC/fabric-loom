@@ -125,14 +125,17 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
 		minecraftConfig.setTransitive(false);
-		Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
-		forgeConfig.setTransitive(false);
-		Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.FORGE_INSTALLER);
-		forgeInstallerConfig.setTransitive(false);
-		Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.FORGE_UNIVERSAL);
-		forgeUniversalConfig.setTransitive(false);
-		Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
-		mcpConfig.setTransitive(false);
+
+		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+			Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
+			forgeConfig.setTransitive(false);
+			Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.FORGE_INSTALLER);
+			forgeInstallerConfig.setTransitive(false);
+			Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.FORGE_UNIVERSAL);
+			forgeUniversalConfig.setTransitive(false);
+			Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
+			mcpConfig.setTransitive(false);
+		}
 
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
@@ -245,10 +248,13 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new McpConfigProvider(getProject()));
-			dependencyManager.addProvider(new ForgeProvider(getProject()));
-			dependencyManager.addProvider(new PatchProvider(getProject()));
-			dependencyManager.addProvider(new ForgeUniversalProvider(getProject()));
+			if (extension.isForge()) {
+				dependencyManager.addProvider(new McpConfigProvider(getProject()));
+				dependencyManager.addProvider(new ForgeProvider(getProject()));
+				dependencyManager.addProvider(new PatchProvider(getProject()));
+				dependencyManager.addProvider(new ForgeUniversalProvider(getProject()));
+			}
+
 			dependencyManager.addProvider(new MinecraftProvider(getProject()));
 			dependencyManager.addProvider(new MappingsProvider(getProject()));
 			dependencyManager.addProvider(new LaunchProvider(getProject()));
@@ -274,11 +280,16 @@ public class AbstractPlugin implements Plugin<Project> {
 
 				if (!remapJarTask.getInput().isPresent()) {
 					jarTask.setClassifier("dev");
-					remapJarTask.setClassifier("official");
-					remapJarTask.getInput().set(jarTask.getArchivePath());
-					srgRemapJarTask.setClassifier("");
-					srgRemapJarTask.getInput().set(remapJarTask.getArchivePath());
-					srgRemapJarTask.getMappings().set(extension.getMcpConfigProvider().getSrg());
+
+					if (extension.isForge()) {
+						remapJarTask.setClassifier("official");
+						remapJarTask.getInput().set(jarTask.getArchivePath());
+						srgRemapJarTask.setClassifier("");
+						srgRemapJarTask.getInput().set(remapJarTask.getArchivePath());
+						srgRemapJarTask.getMappings().set(extension.getMcpConfigProvider().getSrg());
+					} else {
+						remapJarTask.setClassifier("");
+					}
 				}
 
 				extension.getUnmappedModCollection().from(jarTask);

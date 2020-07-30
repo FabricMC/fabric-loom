@@ -29,11 +29,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 
 /**
- * Like Consumer, but can throw IOException and gets access to two file systems.
+ * Consumes two file systems and an equivalent path object for both of them.
  *
  * @author Juuz
  */
 @FunctionalInterface
 public interface FsPathConsumer {
-	void accept(FileSystem sourceFs, FileSystem targetFs, Path path) throws IOException;
+	void accept(FileSystem sourceFs, FileSystem targetFs, Path sourcePath, Path targetPath) throws IOException;
 }

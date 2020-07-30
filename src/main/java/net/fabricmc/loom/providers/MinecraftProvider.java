@@ -352,8 +352,10 @@ public class MinecraftProvider extends DependencyProvider {
 						.filter(java.nio.file.Files::isRegularFile)
 						.filter(filter)
 						.forEach(it -> {
+							Path targetPath = targetFs.getPath(it.toString());
+
 							try {
-								action.accept(sourceFs, targetFs, it);
+								action.accept(sourceFs, targetFs, it, targetPath);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -369,17 +371,15 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void copyMissingClasses(File source, File target) throws IOException {
-		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, it) -> {
-			Path targetFile = targetFs.getPath(it.toString());
-
-			if (java.nio.file.Files.exists(targetFile)) return;
-			Path parent = targetFile.getParent();
+		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, sourcePath, targetPath) -> {
+			if (java.nio.file.Files.exists(targetPath)) return;
+			Path parent = targetPath.getParent();
 
 			if (parent != null) {
 				java.nio.file.Files.createDirectories(parent);
 			}
 
-			java.nio.file.Files.copy(it, targetFile);
+			java.nio.file.Files.copy(sourcePath, targetPath);
 		});
 	}
 
@@ -387,15 +387,14 @@ public class MinecraftProvider extends DependencyProvider {
 		walkFileSystems(source, target, it -> !it.toString().endsWith(".class"), this::copyReplacing);
 	}
 
-	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path it) throws IOException {
-		Path targetFile = targetFs.getPath(it.toString());
-		Path parent = targetFile.getParent();
+	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path sourcePath, Path targetPath) throws IOException {
+		Path parent = targetPath.getParent();
 
 		if (parent != null) {
 			java.nio.file.Files.createDirectories(parent);
 		}
 
-		java.nio.file.Files.copy(it, targetFile, StandardCopyOption.REPLACE_EXISTING);
+		java.nio.file.Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public File getMergedJar() {

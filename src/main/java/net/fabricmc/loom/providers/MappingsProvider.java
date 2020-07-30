@@ -47,6 +47,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.srg.SrgMerger;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
@@ -72,6 +73,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File tinyMappings;
 	public File tinyMappingsJar;
 	public File mappingsMixinExport;
+	private Path tinyMappingsWithSrg;
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -83,6 +85,14 @@ public class MappingsProvider extends DependencyProvider {
 
 	public TinyTree getMappings() throws IOException {
 		return MappingsCache.INSTANCE.get(tinyMappings.toPath());
+	}
+
+	public TinyTree getMappingsWithSrg() throws IOException {
+		if (getExtension().isForge()) {
+			return MappingsCache.INSTANCE.get(tinyMappingsWithSrg);
+		}
+
+		throw new UnsupportedOperationException("Not running with Forge support.");
 	}
 
 	@Override
@@ -129,6 +139,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
+		tinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny");
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
@@ -136,6 +147,10 @@ public class MappingsProvider extends DependencyProvider {
 
 		if (!tinyMappingsJar.exists() || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
+		}
+
+		if (getExtension().isForge() && (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps())) {
+			SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg);
 		}
 
 		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);

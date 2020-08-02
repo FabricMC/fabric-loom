@@ -47,6 +47,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
@@ -67,6 +68,7 @@ public class LoomGradleExtension {
 	private final ConfigurableFileCollection unmappedMods;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
+	final List<JarProcessor> jarProcessors = new ArrayList<>();
 
 	// Not to be set in the build.gradle
 	private final Project project;
@@ -82,6 +84,10 @@ public class LoomGradleExtension {
 	 */
 	public void addDecompiler(LoomDecompiler decompiler) {
 		decompilers.add(decompiler);
+	}
+
+	public void addJarProcessor(JarProcessor processor) {
+		jarProcessors.add(processor);
 	}
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
@@ -113,8 +119,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-			.map(File::toPath)
-			.collect(Collectors.toList());
+										.map(File::toPath)
+										.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -336,6 +342,10 @@ public class LoomGradleExtension {
 
 	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
 		this.jarProcessorManager = jarProcessorManager;
+	}
+
+	public List<JarProcessor> getJarProcessors() {
+		return jarProcessors;
 	}
 
 	public String getRefmapName() {

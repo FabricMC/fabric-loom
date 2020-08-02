@@ -33,6 +33,7 @@ import org.gradle.api.tasks.TaskContainer;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.task.CleanEclipseRunsTask;
 import net.fabricmc.loom.task.CleanLoomBinaries;
@@ -136,6 +137,9 @@ public class LoomGradlePlugin extends AbstractPlugin {
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}
+
+			JarProcessorManager processorManager = new JarProcessorManager(getProject(), extension.jarProcessors);
+			extension.setJarProcessorManager(processorManager);
 		});
 	}
 }

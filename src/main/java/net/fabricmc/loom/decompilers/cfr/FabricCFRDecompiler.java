@@ -28,16 +28,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -83,7 +87,7 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		project.getLogger().warn("!!!! The CFR decompiler support is currently incomplete, line numbers will not match up and there will be no javadocs in the generated source.");
+		project.getLogger().warn("!!!! The CFR decompiler support is currently incomplete, there will be no javadocs in the generated source.");
 
 		// Setups the multi threaded logger, the thread id is used as the key to the ProgressLogger's
 		ServiceRegistry registry = ((ProjectInternal) project).getServices();
@@ -103,6 +107,9 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 		Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 		Set<String> addedDirectories = new HashSet<>();
+		// Is this really the best way?
+		ThreadLocal<String> currentClassName = new ThreadLocal<>();
+		Map<String, Map<Integer, Integer>> classLineMappings = new ConcurrentHashMap<>();
 
 		try (OutputStream fos = Files.newOutputStream(sourcesDestination); JarOutputStream jos = new JarOutputStream(fos, manifest); ZipFile inputZip = new ZipFile(compiledJar.toFile())) {
 			CfrDriver driver = new CfrDriver.Builder()
@@ -146,6 +153,8 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 									return Collections.singletonList(SinkClass.STRING);
 								case JAVA:
 									return Collections.singletonList(SinkClass.DECOMPILED);
+								case LINENUMBER:
+									return Collections.singletonList(SinkClass.LINE_NUMBER_MAPPING);
 								default:
 									return Collections.emptyList();
 							}
@@ -159,6 +168,8 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 									return (p) -> project.getLogger().debug((String) p);
 								case JAVA:
 									return (Sink<T>) decompiledSink(jos, addedDirectories);
+								case LINENUMBER:
+									return (Sink<T>) lineNumberMappingSink(currentClassName.get(), classLineMappings);
 								case EXCEPTION:
 									return (e) -> project.getLogger().error((String) e);
 							}
@@ -179,6 +190,7 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 			for (String clazz : classes) {
 				futures.add(executorService.submit(() -> {
 					loggerMap.computeIfAbsent(Thread.currentThread().getId(), createLogger).progress(clazz);
+					currentClassName.set(clazz);
 					driver.analyse(Collections.singletonList(clazz));
 				}));
 			}
@@ -191,6 +203,12 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 		} finally {
 			loggerMap.forEach((threadId, progressLogger) -> progressLogger.completed());
 		}
+
+		try {
+			writeLineMap(linemapDestination, classLineMappings);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to write line map", e);
+		}
 	}
 
 	private static OutputSinkFactory.Sink<SinkReturns.Decompiled> decompiledSink(JarOutputStream jos, Set<String> addedDirectories) {
@@ -202,6 +220,28 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 			byte[] data = decompiled.getJava().getBytes(Charsets.UTF_8);
 
 			writeToJar(filename, data, jos, addedDirectories);
+		};
+	}
+
+	private static OutputSinkFactory.Sink<SinkReturns.LineNumberMapping> lineNumberMappingSink(String className, Map<String, Map<Integer, Integer>> classLineMappings) {
+		return lineNumbers -> {
+			NavigableMap<Integer, Integer> decompiled = lineNumbers.getMappings();
+			NavigableMap<Integer, Integer> classFile = lineNumbers.getClassFileMappings();
+
+			if (classFile != null) {
+				Map<Integer, Integer> mergedMap = classLineMappings.computeIfAbsent(className, (k) -> new TreeMap<>(Comparator.comparingInt(value -> value)));
+
+				for (Map.Entry<Integer, Integer> decompiledEntry : decompiled.entrySet()) {
+					Integer classFileLineNumber = classFile.get(decompiledEntry.getKey());
+
+					if (classFileLineNumber != null) {
+						// Create a class line -> decompiled source line map
+						mergedMap.put(classFileLineNumber, decompiledEntry.getValue());
+					} else {
+						// TODO why is sourceLine null?
+					}
+				}
+			}
 		};
 	}
 
@@ -236,6 +276,31 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 			jos.closeEntry();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	private static void writeLineMap(Path linemapDestination, Map<String, Map<Integer, Integer>> classLineMappings) throws IOException {
+		try (PrintWriter lineMapWriter = new PrintWriter(Files.newBufferedWriter(linemapDestination))) {
+			for (Map.Entry<String, Map<Integer, Integer>> entry : classLineMappings.entrySet()) {
+				String className = entry.getKey();
+				Map<Integer, Integer> lineMappings = entry.getValue();
+
+				int maxLine = 0;
+				int maxLineDest = 0;
+				StringBuilder builder = new StringBuilder();
+
+				for (Map.Entry<Integer, Integer> lineEntry : lineMappings.entrySet()) {
+					int sourceLine = lineEntry.getKey();
+					int targetLine = lineEntry.getValue();
+
+					maxLine = Math.max(maxLine, sourceLine);
+					maxLineDest = Math.max(maxLineDest, targetLine);
+					builder.append("\t").append(sourceLine).append("\t").append(targetLine).append("\n");
+				}
+
+				lineMapWriter.println(className.replace(".class", "") + "\t" + maxLine + "\t" + maxLineDest);
+				lineMapWriter.println(builder.toString());
+			}
 		}
 	}
 }

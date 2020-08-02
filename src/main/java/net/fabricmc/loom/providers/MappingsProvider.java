@@ -145,10 +145,10 @@ public class MappingsProvider extends DependencyProvider {
 		LoomGradleExtension extension = getExtension();
 
 		if (extension.accessWidener != null) {
-			extension.addJarProcessor(new AccessWidenerJarProcessor());
+			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
 		}
 
-		JarProcessorManager processorManager = new JarProcessorManager(getProject(), extension.getJarProcessors());
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
 

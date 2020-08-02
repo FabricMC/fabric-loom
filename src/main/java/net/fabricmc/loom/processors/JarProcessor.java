@@ -26,10 +26,8 @@ package net.fabricmc.loom.processors;
 
 import java.io.File;
 
-import org.gradle.api.Project;
-
 public interface JarProcessor {
-	void setup(Project project);
+	void setup();
 
 	/**
 	 * Currently this is a destructive process that replaces the existing jar.

@@ -50,20 +50,23 @@ import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.processors.JarProcessor;
+import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();
-	private Project project;
+	private final Project project;
 	private byte[] inputHash;
 
-	@Override
-	public void setup(Project project) {
+	public AccessWidenerJarProcessor(Project project) {
 		this.project = project;
+	}
+
+	@Override
+	public void setup() {
 		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		if (!loomGradleExtension.accessWidener.exists()) {
@@ -103,8 +106,8 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
 		return classes.stream()
-				.map(string -> new ZipEntryTransformerEntry(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
-				.toArray(ZipEntryTransformerEntry[]::new);
+										.map(string -> new ZipEntryTransformerEntry(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
+										.toArray(ZipEntryTransformerEntry[]::new);
 	}
 
 	private ZipEntryTransformer getTransformer(String className) {
@@ -189,44 +192,44 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 			className = name;
 			classAccess = access;
 			super.visit(
-					version,
-					accessWidener.getClassAccess(name).apply(access, name, classAccess),
-					name,
-					signature,
-					superName,
-					interfaces
+											version,
+											accessWidener.getClassAccess(name).apply(access, name, classAccess),
+											name,
+											signature,
+											superName,
+											interfaces
 			);
 		}
 
 		@Override
 		public void visitInnerClass(String name, String outerName, String innerName, int access) {
 			super.visitInnerClass(
-					name,
-					outerName,
-					innerName,
-					accessWidener.getClassAccess(name).apply(access, name, classAccess)
+											name,
+											outerName,
+											innerName,
+											accessWidener.getClassAccess(name).apply(access, name, classAccess)
 			);
 		}
 
 		@Override
 		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 			return super.visitField(
-					accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
-					name,
-					descriptor,
-					signature,
-					value
+											accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
+											name,
+											descriptor,
+											signature,
+											value
 			);
 		}
 
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			return new AccessWidenerMethodVisitor(super.visitMethod(
-					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
-					name,
-					descriptor,
-					signature,
-					exceptions
+											accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
+											name,
+											descriptor,
+											signature,
+											exceptions
 			));
 		}
 

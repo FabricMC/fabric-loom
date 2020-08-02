@@ -68,7 +68,7 @@ public class LoomGradleExtension {
 	private final ConfigurableFileCollection unmappedMods;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
-	final List<JarProcessor> jarProcessors = new ArrayList<>();
+	private final List<JarProcessor> jarProcessors = new ArrayList<>();
 
 	// Not to be set in the build.gradle
 	private final Project project;
@@ -86,6 +86,13 @@ public class LoomGradleExtension {
 		decompilers.add(decompiler);
 	}
 
+	/**
+	 * Add a transformation over the mapped mc jar.
+	 * Adding any jar processor will cause mapped mc jars to be stored per-project so that
+	 * different transformation can be applied in different projects.
+	 * This means remapping will need to be done individually per-project, which is slower when developing
+	 * more than one project using the same minecraft version.
+	 */
 	public void addJarProcessor(JarProcessor processor) {
 		jarProcessors.add(processor);
 	}

@@ -137,9 +137,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}
-
-			JarProcessorManager processorManager = new JarProcessorManager(getProject(), extension.jarProcessors);
-			extension.setJarProcessorManager(processorManager);
 		});
 	}
 }

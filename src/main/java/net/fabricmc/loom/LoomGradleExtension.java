@@ -119,8 +119,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-										.map(File::toPath)
-										.collect(Collectors.toList());
+			.map(File::toPath)
+			.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {

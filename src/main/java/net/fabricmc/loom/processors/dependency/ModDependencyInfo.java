@@ -61,11 +61,11 @@ public class ModDependencyInfo {
 	}
 
 	public String getRemappedNotation() {
-		return String.format("%s:%s:%s@%s%s", group, name, version, remapData.mappingsSuffix, classifier);
+		return String.format("%s:%s%s:%s@%s", group, name, classifier.replace(':', '-'), version, remapData.mappingsSuffix);
 	}
 
 	public String getRemappedFilename() {
-		return String.format("%s-%s@%s", name, version, remapData.mappingsSuffix + classifier.replace(':', '-'));
+		return String.format("%s%s-%s@%s", name, classifier.replace(':', '-'), version, remapData.mappingsSuffix);
 	}
 
 	public File getRemappedOutput() {

@@ -90,7 +90,7 @@ public class ModDependencyInfo {
 
 	@Override
 	public String toString() {
-		return String.format("%s:%s:%s:%s", group, name, version, classifier);
+		return String.format("%s:%s:%s%s", group, name, version, classifier);
 	}
 
 	public String getAccessWidener() throws IOException {

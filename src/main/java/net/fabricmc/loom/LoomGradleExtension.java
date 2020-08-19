@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,6 +53,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.MojmapCreator;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -96,6 +98,28 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
 		this.unmappedMods = project.files();
+	}
+
+	/**
+	 * Creates a dependency for the official Minecraft Mappings.
+	 * <br>
+	 * Note: It is the full responsibility of the user to bear these mappings. Users must read and accept the
+	 * license on the header of the official Minecraft mappings. As of current, the license header provided, but
+	 * may not be correct.
+	 * <br>
+	 * <code>© 2020 Microsoft Corporation. All rights reserved. These mappings are provided "as-is" and you bear the
+	 * risk of using them. You may copy and use the mappings for development purposes, but you may not redistribute
+	 * the mappings complete and unmodified. Microsoft makes no warranties, express or implied, with respect to the
+	 * mappings provided here.  Use and modification of source code for Minecraft: Java Edition is governed by the
+	 * Minecraft End User License Agreement available at https://account.mojang.com/documents/minecraft_eula. </code>
+	 * <br>
+	 *
+	 * @param version Minecraft version to lookup
+	 * @return The dependency. This still needs to be applied to an appropriate configuration
+	 * @throws IOException If any I/O exception occurs while downloading, manipulating or writing mappings
+	 */
+	public Dependency mojmap(String version) throws IOException {
+		return MojmapCreator.mojmap(project, this, version);
 	}
 
 	/**

@@ -123,25 +123,25 @@ public class MojmapCreator {
 				Files.createDirectories(path.getParent());
 
 				try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
-					writer.print("v1\tofficial\tintermediary\tnamed");
+					writer.println("v1\tofficial\tintermediary\tnamed");
 
 					iterateClasses(officialToIntermediary, intermediaryClass -> {
 						String officialName = intermediaryClass.getFullObfuscatedName();
 						ClassMapping<?, ?> mojmapClass = officialToNamed.getClassMapping(officialName).map(x -> (ClassMapping) x).orElse(intermediaryClass);
-						writer.print("\nCLASS\t" + officialName + "\t" + intermediaryClass.getFullDeobfuscatedName() + "\t" + mojmapClass.getFullDeobfuscatedName());
+						writer.println("CLASS\t" + officialName + "\t" + intermediaryClass.getFullDeobfuscatedName() + "\t" + mojmapClass.getFullDeobfuscatedName());
 
 						for (FieldMapping intermediaryField : intermediaryClass.getFieldMappings()) {
 							FieldSignature signature = intermediaryField.getSignature();
 							FieldMapping mojmapField = mojmapClass.getFieldMapping(signature.getName()).orElse(intermediaryField);
 
-							writer.print("\nFIELD\t" + officialName + "\t" + signature.getType().get() + "\t" + intermediaryField.getObfuscatedName() + "\t" + intermediaryField.getDeobfuscatedName() + "\t" + mojmapField.getDeobfuscatedName());
+							writer.println("FIELD\t" + officialName + "\t" + signature.getType().get() + "\t" + intermediaryField.getObfuscatedName() + "\t" + intermediaryField.getDeobfuscatedName() + "\t" + mojmapField.getDeobfuscatedName());
 						}
 
 						for (MethodMapping intermediaryMethod : intermediaryClass.getMethodMappings()) {
 							MethodSignature signature = intermediaryMethod.getSignature();
 							MethodMapping mojmapMethod = mojmapClass.getMethodMapping(signature).orElse(intermediaryMethod);
 
-							writer.print("\nMETHOD\t" + officialName + "\t" + signature.getDescriptor() + "\t" + intermediaryMethod.getObfuscatedName() + "\t" + intermediaryMethod.getDeobfuscatedName() + "\t" + mojmapMethod.getDeobfuscatedName());
+							writer.println("METHOD\t" + officialName + "\t" + signature.getDescriptor() + "\t" + intermediaryMethod.getObfuscatedName() + "\t" + intermediaryMethod.getDeobfuscatedName() + "\t" + mojmapMethod.getDeobfuscatedName());
 						}
 					});
 

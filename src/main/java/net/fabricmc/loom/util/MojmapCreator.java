@@ -26,8 +26,8 @@ package net.fabricmc.loom.util;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URL;
@@ -101,9 +101,26 @@ public class MojmapCreator {
 
 				MappingSet mappings = MappingSet.create();
 
+				// Print license headers
+				String clientMappingsString = MoreFiles.asCharSource(clientMappings.toPath(), StandardCharsets.UTF_8).read();
+				String serverMappingsString = MoreFiles.asCharSource(serverMappings.toPath(), StandardCharsets.UTF_8).read();
+
+				{
+					project.getLogger().warn("Looking for comments in official Minecraft mappings");
+					project.getLogger().warn("");
+
+					for (String line : clientMappingsString.split("\\v+")) {
+						if (line.startsWith("#")) {
+							project.getLogger().warn(line);
+						}
+					}
+
+					project.getLogger().warn("");
+				}
+
 				try (
-						ProGuardReader clientReader = new ProGuardReader(new FileReader(clientMappings));
-						ProGuardReader serverReader = new ProGuardReader(new FileReader(serverMappings))) {
+						ProGuardReader clientReader = new ProGuardReader(new StringReader(clientMappingsString));
+						ProGuardReader serverReader = new ProGuardReader(new StringReader(serverMappingsString))) {
 					clientReader.read(mappings);
 					serverReader.read(mappings);
 				}

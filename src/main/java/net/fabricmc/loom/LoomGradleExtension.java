@@ -104,8 +104,8 @@ public class LoomGradleExtension {
 	 * Creates a dependency for the official Minecraft Mappings.
 	 * <br>
 	 * Note: It is the full responsibility of the user to bear these mappings. Users must read and accept the
-	 * license on the header of the official Minecraft mappings. As of current, the license header provided, but
-	 * may not be correct.
+	 * license on the header of the official Minecraft mappings. As of current, the license header is provided below,
+	 * but may not be correct.
 	 * <br>
 	 * <code>© 2020 Microsoft Corporation. All rights reserved. These mappings are provided "as-is" and you bear the
 	 * risk of using them. You may copy and use the mappings for development purposes, but you may not redistribute

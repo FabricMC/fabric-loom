@@ -33,12 +33,13 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import com.google.common.io.Files;
+import com.google.common.io.MoreFiles;
 import com.google.gson.Gson;
 import org.cadixdev.bombe.type.signature.FieldSignature;
 import org.cadixdev.bombe.type.signature.MethodSignature;
@@ -76,7 +77,7 @@ public class MojmapCreator {
 
 		File manifests = new File(userCache, "version_manifest.json");
 		DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
-		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
+		String versionManifest = MoreFiles.asCharSource(manifests.toPath(), StandardCharsets.UTF_8).read();
 		ManifestVersion mcManifest = GSON.fromJson(versionManifest, ManifestVersion.class);
 
 		ManifestVersion.Versions version = mcManifest.versions.stream().filter(v -> v.id.equals(minecraftVersionRaw)).findAny().get();
@@ -88,7 +89,7 @@ public class MojmapCreator {
 			File minecraftJson = new File(userCache, "minecraft-" + id + "-info.json");
 			DownloadUtil.downloadIfChanged(new URL(version.url), minecraftJson, project.getLogger());
 
-			MinecraftVersionInfo info = GSON.fromJson(Files.asCharSource(minecraftJson, StandardCharsets.UTF_8).read(), MinecraftVersionInfo.class);
+			MinecraftVersionInfo info = GSON.fromJson(MoreFiles.asCharSource(minecraftJson.toPath(), StandardCharsets.UTF_8).read(), MinecraftVersionInfo.class);
 
 			File clientMappings = new File(steps, "mojmap-" + id + "-client.txt");
 			File serverMappings = new File(steps, "mojmap-" + id + "-server.txt");
@@ -119,9 +120,9 @@ public class MojmapCreator {
 
 			try (FileSystem fileSystem = FileSystems.newFileSystem(URI.create("jar:" + mappingsJar.toURI().toURL()), CREATE)) {
 				Path path = fileSystem.getPath("mappings", "mappings.tiny");
-				java.nio.file.Files.createDirectories(path.getParent());
+				Files.createDirectories(path.getParent());
 
-				try (PrintWriter writer = new PrintWriter(java.nio.file.Files.newBufferedWriter(path))) {
+				try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
 					writer.print("v1\tofficial\tintermediary\tnamed");
 
 					iterateClasses(officialToIntermediary, intermediaryClass -> {

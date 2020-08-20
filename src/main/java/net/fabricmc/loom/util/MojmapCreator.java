@@ -24,20 +24,18 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.Writer;
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import com.google.common.io.MoreFiles;
@@ -57,18 +55,16 @@ import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.DefaultSelfResolvingDependency;
 import org.gradle.api.internal.file.FileCollectionInternal;
 import org.gradle.internal.component.external.model.DefaultModuleComponentIdentifier;
+import org.zeroturnaround.zip.ByteSource;
+import org.zeroturnaround.zip.ZipEntrySource;
+import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.lorenztiny.TinyMappingFormat;
+import net.fabricmc.lorenztiny.TinyMappingsReader;
+import net.fabricmc.mapping.tree.TinyMappingFactory;
 
 public class MojmapCreator {
 	private static final Gson GSON = new Gson();
-	private static final ClassLoader CLASS_LOADER = null;
-	private static final Map<String, Object> CREATE = new HashMap<>();
-
-	static {
-		CREATE.put("create", "true");
-	}
 
 	public static Dependency mojmap(Project project, LoomGradleExtension extension, String minecraftVersionRaw) throws IOException {
 		File userCache = extension.getUserCache();
@@ -133,8 +129,10 @@ public class MojmapCreator {
 				File intermediaryJar = new File(steps, "v2-intermediary-" + id + ".jar");
 				DownloadUtil.downloadIfChanged(new URL(extension.getIntermediaryUrl().apply(id)), intermediaryJar, project.getLogger());
 
-				try (FileSystem fileSystem = FileSystems.newFileSystem(intermediaryJar.toPath(), CLASS_LOADER)) {
-					intermediaryToOfficial = TinyMappingFormat.DETECT.createReader(fileSystem.getPath("mappings/mappings.tiny"), "intermediary", "official").read();
+				byte[] bytes = ZipUtil.unpackEntry(intermediaryJar, "mappings/mappings.tiny");
+
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8))) {
+					intermediaryToOfficial = new TinyMappingsReader(TinyMappingFactory.loadWithDetection(reader), "intermediary", "named").read();
 				}
 			}
 
@@ -163,13 +161,14 @@ public class MojmapCreator {
 			});
 
 			// Write
-			try (FileSystem fileSystem = FileSystems.newFileSystem(URI.create("jar:" + mappingsJar.toURI().toURL()), CREATE)) {
-				Path path = fileSystem.getPath("mappings", "mappings.tiny");
-				Files.createDirectories(path.getParent());
+			{
+				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-				try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+				try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
 					new TinyWriter(writer, "intermediary", "named").write(intermediaryToNamed);
 				}
+
+				ZipUtil.pack(new ZipEntrySource[] {new ByteSource("mappings/mappings.tiny", outputStream.toByteArray())}, mappingsJar);
 			}
 		}
 

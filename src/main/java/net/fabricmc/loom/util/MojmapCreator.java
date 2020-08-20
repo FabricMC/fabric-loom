@@ -102,7 +102,7 @@ public class MojmapCreator {
 				String serverMappingsString = MoreFiles.asCharSource(serverMappings.toPath(), StandardCharsets.UTF_8).read();
 
 				{
-					project.getLogger().warn("Looking for comments in official Minecraft mappings");
+					project.getLogger().warn("'USING OFFICIAL MAPPINGS. YOU ARE USING THESE MAPPINGS AT YOUR OWN RISK UNDER THE FOLLOWING LICENSE:'");
 					project.getLogger().warn("");
 
 					for (String line : clientMappingsString.split("\\v+")) {
@@ -132,7 +132,7 @@ public class MojmapCreator {
 				byte[] bytes = ZipUtil.unpackEntry(intermediaryJar, "mappings/mappings.tiny");
 
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8))) {
-					intermediaryToOfficial = new TinyMappingsReader(TinyMappingFactory.loadWithDetection(reader), "intermediary", "named").read();
+					intermediaryToOfficial = new TinyMappingsReader(TinyMappingFactory.loadWithDetection(reader), "intermediary", "official").read();
 				}
 			}
 

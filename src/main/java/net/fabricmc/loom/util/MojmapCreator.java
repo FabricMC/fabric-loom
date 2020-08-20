@@ -76,7 +76,7 @@ public class MojmapCreator {
 
 		File mappingsJar = new File(mappingsDir, "mojmap-" + id + ".jar");
 
-		if (!mappingsJar.exists()) {
+		if (!mappingsJar.exists() || project.getGradle().getStartParameter().isRefreshDependencies()) {
 			MappingSet officialToNamed;
 			MappingSet intermediaryToOfficial;
 

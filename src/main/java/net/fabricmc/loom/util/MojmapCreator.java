@@ -60,6 +60,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 
@@ -71,7 +72,7 @@ public class MojmapCreator {
 		File mappingsDir = new File(userCache, "mappings");
 		File steps = new File(mappingsDir, "steps");
 
-		ManifestVersion.Versions version = findVersion(project, userCache, minecraftVersionRaw);
+		ManifestVersion.Versions version = MinecraftProvider.findVersion(project, userCache, minecraftVersionRaw).get();
 		String id = version.id;
 
 		File mappingsJar = new File(mappingsDir, "mojmap-" + id + ".jar");
@@ -102,7 +103,7 @@ public class MojmapCreator {
 				String serverMappingsString = MoreFiles.asCharSource(serverMappings.toPath(), StandardCharsets.UTF_8).read();
 
 				{
-					project.getLogger().warn("'USING OFFICIAL MAPPINGS. YOU ARE USING THESE MAPPINGS AT YOUR OWN RISK UNDER THE FOLLOWING LICENSE:'");
+					project.getLogger().warn("USING OFFICIAL MAPPINGS. YOU ARE USING THESE MAPPINGS AT YOUR OWN RISK UNDER THE FOLLOWING LICENSE:");
 					project.getLogger().warn("");
 
 					for (String line : clientMappingsString.split("\\v+")) {
@@ -190,15 +191,6 @@ public class MojmapCreator {
 				return gradleId.getVersion();
 			}
 		};
-	}
-
-	private static ManifestVersion.Versions findVersion(Project project, File userCache, String raw) throws IOException {
-		File manifests = new File(userCache, "version_manifest.json");
-		DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, project.getLogger());
-		String versionManifest = MoreFiles.asCharSource(manifests.toPath(), StandardCharsets.UTF_8).read();
-		ManifestVersion mcManifest = GSON.fromJson(versionManifest, ManifestVersion.class);
-
-		return mcManifest.versions.stream().filter(v -> v.id.equals(raw)).findAny().get();
 	}
 
 	private static void iterateClasses(MappingSet mappings, Consumer<ClassMapping<?, ?>> consumer) {

@@ -33,9 +33,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipError;
 
-import com.google.common.io.Files;
+import com.google.common.io.MoreFiles;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -49,6 +48,8 @@ import net.fabricmc.loom.util.StaticPathWatcher;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProvider extends DependencyProvider {
+	private static final Gson GSON = new Gson();
+
 	private String minecraftVersion;
 
 	private MinecraftVersionInfo versionInfo;
@@ -119,28 +120,6 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
-		File manifests = new File(getExtension().getUserCache(), "version_manifest.json");
-
-		if (getExtension().isShareCaches() && !getExtension().isRootProject() && manifests.exists() && !isRefreshDeps()) {
-			return;
-		}
-
-		if (offline) {
-			if (manifests.exists()) {
-				// If there is the manifests already we'll presume that's good enough
-				getProject().getLogger().debug("Found version manifests, presuming up-to-date");
-			} else {
-				// If we don't have the manifests then there's nothing more we can do
-				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
-			}
-		} else {
-			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, getProject().getLogger());
-		}
-
-		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
-		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
-
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
 
 		if (getExtension().customManifest != null) {
@@ -152,7 +131,7 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 
 		if (!optionalVersion.isPresent()) {
-			optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+			optionalVersion = findVersion(getProject(), getExtension().getUserCache(), minecraftVersion);
 		}
 
 		if (optionalVersion.isPresent()) {
@@ -212,5 +191,25 @@ public class MinecraftProvider extends DependencyProvider {
 	@Override
 	public String getTargetConfig() {
 		return Constants.MINECRAFT;
+	}
+
+	public static Optional<ManifestVersion.Versions> findVersion(Project project, File userCache, String raw) throws IOException {
+		File manifest = new File(userCache, "version_manifest.json");
+
+		if (project.getGradle().getStartParameter().isOffline()) {
+			if (manifest.exists()) {
+				project.getLogger().debug("Found version manifest, presuming up-to-date");
+			} else {
+				throw new GradleException("Version manifest not found at " + manifest.getAbsolutePath());
+			}
+		} else {
+			project.getLogger().debug("Downloading version manifest");
+			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifest, project.getLogger());
+		}
+
+		String versionManifest = MoreFiles.asCharSource(manifest.toPath(), StandardCharsets.UTF_8).read();
+		ManifestVersion mcManifest = GSON.fromJson(versionManifest, ManifestVersion.class);
+
+		return mcManifest.versions.stream().filter(v -> v.id.equals(raw)).findAny();
 	}
 }

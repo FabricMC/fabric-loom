@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
@@ -379,7 +380,7 @@ public class LoomGradleExtension {
 	// Ideally this should use maven, but this is a lot easier
 	public Function<String, String> getIntermediaryUrl() {
 		// Done like this to work around this possibly not being a java string...
-		return s -> intermediaryUrl.apply(s).toString();
+		return s -> intermediaryUrl.apply(UrlEscapers.urlFragmentEscaper().escape(s)).toString();
 	}
 
 	public boolean isRootProject() {

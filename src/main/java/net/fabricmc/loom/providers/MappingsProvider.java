@@ -36,7 +36,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
-import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -165,8 +164,7 @@ public class MappingsProvider extends DependencyProvider {
 			// These are unmerged v2 mappings
 
 			// Download and extract intermediary
-			String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
-			String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
+			String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(minecraftVersion);
 			Path intermediaryJar = mappingsStepsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
 			DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), project.getLogger());
 

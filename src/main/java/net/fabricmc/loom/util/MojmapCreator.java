@@ -72,7 +72,7 @@ public class MojmapCreator {
 		File mappingsDir = new File(userCache, "mappings");
 		File steps = new File(mappingsDir, "steps");
 
-		ManifestVersion.Versions version = MinecraftProvider.findVersion(project, userCache, minecraftVersionRaw).get();
+		ManifestVersion.Versions version = MinecraftProvider.findVersion(project, extension, minecraftVersionRaw).get();
 		String id = version.id;
 
 		File mappingsJar = new File(mappingsDir, "mojmap-" + id + ".jar");

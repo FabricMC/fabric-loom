@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 
 import com.google.common.io.Files;
@@ -60,7 +61,14 @@ public class DownloadUtil {
 	 * @throws IOException If an exception occurs during the process
 	 */
 	public static void downloadIfChanged(URL from, File to, Logger logger, boolean quiet) throws IOException {
-		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
+		URLConnection urlConnection = from.openConnection();
+
+		if (!(urlConnection instanceof HttpURLConnection)) {
+			Files.asByteSink(to).writeFrom(urlConnection.getInputStream());
+			return;
+		}
+
+		HttpURLConnection connection = (HttpURLConnection) urlConnection;
 
 		if (refreshDeps) {
 			getETagFile(to).delete();

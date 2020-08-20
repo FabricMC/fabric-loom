@@ -39,6 +39,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -120,19 +121,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
-		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
-
-		if (getExtension().customManifest != null) {
-			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
-			customVersion.id = minecraftVersion;
-			customVersion.url = getExtension().customManifest;
-			optionalVersion = Optional.of(customVersion);
-			getProject().getLogger().lifecycle("Using custom minecraft manifest");
-		}
-
-		if (!optionalVersion.isPresent()) {
-			optionalVersion = findVersion(getProject(), getExtension().getUserCache(), minecraftVersion);
-		}
+		Optional<ManifestVersion.Versions> optionalVersion = findVersion(getProject(), getExtension(), minecraftVersion);
 
 		if (optionalVersion.isPresent()) {
 			if (offline) {
@@ -193,8 +182,17 @@ public class MinecraftProvider extends DependencyProvider {
 		return Constants.MINECRAFT;
 	}
 
-	public static Optional<ManifestVersion.Versions> findVersion(Project project, File userCache, String raw) throws IOException {
-		File manifest = new File(userCache, "version_manifest.json");
+	public static Optional<ManifestVersion.Versions> findVersion(Project project, LoomGradleExtension extension, String raw) throws IOException {
+		if (extension.customManifest != null) {
+			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
+			customVersion.id = raw;
+			customVersion.url = extension.customManifest;
+			project.getLogger().lifecycle("Using custom minecraft manifest");
+
+			return Optional.of(customVersion);
+		}
+
+		File manifest = new File(extension.getUserCache(), "version_manifest.json");
 
 		if (project.getGradle().getStartParameter().isOffline()) {
 			if (manifest.exists()) {

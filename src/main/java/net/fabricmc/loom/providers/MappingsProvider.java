@@ -66,8 +66,10 @@ public class MappingsProvider extends DependencyProvider {
 	public String minecraftVersion;
 	public String mappingsVersion;
 
-	private Path mappingsDir;
-	private Path mappingsStepsDir;
+	private final Path mappingsDir;
+	private final Path mappingsStepsDir;
+	private Path intermediaryTiny;
+	private boolean hasRefreshed = false;
 	// The mappings that gradle gives us
 	private Path baseTinyMappings;
 	// The mappings we use in practice
@@ -77,6 +79,8 @@ public class MappingsProvider extends DependencyProvider {
 
 	public MappingsProvider(Project project) {
 		super(project);
+		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
+		mappingsStepsDir = mappingsDir.resolve("steps");
 	}
 
 	public void clean() throws IOException {
@@ -172,14 +176,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		if (baseMappingsAreV2()) {
 			// These are unmerged v2 mappings
-
-			// Download and extract intermediary
-			String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
-			String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
-			Path intermediaryJar = mappingsStepsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
-			DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), project.getLogger());
-
-			mergeAndSaveMappings(project, intermediaryJar, yarnJar);
+			mergeAndSaveMappings(project, yarnJar);
 		} else {
 			// These are merged v1 mappings
 			if (tinyMappings.exists()) {
@@ -216,14 +213,15 @@ public class MappingsProvider extends DependencyProvider {
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException {
-		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary.tiny");
-		project.getLogger().info(":extracting " + unmergedIntermediaryJar.getFileName());
+	private void extractIntermediary(Path intermediaryJar, Path intermediaryTiny) throws IOException {
+		getProject().getLogger().info(":extracting " + intermediaryJar.getFileName());
 
-		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, (ClassLoader) null)) {
-			extractMappings(unmergedIntermediaryFs, unmergedIntermediary);
+		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(intermediaryJar, (ClassLoader) null)) {
+			extractMappings(unmergedIntermediaryFs, intermediaryTiny);
 		}
+	}
 
+	private void mergeAndSaveMappings(Project project, Path unmergedYarnJar) throws IOException {
 		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn.tiny");
 		project.getLogger().info(":extracting " + unmergedYarnJar.getFileName());
 
@@ -232,7 +230,7 @@ public class MappingsProvider extends DependencyProvider {
 		}
 
 		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
-		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
+		reorderMappings(getIntermediaryTiny(), invertedIntermediary, "intermediary", "official");
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
 		project.getLogger().info(":merging");
 		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
@@ -277,9 +275,6 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private void initFiles() {
-		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
-		mappingsStepsDir = mappingsDir.resolve("steps");
-
 		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
 		mappingsMixinExport = new File(getExtension().getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
@@ -311,5 +306,31 @@ public class MappingsProvider extends DependencyProvider {
 	@Override
 	public String getTargetConfig() {
 		return Constants.MAPPINGS;
+	}
+
+	public Path getMappingsDir() {
+		return mappingsDir;
+	}
+
+	public Path getIntermediaryTiny() throws IOException {
+		if (intermediaryTiny == null) {
+			intermediaryTiny = Paths.get(mappingsStepsDir.toString(), String.format("intermediary-%s%s.tiny", minecraftVersion, mappingsVersion));
+
+			if (!Files.exists(intermediaryTiny) || (isRefreshDeps() && !hasRefreshed)) {
+				hasRefreshed = true;
+
+				minecraftVersion = getExtension().getMinecraftProvider().getMinecraftVersion();
+
+				// Download and extract intermediary
+				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
+				String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
+				Path intermediaryJar = mappingsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
+				DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), getProject().getLogger());
+
+				extractIntermediary(intermediaryJar, intermediaryTiny);
+			}
+		}
+
+		return intermediaryTiny;
 	}
 }

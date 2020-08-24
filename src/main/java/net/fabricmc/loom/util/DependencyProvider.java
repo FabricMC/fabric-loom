@@ -133,6 +133,10 @@ public abstract class DependencyProvider {
 		}
 
 		public Set<File> resolve() {
+			if (dependency instanceof SelfResolvingDependency) {
+				return ((SelfResolvingDependency) dependency).resolve();
+			}
+
 			return sourceConfiguration.files(dependency);
 		}
 

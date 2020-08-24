@@ -53,6 +53,7 @@ import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -103,6 +104,10 @@ public class LoomGradleExtension {
 
 	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
+	}
+
+	public Dependency officialMojangMappings() {
+		return new MojangMappingsDependency(project, this);
 	}
 
 	public LoomGradleExtension(Project project) {

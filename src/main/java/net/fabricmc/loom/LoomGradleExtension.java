@@ -47,6 +47,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
@@ -67,6 +68,7 @@ public class LoomGradleExtension {
 	private final ConfigurableFileCollection unmappedMods;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
+	private final List<JarProcessor> jarProcessors = new ArrayList<>();
 
 	// Not to be set in the build.gradle
 	private final Project project;
@@ -82,6 +84,17 @@ public class LoomGradleExtension {
 	 */
 	public void addDecompiler(LoomDecompiler decompiler) {
 		decompilers.add(decompiler);
+	}
+
+	/**
+	 * Add a transformation over the mapped mc jar.
+	 * Adding any jar processor will cause mapped mc jars to be stored per-project so that
+	 * different transformation can be applied in different projects.
+	 * This means remapping will need to be done individually per-project, which is slower when developing
+	 * more than one project using the same minecraft version.
+	 */
+	public void addJarProcessor(JarProcessor processor) {
+		jarProcessors.add(processor);
 	}
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
@@ -336,6 +349,10 @@ public class LoomGradleExtension {
 
 	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
 		this.jarProcessorManager = jarProcessorManager;
+	}
+
+	public List<JarProcessor> getJarProcessors() {
+		return jarProcessors;
 	}
 
 	public String getRefmapName() {

@@ -44,18 +44,20 @@ import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.JarProcessorManager;
+import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
-import net.fabricmc.loom.processors.JarProcessorManager;
-import net.fabricmc.loom.processors.MinecraftProcessedProvider;
-import net.fabricmc.loom.util.DeletingFileVisitor;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -140,8 +142,15 @@ public class MappingsProvider extends DependencyProvider {
 
 		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
 
-		JarProcessorManager processorManager = new JarProcessorManager(getProject());
-		getExtension().setJarProcessorManager(processorManager);
+		LoomGradleExtension extension = getExtension();
+
+		if (extension.accessWidener != null) {
+			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
+		}
+
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
+		extension.setJarProcessorManager(processorManager);
+		processorManager.setupProcessors();
 
 		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);

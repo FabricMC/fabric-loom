@@ -50,20 +50,23 @@ import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.processors.JarProcessor;
+import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();
-	private Project project;
+	private final Project project;
 	private byte[] inputHash;
 
-	@Override
-	public void setup(Project project) {
+	public AccessWidenerJarProcessor(Project project) {
 		this.project = project;
+	}
+
+	@Override
+	public void setup() {
 		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		if (!loomGradleExtension.accessWidener.exists()) {

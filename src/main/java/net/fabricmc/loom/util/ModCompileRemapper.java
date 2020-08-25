@@ -35,7 +35,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
 import org.gradle.api.artifacts.result.ArtifactResult;
@@ -66,25 +65,16 @@ public class ModCompileRemapper {
 			List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
 			for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-				String group;
-				String name;
-				String version;
+				// TODO: This collection doesn't appear to include FileCollection dependencies
+				// Might have to go based on the dependencies, rather than their resolved form?
+				// File dependencies use SelfResolvingDependency, which appears to be handled differently
+				String group = artifact.getModuleVersion().getId().getGroup();
+				String name = artifact.getModuleVersion().getId().getName();
+				String version = artifact.getModuleVersion().getId().getVersion();
 				String classifierSuffix = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
-				if (artifact.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier) {
-					group = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getGroup();
-					name = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getModule();
-					version = ((ModuleComponentIdentifier) artifact.getId().getComponentIdentifier()).getVersion();
-				} else {
-					group = "net.fabricmc.synthetic";
-					name = artifact.getId().getComponentIdentifier().getDisplayName().replace('.', '-').replace(" :", "-");
-					version = "0.1.0";
-				}
-
-				final String notation = group + ":" + name + ":" + version + classifierSuffix;
-
-				if (!isFabricMod(logger, artifact, notation)) {
-					addToRegularCompile(project, regularConfig, notation);
+				if (!isFabricMod(logger, artifact)) {
+					addToRegularCompile(project, regularConfig, artifact);
 					continue;
 				}
 
@@ -122,12 +112,12 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact, String notation) {
+	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact) {
 		File input = artifact.getFile();
 
 		try (ZipFile zipFile = new ZipFile(input)) {
 			if (zipFile.getEntry("fabric.mod.json") != null) {
-				logger.info("Found Fabric mod in modCompile: {}", notation);
+				logger.info("Found Fabric mod in modCompile: {}", artifact.getId());
 				return true;
 			}
 
@@ -137,10 +127,11 @@ public class ModCompileRemapper {
 		}
 	}
 
-	private static void addToRegularCompile(Project project, Configuration regularCompile, String notation) {
-		project.getLogger().info(":providing " + notation);
+	private static void addToRegularCompile(Project project, Configuration regularCompile, ResolvedArtifact artifact) {
+		project.getLogger().info(":providing " + artifact);
 		DependencyHandler dependencies = project.getDependencies();
-		Dependency dep = dependencies.module(notation);
+		Dependency dep = dependencies.module(artifact.getModuleVersion().toString()
+						+ (artifact.getClassifier() == null ? "" : ':' + artifact.getClassifier())); // the owning module of the artifact
 
 		if (dep instanceof ModuleDependency) {
 			((ModuleDependency) dep).setTransitive(false);

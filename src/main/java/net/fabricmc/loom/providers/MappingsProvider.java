@@ -318,7 +318,7 @@ public class MappingsProvider extends DependencyProvider {
 			minecraftVersion = getExtension().getMinecraftProvider().getMinecraftVersion();
 			Preconditions.checkNotNull(minecraftVersion, "Minecraft version cannot be null");
 
-			intermediaryTiny = Paths.get(mappingsStepsDir.toString(), String.format("intermediary-%s-v2.tiny", minecraftVersion));
+			intermediaryTiny = mappingsDir.resolve(String.format("intermediary-%s-v2.tiny", minecraftVersion));
 
 			if (!Files.exists(intermediaryTiny) || (isRefreshDeps() && !hasRefreshed)) {
 				hasRefreshed = true;

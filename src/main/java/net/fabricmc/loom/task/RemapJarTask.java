@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -212,7 +213,10 @@ public class RemapJarTask extends Jar {
 							throw new RuntimeException("Failed to remap access widener");
 						}
 
-						return Pair.of(accessWidenerJarProcessor.getAccessWidenerPath(remapData.output), data);
+						String awPath = accessWidenerJarProcessor.getAccessWidenerPath(remapData.input);
+						Preconditions.checkNotNull(awPath, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
+
+						return Pair.of(awPath, data);
 					}
 
 					return null;
@@ -233,7 +237,8 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (accessWidener != null) {
-						ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
+						boolean replaced = ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
+						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 				});
 	}

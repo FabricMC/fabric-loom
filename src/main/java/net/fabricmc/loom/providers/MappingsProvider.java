@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
+import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
@@ -314,12 +315,13 @@ public class MappingsProvider extends DependencyProvider {
 
 	public Path getIntermediaryTiny() throws IOException {
 		if (intermediaryTiny == null) {
-			intermediaryTiny = Paths.get(mappingsStepsDir.toString(), String.format("intermediary-%s%s.tiny", minecraftVersion, mappingsVersion));
+			minecraftVersion = getExtension().getMinecraftProvider().getMinecraftVersion();
+			Preconditions.checkNotNull(minecraftVersion, "Minecraft version cannot be null");
+
+			intermediaryTiny = Paths.get(mappingsStepsDir.toString(), String.format("intermediary-%s-v2.tiny", minecraftVersion));
 
 			if (!Files.exists(intermediaryTiny) || (isRefreshDeps() && !hasRefreshed)) {
 				hasRefreshed = true;
-
-				minecraftVersion = getExtension().getMinecraftProvider().getMinecraftVersion();
 
 				// Download and extract intermediary
 				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);

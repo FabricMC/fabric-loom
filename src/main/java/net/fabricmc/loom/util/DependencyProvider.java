@@ -175,12 +175,14 @@ public abstract class DependencyProvider {
 
 	public static class FileDependencyInfo extends DependencyInfo {
 		protected final Map<String, File> classifierToFile = new HashMap<>();
+		protected final Set<File> resolvedFiles;
 		protected final String group, name, version;
 
 		FileDependencyInfo(Project project, SelfResolvingDependency dependency, Configuration configuration) {
 			super(project, dependency, configuration);
 
 			Set<File> files = dependency.resolve();
+			this.resolvedFiles = files;
 			switch (files.size()) {
 			case 0: //Don't think Gradle would ever let you do this
 				throw new IllegalStateException("Empty dependency?");
@@ -262,6 +264,11 @@ public abstract class DependencyProvider {
 		@Override
 		public String getResolvedDepString() {
 			return getDepString();
+		}
+
+		@Override
+		public Set<File> resolve() {
+			return this.resolvedFiles;
 		}
 	}
 }

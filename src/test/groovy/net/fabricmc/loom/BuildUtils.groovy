@@ -3,7 +3,7 @@ package net.fabricmc.loom
 /**
  * Created by Mitchell Skaggs on 6/12/2019.
  */
-static String genBuildFile() {
+static String genBuildFile(String mappingsDep = "\"net.fabricmc:yarn:\${project.yarn_mappings}\"") {
 	"""
 plugins {
 	id 'fabric-loom'
@@ -23,7 +23,7 @@ minecraft {
 dependencies {
 	//to change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:\${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:\${project.yarn_mappings}"
+	mappings ${mappingsDep}
 	modCompile "net.fabricmc:fabric-loader:\${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.

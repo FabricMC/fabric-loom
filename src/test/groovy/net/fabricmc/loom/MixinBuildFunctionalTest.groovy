@@ -40,13 +40,7 @@ class MixinBuildFunctionalTest extends Specification {
 		modMixinsJavaFile = testProjectDir.newFile("src/main/java/net/fabricmc/example/mixin/ExampleMixin.java")
 	}
 
-	/**
-	 * Why it's ignored:
-	 * <p>
-	 * When doing mixin annotation processing, a {@link ServiceLoader} is used to find implementations of {@link org.spongepowered.tools.obfuscation.service.IObfuscationService}. The classpath isn't passed to the build properly in this case, causing the Fabric-specific {@link net.fabricmc.loom.mixin.ObfuscationServiceFabric} to not be loaded. This causes the mixin to fail to compile because it doesn't know how to be reobfuscated.
-	 */
 	@Unroll
-	@Ignore("fails because the annotation processor classpath doesn't include fabric-mixin-compile-extensions, so it doesn't know how to remap anything")
 	def "mixin build succeeds using Minecraft #mcVersion"() {
 		given:
 		settingsFile << genSettingsFile("mixin-build-functional-test")
@@ -69,9 +63,7 @@ class MixinBuildFunctionalTest extends Specification {
 		result.task(":build").outcome == SUCCESS
 
 		where:
-		mcVersion | yarnVersion       | loaderVersion     | fabricVersion
-		'1.14'    | '1.14+build.21'   | '0.4.8+build.155' | '0.3.0+build.184'
-		'1.14.1'  | '1.14.1+build.10' | '0.4.8+build.155' | '0.3.0+build.184'
-		'1.14.2'  | '1.14.2+build.7'  | '0.4.8+build.155' | '0.3.0+build.184'
+		mcVersion | yarnVersion       	| loaderVersion     | fabricVersion
+		'1.14'    | '1.14+build.21'   	| '0.4.8+build.155' | '0.3.0+build.184'
 	}
 }

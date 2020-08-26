@@ -60,6 +60,12 @@ import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 
 public class MojangMappingsDependency implements SelfResolvingDependency {
+	public static final String GROUP = "net.minecraft";
+	public static final String MODULE = "mappings";
+	// Keys in dependency manifest
+	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
+	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+
 	private final Project project;
 	private final LoomGradleExtension extension;
 
@@ -71,9 +77,9 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	@Override
 	public Set<File> resolve() {
 		Path mappingsDir = extension.getMappingsProvider().getMappingsDir();
-		Path mappingsFile = mappingsDir.resolve(String.format("net.mojang.minecraft-mappings-%s.tiny", getVersion()));
-		Path clientMappings = mappingsDir.resolve(String.format("net.mojang.minecraft.mappings-%s-client.map", getVersion()));
-		Path serverMappings = mappingsDir.resolve(String.format("net.mojang.minecraft.mappings-%s-server.map", getVersion()));
+		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
+		Path clientMappings = mappingsDir.resolve(String.format("%s.%s-%s-client.map", GROUP, MODULE, getVersion()));
+		Path serverMappings = mappingsDir.resolve(String.format("%s.%s-%s-server.map", GROUP, MODULE, getVersion()));
 
 		if (!Files.exists(mappingsFile) || project.getGradle().getStartParameter().isRefreshDependencies()) {
 			MappingSet mappingSet;
@@ -95,17 +101,17 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 		}
 
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8)) {
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 			project.getLogger().warn("Using of the official minecraft mappings is at your own risk!");
 			project.getLogger().warn("Please make sure to read and understand the following license:");
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 			String line;
 
 			while ((line = clientBufferedReader.readLine()).startsWith("#")) {
 				project.getLogger().warn(line);
 			}
 
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read client mappings", e);
 		}
@@ -116,12 +122,12 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	private MappingSet getMappingsSet(Path clientMappings, Path serverMappings) throws IOException {
 		MinecraftVersionInfo versionInfo = extension.getMinecraftProvider().getVersionInfo();
 
-		if (versionInfo.downloads.get("client_mappings") == null) {
+		if (versionInfo.downloads.get(MANIFEST_CLIENT_MAPPINGS) == null) {
 			throw new RuntimeException("Failed to find official mojang mappings for " + getVersion());
 		}
 
-		String clientMappingsUrl = versionInfo.downloads.get("client_mappings").url;
-		String serverMappingsUrl = versionInfo.downloads.get("server_mappings").url;
+		String clientMappingsUrl = versionInfo.downloads.get(MANIFEST_CLIENT_MAPPINGS).url;
+		String serverMappingsUrl = versionInfo.downloads.get(MANIFEST_SERVER_MAPPINGS).url;
 
 		DownloadUtil.downloadIfChanged(new URL(clientMappingsUrl), clientMappings.toFile(), project.getLogger());
 		DownloadUtil.downloadIfChanged(new URL(serverMappingsUrl), serverMappings.toFile(), project.getLogger());
@@ -150,7 +156,7 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 		iterateClasses(intermediaryToOfficial, inputMappings -> {
 			officialToNamed.getClassMapping(inputMappings.getFullDeobfuscatedName())
 					.ifPresent(namedClass -> {
-						ClassMapping<?, ?> mojangClassMapping = intermediaryToMojang.getOrCreateClassMapping(inputMappings .getFullObfuscatedName())
+						ClassMapping<?, ?> mojangClassMapping = intermediaryToMojang.getOrCreateClassMapping(inputMappings.getFullObfuscatedName())
 								.setDeobfuscatedName(namedClass.getFullDeobfuscatedName());
 
 						for (FieldMapping fieldMapping : inputMappings .getFieldMappings()) {
@@ -186,12 +192,12 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public String getGroup() {
-		return "net.mojang.minecraft";
+		return GROUP;
 	}
 
 	@Override
 	public String getName() {
-		return "mappings";
+		return MODULE;
 	}
 
 	@Override

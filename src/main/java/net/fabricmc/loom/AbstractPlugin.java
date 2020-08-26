@@ -38,6 +38,8 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExcludeRule;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -397,6 +399,20 @@ public class AbstractPlugin implements Plugin<Project> {
 										depNode.appendNode("artifactId", dependency.getName());
 										depNode.appendNode("version", dependency.getVersion());
 										depNode.appendNode("scope", entry.getMavenScope());
+
+										if (dependency instanceof ModuleDependency) {
+											final Set<ExcludeRule> exclusions = ((ModuleDependency) dependency).getExcludeRules();
+
+											if (!exclusions.isEmpty()) {
+												Node exclusionsNode = depNode.appendNode("exclusions");
+
+												for (ExcludeRule rule : exclusions) {
+													Node exclusionNode = exclusionsNode.appendNode("exclusion");
+													exclusionNode.appendNode("groupId", rule.getGroup() == null ? "*" : rule.getGroup());
+													exclusionNode.appendNode("artifactId", rule.getModule() == null ? "*" : rule.getModule());
+												}
+											}
+										}
 									}
 								}));
 							}

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
@@ -50,6 +51,7 @@ import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.util.JarRemapper;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -59,6 +61,8 @@ public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
+	private final Property<String> fromM;
+	private final Property<String> toM;
 	public JarRemapper jarRemapper;
 
 	public RemapJarTask() {
@@ -66,6 +70,11 @@ public class RemapJarTask extends Jar {
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);
+		fromM = getProject().getObjects().property(String.class);
+		toM = getProject().getObjects().property(String.class);
+		// Set the defaults
+		fromM.set("named");
+		toM.set("intermediary");
 		// false by default, I have no idea why I have to do it for this property and not the other one
 		remapAccessWidener.set(false);
 	}
@@ -91,8 +100,20 @@ public class RemapJarTask extends Jar {
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = this.fromM.get();
+		String toM = this.toM.get();
+
+		TinyTree mappings = mappingsProvider.getMappings();
+		List<String> namespaces = mappings.getMetadata().getNamespaces();
+
+		// Validate the namespaces are supported in the tiny tree the namespaces are supported in the tiny tree
+		if (!namespaces.contains(fromM)) {
+			RemapJarTask.throwMissingNamespaceException(project, fromM, namespaces);
+		}
+
+		if (!namespaces.contains(toM)) {
+			RemapJarTask.throwMissingNamespaceException(project, toM, namespaces);
+		}
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
 						project.getConfigurations().getByName("compileClasspath").getFiles()
@@ -104,7 +125,7 @@ public class RemapJarTask extends Jar {
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
-		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappings, fromM, toM, false));
 
 		if (mixinMapFile.exists()) {
 			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
@@ -176,8 +197,20 @@ public class RemapJarTask extends Jar {
 
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = this.fromM.get();
+		String toM = this.toM.get();
+
+		TinyTree mappings = mappingsProvider.getMappings();
+		List<String> namespaces = mappings.getMetadata().getNamespaces();
+
+		// Validate the namespaces are supported in the tiny tree
+		if (!namespaces.contains(fromM)) {
+			RemapJarTask.throwMissingNamespaceException(project, fromM, namespaces);
+		}
+
+		if (!namespaces.contains(toM)) {
+			RemapJarTask.throwMissingNamespaceException(project, toM, namespaces);
+		}
 
 		if (extension.isRootProject()) {
 			Set<File> classpathFiles = new LinkedHashSet<>(
@@ -191,7 +224,7 @@ public class RemapJarTask extends Jar {
 
 			jarRemapper.addToClasspath(classpath);
 
-			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappings, fromM, toM, false));
 		}
 
 		File mixinMapFile = mappingsProvider.mappingsMixinExport;
@@ -243,6 +276,17 @@ public class RemapJarTask extends Jar {
 				});
 	}
 
+	private static void throwMissingNamespaceException(Project project, String namespace, List<String> supportedNamespaces) {
+		project.getLogger().error(String.format("Namespace \"%s\" is not present in the mappings.", namespace));
+		project.getLogger().error("The following namespaces are supported:");
+
+		for (String supportedNamespace : supportedNamespaces) {
+			project.getLogger().error(String.format("- %s", supportedNamespace));
+		}
+
+		throw new RuntimeException();
+	}
+
 	@InputFile
 	public RegularFileProperty getInput() {
 		return input;
@@ -256,5 +300,31 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
+	}
+
+	/**
+	 * Specifies the input namespace to use to remap a built jar file.
+	 * The value of this property should match the namespace of the mappings used in sources.
+	 *
+	 * <p>The default value of this property is {@code named}.
+	 *
+	 * @return the input namespace
+	 */
+	@Input
+	public Property<String> getFromM() {
+		return this.fromM;
+	}
+
+	/**
+	 * Specifies the output namespace to use to remap a built jar file to.
+	 * The value of this property should match the namespace of the mappings to remap this jar file to.
+	 *
+	 * <p>The default value of this property is {@code intermediary}.
+	 *
+	 * @return the output namespace to remap to
+	 */
+	@Input
+	public Property<String> getToM() {
+		return this.toM;
 	}
 }

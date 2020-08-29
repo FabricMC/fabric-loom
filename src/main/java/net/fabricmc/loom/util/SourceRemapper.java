@@ -202,7 +202,7 @@ public class SourceRemapper {
 	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
 		Mercury m = new Mercury();
 
-		for (File file : project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES).getFiles()) {
+		for (File file : project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()) {
 			m.getClassPath().add(file.toPath());
 		}
 

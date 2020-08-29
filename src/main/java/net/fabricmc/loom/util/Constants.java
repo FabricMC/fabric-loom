@@ -29,16 +29,12 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 public class Constants {
-	public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
-	public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
-
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
+	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 
-	public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
-	public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
 			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
 			new RemappedConfigurationEntry("modApi", "api", true, "compile"),
@@ -47,15 +43,67 @@ public class Constants {
 			new RemappedConfigurationEntry("modCompileOnly", "compileOnly", true, "")
 	);
 
-	public static final String INCLUDE = "include";
-	public static final String MINECRAFT = "minecraft";
-	public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
-	public static final String MINECRAFT_NAMED = "minecraftNamed";
-	public static final String MAPPINGS = "mappings";
-	public static final String MAPPINGS_FINAL = "mappingsFinal";
+	private Constants() {
+	}
 
-	public static final String MIXIN_COMPILE_EXTENSIONS_VERSION = "0.3.2.6";
-	public static final String DEV_LAUNCH_INJECTOR_VERSION = "0.2.1+build.8";
-	public static final String TERMINAL_CONSOLE_APPENDER_VERSION = "1.2.0";
-	public static final String JETBRAINS_ANNOTATIONS_VERSION = "19.0.0";
+	/**
+	 * Constants related to configurations.
+	 */
+	public static final class Configurations {
+		public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
+		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
+		public static final String INCLUDE = "include";
+		public static final String MINECRAFT = "minecraft";
+		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
+		public static final String MINECRAFT_NAMED = "minecraftNamed";
+		public static final String MAPPINGS = "mappings";
+		public static final String MAPPINGS_FINAL = "mappingsFinal";
+
+		private Configurations() {
+		}
+	}
+
+	/**
+	 * Constants related to dependencies.
+	 */
+	public static final class Dependencies {
+		public static final String MIXIN_COMPILE_EXTENSIONS = "net.fabricmc:fabric-mixin-compile-extensions:";
+		public static final String DEV_LAUNCH_INJECTOR = "net.fabricmc:dev-launch-injector:";
+		public static final String TERMINAL_CONSOLE_APPENDER = "net.minecrell:terminalconsoleappender:";
+		public static final String JETBRAINS_ANNOTATIONS = "org.jetbrains:annotations:";
+
+		private Dependencies() {
+		}
+
+		/**
+		 * Constants for versions of dependencies.
+		 */
+		public static final class Versions {
+			public static final String MIXIN_COMPILE_EXTENSIONS = "0.3.2.6";
+			public static final String DEV_LAUNCH_INJECTOR = "0.2.1+build.8";
+			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
+			public static final String JETBRAINS_ANNOTATIONS = "19.0.0";
+
+			private Versions() {
+			}
+		}
+	}
+
+	public static final class MixinArguments {
+		public static final String IN_MAP_FILE_NAMED_INTERMEDIARY = "inMapFileNamedIntermediary";
+		public static final String OUT_MAP_FILE_NAMED_INTERMEDIARY = "outMapFileNamedIntermediary";
+		public static final String OUT_REFMAP_FILE = "outRefMapFile";
+		public static final String DEFAULT_OBFUSCATION_ENV = "defaultObfuscationEnv";
+
+		private MixinArguments() {
+		}
+	}
+
+	public static final class LaunchWrapper {
+		public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
+		public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
+
+		private LaunchWrapper() {
+		}
+	}
 }

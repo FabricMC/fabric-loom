@@ -145,7 +145,7 @@ public class MappingsProvider extends DependencyProvider {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
 		}
 
-		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
+		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);
 
 		LoomGradleExtension extension = getExtension();
 
@@ -306,7 +306,7 @@ public class MappingsProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.MAPPINGS;
+		return Constants.Configurations.MAPPINGS;
 	}
 
 	public Path getMappingsDir() {

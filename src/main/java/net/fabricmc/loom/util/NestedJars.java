@@ -99,7 +99,7 @@ public class NestedJars {
 	private static List<File> getContainedJars(Project project) {
 		List<File> fileList = new ArrayList<>();
 
-		ResolvedConfiguration configuration = project.getConfigurations().getByName(Constants.INCLUDE).getResolvedConfiguration();
+		ResolvedConfiguration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE).getResolvedConfiguration();
 		Set<ResolvedDependency> dependencies = configuration.getFirstLevelModuleDependencies();
 
 		for (ResolvedDependency dependency : dependencies) {
@@ -147,7 +147,7 @@ public class NestedJars {
 	public static List<RemapJarTask> getRequiredTasks(Project project) {
 		List<RemapJarTask> remapTasks = new ArrayList<>();
 
-		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
+		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		DependencySet dependencies = configuration.getDependencies();
 
 		for (Dependency dependency : dependencies) {

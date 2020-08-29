@@ -72,9 +72,9 @@ public class LaunchProvider extends DependencyProvider {
 		writeLog4jConfig();
 		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, "runtimeOnly");
-		addDependency("net.minecrell:terminalconsoleappender:" + Constants.TERMINAL_CONSOLE_APPENDER_VERSION, "runtimeOnly");
-		addDependency("org.jetbrains:annotations:" + Constants.JETBRAINS_ANNOTATIONS_VERSION, "compileOnly");
+		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, "runtimeOnly");
+		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
+		addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
 	}
 
 	private File getLog4jConfigFile() {
@@ -92,7 +92,7 @@ public class LaunchProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.MINECRAFT_NAMED;
+		return Constants.Configurations.MINECRAFT_NAMED;
 	}
 
 	public static class LaunchConfig {

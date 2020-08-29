@@ -72,10 +72,10 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		try {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 			Map<String, String> args = new HashMap<String, String>() {{
-					put("inMapFileNamedIntermediary", extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-					put("outMapFileNamedIntermediary", extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
-					put("outRefMapFile", getRefmapDestination(task, extension));
-					put("defaultObfuscationEnv", "named:intermediary");
+					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, extension.getMappingsProvider().tinyMappings.getCanonicalPath());
+					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, extension.getMappingsProvider().mappingsMixinExport.getCanonicalPath());
+					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, extension));
+					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:intermediary");
 				}};
 
 			project.getLogger().debug("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);
@@ -94,14 +94,14 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath
 				processorConfig.extendsFrom(
-								configs.getByName(Constants.MINECRAFT_NAMED),
-								configs.getByName(Constants.MOD_COMPILE_CLASSPATH_MAPPED),
-								configs.getByName(Constants.MAPPINGS_FINAL)
+								configs.getByName(Constants.Configurations.MINECRAFT_NAMED),
+								configs.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED),
+								configs.getByName(Constants.Configurations.MAPPINGS_FINAL)
 				);
 
 				// Add Mixin and mixin extensions (fabric-mixin-compile-extensions pulls mixin itself too)
 				project.getDependencies().add(processorConfig.getName(),
-								"net.fabricmc:fabric-mixin-compile-extensions:" + Constants.MIXIN_COMPILE_EXTENSIONS_VERSION);
+								Constants.Dependencies.MIXIN_COMPILE_EXTENSIONS + Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
 			}
 		}
 

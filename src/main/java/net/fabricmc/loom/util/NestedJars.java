@@ -212,7 +212,7 @@ public class NestedJars {
 		jsonObject.addProperty("name", dependency.getModuleName());
 
 		JsonObject custom = new JsonObject();
-		custom.addProperty("modmenu:api", true);
+		custom.addProperty("fabric-loom:generated", true);
 		jsonObject.add("custom", custom);
 
 		return GSON.toJson(jsonObject);

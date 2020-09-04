@@ -76,7 +76,6 @@ public class MappingsProvider extends DependencyProvider {
 	// The mappings we use in practice
 	public File tinyMappings;
 	public File tinyMappingsJar;
-	public File mappingsMixinExport;
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -277,7 +276,6 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void initFiles() {
 		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
-		mappingsMixinExport = new File(getExtension().getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 
 	public void cleanFiles() {
@@ -289,8 +287,6 @@ public class MappingsProvider extends DependencyProvider {
 			if (Files.exists(baseTinyMappings)) {
 				Files.deleteIfExists(baseTinyMappings);
 			}
-
-			mappingsMixinExport.delete();
 
 			if (tinyMappings != null) {
 				tinyMappings.delete();

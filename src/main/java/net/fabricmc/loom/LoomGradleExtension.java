@@ -399,4 +399,8 @@ public class LoomGradleExtension {
 	public boolean isShareCaches() {
 		return shareCaches;
 	}
+
+	public File getMixinMappings() {
+		return new File(getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().getMinecraftVersion() + "-" + getMappingsProvider().mappingsVersion + ".tiny");
+	}
 }

@@ -99,7 +99,7 @@ public class RemapJarTask extends Jar {
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
+		File mixinMapFile = extension.getMixinMappings();
 		Path mixinMapPath = mixinMapFile.toPath();
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
@@ -194,7 +194,7 @@ public class RemapJarTask extends Jar {
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
+		File mixinMapFile = extension.getMixinMappings();
 		Path mixinMapPath = mixinMapFile.toPath();
 
 		if (mixinMapFile.exists()) {

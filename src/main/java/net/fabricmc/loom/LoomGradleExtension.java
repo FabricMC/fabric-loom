@@ -28,8 +28,11 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -78,6 +81,7 @@ public class LoomGradleExtension {
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
+	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -400,7 +404,15 @@ public class LoomGradleExtension {
 		return shareCaches;
 	}
 
-	public File getMixinMappings() {
-		return new File(getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().getMinecraftVersion() + "-" + getMappingsProvider().mappingsVersion + ".tiny");
+	// Creates a new file each time its called, this is then held onto later when remapping the output jar
+	// Required as now when using parallel builds the old single file could be written by another sourceset compile task
+	public synchronized File getNextMixinMappings() {
+		File mixinMapping = new File(getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().getMinecraftVersion() + "-" + getMappingsProvider().mappingsVersion + "." + mixinMappings.size() + ".tiny");
+		mixinMappings.add(mixinMapping);
+		return mixinMapping;
+	}
+
+	public Set<File> getAllMixinMappings() {
+		return Collections.unmodifiableSet(mixinMappings);
 	}
 }

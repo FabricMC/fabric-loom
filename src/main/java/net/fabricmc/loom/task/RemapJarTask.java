@@ -205,11 +205,11 @@ public class RemapJarTask extends Jar {
 
 		// Validate the namespaces are supported in the tiny tree
 		if (!namespaces.contains(fromM)) {
-			RemapJarTask.throwMissingNamespaceException(project, fromM, namespaces);
+			throwMissingNamespaceException(project, fromM, namespaces);
 		}
 
 		if (!namespaces.contains(toM)) {
-			RemapJarTask.throwMissingNamespaceException(project, toM, namespaces);
+			throwMissingNamespaceException(project, toM, namespaces);
 		}
 
 		if (extension.isRootProject()) {

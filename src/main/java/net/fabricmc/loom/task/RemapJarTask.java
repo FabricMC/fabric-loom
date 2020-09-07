@@ -154,7 +154,7 @@ public class RemapJarTask extends Jar {
 		}
 
 		if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
-			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper());
+			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper(), toM);
 		}
 
 		remapper.finish();
@@ -241,7 +241,7 @@ public class RemapJarTask extends Jar {
 						byte[] data;
 
 						try {
-							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper);
+							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper, toM);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to remap access widener");
 						}

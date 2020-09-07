@@ -126,12 +126,16 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
-		return TinyRemapper.newRemapper()
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
-				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
-				.rebuildSourceFilenames(true)
-				.build();
+				.rebuildSourceFilenames(true);
+
+		if (getExtension().remapJSRAnnotations) {
+			builder.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass));
+		}
+
+		return builder.build();
 	}
 
 	public Path[] getRemapClasspath() {

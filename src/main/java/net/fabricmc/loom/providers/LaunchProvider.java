@@ -36,12 +36,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
+import net.fabricmc.loom.util.RemappedConfigurationEntry;
 
 public class LaunchProvider extends DependencyProvider {
 	public LaunchProvider(Project project) {
@@ -52,6 +54,7 @@ public class LaunchProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
+				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getLog4jConfigFile().getAbsolutePath())
 
 				.property("client", "java.library.path", getExtension().getNativesDirectory().getAbsolutePath())
@@ -75,10 +78,16 @@ public class LaunchProvider extends DependencyProvider {
 		addDependency("net.fabricmc:dev-launch-injector:" + Constants.DEV_LAUNCH_INJECTOR_VERSION, "runtimeOnly");
 		addDependency("net.minecrell:terminalconsoleappender:" + Constants.TERMINAL_CONSOLE_APPENDER_VERSION, "runtimeOnly");
 		addDependency("org.jetbrains:annotations:" + Constants.JETBRAINS_ANNOTATIONS_VERSION, "compileOnly");
+
+		postPopulationScheduler.accept(this::writeRemapClassPath);
 	}
 
 	private File getLog4jConfigFile() {
 		return new File(getExtension().getDevLauncherConfig().getParentFile(), "log4j.xml");
+	}
+
+	private File getRemapClasspathFile() {
+		return new File(getExtension().getDevLauncherConfig().getParentFile(), "remapClasspath.txt");
 	}
 
 	private void writeLog4jConfig() {
@@ -87,6 +96,30 @@ public class LaunchProvider extends DependencyProvider {
 			Files.copy(is, getLog4jConfigFile().toPath());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to generate log4j config", e);
+		}
+	}
+
+	private void writeRemapClassPath() {
+		List<String> inputConfigurations = new ArrayList<>();
+		inputConfigurations.add(Constants.MINECRAFT_DEPENDENCIES);
+		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::getSourceConfiguration).collect(Collectors.toList()));
+
+		List<File> remapClasspath = new ArrayList<>();
+
+		for (String inputConfiguration : inputConfigurations) {
+			remapClasspath.addAll(getProject().getConfigurations().getByName(inputConfiguration).getFiles());
+		}
+
+		remapClasspath.add(getExtension().getMinecraftMappedProvider().getIntermediaryJar());
+
+		String str = remapClasspath.stream()
+				.map(File::getAbsolutePath)
+				.collect(Collectors.joining(File.pathSeparator));
+
+		try {
+			Files.write(getRemapClasspathFile().toPath(), str.getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to generate remap classpath", e);
 		}
 	}
 

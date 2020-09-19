@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,9 +69,15 @@ public class ModProcessor {
 			return;
 		}
 
+		ArrayList<ModDependencyInfo> remapList = new ArrayList<>();
+
 		for (ModDependencyInfo info : processList) {
-			if (info.requiresRemapping() && info.getRemappedOutput().exists()) {
-				info.getRemappedOutput().delete();
+			if (info.requiresRemapping()) {
+				if (info.getRemappedOutput().exists()) {
+					info.getRemappedOutput().delete();
+				}
+
+				remapList.add(info);
 			}
 		}
 
@@ -78,12 +85,12 @@ public class ModProcessor {
 
 		for (ModDependencyInfo info : processList) {
 			if (!info.getRemappedOutput().exists()) {
-				throw new RuntimeException("Failed to remap mod" + info);
+				throw new RuntimeException("Failed to find remapped mod" + info);
 			}
+		}
 
-			if (info.requiresRemapping()) {
-				stripNestedJars(info.getRemappedOutput());
-			}
+		for (ModDependencyInfo info : remapList) {
+			stripNestedJars(info.getRemappedOutput());
 		}
 	}
 

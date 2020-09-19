@@ -203,7 +203,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	private static TinyTree getMappings(File mappings) throws IOException {
 		Path temp = Files.createTempFile("mappings", ".tiny");
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), (ClassLoader) null)) {
 			Files.copy(fileSystem.getPath("mappings/mappings.tiny"), temp, StandardCopyOption.REPLACE_EXISTING);
 		}
 

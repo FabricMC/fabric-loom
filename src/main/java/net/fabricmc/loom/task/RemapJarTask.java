@@ -99,15 +99,14 @@ public class RemapJarTask extends Jar {
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
-		Path mixinMapPath = mixinMapFile.toPath();
-
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 
-		if (mixinMapFile.exists()) {
-			remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+		for (File mixinMapFile : extension.getAllMixinMappings()) {
+			if (mixinMapFile.exists()) {
+				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
+			}
 		}
 
 		project.getLogger().lifecycle(":remapping " + input.getFileName());
@@ -194,11 +193,10 @@ public class RemapJarTask extends Jar {
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
-		Path mixinMapPath = mixinMapFile.toPath();
-
-		if (mixinMapFile.exists()) {
-			jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+		for (File mixinMapFile : extension.getAllMixinMappings()) {
+			if (mixinMapFile.exists()) {
+				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
+			}
 		}
 
 		jarRemapper.scheduleRemap(input, output)

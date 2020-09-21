@@ -113,7 +113,7 @@ public class RunConfig {
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
-			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.DEFAULT_FABRIC_SERVER_TWEAKER);
+			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";

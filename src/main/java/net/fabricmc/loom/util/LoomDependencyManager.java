@@ -139,7 +139,7 @@ public class LoomDependencyManager {
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
-			final Configuration configuration = project.getConfigurations().getByName(Constants.MOD_COMPILE_CLASSPATH);
+			final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 
 			for (File input : configuration.resolve()) {
 				JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
@@ -173,7 +173,7 @@ public class LoomDependencyManager {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
-		Configuration mcDepsConfig = project.getConfigurations().getByName(Constants.MINECRAFT_DEPENDENCIES);
+		Configuration mcDepsConfig = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		Configuration apDepsConfig = project.getConfigurations().getByName("annotationProcessor");
 
 		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {

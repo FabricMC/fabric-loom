@@ -63,6 +63,13 @@ public class Constants {
 		}
 	}
 
+	public static final class SourceSets {
+		public static final String TEST_MOD = "testmod";
+
+		private SourceSets() {
+		}
+	}
+
 	/**
 	 * Constants related to dependencies.
 	 */

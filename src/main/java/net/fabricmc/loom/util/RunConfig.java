@@ -41,6 +41,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.tasks.SourceSet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -94,8 +95,8 @@ public class RunConfig {
 		return e;
 	}
 
-	private static String getIdeaModuleName(Project project) {
-		String module = project.getName() + ".main";
+	private static String getIdeaModuleName(Project project, String sourceSet) {
+		String module = project.getName() + "." + sourceSet;
 
 		while ((project = project.getParent()) != null) {
 			module = project.getName() + "." + module;
@@ -104,10 +105,10 @@ public class RunConfig {
 		return module;
 	}
 
-	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
+	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode, String sourceSet) {
 		runConfig.configName += isRootProject(project) ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-		runConfig.ideaModuleName = getIdeaModuleName(project);
+		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
@@ -155,7 +156,7 @@ public class RunConfig {
 
 		RunConfig ideaClient = new RunConfig();
 		ideaClient.configName = "Minecraft Client";
-		populate(project, extension, ideaClient, "client");
+		populate(project, extension, ideaClient, "client", extension.isUsingTestmod() ? Constants.SourceSets.TEST_MOD : SourceSet.MAIN_SOURCE_SET_NAME);
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
 
@@ -167,7 +168,7 @@ public class RunConfig {
 
 		RunConfig ideaServer = new RunConfig();
 		ideaServer.configName = "Minecraft Server";
-		populate(project, extension, ideaServer, "server");
+		populate(project, extension, ideaServer, "server", extension.isUsingTestmod() ? Constants.SourceSets.TEST_MOD : SourceSet.MAIN_SOURCE_SET_NAME);
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
 
 		return ideaServer;

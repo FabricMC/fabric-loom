@@ -48,6 +48,13 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.jvm.tasks.Jar;
+import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessor;
@@ -55,6 +62,8 @@ import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
 
@@ -414,5 +423,76 @@ public class LoomGradleExtension {
 
 	public Set<File> getAllMixinMappings() {
 		return Collections.unmodifiableSet(mixinMappings);
+	}
+
+	/**
+	 * Whether the project has a testmod source set configured.
+	 *
+	 * @return if a testmod is set up.
+	 */
+	public boolean isUsingTestmod() {
+		final JavaPluginConvention convention = this.project.getConvention().findPlugin(JavaPluginConvention.class);
+
+		if (convention == null) {
+			return false;
+		}
+
+		return convention.getSourceSets().findByName(Constants.SourceSets.TEST_MOD) != null;
+	}
+
+	/**
+	 * Create a new {@code testmod} source set for testing library mods.
+	 *
+	 * <p>The output of the created source set will be provided to the run tasks for use in development ONLY.</p>
+	 *
+	 * <p>Due to limitations in Loom, this source set cannot have its own dependencies</p>
+	 *
+	 * @see #withRemappedTestmodSourceSet() to set up a testmod configuration that will produce a production jar
+	 */
+	public void withTestmodSourceSet() {
+		setupTestmodSourceSet(false);
+	}
+
+	/**
+	 * Create a new {@code testmod} source set for testing library mods.
+	 *
+	 * <p>The output of the created source set will be provided to run tasks, and generate a remapped jar for testing in-game.</p>
+	 *
+	 * <p>The output jar will not include any JiJ-ed dependencies or an access widener, since those are currently set for the project as a whole.</p>
+	 */
+	public void withRemappedTestmodSourceSet() {
+		setupTestmodSourceSet(true);
+	}
+
+	private void setupTestmodSourceSet(boolean remap) {
+		final SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets();
+		final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+
+		// Create a new source set, depending on the main source set
+		final SourceSet testModSet = sourceSets.create(Constants.SourceSets.TEST_MOD, set -> {
+			project.getDependencies().add(set.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspath());
+			project.getDependencies().add(set.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspath());
+			project.getDependencies().add(set.getImplementationConfigurationName(), mainSourceSet.getOutput());
+		});
+
+		// Generate a jar from this source set and add it to the list used by the run configurations
+		final TaskProvider<Jar> testModJar = project.getTasks().register(testModSet.getJarTaskName(), Jar.class, jar -> {
+			jar.setClassifier(Constants.SourceSets.TEST_MOD + "-dev");
+			jar.setGroup(LifecycleBasePlugin.BUILD_GROUP);
+
+			jar.from(testModSet.getOutput());
+		});
+		this.unmappedMods.from(testModJar);
+
+		if (remap) {
+			// Generate a remappped jar
+			// This doesn't include any JiJ dependencies or access wideners, since those are declared per-project -- and are therefore in the main mod jar
+			final TaskProvider<RemapJarTask> remapJar = project.getTasks().register(testModSet.getTaskName("remap", "Jar"), RemapJarTask.class, task -> {
+				task.setClassifier(Constants.SourceSets.TEST_MOD);
+				task.getInput().set(project.getLayout().file(testModJar.map(AbstractArchiveTask::getArchivePath)));
+				task.dependsOn(testModJar);
+			});
+			project.getTasks().named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJar));
+		}
 	}
 }

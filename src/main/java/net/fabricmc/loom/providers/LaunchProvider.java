@@ -101,7 +101,7 @@ public class LaunchProvider extends DependencyProvider {
 
 	private void writeRemapClassPath() {
 		List<String> inputConfigurations = new ArrayList<>();
-		inputConfigurations.add(Constants.MINECRAFT_DEPENDENCIES);
+		inputConfigurations.add(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::getSourceConfiguration).collect(Collectors.toList()));
 
 		List<File> remapClasspath = new ArrayList<>();

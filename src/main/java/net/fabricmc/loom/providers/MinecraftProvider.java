@@ -135,7 +135,7 @@ public class MinecraftProvider extends DependencyProvider {
 			}
 		} else {
 			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL("https://launchermeta.mojang.com/mc/game/version_manifest.json"), manifests, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(Constants.VERSION_MANIFESTS), manifests, getProject().getLogger());
 		}
 
 		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
@@ -211,6 +211,6 @@ public class MinecraftProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.MINECRAFT;
+		return Constants.Configurations.MINECRAFT;
 	}
 }

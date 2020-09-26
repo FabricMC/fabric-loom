@@ -110,23 +110,23 @@ public class AbstractPlugin implements Plugin<Project> {
 		// Force add Mojang repository
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 
-		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH);
+		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
-		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH_MAPPED);
+		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
 		modCompileClasspathMappedConfig.setTransitive(false);
 
-		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
+		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
+		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
-		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
+		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
 		minecraftConfig.setTransitive(false);
 
-		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
+		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
-		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
-		project.getConfigurations().maybeCreate(Constants.MAPPINGS_FINAL);
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -137,19 +137,19 @@ public class AbstractPlugin implements Plugin<Project> {
 			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration());
 
 			if (entry.isOnModCompileClasspath()) {
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
 			}
 		}
 
-		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("testCompileClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("testRuntimeClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("compileClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("runtimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
 
-		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.MINECRAFT_DEPENDENCIES);
 
-		extendsFrom("compile", Constants.MAPPINGS_FINAL);
+		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL);
 
 		configureIDEs();
 		configureCompile();

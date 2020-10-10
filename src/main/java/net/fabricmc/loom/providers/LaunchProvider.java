@@ -40,12 +40,15 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
 
 public class LaunchProvider extends DependencyProvider {
+	public Dependency annotationDependency;
+
 	public LaunchProvider(Project project) {
 		super(project);
 	}
@@ -77,7 +80,7 @@ public class LaunchProvider extends DependencyProvider {
 
 		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, "runtimeOnly");
 		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
-		addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
+		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
 
 		postPopulationScheduler.accept(this::writeRemapClassPath);
 	}

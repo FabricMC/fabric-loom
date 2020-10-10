@@ -30,16 +30,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
+import net.fabricmc.loom.providers.LaunchProvider;
 import net.fabricmc.loom.util.progress.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
@@ -175,6 +178,18 @@ public class SourceRemapper {
 
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+
+			Dependency annotationDependency = extension.getDependencyManager().getProvider(LaunchProvider.class).annotationDependency;
+			Set<File> files = project.getConfigurations().getByName("compileOnly")
+					.files(annotationDependency);
+
+			if (files.size() != 1) {
+				throw new RuntimeException(String.format("Found %d files for the annotations, expected 1", files.size()));
+			}
+
+			for (File file : files) {
+				m.getClassPath().add(file.toPath());
+			}
 
 			m.getProcessors().add(MercuryRemapper.create(mappings));
 

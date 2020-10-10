@@ -67,12 +67,12 @@ public abstract class DependencyProvider {
 		addDependency(object, "compile");
 	}
 
-	public void addDependency(Object object, String target) {
+	public Dependency addDependency(Object object, String target) {
 		if (object instanceof File) {
 			object = project.files(object);
 		}
 
-		project.getDependencies().add(target, object);
+		return project.getDependencies().add(target, object);
 	}
 
 	public void register(LoomDependencyManager dependencyManager) {

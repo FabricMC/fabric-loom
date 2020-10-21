@@ -340,16 +340,20 @@ public class AbstractPlugin implements Plugin<Project> {
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 
-			project.getLogger().lifecycle("Configuring compiler arguments for Java");
+			// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
+			System.setProperty("log4j2.disable.jmx", "true");
+			System.setProperty("log4j.shutdownHookEnabled", "false");
+
+			project.getLogger().info("Configuring compiler arguments for Java");
 			new JavaApInvoker(project).configureMixin();
 
 			if (project.getPluginManager().hasPlugin("scala")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Scala");
+				project.getLogger().info("Configuring compiler arguments for Scala");
 				new ScalaApInvoker(project).configureMixin();
 			}
 
 			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Kapt plugin");
+				project.getLogger().info("Configuring compiler arguments for Kapt plugin");
 				new KaptApInvoker(project).configureMixin();
 			}
 		});

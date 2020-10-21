@@ -183,10 +183,6 @@ public class SourceRemapper {
 			Set<File> files = project.getConfigurations().getByName("compileOnly")
 					.files(annotationDependency);
 
-			if (files.size() != 1) {
-				throw new RuntimeException(String.format("Found %d files for the annotations, expected 1", files.size()));
-			}
-
 			for (File file : files) {
 				m.getClassPath().add(file.toPath());
 			}

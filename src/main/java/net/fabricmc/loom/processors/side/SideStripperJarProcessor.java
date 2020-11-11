@@ -38,15 +38,9 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.processors.JarProcessor;
 
-public class SideStripperJarProcessor implements JarProcessor {
-	public static final SideStripperJarProcessor CLIENT = new SideStripperJarProcessor("CLIENT");
-	public static final SideStripperJarProcessor SERVER = new SideStripperJarProcessor("SERVER");
-
-	private final String side;
-
-	private SideStripperJarProcessor(String side) {
-		this.side = side;
-	}
+public enum SideStripperJarProcessor implements JarProcessor {
+	CLIENT,
+	SERVER;
 
 	@Override
 	public void setup() {
@@ -64,7 +58,7 @@ public class SideStripperJarProcessor implements JarProcessor {
 				ClassNode original = new ClassNode();
 				new ClassReader(in).accept(original, 0);
 
-				EnvironmentStrippingData stripData = new EnvironmentStrippingData(Opcodes.ASM8, side);
+				EnvironmentStrippingData stripData = new EnvironmentStrippingData(Opcodes.ASM8, name());
 				original.accept(stripData);
 
 				if (stripData.stripEntireClass()) {
@@ -79,11 +73,11 @@ public class SideStripperJarProcessor implements JarProcessor {
 
 		ZipUtil.replaceEntries(file, toTransform.toArray(new ByteSource[0]));
 		ZipUtil.removeEntries(file, toRemove.toArray(new String[0]));
-		ZipUtil.addEntry(file, "side.txt", side.getBytes());
+		ZipUtil.addEntry(file, "side.txt", name().getBytes());
 	}
 
 	@Override
 	public boolean isInvalid(File file) {
-		return !Arrays.equals(ZipUtil.unpackEntry(file, "side.txt"), side.getBytes());
+		return !Arrays.equals(ZipUtil.unpackEntry(file, "side.txt"), name().getBytes());
 	}
 }

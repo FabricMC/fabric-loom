@@ -132,7 +132,8 @@ public class ModProcessor {
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
 		Path mc = mappedProvider.getIntermediaryJar().toPath();
-		Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
+		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
+							.stream().map(File::toPath).toArray(Path[]::new);
 
 		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());
 

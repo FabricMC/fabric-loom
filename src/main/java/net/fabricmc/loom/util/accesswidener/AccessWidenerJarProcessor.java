@@ -41,23 +41,26 @@ import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerRemapper;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.processors.JarProcessor;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.mappings.EntryTriple;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();
+	private AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 	private final Project project;
 	private byte[] inputHash;
 
@@ -76,13 +79,13 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		inputHash = Checksum.sha256(loomGradleExtension.accessWidener);
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.accessWidener))) {
-			accessWidener.read(reader);
+			accessWidenerReader.read(reader);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read project access widener file");
 		}
 
 		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
-		if (!accessWidener.namespace.equals("named")) {
+		if (!accessWidener.getNamespace().equals("named")) {
 			try {
 				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper("official", "named");
 				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
@@ -116,10 +119,11 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 			protected byte[] transform(ZipEntry zipEntry, byte[] input) {
 				ClassReader reader = new ClassReader(input);
 				ClassWriter writer = new ClassWriter(0);
+				ClassVisitor classVisitor = AccessWidenerVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
 
 				project.getLogger().lifecycle("Applying access widener to " + className);
 
-				reader.accept(new AccessTransformer(writer), 0);
+				reader.accept(classVisitor, 0);
 				return writer.toByteArray();
 			}
 		};
@@ -145,9 +149,10 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
 		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
 		AccessWidener remapped = remapper.remap();
+		AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
 
 		try (StringWriter writer = new StringWriter()) {
-			remapped.write(writer);
+			accessWidenerWriter.write(writer);
 			return writer.toString().getBytes();
 		}
 	}
@@ -177,79 +182,5 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		}
 
 		return !Arrays.equals(inputHash, hash); // TODO how do we know if the current jar as the correct access applied? save the hash of the input?
-	}
-
-	private class AccessTransformer extends ClassVisitor {
-		private String className;
-		private int classAccess;
-
-		private AccessTransformer(ClassVisitor classVisitor) {
-			super(Opcodes.ASM7, classVisitor);
-		}
-
-		@Override
-		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-			className = name;
-			classAccess = access;
-			super.visit(
-					version,
-					accessWidener.getClassAccess(name).apply(access, name, classAccess),
-					name,
-					signature,
-					superName,
-					interfaces
-			);
-		}
-
-		@Override
-		public void visitInnerClass(String name, String outerName, String innerName, int access) {
-			super.visitInnerClass(
-					name,
-					outerName,
-					innerName,
-					accessWidener.getClassAccess(name).apply(access, name, classAccess)
-			);
-		}
-
-		@Override
-		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-			return super.visitField(
-					accessWidener.getFieldAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
-					name,
-					descriptor,
-					signature,
-					value
-			);
-		}
-
-		@Override
-		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-			return new AccessWidenerMethodVisitor(super.visitMethod(
-					accessWidener.getMethodAccess(new EntryTriple(className, name, descriptor)).apply(access, name, classAccess),
-					name,
-					descriptor,
-					signature,
-					exceptions
-			));
-		}
-
-		private class AccessWidenerMethodVisitor extends MethodVisitor {
-			AccessWidenerMethodVisitor(MethodVisitor methodVisitor) {
-				super(Opcodes.ASM7, methodVisitor);
-			}
-
-			@Override
-			public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-				if (opcode == Opcodes.INVOKESPECIAL && owner.equals(className) && !name.equals("<init>")) {
-					AccessWidener.Access methodAccess = accessWidener.getMethodAccess(new EntryTriple(owner, name, descriptor));
-
-					if (methodAccess != AccessWidener.MethodAccess.DEFAULT) {
-						opcode = Opcodes.INVOKEVIRTUAL;
-					}
-				}
-
-				super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-			}
-		}
 	}
 }

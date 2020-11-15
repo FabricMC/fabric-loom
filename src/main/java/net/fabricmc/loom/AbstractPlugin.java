@@ -304,17 +304,15 @@ public class AbstractPlugin implements Plugin<Project> {
 								}
 							});
 						});
-
-						for (Project subProject : rootProject.getAllprojects()) {
-							subProject.getTasks().getByName("build").dependsOn(parentTask);
-							subProject.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-							rootProject.getTasks().getByName("remapAllJars").dependsOn(subProject.getTasks().getByName("remapJar"));
-						}
 					} else {
 						parentTask = rootProject.getTasks().getByName("remapAllSources");
 						remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
 
 						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
+
+						project1.getTasks().getByName("build").dependsOn(parentTask);
+						project1.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
+						rootProject.getTasks().getByName("remapAllJars").dependsOn(project1.getTasks().getByName("remapJar"));
 					}
 				}
 

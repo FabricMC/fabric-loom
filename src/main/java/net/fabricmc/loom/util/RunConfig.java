@@ -111,7 +111,9 @@ public class RunConfig {
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
-		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
+		if (extension.isForge()) {
+			runConfig.mainClass = "net.minecraftforge.userdev.LaunchTesting";
+		} else if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
@@ -158,6 +160,7 @@ public class RunConfig {
 		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
+		ideaClient.vmArgs += " -DlaunchTarget=fmluserdevclient";
 
 		return ideaClient;
 	}
@@ -169,6 +172,7 @@ public class RunConfig {
 		ideaServer.configName = "Minecraft Server";
 		populate(project, extension, ideaServer, "server");
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
+		ideaServer.vmArgs += " -DlaunchTarget=fmluserdevserver";
 
 		return ideaServer;
 	}

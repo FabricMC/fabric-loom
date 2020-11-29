@@ -22,4 +22,4 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: gradle/wrapper-validation-action@v1
-      - run: gradle build check test --stacktrace
+      - run: gradle build check -xtest --stacktrace

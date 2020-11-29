@@ -56,6 +56,6 @@ public class ForgeUniversalProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE_UNIVERSAL;
+		return Constants.Configurations.FORGE_UNIVERSAL;
 	}
 }

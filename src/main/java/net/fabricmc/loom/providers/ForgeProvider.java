@@ -38,12 +38,12 @@ public class ForgeProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		addDependency(dependency.getDepString() + ":userdev", Constants.FORGE_USERDEV);
-		addDependency(dependency.getDepString() + ":installer", Constants.FORGE_INSTALLER);
+		addDependency(dependency.getDepString() + ":userdev", Constants.Configurations.FORGE_USERDEV);
+		addDependency(dependency.getDepString() + ":installer", Constants.Configurations.FORGE_INSTALLER);
 	}
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE;
+		return Constants.Configurations.FORGE;
 	}
 }

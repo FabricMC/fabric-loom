@@ -83,6 +83,6 @@ public class McpConfigProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.MCP_CONFIG;
+		return Constants.Configurations.MCP_CONFIG;
 	}
 }

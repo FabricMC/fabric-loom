@@ -74,11 +74,11 @@ public class ForgeUserdevProvider extends DependencyProvider {
 			json = new Gson().fromJson(reader, JsonObject.class);
 		}
 
-		addDependency(json.get("mcp").getAsString(), Constants.MCP_CONFIG);
-		addDependency(json.get("universal").getAsString(), Constants.FORGE_UNIVERSAL);
+		addDependency(json.get("mcp").getAsString(), Constants.Configurations.MCP_CONFIG);
+		addDependency(json.get("universal").getAsString(), Constants.Configurations.FORGE_UNIVERSAL);
 
 		for (JsonElement lib : json.get("libraries").getAsJsonArray()) {
-			addDependency(lib.getAsString(), Constants.FORGE_DEPENDENCIES);
+			addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
 		}
 
 		// TODO: Read launch configs from the JSON too
@@ -92,6 +92,6 @@ public class ForgeUserdevProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE_USERDEV;
+		return Constants.Configurations.FORGE_USERDEV;
 	}
 }

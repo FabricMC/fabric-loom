@@ -71,6 +71,6 @@ public class PatchProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.FORGE_INSTALLER;
+		return Constants.Configurations.FORGE_INSTALLER;
 	}
 }

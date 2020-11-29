@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.loom.util.Constants;
@@ -113,7 +114,12 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			TinyRemapper remapper = getTinyRemapper(fromM, toM);
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				outputConsumer.addNonClassFiles(input);
+				if (getExtension().isForge()) {
+					outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
+				} else {
+					outputConsumer.addNonClassFiles(input);
+				}
+
 				remapper.readClassPath(getRemapClasspath());
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);

@@ -33,6 +33,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +51,13 @@ import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.accesswidener.AccessWidenerRemapper;
+import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.util.accesswidener.AccessWidener;
-import net.fabricmc.loom.util.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.InputTag;
@@ -68,9 +71,15 @@ public class ModProcessor {
 			return;
 		}
 
+		ArrayList<ModDependencyInfo> remapList = new ArrayList<>();
+
 		for (ModDependencyInfo info : processList) {
-			if (info.requiresRemapping() && info.getRemappedOutput().exists()) {
-				info.getRemappedOutput().delete();
+			if (info.requiresRemapping()) {
+				if (info.getRemappedOutput().exists()) {
+					info.getRemappedOutput().delete();
+				}
+
+				remapList.add(info);
 			}
 		}
 
@@ -78,12 +87,12 @@ public class ModProcessor {
 
 		for (ModDependencyInfo info : processList) {
 			if (!info.getRemappedOutput().exists()) {
-				throw new RuntimeException("Failed to remap mod" + info);
+				throw new RuntimeException("Failed to find remapped mod" + info);
 			}
+		}
 
-			if (info.requiresRemapping()) {
-				stripNestedJars(info.getRemappedOutput());
-			}
+		for (ModDependencyInfo info : remapList) {
+			stripNestedJars(info.getRemappedOutput());
 		}
 	}
 
@@ -102,13 +111,15 @@ public class ModProcessor {
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
 			AccessWidener accessWidener = new AccessWidener();
-			accessWidener.read(bufferedReader);
+			AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
+			accessWidenerReader.read(bufferedReader);
 
 			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, "named");
 			AccessWidener remapped = accessWidenerRemapper.remap();
+			AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
 
 			try (StringWriter writer = new StringWriter()) {
-				remapped.write(writer);
+				accessWidenerWriter.write(writer);
 				return writer.toString().getBytes(StandardCharsets.UTF_8);
 			}
 		} catch (IOException e) {

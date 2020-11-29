@@ -12,7 +12,7 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 /**
  * Created by Mitchell Skaggs on 6/10/2019.
  */
-class EmptyBuildFunctionalTest extends Specification {
+class EmptyBuildMojangFunctionalTest extends Specification {
 	@Rule
 	TemporaryFolder testProjectDir = new TemporaryFolder()
 	File settingsFile
@@ -29,8 +29,8 @@ class EmptyBuildFunctionalTest extends Specification {
 	def "empty build succeeds using Minecraft #mcVersion"() {
 		given:
 		settingsFile << genSettingsFile("empty-build-functional-test")
-		propsFile << genPropsFile(mcVersion, yarnVersion, loaderVersion, fabricVersion)
-		buildFile << genBuildFile()
+		propsFile << genPropsFile(mcVersion, "nope", loaderVersion, fabricVersion)
+		buildFile << genBuildFile("minecraft.officialMojangMappings()")
 
 		when:
 		def result = GradleRunner.create()
@@ -44,8 +44,7 @@ class EmptyBuildFunctionalTest extends Specification {
 		result.task(":build").outcome == SUCCESS
 
 		where:
-		mcVersion | yarnVersion       		| loaderVersion     | fabricVersion
-		'1.14'    | '1.14+build.21'   		| '0.4.8+build.155' | '0.3.0+build.183'
-		'1.16.2'  | '1.16.2+build.26:v2' 	| '0.9.2+build.206' | '0.19.0+build.398-1.16'
+		mcVersion	| loaderVersion     | fabricVersion
+		'1.16.2'	| '0.9.2+build.206' | '0.19.0+build.398-1.16'
 	}
 }

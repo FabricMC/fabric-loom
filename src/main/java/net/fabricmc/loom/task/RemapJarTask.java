@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -104,17 +105,16 @@ public class RemapJarTask extends Jar {
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
-		Path mixinMapPath = mixinMapFile.toPath();
-
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 
 		// FIXME: The mixin map is named->intermediary, but I think we need named->srg?
-		if (mixinMapFile.exists()) {
+		for (File mixinMapFile : extension.getAllMixinMappings()) {
 			if ("intermediary".equals(toM)) {
-				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
+				if (mixinMapFile.exists()) {
+					remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
+				}
 			} else {
 				project.getLogger().error("Mixins in Forge projects are currently not supported.");
 			}
@@ -204,14 +204,13 @@ public class RemapJarTask extends Jar {
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
-		File mixinMapFile = mappingsProvider.mappingsMixinExport;
-		Path mixinMapPath = mixinMapFile.toPath();
-
-		if (mixinMapFile.exists()) {
+		for (File mixinMapFile : extension.getAllMixinMappings()) {
 			if ("intermediary".equals(toM)) {
-				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapPath, fromM, toM));
-			} else {
-				project.getLogger().error("Mixins in Forge projects are currently not supported.");
+				if (mixinMapFile.exists()) {
+					jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
+				} else {
+					project.getLogger().error("Mixins in Forge projects are currently not supported.");
+				}
 			}
 		}
 
@@ -227,7 +226,10 @@ public class RemapJarTask extends Jar {
 							throw new RuntimeException("Failed to remap access widener");
 						}
 
-						return Pair.of(accessWidenerJarProcessor.getAccessWidenerPath(remapData.output), data);
+						String awPath = accessWidenerJarProcessor.getAccessWidenerPath(remapData.input);
+						Preconditions.checkNotNull(awPath, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
+
+						return Pair.of(awPath, data);
 					}
 
 					return null;
@@ -248,7 +250,8 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (accessWidener != null) {
-						ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
+						boolean replaced = ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
+						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 				});
 	}

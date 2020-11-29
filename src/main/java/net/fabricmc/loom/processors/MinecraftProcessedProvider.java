@@ -65,7 +65,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
-		getProject().getDependencies().add(Constants.MINECRAFT_NAMED,
+		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
 	}
 

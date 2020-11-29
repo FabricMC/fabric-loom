@@ -38,6 +38,8 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExcludeRule;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -114,40 +116,40 @@ public class AbstractPlugin implements Plugin<Project> {
 		addMavenRepo(target, "Mojang", "https://libraries.minecraft.net/");
 		addMavenRepo(target, "Forge", "https://files.minecraftforge.net/maven/");
 
-		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH);
+		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
-		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.MOD_COMPILE_CLASSPATH_MAPPED);
+		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
 		modCompileClasspathMappedConfig.setTransitive(false);
 
-		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_NAMED);
+		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED);
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT_DEPENDENCIES);
+		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
-		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.MINECRAFT);
+		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
 		minecraftConfig.setTransitive(false);
 
 		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
-			Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.FORGE);
+			Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE);
 			forgeConfig.setTransitive(false);
-			Configuration forgeUserdevConfig = project.getConfigurations().maybeCreate(Constants.FORGE_USERDEV);
+			Configuration forgeUserdevConfig = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE_USERDEV);
 			forgeUserdevConfig.setTransitive(false);
-			Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.FORGE_INSTALLER);
+			Configuration forgeInstallerConfig = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE_INSTALLER);
 			forgeInstallerConfig.setTransitive(false);
-			Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.FORGE_UNIVERSAL);
+			Configuration forgeUniversalConfig = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE_UNIVERSAL);
 			forgeUniversalConfig.setTransitive(false);
-			Configuration forgeDependencies = project.getConfigurations().maybeCreate(Constants.FORGE_DEPENDENCIES);
+			Configuration forgeDependencies = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE_DEPENDENCIES);
 			forgeDependencies.setTransitive(false);
-			Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.MCP_CONFIG);
+			Configuration mcpConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MCP_CONFIG);
 			mcpConfig.setTransitive(false);
 
-			extendsFrom(Constants.MINECRAFT_DEPENDENCIES, Constants.FORGE_DEPENDENCIES);
+			extendsFrom(Constants.Configurations.MINECRAFT_DEPENDENCIES, Constants.Configurations.FORGE_DEPENDENCIES);
 		}
 
-		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.INCLUDE);
+		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
-		project.getConfigurations().maybeCreate(Constants.MAPPINGS);
-		project.getConfigurations().maybeCreate(Constants.MAPPINGS_FINAL);
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
@@ -158,19 +160,19 @@ public class AbstractPlugin implements Plugin<Project> {
 			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration());
 
 			if (entry.isOnModCompileClasspath()) {
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
-				extendsFrom(Constants.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration());
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration());
 			}
 		}
 
-		extendsFrom("compileClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("runtimeClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("testCompileClasspath", Constants.MINECRAFT_NAMED);
-		extendsFrom("testRuntimeClasspath", Constants.MINECRAFT_NAMED);
+		extendsFrom("compileClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("runtimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
 
-		extendsFrom(Constants.MINECRAFT_NAMED, Constants.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.MINECRAFT_DEPENDENCIES);
 
-		extendsFrom("compile", Constants.MAPPINGS_FINAL);
+		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL);
 
 		configureIDEs();
 		configureCompile();
@@ -342,17 +344,15 @@ public class AbstractPlugin implements Plugin<Project> {
 								}
 							});
 						});
-
-						for (Project subProject : rootProject.getAllprojects()) {
-							subProject.getTasks().getByName("build").dependsOn(parentTask);
-							subProject.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-							rootProject.getTasks().getByName("remapAllJars").dependsOn(subProject.getTasks().getByName("remapJar"));
-						}
 					} else {
 						parentTask = rootProject.getTasks().getByName("remapAllSources");
 						remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
 
 						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
+
+						project1.getTasks().getByName("build").dependsOn(parentTask);
+						project1.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
+						rootProject.getTasks().getByName("remapAllJars").dependsOn(project1.getTasks().getByName("remapJar"));
 					}
 				}
 
@@ -378,16 +378,20 @@ public class AbstractPlugin implements Plugin<Project> {
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 
-			project.getLogger().lifecycle("Configuring compiler arguments for Java");
+			// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
+			System.setProperty("log4j2.disable.jmx", "true");
+			System.setProperty("log4j.shutdownHookEnabled", "false");
+
+			project.getLogger().info("Configuring compiler arguments for Java");
 			new JavaApInvoker(project).configureMixin();
 
 			if (project.getPluginManager().hasPlugin("scala")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Scala");
+				project.getLogger().info("Configuring compiler arguments for Scala");
 				new ScalaApInvoker(project).configureMixin();
 			}
 
 			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-				project.getLogger().lifecycle("Configuring compiler arguments for Kapt plugin");
+				project.getLogger().info("Configuring compiler arguments for Kapt plugin");
 				new KaptApInvoker(project).configureMixin();
 			}
 		});
@@ -437,6 +441,20 @@ public class AbstractPlugin implements Plugin<Project> {
 										depNode.appendNode("artifactId", dependency.getName());
 										depNode.appendNode("version", dependency.getVersion());
 										depNode.appendNode("scope", entry.getMavenScope());
+
+										if (dependency instanceof ModuleDependency) {
+											final Set<ExcludeRule> exclusions = ((ModuleDependency) dependency).getExcludeRules();
+
+											if (!exclusions.isEmpty()) {
+												Node exclusionsNode = depNode.appendNode("exclusions");
+
+												for (ExcludeRule rule : exclusions) {
+													Node exclusionNode = exclusionsNode.appendNode("exclusion");
+													exclusionNode.appendNode("groupId", rule.getGroup() == null ? "*" : rule.getGroup());
+													exclusionNode.appendNode("artifactId", rule.getModule() == null ? "*" : rule.getModule());
+												}
+											}
+										}
 									}
 								}));
 							}

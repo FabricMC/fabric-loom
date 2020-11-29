@@ -28,8 +28,11 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -47,6 +50,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.providers.ForgeUniversalProvider;
 import net.fabricmc.loom.providers.ForgeUserdevProvider;
@@ -57,6 +61,7 @@ import net.fabricmc.loom.providers.PatchProvider;
 import net.fabricmc.loom.providers.McpConfigProvider;
 import net.fabricmc.loom.util.function.LazyBool;
 import net.fabricmc.loom.util.LoomDependencyManager;
+import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
 
 public class LoomGradleExtension {
 	private static final String FORGE_PROPERTY = "loom.forge";
@@ -74,6 +79,7 @@ public class LoomGradleExtension {
 	private final ConfigurableFileCollection unmappedMods;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
+	private final List<JarProcessor> jarProcessors = new ArrayList<>();
 
 	// Not to be set in the build.gradle
 	private final Project project;
@@ -83,6 +89,7 @@ public class LoomGradleExtension {
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private final LazyBool forge;
+	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -92,12 +99,27 @@ public class LoomGradleExtension {
 		decompilers.add(decompiler);
 	}
 
+	/**
+	 * Add a transformation over the mapped mc jar.
+	 * Adding any jar processor will cause mapped mc jars to be stored per-project so that
+	 * different transformation can be applied in different projects.
+	 * This means remapping will need to be done individually per-project, which is slower when developing
+	 * more than one project using the same minecraft version.
+	 */
+	public void addJarProcessor(JarProcessor processor) {
+		jarProcessors.add(processor);
+	}
+
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
 		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());
 	}
 
 	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
+	}
+
+	public Dependency officialMojangMappings() {
+		return new MojangMappingsDependency(project, this);
 	}
 
 	public LoomGradleExtension(Project project) {
@@ -363,6 +385,10 @@ public class LoomGradleExtension {
 		this.jarProcessorManager = jarProcessorManager;
 	}
 
+	public List<JarProcessor> getJarProcessors() {
+		return jarProcessors;
+	}
+
 	public String getRefmapName() {
 		if (refmapName == null || refmapName.isEmpty()) {
 			String defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
@@ -405,5 +431,17 @@ public class LoomGradleExtension {
 
 	public boolean isForge() {
 		return forge.getAsBoolean();
+	}
+
+	// Creates a new file each time its called, this is then held onto later when remapping the output jar
+	// Required as now when using parallel builds the old single file could be written by another sourceset compile task
+	public synchronized File getNextMixinMappings() {
+		File mixinMapping = new File(getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().getMinecraftVersion() + "-" + getMappingsProvider().mappingsVersion + "." + mixinMappings.size() + ".tiny");
+		mixinMappings.add(mixinMapping);
+		return mixinMapping;
+	}
+
+	public Set<File> getAllMixinMappings() {
+		return Collections.unmodifiableSet(mixinMappings);
 	}
 }

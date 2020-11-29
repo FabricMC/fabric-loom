@@ -67,12 +67,12 @@ public abstract class DependencyProvider {
 		addDependency(object, "compile");
 	}
 
-	public void addDependency(Object object, String target) {
+	public Dependency addDependency(Object object, String target) {
 		if (object instanceof File) {
 			object = project.files(object);
 		}
 
-		project.getDependencies().add(target, object);
+		return project.getDependencies().add(target, object);
 	}
 
 	public void register(LoomDependencyManager dependencyManager) {
@@ -133,6 +133,10 @@ public abstract class DependencyProvider {
 		}
 
 		public Set<File> resolve() {
+			if (dependency instanceof SelfResolvingDependency) {
+				return ((SelfResolvingDependency) dependency).resolve();
+			}
+
 			return sourceConfiguration.files(dependency);
 		}
 
@@ -171,12 +175,14 @@ public abstract class DependencyProvider {
 
 	public static class FileDependencyInfo extends DependencyInfo {
 		protected final Map<String, File> classifierToFile = new HashMap<>();
+		protected final Set<File> resolvedFiles;
 		protected final String group, name, version;
 
 		FileDependencyInfo(Project project, SelfResolvingDependency dependency, Configuration configuration) {
 			super(project, dependency, configuration);
 
 			Set<File> files = dependency.resolve();
+			this.resolvedFiles = files;
 			switch (files.size()) {
 			case 0: //Don't think Gradle would ever let you do this
 				throw new IllegalStateException("Empty dependency?");
@@ -258,6 +264,11 @@ public abstract class DependencyProvider {
 		@Override
 		public String getResolvedDepString() {
 			return getDepString();
+		}
+
+		@Override
+		public Set<File> resolve() {
+			return this.resolvedFiles;
 		}
 	}
 }

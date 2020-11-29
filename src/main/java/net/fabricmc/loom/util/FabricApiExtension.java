@@ -92,8 +92,6 @@ public class FabricApiExtension {
 					throw new RuntimeException("Failed to find artifact or version");
 				}
 
-				project.getLogger().lifecycle(artifact.getTextContent() + " : " + version.getTextContent());
-
 				versionMap.put(artifact.getTextContent(), version.getTextContent());
 			}
 

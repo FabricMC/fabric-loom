@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -99,13 +100,19 @@ public class NestedJars {
 	private static List<File> getContainedJars(Project project) {
 		List<File> fileList = new ArrayList<>();
 
-		ResolvedConfiguration configuration = project.getConfigurations().getByName(Constants.INCLUDE).getResolvedConfiguration();
-		Set<ResolvedDependency> dependencies = configuration.getFirstLevelModuleDependencies();
+		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		ResolvedConfiguration resolvedConfiguration = configuration.getResolvedConfiguration();
+		Set<ResolvedDependency> dependencies = resolvedConfiguration.getFirstLevelModuleDependencies();
 
-		for (ResolvedDependency dependency : dependencies) {
+		// Bit ugly doing this, id guess there is a better way but this works.
+		Set<String> projectDeps = new HashSet<>();
+
+		for (Dependency dependency : configuration.getDependencies()) {
 			if (dependency instanceof ProjectDependency) {
 				ProjectDependency projectDependency = (ProjectDependency) dependency;
 				Project dependencyProject = projectDependency.getDependencyProject();
+
+				projectDeps.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
 
 				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
 				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
@@ -118,6 +125,12 @@ public class NestedJars {
 						fileList.add(((AbstractArchiveTask) task).getArchivePath());
 					}
 				}
+			}
+		}
+
+		for (ResolvedDependency dependency : dependencies) {
+			if (projectDeps.contains(dependency.getModuleGroup() + ":" + dependency.getModuleName() + ":" + dependency.getModuleVersion())) {
+				continue;
 			} else {
 				fileList.addAll(prepareForNesting(
 						dependency
@@ -147,7 +160,7 @@ public class NestedJars {
 	public static List<RemapJarTask> getRequiredTasks(Project project) {
 		List<RemapJarTask> remapTasks = new ArrayList<>();
 
-		Configuration configuration = project.getConfigurations().getByName(Constants.INCLUDE);
+		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		DependencySet dependencies = configuration.getDependencies();
 
 		for (Dependency dependency : dependencies) {
@@ -210,6 +223,10 @@ public class NestedJars {
 		jsonObject.addProperty("id", (dependency.getModuleGroup() + "_" + dependency.getModuleName()).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
 		jsonObject.addProperty("version", dependency.getModuleVersion());
 		jsonObject.addProperty("name", dependency.getModuleName());
+
+		JsonObject custom = new JsonObject();
+		custom.addProperty("fabric-loom:generated", true);
+		jsonObject.add("custom", custom);
 
 		return GSON.toJson(jsonObject);
 	}

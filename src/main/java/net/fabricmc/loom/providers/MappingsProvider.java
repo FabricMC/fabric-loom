@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
+import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
@@ -44,19 +45,21 @@ import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.JarProcessorManager;
+import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.srg.SrgMerger;
+import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
-import net.fabricmc.loom.processors.JarProcessorManager;
-import net.fabricmc.loom.processors.MinecraftProcessedProvider;
-import net.fabricmc.loom.util.DeletingFileVisitor;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -65,8 +68,10 @@ public class MappingsProvider extends DependencyProvider {
 	public String minecraftVersion;
 	public String mappingsVersion;
 
-	private Path mappingsDir;
-	private Path mappingsStepsDir;
+	private final Path mappingsDir;
+	private final Path mappingsStepsDir;
+	private Path intermediaryTiny;
+	private boolean hasRefreshed = false;
 	// The mappings that gradle gives us
 	private Path baseTinyMappings;
 	// The mappings we use in practice
@@ -77,6 +82,8 @@ public class MappingsProvider extends DependencyProvider {
 
 	public MappingsProvider(Project project) {
 		super(project);
+		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
+		mappingsStepsDir = mappingsDir.resolve("steps");
 	}
 
 	public void clean() throws IOException {
@@ -153,10 +160,17 @@ public class MappingsProvider extends DependencyProvider {
 			SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg);
 		}
 
-		addDependency(tinyMappingsJar, Constants.MAPPINGS_FINAL);
+		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);
 
-		JarProcessorManager processorManager = new JarProcessorManager(getProject());
-		getExtension().setJarProcessorManager(processorManager);
+		LoomGradleExtension extension = getExtension();
+
+		if (extension.accessWidener != null) {
+			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
+		}
+
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
+		extension.setJarProcessorManager(processorManager);
+		processorManager.setupProcessors();
 
 		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
@@ -178,14 +192,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		if (baseMappingsAreV2()) {
 			// These are unmerged v2 mappings
-
-			// Download and extract intermediary
-			String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
-			String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
-			Path intermediaryJar = mappingsStepsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
-			DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), project.getLogger());
-
-			mergeAndSaveMappings(project, intermediaryJar, yarnJar);
+			mergeAndSaveMappings(project, yarnJar);
 		} else {
 			// These are merged v1 mappings
 			if (tinyMappings.exists()) {
@@ -222,14 +229,15 @@ public class MappingsProvider extends DependencyProvider {
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void mergeAndSaveMappings(Project project, Path unmergedIntermediaryJar, Path unmergedYarnJar) throws IOException {
-		Path unmergedIntermediary = Paths.get(mappingsStepsDir.toString(), "unmerged-intermediary.tiny");
-		project.getLogger().info(":extracting " + unmergedIntermediaryJar.getFileName());
+	private void extractIntermediary(Path intermediaryJar, Path intermediaryTiny) throws IOException {
+		getProject().getLogger().info(":extracting " + intermediaryJar.getFileName());
 
-		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(unmergedIntermediaryJar, (ClassLoader) null)) {
-			extractMappings(unmergedIntermediaryFs, unmergedIntermediary);
+		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(intermediaryJar, (ClassLoader) null)) {
+			extractMappings(unmergedIntermediaryFs, intermediaryTiny);
 		}
+	}
 
+	private void mergeAndSaveMappings(Project project, Path unmergedYarnJar) throws IOException {
 		Path unmergedYarn = Paths.get(mappingsStepsDir.toString(), "unmerged-yarn.tiny");
 		project.getLogger().info(":extracting " + unmergedYarnJar.getFileName());
 
@@ -238,7 +246,7 @@ public class MappingsProvider extends DependencyProvider {
 		}
 
 		Path invertedIntermediary = Paths.get(mappingsStepsDir.toString(), "inverted-intermediary.tiny");
-		reorderMappings(unmergedIntermediary, invertedIntermediary, "intermediary", "official");
+		reorderMappings(getIntermediaryTiny(), invertedIntermediary, "intermediary", "official");
 		Path unorderedMergedMappings = Paths.get(mappingsStepsDir.toString(), "unordered-merged.tiny");
 		project.getLogger().info(":merging");
 		mergeMappings(invertedIntermediary, unmergedYarn, unorderedMergedMappings);
@@ -283,11 +291,7 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private void initFiles() {
-		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
-		mappingsStepsDir = mappingsDir.resolve("steps");
-
 		baseTinyMappings = mappingsDir.resolve(mappingsName + "-tiny-" + minecraftVersion + "-" + mappingsVersion + "-base");
-		mappingsMixinExport = new File(getExtension().getProjectBuildCache(), "mixin-map-" + minecraftVersion + "-" + mappingsVersion + ".tiny");
 	}
 
 	public void cleanFiles() {
@@ -299,8 +303,6 @@ public class MappingsProvider extends DependencyProvider {
 			if (Files.exists(baseTinyMappings)) {
 				Files.deleteIfExists(baseTinyMappings);
 			}
-
-			mappingsMixinExport.delete();
 
 			if (tinyMappings != null) {
 				tinyMappings.delete();
@@ -316,6 +318,33 @@ public class MappingsProvider extends DependencyProvider {
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.MAPPINGS;
+		return Constants.Configurations.MAPPINGS;
+	}
+
+	public Path getMappingsDir() {
+		return mappingsDir;
+	}
+
+	public Path getIntermediaryTiny() throws IOException {
+		if (intermediaryTiny == null) {
+			minecraftVersion = getExtension().getMinecraftProvider().getMinecraftVersion();
+			Preconditions.checkNotNull(minecraftVersion, "Minecraft version cannot be null");
+
+			intermediaryTiny = mappingsDir.resolve(String.format("intermediary-%s-v2.tiny", minecraftVersion));
+
+			if (!Files.exists(intermediaryTiny) || (isRefreshDeps() && !hasRefreshed)) {
+				hasRefreshed = true;
+
+				// Download and extract intermediary
+				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
+				String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
+				Path intermediaryJar = mappingsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
+				DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), getProject().getLogger());
+
+				extractIntermediary(intermediaryJar, intermediaryTiny);
+			}
+		}
+
+		return intermediaryTiny;
 	}
 }

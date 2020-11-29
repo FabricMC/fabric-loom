@@ -25,37 +25,17 @@
 package net.fabricmc.loom.processors;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
-import net.fabricmc.loom.LoomGradleExtension;
-
 public class JarProcessorManager {
-	private final Project project;
-	private final LoomGradleExtension extension;
-
 	private final List<JarProcessor> jarProcessors;
 
-	public JarProcessorManager(Project project) {
-		this.project = project;
-		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		jarProcessors = setupProcessors();
+	public JarProcessorManager(List<JarProcessor> jarProcessors) {
+		this.jarProcessors = jarProcessors;
 	}
 
-	//TODO possibly expand via an API?
-	private List<JarProcessor> setupProcessors() {
-		List<JarProcessor> jarProcessors = new ArrayList<>();
-
-		if (extension.accessWidener != null) {
-			jarProcessors.add(new AccessWidenerJarProcessor());
-		}
-
-		jarProcessors.forEach(jarProcessor -> jarProcessor.setup(project));
-		return Collections.unmodifiableList(jarProcessors);
+	public void setupProcessors() {
+		jarProcessors.forEach(JarProcessor::setup);
 	}
 
 	public boolean active() {

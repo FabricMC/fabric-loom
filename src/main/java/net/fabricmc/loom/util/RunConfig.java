@@ -113,6 +113,7 @@ public class RunConfig {
 
 		if (extension.isForge()) {
 			runConfig.mainClass = "net.minecraftforge.userdev.LaunchTesting";
+			runConfig.programArgs = "";
 		} else if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
 			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);

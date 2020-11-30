@@ -71,6 +71,7 @@ public final class AtRemapper {
 				}
 
 				if (!lines.equals(output)) {
+					Files.delete(atPath);
 					Files.write(atPath, output);
 				}
 			}

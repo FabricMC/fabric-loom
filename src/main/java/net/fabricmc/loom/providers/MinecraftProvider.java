@@ -352,19 +352,16 @@ public class MinecraftProvider extends DependencyProvider {
 	private void walkFileSystems(File source, File target, Predicate<Path> filter, Function<FileSystem, Iterable<Path>> toWalk, FsPathConsumer action) throws IOException {
 		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
 				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toURI()), ImmutableMap.of("create", false))) {
-			for (Path rootDirectory : toWalk.apply(sourceFs)) {
-				java.nio.file.Files.walk(rootDirectory)
+			for (Path sourceDir : toWalk.apply(sourceFs)) {
+				Path dir = sourceDir.toAbsolutePath();
+				java.nio.file.Files.walk(dir)
 						.filter(java.nio.file.Files::isRegularFile)
 						.filter(filter)
 						.forEach(it -> {
-							boolean actuallyRoot = rootDirectory.getParent() == null;
-
-							if (!actuallyRoot) {
-								System.out.printf("%s relativizes %s to %s%n", rootDirectory, it, rootDirectory.relativize(it));
-							}
+							boolean root = dir.getParent() == null;
 
 							try {
-								action.accept(sourceFs, targetFs, actuallyRoot ? it : rootDirectory.relativize(it));
+								action.accept(sourceFs, targetFs, root ? it : dir.relativize(it));
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}

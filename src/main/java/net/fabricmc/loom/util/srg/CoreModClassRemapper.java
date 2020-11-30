@@ -52,12 +52,16 @@ import net.fabricmc.mapping.tree.TinyTree;
  * @author Juuz
  */
 public final class CoreModClassRemapper {
-	private static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^(.+')((?:com\\.mojang\\.|net\\.minecraft\\.)[A-Za-z0-9.-_$]+)('.+)$");
+	private static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^(.*')((?:com\\.mojang\\.|net\\.minecraft\\.)[A-Za-z0-9.-_$]+)('.*)$");
 
 	public static void remapJar(Path jar, TinyTree mappings, Logger logger) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + jar.toUri()), ImmutableMap.of("create", false))) {
 			Path coremodsJsonPath = fs.getPath("META-INF", "coremods.json");
-			if (Files.notExists(coremodsJsonPath)) return;
+
+			if (Files.notExists(coremodsJsonPath)) {
+				logger.lifecycle(":no coremods in " + jar.getFileName());
+				return;
+			}
 
 			JsonObject coremodsJson;
 
@@ -70,7 +74,7 @@ public final class CoreModClassRemapper {
 				Path js = fs.getPath(file);
 
 				if (Files.exists(js)) {
-					logger.info(":remapping coremod '" + file + "'");
+					logger.lifecycle(":remapping coremod '" + file + "'");
 					remap(js, mappings);
 				} else {
 					logger.warn("Coremod '" + file + "' listed in coremods.json but not found");

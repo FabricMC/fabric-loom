@@ -30,13 +30,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
-import org.cadixdev.at.AccessTransformSet;
-import org.cadixdev.at.io.AccessTransformFormats;
-import org.cadixdev.lorenz.MappingSet;
 
-import net.fabricmc.lorenztiny.TinyMappingsReader;
+import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.TinyTree;
 
 /**
@@ -50,12 +49,30 @@ public final class AtRemapper {
 			Path atPath = fs.getPath("META-INF", "accesstransformer.cfg");
 
 			if (Files.exists(atPath)) {
-				AccessTransformSet atSet = AccessTransformFormats.FML.read(atPath);
-				MappingSet mappingSet = new TinyMappingsReader(mappings, "srg", "named").read();
-				AccessTransformSet remapped = atSet.remap(mappingSet);
+				List<String> lines = Files.readAllLines(atPath);
+				List<String> output = new ArrayList<>(lines.size());
 
-				Files.delete(atPath);
-				AccessTransformFormats.FML.write(atPath, remapped);
+				for (int i = 0; i < lines.size(); i++) {
+					String line = lines.get(i).trim();
+
+					if (line.startsWith("#")) {
+						output.set(i, line);
+						continue;
+					}
+
+					String[] parts = line.split(" ");
+					String name = parts[1].replace('.', '/');
+					parts[1] = CollectionUtil.find(
+							mappings.getClasses(),
+							def -> def.getName("srg").equals(name)
+					).map(def -> def.getName("named")).orElse(name).replace('/', '.');
+
+					output.set(i, String.join(" ", parts));
+				}
+
+				if (!lines.equals(output)) {
+					Files.write(atPath, output);
+				}
 			}
 		}
 	}

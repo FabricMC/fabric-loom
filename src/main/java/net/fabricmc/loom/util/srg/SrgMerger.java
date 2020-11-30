@@ -110,7 +110,11 @@ public final class SrgMerger {
 		ClassDef classDef = foss.getDefaultNamespaceClassMap().get(obf);
 
 		if (classDef == null) {
-			throw new MappingException("Missing class: " + obf + " (srg: " + srg + ")");
+			if (lenient) {
+				return;
+			} else {
+				throw new MappingException("Missing class: " + obf + " (srg: " + srg + ")");
+			}
 		}
 
 		List<String> classNames = CollectionUtil.map(

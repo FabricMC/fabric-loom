@@ -41,6 +41,7 @@ import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class YarnNamingService implements INameMappingService {
+	private static final String PATH_TO_MAPPINGS = "fabric.yarnWithSrg.path";
 	private TinyTree mappings = null;
 
 	@Override
@@ -68,8 +69,8 @@ public class YarnNamingService implements INameMappingService {
 			return mappings;
 		}
 
-		String pathStr = System.getProperty("loom.srgtoyarn.path");
-		if (pathStr == null) throw new RuntimeException("Missing system property 'fabric.yarnWithSrg.path'!");
+		String pathStr = System.getProperty(PATH_TO_MAPPINGS);
+		if (pathStr == null) throw new RuntimeException("Missing system property '" + PATH_TO_MAPPINGS + "'!");
 		Path path = Paths.get(pathStr);
 
 		try (BufferedReader reader = Files.newBufferedReader(path)) {

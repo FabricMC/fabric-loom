@@ -156,7 +156,7 @@ public final class SrgMerger {
 
 			List<String> fieldNames = CollectionUtil.map(
 					namespaces,
-					namespace -> "srg".equals(namespace) ? field.getDeobfuscatedName() : field.getObfuscatedName()
+					namespace -> "srg".equals(namespace) ? field.getDeobfuscatedName() : def.getName(namespace)
 			);
 
 			fields.add(new TinyField(def.getDescriptor("official"), fieldNames, Collections.emptyList()));

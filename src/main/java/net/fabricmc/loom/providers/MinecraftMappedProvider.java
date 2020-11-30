@@ -42,6 +42,9 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.srg.AtRemapper;
+import net.fabricmc.loom.util.srg.CoreModClassRemapper;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -136,8 +139,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			}
 
 			if (getExtension().isForge()) {
-				getProject().getLogger().lifecycle(":adding forge manifest data");
+				getProject().getLogger().lifecycle(":running forge finalising tasks");
 
+				// TODO: Relocate this to its own class
 				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
 					Path manifestPath = fs.getPath("META-INF", "MANIFEST.MF");
 					ForgeProvider.ForgeVersion version = getExtension().getForgeProvider().getVersion();
@@ -153,6 +157,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 					Files.delete(manifestPath);
 					Files.write(manifestPath, lines);
 				}
+
+				TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
+				AtRemapper.remap(output, yarnWithSrg);
+				CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
 			}
 		}
 	}

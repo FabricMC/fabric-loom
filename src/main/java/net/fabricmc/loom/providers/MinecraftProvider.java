@@ -361,7 +361,9 @@ public class MinecraftProvider extends DependencyProvider {
 							boolean root = dir.getParent() == null;
 
 							try {
-								action.accept(sourceFs, targetFs, root ? it : dir.relativize(it));
+								Path relativeSource = root ? it : dir.relativize(it);
+								Path targetPath = targetFs.getPath(relativeSource.toString());
+								action.accept(sourceFs, targetFs, relativeSource, targetPath);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}
@@ -381,9 +383,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void copyMissingClasses(File source, File target) throws IOException {
-		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, it) -> {
-			Path targetPath = targetFs.getPath(it.toString());
-
+		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, sourcePath, targetPath) -> {
 			if (java.nio.file.Files.exists(targetPath)) return;
 			Path parent = targetPath.getParent();
 
@@ -391,7 +391,7 @@ public class MinecraftProvider extends DependencyProvider {
 				java.nio.file.Files.createDirectories(parent);
 			}
 
-			java.nio.file.Files.copy(it, targetPath);
+			java.nio.file.Files.copy(sourcePath, targetPath);
 		});
 	}
 
@@ -399,27 +399,25 @@ public class MinecraftProvider extends DependencyProvider {
 		walkFileSystems(source, target, it -> !it.toString().endsWith(".class"), this::copyReplacing);
 	}
 
-	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path it) throws IOException {
-		Path targetPath = targetFs.getPath(it.toString());
+	private void copyReplacing(FileSystem sourceFs, FileSystem targetFs, Path sourcePath, Path targetPath) throws IOException {
 		Path parent = targetPath.getParent();
 
 		if (parent != null) {
 			java.nio.file.Files.createDirectories(parent);
 		}
 
-		java.nio.file.Files.copy(it, targetPath, StandardCopyOption.REPLACE_EXISTING);
+		java.nio.file.Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	private void copyUserdevFiles(File source, File target) throws IOException {
-		walkFileSystems(source, target, file -> true, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, it) -> {
-			Path targetPath = targetFs.getPath(it.toString());
+		walkFileSystems(source, target, file -> true, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, sourcePath, targetPath) -> {
 			Path parent = targetPath.getParent();
 
 			if (parent != null) {
 				java.nio.file.Files.createDirectories(parent);
 			}
 
-			java.nio.file.Files.copy(it, targetPath);
+			java.nio.file.Files.copy(sourcePath, targetPath);
 		});
 	}
 

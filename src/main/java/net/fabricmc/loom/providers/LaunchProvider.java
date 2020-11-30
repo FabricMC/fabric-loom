@@ -69,8 +69,15 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
 		if (getExtension().isForge()) {
-			launchConfig.argument("client", "--launchTarget=fmluserdevclient");
-			launchConfig.argument("server", "--launchTarget=fmluserdevserver");
+			launchConfig
+					.argument("fml.mcVersion", getExtension().getMinecraftProvider().getMinecraftVersion())
+					.argument("fml.forgeVersion", getExtension().getForgeProvider().getForgeVersion())
+
+					.argument("client", "--launchTarget")
+					.argument("client", "fmluserdevclient")
+
+					.argument("server", "--launchTarget")
+					.argument("server", "fmluserdevserver");
 		}
 
 		//Enable ansi by default for idea and vscode

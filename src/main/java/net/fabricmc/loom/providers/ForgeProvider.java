@@ -32,14 +32,21 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class ForgeProvider extends DependencyProvider {
+	private String forgeVersion = "NO_VERSION";
+
 	public ForgeProvider(Project project) {
 		super(project);
 	}
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		forgeVersion = dependency.getDependency().getVersion();
 		addDependency(dependency.getDepString() + ":userdev", Constants.Configurations.FORGE_USERDEV);
 		addDependency(dependency.getDepString() + ":installer", Constants.Configurations.FORGE_INSTALLER);
+	}
+
+	public String getForgeVersion() {
+		return forgeVersion;
 	}
 
 	@Override

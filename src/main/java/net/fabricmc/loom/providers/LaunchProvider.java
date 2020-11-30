@@ -73,7 +73,7 @@ public class LaunchProvider extends DependencyProvider {
 					.argument("--fml.mcVersion")
 					.argument(getExtension().getMinecraftProvider().getMinecraftVersion())
 					.argument("--fml.forgeVersion")
-					.argument(getExtension().getForgeProvider().getForgeVersion())
+					.argument(getExtension().getForgeProvider().getVersion().getForgeVersion())
 
 					.argument("client", "--launchTarget")
 					.argument("client", "fmluserdevclient")

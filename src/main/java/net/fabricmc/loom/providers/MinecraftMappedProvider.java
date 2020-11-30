@@ -26,9 +26,15 @@ package net.fabricmc.loom.providers;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -127,6 +133,25 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
 			} finally {
 				remapper.finish();
+			}
+
+			if (getExtension().isForge()) {
+				getProject().getLogger().lifecycle(":adding forge manifest data");
+
+				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
+					Path manifestPath = fs.getPath("META-INF", "MANIFEST.MF");
+					ForgeProvider.ForgeVersion version = getExtension().getForgeProvider().getVersion();
+					List<String> lines = new ArrayList<>(Files.readAllLines(manifestPath));
+
+					lines.add("");
+					lines.add("Name: net/minecraftforge/fml/javafmlmod/");
+					lines.add("Implementation-Version: " + version.getForgeVersion());
+					lines.add("");
+					lines.add("Name: net/minecraftforge/fml/mclanguageprovider/");
+					lines.add("Implementation-Version: " + version.getMinecraftVersion());
+
+					Files.write(manifestPath, lines);
+				}
 			}
 		}
 	}

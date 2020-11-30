@@ -32,7 +32,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 
 public class ForgeProvider extends DependencyProvider {
-	private String forgeVersion = "NO_VERSION";
+	private ForgeVersion version = new ForgeVersion(null);
 
 	public ForgeProvider(Project project) {
 		super(project);
@@ -40,17 +40,48 @@ public class ForgeProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		forgeVersion = dependency.getDependency().getVersion();
+		version = new ForgeVersion(dependency.getDependency().getVersion());
 		addDependency(dependency.getDepString() + ":userdev", Constants.Configurations.FORGE_USERDEV);
 		addDependency(dependency.getDepString() + ":installer", Constants.Configurations.FORGE_INSTALLER);
 	}
 
-	public String getForgeVersion() {
-		return forgeVersion;
+	public ForgeVersion getVersion() {
+		return version;
 	}
 
 	@Override
 	public String getTargetConfig() {
 		return Constants.Configurations.FORGE;
+	}
+
+	public static final class ForgeVersion {
+		private final String minecraftVersion;
+		private final String forgeVersion;
+
+		public ForgeVersion(String combined) {
+			if (combined == null) {
+				this.minecraftVersion = "NO_VERSION";
+				this.forgeVersion = "NO_VERSION";
+				return;
+			}
+
+			int hyphenIndex = combined.indexOf('-');
+
+			if (hyphenIndex != -1) {
+				this.minecraftVersion = combined.substring(0, hyphenIndex);
+				this.forgeVersion = combined.substring(hyphenIndex + 1);
+			} else {
+				this.minecraftVersion = "NO_VERSION";
+				this.forgeVersion = combined;
+			}
+		}
+
+		public String getMinecraftVersion() {
+			return minecraftVersion;
+		}
+
+		public String getForgeVersion() {
+			return forgeVersion;
+		}
 	}
 }

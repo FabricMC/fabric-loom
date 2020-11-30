@@ -150,6 +150,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 					lines.add("Name: net/minecraftforge/fml/mclanguageprovider/");
 					lines.add("Implementation-Version: " + version.getMinecraftVersion());
 
+					Files.delete(manifestPath);
 					Files.write(manifestPath, lines);
 				}
 			}

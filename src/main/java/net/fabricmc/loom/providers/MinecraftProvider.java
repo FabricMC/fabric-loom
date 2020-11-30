@@ -363,7 +363,7 @@ public class MinecraftProvider extends DependencyProvider {
 							try {
 								Path relativeSource = root ? it : dir.relativize(it);
 								Path targetPath = targetFs.getPath(relativeSource.toString());
-								action.accept(sourceFs, targetFs, relativeSource, targetPath);
+								action.accept(sourceFs, targetFs, it, targetPath);
 							} catch (IOException e) {
 								throw new UncheckedIOException(e);
 							}

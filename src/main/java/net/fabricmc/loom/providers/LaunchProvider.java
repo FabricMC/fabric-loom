@@ -68,6 +68,11 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
+		if (getExtension().isForge()) {
+			launchConfig.argument("client", "--launchTarget=fmluserdevclient");
+			launchConfig.argument("server", "--launchTarget=fmluserdevserver");
+		}
+
 		//Enable ansi by default for idea and vscode
 		if (new File(getProject().getRootDir(), ".vscode").exists()
 				|| new File(getProject().getRootDir(), ".idea").exists()

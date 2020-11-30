@@ -92,13 +92,13 @@ public final class CoreModClassRemapper {
 			Matcher matcher = CLASS_NAME_PATTERN.matcher(line);
 
 			if (matcher.matches()) {
-				String className = matcher.group(2);
+				String className = matcher.group(2).replace('.', '/');
 				String remapped = CollectionUtil.find(mappings.getClasses(), def -> def.getName("srg").equals(className))
 						.map(def -> def.getName("named"))
 						.orElse(className);
 
 				if (!className.equals(remapped)) {
-					output.set(i, matcher.group(1) + remapped + matcher.group(3));
+					output.set(i, matcher.group(1) + remapped.replace('/', '.') + matcher.group(3));
 				}
 			}
 		}

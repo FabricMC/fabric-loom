@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Optional;
@@ -275,11 +276,20 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void injectForgeClasses(Logger logger) throws IOException {
 		logger.lifecycle(":injecting forge classes into minecraft");
-		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftClientPatchedSrgJar);
-		copyAll(getExtension().getForgeUniversalProvider().getForge(), minecraftServerPatchedSrgJar);
+		copyAll(getExtension().getForgeUniversalProvider().getForge().toPath(), minecraftClientPatchedSrgJar.toPath());
+		copyAll(getExtension().getForgeUniversalProvider().getForge().toPath(), minecraftServerPatchedSrgJar.toPath());
 
-		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar(), minecraftClientPatchedSrgJar);
-		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar(), minecraftServerPatchedSrgJar);
+		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar().toPath(), minecraftClientPatchedSrgJar.toPath());
+		copyUserdevFiles(getExtension().getForgeUserdevProvider().getUserdevJar().toPath(), minecraftServerPatchedSrgJar.toPath());
+
+		try {
+			logger.lifecycle(":injecting loom classes into minecraft");
+			Path injection = Paths.get(MinecraftProvider.class.getResource("/inject/injection.jar").toURI());
+			copyAll(injection, minecraftClientPatchedSrgJar.toPath());
+			copyAll(injection, minecraftServerPatchedSrgJar.toPath());
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
 	}
 
 	private void remapPatchedJars(Logger logger) throws IOException {
@@ -317,8 +327,8 @@ public class MinecraftProvider extends DependencyProvider {
 		patchJars(minecraftServerSrgJar, minecraftServerPatchedSrgJar, patchProvider.serverPatches);
 
 		logger.lifecycle(":copying missing classes into patched jars");
-		copyMissingClasses(minecraftClientSrgJar, minecraftClientPatchedSrgJar);
-		copyMissingClasses(minecraftServerSrgJar, minecraftServerPatchedSrgJar);
+		copyMissingClasses(minecraftClientSrgJar.toPath(), minecraftClientPatchedSrgJar.toPath());
+		copyMissingClasses(minecraftServerSrgJar.toPath(), minecraftServerPatchedSrgJar.toPath());
 	}
 
 	private void patchJars(File clean, File output, Path patches) throws IOException {
@@ -337,8 +347,8 @@ public class MinecraftProvider extends DependencyProvider {
 			logger.lifecycle(":copying resources");
 
 			// Copy resources
-			copyNonClassFiles(minecraftClientJar, minecraftMergedJar);
-			copyNonClassFiles(minecraftServerJar, minecraftMergedJar);
+			copyNonClassFiles(minecraftClientJar.toPath(), minecraftMergedJar.toPath());
+			copyNonClassFiles(minecraftServerJar.toPath(), minecraftMergedJar.toPath());
 		} else {
 			logger.lifecycle(":merging jars");
 
@@ -349,9 +359,9 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
-	private void walkFileSystems(File source, File target, Predicate<Path> filter, Function<FileSystem, Iterable<Path>> toWalk, FsPathConsumer action) throws IOException {
-		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toURI()), ImmutableMap.of("create", false));
-				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toURI()), ImmutableMap.of("create", false))) {
+	private void walkFileSystems(Path source, Path target, Predicate<Path> filter, Function<FileSystem, Iterable<Path>> toWalk, FsPathConsumer action) throws IOException {
+		try (FileSystem sourceFs = FileSystems.newFileSystem(new URI("jar:" + source.toUri()), ImmutableMap.of("create", false));
+				FileSystem targetFs = FileSystems.newFileSystem(new URI("jar:" + target.toUri()), ImmutableMap.of("create", false))) {
 			for (Path sourceDir : toWalk.apply(sourceFs)) {
 				Path dir = sourceDir.toAbsolutePath();
 				java.nio.file.Files.walk(dir)
@@ -374,15 +384,15 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
-	private void walkFileSystems(File source, File target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
+	private void walkFileSystems(Path source, Path target, Predicate<Path> filter, FsPathConsumer action) throws IOException {
 		walkFileSystems(source, target, filter, FileSystem::getRootDirectories, action);
 	}
 
-	private void copyAll(File source, File target) throws IOException {
+	private void copyAll(Path source, Path target) throws IOException {
 		walkFileSystems(source, target, it -> true, this::copyReplacing);
 	}
 
-	private void copyMissingClasses(File source, File target) throws IOException {
+	private void copyMissingClasses(Path source, Path target) throws IOException {
 		walkFileSystems(source, target, it -> it.toString().endsWith(".class"), (sourceFs, targetFs, sourcePath, targetPath) -> {
 			if (java.nio.file.Files.exists(targetPath)) return;
 			Path parent = targetPath.getParent();
@@ -395,7 +405,7 @@ public class MinecraftProvider extends DependencyProvider {
 		});
 	}
 
-	private void copyNonClassFiles(File source, File target) throws IOException {
+	private void copyNonClassFiles(Path source, Path target) throws IOException {
 		walkFileSystems(source, target, it -> !it.toString().endsWith(".class"), this::copyReplacing);
 	}
 
@@ -409,7 +419,7 @@ public class MinecraftProvider extends DependencyProvider {
 		java.nio.file.Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void copyUserdevFiles(File source, File target) throws IOException {
+	private void copyUserdevFiles(Path source, Path target) throws IOException {
 		walkFileSystems(source, target, file -> true, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, sourcePath, targetPath) -> {
 			Path parent = targetPath.getParent();
 

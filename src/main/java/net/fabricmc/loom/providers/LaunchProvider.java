@@ -70,6 +70,8 @@ public class LaunchProvider extends DependencyProvider {
 
 		if (getExtension().isForge()) {
 			launchConfig
+					.property("fabric.yarnWithSrg.path", getExtension().getMappingsProvider().tinyMappingsWithSrg.toAbsolutePath().toString())
+
 					.argument("--fml.mcVersion")
 					.argument(getExtension().getMinecraftProvider().getMinecraftVersion())
 					.argument("--fml.forgeVersion")

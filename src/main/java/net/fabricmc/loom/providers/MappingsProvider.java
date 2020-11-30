@@ -78,7 +78,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File tinyMappings;
 	public File tinyMappingsJar;
 	public File mappingsMixinExport;
-	private Path tinyMappingsWithSrg;
+	public Path tinyMappingsWithSrg;
 
 	public MappingsProvider(Project project) {
 		super(project);

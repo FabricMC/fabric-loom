@@ -69,7 +69,7 @@ public class YarnNamingService implements INameMappingService {
 		}
 
 		String pathStr = System.getProperty("loom.srgtoyarn.path");
-		if (pathStr == null) throw new RuntimeException("Missing system property 'loom.srgtoyarn.path'!");
+		if (pathStr == null) throw new RuntimeException("Missing system property 'fabric.yarnWithSrg.path'!");
 		Path path = Paths.get(pathStr);
 
 		try (BufferedReader reader = Files.newBufferedReader(path)) {

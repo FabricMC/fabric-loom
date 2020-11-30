@@ -6,6 +6,7 @@ plugins {
 	id 'eclipse'
 	id 'groovy'
 	id 'checkstyle'
+	id 'com.github.johnrengelman.shadow' version '4.0.4'
 }
 
 sourceCompatibility = 1.8
@@ -22,6 +23,12 @@ if (ENV.BUILD_NUMBER) {
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
 	version = baseVersion + '-forge.28'
+}
+
+configurations {
+	forgeInjectShadow
+	forgeInjectCompileClasspath.extendsFrom(forgeInjectShadow)
+	forgeInjectRuntimeClasspath.extendsFrom(forgeInjectShadow)
 }
 
 sourceSets {
@@ -84,7 +91,7 @@ dependencies {
 	implementation ('net.minecraftforge.gradle:ForgeGradle:3.0.179')
 
 	// Forge injection
-	forgeInjectImplementation ('net.fabricmc:tiny-mappings-parser:0.2.2.14') // TODO: Shade this
+	forgeInjectShadow ('net.fabricmc:tiny-mappings-parser:0.2.2.14')
 	forgeInjectImplementation ('cpw.mods:modlauncher:6.1.3')
 
 	// Testing
@@ -94,7 +101,8 @@ dependencies {
 	}
 }
 
-task forgeInjectJar(type: Jar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {
+task forgeInjectJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {
+	configurations = [project.configurations.forgeInjectShadow]
 	classifier = 'forgeinject'
 	from compileForgeInjectJava.outputs
 	from processForgeInjectResources.outputs

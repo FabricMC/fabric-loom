@@ -290,8 +290,8 @@ public class MinecraftProvider extends DependencyProvider {
 			FileUtils.copyInputStreamToFile(in, injection);
 		}
 
-		copyAll(injection, minecraftClientPatchedSrgJar);
-		copyAll(injection, minecraftServerPatchedSrgJar);
+		walkFileSystems(injection, minecraftClientPatchedSrgJar, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
+		walkFileSystems(injection, minecraftServerPatchedSrgJar, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
 	}
 
 	private void remapPatchedJars(Logger logger) throws IOException {

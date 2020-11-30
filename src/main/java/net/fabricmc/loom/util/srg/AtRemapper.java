@@ -56,7 +56,7 @@ public final class AtRemapper {
 					String line = lines.get(i).trim();
 
 					if (line.startsWith("#")) {
-						output.set(i, line);
+						output.add(i, line);
 						continue;
 					}
 
@@ -67,7 +67,7 @@ public final class AtRemapper {
 							def -> def.getName("srg").equals(name)
 					).map(def -> def.getName("named")).orElse(name).replace('/', '.');
 
-					output.set(i, String.join(" ", parts));
+					output.add(i, String.join(" ", parts));
 				}
 
 				if (!lines.equals(output)) {

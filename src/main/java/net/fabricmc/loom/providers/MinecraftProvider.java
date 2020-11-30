@@ -359,6 +359,10 @@ public class MinecraftProvider extends DependencyProvider {
 						.forEach(it -> {
 							boolean actuallyRoot = rootDirectory.getParent() == null;
 
+							if (!actuallyRoot) {
+								System.out.printf("%s relativizes %s to %s%n", rootDirectory, it, rootDirectory.relativize(it));
+							}
+
 							try {
 								action.accept(sourceFs, targetFs, actuallyRoot ? it : rootDirectory.relativize(it));
 							} catch (IOException e) {
@@ -410,7 +414,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void copyUserdevFiles(File source, File target) throws IOException {
-		walkFileSystems(source, target, java.nio.file.Files::isRegularFile, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, it) -> {
+		walkFileSystems(source, target, file -> true, fs -> Collections.singleton(fs.getPath("inject")), (sourceFs, targetFs, it) -> {
 			Path targetPath = targetFs.getPath(it.toString());
 			Path parent = targetPath.getParent();
 

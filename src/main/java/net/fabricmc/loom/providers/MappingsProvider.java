@@ -157,7 +157,7 @@ public class MappingsProvider extends DependencyProvider {
 		}
 
 		if (getExtension().isForge() && (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps())) {
-			SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg);
+			SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
 		}
 
 		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
@@ -40,6 +41,7 @@ import org.cadixdev.lorenz.model.FieldMapping;
 import org.cadixdev.lorenz.model.InnerClassMapping;
 import org.cadixdev.lorenz.model.MethodMapping;
 import org.cadixdev.lorenz.model.TopLevelClassMapping;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.ClassDef;
@@ -63,14 +65,15 @@ public final class SrgMerger {
 	/**
 	 * Merges SRG mappings with a tiny mappings tree through the obf names.
 	 *
-	 * @param srg  the SRG file in .tsrg format
-	 * @param tiny the tiny file
-	 * @param out  the output file, will be in tiny v2
+	 * @param srg     the SRG file in .tsrg format
+	 * @param tiny    the tiny file
+	 * @param out     the output file, will be in tiny v2
+	 * @param lenient whether to ignore missing tiny mapping
 	 * @throws IOException      if an IO error occurs while reading or writing the mappings
 	 * @throws MappingException if the input tiny tree's default namespace is not 'official'
 	 *                          or if an element mentioned in the SRG file does not have tiny mappings
 	 */
-	public static void mergeSrg(Path srg, Path tiny, Path out) throws IOException, MappingException {
+	public static void mergeSrg(Path srg, Path tiny, Path out, boolean lenient) throws IOException, MappingException {
 		MappingSet arr;
 		TinyTree foss;
 
@@ -94,14 +97,14 @@ public final class SrgMerger {
 		List<TinyClass> classes = new ArrayList<>();
 
 		for (TopLevelClassMapping klass : arr.getTopLevelClassMappings()) {
-			classToTiny(foss, namespaces, klass, classes::add);
+			classToTiny(foss, namespaces, klass, classes::add, lenient);
 		}
 
 		TinyFile file = new TinyFile(header, classes);
 		TinyV2Writer.write(file, out);
 	}
 
-	private static void classToTiny(TinyTree foss, List<String> namespaces, ClassMapping<?, ?> klass, Consumer<TinyClass> classConsumer) {
+	private static void classToTiny(TinyTree foss, List<String> namespaces, ClassMapping<?, ?> klass, Consumer<TinyClass> classConsumer, boolean lenient) {
 		String obf = klass.getFullObfuscatedName();
 		String srg = klass.getFullDeobfuscatedName();
 		ClassDef classDef = foss.getDefaultNamespaceClassMap().get(obf);
@@ -122,7 +125,9 @@ public final class SrgMerger {
 			MethodDef def = CollectionUtil.find(
 					classDef.getMethods(),
 					m -> m.getName("official").equals(method.getObfuscatedName()) && m.getDescriptor("official").equals(method.getObfuscatedDescriptor())
-			).orElseThrow(() -> new MappingException("Missing method: " + method.getFullObfuscatedName() + " (srg: " + method.getFullDeobfuscatedName() + ")"));
+			).orElse(nullOrThrow(lenient, () -> new MappingException("Missing method: " + method.getFullObfuscatedName() + " (srg: " + method.getFullDeobfuscatedName() + ")")));
+
+			if (def == null) continue;
 
 			List<String> methodNames = CollectionUtil.map(
 					namespaces,
@@ -141,7 +146,9 @@ public final class SrgMerger {
 			FieldDef def = CollectionUtil.find(
 					classDef.getFields(),
 					f -> f.getName("official").equals(field.getObfuscatedName())
-			).orElseThrow(() -> new MappingException("Missing field: " + field.getFullObfuscatedName() + " (srg: " + field.getFullDeobfuscatedName() + ")"));
+			).orElse(nullOrThrow(lenient, () -> new MappingException("Missing field: " + field.getFullObfuscatedName() + " (srg: " + field.getFullDeobfuscatedName() + ")")));
+
+			if (def == null) continue;
 
 			List<String> fieldNames = CollectionUtil.map(
 					namespaces,
@@ -155,7 +162,16 @@ public final class SrgMerger {
 		classConsumer.accept(tinyClass);
 
 		for (InnerClassMapping innerKlass : klass.getInnerClassMappings()) {
-			classToTiny(foss, namespaces, innerKlass, classConsumer);
+			classToTiny(foss, namespaces, innerKlass, classConsumer, lenient);
+		}
+	}
+
+	@Nullable
+	private static <T, X extends Exception> T nullOrThrow(boolean lenient, Supplier<X> exception) throws X {
+		if (lenient) {
+			return null;
+		} else {
+			throw exception.get();
 		}
 	}
 }

@@ -288,9 +288,9 @@ public class AbstractPlugin implements Plugin<Project> {
 				if (!remapJarTask.getInput().isPresent()) {
 					jarTask.setClassifier("dev");
 					remapJarTask.setClassifier("");
+					remapJarTask.getInput().set(jarTask.getArchivePath());
 
 					if (extension.isForge()) {
-						remapJarTask.getInput().set(jarTask.getArchivePath());
 						remapJarTask.getToM().set("srg");
 					}
 				}

@@ -30,6 +30,7 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -41,7 +42,9 @@ import com.google.common.collect.ImmutableMap;
 public final class JarUtil {
 	public static void extractFile(File jar, String filePath, File target) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + jar.toURI()), ImmutableMap.of("create", false))) {
-			Files.copy(fs.getPath(filePath), target.toPath());
+			Path targetPath = target.toPath();
+			Files.deleteIfExists(targetPath);
+			Files.copy(fs.getPath(filePath), targetPath);
 		}
 	}
 }

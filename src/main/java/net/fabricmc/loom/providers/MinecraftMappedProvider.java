@@ -160,17 +160,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 					}
 
 					for (Map.Entry<String, Attributes> forgeEntry : forgeManifest.getEntries().entrySet()) {
-						if (!forgeEntry.getKey().endsWith(".class")) {
+						if (forgeEntry.getKey().endsWith("/")) {
 							minecraftManifest.getEntries().put(forgeEntry.getKey(), forgeEntry.getValue());
 						}
 					}
-
-					Attributes javafmlmod = new Attributes();
-					javafmlmod.put("Implementation-Version", version.getForgeVersion());
-					Attributes mclanguageprovider = new Attributes();
-					mclanguageprovider.put("Implementation-Version", version.getMinecraftVersion());
-					minecraftManifest.getEntries().putIfAbsent("net/minecraftforge/fml/javafmlmod/", javafmlmod);
-					minecraftManifest.getEntries().putIfAbsent("net/minecraftforge/fml/mclanguageprovider/", mclanguageprovider);
 
 					Files.delete(manifestPath);
 

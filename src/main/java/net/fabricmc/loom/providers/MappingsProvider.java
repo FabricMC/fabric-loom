@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
+import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -147,6 +148,10 @@ public class MappingsProvider extends DependencyProvider {
 		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);
 
 		LoomGradleExtension extension = getExtension();
+
+		if (extension.enumWidener != null) {
+			extension.addJarProcessor(new EnumWidenerJarProcessor(getProject()));
+		}
 
 		if (extension.accessWidener != null) {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));

@@ -22,7 +22,7 @@ if (ENV.BUILD_NUMBER) {
 	build = "release #${ENV.BUILD_NUMBER}"
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + '-forge.34'
+	version = baseVersion + '-forge.36'
 }
 
 configurations {
@@ -87,7 +87,6 @@ dependencies {
 	implementation ('net.minecraftforge:binarypatcher:1.1.1')
 	implementation ('org.cadixdev:lorenz:0.5.3')
 	implementation ('org.cadixdev:lorenz-asm:0.5.3')
-	implementation ('org.cadixdev:atlas:0.2.0')
 	implementation ('net.minecraftforge.gradle:ForgeGradle:3.0.179')
 	implementation ('net.minecraftforge:accesstransformers:2.2.0')
 

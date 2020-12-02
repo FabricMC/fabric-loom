@@ -25,10 +25,8 @@
 package net.fabricmc.loom.providers;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,7 +38,6 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
@@ -49,19 +46,16 @@ import net.minecraftforge.binarypatcher.ConsoleTool;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import org.apache.commons.io.FileUtils;
-import org.cadixdev.atlas.Atlas;
-import org.cadixdev.bombe.asm.jar.JarEntryRemappingTransformer;
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.lorenz.asm.LorenzRemapper;
-import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.JarUtil;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.function.FsPathConsumer;
-import net.fabricmc.loom.util.function.IoConsumer;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MinecraftPatchedProvider extends DependencyProvider {
 	private File minecraftClientSrgJar;
@@ -115,6 +109,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void createSrgJars(Logger logger) throws Exception {
+		// TODO: FORGE: Get rid of *this*
 		logger.lifecycle(":remapping minecraft (MCP, official -> srg)");
 
 		McpConfigProvider volde = getExtension().getMcpConfigProvider();
@@ -169,29 +164,36 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void remapPatchedJars(Logger logger) throws IOException {
-		logger.lifecycle(":remapping minecraft (Atlas, srg -> official)");
+		boolean[] bools = { true, false };
+		Path[] libraries = getExtension()
+				.getMinecraftProvider()
+				.getLibraryProvider()
+				.getLibraries()
+				.stream()
+				.map(File::toPath)
+				.toArray(Path[]::new);
 
-		useAtlas(MappingSet::reverse, atlas -> {
-			atlas.run(minecraftClientPatchedSrgJar.toPath(), minecraftClientPatchedJar.toPath());
-			atlas.run(minecraftServerPatchedSrgJar.toPath(), minecraftServerPatchedJar.toPath());
-		});
-	}
+		for (boolean isClient : bools) {
+			logger.lifecycle(":remapping minecraft (TinyRemapper, " + (isClient ? "client" : "server") + ", srg -> official)");
 
-	private void useAtlas(UnaryOperator<MappingSet> mappingOp, IoConsumer<Atlas> action) throws IOException {
-		try (Reader mappingReader = new FileReader(getExtension().getMcpConfigProvider().getSrg());
-				TSrgReader reader = new TSrgReader(mappingReader);
-				Atlas atlas = new Atlas()) {
-			MappingSet mappings = mappingOp.apply(reader.read());
+			TinyRemapper remapper = TinyRemapper.newRemapper()
+					.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappingsWithSrg(), "srg", "official", true))
+					.renameInvalidLocals(true)
+					.rebuildSourceFilenames(true)
+					.build();
 
-			atlas.install(ctx -> new JarEntryRemappingTransformer(
-					new LorenzRemapper(mappings, ctx.inheritanceProvider())
-			));
+			Path input = (isClient ? minecraftClientPatchedSrgJar : minecraftServerPatchedSrgJar).toPath();
+			Path output = (isClient ? minecraftClientPatchedJar : minecraftServerPatchedJar).toPath();
 
-			for (File library : getExtension().getMinecraftProvider().getLibraryProvider().getLibraries()) {
-				atlas.use(library.toPath());
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
+				outputConsumer.addNonClassFiles(input);
+
+				remapper.readClassPath(libraries);
+				remapper.readInputs(input);
+				remapper.apply(outputConsumer);
+			} finally {
+				remapper.finish();
 			}
-
-			action.accept(atlas);
 		}
 	}
 

@@ -148,7 +148,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				// TODO: Relocate this to its own class
 				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
 					Path manifestPath = fs.getPath("META-INF", "MANIFEST.MF");
-					ForgeProvider.ForgeVersion version = getExtension().getForgeProvider().getVersion();
 					Manifest minecraftManifest;
 					Manifest forgeManifest;
 

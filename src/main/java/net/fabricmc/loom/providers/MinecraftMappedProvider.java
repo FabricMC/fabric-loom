@@ -61,6 +61,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
 			.build();
 
+	private File inputJar;
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
@@ -76,7 +77,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mappings file not found");
 		}
 
-		if (!getExtension().getMinecraftProvider().getMergedJar().exists()) {
+		if (!inputJar.exists()) {
 			throw new RuntimeException("input merged jar not found");
 		}
 
@@ -114,7 +115,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
 
-		Path input = minecraftProvider.getMergedJar().toPath();
+		Path input = inputJar.toPath();
 		Path outputMapped = minecraftMappedJar.toPath();
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 
@@ -207,6 +208,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
 		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		inputJar = getExtension().isForge() ? mappingsProvider.patchedProvider.getMergedJar() : minecraftProvider.getMergedJar();
 	}
 
 	protected File getJarDirectory(File parentDirectory, String type) {

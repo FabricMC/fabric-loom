@@ -63,6 +63,7 @@ import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
+	public MinecraftPatchedProvider patchedProvider;
 
 	public String mappingsName;
 	public String minecraftVersion;
@@ -171,6 +172,11 @@ public class MappingsProvider extends DependencyProvider {
 		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
+
+		if (extension.isForge()) {
+			patchedProvider = new MinecraftPatchedProvider(getProject());
+			patchedProvider.provide(dependency, postPopulationScheduler);
+		}
 
 		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);

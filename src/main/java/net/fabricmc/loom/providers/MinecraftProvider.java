@@ -50,6 +50,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraftforge.accesstransformer.TransformerProcessor;
 import net.minecraftforge.binarypatcher.ConsoleTool;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
@@ -66,6 +67,7 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.JarUtil;
 import net.fabricmc.loom.util.function.FsPathConsumer;
 import net.fabricmc.loom.util.function.IoConsumer;
 import net.fabricmc.loom.util.ManifestVersion;
@@ -292,6 +294,18 @@ public class MinecraftProvider extends DependencyProvider {
 
 		walkFileSystems(injection, minecraftClientPatchedSrgJar, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
 		walkFileSystems(injection, minecraftServerPatchedSrgJar, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
+
+		logger.lifecycle(":access transforming");
+		File clientAtJar = File.createTempFile("atclient", ".jar");
+		File serverAtJar = File.createTempFile("atserver", ".jar");
+		File clientAt = File.createTempFile("atclient", ".cfg");
+		File serverAt = File.createTempFile("atserver", ".cfg");
+		Files.copy(minecraftClientPatchedSrgJar, clientAtJar);
+		Files.copy(minecraftServerPatchedSrgJar, serverAtJar);
+		JarUtil.extractFile(clientAtJar, "META-INF/accesstransformer.cfg", clientAt);
+		JarUtil.extractFile(serverAtJar, "META-INF/accesstransformer.cfg", serverAt);
+		TransformerProcessor.main("--inJar", clientAtJar.getAbsolutePath(), "--outJar", minecraftClientPatchedSrgJar.getAbsolutePath(), "--atFile", clientAt.getAbsolutePath());
+		TransformerProcessor.main("--inJar", serverAtJar.getAbsolutePath(), "--outJar", minecraftServerPatchedSrgJar.getAbsolutePath(), "--atFile", serverAt.getAbsolutePath());
 	}
 
 	private void remapPatchedJars(Logger logger) throws IOException {

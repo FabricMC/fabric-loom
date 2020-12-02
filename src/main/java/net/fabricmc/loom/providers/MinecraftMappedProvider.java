@@ -42,7 +42,6 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.srg.AtRemapper;
 import net.fabricmc.loom.util.srg.CoreModClassRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
@@ -159,7 +158,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				}
 
 				TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
-				AtRemapper.remap(output, yarnWithSrg);
 				CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
 			}
 		}
@@ -171,10 +169,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
-				/* FORGE: Required for classes like aej$OptionalNamedTag (1.16.4) which are added by Forge patches.
-				 * They won't get remapped to their proper packages, so IllegalAccessErrors will happen without ._.
-				 */
-				.fixPackageAccess(true)
 				.build();
 	}
 

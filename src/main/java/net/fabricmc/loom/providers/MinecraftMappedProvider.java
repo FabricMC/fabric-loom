@@ -171,6 +171,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
+				/* FORGE: Required for classes like aej$OptionalNamedTag (1.16.4) which are added by Forge patches.
+				 * They won't get remapped to their proper packages, so IllegalAccessErrors will happen without ._.
+				 */
+				.fixPackageAccess(true)
 				.build();
 	}
 

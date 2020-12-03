@@ -42,8 +42,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.gradle.api.tasks.Copy;
-import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -134,14 +134,17 @@ public class RunConfig {
 
 		if (extension.isForge()) {
 			StringBuilder modClasses = new StringBuilder();
+			SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 
 			modClasses.append("loom%%");
-			modClasses.append(((Copy) project.getTasks().getByName("processResources")).getDestinationDir().getAbsolutePath());
+			modClasses.append(main.getOutput().getResourcesDir().getAbsolutePath());
 			modClasses.append(';');
-			modClasses.append("loom%%");
-			// This *should* include Kotlin as well AFAIK.
-			modClasses.append(((JavaCompile) project.getTasks().getByName("compileJava")).getDestinationDir().getAbsolutePath());
-			modClasses.append(';');
+
+			for (File classes : main.getOutput().getClassesDirs()) {
+				modClasses.append("loom%%");
+				modClasses.append(classes.getAbsolutePath());
+				modClasses.append(';');
+			}
 
 			runConfig.envVariables.put("MOD_CLASSES", modClasses.toString());
 		}

@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class RunConfig {
 	public String runDir;
 	public String vmArgs;
 	public String programArgs;
+	public final Map<String, String> envVariables = new HashMap<>();
 
 	public Element genRuns(Element doc) {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -72,6 +74,14 @@ public class RunConfig {
 
 		if (!Strings.isNullOrEmpty(programArgs)) {
 			this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", programArgs));
+		}
+
+		if (!envVariables.isEmpty()) {
+			Element envs = this.addXml(root, "envs", ImmutableMap.of());
+
+			for (Map.Entry<String, String> envEntry : envVariables.entrySet()) {
+				this.addXml(envs, "env", ImmutableMap.of("name", envEntry.getKey(), "value", envEntry.getValue()));
+			}
 		}
 
 		return root;
@@ -192,6 +202,25 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", programArgs.replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
+
+		String envs = "";
+
+		if (!envVariables.isEmpty()) {
+			StringBuilder builder = new StringBuilder("<envs>");
+
+			for (Map.Entry<String, String> env : envVariables.entrySet()) {
+				builder.append("<env name=\"");
+				builder.append(env.getKey().replaceAll("\"", "&quot;"));
+				builder.append("\" value=\"");
+				builder.append(env.getValue().replaceAll("\"", "&quot;"));
+				builder.append("\"/>");
+			}
+
+			builder.append("</envs>");
+			envs = builder.toString();
+		}
+
+		dummyConfig = dummyConfig.replace("%ENVS%", envs);
 
 		return dummyConfig;
 	}

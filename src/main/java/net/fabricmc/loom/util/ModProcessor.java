@@ -59,6 +59,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
 import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.processors.dependency.ModDependencyInfo;
+import net.fabricmc.loom.util.srg.AtRemapper;
+import net.fabricmc.loom.util.srg.CoreModClassRemapper;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -129,7 +132,7 @@ public class ModProcessor {
 
 	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		String fromM = "intermediary";
+		String fromM = extension.isForge() ? "srg" : "intermediary";
 		String toM = "named";
 
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
@@ -142,8 +145,9 @@ public class ModProcessor {
 
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
+		TinyTree mappings = extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings();
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+						.withMappings(TinyRemapperMappingsHelper.create(mappings, fromM, toM, false))
 						.renameInvalidLocals(false)
 						.build();
 
@@ -195,6 +199,11 @@ public class ModProcessor {
 
 			if (accessWidener != null) {
 				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
+			}
+
+			if (extension.isForge()) {
+				AtRemapper.remap(info.getRemappedOutput().toPath(), mappings);
+				CoreModClassRemapper.remapJar(info.getRemappedOutput().toPath(), mappings, project.getLogger());
 			}
 		}
 	}

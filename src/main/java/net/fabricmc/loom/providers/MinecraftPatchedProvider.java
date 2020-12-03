@@ -48,7 +48,6 @@ import net.minecraftforge.binarypatcher.ConsoleTool;
 import net.minecraftforge.gradle.mcp.util.MCPRuntime;
 import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -218,7 +217,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			};
 
 			if (modAt != null) {
-				args = ArrayUtils.addAll(args, "--atFile", modAt.getAbsolutePath());
+				args = Arrays.copyOf(args, args.length + 2);
+				args[args.length - 2] = "--atFile";
+				args[args.length - 1] = modAt.getAbsolutePath();
 			}
 
 			TransformerProcessor.main(args);

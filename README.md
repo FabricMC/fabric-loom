@@ -22,6 +22,10 @@ pluginManagement {
 		}
 		gradlePluginPortal()
 +		maven {
++			name = 'Forge'
++			url = 'https://files.minecraftforge.net/maven'
++		}
++		maven {
 +			name = 'Jitpack'
 +			url = 'https://jitpack.io'
 +		}

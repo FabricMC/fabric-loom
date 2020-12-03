@@ -82,6 +82,13 @@ public class LaunchProvider extends DependencyProvider {
 
 					.argument("server", "--launchTarget")
 					.argument("server", "fmluserdevserver");
+
+			String mixinConfig = getExtension().mixinConfig;
+
+			if (mixinConfig != null) {
+				launchConfig.argument("-mixin.config");
+				launchConfig.argument(mixinConfig);
+			}
 		}
 
 		//Enable ansi by default for idea and vscode

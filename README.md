@@ -70,4 +70,4 @@ loom {
   in some places. 
 - The srg -> yarn remapper used for coremod class names is *really* simple,
   and might break with coremods that have multiple class names per line.
-- Mod dependencies (apart from Forge itself) aren't remapped properly yet.
+- Mixins aren't obfuscated properly.

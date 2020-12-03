@@ -48,6 +48,7 @@ import org.gradle.api.publish.PublishingExtension;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
@@ -289,10 +290,15 @@ public class AbstractPlugin implements Plugin<Project> {
 					jarTask.setClassifier("dev");
 					remapJarTask.setClassifier("");
 					remapJarTask.getInput().set(jarTask.getArchivePath());
+				}
 
-					if (extension.isForge()) {
-						remapJarTask.getToM().set("srg");
-					}
+				if (extension.isForge()) {
+					remapJarTask.getToM().set("srg");
+					((Jar) jarTask).manifest(manifest -> {
+						if (extension.mixinConfig != null) {
+							manifest.attributes(ImmutableMap.of("MixinConfigs", extension.mixinConfig));
+						}
+					});
 				}
 
 				extension.getUnmappedModCollection().from(jarTask);

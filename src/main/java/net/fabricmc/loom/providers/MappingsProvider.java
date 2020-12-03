@@ -178,7 +178,7 @@ public class MappingsProvider extends DependencyProvider {
 			patchedProvider.provide(dependency, postPopulationScheduler);
 		}
 
-		if (processorManager.active()) {
+		if (processorManager.active() || (extension.isForge() && patchedProvider.usesProjectCache())) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
 			getProject().getLogger().lifecycle("Using project based jar storage");
 		} else {

@@ -81,7 +81,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("input merged jar not found");
 		}
 
-		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || isRefreshDeps()) {
+		boolean isForgeAtDirty = getExtension().isForge() && getExtension().getMappingsProvider().patchedProvider.isAtDirty();
+
+		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || isRefreshDeps() || isForgeAtDirty) {
 			if (minecraftMappedJar.exists()) {
 				minecraftMappedJar.delete();
 			}

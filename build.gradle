@@ -22,7 +22,7 @@ if (ENV.BUILD_NUMBER) {
 	build = "release #${ENV.BUILD_NUMBER}"
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + '-forge.44'
+	version = baseVersion + '-forge.49'
 }
 
 configurations {

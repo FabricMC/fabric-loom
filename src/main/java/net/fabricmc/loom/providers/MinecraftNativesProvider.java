@@ -45,6 +45,14 @@ public class MinecraftNativesProvider {
 		File nativesDir = extension.getNativesDirectory();
 		File jarStore = extension.getNativesJarStore();
 
+		if (extension.hasCustomNatives()) {
+			if (!nativesDir.exists()) {
+				throw new RuntimeException("Could no find custom natives directory at " + nativesDir.getAbsolutePath());
+			}
+
+			return;
+		}
+
 		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
 			File libJarFile = library.getFile(jarStore);
 

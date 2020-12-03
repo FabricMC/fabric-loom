@@ -42,6 +42,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -128,6 +130,20 @@ public class RunConfig {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
 			runConfig.programArgs = "";
 			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
+		}
+
+		if (extension.isForge()) {
+			StringBuilder modClasses = new StringBuilder();
+
+			modClasses.append("loom%%");
+			modClasses.append(((Copy) project.getTasks().getByName("processResources")).getDestinationDir().getAbsolutePath());
+			modClasses.append(';');
+			modClasses.append("loom%%");
+			// This *should* include Kotlin as well AFAIK.
+			modClasses.append(((JavaCompile) project.getTasks().getByName("compileJava")).getDestinationDir().getAbsolutePath());
+			modClasses.append(';');
+
+			runConfig.envVariables.put("MOD_CLASSES", modClasses.toString());
 		}
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {

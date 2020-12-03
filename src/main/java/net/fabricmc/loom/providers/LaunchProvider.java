@@ -105,6 +105,10 @@ public class LaunchProvider extends DependencyProvider {
 		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
 		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
 
+		if (getExtension().isForge()) {
+			addDependency(Constants.Dependencies.JAVAX_ANNOTATIONS + Constants.Dependencies.Versions.JAVAX_ANNOTATIONS, "compileOnly");
+		}
+
 		postPopulationScheduler.accept(this::writeRemapClassPath);
 	}
 

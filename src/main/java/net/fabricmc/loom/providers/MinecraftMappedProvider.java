@@ -182,16 +182,21 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
-		return TinyRemapper.newRemapper()
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
-				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
-				.rebuildSourceFilenames(true)
-				/* FORGE: Required for classes like aej$OptionalNamedTag (1.16.4) which are added by Forge patches.
-				 * They won't get remapped to their proper packages, so IllegalAccessErrors will happen without ._.
-				 */
-				.fixPackageAccess(true)
-				.build();
+				.rebuildSourceFilenames(true);
+
+		if (getExtension().isForge()) {
+			/* FORGE: Required for classes like aej$OptionalNamedTag (1.16.4) which are added by Forge patches.
+			 * They won't get remapped to their proper packages, so IllegalAccessErrors will happen without ._.
+			 */
+			builder.fixPackageAccess(true);
+		} else {
+			builder.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass));
+		}
+
+		return builder.build();
 	}
 
 	public Path[] getRemapClasspath() {

@@ -71,9 +71,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	private File minecraftClientPatchedJar;
 	private File minecraftServerPatchedJar;
 	private File minecraftMergedPatchedJar;
-	private File modAtHash;
+	private File projectAtHash;
 	@Nullable
-	private File modAt = null;
+	private File projectAt = null;
 	private boolean atDirty = false;
 
 	public MinecraftPatchedProvider(Project project) {
@@ -89,7 +89,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 				createSrgJars(getProject().getLogger());
 			}
 
-			if (atDirty || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
+			if ((atDirty && usesProjectCache()) || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
 				patchJars(getProject().getLogger());
 				injectForgeClasses(getProject().getLogger());
 			}
@@ -97,31 +97,31 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			remapPatchedJars(getProject().getLogger());
 		}
 
-		if (atDirty || !minecraftMergedPatchedJar.exists()) {
+		if ((atDirty && usesProjectCache()) || !minecraftMergedPatchedJar.exists()) {
 			mergeJars(getProject().getLogger());
 		}
 	}
 
 	private void initFiles() throws IOException {
-		modAtHash = new File(getExtension().getProjectPersistentCache(), "at.sha256");
+		projectAtHash = new File(getExtension().getProjectPersistentCache(), "at.sha256");
 
 		SourceSet main = getProject().getConvention().findPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 
 		for (File srcDir : main.getResources().getSrcDirs()) {
-			File modAt = new File(srcDir, "META-INF/accesstransformer.cfg");
+			File projectAt = new File(srcDir, "META-INF/accesstransformer.cfg");
 
-			if (modAt.exists()) {
-				this.modAt = modAt;
+			if (projectAt.exists()) {
+				this.projectAt = projectAt;
 				break;
 			}
 		}
 
-		if (!modAtHash.exists()) {
+		if (!projectAtHash.exists()) {
 			writeAtHash();
-			atDirty = modAt != null;
+			atDirty = projectAt != null;
 		} else {
-			byte[] expected = Files.asByteSource(modAtHash).read();
-			byte[] current = modAt != null ? Checksum.sha256(modAt) : Checksum.sha256("");
+			byte[] expected = Files.asByteSource(projectAtHash).read();
+			byte[] current = projectAt != null ? Checksum.sha256(projectAt) : Checksum.sha256("");
 			atDirty = !Arrays.equals(current, expected);
 
 			if (atDirty) {
@@ -147,9 +147,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void writeAtHash() throws IOException {
-		try (FileOutputStream out = new FileOutputStream(modAtHash)) {
-			if (modAt != null) {
-				out.write(Checksum.sha256(modAt));
+		try (FileOutputStream out = new FileOutputStream(projectAtHash)) {
+			if (projectAt != null) {
+				out.write(Checksum.sha256(projectAt));
 			} else {
 				out.write(Checksum.sha256(""));
 			}
@@ -216,10 +216,10 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 					"--atFile", at.getAbsolutePath()
 			};
 
-			if (modAt != null) {
+			if (projectAt != null) {
 				args = Arrays.copyOf(args, args.length + 2);
 				args[args.length - 2] = "--atFile";
-				args[args.length - 1] = modAt.getAbsolutePath();
+				args[args.length - 1] = projectAt.getAbsolutePath();
 			}
 
 			TransformerProcessor.main(args);
@@ -369,7 +369,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	public boolean usesProjectCache() {
-		return modAt != null;
+		return projectAt != null;
 	}
 
 	public boolean isAtDirty() {

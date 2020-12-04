@@ -16,13 +16,13 @@ group = 'net.fabricmc'
 archivesBaseName = project.name
 def baseVersion = '0.5'
 
-def build = 'local'
+def build = 'Forgified'
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
 	build = "release #${ENV.BUILD_NUMBER}"
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
-	version = baseVersion + '-forge.49'
+	version = baseVersion + '-SNAPSHOT'
 }
 
 configurations {

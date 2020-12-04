@@ -109,14 +109,9 @@ public class RemapJarTask extends Jar {
 
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 
-		// FIXME: The mixin map is named->intermediary, but I think we need named->srg?
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
-			if ("intermediary".equals(toM)) {
-				if (mixinMapFile.exists()) {
-					remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
-				}
-			} else {
-				project.getLogger().error("Mixins in Forge projects are currently not supported.");
+			if (mixinMapFile.exists()) {
+				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
 			}
 		}
 
@@ -205,12 +200,8 @@ public class RemapJarTask extends Jar {
 		}
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
-			if ("intermediary".equals(toM)) {
-				if (mixinMapFile.exists()) {
-					jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
-				} else {
-					project.getLogger().error("Mixins in Forge projects are currently not supported.");
-				}
+			if (mixinMapFile.exists()) {
+				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
 			}
 		}
 

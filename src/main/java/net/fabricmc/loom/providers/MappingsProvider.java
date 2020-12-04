@@ -34,6 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.google.common.base.Preconditions;
@@ -80,6 +82,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File tinyMappingsJar;
 	public File mappingsMixinExport;
 	public Path tinyMappingsWithSrg;
+	public File mixinTinyMappingsWithSrg; // FORGE: The mixin mappings have srg names in intermediary.
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -148,6 +151,7 @@ public class MappingsProvider extends DependencyProvider {
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 		tinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny");
+		mixinTinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-mixin-srg.tiny").toFile();
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
@@ -157,8 +161,17 @@ public class MappingsProvider extends DependencyProvider {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
 		}
 
-		if (getExtension().isForge() && (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps())) {
-			SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
+		if (getExtension().isForge()) {
+			if (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps()) {
+				SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
+			}
+
+			if (!mixinTinyMappingsWithSrg.exists() || isRefreshDeps()) {
+				List<String> lines = new ArrayList<>(Files.readAllLines(tinyMappingsWithSrg));
+				lines.set(0, lines.get(0).replace("intermediary", "yraidemretni").replace("srg", "intermediary"));
+				Files.deleteIfExists(mixinTinyMappingsWithSrg.toPath());
+				Files.write(mixinTinyMappingsWithSrg.toPath(), lines);
+			}
 		}
 
 		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);

@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -57,7 +58,14 @@ public class ZipReprocessorUtil {
 					}
 
 					zipOutputStream.putNextEntry(entry);
-					zipOutputStream.write(zipFile.getInputStream(entry).readAllBytes());
+					InputStream inputStream = zipFile.getInputStream(entry);
+					byte[] buf = new byte[1024];
+					int length;
+
+					while ((length = inputStream.read(buf)) > 0) {
+						zipOutputStream.write(buf, 0, length);
+					}
+					
 					zipOutputStream.closeEntry();
 				}
 			}

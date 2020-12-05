@@ -36,6 +36,9 @@ public class ZipReprocessorUtil {
 	private ZipReprocessorUtil() { }
 
 	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
+		if (!reproducibleFileOrder && preserveFileTimestamps) {
+			return;
+		}
 		try (ZipFile zipFile = new ZipFile(file)) {
 			ZipEntry[] entries;
 

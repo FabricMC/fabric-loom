@@ -62,15 +62,21 @@ public class SourceRemapper {
 
 	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
-		sourceRemapper.scheduleRemapSources(input, output);
+		sourceRemapper.scheduleRemapSources(input, output, false, true);
 		sourceRemapper.remapAll();
 	}
 
+	@Deprecated
 	public void scheduleRemapSources(File source, File destination) throws Exception {
+		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
+	}
+
+	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws Exception {
 		remapTasks.add((logger) -> {
 			try {
 				logger.progress("remapping sources - " + source.getName());
 				remapSourcesInner(source, destination);
+				ZipReprocessorUtil.reprocessZip(destination, reproducibleFileOrder, preserveFileTimestamps);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to remap sources for " + source, e);
 			}

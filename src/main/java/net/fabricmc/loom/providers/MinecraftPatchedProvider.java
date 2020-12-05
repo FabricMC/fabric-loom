@@ -89,7 +89,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 				createSrgJars(getProject().getLogger());
 			}
 
-			if ((atDirty && usesProjectCache()) || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
+			if (atDirty || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
 				patchJars(getProject().getLogger());
 				injectForgeClasses(getProject().getLogger());
 			}
@@ -97,7 +97,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			remapPatchedJars(getProject().getLogger());
 		}
 
-		if ((atDirty && usesProjectCache()) || !minecraftMergedPatchedJar.exists()) {
+		if (atDirty || !minecraftMergedPatchedJar.exists()) {
 			mergeJars(getProject().getLogger());
 		}
 	}
@@ -122,11 +122,13 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		} else {
 			byte[] expected = Files.asByteSource(projectAtHash).read();
 			byte[] current = projectAt != null ? Checksum.sha256(projectAt) : Checksum.sha256("");
-			atDirty = !Arrays.equals(current, expected);
+			boolean mismatched = !Arrays.equals(current, expected);
 
-			if (atDirty) {
+			if (mismatched) {
 				writeAtHash();
 			}
+
+			atDirty = mismatched && projectAt != null;
 		}
 
 		MinecraftProvider minecraftProvider = getExtension().getMinecraftProvider();

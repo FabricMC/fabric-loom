@@ -40,6 +40,7 @@ public class ZipReprocessorUtil {
 		if (!reproducibleFileOrder && preserveFileTimestamps) {
 			return;
 		}
+
 		try (ZipFile zipFile = new ZipFile(file)) {
 			ZipEntry[] entries;
 
@@ -65,7 +66,7 @@ public class ZipReprocessorUtil {
 					while ((length = inputStream.read(buf)) > 0) {
 						zipOutputStream.write(buf, 0, length);
 					}
-					
+
 					zipOutputStream.closeEntry();
 				}
 			}

@@ -44,7 +44,7 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	private SourceRemapper sourceRemapper = null;
 	private final Property<Boolean> archivePreserveFileTimestamps;
 	private final Property<Boolean> archiveReproducibleFileOrder;
-	
+
 	public RemapSourcesJarTask() {
 		ObjectFactory objectFactory = getProject().getObjects();
 		archivePreserveFileTimestamps = objectFactory.property(Boolean.class);

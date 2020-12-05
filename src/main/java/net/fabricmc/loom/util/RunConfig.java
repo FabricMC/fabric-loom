@@ -136,15 +136,14 @@ public class RunConfig {
 			StringBuilder modClasses = new StringBuilder();
 			SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 
-			modClasses.append("loom%%");
-			modClasses.append(main.getOutput().getResourcesDir().getAbsolutePath());
-			modClasses.append(';');
-
 			for (File classes : main.getOutput().getClassesDirs()) {
 				modClasses.append("loom%%");
 				modClasses.append(classes.getAbsolutePath());
-				modClasses.append(';');
+				modClasses.append(File.pathSeparator);
 			}
+
+			modClasses.append("loom%%");
+			modClasses.append(main.getOutput().getResourcesDir().getAbsolutePath());
 
 			runConfig.envVariables.put("MOD_CLASSES", modClasses.toString());
 		}

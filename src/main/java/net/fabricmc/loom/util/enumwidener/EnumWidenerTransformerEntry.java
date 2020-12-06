@@ -1,6 +1,5 @@
 package net.fabricmc.loom.util.enumwidener;
 
-import java.io.IOException;
 import java.util.zip.ZipEntry;
 import net.fabricmc.loom.util.Constants;
 import org.gradle.api.Project;
@@ -19,11 +18,11 @@ public class EnumWidenerTransformerEntry extends ByteArrayZipEntryTransformer {
 	}
 
 	@Override
-	protected byte[] transform(ZipEntry zipEntry, byte[] input) throws IOException {
+	protected byte[] transform(ZipEntry zipEntry, byte[] input) {
 		ClassWriter writer = new ClassWriter(0);
 		ClassVisitor visitor = new EnumWidenerClassVisitor(Constants.ASM_VERSION, writer);
 
-		this.project.getLogger().lifecycle(String.format("Applying EnumWidener™ to class %s.", klass));
+		this.project.getLogger().lifecycle(String.format("Applying EnumWidener(tm) to %s.", klass));
 
 		new ClassReader(input).accept(visitor, 0);
 

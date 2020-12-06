@@ -115,8 +115,10 @@ public class AbstractPlugin implements Plugin<Project> {
 		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
 		modCompileClasspathMappedConfig.setTransitive(false);
 
-		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED);
-		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
+		Configuration minecraftNamedCompileConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED_COMPILE);
+		minecraftNamedCompileConfig.setTransitive(false); // The launchers do not recurse dependencies
+		Configuration minecraftNamedRuntimeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED_RUNTIME);
+		minecraftNamedRuntimeConfig.setTransitive(false); // The launchers do not recurse dependencies
 		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
@@ -142,12 +144,13 @@ public class AbstractPlugin implements Plugin<Project> {
 			}
 		}
 
-		extendsFrom("compileClasspath", Constants.Configurations.MINECRAFT_NAMED);
-		extendsFrom("runtimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
-		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED);
-		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
+		extendsFrom("compileClasspath", Constants.Configurations.MINECRAFT_NAMED_COMPILE);
+		extendsFrom("runtimeClasspath", Constants.Configurations.MINECRAFT_NAMED_RUNTIME);
+		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED_COMPILE);
+		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED_RUNTIME);
 
-		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED_COMPILE, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED_RUNTIME, Constants.Configurations.MINECRAFT_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL);
 

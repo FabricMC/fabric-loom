@@ -38,8 +38,11 @@ import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
+	public static final String PROJECT_MAPPED_COMPILE_CLASSIFIER = "projectmapped-compile";
+	public static final String PROJECT_MAPPED_RUNTIME_CLASSIFIER = "projectmapped-runtime";
 
-	private File projectMappedJar;
+	private File projectMappedCompileJar;
+	private File projectMappedRuntimeJar;
 
 	private final JarProcessorManager jarProcessorManager;
 
@@ -50,23 +53,27 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
+		if (jarProcessorManager.isInvalid(projectMappedCompileJar) || isRefreshDeps()) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
 			invalidateJars();
 
 			try {
-				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
+				FileUtils.copyFile(super.getMappedJar(), projectMappedCompileJar);
+				FileUtils.copyFile(super.getMappedJar(), projectMappedRuntimeJar);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to copy source jar", e);
 			}
 
-			jarProcessorManager.process(projectMappedJar);
+			jarProcessorManager.process(projectMappedCompileJar);
+			jarProcessorManager.process(projectMappedRuntimeJar);
 		}
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
-		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
+		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER)));
+		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
+			getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER)));
 	}
 
 	private void invalidateJars() {
@@ -87,11 +94,16 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		projectMappedCompileJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER) + ".jar");
+		projectMappedRuntimeJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER) + ".jar");
 	}
 
 	@Override
 	public File getMappedJar() {
-		return projectMappedJar;
+		return projectMappedCompileJar;
+	}
+
+	public File getMappedRuntimeJar() {
+		return projectMappedRuntimeJar;
 	}
 }

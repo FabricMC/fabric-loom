@@ -1,13 +1,14 @@
 package net.fabricmc.loom.processors;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.enumwidener.EnumWidenerTransformerEntry;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 public class EnumWidenerJarProcessor implements JarProcessor {
 	private static final String HASH_FILE_NAME = "ew.hash";
@@ -47,7 +48,7 @@ public class EnumWidenerJarProcessor implements JarProcessor {
 			return false;
 		}
 
-		final byte[] hash = ZipUtil.unpackEntry(file, HASH_FILE_NAME);
+		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILE_NAME);
 
 		return hash == null || ByteBuffer.wrap(hash).getInt() != this.classes.hashCode();
 	}

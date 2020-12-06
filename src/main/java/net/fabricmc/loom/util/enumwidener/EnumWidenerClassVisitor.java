@@ -11,12 +11,11 @@ public class EnumWidenerClassVisitor extends ClassVisitor {
 	}
 
 	private static String fixSignature(final String signature, final String name) {
-//		if (name.equals("<init>")) {
-//			return signature.replaceFirst("\\(", "(Ljava/lang/String;I");
-//		}
-//
-//		return signature;
-		return null;
+		if (name.equals("<init>")) {
+			return signature.replace("(", "(Ljava/lang/String;I");
+		}
+
+		return signature;
 	}
 
 	@Override
@@ -29,17 +28,6 @@ public class EnumWidenerClassVisitor extends ClassVisitor {
 
 		super.visit(version, widenedAccess, name, signature, superName, interfaces);
 	}
-
-//	@Override
-//	public void visitInnerClass(final String name, final String outerName, final String innerName, final int access) {
-//		final int widenedAccess = access & ~Opcodes.ACC_ENUM;
-//
-//		if (widenedAccess == access) {
-//			throw new IllegalArgumentException(name + " is not an enum");
-//		}
-//
-//		super.visitInnerClass(name, outerName, innerName, widenedAccess);
-//	}
 
 	@Override
 	public FieldVisitor visitField(final int access, final String name, final String descriptor, final String signature, final Object value) {

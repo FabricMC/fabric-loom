@@ -53,7 +53,7 @@ public class EnumWidenerClassNode extends ClassNode {
 	@Override
 	public MethodVisitor visitMethod(final int access, final String name, final String descriptor, final String signature, final String[] exceptions) {
 		return super.visitMethod(
-			access & ~Opcodes.ACC_SYNTHETIC,
+			access,
 			name,
 			descriptor,
 			name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature,

@@ -24,15 +24,16 @@
 
 package net.fabricmc.loom.processors;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.enumwidener.EnumWidenerTransformerEntry;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.List;
+
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.List;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.enumwidener.EnumWidenerTransformerEntry;
 
 public class EnumWidenerJarProcessor implements JarProcessor {
 	private static final String HASH_FILE_NAME = "ew.hash";
@@ -58,8 +59,8 @@ public class EnumWidenerJarProcessor implements JarProcessor {
 			this.project.getLogger().lifecycle(String.format("EnumWidener(tm) v0 is in action on %s.", file));
 
 			ZipUtil.transformEntries(file, this.classes.stream()
-				.map(klass -> new ZipEntryTransformerEntry(klass.replace('.', '/') + ".class", new EnumWidenerTransformerEntry(this.project, klass)))
-				.toArray(ZipEntryTransformerEntry[]::new)
+						.map(klass -> new ZipEntryTransformerEntry(klass.replace('.', '/') + ".class", new EnumWidenerTransformerEntry(this.project, klass)))
+						.toArray(ZipEntryTransformerEntry[]::new)
 			);
 
 			ZipUtil.addEntry(file, HASH_FILE_NAME, ByteBuffer.allocate(4).putInt(this.classes.hashCode()).array());

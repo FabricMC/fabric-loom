@@ -26,7 +26,7 @@ package net.fabricmc.loom.util.enumwidener;
 
 import java.util.List;
 import java.util.zip.ZipEntry;
-import net.fabricmc.loom.util.Constants;
+
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -34,6 +34,8 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
+
+import net.fabricmc.loom.util.Constants;
 
 public class EnumWidenerTransformerEntry extends ByteArrayZipEntryTransformer {
 	private final Project project;

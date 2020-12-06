@@ -73,7 +73,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER)));
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
-			getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER)));
+					getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER)));
 	}
 
 	private void invalidateJars() {

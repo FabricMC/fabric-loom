@@ -144,7 +144,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
-			getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
+					getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
 	}
 
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {

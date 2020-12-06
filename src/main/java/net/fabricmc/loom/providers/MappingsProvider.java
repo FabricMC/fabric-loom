@@ -38,7 +38,6 @@ import java.util.function.Consumer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
-import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -47,6 +46,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.util.Constants;

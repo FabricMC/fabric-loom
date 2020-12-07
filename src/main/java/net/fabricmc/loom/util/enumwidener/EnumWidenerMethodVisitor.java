@@ -37,12 +37,12 @@ public class EnumWidenerMethodVisitor extends MethodVisitor {
 	}
 
 	@Override
-	public void visitAnnotableParameterCount(final int parameterCount, final boolean visible) {
+	public void visitAnnotableParameterCount(int parameterCount, boolean visible) {
 		super.visitAnnotableParameterCount(!this.constructor || parameterCount == 0 ? parameterCount : parameterCount + 2, visible);
 	}
 
 	@Override
-	public AnnotationVisitor visitParameterAnnotation(final int parameter, final String descriptor, final boolean visible) {
+	public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
 		return super.visitParameterAnnotation(this.constructor ? parameter + 2 : parameter, descriptor, visible);
 	}
 }

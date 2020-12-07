@@ -24,14 +24,16 @@
 
 package net.fabricmc.loom.util.enumwidener;
 
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
 
-public class EnumWidenerClassNode extends ClassNode {
-	public EnumWidenerClassNode(int api) {
-		super(api);
+import net.fabricmc.loom.util.Constants;
+
+public class EnumWidenerClassVisitor extends ClassVisitor {
+	public EnumWidenerClassVisitor(int api, ClassVisitor classVisitor) {
+		super(api, classVisitor);
 	}
 
 	@Override
@@ -52,12 +54,10 @@ public class EnumWidenerClassNode extends ClassNode {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		return super.visitMethod(
-			access,
-			name,
-			descriptor,
-			name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature,
-			exceptions
+		return new EnumWidenerMethodVisitor(
+			Constants.ASM_VERSION,
+			super.visitMethod(access, name, descriptor, name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature, exceptions),
+			name.equals("<init>")
 		);
 	}
 }

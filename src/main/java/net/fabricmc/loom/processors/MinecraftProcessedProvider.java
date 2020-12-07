@@ -60,9 +60,9 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		boolean invalid;
 
 		if (this.split) {
-			invalid = this.jarProcessorManager.isInvalid(this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(this.projectMappedRuntimeJar);
+			invalid = this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedRuntimeJar);
 		} else {
-			invalid = this.jarProcessorManager.isInvalid(this.projectMappedCommonJar);
+			invalid = this.jarProcessorManager.isInvalid(Environment.BOTH, this.projectMappedCommonJar);
 		}
 
 		if (invalid || isRefreshDeps()) {

@@ -59,12 +59,12 @@ public class JarProcessorManager {
 		return !this.filter(environment).isEmpty();
 	}
 
-	public boolean isInvalid(File file) {
+	public boolean isInvalid(Environment environment, File file) {
 		if (!file.exists()) {
 			return true;
 		}
 
-		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+		return this.filter(environment).stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
 	}
 
 	public void process(Environment environment, File file) {

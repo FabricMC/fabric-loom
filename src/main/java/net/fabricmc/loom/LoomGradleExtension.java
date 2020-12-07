@@ -66,6 +66,7 @@ public class LoomGradleExtension {
 	public boolean autoGenIDERuns;
 	public String customManifest = null;
 	public File accessWidener = null;
+	public List<String> enumWidener = new ArrayList<>();
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 	public boolean shareCaches = false;
 
@@ -149,6 +150,10 @@ public class LoomGradleExtension {
 
 	public JsonObject getInstallerJson() {
 		return installerJson;
+	}
+
+	public void enumWidener(String klass) {
+		this.enumWidener.add(klass);
 	}
 
 	public void accessWidener(Object file) {

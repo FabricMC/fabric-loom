@@ -37,7 +37,6 @@ import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import net.fabricmc.loom.processors.Environment;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -49,14 +48,15 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.Environment;
 import net.fabricmc.loom.processors.JarProcessor;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {

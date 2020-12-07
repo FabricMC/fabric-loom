@@ -153,7 +153,7 @@ public class MappingsProvider extends DependencyProvider {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
 		}
 
-		if (extension.enumWidener != null) {
+		if (!extension.enumWidener.isEmpty()) {
 			extension.addJarProcessor(new EnumWidenerJarProcessor(getProject()));
 		}
 

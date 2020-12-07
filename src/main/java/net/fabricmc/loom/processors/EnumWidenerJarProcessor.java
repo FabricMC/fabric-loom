@@ -55,7 +55,7 @@ public class EnumWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void process(File file) {
-		if (this.classes != null && file.equals(this.getTarget())) {
+		if (!this.classes.isEmpty() && file.equals(this.getTarget())) {
 			this.project.getLogger().lifecycle(String.format("EnumWidener(tm) v0 is in action on %s.", file));
 
 			ZipUtil.transformEntries(file, this.classes.stream()
@@ -69,13 +69,17 @@ public class EnumWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
-		if (this.classes == null || !file.equals(this.getTarget())) {
+		if (!file.equals(this.getTarget())) {
 			return false;
 		}
 
 		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILE_NAME);
 
-		return hash == null || ByteBuffer.wrap(hash).getInt() != this.classes.hashCode();
+		if (hash == null) {
+			return !this.classes.isEmpty();
+		}
+
+		return ByteBuffer.wrap(hash).getInt() != this.classes.hashCode();
 	}
 
 	private File getTarget() {

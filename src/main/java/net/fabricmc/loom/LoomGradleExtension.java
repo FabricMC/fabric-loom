@@ -65,7 +65,7 @@ public class LoomGradleExtension {
 	public boolean remapMod = true;
 	public boolean autoGenIDERuns;
 	public String customManifest = null;
-	public List<String> enumWidener = null;
+	public List<String> enumWidener = new ArrayList<>();
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 	public boolean shareCaches = false;
@@ -153,10 +153,6 @@ public class LoomGradleExtension {
 	}
 
 	public void enumWidener(String klass) {
-		if (this.enumWidener == null) {
-			this.enumWidener = new ArrayList<>();
-		}
-
 		this.enumWidener.add(klass);
 	}
 

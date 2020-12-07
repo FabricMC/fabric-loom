@@ -26,6 +26,7 @@ package net.fabricmc.loom.processors;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -41,8 +42,11 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public static final String PROJECT_MAPPED_COMPILE_CLASSIFIER = "projectmapped-compile";
 	public static final String PROJECT_MAPPED_RUNTIME_CLASSIFIER = "projectmapped-runtime";
 
+	private File projectMappedCommonJar;
 	private File projectMappedCompileJar;
 	private File projectMappedRuntimeJar;
+
+	private boolean split;
 
 	private final JarProcessorManager jarProcessorManager;
 
@@ -53,27 +57,51 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		if (jarProcessorManager.isInvalid(projectMappedCompileJar) || jarProcessorManager.isInvalid(projectMappedRuntimeJar) || isRefreshDeps()) {
+		boolean invalid;
+
+		if (this.split) {
+			invalid = this.jarProcessorManager.isInvalid(this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(this.projectMappedRuntimeJar);
+		} else {
+			invalid = this.jarProcessorManager.isInvalid(this.projectMappedCommonJar);
+		}
+
+		if (invalid || isRefreshDeps()) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
 			invalidateJars();
 
 			try {
-				FileUtils.copyFile(super.getMappedJar(), projectMappedCompileJar);
-				FileUtils.copyFile(super.getMappedJar(), projectMappedRuntimeJar);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to copy source jar", e);
-			}
+				File mappedJar = super.getMappedJar();
+				File firstProcessedJar = this.getMappedJar();
 
-			jarProcessorManager.process(projectMappedCompileJar);
-			jarProcessorManager.process(projectMappedRuntimeJar);
+				FileUtils.copyFile(mappedJar, firstProcessedJar);
+
+				this.jarProcessorManager.process(Environment.BOTH, firstProcessedJar);
+
+				if (this.split) {
+					FileUtils.copyFile(firstProcessedJar, this.projectMappedRuntimeJar);
+
+					this.jarProcessorManager.process(Environment.COMPILE, this.projectMappedCompileJar);
+					this.jarProcessorManager.process(Environment.RUNTIME, this.projectMappedRuntimeJar);
+				}
+			} catch (IOException e) {
+				String message = "Failed to copy or process source jar";
+
+				if (this.split) {
+					message += "s";
+				}
+
+				throw new UncheckedIOException(message, e);
+			}
 		}
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER)));
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER))
+		);
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
-					getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER)));
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER))
+		);
 	}
 
 	private void invalidateJars() {
@@ -94,16 +122,23 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedCompileJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER) + ".jar");
-		projectMappedRuntimeJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER) + ".jar");
+		this.projectMappedCommonJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		this.projectMappedCompileJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER) + ".jar");
+		this.projectMappedRuntimeJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER) + ".jar");
+
+		this.split = this.jarProcessorManager.hasEnvironment(Environment.COMPILE) || this.jarProcessorManager.hasEnvironment(Environment.RUNTIME);
 	}
 
 	@Override
 	public File getMappedJar() {
-		return projectMappedCompileJar;
+		return this.split ? this.projectMappedCompileJar : this.projectMappedCommonJar;
+	}
+
+	public File getMappedCompileJar() {
+		return this.projectMappedCompileJar;
 	}
 
 	public File getMappedRuntimeJar() {
-		return projectMappedRuntimeJar;
+		return this.projectMappedRuntimeJar;
 	}
 }

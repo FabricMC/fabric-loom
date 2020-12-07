@@ -37,6 +37,7 @@ import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.processors.Environment;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -66,6 +67,11 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	public AccessWidenerJarProcessor(Project project) {
 		this.project = project;
+	}
+
+	@Override
+	public Environment getEnvironment() {
+		return Environment.BOTH;
 	}
 
 	@Override

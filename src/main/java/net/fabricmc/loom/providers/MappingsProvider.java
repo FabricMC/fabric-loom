@@ -46,7 +46,6 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.util.Constants;
@@ -153,10 +152,6 @@ public class MappingsProvider extends DependencyProvider {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
 		}
 
-		if (!extension.enumWidener.isEmpty()) {
-			extension.addJarProcessor(new EnumWidenerJarProcessor(getProject()));
-		}
-
 		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
@@ -175,7 +170,7 @@ public class MappingsProvider extends DependencyProvider {
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
 		project.getLogger().lifecycle(":extracting " + yarnJar.getFileName());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, null)) {
 			extractMappings(fileSystem, baseTinyMappings);
 		}
 

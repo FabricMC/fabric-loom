@@ -60,7 +60,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		boolean invalid;
 
 		if (this.split) {
-			invalid = this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedRuntimeJar);
+			invalid = this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(Environment.RUNTIME, this.projectMappedRuntimeJar);
 		} else {
 			invalid = this.jarProcessorManager.isInvalid(Environment.BOTH, this.projectMappedCommonJar);
 		}
@@ -96,11 +96,14 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
+		String compileClassifier = this.split ? PROJECT_MAPPED_COMPILE_CLASSIFIER : PROJECT_MAPPED_CLASSIFIER;
+		String runtimeClassifier = this.split ? PROJECT_MAPPED_RUNTIME_CLASSIFIER : PROJECT_MAPPED_CLASSIFIER;
+
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER))
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(compileClassifier))
 		);
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER))
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(runtimeClassifier))
 		);
 	}
 

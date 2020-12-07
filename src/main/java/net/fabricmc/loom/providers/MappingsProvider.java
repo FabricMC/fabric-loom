@@ -170,7 +170,8 @@ public class MappingsProvider extends DependencyProvider {
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
 		project.getLogger().lifecycle(":extracting " + yarnJar.getFileName());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, null)) {
+		//noinspection RedundantCast
+		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
 		}
 

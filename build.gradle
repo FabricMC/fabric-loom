@@ -151,7 +151,7 @@ bintray {
 	publish = true
 	pkg {
 		repo = "cloth"
-		name = "forgified.fabric-loom"
+		name = "forgified-fabric-loom"
 		userOrg = "shedaniel"
 		licenses = ["MIT"]
 		version {
@@ -166,8 +166,8 @@ bintray {
 publishing {
 	publications {
 		plugin(MavenPublication) {
-			groupId 'forgified.fabric-loom'
-			artifactId 'forgified.fabric-loom.gradle.plugin'
+			groupId 'forgified-fabric-loom'
+			artifactId 'forgified-fabric-loom.gradle.plugin'
 
 			from components.java
 			artifact sourcesJar

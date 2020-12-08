@@ -34,6 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -133,19 +136,16 @@ public class RunConfig {
 		}
 
 		if (extension.isForge()) {
-			StringBuilder modClasses = new StringBuilder();
 			SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 
-			for (File classes : main.getOutput().getClassesDirs()) {
-				modClasses.append("loom%%");
-				modClasses.append(classes.getAbsolutePath());
-				modClasses.append(File.pathSeparator);
-			}
+			String modClasses = Stream.concat(
+					Stream.of(main.getOutput().getResourcesDir().getAbsolutePath()),
+					StreamSupport.stream(main.getOutput().getClassesDirs().spliterator(), false)
+							.map(File::getAbsolutePath)
+			).map(s -> "loom%%" + s)
+					.collect(Collectors.joining(":"));
 
-			modClasses.append("loom%%");
-			modClasses.append(main.getOutput().getResourcesDir().getAbsolutePath());
-
-			runConfig.envVariables.put("MOD_CLASSES", modClasses.toString());
+			runConfig.envVariables.put("MOD_CLASSES", modClasses);
 		}
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {

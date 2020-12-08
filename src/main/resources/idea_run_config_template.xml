@@ -8,6 +8,7 @@
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run/" />
     <method v="2">
       <option name="Make" enabled="true" />
+      %TASKS%
     </method>
   </configuration>
 </component>

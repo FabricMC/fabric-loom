@@ -24,36 +24,32 @@
 
 package net.fabricmc.loom.util;
 
-import static net.fabricmc.loom.AbstractPlugin.isRootProject;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.LoomGradleExtension;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.gradle.api.Project;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static net.fabricmc.loom.AbstractPlugin.isRootProject;
 
 public class RunConfig {
 	public String configName;
@@ -63,6 +59,7 @@ public class RunConfig {
 	public String runDir;
 	public String vmArgs;
 	public String programArgs;
+	public List<String> tasksBeforeRun = new ArrayList<>();
 	public final Map<String, String> envVariables = new HashMap<>();
 
 	public Element genRuns(Element doc) {
@@ -88,7 +85,25 @@ public class RunConfig {
 				this.addXml(envs, "env", ImmutableMap.of("name", envEntry.getKey(), "value", envEntry.getValue()));
 			}
 		}
-
+		
+		if (!tasksBeforeRun.isEmpty()) {
+			Element methodElement = this.addXml(root, "method", ImmutableMap.of("v", "2"));
+			
+			this.addXml(methodElement, "option", ImmutableMap.of("name", "Make", "enabled", "true"));
+			for (String s : tasksBeforeRun) {
+				String project = s.substring(0, s.lastIndexOf(':'));
+				String task = s.substring(s.lastIndexOf(':') + 1);
+				this.addXml(methodElement, "option", ImmutableMap.<String, String>builder()
+						.put("name", "Gradle.BeforeRunTask")
+						.put("enabled", "true")
+						.put("tasks", task)
+						.put("externalProjectPath", project)
+						.put("vmOptions", "")
+						.put("scriptParameters", "")
+						.build());
+			}
+		}
+		
 		return root;
 	}
 
@@ -186,6 +201,7 @@ public class RunConfig {
 		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
+		ideaClient.tasksBeforeRun = new ArrayList<>(extension.getTasksBeforeRun());
 
 		return ideaClient;
 	}
@@ -197,6 +213,7 @@ public class RunConfig {
 		ideaServer.configName = "Minecraft Server";
 		populate(project, extension, ideaServer, "server");
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
+		ideaServer.tasksBeforeRun = new ArrayList<>(extension.getTasksBeforeRun());
 
 		return ideaServer;
 	}
@@ -239,6 +256,14 @@ public class RunConfig {
 		}
 
 		dummyConfig = dummyConfig.replace("%ENVS%", envs);
+		
+		StringBuilder tasksToRun = new StringBuilder();
+		for (String s : tasksBeforeRun) {
+			String project = s.substring(0, s.lastIndexOf(':'));
+			String task = s.substring(s.lastIndexOf(':') + 1);
+			tasksToRun.append(" <option name=\"Gradle.BeforeRunTask\" enabled=\"true\" tasks=\"").append(task).append("\" externalProjectPath=\"").append(project).append("\" vmOptions=\"\" scriptParameters=\"\" />");
+		}
+		dummyConfig = dummyConfig.replace("%TASKS%", tasksToRun.toString());
 
 		return dummyConfig;
 	}

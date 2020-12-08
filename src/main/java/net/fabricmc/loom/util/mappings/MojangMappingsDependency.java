@@ -100,20 +100,22 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 			}
 		}
 
-		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8)) {
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-			project.getLogger().warn("Using of the official minecraft mappings is at your own risk!");
-			project.getLogger().warn("Please make sure to read and understand the following license:");
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-			String line;
-
-			while ((line = clientBufferedReader.readLine()).startsWith("#")) {
-				project.getLogger().warn(line);
+		if (!extension.isSilentMojangMappingsLicenseEnabled()) {
+			try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8)) {
+				project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				project.getLogger().warn("Using of the official minecraft mappings is at your own risk!");
+				project.getLogger().warn("Please make sure to read and understand the following license:");
+				project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				String line;
+				
+				while ((line = clientBufferedReader.readLine()).startsWith("#")) {
+					project.getLogger().warn(line);
+				}
+				
+				project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to read client mappings", e);
 			}
-
-			project.getLogger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read client mappings", e);
 		}
 
 		return Collections.singleton(mappingsFile.toFile());

@@ -7,23 +7,18 @@ plugins {
 	id 'groovy'
 	id 'checkstyle'
 	id 'com.github.johnrengelman.shadow' version '4.0.4'
+	id "com.jfrog.bintray" version "1.8.5"
 }
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'net.fabricmc'
+group = 'me.shedaniel'
 archivesBaseName = project.name
 def baseVersion = '0.5'
 
-def build = 'Forgified'
-def ENV = System.getenv()
-if (ENV.BUILD_NUMBER) {
-	build = "release #${ENV.BUILD_NUMBER}"
-	version = baseVersion + '.' + ENV.BUILD_NUMBER
-} else {
-	version = baseVersion + '-SNAPSHOT'
-}
+def build = "release #${System.getenv("GITHUB_RUN_NUMBER") == null ? "custom" : System.getenv("GITHUB_RUN_NUMBER")}"
+version = baseVersion + "." + (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
 
 configurations {
 	forgeInjectShadow
@@ -36,14 +31,8 @@ sourceSets {
 }
 
 repositories {
-	maven {
-		name = 'Fabric'
-		url = 'https://maven.fabricmc.net/'
-	}
-	maven {
-		name = 'Forge'
-		url = 'https://files.minecraftforge.net/maven/'
-	}
+	maven { url "https://maven.fabricmc.net/" }
+	maven { url "https://files.minecraftforge.net/maven/" }
 	mavenCentral()
 }
 
@@ -149,71 +138,48 @@ checkstyleMain {
 gradlePlugin {
 	plugins {
 		fabricLoom {
-			id = 'fabric-loom'
+			id = 'forgified.fabric-loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 	}
 }
 
-import org.w3c.dom.Document
-import org.w3c.dom.Element
-import org.w3c.dom.Node
+bintray {
+	user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+	key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_KEY')
+	publications = ["plugin", "maven"]
+	publish = true
+	pkg {
+		repo = "cloth"
+		name = "forgified.fabric-loom"
+		userOrg = "shedaniel"
+		licenses = ["MIT"]
+		version {
+			name = project.version
+			vcsTag = project.version
+			released = new Date()
+			vcsUrl = 'https://github.com/shedaniel/fabric-loom.git'
+		}
+	}
+}
 
 publishing {
 	publications {
-		plugin(MavenPublication) { publication ->
+		plugin(MavenPublication) {
+			groupId 'forgified.fabric-loom'
+			artifactId 'forgified.fabric-loom.gradle.plugin'
+
+			from components.java
+			artifact sourcesJar
+		}
+
+		maven(MavenPublication) { publication ->
 			groupId project.group
 			artifactId project.archivesBaseName
-			version project.version
 
-			from components['java']
-
+			from components.java
 			artifact sourcesJar
 			artifact javadocJar
-		}
-
-		// Also publish a snapshot so people can use the latest version if they wish
-		snapshot(MavenPublication) { publication ->
-			groupId project.group
-			artifactId project.archivesBaseName
-			version baseVersion + '-SNAPSHOT'
-
-			from components['java']
-
-			artifact sourcesJar
-			artifact javadocJar
-		}
-
-		// Manually crate the plugin marker for snapshot versions
-		snapshotPlugin(MavenPublication) { publication ->
-			groupId 'fabric-loom'
-			artifactId 'fabric-loom.gradle.plugin'
-			version baseVersion + '-SNAPSHOT'
-
-			pom.withXml({
-				// Based off org.gradle.plugin.devel.plugins.MavenPluginPublishPlugin
-				Element root = asElement()
-				Document document = root.getOwnerDocument()
-				Node dependencies = root.appendChild(document.createElement('dependencies'))
-				Node dependency = dependencies.appendChild(document.createElement('dependency'))
-				Node groupId = dependency.appendChild(document.createElement('groupId'))
-				groupId.setTextContent('net.fabricmc')
-				Node artifactId = dependency.appendChild(document.createElement('artifactId'))
-				artifactId.setTextContent('fabric-loom')
-				Node version = dependency.appendChild(document.createElement('version'))
-				version.setTextContent(baseVersion + '-SNAPSHOT')
-			})
-		}
-	}
-	repositories {
-		maven {
-			if (ENV.MAVEN_URL) {
-				url ENV.MAVEN_URL
-				credentials {
-					username ENV.MAVEN_USERNAME
-					password ENV.MAVEN_PASSWORD
-				}
-			}
 		}
 	}
 }

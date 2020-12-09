@@ -46,6 +46,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
 import net.fabricmc.loom.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.util.Constants;
@@ -150,6 +151,10 @@ public class MappingsProvider extends DependencyProvider {
 
 		if (extension.accessWidener != null) {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
+		}
+
+		if (!extension.enumWidener.isEmpty()) {
+			extension.addJarProcessor(new EnumWidenerJarProcessor(getProject()));
 		}
 
 		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());

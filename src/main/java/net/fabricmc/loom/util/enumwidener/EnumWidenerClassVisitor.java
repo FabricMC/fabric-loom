@@ -56,7 +56,7 @@ public class EnumWidenerClassVisitor extends ClassVisitor {
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 		return new EnumWidenerMethodVisitor(
 			Constants.ASM_VERSION,
-			super.visitMethod(access, name, descriptor, name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature, exceptions),
+			super.visitMethod(access, name, descriptor, signature != null && name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature, exceptions),
 			name.equals("<init>")
 		);
 	}

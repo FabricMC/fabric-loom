@@ -158,7 +158,7 @@ public class RunConfig {
 					StreamSupport.stream(main.getOutput().getClassesDirs().spliterator(), false)
 							.map(File::getAbsolutePath)
 			).map(s -> "loom%%" + s)
-					.collect(Collectors.joining(":"));
+					.collect(Collectors.joining(File.pathSeparator));
 
 			runConfig.envVariables.put("MOD_CLASSES", modClasses);
 		}

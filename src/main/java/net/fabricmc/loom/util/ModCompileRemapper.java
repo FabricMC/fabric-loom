@@ -164,7 +164,7 @@ public class ModCompileRemapper {
 
 		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified() || refreshDeps) {
 			try {
-				sourceRemapper.scheduleRemapSources(sources, remappedSources);
+				sourceRemapper.scheduleRemapSources(sources, remappedSources, false, true); // Depenedency sources are used in ide only so don't need to be reproducable
 
 				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
 				remappedSources.setLastModified(sources.lastModified());

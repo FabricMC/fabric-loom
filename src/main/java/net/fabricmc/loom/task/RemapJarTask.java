@@ -48,6 +48,7 @@ import net.fabricmc.loom.util.GradleSupport;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.util.JarRemapper;
 import net.fabricmc.stitch.util.Pair;
@@ -151,16 +152,9 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
-		/*try {
-			if (modJar.exists()) {
-				Files.move(modJar, modJarUnmappedCopy);
-				extension.addUnmappedMod(modJarUnmappedCopy);
-			}
-
-			Files.move(modJarOutput, modJar);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}*/
+		if (isReproducibleFileOrder() || isPreserveFileTimestamps()) {
+			ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
+		}
 	}
 
 	public void scheduleRemap() throws Throwable {

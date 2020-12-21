@@ -196,6 +196,8 @@ public class ModProcessor {
 			if (accessWidener != null) {
 				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
 			}
+
+			info.finaliseRemapping();
 		}
 	}
 

@@ -54,7 +54,7 @@ public class LoomDependencyManager {
 
 	private final List<DependencyProvider> dependencyProviderList = new ArrayList<>();
 
-	public void addProvider(DependencyProvider provider) {
+	public <T extends DependencyProvider> T addProvider(T provider) {
 		if (dependencyProviderList.contains(provider)) {
 			throw new RuntimeException("Provider is already registered");
 		}
@@ -65,6 +65,7 @@ public class LoomDependencyManager {
 
 		provider.register(this);
 		dependencyProviderList.add(provider);
+		return provider;
 	}
 
 	public <T> T getProvider(Class<T> clazz) {
@@ -132,7 +133,7 @@ public class LoomDependencyManager {
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
+		String mappingsKey = mappingsProvider.getMappingsKey();
 
 		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
 

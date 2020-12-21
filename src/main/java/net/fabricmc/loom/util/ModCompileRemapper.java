@@ -92,7 +92,7 @@ public class ModCompileRemapper {
 				project.getLogger().info(":providing " + remappedLog);
 
 				if (sources != null) {
-					scheduleSourcesRemapping(project, sourceRemapper, info.sourcesFile, info.getRemappedNotation(), info.getRemappedFilename(), modStore);
+					scheduleSourcesRemapping(project, sourceRemapper, info.sourcesFile, info.getRemappedNotation(), info.getRemappedOutput(), modStore);
 				}
 			}
 
@@ -156,10 +156,10 @@ public class ModCompileRemapper {
 		return null;
 	}
 
-	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, String remappedFilename, File modStore) {
+	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, File remappedJar, File modStore) {
 		project.getLogger().debug(":providing " + remappedLog + " sources");
 
-		File remappedSources = new File(modStore, remappedFilename + "-sources.jar");
+		File remappedSources = new File(remappedJar.getAbsolutePath().replace(".jar", "-sources.jar"));
 		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified() || refreshDeps) {

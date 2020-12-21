@@ -207,9 +207,9 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getRemappedModCache());
-				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setUrl(extension.getRemappedModCache());
+				mavenArtifactRepository.setName("UserLocalRemappedMods");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {

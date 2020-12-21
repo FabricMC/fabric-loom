@@ -119,6 +119,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
 		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
+		Configuration loaderDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.LOADER_DEPENDENCIES);
+		loaderDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
 		minecraftConfig.setTransitive(false);
 
@@ -147,7 +149,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED);
 		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
 
-		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.LOADER_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL);
 

@@ -36,6 +36,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -58,7 +59,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	public void doTask() throws Throwable {
 		int threads = Runtime.getRuntime().availableProcessors();
 		Path javaDocs = getExtension().getMappingsProvider().tinyMappings.toPath();
-		Collection<Path> libraries = getExtension().getMinecraftProvider().getLibraryProvider().getLibraries()
+		Collection<Path> libraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
 						.stream().map(File::toPath).collect(Collectors.toSet());
 
 		DecompilationMetadata metadata = new DecompilationMetadata(threads, javaDocs, libraries);

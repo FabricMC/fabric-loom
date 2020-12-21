@@ -214,7 +214,7 @@ public class SourceRemapper {
 		Mercury m = new Mercury();
 		m.setGracefulClasspathChecks(true);
 
-		for (File file : project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()) {
+		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
 			m.getClassPath().add(file.toPath());
 		}
 

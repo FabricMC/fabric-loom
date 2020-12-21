@@ -45,7 +45,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.util.progress.ProgressLogger;
 
@@ -124,7 +123,7 @@ public class LineNumberRemapper {
 							ClassReader reader = new ClassReader(is);
 							ClassWriter writer = new ClassWriter(0);
 
-							reader.accept(new LineNumberVisitor(Opcodes.ASM7, writer, lineMap.get(idx)), 0);
+							reader.accept(new LineNumberVisitor(Constants.ASM_VERSION, writer, lineMap.get(idx)), 0);
 							Files.write(dst, writer.toByteArray());
 						}
 					}

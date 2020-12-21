@@ -119,6 +119,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
 		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
 		minecraftDependenciesConfig.setTransitive(false);
+		Configuration loaderDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.LOADER_DEPENDENCIES);
+		loaderDependenciesConfig.setTransitive(false);
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
 		minecraftConfig.setTransitive(false);
 
@@ -147,7 +149,8 @@ public class AbstractPlugin implements Plugin<Project> {
 		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED);
 		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED);
 
-		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.LOADER_DEPENDENCIES);
 
 		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL);
 
@@ -207,9 +210,9 @@ public class AbstractPlugin implements Plugin<Project> {
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getRemappedModCache());
-				flatDirectoryArtifactRepository.setName("UserLocalRemappedMods");
+			project1.getRepositories().maven(mavenArtifactRepository -> {
+				mavenArtifactRepository.setUrl(extension.getRemappedModCache());
+				mavenArtifactRepository.setName("UserLocalRemappedMods");
 			});
 
 			project1.getRepositories().maven(mavenArtifactRepository -> {
@@ -304,17 +307,15 @@ public class AbstractPlugin implements Plugin<Project> {
 								}
 							});
 						});
-
-						for (Project subProject : rootProject.getAllprojects()) {
-							subProject.getTasks().getByName("build").dependsOn(parentTask);
-							subProject.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-							rootProject.getTasks().getByName("remapAllJars").dependsOn(subProject.getTasks().getByName("remapJar"));
-						}
 					} else {
 						parentTask = rootProject.getTasks().getByName("remapAllSources");
 						remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
 
 						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
+
+						project1.getTasks().getByName("build").dependsOn(parentTask);
+						project1.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
+						rootProject.getTasks().getByName("remapAllJars").dependsOn(project1.getTasks().getByName("remapJar"));
 					}
 				}
 

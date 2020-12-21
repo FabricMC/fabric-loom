@@ -54,7 +54,7 @@ public class LoomDependencyManager {
 
 	private final List<DependencyProvider> dependencyProviderList = new ArrayList<>();
 
-	public void addProvider(DependencyProvider provider) {
+	public <T extends DependencyProvider> T addProvider(T provider) {
 		if (dependencyProviderList.contains(provider)) {
 			throw new RuntimeException("Provider is already registered");
 		}
@@ -65,6 +65,7 @@ public class LoomDependencyManager {
 
 		provider.register(this);
 		dependencyProviderList.add(provider);
+		return provider;
 	}
 
 	public <T> T getProvider(Class<T> clazz) {
@@ -132,9 +133,7 @@ public class LoomDependencyManager {
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
-
-		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
+		String mappingsKey = mappingsProvider.getMappingsKey();
 
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
@@ -152,15 +151,16 @@ public class LoomDependencyManager {
 
 					project.getLogger().info("Found installer JSON in " + input);
 					extension.setInstallerJson(jsonObject);
+					handleInstallerJson(extension.getInstallerJson(), project);
 				}
 			}
 		}
 
-		if (extension.getInstallerJson() != null) {
-			handleInstallerJson(extension.getInstallerJson(), project);
-		} else {
+		if (extension.getInstallerJson() == null) {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
+
+		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
 
 		sourceRemapper.remapAll();
 
@@ -173,7 +173,7 @@ public class LoomDependencyManager {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
-		Configuration mcDepsConfig = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);
 		Configuration apDepsConfig = project.getConfigurations().getByName("annotationProcessor");
 
 		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
@@ -181,7 +181,7 @@ public class LoomDependencyManager {
 
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
 			modDep.setTransitive(false);
-			mcDepsConfig.getDependencies().add(modDep);
+			loaderDepsConfig.getDependencies().add(modDep);
 
 			if (!extension.ideSync()) {
 				apDepsConfig.getDependencies().add(modDep);

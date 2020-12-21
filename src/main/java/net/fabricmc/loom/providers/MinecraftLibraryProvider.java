@@ -25,8 +25,6 @@
 package net.fabricmc.loom.providers;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.HashSet;
 
 import org.gradle.api.Project;
 
@@ -36,8 +34,6 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 
 public class MinecraftLibraryProvider {
 	public File MINECRAFT_LIBS;
-
-	private final Collection<File> libs = new HashSet<>();
 
 	public void provide(MinecraftProvider minecraftProvider, Project project) {
 		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
@@ -58,10 +54,6 @@ public class MinecraftLibraryProvider {
 				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.getArtifactName()));
 			}
 		}
-	}
-
-	public Collection<File> getLibraries() {
-		return libs;
 	}
 
 	private void initFiles(Project project, MinecraftProvider minecraftProvider) {

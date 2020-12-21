@@ -28,16 +28,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.artifacts.Configuration;
 
 import net.fabricmc.loom.util.ModProcessor;
 
 public class ModDependencyInfo {
-	public final String group;
+	private final String group;
 	public final String name;
 	public final String version;
 	public final String classifier;
@@ -61,15 +64,39 @@ public class ModDependencyInfo {
 	}
 
 	public String getRemappedNotation() {
-		return String.format("%s:%s:%s@%s%s", group, name, version, remapData.mappingsSuffix, classifier);
+		if (classifier == null || classifier.isEmpty()) {
+			return String.format("%s:%s:%s", getGroup(), name, version);
+		}
+
+		return String.format("%s:%s:%s:%s", getGroup(), name, version, classifier);
 	}
 
-	public String getRemappedFilename() {
-		return String.format("%s-%s@%s", name, version, remapData.mappingsSuffix + classifier.replace(':', '-'));
+	private String getRemappedFilename() {
+		if (classifier == null || classifier.isEmpty()) {
+			return String.format("%s-%s", name, version);
+		}
+
+		return String.format("%s-%s@%s", name, version, classifier.replace(':', '-'));
+	}
+
+	private File getRemappedDir() {
+		return new File(remapData.modStore, String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
 	}
 
 	public File getRemappedOutput() {
-		return new File(remapData.modStore, getRemappedFilename() + ".jar");
+		return new File(getRemappedDir(), getRemappedFilename() + ".jar");
+	}
+
+	private File getRemappedPom() {
+		return new File(getRemappedOutput().getAbsolutePath().replace(".jar", ".pom"));
+	}
+
+	private String getGroup() {
+		return getMappingsPrefix(remapData.mappingsSuffix) + "." + group;
+	}
+
+	public static String getMappingsPrefix(String mappings) {
+		return mappings.replace(".", "_").replace("-", "_").replace("+", "_");
 	}
 
 	public File getInputFile() {
@@ -77,11 +104,31 @@ public class ModDependencyInfo {
 	}
 
 	public boolean requiresRemapping() {
-		return !getRemappedOutput().exists() || inputFile.lastModified() <= 0 || inputFile.lastModified() > getRemappedOutput().lastModified() || forceRemap;
+		return !getRemappedOutput().exists() || inputFile.lastModified() <= 0 || inputFile.lastModified() > getRemappedOutput().lastModified() || forceRemap || !getRemappedPom().exists();
 	}
 
 	public void finaliseRemapping() {
 		getRemappedOutput().setLastModified(inputFile.lastModified());
+		savePom();
+	}
+
+	private void savePom() {
+		try {
+			String pomTemplate;
+
+			try (InputStream input = ModDependencyInfo.class.getClassLoader().getResourceAsStream("mod_compile_template.pom")) {
+				pomTemplate = IOUtils.toString(input, StandardCharsets.UTF_8);
+			}
+
+			pomTemplate = pomTemplate
+					.replace("%GROUP%", getGroup())
+					.replace("%NAME%", name)
+					.replace("%VERSION%", version);
+
+			FileUtils.writeStringToFile(getRemappedPom(), pomTemplate, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to write mod pom", e);
+		}
 	}
 
 	public void forceRemap() {

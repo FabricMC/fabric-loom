@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -135,7 +134,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public Path[] getRemapClasspath() {
-		return getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
+		return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
+				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
@@ -157,10 +157,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	protected String getJarVersionString(String type) {
 		return String.format("%s-%s-%s-%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion);
-	}
-
-	public Collection<File> getMapperPaths() {
-		return minecraftProvider.getLibraryProvider().getLibraries();
 	}
 
 	public File getIntermediaryJar() {

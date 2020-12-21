@@ -37,6 +37,7 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -51,6 +52,7 @@ import net.fabricmc.loom.util.GradleSupport;
 import net.fabricmc.loom.util.MixinRefmapHelper;
 import net.fabricmc.loom.util.NestedJars;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.util.JarRemapper;
 import net.fabricmc.stitch.util.Pair;
@@ -64,6 +66,7 @@ public class RemapJarTask extends Jar {
 	private final Property<Boolean> remapAccessWidener;
 	private final List<Action<TinyRemapper.Builder>> remapOptions = new ArrayList<>();
 	public JarRemapper jarRemapper;
+	private FileCollection classpath;
 
 	public RemapJarTask() {
 		super();
@@ -98,10 +101,7 @@ public class RemapJarTask extends Jar {
 		String fromM = "named";
 		String toM = "intermediary";
 
-		Set<File> classpathFiles = new LinkedHashSet<>(
-						project.getConfigurations().getByName("compileClasspath").getFiles()
-		);
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
+		Path[] classpath = getRemapClasspath();
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
@@ -160,16 +160,9 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
-		/*try {
-			if (modJar.exists()) {
-				Files.move(modJar, modJarUnmappedCopy);
-				extension.addUnmappedMod(modJarUnmappedCopy);
-			}
-
-			Files.move(modJarOutput, modJar);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}*/
+		if (isReproducibleFileOrder() || isPreserveFileTimestamps()) {
+			ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
+		}
 	}
 
 	public void scheduleRemap() throws Throwable {
@@ -188,16 +181,7 @@ public class RemapJarTask extends Jar {
 		String toM = "intermediary";
 
 		if (extension.isRootProject()) {
-			Set<File> classpathFiles = new LinkedHashSet<>(
-					project.getConfigurations().getByName("compileClasspath").getFiles()
-			);
-
-			Path[] classpath = classpathFiles.stream()
-					.map(File::toPath)
-					.filter(Files::exists)
-					.toArray(Path[]::new);
-
-			jarRemapper.addToClasspath(classpath);
+			jarRemapper.addToClasspath(getRemapClasspath());
 
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
@@ -253,6 +237,19 @@ public class RemapJarTask extends Jar {
 				});
 	}
 
+	private Path[] getRemapClasspath() {
+		FileCollection files = this.classpath;
+
+		if (files == null) {
+			files = getProject().getConfigurations().getByName("compileClasspath");
+		}
+
+		return files.getFiles().stream()
+				.map(File::toPath)
+				.filter(Files::exists)
+				.toArray(Path[]::new);
+	}
+
 	@InputFile
 	public RegularFileProperty getInput() {
 		return input;
@@ -270,5 +267,15 @@ public class RemapJarTask extends Jar {
 
 	public void remapOptions(Action<TinyRemapper.Builder> action) {
 		this.remapOptions.add(action);
+	}
+
+	public RemapJarTask classpath(FileCollection collection) {
+		if (this.classpath == null) {
+			this.classpath = collection;
+		} else {
+			this.classpath = this.classpath.plus(collection);
+		}
+
+		return this;
 	}
 }

@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import org.gradle.api.Action;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.stitch.util.Pair;
@@ -46,6 +47,7 @@ public class JarRemapper {
 	private final List<IMappingProvider> mappingProviders = new ArrayList<>();
 	private final Set<Path> classPath = new HashSet<>();
 	private final List<RemapData> remapData = new ArrayList<>();
+	private List<Action<TinyRemapper.Builder>> remapOptions;
 
 	public void addMappings(IMappingProvider mappingProvider) {
 		mappingProviders.add(mappingProvider);
@@ -64,6 +66,12 @@ public class JarRemapper {
 	public void remap() throws IOException {
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 		mappingProviders.forEach(remapperBuilder::withMappings);
+
+		if (remapOptions != null) {
+			for (Action<TinyRemapper.Builder> remapOption : remapOptions) {
+				remapOption.execute(remapperBuilder);
+			}
+		}
 
 		TinyRemapper remapper = remapperBuilder.build();
 
@@ -100,6 +108,10 @@ public class JarRemapper {
 		}
 
 		remapData.forEach(RemapData::complete);
+	}
+
+	public void addOptions(List<Action<TinyRemapper.Builder>> remapOptions) {
+		this.remapOptions = remapOptions;
 	}
 
 	public static class RemapData {

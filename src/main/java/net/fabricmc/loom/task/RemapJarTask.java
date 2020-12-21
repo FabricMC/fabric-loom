@@ -29,8 +29,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -59,6 +62,7 @@ public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
+	private final List<Action<TinyRemapper.Builder>> remapOptions = new ArrayList<>();
 	public JarRemapper jarRemapper;
 	private FileCollection classpath;
 
@@ -105,6 +109,11 @@ public class RemapJarTask extends Jar {
 			if (mixinMapFile.exists()) {
 				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, toM));
 			}
+		}
+
+		// Apply any requested options to tiny remapper
+		for (Action<TinyRemapper.Builder> remapOption : this.remapOptions) {
+			remapOption.execute(remapperBuilder);
 		}
 
 		project.getLogger().lifecycle(":remapping " + input.getFileName());
@@ -181,6 +190,9 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
+		// Add remap options to the jar remapper
+		jarRemapper.addOptions(this.remapOptions);
+
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
 					if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
@@ -249,6 +261,10 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
+	}
+
+	public void remapOptions(Action<TinyRemapper.Builder> action) {
+		this.remapOptions.add(action);
 	}
 
 	public RemapJarTask classpath(FileCollection collection) {

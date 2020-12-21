@@ -29,11 +29,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -61,6 +60,7 @@ public class RemapJarTask extends Jar {
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
 	public JarRemapper jarRemapper;
+	private FileCollection classpath;
 
 	public RemapJarTask() {
 		super();
@@ -95,10 +95,7 @@ public class RemapJarTask extends Jar {
 		String fromM = "named";
 		String toM = "intermediary";
 
-		Set<File> classpathFiles = new LinkedHashSet<>(
-						project.getConfigurations().getByName("compileClasspath").getFiles()
-		);
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
+		Path[] classpath = getRemapClasspath();
 
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
@@ -173,16 +170,7 @@ public class RemapJarTask extends Jar {
 		String toM = "intermediary";
 
 		if (extension.isRootProject()) {
-			Set<File> classpathFiles = new LinkedHashSet<>(
-					project.getConfigurations().getByName("compileClasspath").getFiles()
-			);
-
-			Path[] classpath = classpathFiles.stream()
-					.map(File::toPath)
-					.filter(Files::exists)
-					.toArray(Path[]::new);
-
-			jarRemapper.addToClasspath(classpath);
+			jarRemapper.addToClasspath(getRemapClasspath());
 
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
@@ -235,6 +223,19 @@ public class RemapJarTask extends Jar {
 				});
 	}
 
+	private Path[] getRemapClasspath() {
+		FileCollection files = this.classpath;
+
+		if (files == null) {
+			files = getProject().getConfigurations().getByName("compileClasspath");
+		}
+
+		return files.getFiles().stream()
+				.map(File::toPath)
+				.filter(Files::exists)
+				.toArray(Path[]::new);
+	}
+
 	@InputFile
 	public RegularFileProperty getInput() {
 		return input;
@@ -248,5 +249,15 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
+	}
+
+	public RemapJarTask classpath(FileCollection collection) {
+		if (this.classpath == null) {
+			this.classpath = collection;
+		} else {
+			this.classpath = this.classpath.plus(collection);
+		}
+
+		return this;
 	}
 }

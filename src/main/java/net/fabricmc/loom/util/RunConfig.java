@@ -113,10 +113,9 @@ public class RunConfig {
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
-			runConfig.programArgs = "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
+			runConfig.programArgs += "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
-			runConfig.programArgs = "";
 			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
 		}
 
@@ -155,6 +154,7 @@ public class RunConfig {
 
 		RunConfig ideaClient = new RunConfig();
 		ideaClient.configName = "Minecraft Client";
+		ideaClient.programArgs = "";
 		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
@@ -167,6 +167,7 @@ public class RunConfig {
 
 		RunConfig ideaServer = new RunConfig();
 		ideaServer.configName = "Minecraft Server";
+		ideaServer.programArgs = "nogui ";
 		populate(project, extension, ideaServer, "server");
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
 

@@ -22,24 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.processors.dependency;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+public class RemapData {
+	public final String mappingsSuffix;
+	public final File modStore;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
-
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
-
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	public RemapData(String mappingsSuffix, File modStore) {
+		this.mappingsSuffix = mappingsSuffix;
+		this.modStore = modStore;
 	}
 }

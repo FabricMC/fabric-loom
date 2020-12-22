@@ -22,24 +22,37 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.providers.minecraft.assets;
 
-import java.io.IOException;
+@SuppressWarnings("unused")
+public class AssetObject {
+	private String hash;
+	private long size;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+	public String getHash() {
+		return this.hash;
+	}
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+	public long getSize() {
+		return this.size;
+	}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		} else if ((o == null) || (getClass() != o.getClass())) {
+			return false;
+		} else {
+			AssetObject that = (AssetObject) o;
+			return this.size == that.size && this.hash.equals(that.hash);
+		}
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	@Override
+	public int hashCode() {
+		int result = this.hash.hashCode();
+		result = 31 * result + (int) (this.size ^ this.size >>> 32);
+		return result;
 	}
 }

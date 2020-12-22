@@ -22,24 +22,42 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.processors;
 
-import java.io.IOException;
+import java.io.File;
+import java.util.List;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+public class JarProcessorManager {
+	private final List<JarProcessor> jarProcessors;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+	public JarProcessorManager(List<JarProcessor> jarProcessors) {
+		this.jarProcessors = jarProcessors;
+	}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+	public void setupProcessors() {
+		jarProcessors.forEach(JarProcessor::setup);
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	public boolean active() {
+		return !jarProcessors.isEmpty();
+	}
+
+	public boolean isInvalid(File file) {
+		if (!file.exists()) {
+			return true;
+		}
+
+		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+	}
+
+	public void process(File file) {
+		for (JarProcessor jarProcessor : jarProcessors) {
+			jarProcessor.process(file);
+		}
+	}
+
+	public <T extends JarProcessor> T getByType(Class<T> tClass) {
+		//noinspection unchecked
+		return (T) jarProcessors.stream().filter(jarProcessor -> jarProcessor.getClass().equals(tClass)).findFirst().orElse(null);
 	}
 }

@@ -35,7 +35,7 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.JavaExec;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private final Function<Project, RunConfig> configProvider;

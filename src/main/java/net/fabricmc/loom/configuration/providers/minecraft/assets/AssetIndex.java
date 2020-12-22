@@ -22,24 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.providers.minecraft.assets;
 
-import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+@SuppressWarnings("unused")
+public class AssetIndex {
+	private final Map<String, AssetObject> objects;
+	private boolean virtual;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+	public AssetIndex() {
+		this.objects = new LinkedHashMap<>();
+	}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+	public Map<String, AssetObject> getFileMap() {
+		return this.objects;
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	public Set<AssetObject> getUniqueObjects() {
+		return new HashSet<>(this.objects.values());
+	}
+
+	public boolean isVirtual() {
+		return this.virtual;
 	}
 }

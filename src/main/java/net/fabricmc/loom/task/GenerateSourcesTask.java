@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -67,18 +66,18 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 
 		DecompilationMetadata metadata = new DecompilationMetadata(threads, javaDocs, libraries);
 		Path compiledJar = getExtension().getMappingsProvider().mappedProvider.getMappedJar().toPath();
-		Path sourcesDestination = getMappedByproduct(getProject(), "-sources.jar").toPath();
-		Path linemap = getMappedByproduct(getProject(), "-sources.lmap").toPath();
+		Path sourcesDestination = getMappedJarFileWithSuffix("-sources.jar").toPath();
+		Path linemap = getMappedJarFileWithSuffix("-sources.lmap").toPath();
 		decompiler.decompile(compiledJar, sourcesDestination, linemap, metadata);
 
 		if (Files.exists(linemap)) {
-			Path linemappedJarDestination = getMappedByproduct(getProject(), "-linemapped.jar").toPath();
+			Path linemappedJarDestination = getMappedJarFileWithSuffix("-linemapped.jar").toPath();
 
 			remapLineNumbers(compiledJar, linemap, linemappedJarDestination);
 
 			// In order for IDEs to recognize the new line mappings, we need to overwrite the existing compiled jar
 			// with the linemapped one. In the name of not destroying the existing jar, we will copy it to somewhere else.
-			Path unlinemappedJar = getMappedByproduct(getProject(), "-unlinemapped.jar").toPath();
+			Path unlinemappedJar = getMappedJarFileWithSuffix("-unlinemapped.jar").toPath();
 
 			// The second time genSources is ran, we want to keep the existing unlinemapped jar.
 			if (!Files.exists(unlinemappedJar)) {
@@ -106,8 +105,8 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		progressLogger.completed();
 	}
 
-	private static File getMappedByproduct(Project project, String suffix) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+	private File getMappedJarFileWithSuffix(String suffix) {
+		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		String path = mappedJar.getAbsolutePath();

@@ -40,8 +40,10 @@ import org.gradle.api.publish.PublishingExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 
-public class MavenPublication {
-	// TODO make this not suck
+public final class MavenPublication {
+	private MavenPublication() {
+	}
+
 	public static void configure(Project project) {
 		project.afterEvaluate((p) -> {
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
@@ -55,52 +57,62 @@ public class MavenPublication {
 				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
 
 				if (mavenPublish != null) {
-					mavenPublish.publications((publications) -> {
-						for (Publication publication : publications) {
-							if (publication instanceof org.gradle.api.publish.maven.MavenPublication) {
-								((org.gradle.api.publish.maven.MavenPublication) publication).pom((pom) -> pom.withXml((xml) -> {
-									Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
-									Set<String> foundArtifacts = new HashSet<>();
+					processEntry(entry, compileModsConfig, mavenPublish);
+				}
+			}
+		});
+	}
 
-									GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
-										Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
-										Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
+	private static void processEntry(RemappedConfigurationEntry entry, Configuration compileModsConfig, PublishingExtension mavenPublish) {
+		mavenPublish.publications((publications) -> {
+			for (Publication publication : publications) {
+				if (!(publication instanceof org.gradle.api.publish.maven.MavenPublication)) {
+					continue;
+				}
 
-										if (groupId.isPresent() && artifactId.isPresent()) {
-											foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
-										}
-									});
+				((org.gradle.api.publish.maven.MavenPublication) publication).pom((pom) -> pom.withXml((xml) -> {
+					Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
+					Set<String> foundArtifacts = new HashSet<>();
 
-									for (Dependency dependency : compileModsConfig.getAllDependencies()) {
-										if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
-											continue;
-										}
+					GroovyXmlUtil.childrenNodesStream(dependencies).filter((n) -> "dependency".equals(n.name())).forEach((n) -> {
+						Optional<Node> groupId = GroovyXmlUtil.getNode(n, "groupId");
+						Optional<Node> artifactId = GroovyXmlUtil.getNode(n, "artifactId");
 
-										Node depNode = dependencies.appendNode("dependency");
-										depNode.appendNode("groupId", dependency.getGroup());
-										depNode.appendNode("artifactId", dependency.getName());
-										depNode.appendNode("version", dependency.getVersion());
-										depNode.appendNode("scope", entry.getMavenScope());
-
-										if (dependency instanceof ModuleDependency) {
-											final Set<ExcludeRule> exclusions = ((ModuleDependency) dependency).getExcludeRules();
-
-											if (!exclusions.isEmpty()) {
-												Node exclusionsNode = depNode.appendNode("exclusions");
-
-												for (ExcludeRule rule : exclusions) {
-													Node exclusionNode = exclusionsNode.appendNode("exclusion");
-													exclusionNode.appendNode("groupId", rule.getGroup() == null ? "*" : rule.getGroup());
-													exclusionNode.appendNode("artifactId", rule.getModule() == null ? "*" : rule.getModule());
-												}
-											}
-										}
-									}
-								}));
-							}
+						if (groupId.isPresent() && artifactId.isPresent()) {
+							foundArtifacts.add(groupId.get().text() + ":" + artifactId.get().text());
 						}
 					});
-				}
+
+					for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+						if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
+							continue;
+						}
+
+						Node depNode = dependencies.appendNode("dependency");
+						depNode.appendNode("groupId", dependency.getGroup());
+						depNode.appendNode("artifactId", dependency.getName());
+						depNode.appendNode("version", dependency.getVersion());
+						depNode.appendNode("scope", entry.getMavenScope());
+
+						if (!(dependency instanceof ModuleDependency)) {
+							continue;
+						}
+
+						final Set<ExcludeRule> exclusions = ((ModuleDependency) dependency).getExcludeRules();
+
+						if (exclusions.isEmpty()) {
+							continue;
+						}
+
+						Node exclusionsNode = depNode.appendNode("exclusions");
+
+						for (ExcludeRule rule : exclusions) {
+							Node exclusionNode = exclusionsNode.appendNode("exclusion");
+							exclusionNode.appendNode("groupId", rule.getGroup() == null ? "*" : rule.getGroup());
+							exclusionNode.appendNode("artifactId", rule.getModule() == null ? "*" : rule.getModule());
+						}
+					}
+				}));
 			}
 		});
 	}

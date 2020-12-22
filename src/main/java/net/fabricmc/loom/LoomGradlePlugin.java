@@ -27,24 +27,23 @@ package net.fabricmc.loom;
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
 
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
 import net.fabricmc.loom.configuration.MavenPublication;
+import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
-import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
-import net.fabricmc.loom.util.DownloadUtil;
 
-public class LoomGradlePlugin implements Plugin<Project> {
+public final class LoomGradlePlugin implements Plugin<Project> {
+	public static boolean refreshDeps;
+
 	@Override
 	public void apply(Project project) {
 		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
 
-		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
-		DownloadUtil.refreshDeps = refreshDeps;
+		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		if (refreshDeps) {
 			MappingsCache.INSTANCE.invalidate();
@@ -62,25 +61,10 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
 		CompileConfiguration.setupConfigurations(project);
-
-		configureIDEs(project);
+		IdeConfiguration.setup(project);
 		CompileConfiguration.configureCompile(project);
 		MavenPublication.configure(project);
-
 		LoomTasks.registerTasks(project);
-
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
-		extension.addDecompiler(new FabricCFRDecompiler(project));
-	}
-
-	protected void configureIDEs(Project project) {
-		// IDEA
-		IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
-
-		ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
-		ideaModel.getModule().setDownloadJavadoc(true);
-		ideaModel.getModule().setDownloadSources(true);
-		ideaModel.getModule().setInheritOutputDirs(true);
+		DecompilerConfiguration.setup(project);
 	}
 }

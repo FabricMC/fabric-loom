@@ -31,19 +31,12 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
-public class LoomTasks {
+public final class LoomTasks {
+	private LoomTasks() {
+	}
+
 	public static void registerTasks(Project project) {
 		TaskContainer tasks = project.getTasks();
-
-		tasks.register("cleanLoomBinaries", CleanLoomBinaries.class, t -> t.setDescription("Removes binary jars created by Loom."));
-		tasks.register("cleanLoomMappings", CleanLoomMappings.class, t -> t.setDescription("Removes mappings downloaded by Loom."));
-
-		tasks.register("cleanLoom").configure(task -> {
-			task.setGroup("fabric");
-			task.setDescription("Runs all Loom cleanup tasks.");
-			task.dependsOn(tasks.getByName("cleanLoomBinaries"));
-			task.dependsOn(tasks.getByName("cleanLoomMappings"));
-		});
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
@@ -56,7 +49,14 @@ public class LoomTasks {
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
+		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
+		registerIDETasks(tasks);
+		registerRunTasks(tasks);
+		registerDecompileTasks(tasks, project);
+	}
+
+	private static void registerIDETasks(TaskContainer tasks) {
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
 			t.dependsOn("idea", "downloadAssets");
@@ -79,9 +79,9 @@ public class LoomTasks {
 			t.dependsOn("downloadAssets");
 			t.setGroup("ide");
 		});
+	}
 
-		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
-
+	private static void registerRunTasks(TaskContainer tasks) {
 		tasks.register("runClient", RunClientTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft client.");
 			t.dependsOn("downloadAssets");
@@ -92,7 +92,9 @@ public class LoomTasks {
 			t.setDescription("Starts a development version of the Minecraft server.");
 			t.setGroup("fabric");
 		});
+	}
 
+	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		project.afterEvaluate((p) -> {

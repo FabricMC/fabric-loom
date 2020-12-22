@@ -59,7 +59,10 @@ import net.fabricmc.loom.util.SourceRemapper;
 /**
  * Add Minecraft dependencies to compile time.
  */
-public class CompileConfiguration {
+public final class CompileConfiguration {
+	private CompileConfiguration() {
+	}
+
 	public static void setupConfigurations(Project project) {
 		// Force add Mojang repository
 		addMavenRepo(project, "Mojang", "https://libraries.minecraft.net/");
@@ -98,15 +101,15 @@ public class CompileConfiguration {
 			}
 		}
 
-		extendsFrom("compileClasspath", Constants.Configurations.MINECRAFT_NAMED, project);
-		extendsFrom("runtimeClasspath", Constants.Configurations.MINECRAFT_NAMED, project);
-		extendsFrom("testCompileClasspath", Constants.Configurations.MINECRAFT_NAMED, project);
-		extendsFrom("testRuntimeClasspath", Constants.Configurations.MINECRAFT_NAMED, project);
+		extendsFrom(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_NAMED, project);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_NAMED, project);
+		extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_NAMED, project);
+		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_NAMED, project);
 
 		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES, project);
 		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.LOADER_DEPENDENCIES, project);
 
-		extendsFrom("compile", Constants.Configurations.MAPPINGS_FINAL, project);
+		extendsFrom(JavaPlugin.COMPILE_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
 	}
 
 	/**

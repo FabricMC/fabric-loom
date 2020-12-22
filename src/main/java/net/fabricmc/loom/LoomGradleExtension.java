@@ -57,7 +57,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
-public class LoomGradleExtension {
+public final class LoomGradleExtension {
 	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;

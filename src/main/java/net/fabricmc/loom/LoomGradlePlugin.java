@@ -36,7 +36,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
 
-public final class LoomGradlePlugin implements Plugin<Project> {
+public class LoomGradlePlugin implements Plugin<Project> {
 	public static boolean refreshDeps;
 
 	@Override

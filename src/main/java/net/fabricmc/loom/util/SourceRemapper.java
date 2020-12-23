@@ -185,9 +185,9 @@ public class SourceRemapper {
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
 
-			Dependency annotationDependency = extension.getDependencyManager().getProvider(LaunchProvider.class).annotationDependency;
+			Set<Dependency> annotationDependencies = extension.getDependencyManager().getProvider(LaunchProvider.class).annotationDependencies;
 			Set<File> files = project.getConfigurations().getByName("compileOnly")
-					.files(annotationDependency);
+					.files(annotationDependencies.toArray(new Dependency[0]));
 
 			for (File file : files) {
 				m.getClassPath().add(file.toPath());

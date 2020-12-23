@@ -32,8 +32,10 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -46,8 +48,10 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.RemappedConfigurationEntry;
 
+import org.gradle.api.plugins.JavaPlugin;
+
 public class LaunchProvider extends DependencyProvider {
-	public Dependency annotationDependency;
+	public final Set<Dependency> annotationDependencies = new HashSet<>();
 
 	public LaunchProvider(Project project) {
 		super(project);
@@ -78,9 +82,10 @@ public class LaunchProvider extends DependencyProvider {
 		writeLog4jConfig();
 		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, "runtimeOnly");
-		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
-		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
+		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
+		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
+		annotationDependencies.add(addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
+		annotationDependencies.add(addDependency(Constants.Dependencies.STITCH_ANNOTATIONS + Constants.Dependencies.Versions.STITCH_ANNOTATIONS, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
 
 		postPopulationScheduler.accept(this::writeRemapClassPath);
 	}

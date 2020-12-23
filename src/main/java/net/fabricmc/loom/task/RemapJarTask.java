@@ -33,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import net.fabricmc.loom.util.*;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -44,12 +45,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.GradleSupport;
-import net.fabricmc.loom.util.MixinRefmapHelper;
-import net.fabricmc.loom.util.NestedJars;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
-import net.fabricmc.loom.util.JarRemapper;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -104,7 +100,8 @@ public class RemapJarTask extends Jar {
 				project.getConfigurations().getByName("compileClasspath").getFiles()
 		);
 		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
-
+		
+		LoggerFilter.replaceSystemOut();
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));

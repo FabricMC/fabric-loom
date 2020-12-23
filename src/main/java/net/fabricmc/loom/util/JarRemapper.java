@@ -62,6 +62,7 @@ public class JarRemapper {
 	}
 
 	public void remap() throws IOException {
+		LoggerFilter.replaceSystemOut();
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 		mappingProviders.forEach(remapperBuilder::withMappings);
 

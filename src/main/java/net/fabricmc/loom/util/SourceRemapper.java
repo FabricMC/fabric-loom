@@ -41,9 +41,10 @@ import org.gradle.api.artifacts.Dependency;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.LaunchProvider;
-import net.fabricmc.loom.util.progress.ProgressLogger;
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.providers.LaunchProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;

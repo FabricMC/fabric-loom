@@ -22,24 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
-
-import java.io.IOException;
+package net.fabricmc.loom.configuration.ide;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+public final class IdeConfiguration {
+	private IdeConfiguration() {
+	}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+	public static void setup(Project project) {
+		IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+		ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
+		ideaModel.getModule().setDownloadJavadoc(true);
+		ideaModel.getModule().setDownloadSources(true);
+		ideaModel.getModule().setInheritOutputDirs(true);
 	}
 }

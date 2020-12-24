@@ -22,24 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.util.gradle;
 
-import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.file.RegularFileProperty;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+// This is used to bridge the gap over large gradle api changes.
+public class GradleSupport {
+	public static RegularFileProperty getfileProperty(Project project) {
+		try {
+			// First try the new method, if that fails fall back.
+			return getfilePropertyModern(project);
+		} catch (Exception e) {
+			// Nope
+		}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+		try {
+			return getfilePropertyLegacy(project);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to find file property", e);
+		}
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	private static RegularFileProperty getfilePropertyModern(Project project) throws Exception {
+		return getfilePropertyLegacyFromObject(project.getObjects());
+	}
+
+	private static RegularFileProperty getfilePropertyLegacy(Project project) throws Exception {
+		return getfilePropertyLegacyFromObject(project.getLayout());
+	}
+
+	private static RegularFileProperty getfilePropertyLegacyFromObject(Object object) throws Exception {
+		Method method = object.getClass().getDeclaredMethod("fileProperty");
+		method.setAccessible(true);
+		return (RegularFileProperty) method.invoke(object);
 	}
 }

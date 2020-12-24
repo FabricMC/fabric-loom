@@ -22,24 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.build.mixin;
 
-import java.io.IOException;
+import java.io.File;
 
+import com.google.common.collect.ImmutableList;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.scala.ScalaCompile;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
+	public ScalaApInvoker(Project project) {
+		super(project,
+						// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
+						ImmutableList.of(),
+						project.getTasks().withType(ScalaCompile.class));
+	}
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+	@Override
+	protected void passArgument(ScalaCompile compileTask, String key, String value) {
+		compileTask.getOptions().getCompilerArgs().add("-A" + key + "=" + value);
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	@Override
+	protected File getDestinationDir(ScalaCompile task) {
+		return task.getDestinationDir();
 	}
 }

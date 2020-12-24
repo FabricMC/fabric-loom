@@ -29,6 +29,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.objectweb.asm.Opcodes;
 
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+
 public class Constants {
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";

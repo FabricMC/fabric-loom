@@ -22,24 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
-
-import java.io.IOException;
+package net.fabricmc.loom.decompilers;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
+import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
+public final class DecompilerConfiguration {
+	private DecompilerConfiguration() {
+	}
 
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	public static void setup(Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
+		extension.addDecompiler(new FabricCFRDecompiler(project));
 	}
 }

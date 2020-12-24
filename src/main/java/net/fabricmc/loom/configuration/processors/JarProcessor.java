@@ -22,24 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.processors;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+public interface JarProcessor {
+	void setup();
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
+	/**
+	 * Currently this is a destructive process that replaces the existing jar.
+	 */
+	void process(File file);
 
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
-
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
-	}
+	/**
+	 * Return true to make all jar processors run again, return false to use the existing results of jar processing.
+	 */
+	boolean isInvalid(File file);
 }

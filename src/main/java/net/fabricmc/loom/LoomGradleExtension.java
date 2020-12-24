@@ -38,8 +38,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
@@ -48,15 +46,16 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.processors.JarProcessor;
-import net.fabricmc.loom.processors.JarProcessorManager;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.util.LoomDependencyManager;
-import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -116,7 +115,7 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
-		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
+		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
 	}
 
@@ -281,7 +280,7 @@ public class LoomGradleExtension {
 		Project p = this.project;
 		T result;
 
-		while (!AbstractPlugin.isRootProject(p)) {
+		while (!isRootProject()) {
 			if ((result = projectTFunction.apply(p)) != null) {
 				return result;
 			}
@@ -424,5 +423,9 @@ public class LoomGradleExtension {
 
 	public Set<File> getAllMixinMappings() {
 		return Collections.unmodifiableSet(mixinMappings);
+	}
+
+	public List<LoomDecompiler> getDecompilers() {
+		return decompilers;
 	}
 }

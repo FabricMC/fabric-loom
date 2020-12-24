@@ -22,24 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskAction;
+public class ManifestVersion {
+	public List<Versions> versions = new ArrayList<>();
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
-
-public class DownloadAssetsTask extends AbstractLoomTask {
-	@TaskAction
-	public void downloadAssets() throws IOException {
-		Project project = this.getProject();
-		LoomGradleExtension extension = getExtension();
-
-		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+	public static class Versions {
+		public String id, url;
 	}
 }

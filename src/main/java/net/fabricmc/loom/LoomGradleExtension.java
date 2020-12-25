@@ -24,8 +24,35 @@
 
 package net.fabricmc.loom;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
 import com.google.gson.JsonObject;
 import groovy.lang.Closure;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.BasePluginConvention;
+
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
@@ -34,24 +61,6 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
-import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NamedDomainObjectFactory;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.plugins.BasePluginConvention;
-
-import javax.annotation.Nullable;
-import java.io.File;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -132,8 +141,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-						   .map(File::toPath)
-						   .collect(Collectors.toList());
+				.map(File::toPath)
+				.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -475,7 +484,7 @@ public class LoomGradleExtension {
 		public boolean isClient() {
 			String m = mode != null ? mode : baseName;
 			return client != null ? client // Do not confuse users: detect client mode unless client mode is explicitly defined
-								  : m.toLowerCase().contains("client");
+					: m.toLowerCase().contains("client");
 		}
 
 		public void setClient(Boolean client) {

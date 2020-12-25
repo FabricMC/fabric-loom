@@ -26,9 +26,6 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
-import org.gradle.api.Project;
-
-import java.util.function.Function;
 
 public class RunGameTask extends AbstractRunTask {
 	public RunGameTask(LoomGradleExtension.RunConfigSettings settings) {

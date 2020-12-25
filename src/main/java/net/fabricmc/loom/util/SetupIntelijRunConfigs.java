@@ -24,15 +24,16 @@
 
 package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftAssetsProvider;
-import net.fabricmc.loom.providers.MinecraftNativesProvider;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
+import net.fabricmc.loom.providers.MinecraftNativesProvider;
 
 public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {

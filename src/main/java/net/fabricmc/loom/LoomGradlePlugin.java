@@ -24,16 +24,28 @@
 
 package net.fabricmc.loom;
 
+import java.io.File;
+import java.util.Locale;
+
+import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskContainer;
+
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.task.*;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskContainer;
-
-import java.io.File;
-import java.util.Locale;
+import net.fabricmc.loom.task.CleanEclipseRunsTask;
+import net.fabricmc.loom.task.CleanLoomBinaries;
+import net.fabricmc.loom.task.CleanLoomMappings;
+import net.fabricmc.loom.task.DownloadAssetsTask;
+import net.fabricmc.loom.task.GenEclipseRunsTask;
+import net.fabricmc.loom.task.GenIdeaProjectTask;
+import net.fabricmc.loom.task.GenVsCodeProjectTask;
+import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.task.MigrateMappingsTask;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.task.RunGameTask;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	public static File getMappedByproduct(Project project, String suffix) {
@@ -127,7 +139,6 @@ public class LoomGradlePlugin extends AbstractPlugin {
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}
 		});
-
 
 		// Default run configurations
 		extension.getRuns().create("client");

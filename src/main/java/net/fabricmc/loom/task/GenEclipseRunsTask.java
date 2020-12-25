@@ -24,21 +24,23 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.RunConfig;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.RunConfig;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction
 	public void genRuns() throws IOException {
 		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
 		LoomGradleExtension extension = getExtension();
+
 		for (LoomGradleExtension.RunConfigSettings settings : extension.getRuns()) {
 			String name = settings.getBaseName();
 

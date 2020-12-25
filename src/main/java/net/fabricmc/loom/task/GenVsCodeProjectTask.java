@@ -61,7 +61,8 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 
 		VsCodeLaunch launch = new VsCodeLaunch();
-		for(LoomGradleExtension.RunConfigSettings settings : getExtension().getRuns()) {
+
+		for (LoomGradleExtension.RunConfigSettings settings : getExtension().getRuns()) {
 			launch.add(RunConfig.runConfig(project, settings));
 		}
 

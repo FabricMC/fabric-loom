@@ -24,20 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import net.fabricmc.loom.LoomGradleExtension;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +32,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static net.fabricmc.loom.AbstractPlugin.*;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+import net.fabricmc.loom.AbstractPlugin;
+import net.fabricmc.loom.LoomGradleExtension;
 
 public class RunConfig {
 	public String configName;
@@ -104,7 +104,7 @@ public class RunConfig {
 	}
 
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
-		runConfig.configName += isRootProject(project) ? "" : " (" + project.getPath() + ")";
+		runConfig.configName += AbstractPlugin.isRootProject(project) ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = getIdeaModuleName(project);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
@@ -181,11 +181,12 @@ public class RunConfig {
 		boolean client = settings.isClient();
 
 		String configName = settings.getName();
+		String mode = settings.getMode();
+
 		if (configName == null) {
 			configName = "Minecraft " + name.substring(0, 1).toUpperCase() + name.substring(1);
 		}
 
-		String mode = settings.getMode();
 		if (mode == null) {
 			mode = name;
 		}
@@ -207,6 +208,7 @@ public class RunConfig {
 		if (client) {
 			runConfig.vmArgs += getOSClientJVMArgs();
 		}
+
 		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(mode, extension, client);
 
 		// Remove unnecessary leading/trailing whitespaces we might have generated
@@ -226,9 +228,9 @@ public class RunConfig {
 	public static boolean needsUpgrade(File file, RunConfig config) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"))
-				   || !(contents.contains(config.mainClass))
-				   || !(contents.contains(config.vmArgs))
-				   || !(contents.contains(config.programArgs));
+				|| !(contents.contains(config.mainClass))
+				|| !(contents.contains(config.vmArgs))
+				|| !(contents.contains(config.programArgs));
 	}
 
 	public String fromDummy(String dummy) throws IOException {

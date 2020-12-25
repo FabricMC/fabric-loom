@@ -52,11 +52,12 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
-import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -144,8 +145,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-			.map(File::toPath)
-			.collect(Collectors.toList());
+				.map(File::toPath)
+				.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -304,7 +305,7 @@ public class LoomGradleExtension {
 
 	@Nullable
 	private Dependency getMixinDependency() {
-		return recurseProjects((p) -> {
+		return recurseProjects(p -> {
 			List<Configuration> configs = new ArrayList<>();
 			// check compile classpath first
 			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
@@ -321,11 +322,7 @@ public class LoomGradleExtension {
 					return true;
 				}
 
-				if (name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc")) {
-					return true;
-				}
-
-				return false;
+				return name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc");
 			});
 		});
 	}
@@ -459,10 +456,12 @@ public class LoomGradleExtension {
 		private String name;
 		private Boolean client;
 		private final String baseName;
+		private Function<Project, SourceSet> source;
 
 		public RunConfigSettings(String baseName) {
 			this.baseName = baseName;
 			setMode(baseName);
+			source("main");
 		}
 
 		@Override
@@ -502,6 +501,18 @@ public class LoomGradleExtension {
 
 		public void setClient(Boolean client) {
 			this.client = client;
+		}
+
+		public SourceSet getSource(Project proj) {
+			return source.apply(proj);
+		}
+
+		public void setSource(SourceSet source) {
+			this.source = proj -> source;
+		}
+
+		public void setSource(Function<Project, SourceSet> sourceFn) {
+			this.source = sourceFn;
 		}
 
 		public void mode(String mode) {
@@ -554,6 +565,17 @@ public class LoomGradleExtension {
 
 		public void programArgs(Collection<String> args) {
 			programArgs.addAll(args);
+		}
+
+		public void source(SourceSet source) {
+			setSource(source);
+		}
+
+		public void source(String source) {
+			setSource(proj -> {
+				JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
+				return conv.getSourceSets().getByName(source);
+			});
 		}
 	}
 }

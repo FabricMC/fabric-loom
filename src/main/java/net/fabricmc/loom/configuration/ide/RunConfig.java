@@ -40,6 +40,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -94,8 +95,19 @@ public class RunConfig {
 		return e;
 	}
 
+	@Deprecated // Replaced with source set variant
 	private static String getIdeaModuleName(Project project) {
 		String module = project.getName() + ".main";
+
+		while ((project = project.getParent()) != null) {
+			module = project.getName() + "." + module;
+		}
+
+		return module;
+	}
+
+	private static String getIdeaModuleName(Project project, SourceSet srcs) {
+		String module = project.getName() + "." + srcs.getName();
 
 		while ((project = project.getParent()) != null) {
 			module = project.getName() + "." + module;
@@ -107,7 +119,7 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-		runConfig.ideaModuleName = getIdeaModuleName(project);
+		// runConfig.ideaModuleName = getIdeaModuleName(project);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
@@ -157,6 +169,7 @@ public class RunConfig {
 		ideaClient.configName = "Minecraft Client";
 		ideaClient.programArgs = "";
 		populate(project, extension, ideaClient, "client");
+		ideaClient.ideaModuleName = getIdeaModuleName(project);
 		ideaClient.vmArgs += getOSClientJVMArgs();
 		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension, true);
 
@@ -171,9 +184,20 @@ public class RunConfig {
 		ideaServer.configName = "Minecraft Server";
 		ideaServer.programArgs = "nogui ";
 		populate(project, extension, ideaServer, "server");
+		ideaServer.ideaModuleName = getIdeaModuleName(project);
 		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension, false);
 
 		return ideaServer;
+	}
+
+	// Turns camelCase/PascalCase into Capital Case
+	// caseConversionExample -> Case Conversion Example
+	private static String capitalizeCamelCaseName(String name) {
+		if (name.length() == 0) {
+			return "";
+		}
+
+		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
 	}
 
 	public static RunConfig runConfig(Project project, LoomGradleExtension.RunConfigSettings settings) {
@@ -184,9 +208,17 @@ public class RunConfig {
 
 		String configName = settings.getConfigName();
 		String mode = settings.getMode();
+		SourceSet sourceSet = settings.getSource(project);
 
 		if (configName == null) {
-			configName = "Minecraft " + name.substring(0, 1).toUpperCase() + name.substring(1);
+			configName = "";
+			String srcName = sourceSet.getName();
+
+			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+				configName += capitalizeCamelCaseName(srcName) + " ";
+			}
+
+			configName += "Minecraft " + capitalizeCamelCaseName(name);
 		}
 
 		if (mode == null) {
@@ -196,6 +228,7 @@ public class RunConfig {
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 		populate(project, extension, runConfig, mode);
+		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
 
 		// Custom parameters
 		for (String progArg : settings.getProgramArgs()) {
@@ -224,15 +257,15 @@ public class RunConfig {
 	@Deprecated // Whatever this is still going to mean, replaced it with more strict version below
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"));
+		return !contents.contains("net.fabricmc.devlaunchinjector.Main");
 	}
 
 	public static boolean needsUpgrade(File file, RunConfig config) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"))
-				|| !(contents.contains(config.mainClass))
-				|| !(contents.contains(config.vmArgs))
-				|| !(contents.contains(config.programArgs));
+		return !contents.contains("net.fabricmc.devlaunchinjector.Main")
+				|| !contents.contains(config.mainClass)
+				|| !contents.contains(config.vmArgs)
+				|| !contents.contains(config.programArgs);
 	}
 
 	public String fromDummy(String dummy) throws IOException {

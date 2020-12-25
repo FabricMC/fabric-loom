@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
@@ -48,6 +49,11 @@ public class LoomGradlePlugin implements Plugin<Project> {
 			MappingsCache.INSTANCE.invalidate();
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
+
+		// Apply default plugins
+		project.apply(ImmutableMap.of("plugin", "java"));
+		project.apply(ImmutableMap.of("plugin", "eclipse"));
+		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		// Setup extensions, loom shadows minecraft
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);

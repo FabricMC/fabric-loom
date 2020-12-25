@@ -109,12 +109,11 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-		// runConfig.ideaModuleName = getIdeaModuleName(project);
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
-			runConfig.mainClass = "net.minecraft.launchwrapper.Launch";
+			runConfig.mainClass = "net.minecraft.launchwrapper.Launch"; // TODO What about custom tweakers for run configs?
 			runConfig.programArgs += "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";

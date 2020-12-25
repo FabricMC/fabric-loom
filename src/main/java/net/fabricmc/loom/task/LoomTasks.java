@@ -93,7 +93,7 @@ public final class LoomTasks {
 				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 
 				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
-					t.setDescription("Starts a development version of the Minecraft server.");
+					t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 					t.setGroup("fabric");
 				});
 			}

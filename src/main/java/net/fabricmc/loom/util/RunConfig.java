@@ -176,11 +176,11 @@ public class RunConfig {
 
 	public static RunConfig runConfig(Project project, LoomGradleExtension.RunConfigSettings settings) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		String name = settings.getBaseName();
+		String name = settings.getName();
 
 		boolean client = settings.isClient();
 
-		String configName = settings.getName();
+		String configName = settings.getConfigName();
 		String mode = settings.getMode();
 
 		if (configName == null) {

@@ -46,6 +46,7 @@ import com.google.gson.JsonObject;
 import groovy.lang.Closure;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -440,7 +441,7 @@ public class LoomGradleExtension {
 		return runs;
 	}
 
-	public static class RunConfigSettings {
+	public static class RunConfigSettings implements Named {
 		private final List<String> vmArgs = new ArrayList<>();
 		private final List<String> programArgs = new ArrayList<>();
 		private String mode;
@@ -453,7 +454,8 @@ public class LoomGradleExtension {
 			setMode(baseName);
 		}
 
-		public String getBaseName() {
+		@Override
+		public String getName() {
 			return baseName;
 		}
 
@@ -473,11 +475,11 @@ public class LoomGradleExtension {
 			this.mode = mode;
 		}
 
-		public String getName() {
+		public String getConfigName() {
 			return name;
 		}
 
-		public void setName(String name) {
+		public void setConfigName(String name) {
 			this.name = name;
 		}
 
@@ -496,7 +498,7 @@ public class LoomGradleExtension {
 		}
 
 		public void name(String name) {
-			setName(name);
+			setConfigName(name);
 		}
 
 		public void client(boolean client) {

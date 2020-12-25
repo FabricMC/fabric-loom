@@ -146,7 +146,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		project.afterEvaluate((p) -> {
 			for (LoomGradleExtension.RunConfigSettings config : extension.getRuns()) {
-				String configName = config.getBaseName();
+				String configName = config.getName();
 				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 
 				tasks.register(taskName, RunGameTask.class, config).configure(t -> {

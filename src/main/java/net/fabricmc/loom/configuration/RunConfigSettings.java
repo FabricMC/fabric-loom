@@ -37,13 +37,43 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
 public class RunConfigSettings implements Named {
+
+	/**
+	 * Arguments for the JVM, such as system properties.
+	 */
 	private final List<String> vmArgs = new ArrayList<>();
+
+	/**
+	 * Arguments for the program's main class.
+	 */
 	private final List<String> programArgs = new ArrayList<>();
+
+	/**
+	 * The mode to run, which is the name of the run config in {@code fabric_installer.[method].json}.
+	 */
 	private String mode;
+
+	/**
+	 * The full name of the run configuration, i.e. 'Minecraft Client'.
+	 * <p>
+	 * By default this is determined from the base name.
+	 */
 	private String name;
+
+	/**
+	 * Whether the run config is for the client, i.e. uses natives and needs {@code -XstartOnFirstThread} on OSX.
+	 */
 	private Boolean client;
-	private final String baseName;
+
+	/**
+	 * The source set getter, which obtains the source set from the given project.
+	 */
 	private Function<Project, SourceSet> source;
+
+	/**
+	 * The base name of the run configuration, which is the name it is created with, i.e. 'client'
+	 */
+	private final String baseName;
 
 	public RunConfigSettings(String baseName) {
 		this.baseName = baseName;
@@ -160,8 +190,8 @@ public class RunConfigSettings implements Named {
 
 	public void source(String source) {
 		setSource(proj -> {
-			JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
-			return conv.getSourceSets().getByName(source);
+				JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
+				return conv.getSourceSets().getByName(source);
 		});
 	}
 }

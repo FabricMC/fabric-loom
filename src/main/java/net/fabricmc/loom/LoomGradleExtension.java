@@ -444,5 +444,4 @@ public class LoomGradleExtension {
 	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
 		return runs;
 	}
-
 }

@@ -35,6 +35,7 @@ import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
+import net.fabricmc.loom.task.RunGameTask;
 
 public class LoomGradlePlugin implements Plugin<Project> {
 	public static boolean refreshDeps;
@@ -78,28 +79,5 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		MavenPublication.configure(project);
 		LoomTasks.registerTasks(project);
 		DecompilerConfiguration.setup(project);
-		project.afterEvaluate((p) -> {
-			for (LoomDecompiler decompiler : extension.decompilers) {
-				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
-				// decompiler will be passed to the constructor of GenerateSourcesTask
-				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
-			}
-		});
-
-		// Default run configurations
-		extension.getRuns().create("client");
-		extension.getRuns().create("server");
-
-		project.afterEvaluate((p) -> {
-			for (LoomGradleExtension.RunConfigSettings config : extension.getRuns()) {
-				String configName = config.getName();
-				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
-
-				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
-					t.setDescription("Starts a development version of the Minecraft server.");
-					t.setGroup("fabric");
-				});
-			}
-		});
 	}
 }

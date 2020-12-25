@@ -44,6 +44,7 @@ import com.google.gson.JsonObject;
 import groovy.lang.Closure;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
 import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -55,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -439,6 +441,11 @@ public class LoomGradleExtension {
 
 	public void runs(Closure<?> conf) {
 		runs.configure(conf);
+	}
+
+	// Workaround for ugly closures in Kotlin DSL buildscripts
+	public void run(String name, Action<RunConfigSettings> settingsAction) {
+		runs.create(name, settingsAction);
 	}
 
 	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {

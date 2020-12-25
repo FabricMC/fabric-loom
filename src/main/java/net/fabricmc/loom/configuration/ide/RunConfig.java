@@ -44,10 +44,7 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.gradle.api.Project;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.AbstractPlugin;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;

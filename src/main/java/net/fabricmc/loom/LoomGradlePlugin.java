@@ -49,11 +49,23 @@ public class LoomGradlePlugin implements Plugin<Project> {
 			MappingsCache.INSTANCE.invalidate();
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
+		/* Replacement below
+
+		tasks.register("runClient", RunClientTask.class, t -> {
+			t.setDescription("Starts a development version of the Minecraft client.");
+			t.dependsOn("downloadAssets");
+			t.setGroup("fabric");
+		});
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
+		tasks.register("runServer", RunServerTask.class, t -> {
+			t.setDescription("Starts a development version of the Minecraft server.");
+			t.setGroup("fabric");
+		});
+		*/
 
 		// Setup extensions, loom shadows minecraft
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
@@ -66,5 +78,28 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		MavenPublication.configure(project);
 		LoomTasks.registerTasks(project);
 		DecompilerConfiguration.setup(project);
+		project.afterEvaluate((p) -> {
+			for (LoomDecompiler decompiler : extension.decompilers) {
+				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
+				// decompiler will be passed to the constructor of GenerateSourcesTask
+				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
+			}
+		});
+
+		// Default run configurations
+		extension.getRuns().create("client");
+		extension.getRuns().create("server");
+
+		project.afterEvaluate((p) -> {
+			for (LoomGradleExtension.RunConfigSettings config : extension.getRuns()) {
+				String configName = config.getName();
+				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
+
+				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
+					t.setDescription("Starts a development version of the Minecraft server.");
+					t.setGroup("fabric");
+				});
+			}
+		});
 	}
 }

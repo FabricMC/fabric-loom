@@ -27,10 +27,12 @@ package net.fabricmc.loom;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -39,8 +41,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
+import groovy.lang.Closure;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Named;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -82,6 +87,8 @@ public class LoomGradleExtension {
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 
+	private NamedDomainObjectContainer<RunConfigSettings> runs;
+
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
 	 * that uses the specified decompiler instead.
@@ -117,6 +124,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
+		this.runs = project.container(RunConfigSettings.class, RunConfigSettings::new);
 	}
 
 	/**
@@ -427,5 +435,114 @@ public class LoomGradleExtension {
 
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
+	}
+
+	public void runs(Closure<?> conf) {
+		runs.configure(conf);
+	}
+
+	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
+		return runs;
+	}
+
+	public static class RunConfigSettings implements Named {
+		private final List<String> vmArgs = new ArrayList<>();
+		private final List<String> programArgs = new ArrayList<>();
+		private String mode;
+		private String name;
+		private Boolean client;
+		private final String baseName;
+
+		public RunConfigSettings(String baseName) {
+			this.baseName = baseName;
+			setMode(baseName);
+		}
+
+		@Override
+		public String getName() {
+			return baseName;
+		}
+
+		public List<String> getVmArgs() {
+			return vmArgs;
+		}
+
+		public List<String> getProgramArgs() {
+			return programArgs;
+		}
+
+		public String getMode() {
+			return mode;
+		}
+
+		public void setMode(String mode) {
+			this.mode = mode;
+		}
+
+		public String getConfigName() {
+			return name;
+		}
+
+		public void setConfigName(String name) {
+			this.name = name;
+		}
+
+		public boolean isClient() {
+			String m = mode != null ? mode : baseName;
+			return client != null ? client // Do not confuse users: detect client mode unless client mode is explicitly defined
+					: m.toLowerCase().contains("client");
+		}
+
+		public void setClient(Boolean client) {
+			this.client = client;
+		}
+
+		public void mode(String mode) {
+			setMode(mode);
+		}
+
+		public void name(String name) {
+			setConfigName(name);
+		}
+
+		public void client(boolean client) {
+			setClient(client);
+		}
+
+		public void server(boolean server) {
+			setClient(!server);
+		}
+
+		public void vmArg(String arg) {
+			vmArgs.add(arg);
+		}
+
+		public void vmArgs(String... args) {
+			vmArgs.addAll(Arrays.asList(args));
+		}
+
+		public void vmArgs(Collection<String> args) {
+			vmArgs.addAll(args);
+		}
+
+		public void property(String name, String value) {
+			vmArg("-D" + name + "=" + value);
+		}
+
+		public void properties(Map<String, String> props) {
+			props.forEach(this::property);
+		}
+
+		public void programArg(String arg) {
+			programArgs.add(arg);
+		}
+
+		public void programArgs(String... args) {
+			programArgs.addAll(Arrays.asList(args));
+		}
+
+		public void programArgs(Collection<String> args) {
+			programArgs.addAll(args);
+		}
 	}
 }

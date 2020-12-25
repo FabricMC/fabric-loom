@@ -30,9 +30,11 @@ import net.fabricmc.loom.configuration.ide.RunConfig;
 @Deprecated // Replaced by RunGameTask
 public class RunClientTask extends AbstractRunTask {
 	public RunClientTask() {
-		super(project -> {
-				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-				return RunConfig.runConfig(project, extension.getRuns().getByName("client"));
-		});
+		super(
+				project -> {
+					LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+					return RunConfig.runConfig(project, extension.getRuns().getByName("client"));
+				}
+		);
 	}
 }

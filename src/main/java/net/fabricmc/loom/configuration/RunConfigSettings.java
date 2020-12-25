@@ -37,7 +37,6 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
 public class RunConfigSettings implements Named {
-
 	/**
 	 * Arguments for the JVM, such as system properties.
 	 */
@@ -55,8 +54,8 @@ public class RunConfigSettings implements Named {
 
 	/**
 	 * The full name of the run configuration, i.e. 'Minecraft Client'.
-	 * <p>
-	 * By default this is determined from the base name.
+	 *
+	 * <p>By default this is determined from the base name.
 	 */
 	private String name;
 
@@ -125,7 +124,8 @@ public class RunConfigSettings implements Named {
 	}
 
 	public void setSource(SourceSet source) {
-		this.source = proj -> source;
+		this.source =
+				proj -> source;
 	}
 
 	public void setSource(Function<Project, SourceSet> sourceFn) {
@@ -190,8 +190,8 @@ public class RunConfigSettings implements Named {
 
 	public void source(String source) {
 		setSource(proj -> {
-				JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
-				return conv.getSourceSets().getByName(source);
+			JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
+			return conv.getSourceSets().getByName(source);
 		});
 	}
 }

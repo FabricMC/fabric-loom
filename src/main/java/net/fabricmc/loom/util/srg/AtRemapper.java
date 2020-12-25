@@ -63,7 +63,7 @@ public final class AtRemapper {
 					}
 
 					String[] parts = line.split(" ");
-					if (parts.length < 3) {
+					if (parts.length < 2) {
 						logger.warn("Invalid AT Line: " + line);
 						output.add(i, line);
 						continue;

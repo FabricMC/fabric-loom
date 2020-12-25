@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom;
 
-import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
@@ -35,7 +34,6 @@ import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
-import net.fabricmc.loom.task.RunGameTask;
 
 public class LoomGradlePlugin implements Plugin<Project> {
 	public static boolean refreshDeps;
@@ -50,23 +48,6 @@ public class LoomGradlePlugin implements Plugin<Project> {
 			MappingsCache.INSTANCE.invalidate();
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
-		/* Replacement below
-
-		tasks.register("runClient", RunClientTask.class, t -> {
-			t.setDescription("Starts a development version of the Minecraft client.");
-			t.dependsOn("downloadAssets");
-			t.setGroup("fabric");
-		});
-
-		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java"));
-		project.apply(ImmutableMap.of("plugin", "eclipse"));
-		project.apply(ImmutableMap.of("plugin", "idea"));
-		tasks.register("runServer", RunServerTask.class, t -> {
-			t.setDescription("Starts a development version of the Minecraft server.");
-			t.setGroup("fabric");
-		});
-		*/
 
 		// Setup extensions, loom shadows minecraft
 		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);

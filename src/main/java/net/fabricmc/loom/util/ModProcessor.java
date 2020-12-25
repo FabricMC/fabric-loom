@@ -100,6 +100,7 @@ public class ModProcessor {
 	}
 
 	private static void stripNestedJars(File file) {
+		if (!ZipUtil.containsEntry(file, "fabric.mod.json")) return;
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
 		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
@@ -203,7 +204,7 @@ public class ModProcessor {
 			}
 
 			if (extension.isForge()) {
-				AtRemapper.remap(info.getRemappedOutput().toPath(), mappings);
+				AtRemapper.remap(project.getLogger(), info.getRemappedOutput().toPath(), mappings);
 				CoreModClassRemapper.remapJar(info.getRemappedOutput().toPath(), mappings, project.getLogger());
 			}
 		}

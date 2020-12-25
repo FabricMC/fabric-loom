@@ -175,7 +175,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				}
 
 				TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
-				AtRemapper.remap(output, yarnWithSrg);
+				AtRemapper.remap(getProject().getLogger(), output, yarnWithSrg);
 				CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
 			}
 		}

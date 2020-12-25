@@ -73,7 +73,7 @@ public class ModCompileRemapper {
 				String version = artifact.getModuleVersion().getId().getVersion();
 				String classifierSuffix = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
-				if (!isFabricMod(logger, artifact)) {
+				if (!shouldRemapMod(logger, artifact, extension.isForge())) {
 					addToRegularCompile(project, regularConfig, artifact);
 					continue;
 				}
@@ -112,13 +112,20 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact) {
+	private static boolean shouldRemapMod(Logger logger, ResolvedArtifact artifact, boolean forge) {
 		File input = artifact.getFile();
 
 		try (ZipFile zipFile = new ZipFile(input)) {
-			if (zipFile.getEntry("fabric.mod.json") != null) {
-				logger.info("Found Fabric mod in modCompile: {}", artifact.getId());
-				return true;
+			if (forge) {
+				if (zipFile.getEntry("META-INF/mods.toml") != null) {
+					logger.info("Found Forge mod in modCompile: {}", artifact.getId());
+					return true;
+				}
+			} else {
+				if (zipFile.getEntry("fabric.mod.json") != null) {
+					logger.info("Found Fabric mod in modCompile: {}", artifact.getId());
+					return true;
+				}
 			}
 
 			return false;

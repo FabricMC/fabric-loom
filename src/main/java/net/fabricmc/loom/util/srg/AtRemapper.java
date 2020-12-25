@@ -37,6 +37,8 @@ import com.google.common.collect.ImmutableMap;
 
 import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.TinyTree;
+import org.apache.commons.lang3.StringUtils;
+import org.gradle.api.logging.Logger;
 
 /**
  * Remaps AT classes from SRG to Yarn.
@@ -44,7 +46,7 @@ import net.fabricmc.mapping.tree.TinyTree;
  * @author Juuz
  */
 public final class AtRemapper {
-	public static void remap(Path jar, TinyTree mappings) throws IOException {
+	public static void remap(Logger logger, Path jar, TinyTree mappings) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + jar.toUri()), ImmutableMap.of("create", false))) {
 			Path atPath = fs.getPath("META-INF", "accesstransformer.cfg");
 
@@ -55,12 +57,17 @@ public final class AtRemapper {
 				for (int i = 0; i < lines.size(); i++) {
 					String line = lines.get(i).trim();
 
-					if (line.startsWith("#")) {
+					if (line.startsWith("#") || StringUtils.isBlank(line)) {
 						output.add(i, line);
 						continue;
 					}
 
 					String[] parts = line.split(" ");
+					if (parts.length < 3) {
+						logger.warn("Invalid AT Line: " + line);
+						output.add(i, line);
+						continue;
+					}
 					String name = parts[1].replace('.', '/');
 					parts[1] = CollectionUtil.find(
 							mappings.getClasses(),

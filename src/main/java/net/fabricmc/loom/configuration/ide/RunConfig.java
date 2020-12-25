@@ -96,17 +96,6 @@ public class RunConfig {
 		return e;
 	}
 
-	@Deprecated // Replaced with source set variant
-	private static String getIdeaModuleName(Project project) {
-		String module = project.getName() + ".main";
-
-		while ((project = project.getParent()) != null) {
-			module = project.getName() + "." + module;
-		}
-
-		return module;
-	}
-
 	private static String getIdeaModuleName(Project project, SourceSet srcs) {
 		String module = project.getName() + "." + srcs.getName();
 
@@ -160,35 +149,6 @@ public class RunConfig {
 				}
 			}
 		}
-	}
-
-	@Deprecated // Replaced by runConfig(project, settings)
-	public static RunConfig clientRunConfig(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-
-		RunConfig ideaClient = new RunConfig();
-		ideaClient.configName = "Minecraft Client";
-		ideaClient.programArgs = "";
-		populate(project, extension, ideaClient, "client");
-		ideaClient.ideaModuleName = getIdeaModuleName(project);
-		ideaClient.vmArgs += getOSClientJVMArgs();
-		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension, true);
-
-		return ideaClient;
-	}
-
-	@Deprecated // Replaced by runConfig(project, settings)
-	public static RunConfig serverRunConfig(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-
-		RunConfig ideaServer = new RunConfig();
-		ideaServer.configName = "Minecraft Server";
-		ideaServer.programArgs = "nogui ";
-		populate(project, extension, ideaServer, "server");
-		ideaServer.ideaModuleName = getIdeaModuleName(project);
-		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension, false);
-
-		return ideaServer;
 	}
 
 	// Turns camelCase/PascalCase into Capital Case
@@ -254,13 +214,7 @@ public class RunConfig {
 		return runConfig;
 	}
 
-	// This can be removed at somepoint, its not ideal but its the best solution I could think of
-	@Deprecated // Whatever this is still going to mean, replaced it with more strict version below
-	public static boolean needsUpgrade(File file) throws IOException {
-		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		return !contents.contains("net.fabricmc.devlaunchinjector.Main");
-	}
-
+	// This can be removed at some point, its not ideal but its the best solution I could think of
 	public static boolean needsUpgrade(File file, RunConfig config) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		return !contents.contains("net.fabricmc.devlaunchinjector.Main")

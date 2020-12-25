@@ -24,11 +24,15 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 
 @Deprecated // Replaced by RunGameTask
 public class RunServerTask extends AbstractRunTask {
 	public RunServerTask() {
-		super(RunConfig::serverRunConfig);
+		super(project -> {
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			return RunConfig.runConfig(project, extension.getRuns().getByName("server"));
+		});
 	}
 }

@@ -82,8 +82,9 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to generate IntelliJ run configurations (runManager was not found)");
 		}
 
-		runManager.appendChild(RunConfig.clientRunConfig(project).genRuns(runManager));
-		runManager.appendChild(RunConfig.serverRunConfig(project).genRuns(runManager));
+		for(LoomGradleExtension.RunConfigSettings settings : getExtension().getRuns()) {
+			runManager.appendChild(RunConfig.runConfig(project, settings).genRuns(runManager));
+		}
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();

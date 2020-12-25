@@ -24,31 +24,8 @@
 
 package net.fabricmc.loom;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
 import com.google.gson.JsonObject;
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.plugins.BasePluginConvention;
-
+import groovy.lang.Closure;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
@@ -57,6 +34,24 @@ import net.fabricmc.loom.providers.MinecraftMappedProvider;
 import net.fabricmc.loom.providers.MinecraftProvider;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
+import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectFactory;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.BasePluginConvention;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class LoomGradleExtension {
 	public String runDir = "run";
@@ -83,20 +78,21 @@ public class LoomGradleExtension {
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 
+	private NamedDomainObjectContainer<RunConfigSettings> runs;
+
 	/**
-	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
-	 * that uses the specified decompiler instead.
+	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()}) that uses
+	 * the specified decompiler instead.
 	 */
 	public void addDecompiler(LoomDecompiler decompiler) {
 		decompilers.add(decompiler);
 	}
 
 	/**
-	 * Add a transformation over the mapped mc jar.
-	 * Adding any jar processor will cause mapped mc jars to be stored per-project so that
-	 * different transformation can be applied in different projects.
-	 * This means remapping will need to be done individually per-project, which is slower when developing
-	 * more than one project using the same minecraft version.
+	 * Add a transformation over the mapped mc jar. Adding any jar processor will cause mapped mc jars to be stored
+	 * per-project so that different transformation can be applied in different projects. This means remapping will need
+	 * to be done individually per-project, which is slower when developing more than one project using the same
+	 * minecraft version.
 	 */
 	public void addJarProcessor(JarProcessor processor) {
 		jarProcessors.add(processor);
@@ -118,6 +114,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
 		this.unmappedMods = project.files();
+		this.runs = project.container(RunConfigSettings.class, RunConfigSettings::new);
 	}
 
 	/**
@@ -135,8 +132,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-			.map(File::toPath)
-			.collect(Collectors.toList());
+						   .map(File::toPath)
+						   .collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -424,5 +421,113 @@ public class LoomGradleExtension {
 
 	public Set<File> getAllMixinMappings() {
 		return Collections.unmodifiableSet(mixinMappings);
+	}
+
+	public void runs(Closure<?> conf) {
+		runs.configure(conf);
+	}
+
+	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
+		return runs;
+	}
+
+	public static class RunConfigSettings {
+		private final List<String> vmArgs = new ArrayList<>();
+		private final List<String> programArgs = new ArrayList<>();
+		private String mode;
+		private String name;
+		private Boolean client;
+		private final String baseName;
+
+		public RunConfigSettings(String baseName) {
+			this.baseName = baseName;
+			setMode(baseName);
+		}
+
+		public String getBaseName() {
+			return baseName;
+		}
+
+		public List<String> getVmArgs() {
+			return vmArgs;
+		}
+
+		public List<String> getProgramArgs() {
+			return programArgs;
+		}
+
+		public String getMode() {
+			return mode;
+		}
+
+		public void setMode(String mode) {
+			this.mode = mode;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public boolean isClient() {
+			String m = mode != null ? mode : baseName;
+			return client != null ? client // Do not confuse users: detect client mode unless client mode is explicitly defined
+								  : m.toLowerCase().contains("client");
+		}
+
+		public void setClient(Boolean client) {
+			this.client = client;
+		}
+
+		public void mode(String mode) {
+			setMode(mode);
+		}
+
+		public void name(String name) {
+			setName(name);
+		}
+
+		public void client(boolean client) {
+			setClient(client);
+		}
+
+		public void server(boolean server) {
+			setClient(!server);
+		}
+
+		public void vmArg(String arg) {
+			vmArgs.add(arg);
+		}
+
+		public void vmArgs(String... args) {
+			vmArgs.addAll(Arrays.asList(args));
+		}
+
+		public void vmArgs(Collection<String> args) {
+			vmArgs.addAll(args);
+		}
+
+		public void property(String name, String value) {
+			vmArg("-D" + name + "=" + value);
+		}
+
+		public void properties(Map<String, String> props) {
+			props.forEach(this::property);
+		}
+
+		public void programArg(String arg) {
+			programArgs.add(arg);
+		}
+
+		public void programArgs(String... args) {
+			programArgs.addAll(Arrays.asList(args));
+		}
+
+		public void programArgs(Collection<String> args) {
+			programArgs.addAll(args);
+		}
 	}
 }

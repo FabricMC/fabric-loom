@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import net.fabricmc.loom.util.RunConfig;
 
+@Deprecated // Replaced by RunGameTasl
 public class RunClientTask extends AbstractRunTask {
 	public RunClientTask() {
 		super(RunConfig::clientRunConfig);

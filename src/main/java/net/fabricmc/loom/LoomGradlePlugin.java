@@ -24,29 +24,16 @@
 
 package net.fabricmc.loom;
 
-import java.io.File;
-import java.util.Locale;
-
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskContainer;
-
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.task.CleanEclipseRunsTask;
-import net.fabricmc.loom.task.CleanLoomBinaries;
-import net.fabricmc.loom.task.CleanLoomMappings;
-import net.fabricmc.loom.task.DownloadAssetsTask;
-import net.fabricmc.loom.task.GenEclipseRunsTask;
-import net.fabricmc.loom.task.GenIdeaProjectTask;
-import net.fabricmc.loom.task.GenVsCodeProjectTask;
-import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.task.MigrateMappingsTask;
-import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.task.RunClientTask;
-import net.fabricmc.loom.task.RunServerTask;
+import net.fabricmc.loom.task.*;
+import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskContainer;
+
+import java.io.File;
+import java.util.Locale;
 
 public class LoomGradlePlugin extends AbstractPlugin {
 	public static File getMappedByproduct(Project project, String suffix) {
@@ -115,6 +102,8 @@ public class LoomGradlePlugin extends AbstractPlugin {
 
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
+		/* Replacement below
+
 		tasks.register("runClient", RunClientTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft client.");
 			t.dependsOn("downloadAssets");
@@ -125,6 +114,7 @@ public class LoomGradlePlugin extends AbstractPlugin {
 			t.setDescription("Starts a development version of the Minecraft server.");
 			t.setGroup("fabric");
 		});
+		*/
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		extension.addDecompiler(new FabricFernFlowerDecompiler(project));
@@ -135,6 +125,23 @@ public class LoomGradlePlugin extends AbstractPlugin {
 				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
+			}
+		});
+
+
+		// Default run configurations
+		extension.getRuns().create("client");
+		extension.getRuns().create("server");
+
+		project.afterEvaluate((p) -> {
+			for (LoomGradleExtension.RunConfigSettings config : extension.getRuns()) {
+				String configName = config.getBaseName();
+				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
+
+				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
+					t.setDescription("Starts a development version of the Minecraft server.");
+					t.setGroup("fabric");
+				});
 			}
 		});
 	}

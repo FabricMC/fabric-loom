@@ -24,7 +24,19 @@
 
 package net.fabricmc.loom.util;
 
-import static net.fabricmc.loom.AbstractPlugin.isRootProject;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.fabricmc.loom.LoomGradleExtension;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,20 +46,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.gradle.api.Project;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-
-import net.fabricmc.loom.LoomGradleExtension;
+import static net.fabricmc.loom.AbstractPlugin.*;
 
 public class RunConfig {
 	public String configName;
@@ -150,6 +149,7 @@ public class RunConfig {
 		}
 	}
 
+	@Deprecated // Replaced by runConfig(project, settings)
 	public static RunConfig clientRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
@@ -157,26 +157,78 @@ public class RunConfig {
 		ideaClient.configName = "Minecraft Client";
 		populate(project, extension, ideaClient, "client");
 		ideaClient.vmArgs += getOSClientJVMArgs();
-		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension);
+		ideaClient.vmArgs += " -Dfabric.dli.main=" + getMainClass("client", extension, true);
 
 		return ideaClient;
 	}
 
+	@Deprecated // Replaced by runConfig(project, settings)
 	public static RunConfig serverRunConfig(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		RunConfig ideaServer = new RunConfig();
 		ideaServer.configName = "Minecraft Server";
 		populate(project, extension, ideaServer, "server");
-		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension);
+		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("server", extension, false);
 
 		return ideaServer;
 	}
 
-	// This can be removed at somepoint, its not ideal but its the best solution I could thing of
+	public static RunConfig runConfig(Project project, LoomGradleExtension.RunConfigSettings settings) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		String name = settings.getBaseName();
+
+		boolean client = settings.isClient();
+
+		String configName = settings.getName();
+		if (configName == null) {
+			configName = "Minecraft " + name.substring(0, 1).toUpperCase() + name.substring(1);
+		}
+
+		String mode = settings.getMode();
+		if (mode == null) {
+			mode = name;
+		}
+
+		RunConfig runConfig = new RunConfig();
+		runConfig.configName = configName;
+		populate(project, extension, runConfig, mode);
+
+		// Custom parameters
+		for (String progArg : settings.getProgramArgs()) {
+			runConfig.programArgs += " " + progArg;
+		}
+
+		for (String vmArg : settings.getVmArgs()) {
+			runConfig.vmArgs += " " + vmArg;
+		}
+
+		// Other mandatory properties
+		if (client) {
+			runConfig.vmArgs += getOSClientJVMArgs();
+		}
+		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(mode, extension, client);
+
+		// Remove unnecessary leading/trailing whitespaces we might have generated
+		runConfig.programArgs = runConfig.programArgs.trim();
+		runConfig.vmArgs = runConfig.vmArgs.trim();
+
+		return runConfig;
+	}
+
+	// This can be removed at somepoint, its not ideal but its the best solution I could think of
+	@Deprecated // Whatever this is still going to mean, replaced it with more strict version below
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"));
+	}
+
+	public static boolean needsUpgrade(File file, RunConfig config) throws IOException {
+		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+		return !(contents.contains("net.fabricmc.devlaunchinjector.Main"))
+				   || !(contents.contains(config.mainClass))
+				   || !(contents.contains(config.vmArgs))
+				   || !(contents.contains(config.programArgs));
 	}
 
 	public String fromDummy(String dummy) throws IOException {
@@ -204,7 +256,7 @@ public class RunConfig {
 		return "";
 	}
 
-	private static String getMainClass(String side, LoomGradleExtension extension) {
+	private static String getMainClass(String side, LoomGradleExtension extension, boolean client) {
 		JsonObject installerJson = extension.getInstallerJson();
 
 		if (installerJson != null && installerJson.has("mainClass")) {
@@ -228,6 +280,12 @@ public class RunConfig {
 		// Fallback to default class names, happens when in a loader dev env
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			return "net.minecraft.launchwrapper.Launch";
+		}
+
+		if (!side.equals("client") && !side.equals("server")) {
+			// There exists only KnotClient or KnotServer. If we can't use the mode name to determine this class, fall
+			// back on the 'client' property
+			side = client ? "client" : "server";
 		}
 
 		return "net.fabricmc.loader.launch.knot.Knot" + side.substring(0, 1).toUpperCase(Locale.ROOT) + side.substring(1).toLowerCase(Locale.ROOT);

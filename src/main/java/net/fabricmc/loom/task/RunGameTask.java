@@ -24,11 +24,14 @@
 
 package net.fabricmc.loom.task;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.RunConfig;
+import org.gradle.api.Project;
 
-@Deprecated // Replaced by RunGameTasl
-public class RunServerTask extends AbstractRunTask {
-	public RunServerTask() {
-		super(RunConfig::serverRunConfig);
+import java.util.function.Function;
+
+public class RunGameTask extends AbstractRunTask {
+	public RunGameTask(LoomGradleExtension.RunConfigSettings settings) {
+		super(proj -> RunConfig.runConfig(proj, settings));
 	}
 }

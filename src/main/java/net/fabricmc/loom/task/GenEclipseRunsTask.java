@@ -24,32 +24,31 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.RunConfig;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.util.RunConfig;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction
 	public void genRuns() throws IOException {
 		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
-		File clientRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_client.launch");
-		File serverRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_server.launch");
+		LoomGradleExtension extension = getExtension();
+		for (LoomGradleExtension.RunConfigSettings settings : extension.getRuns()) {
+			String name = settings.getBaseName();
 
-		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
-		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
+			File configs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
+			RunConfig configInst = RunConfig.runConfig(getProject(), settings);
+			String config = configInst.fromDummy("eclipse_run_config_template.xml");
 
-		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
-			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		}
-
-		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
-			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+			if (!configs.exists() || RunConfig.needsUpgrade(configs, configInst)) {
+				FileUtils.writeStringToFile(configs, config, StandardCharsets.UTF_8);
+			}
 		}
 
 		File runDir = new File(getProject().getRootDir(), getExtension().runDir);

@@ -536,6 +536,10 @@ public class LoomGradleExtension {
 			vmArg("-D" + name + "=" + value);
 		}
 
+		public void property(String name) {
+			vmArg("-D" + name);
+		}
+
 		public void properties(Map<String, String> props) {
 			props.forEach(this::property);
 		}

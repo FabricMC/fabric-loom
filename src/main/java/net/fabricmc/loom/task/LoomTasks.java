@@ -29,6 +29,7 @@ import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class LoomTasks {
@@ -40,7 +41,7 @@ public final class LoomTasks {
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
-			t.getOutputs().upToDateWhen((o) -> false);
+			t.getOutputs().upToDateWhen(o -> false);
 		});
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
@@ -86,8 +87,8 @@ public final class LoomTasks {
 		extension.getRuns().create("client");
 		extension.getRuns().create("server", settings -> settings.programArg("nogui"));
 
-		project.afterEvaluate((p) -> {
-			for (LoomGradleExtension.RunConfigSettings config : extension.getRuns()) {
+		project.afterEvaluate(p -> {
+			for (RunConfigSettings config : extension.getRuns()) {
 				String configName = config.getName();
 				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 
@@ -102,9 +103,9 @@ public final class LoomTasks {
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		project.afterEvaluate((p) -> {
+		project.afterEvaluate(p -> {
 			for (LoomDecompiler decompiler : extension.getDecompilers()) {
-				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
+				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}

@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public class RunGameTask extends AbstractRunTask {
-	public RunGameTask(LoomGradleExtension.RunConfigSettings settings) {
+	public RunGameTask(RunConfigSettings settings) {
 		super(proj -> RunConfig.runConfig(proj, settings));
 	}
 }

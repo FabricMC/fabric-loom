@@ -37,6 +37,7 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 
 // Recommended vscode plugins:
@@ -62,7 +63,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 
 		VsCodeLaunch launch = new VsCodeLaunch();
 
-		for (LoomGradleExtension.RunConfigSettings settings : getExtension().getRuns()) {
+		for (RunConfigSettings settings : getExtension().getRuns()) {
 			launch.add(RunConfig.runConfig(project, settings));
 		}
 

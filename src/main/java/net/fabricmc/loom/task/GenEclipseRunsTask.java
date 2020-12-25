@@ -32,8 +32,9 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction
@@ -41,7 +42,7 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
 		LoomGradleExtension extension = getExtension();
 
-		for (LoomGradleExtension.RunConfigSettings settings : extension.getRuns()) {
+		for (RunConfigSettings settings : extension.getRuns()) {
 			String name = settings.getName();
 
 			File configs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");

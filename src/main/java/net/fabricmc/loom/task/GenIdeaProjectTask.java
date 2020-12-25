@@ -45,6 +45,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public class GenIdeaProjectTask extends AbstractLoomTask {
@@ -82,7 +83,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to generate IntelliJ run configurations (runManager was not found)");
 		}
 
-		for (LoomGradleExtension.RunConfigSettings settings : getExtension().getRuns()) {
+		for (RunConfigSettings settings : getExtension().getRuns()) {
 			runManager.appendChild(RunConfig.runConfig(project, settings).genRuns(runManager));
 		}
 

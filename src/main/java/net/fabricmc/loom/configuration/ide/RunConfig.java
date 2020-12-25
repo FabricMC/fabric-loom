@@ -47,6 +47,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
@@ -200,7 +201,7 @@ public class RunConfig {
 		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
 	}
 
-	public static RunConfig runConfig(Project project, LoomGradleExtension.RunConfigSettings settings) {
+	public static RunConfig runConfig(Project project, RunConfigSettings settings) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String name = settings.getName();
 

@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
 
@@ -77,7 +78,7 @@ public class SetupIntelijRunConfigs {
 			runConfigsDir.mkdirs();
 		}
 
-		for (LoomGradleExtension.RunConfigSettings settings : extension.getRuns()) {
+		for (RunConfigSettings settings : extension.getRuns()) {
 			RunConfig config = RunConfig.runConfig(project, settings);
 			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 

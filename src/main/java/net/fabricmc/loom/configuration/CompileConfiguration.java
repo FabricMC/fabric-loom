@@ -159,7 +159,6 @@ public final class CompileConfiguration {
 			});
 
 			project1.getRepositories().mavenCentral();
-			project1.getRepositories().jcenter();
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);

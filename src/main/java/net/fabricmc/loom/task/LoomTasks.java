@@ -29,7 +29,7 @@ import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.configuration.RunConfigSettings;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class LoomTasks {

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration;
+package net.fabricmc.loom.configuration.ide;
 
 import java.util.ArrayList;
 import java.util.Arrays;

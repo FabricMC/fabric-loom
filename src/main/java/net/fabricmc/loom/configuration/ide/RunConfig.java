@@ -46,7 +46,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 

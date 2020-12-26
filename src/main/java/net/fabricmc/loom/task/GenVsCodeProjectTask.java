@@ -37,8 +37,8 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
 // Recommended vscode plugins:
 // https://marketplace.visualstudio.com/items?itemName=redhat.java

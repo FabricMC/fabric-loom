@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.configuration.RunConfigSettings;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
 public class RunGameTask extends AbstractRunTask {
 	public RunGameTask(RunConfigSettings settings) {

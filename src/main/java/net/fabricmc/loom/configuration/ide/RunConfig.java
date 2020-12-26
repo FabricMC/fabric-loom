@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import com.google.common.base.Strings;
@@ -56,6 +55,7 @@ public class RunConfig {
 	public String eclipseProjectName;
 	public String ideaModuleName;
 	public String mainClass;
+	public String runDirIdeaUrl;
 	public String runDir;
 	public String vmArgs;
 	public String programArgs;
@@ -66,7 +66,7 @@ public class RunConfig {
 
 		this.addXml(root, "module", ImmutableMap.of("name", ideaModuleName));
 		this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
-		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
+		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDirIdeaUrl));
 
 		if (!Strings.isNullOrEmpty(vmArgs)) {
 			this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", vmArgs));
@@ -109,7 +109,6 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
 		runConfig.vmArgs = "";
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
@@ -164,11 +163,24 @@ public class RunConfig {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		String name = settings.getName();
 
-		boolean client = settings.isClient();
-
 		String configName = settings.getConfigName();
 		String mode = settings.getMode();
 		SourceSet sourceSet = settings.getSource(project);
+
+		String defaultMain = settings.getDefaultMainClass();
+
+		if (defaultMain == null) {
+			if (name.equals("client")) {
+				defaultMain = Constants.Knot.KNOT_CLIENT;
+			} else if (name.equals("server")) {
+				defaultMain = Constants.Knot.KNOT_SERVER;
+			} else {
+				// throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'defaultMainClass'");
+
+				// Can go for above exception, or just assume user wants to start client (because that one is used most often)
+				defaultMain = Constants.Knot.KNOT_CLIENT;
+			}
+		}
 
 		if (configName == null) {
 			configName = "";
@@ -185,10 +197,18 @@ public class RunConfig {
 			mode = name;
 		}
 
+		String runDir = settings.getRunDir();
+
+		if (runDir == null) {
+			runDir = "run";
+		}
+
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 		populate(project, extension, runConfig, mode);
 		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
+		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
+		runConfig.runDir = runDir;
 
 		// Custom parameters
 		for (String progArg : settings.getProgramArgs()) {
@@ -199,12 +219,7 @@ public class RunConfig {
 			runConfig.vmArgs += " " + vmArg;
 		}
 
-		// Other mandatory properties
-		if (client) {
-			runConfig.vmArgs += getOSClientJVMArgs();
-		}
-
-		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(mode, extension, client);
+		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(mode, extension, defaultMain);
 
 		// Remove unnecessary leading/trailing whitespaces we might have generated
 		runConfig.programArgs = runConfig.programArgs.trim();
@@ -233,6 +248,7 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
 		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
 		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
+		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", programArgs.replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
 
@@ -247,7 +263,7 @@ public class RunConfig {
 		return "";
 	}
 
-	private static String getMainClass(String side, LoomGradleExtension extension, boolean client) {
+	private static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
 		JsonObject installerJson = extension.getInstallerJson();
 
 		if (installerJson != null && installerJson.has("mainClass")) {
@@ -273,13 +289,7 @@ public class RunConfig {
 			return "net.minecraft.launchwrapper.Launch";
 		}
 
-		if (!side.equals("client") && !side.equals("server")) {
-			// There exists only KnotClient or KnotServer. If we can't use the mode name to determine this class, fall
-			// back on the 'client' property
-			side = client ? "client" : "server";
-		}
-
-		return "net.fabricmc.loader.launch.knot.Knot" + side.substring(0, 1).toUpperCase(Locale.ROOT) + side.substring(1).toLowerCase(Locale.ROOT);
+		return defaultMainClass;
 	}
 
 	private static String encodeEscaped(String s) {

@@ -62,6 +62,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependen
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
 public class LoomGradleExtension {
+	@Deprecated // Configured in run configurations now
 	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;
@@ -123,7 +124,8 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
-		this.runs = project.container(RunConfigSettings.class, RunConfigSettings::new);
+		this.runs = project.container(RunConfigSettings.class,
+				baseName -> new RunConfigSettings(project, baseName));
 	}
 
 	/**

@@ -84,8 +84,8 @@ public final class LoomTasks {
 
 	private static void registerRunTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		extension.getRuns().create("client");
-		extension.getRuns().create("server", settings -> settings.programArg("nogui"));
+		extension.getRuns().create("client", RunConfigSettings::configureClient);
+		extension.getRuns().create("server", RunConfigSettings::configureServer);
 
 		project.afterEvaluate(p -> {
 			for (RunConfigSettings config : extension.getRuns()) {

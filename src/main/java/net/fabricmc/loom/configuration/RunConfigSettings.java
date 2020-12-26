@@ -36,7 +36,11 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-public class RunConfigSettings implements Named {
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.OperatingSystem;
+
+public final class RunConfigSettings implements Named {
 	/**
 	 * Arguments for the JVM, such as system properties.
 	 */
@@ -65,19 +69,47 @@ public class RunConfigSettings implements Named {
 	private Boolean client;
 
 	/**
+	 * The default main class of the run configuration.
+	 *
+	 * <p>This can be overwritten in {@code fabric_installer.[method].json}. Note that this <em>doesn't</em> take
+	 * priority over the main class specified in the Fabric installer configuration.
+	 */
+	private String defaultMainClass;
+
+	/**
 	 * The source set getter, which obtains the source set from the given project.
 	 */
 	private Function<Project, SourceSet> source;
+
+	/**
+	 * The run directory for this configuration, relative to the root project directory.
+	 */
+	private String runDir;
 
 	/**
 	 * The base name of the run configuration, which is the name it is created with, i.e. 'client'
 	 */
 	private final String baseName;
 
-	public RunConfigSettings(String baseName) {
+	private final Project project;
+	private final LoomGradleExtension extension;
+
+	public RunConfigSettings(Project project, String baseName) {
 		this.baseName = baseName;
-		setMode(baseName);
+		this.project = project;
+		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
+		mode(baseName);
 		source("main");
+		runDir("run");
+	}
+
+	public Project getProject() {
+		return project;
+	}
+
+	public LoomGradleExtension getExtension() {
+		return extension;
 	}
 
 	@Override
@@ -109,14 +141,20 @@ public class RunConfigSettings implements Named {
 		this.name = name;
 	}
 
-	public boolean isClient() {
-		String m = mode != null ? mode : baseName;
-		return client != null ? client // Do not confuse users: detect client mode unless client mode is explicitly defined
-				: m.toLowerCase().contains("client");
+	public String getDefaultMainClass() {
+		return defaultMainClass;
 	}
 
-	public void setClient(Boolean client) {
-		this.client = client;
+	public void setDefaultMainClass(String defaultMainClass) {
+		this.defaultMainClass = defaultMainClass;
+	}
+
+	public String getRunDir() {
+		return runDir;
+	}
+
+	public void setRunDir(String runDir) {
+		this.runDir = runDir;
 	}
 
 	public SourceSet getSource(Project proj) {
@@ -140,12 +178,12 @@ public class RunConfigSettings implements Named {
 		setConfigName(name);
 	}
 
-	public void client(boolean client) {
-		setClient(client);
+	public void defaultMainClass(String cls) {
+		setDefaultMainClass(cls);
 	}
 
-	public void server(boolean server) {
-		setClient(!server);
+	public void runDir(String dir) {
+		setRunDir(dir);
 	}
 
 	public void vmArg(String arg) {
@@ -193,5 +231,47 @@ public class RunConfigSettings implements Named {
 			JavaPluginConvention conv = proj.getConvention().getPlugin(JavaPluginConvention.class);
 			return conv.getSourceSets().getByName(source);
 		});
+	}
+
+	/**
+	 * Add the {@code -XstartOnFirstThread} JVM argument when on OSX
+	 */
+	public void startFirstThread() {
+		if (OperatingSystem.getOS().equalsIgnoreCase("osx")) {
+			vmArg("-XstartOnFirstThread");
+		}
+	}
+
+	/**
+	 * Removes the {@code nogui} argument for the server configuration. By default {@code nogui} is specified, this is
+	 * a convenient way to remove it if wanted.
+	 */
+	public void serverWithGui() {
+		programArgs.remove("nogui");
+	}
+
+	/**
+	 * Copies settings from another run configuration.
+	 */
+	public void inherit(RunConfigSettings parent) {
+		vmArgs.addAll(0, parent.vmArgs);
+		programArgs.addAll(0, parent.programArgs);
+
+		mode = parent.mode;
+		name = parent.name;
+		defaultMainClass = parent.defaultMainClass;
+		source = parent.source;
+	}
+
+	public static void configureClient(RunConfigSettings settings) {
+		settings.startFirstThread();
+		settings.mode("client");
+		settings.defaultMainClass(Constants.Knot.KNOT_CLIENT);
+	}
+
+	public static void configureServer(RunConfigSettings settings) {
+		settings.programArg("nogui");
+		settings.mode("server");
+		settings.defaultMainClass(Constants.Knot.KNOT_SERVER);
 	}
 }

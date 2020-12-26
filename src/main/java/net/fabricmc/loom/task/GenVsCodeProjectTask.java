@@ -97,7 +97,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		public String type = "java";
 		public String name;
 		public String request = "launch";
-		public String cwd = "${workspaceFolder}/run";
+		public String cwd;
 		public String console = "internalConsole";
 		public boolean stopOnEntry = false;
 		public String mainClass;
@@ -109,6 +109,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			this.mainClass = runConfig.mainClass;
 			this.vmArgs = runConfig.vmArgs;
 			this.args = runConfig.programArgs;
+			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
 		}
 	}
 }

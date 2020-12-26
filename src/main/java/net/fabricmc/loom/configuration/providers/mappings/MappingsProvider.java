@@ -97,13 +97,15 @@ public class MappingsProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
-		getProject().getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
+		getProject().getLogger().info(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
 
 		this.mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
 		this.minecraftVersion = minecraftProvider.getMinecraftVersion();
+
+		boolean isV2;
 
 		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
 		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
@@ -114,9 +116,13 @@ public class MappingsProvider extends DependencyProvider {
 			if (!yarnMinecraftVersion.equalsIgnoreCase(minecraftVersion)) {
 				throw new RuntimeException(String.format("Minecraft Version (%s) does not match yarn's minecraft version (%s)", minecraftVersion, yarnMinecraftVersion));
 			}
+
+			// We can save reading the zip file + header by checking the file name
+			isV2 = mappingsJar.getName().endsWith("-v2.jar");
+		} else {
+			isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
 		}
 
-		boolean isV2 = doesJarContainV2Mappings(mappingsJar.toPath());
 		this.mappingsVersion = version + (isV2 ? "-v2" : "");
 
 		initFiles();

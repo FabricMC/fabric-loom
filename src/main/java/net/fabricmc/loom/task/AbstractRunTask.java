@@ -45,9 +45,6 @@ public abstract class AbstractRunTask extends JavaExec {
 		super();
 		setGroup("fabric");
 		this.configProvider = config;
-
-		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
-		classpath(this.getProject().getExtensions().getByType(LoomGradleExtension.class).getUnmappedModCollection());
 	}
 
 	@Override
@@ -55,6 +52,9 @@ public abstract class AbstractRunTask extends JavaExec {
 		if (config == null) {
 			config = configProvider.apply(getProject());
 		}
+
+		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
+		classpath(this.getProject().getExtensions().getByType(LoomGradleExtension.class).getUnmappedModCollection());
 
 		List<String> argsSplit = new ArrayList<>();
 		String[] args = config.programArgs.split(" ");

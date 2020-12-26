@@ -41,8 +41,6 @@ import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
@@ -56,6 +54,7 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
@@ -67,8 +66,6 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
-	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
 	public static void processMods(Project project, List<ModDependencyInfo> processList) throws IOException {
 		if (processList.stream().noneMatch(ModDependencyInfo::requiresRemapping)) {
 			return;
@@ -104,9 +101,9 @@ public class ModProcessor {
 		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = GSON.fromJson(input, JsonObject.class);
+				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
 				json.remove("jars");
-				return GSON.toJson(json);
+				return LoomGradlePlugin.GSON.toJson(json);
 			}
 		}))});
 	}
@@ -236,7 +233,7 @@ public class ModProcessor {
 				}
 			}
 
-			return GSON.fromJson(jsonStr, JsonObject.class);
+			return LoomGradlePlugin.GSON.fromJson(jsonStr, JsonObject.class);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

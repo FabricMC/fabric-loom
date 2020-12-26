@@ -192,7 +192,7 @@ public class DownloadUtil {
 	 * @param bytes The number of bytes
 	 * @return The given number of bytes formatted to kilobytes, megabytes or gigabytes if appropriate
 	 */
-	private static String toNiceSize(long bytes) {
+	public static String toNiceSize(long bytes) {
 		if (bytes < 1024) {
 			return bytes + " B";
 		} else if (bytes < 1024 * 1024) {

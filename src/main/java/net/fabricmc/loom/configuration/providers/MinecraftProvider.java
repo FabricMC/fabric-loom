@@ -31,22 +31,24 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftLibraryProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.StaticPathWatcher;
+import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProvider extends DependencyProvider {
@@ -59,8 +61,7 @@ public class MinecraftProvider extends DependencyProvider {
 	private File minecraftClientJar;
 	private File minecraftServerJar;
 	private File minecraftMergedJar;
-
-	Gson gson = new Gson();
+	private File versionManifestJson;
 
 	public MinecraftProvider(Project project) {
 		super(project);
@@ -77,7 +78,7 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson(offline);
 
 		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = gson.fromJson(reader, MinecraftVersionInfo.class);
+			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionInfo.class);
 		}
 
 		// Add Loom as an annotation processor
@@ -117,29 +118,30 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftClientJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
 		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
 		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
+		versionManifestJson = new File(getExtension().getUserCache(), "version_manifest.json");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
-		File manifests = new File(getExtension().getUserCache(), "version_manifest.json");
-
-		if (getExtension().isShareCaches() && !getExtension().isRootProject() && manifests.exists() && !isRefreshDeps()) {
+		if (getExtension().isShareCaches() && !getExtension().isRootProject() && versionManifestJson.exists() && !isRefreshDeps()) {
 			return;
 		}
 
-		if (offline) {
-			if (manifests.exists()) {
+		if (!offline && !isRefreshDeps() && hasRecentValidManifest()) {
+			// We have a recent valid manifest file, so do nothing
+		} else if (offline) {
+			if (versionManifestJson.exists()) {
 				// If there is the manifests already we'll presume that's good enough
 				getProject().getLogger().debug("Found version manifests, presuming up-to-date");
 			} else {
 				// If we don't have the manifests then there's nothing more we can do
-				throw new GradleException("Version manifests not found at " + manifests.getAbsolutePath());
+				throw new GradleException("Version manifests not found at " + versionManifestJson.getAbsolutePath());
 			}
 		} else {
 			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL(Constants.VERSION_MANIFESTS), manifests, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(Constants.VERSION_MANIFESTS), versionManifestJson, getProject().getLogger());
 		}
 
-		String versionManifest = Files.asCharSource(manifests, StandardCharsets.UTF_8).read();
+		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();
 		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
 
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
@@ -166,9 +168,18 @@ public class MinecraftProvider extends DependencyProvider {
 					throw new GradleException("Minecraft " + minecraftVersion + " manifest not found at " + minecraftJson.getAbsolutePath());
 				}
 			} else {
-				if (StaticPathWatcher.INSTANCE.hasFileChanged(minecraftJson.toPath()) || isRefreshDeps()) {
-					getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
-					DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), minecraftJson, getProject().getLogger());
+				getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
+
+				String url = optionalVersion.get().url;
+				// Find the sha1 of the json from the url, return true if it matches the local json
+				Pattern sha1Pattern = Pattern.compile("\\b[0-9a-f]{5,40}\\b");
+				Matcher matcher = sha1Pattern.matcher(url);
+
+				if (matcher.find()) {
+					HashedDownloadUtil.downloadIfInvalid(new URL(url), minecraftJson, matcher.group(), getProject().getLogger(), true);
+				} else {
+					// Use the etag if no hash found from url
+					DownloadUtil.downloadIfChanged(new URL(url), minecraftJson, getProject().getLogger());
 				}
 			}
 		} else {
@@ -176,13 +187,37 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 	}
 
+	private boolean hasRecentValidManifest() throws IOException {
+		if (getExtension().customManifest != null) {
+			return false;
+		}
+
+		if (!versionManifestJson.exists() || !minecraftJson.exists()) {
+			return false;
+		}
+
+		if (versionManifestJson.lastModified() > System.currentTimeMillis() - 24 * 3_600_000) {
+			// Version manifest hasn't been modified in 24 hours, time to get a new one.
+			return false;
+		}
+
+		ManifestVersion manifest = new GsonBuilder().create().fromJson(Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read(), ManifestVersion.class);
+		Optional<ManifestVersion.Versions> version = manifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+
+		// fail if the expected mc version was not found, will download the file again.
+		return version.isPresent();
+	}
+
 	private void downloadJars(Logger logger) throws IOException {
 		if (getExtension().isShareCaches() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
 			return;
 		}
 
-		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), minecraftClientJar, logger);
-		DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), minecraftServerJar, logger);
+		MinecraftVersionInfo.Downloads client = versionInfo.downloads.get("client");
+		MinecraftVersionInfo.Downloads server = versionInfo.downloads.get("server");
+
+		HashedDownloadUtil.downloadIfInvalid(new URL(client.url), minecraftClientJar, client.sha1, logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(server.url), minecraftServerJar, server.sha1, logger, false);
 	}
 
 	private void mergeJars(Logger logger) throws IOException {

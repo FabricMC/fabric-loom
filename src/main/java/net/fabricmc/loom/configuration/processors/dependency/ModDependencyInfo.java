@@ -37,7 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.artifacts.Configuration;
 
-import net.fabricmc.loom.configuration.mods.ModProcessor;
+import net.fabricmc.loom.LoomGradlePlugin;
 
 public class ModDependencyInfo {
 	private final String group;
@@ -45,20 +45,18 @@ public class ModDependencyInfo {
 	public final String version;
 	public final String classifier;
 	public final File inputFile;
-	public final File sourcesFile;
 	public final Configuration targetConfig;
 
 	public final RemapData remapData;
 
 	private boolean forceRemap = false;
 
-	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, File sourcesFile, Configuration targetConfig, RemapData remapData) {
+	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
 		this.classifier = classifier;
 		this.inputFile = inputFile;
-		this.sourcesFile = sourcesFile;
 		this.targetConfig = targetConfig;
 		this.remapData = remapData;
 	}
@@ -149,7 +147,7 @@ public class ModDependencyInfo {
 			}
 
 			try (InputStream inputStream = jarFile.getInputStream(modJsonEntry)) {
-				JsonObject json = ModProcessor.GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
+				JsonObject json = LoomGradlePlugin.GSON.fromJson(new InputStreamReader(inputStream), JsonObject.class);
 
 				if (!json.has("accessWidener")) {
 					return null;

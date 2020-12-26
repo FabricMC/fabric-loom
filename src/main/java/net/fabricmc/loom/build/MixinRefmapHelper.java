@@ -32,16 +32,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-public final class MixinRefmapHelper {
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+import net.fabricmc.loom.LoomGradlePlugin;
 
+public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
 
 	public static boolean addRefmapName(String filename, String mixinVersion, Path outputPath) {
@@ -52,7 +50,7 @@ public final class MixinRefmapHelper {
 			return ZipUtil.transformEntries(output, mixinFilenames.stream().map((f) -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
 				@Override
 				protected String transform(ZipEntry zipEntry, String input) throws IOException {
-					JsonObject json = GSON.fromJson(input, JsonObject.class);
+					JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
 
 					if (!json.has("refmap")) {
 						json.addProperty("refmap", filename);
@@ -62,7 +60,7 @@ public final class MixinRefmapHelper {
 						json.addProperty("minVersion", mixinVersion);
 					}
 
-					return GSON.toJson(json);
+					return LoomGradlePlugin.GSON.toJson(json);
 				}
 			})).toArray(ZipEntryTransformerEntry[]::new));
 		} else {
@@ -78,7 +76,7 @@ public final class MixinRefmapHelper {
 			if (!entry.isDirectory() && entry.getName().endsWith(".json") && !entry.getName().contains("/") && !entry.getName().contains("\\")) {
 				// JSON file in root directory
 				try (InputStreamReader inputStreamReader = new InputStreamReader(stream)) {
-					JsonObject json = GSON.fromJson(inputStreamReader, JsonObject.class);
+					JsonObject json = LoomGradlePlugin.GSON.fromJson(inputStreamReader, JsonObject.class);
 
 					if (json != null) {
 						boolean hasMixins = json.has("mixins") && json.get("mixins").isJsonArray();

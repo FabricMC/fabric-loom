@@ -235,10 +235,8 @@ public class LoomGradleExtension {
 	}
 
 	public File getNativesDirectory() {
-		Object customNativesDir = project.getProperties().get("fabric.loom.natives.dir");
-
-		if (customNativesDir != null) {
-			return new File((String) customNativesDir);
+		if (project.hasProperty("fabric.loom.natives.dir")) {
+			return new File((String) project.property("fabric.loom.natives.dir"));
 		}
 
 		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().getMinecraftVersion());

@@ -76,7 +76,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, inMapFile.getCanonicalPath());
 					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, extension.getNextMixinMappings().getCanonicalPath());
 					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, extension));
-					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, extension.isForge() ? "searge" : "named:intermediary");
+					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:intermediary");
 				}};
 
 			project.getLogger().debug("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);

@@ -27,12 +27,21 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Reader;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.fabricmc.loom.util.*;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
@@ -50,6 +59,7 @@ import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
@@ -146,6 +156,28 @@ public class RemapJarTask extends Jar {
 
 		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), output)) {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
+		}
+		
+		if (extension.isForge()) {
+			try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
+				Path refmapPath = fs.getPath(extension.getRefmapName());
+				
+				if (Files.exists(refmapPath)) {
+					try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
+						JsonObject refmapElement = new JsonParser().parse(refmapReader).getAsJsonObject().deepCopy();
+						Files.delete(refmapPath);
+						if (refmapElement.has("data")) {
+							JsonObject data = refmapElement.get("data").getAsJsonObject();
+							
+							if (data.has("named:intermediary")) {
+								data.add("searge", data.get("named:intermediary").deepCopy());
+								data.remove("named:intermediary");
+							}
+						}
+						Files.write(refmapPath, new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create().toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
+					}
+				}
+			}
 		}
 
 		if (getAddNestedDependencies().getOrElse(false)) {

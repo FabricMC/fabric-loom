@@ -52,6 +52,7 @@ import net.fabricmc.loom.configuration.processors.dependency.RemapData;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 
+@SuppressWarnings("UnstableApiUsage")
 public class ModCompileRemapper {
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		Logger logger = project.getLogger();
@@ -82,9 +83,7 @@ public class ModCompileRemapper {
 					continue;
 				}
 
-				File sources = findSources(dependencies, artifact);
-
-				ModDependencyInfo info = new ModDependencyInfo(group, name, version, classifierSuffix, artifact.getFile(), sources, remappedConfig, remapData);
+				ModDependencyInfo info = new ModDependencyInfo(group, name, version, classifierSuffix, artifact.getFile(), remappedConfig, remapData);
 
 				if (refreshDeps) {
 					info.forceRemap();
@@ -95,8 +94,14 @@ public class ModCompileRemapper {
 				String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
 				project.getLogger().info(":providing " + remappedLog);
 
-				if (sources != null) {
-					scheduleSourcesRemapping(project, sourceRemapper, info.sourcesFile, info.getRemappedNotation(), info.getRemappedOutput(), modStore);
+				File remappedSources = new File(info.getRemappedOutput().getAbsolutePath().replace(".jar", "-sources.jar"));
+
+				if (!remappedSources.exists() || refreshDeps) {
+					File sources = findSources(dependencies, artifact);
+
+					if (sources != null) {
+						scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), info.getRemappedOutput(), modStore);
+					}
 				}
 			}
 
@@ -145,8 +150,8 @@ public class ModCompileRemapper {
 	}
 
 	public static File findSources(DependencyHandler dependencies, ResolvedArtifact artifact) {
-		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()//
-				.forComponents(artifact.getId().getComponentIdentifier())//
+		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()
+				.forComponents(artifact.getId().getComponentIdentifier())
 				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
 		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {

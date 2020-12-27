@@ -36,8 +36,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
@@ -58,12 +56,11 @@ import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public class NestedJars {
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
 	public static boolean addNestedJars(Project project, Path modJarPath) {
 		List<File> containedJars = getContainedJars(project);
 
@@ -78,7 +75,7 @@ public class NestedJars {
 		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = GSON.fromJson(input, JsonObject.class);
+				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
 				JsonArray nestedJars = json.getAsJsonArray("jars");
 
 				if (nestedJars == null || !json.has("jars")) {
@@ -93,7 +90,7 @@ public class NestedJars {
 
 				json.add("jars", nestedJars);
 
-				return GSON.toJson(json);
+				return LoomGradlePlugin.GSON.toJson(json);
 			}
 		})));
 	}
@@ -229,7 +226,7 @@ public class NestedJars {
 		custom.addProperty("fabric-loom:generated", true);
 		jsonObject.add("custom", custom);
 
-		return GSON.toJson(jsonObject);
+		return LoomGradlePlugin.GSON.toJson(jsonObject);
 	}
 
 	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {

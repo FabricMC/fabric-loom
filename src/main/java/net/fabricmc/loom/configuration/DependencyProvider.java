@@ -100,6 +100,8 @@ public abstract class DependencyProvider {
 		final Dependency dependency;
 		final Configuration sourceConfiguration;
 
+		private String resolvedVersion = null;
+
 		public static DependencyInfo create(Project project, Dependency dependency, Configuration sourceConfiguration) {
 			if (dependency instanceof SelfResolvingDependency) {
 				return new FileDependencyInfo(project, (SelfResolvingDependency) dependency, sourceConfiguration);
@@ -119,13 +121,19 @@ public abstract class DependencyProvider {
 		}
 
 		public String getResolvedVersion() {
+			if (resolvedVersion != null) {
+				return resolvedVersion;
+			}
+
 			for (ResolvedDependency rd : sourceConfiguration.getResolvedConfiguration().getFirstLevelModuleDependencies()) {
 				if (rd.getModuleGroup().equals(dependency.getGroup()) && rd.getModuleName().equals(dependency.getName())) {
-					return rd.getModuleVersion();
+					resolvedVersion = rd.getModuleVersion();
+					return resolvedVersion;
 				}
 			}
 
-			return dependency.getVersion();
+			resolvedVersion = dependency.getVersion();
+			return resolvedVersion;
 		}
 
 		public Configuration getSourceConfiguration() {

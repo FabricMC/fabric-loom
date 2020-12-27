@@ -25,8 +25,6 @@
 package net.fabricmc.loom.configuration;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -159,7 +157,6 @@ public final class CompileConfiguration {
 			});
 
 			project1.getRepositories().mavenCentral();
-			project1.getRepositories().jcenter();
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -199,18 +196,11 @@ public final class CompileConfiguration {
 				remapJarTask.dependsOn(jarTask);
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
-				Map<Project, Set<Task>> taskMap = project.getAllTasks(true);
-
-				for (Map.Entry<Project, Set<Task>> entry : taskMap.entrySet()) {
-					Set<Task> taskSet = entry.getValue();
-
-					for (Task task : taskSet) {
-						if (task instanceof RemapJarTask && ((RemapJarTask) task).getAddNestedDependencies().getOrElse(false)) {
-							//Run all the sub project remap jars tasks before the root projects jar, this is to allow us to include projects
-							NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
-						}
+				project.getTasks().withType(RemapJarTask.class).forEach(task -> {
+					if (task.getAddNestedDependencies().getOrElse(false)) {
+						NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
 					}
-				}
+				});
 
 				SourceRemapper remapper = null;
 				Task parentTask = project1.getTasks().getByName("build");

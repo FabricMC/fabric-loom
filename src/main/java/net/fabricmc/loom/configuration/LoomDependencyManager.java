@@ -87,7 +87,7 @@ public class LoomDependencyManager {
 
 		MappingsProvider mappingsProvider = null;
 
-		project.getLogger().lifecycle(":setting up loom dependencies");
+		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Map<String, ProviderList> providerListMap = new HashMap<>();
 		List<ProviderList> targetProviders = new ArrayList<>();

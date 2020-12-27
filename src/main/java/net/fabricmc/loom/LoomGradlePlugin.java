@@ -25,6 +25,8 @@
 package net.fabricmc.loom;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
@@ -38,6 +40,7 @@ import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements Plugin<Project> {
 	public static boolean refreshDeps;
+	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	@Override
 	public void apply(Project project) {

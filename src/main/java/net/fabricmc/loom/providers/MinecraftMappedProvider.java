@@ -24,11 +24,20 @@
 
 package net.fabricmc.loom.providers;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import com.google.common.collect.ImmutableMap;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DependencyProvider;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.srg.AtRemapper;
+import net.fabricmc.loom.util.srg.CoreModClassRemapper;
+import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import org.gradle.api.Project;
+import org.zeroturnaround.zip.ZipUtil;
+
+import java.io.*;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -41,19 +50,6 @@ import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import com.google.common.collect.ImmutableMap;
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.srg.AtRemapper;
-import net.fabricmc.loom.util.srg.CoreModClassRemapper;
-import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.NonClassCopyMode;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.DependencyProvider;
-
 public class MinecraftMappedProvider extends DependencyProvider {
 	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
 			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
@@ -64,6 +60,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	private File inputJar;
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
+	private File minecraftSrgJar;
 
 	private MinecraftProvider minecraftProvider;
 
@@ -83,7 +80,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 		boolean isForgeAtDirty = getExtension().isForge() && getExtension().getMappingsProvider().patchedProvider.isAtDirty();
 
-		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || isRefreshDeps() || isForgeAtDirty) {
+		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || (getExtension().isForge() && !getSrgJar().exists()) || isRefreshDeps() || isForgeAtDirty) {
 			if (minecraftMappedJar.exists()) {
 				minecraftMappedJar.delete();
 			}
@@ -93,6 +90,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			if (minecraftIntermediaryJar.exists()) {
 				minecraftIntermediaryJar.delete();
 			}
+			
+			if (getExtension().isForge() && minecraftSrgJar.exists()) {
+				minecraftSrgJar.delete();
+			}
 
 			try {
 				mapMinecraftJar();
@@ -100,6 +101,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				// Cleanup some some things that may be in a bad state now
 				minecraftMappedJar.delete();
 				minecraftIntermediaryJar.delete();
+				if (getExtension().isForge()) {
+					minecraftSrgJar.delete();
+				}
 				getExtension().getMappingsProvider().cleanFiles();
 				throw new RuntimeException("Failed to remap minecraft", t);
 			}
@@ -120,9 +124,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		Path input = inputJar.toPath();
 		Path outputMapped = minecraftMappedJar.toPath();
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
+		Path outputSrg = minecraftSrgJar == null ? null : minecraftSrgJar.toPath();
 
-		for (String toM : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+		for (String toM : (getExtension().isForge() ? Arrays.asList("named", "intermediary", "srg") : Arrays.asList("named", "intermediary"))) {
+			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
@@ -144,7 +149,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				remapper.finish();
 			}
 
-			if (getExtension().isForge()) {
+			if (getExtension().isForge() && !"srg".equals(toM)) {
 				getProject().getLogger().lifecycle(":running forge finalising tasks");
 
 				// TODO: Relocate this to its own class
@@ -183,7 +188,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
+				.withMappings(TinyRemapperMappingsHelper.create(getExtension().isForge() ? getExtension().getMappingsProvider().getMappingsWithSrg() : getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true);
 
@@ -213,6 +218,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
+		minecraftSrgJar = !getExtension().isForge() ? null : new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("srg") + ".jar");
 		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
 		inputJar = getExtension().isForge() ? mappingsProvider.patchedProvider.getMergedJar() : minecraftProvider.getMergedJar();
 	}
@@ -231,6 +237,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public File getIntermediaryJar() {
 		return minecraftIntermediaryJar;
+	}
+	
+	public File getSrgJar() {
+		return minecraftSrgJar;
 	}
 
 	public File getMappedJar() {

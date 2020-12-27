@@ -24,21 +24,19 @@
 
 package net.fabricmc.loom.util.srg;
 
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.collect.ImmutableMap;
-
 import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.TinyTree;
 import org.apache.commons.lang3.StringUtils;
 import org.gradle.api.logging.Logger;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
 
 /**
  * Remaps AT classes from SRG to Yarn.
@@ -47,21 +45,20 @@ import org.gradle.api.logging.Logger;
  */
 public final class AtRemapper {
 	public static void remap(Logger logger, Path jar, TinyTree mappings) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + jar.toUri()), ImmutableMap.of("create", false))) {
-			Path atPath = fs.getPath("META-INF", "accesstransformer.cfg");
-
-			if (Files.exists(atPath)) {
-				List<String> lines = Files.readAllLines(atPath);
-				List<String> output = new ArrayList<>(lines.size());
-
-				for (int i = 0; i < lines.size(); i++) {
-					String line = lines.get(i).trim();
-
+		ZipUtil.transformEntries(jar.toFile(), new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("META-INF/accesstransformer.cfg", new StringZipEntryTransformer() {
+			@Override
+			protected String transform(ZipEntry zipEntry, String input) {
+				String[] lines = input.split("\n");
+				List<String> output = new ArrayList<>(lines.length);
+				
+				for (int i = 0; i < lines.length; i++) {
+					String line = lines[i].trim();
+					
 					if (line.startsWith("#") || StringUtils.isBlank(line)) {
 						output.add(i, line);
 						continue;
 					}
-
+					
 					String[] parts = line.split(" ");
 					if (parts.length < 2) {
 						logger.warn("Invalid AT Line: " + line);
@@ -73,15 +70,12 @@ public final class AtRemapper {
 							mappings.getClasses(),
 							def -> def.getName("srg").equals(name)
 					).map(def -> def.getName("named")).orElse(name).replace('/', '.');
-
+					
 					output.add(i, String.join(" ", parts));
 				}
-
-				if (!lines.equals(output)) {
-					Files.delete(atPath);
-					Files.write(atPath, output);
-				}
+				
+				return String.join("\n", output);
 			}
-		}
+		}))});
 	}
 }

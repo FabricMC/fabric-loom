@@ -20,6 +20,8 @@ def baseVersion = '0.5'
 def build = "release #${System.getenv("GITHUB_RUN_NUMBER") == null ? "custom" : System.getenv("GITHUB_RUN_NUMBER")}"
 version = baseVersion + "." + (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
 
+logger.lifecycle(":building plugin v${version}")
+
 configurations {
 	forgeInjectShadow
 	forgeInjectCompileClasspath.extendsFrom(forgeInjectShadow)

@@ -81,7 +81,10 @@ public class LaunchProvider extends DependencyProvider {
 					.argument("client", "fmluserdevclient")
 
 					.argument("server", "--launchTarget")
-					.argument("server", "fmluserdevserver");
+					.argument("server", "fmluserdevserver")
+					
+					.property("mixin.env.remapRefMap", "true")
+					.property("net.minecraftforge.gradle.GradleStart.srg.srg-mcp", getExtension().getMappingsProvider().srgToNamedSrg.getAbsolutePath());
 
 			String mixinConfig = getExtension().mixinConfig;
 

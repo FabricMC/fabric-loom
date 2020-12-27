@@ -139,7 +139,7 @@ public class ModProcessor {
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		Path mc = mappedProvider.getIntermediaryJar().toPath();
+		Path mc = extension.isForge() ? mappedProvider.getSrgJar().toPath() : mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = mappedProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
 		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());

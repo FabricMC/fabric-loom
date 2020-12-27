@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
+import net.fabricmc.loom.util.srg.SrgNamedWriter;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -83,6 +84,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File mappingsMixinExport;
 	public Path tinyMappingsWithSrg;
 	public File mixinTinyMappingsWithSrg; // FORGE: The mixin mappings have srg names in intermediary.
+	public File srgToNamedSrg; // FORGE: srg to named in srg file format
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -152,6 +154,7 @@ public class MappingsProvider extends DependencyProvider {
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 		tinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny");
 		mixinTinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-mixin-srg.tiny").toFile();
+		srgToNamedSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg-named.srg").toFile();
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
@@ -171,6 +174,10 @@ public class MappingsProvider extends DependencyProvider {
 				lines.set(0, lines.get(0).replace("intermediary", "yraidemretni").replace("srg", "intermediary"));
 				Files.deleteIfExists(mixinTinyMappingsWithSrg.toPath());
 				Files.write(mixinTinyMappingsWithSrg.toPath(), lines);
+			}
+			
+			if (!srgToNamedSrg.exists() || isRefreshDeps()) {
+				SrgNamedWriter.writeTo(getProject().getLogger(), srgToNamedSrg.toPath(), getMappingsWithSrg());
 			}
 		}
 

@@ -1,6 +1,8 @@
 # Forgified Loom
 
-A fork of [Juuxel's Loom fork]("https://github.com/Juuxel/fabric-loom) that is a fork of [Fabric Loom](https://github.com/FabricMC/fabric-loom) that supports the Forge modding toolchain.
+Talk to us on [Discord](https://discord.gg/C2RdJDpRBP)!
+
+A fork of [Juuxel's Loom fork]("https://github.com/Juuxel/fabric-loom") that is a fork of [Fabric Loom](https://github.com/FabricMC/fabric-loom) that supports the Forge modding toolchain.
 
 Note that if ForgeGradle works fine for you, *use it*.
 This is not meant to be a complete replacement for ForgeGradle,
@@ -37,3 +39,6 @@ loom {
   in some places. 
 - The srg -> yarn remapper used for coremod class names is *really* simple,
   and might break with coremods that have multiple class names per line.
+
+## Known Issues
+- https://github.com/architectury/forgified-fabric-loom/issues

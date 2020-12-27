@@ -31,16 +31,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.jar.Attributes;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -206,6 +209,26 @@ public class ModProcessor {
 			if (extension.isForge()) {
 				AtRemapper.remap(project.getLogger(), info.getRemappedOutput().toPath(), mappings);
 				CoreModClassRemapper.remapJar(info.getRemappedOutput().toPath(), mappings, project.getLogger());
+				
+				if (ZipUtil.containsEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF")) {
+					ZipUtil.transformEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF", (in, zipEntry, out) -> {
+						Manifest manifest = new Manifest(in);
+						manifest.getEntries().clear();
+						out.putNextEntry(new ZipEntry(zipEntry.getName()));
+						manifest.write(out);
+						out.closeEntry();
+					});
+				}
+				
+				List<String> filesToRemove = new ArrayList<>();
+				ZipUtil.iterate(info.getRemappedOutput(), (in, zipEntry) -> {
+					if (zipEntry.getName().toLowerCase(Locale.ROOT).endsWith(".rsa") || zipEntry.getName().toLowerCase(Locale.ROOT).endsWith(".sf")) {
+						if (zipEntry.getName().startsWith("META-INF")) {
+							filesToRemove.add(zipEntry.getName());
+						}
+					}
+				});
+				ZipUtil.removeEntries(info.getRemappedOutput(), filesToRemove.toArray(new String[0]));
 			}
 		}
 	}

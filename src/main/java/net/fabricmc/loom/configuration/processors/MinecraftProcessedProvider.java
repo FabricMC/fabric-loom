@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -37,10 +38,15 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {
+	public static final String PROJECT_OBF_CLASSIFIER = "projectobf";
+	public static final String PROJECT_INT_CLASSIFIER = "projectintermediary";
 	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
 
+	private File projectObfJar;
+	private File projectIntJar;
 	private File projectMappedJar;
-
+	private boolean intInvalidated = false;
+	private boolean mappedInvalidated = false;
 	private final JarProcessorManager jarProcessorManager;
 
 	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
@@ -49,18 +55,70 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	}
 
 	@Override
-	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
-			getProject().getLogger().lifecycle(":processing mapped jar");
-			invalidateJars();
+	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		if (jarProcessorManager.hasStage(JarProcessor.Stage.OBF) &&
+				(jarProcessorManager.isInvalid(projectObfJar, JarProcessor.Stage.OBF) || isRefreshDeps())) {
+			System.out.println(jarProcessorManager.isInvalid(projectObfJar, JarProcessor.Stage.OBF));
+			getProject().getLogger().lifecycle(":processing obf jar");
+			invalidateJars(JarProcessor.Stage.OBF);
+			intInvalidated = true;
 
 			try {
-				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
+				FileUtils.copyFile(minecraftProvider.getMergedJar(), projectObfJar);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to copy source jar", e);
+			}
+
+			jarProcessorManager.process(projectObfJar, JarProcessor.Stage.OBF);
+		}
+
+		if ((jarProcessorManager.hasStage(JarProcessor.Stage.INTERMEDIARY) || jarProcessorManager.hasStage(JarProcessor.Stage.OBF)) &&
+				(jarProcessorManager.isInvalid(projectIntJar, JarProcessor.Stage.INTERMEDIARY) || intInvalidated)) {
+			getProject().getLogger().lifecycle(":processing intermediary jar");
+			invalidateJars(JarProcessor.Stage.INTERMEDIARY);
+			intInvalidated = false;
+			mappedInvalidated = true;
+
+			try {
+				if (projectObfJar.exists()) {
+					this.mapMinecraftJar(projectObfJar.toPath(), projectIntJar.toPath(), "official", "intermediary");
+				} else {
+					FileUtils.copyFile(super.getIntermediaryJar(), projectIntJar);
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to copy source jar", e);
+			}
+
+			jarProcessorManager.process(projectIntJar, JarProcessor.Stage.INTERMEDIARY);
+		}
+
+		if (!mappedInvalidated) {
+			// if mapped isn't invalidated, then that means we're still using the normal jars, so we delegate to normal MinecraftMappedProvider
+			super.provide(dependency, postPopulationScheduler);
+		} else {
+			addDependencies(dependency, postPopulationScheduler);
+		}
+	}
+
+
+	@Override
+	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
+		if (jarProcessorManager.isInvalid(projectMappedJar, JarProcessor.Stage.MAPPED) || mappedInvalidated) {
+			getProject().getLogger().lifecycle(":processing mapped jar");
+			invalidateJars(JarProcessor.Stage.MAPPED);
+			mappedInvalidated = false;
+
+			try {
+				if (projectIntJar.exists()) {
+					this.mapMinecraftJar(projectIntJar.toPath(), projectMappedJar.toPath(), "intermediary", "named");
+				} else {
+					FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
+				}
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to copy source jar", e);
 			}
 
-			jarProcessorManager.process(projectMappedJar);
+			jarProcessorManager.process(projectMappedJar, JarProcessor.Stage.MAPPED);
 		}
 
 		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
@@ -69,25 +127,46 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
 	}
 
-	private void invalidateJars() {
-		File dir = getJarDirectory(getExtension().getUserCache(), PROJECT_MAPPED_CLASSIFIER);
+	private void invalidateJars(JarProcessor.Stage stage) {
+		File obfDir = getJarDirectory(getExtension().getUserCache(), PROJECT_OBF_CLASSIFIER);
+		File intDir = getJarDirectory(getExtension().getUserCache(), PROJECT_INT_CLASSIFIER);
+		File mappedDir = getJarDirectory(getExtension().getUserCache(), PROJECT_MAPPED_CLASSIFIER);
+		getProject().getLogger().warn("Invalidating project jars");
 
-		if (dir.exists()) {
-			getProject().getLogger().warn("Invalidating project jars");
-
-			try {
-				FileUtils.cleanDirectory(dir);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to invalidate jars, try stopping gradle daemon or closing the game", e);
+		try {
+			if (stage == JarProcessor.Stage.OBF) {
+				cleanDirectory(obfDir);
+				cleanDirectory(intDir);
+				cleanDirectory(mappedDir);
+			} else if (stage == JarProcessor.Stage.INTERMEDIARY) {
+				cleanDirectory(intDir);
+				cleanDirectory(mappedDir);
+			} else {
+				cleanDirectory(mappedDir);
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to invalidate jars, try stopping gradle daemon or closing the game", e);
+		}
+	}
+
+	private void cleanDirectory(File file) throws IOException {
+		if (file.exists()) {
+			FileUtils.cleanDirectory(projectObfJar);
 		}
 	}
 
 	@Override
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
+		projectObfJar = new File(getObfJarDirectory(PROJECT_OBF_CLASSIFIER), "minecraft-" + minecraftProvider.getMinecraftVersion() + "-projectobf" + ".jar");
+		projectIntJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_INT_CLASSIFIER),
+				"minecraft-" + getJarVersionString(PROJECT_INT_CLASSIFIER) + ".jar");
+		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER),
+				"minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+	}
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+	private File getObfJarDirectory(String classifier) {
+		return new File(getExtension().getProjectPersistentCache(), minecraftProvider.getMinecraftVersion() + "-" + classifier);
 	}
 
 	@Override

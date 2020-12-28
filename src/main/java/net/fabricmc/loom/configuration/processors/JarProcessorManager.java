@@ -42,17 +42,23 @@ public class JarProcessorManager {
 		return !jarProcessors.isEmpty();
 	}
 
-	public boolean isInvalid(File file) {
+	boolean hasStage(JarProcessor.Stage stage) {
+		return jarProcessors.stream().anyMatch(jarProcessor -> stage == jarProcessor.getStage());
+	}
+
+	public boolean isInvalid(File file, JarProcessor.Stage stage) {
 		if (!file.exists()) {
 			return true;
 		}
 
-		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+		return jarProcessors.stream().filter(jarProcessor -> jarProcessor.getStage() == stage).anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
 	}
 
-	public void process(File file) {
+	public void process(File file, JarProcessor.Stage stage) {
 		for (JarProcessor jarProcessor : jarProcessors) {
-			jarProcessor.process(file);
+			if (jarProcessor.getStage() == stage) {
+				jarProcessor.process(file);
+			}
 		}
 	}
 

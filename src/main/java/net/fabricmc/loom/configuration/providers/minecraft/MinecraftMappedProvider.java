@@ -52,7 +52,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
-	private MinecraftProvider minecraftProvider;
+	protected MinecraftProvider minecraftProvider;
 
 	public MinecraftMappedProvider(Project project) {
 		super(project);
@@ -80,7 +80,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			}
 
 			try {
-				mapMinecraftJar();
+				mapMinecraftJar(minecraftProvider.getMergedJar().toPath(), minecraftIntermediaryJar.toPath(), "official", "intermediary");
+				mapMinecraftJar(minecraftIntermediaryJar.toPath(), minecraftMappedJar.toPath(), "intermediary", "named");
 			} catch (Throwable t) {
 				// Cleanup some some things that may be in a bad state now
 				minecraftMappedJar.delete();
@@ -97,32 +98,22 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		addDependencies(dependency, postPopulationScheduler);
 	}
 
-	private void mapMinecraftJar() throws IOException {
-		String fromM = "official";
-
+	protected void mapMinecraftJar(Path input, Path output, String left, String right) throws IOException {
 		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
 
-		Path input = minecraftProvider.getMergedJar().toPath();
-		Path outputMapped = minecraftMappedJar.toPath();
-		Path outputIntermediary = minecraftIntermediaryJar.toPath();
+		getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + left + " -> " + right + ")");
 
-		for (String toM : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+		TinyRemapper remapper = getTinyRemapper(left, right);
 
-			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
-
-			TinyRemapper remapper = getTinyRemapper(fromM, toM);
-
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				outputConsumer.addNonClassFiles(input);
-				remapper.readClassPath(getRemapClasspath());
-				remapper.readInputs(input);
-				remapper.apply(outputConsumer);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
-			} finally {
-				remapper.finish();
-			}
+		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
+			outputConsumer.addNonClassFiles(input);
+			remapper.readClassPath(getRemapClasspath());
+			remapper.readInputs(input);
+			remapper.apply(outputConsumer);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
+		} finally {
+			remapper.finish();
 		}
 	}
 

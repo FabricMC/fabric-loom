@@ -24,11 +24,30 @@
 
 package net.fabricmc.loom.providers;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
+import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
+import net.fabricmc.loom.util.*;
+import net.fabricmc.loom.util.function.FsPathConsumer;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.minecraftforge.accesstransformer.TransformerProcessor;
+import net.minecraftforge.binarypatcher.ConsoleTool;
+import net.minecraftforge.gradle.mcp.util.MCPRuntime;
+import net.minecraftforge.gradle.mcp.util.MCPWrapper;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.output.NullOutputStream;
+import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -37,31 +56,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
-import net.minecraftforge.accesstransformer.TransformerProcessor;
-import net.minecraftforge.binarypatcher.ConsoleTool;
-import net.minecraftforge.gradle.mcp.util.MCPRuntime;
-import net.minecraftforge.gradle.mcp.util.MCPWrapper;
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.tasks.SourceSet;
-import org.jetbrains.annotations.Nullable;
-
-import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.DependencyProvider;
-import net.fabricmc.loom.util.JarUtil;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.function.FsPathConsumer;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
+import java.util.stream.Stream;
 
 public class MinecraftPatchedProvider extends DependencyProvider {
 	private File minecraftClientSrgJar;
@@ -80,29 +83,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		super(project);
 	}
 
-	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		initFiles();
-
-		if (atDirty || !minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists()) {
-			if (!minecraftClientSrgJar.exists() || !minecraftServerSrgJar.exists()) {
-				createSrgJars(getProject().getLogger());
-			}
-
-			if (atDirty || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
-				patchJars(getProject().getLogger());
-				injectForgeClasses(getProject().getLogger());
-			}
-
-			remapPatchedJars(getProject().getLogger());
-		}
-
-		if (atDirty || !minecraftMergedPatchedJar.exists()) {
-			mergeJars(getProject().getLogger());
-		}
-	}
-
-	private void initFiles() throws IOException {
+	public void initFiles() throws IOException {
 		projectAtHash = new File(getExtension().getProjectPersistentCache(), "at.sha256");
 
 		SourceSet main = getProject().getConvention().findPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
@@ -116,7 +97,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			}
 		}
 
-		if (!projectAtHash.exists()) {
+		if (isRefreshDeps() || !projectAtHash.exists()) {
 			writeAtHash();
 			atDirty = projectAt != null;
 		} else {
@@ -146,6 +127,52 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		minecraftClientPatchedSrgJar = new File(cache, "minecraft-" + minecraftVersion + "-client-srg" + jarSuffix + ".jar");
 		minecraftServerPatchedSrgJar = new File(cache, "minecraft-" + minecraftVersion + "-server-srg" + jarSuffix + ".jar");
 		minecraftMergedPatchedJar = new File(cache, "minecraft-" + minecraftVersion + "-merged" + jarSuffix + ".jar");
+		
+		if (isRefreshDeps()) {
+			cleanCache();
+		}
+
+		if (!minecraftClientSrgJar.exists() || !minecraftServerSrgJar.exists()) {
+			minecraftClientPatchedJar.delete();
+			minecraftServerPatchedJar.delete();
+		}
+	}
+	
+	public void cleanCache() {
+		for (File file : Arrays.asList(
+				projectAtHash,
+				minecraftClientSrgJar,
+				minecraftServerSrgJar,
+				minecraftClientPatchedSrgJar,
+				minecraftServerPatchedSrgJar,
+				minecraftClientPatchedJar,
+				minecraftServerPatchedJar,
+				minecraftMergedPatchedJar
+		)) {
+			file.delete();
+		}
+	}
+
+	@Override
+	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		initFiles();
+
+		if (atDirty || !minecraftClientPatchedJar.exists() || !minecraftServerPatchedJar.exists()) {
+			if (!minecraftClientSrgJar.exists() || !minecraftServerSrgJar.exists()) {
+				createSrgJars(getProject().getLogger());
+			}
+
+			if (atDirty || !minecraftClientPatchedSrgJar.exists() || !minecraftServerPatchedSrgJar.exists()) {
+				patchJars(getProject().getLogger());
+				injectForgeClasses(getProject().getLogger());
+			}
+
+			remapPatchedJars(getProject().getLogger());
+		}
+
+		if (atDirty || !minecraftMergedPatchedJar.exists()) {
+			mergeJars(getProject().getLogger());
+		}
 	}
 
 	private void writeAtHash() throws IOException {
@@ -171,14 +198,38 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		{
 			MCPRuntime runtime = wrapper.getRuntime(getProject(), "client");
 			File output = runtime.execute(logger, "rename");
-			Files.copy(output, minecraftClientSrgJar);
+			FileUtils.copyFile(output, minecraftClientSrgJar);
 		}
 
 		// Server
 		{
 			MCPRuntime runtime = wrapper.getRuntime(getProject(), "server");
 			File output = runtime.execute(logger, "rename");
-			Files.copy(output, minecraftServerSrgJar);
+			FileUtils.copyFile(output, minecraftServerSrgJar);
+		}
+	}
+	
+	private void fixParameterAnnotation(File jarFile) throws Exception {
+		getProject().getLogger().info(":fixing parameter annotations for " + jarFile.toString());
+		try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + jarFile.toURI()), ImmutableMap.of("create", false))) {
+			for (Path rootDir : fs.getRootDirectories()) {
+				for (Path file : (Iterable<? extends Path>) java.nio.file.Files.walk(rootDir)::iterator) {
+					if (!file.toString().endsWith(".class")) continue;
+					byte[] bytes = java.nio.file.Files.readAllBytes(file);
+					ClassReader reader = new ClassReader(bytes);
+					ClassNode cn = new ClassNode();
+					ClassVisitor visitor = new ParameterAnnotationFixer(cn, null);
+					reader.accept(visitor, 0);
+
+					ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+					cn.accept(writer);
+					byte[] out = writer.toByteArray();
+					if (!Arrays.equals(bytes, out)) {
+						java.nio.file.Files.delete(file);
+						java.nio.file.Files.write(file, out);
+					}
+				}
+			}
 		}
 	}
 
@@ -228,7 +279,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		}
 	}
 
-	private void remapPatchedJars(Logger logger) throws IOException {
+	private void remapPatchedJars(Logger logger) throws Exception {
 		boolean[] bools = { true, false };
 		Path[] libraries = getExtension()
 				.getMinecraftProvider()
@@ -238,31 +289,44 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 				.map(File::toPath)
 				.toArray(Path[]::new);
 
+		ExecutorService service = Executors.newFixedThreadPool(2);
+		List<Future<?>> futures = new LinkedList<>();
+		
 		for (boolean isClient : bools) {
-			logger.lifecycle(":remapping minecraft (TinyRemapper, " + (isClient ? "client" : "server") + ", srg -> official)");
+			futures.add(service.submit(() -> {
+				try {
+					logger.lifecycle(":remapping minecraft (TinyRemapper, " + (isClient ? "client" : "server") + ", srg -> official)");
 
-			TinyRemapper remapper = TinyRemapper.newRemapper()
-					.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappingsWithSrg(), "srg", "official", true))
-					.renameInvalidLocals(true)
-					.rebuildSourceFilenames(true)
-					.build();
+					TinyRemapper remapper = TinyRemapper.newRemapper()
+							.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappingsWithSrg(), "srg", "official", true))
+							.renameInvalidLocals(true)
+							.rebuildSourceFilenames(true)
+							.build();
 
-			Path input = (isClient ? minecraftClientPatchedSrgJar : minecraftServerPatchedSrgJar).toPath();
-			Path output = (isClient ? minecraftClientPatchedJar : minecraftServerPatchedJar).toPath();
+					Path input = (isClient ? minecraftClientPatchedSrgJar : minecraftServerPatchedSrgJar).toPath();
+					Path output = (isClient ? minecraftClientPatchedJar : minecraftServerPatchedJar).toPath();
 
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				outputConsumer.addNonClassFiles(input);
+					try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
+						outputConsumer.addNonClassFiles(input);
 
-				remapper.readClassPath(libraries);
-				remapper.readInputs(input);
-				remapper.apply(outputConsumer);
-			} finally {
-				remapper.finish();
-			}
+						remapper.readClassPath(libraries);
+						remapper.readInputs(input);
+						remapper.apply(outputConsumer);
+					} finally {
+						remapper.finish();
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}));
+		}
+
+		for (Future<?> future : futures) {
+			future.get();
 		}
 	}
 
-	private void patchJars(Logger logger) throws IOException {
+	private void patchJars(Logger logger) throws Exception {
 		logger.lifecycle(":patching jars");
 
 		PatchProvider patchProvider = getExtension().getPatchProvider();
@@ -272,19 +336,31 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		logger.lifecycle(":copying missing classes into patched jars");
 		copyMissingClasses(minecraftClientSrgJar, minecraftClientPatchedSrgJar);
 		copyMissingClasses(minecraftServerSrgJar, minecraftServerPatchedSrgJar);
+		
+		fixParameterAnnotation(minecraftClientPatchedSrgJar);
+		fixParameterAnnotation(minecraftServerPatchedSrgJar);
 	}
 
 	private void patchJars(File clean, File output, Path patches) throws IOException {
+		PrintStream previous = System.out;
+		try {
+			System.setOut(new PrintStream(new NullOutputStream()));
+		} catch (SecurityException ignored) {
+		}
 		ConsoleTool.main(new String[]{
 				"--clean", clean.getAbsolutePath(),
 				"--output", output.getAbsolutePath(),
 				"--apply", patches.toAbsolutePath().toString()
 		});
+		try {
+			System.setOut(previous);
+		} catch (SecurityException ignored) {
+		}
 	}
 
 	private void mergeJars(Logger logger) throws IOException {
 		// FIXME: Hack here: There are no server-only classes so we can just copy the client JAR.
-		Files.copy(minecraftClientPatchedJar, minecraftMergedPatchedJar);
+		FileUtils.copyFile(minecraftClientPatchedJar, minecraftMergedPatchedJar);
 
 		logger.lifecycle(":copying resources");
 

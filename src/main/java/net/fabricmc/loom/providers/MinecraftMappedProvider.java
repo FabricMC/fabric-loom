@@ -43,9 +43,10 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -116,7 +117,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		addDependencies(dependency, postPopulationScheduler);
 	}
 
-	private void mapMinecraftJar() throws IOException {
+	private void mapMinecraftJar() throws Exception {
 		String fromM = "official";
 
 		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
@@ -126,63 +127,76 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 		Path outputSrg = minecraftSrgJar == null ? null : minecraftSrgJar.toPath();
 
+		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
+		List<Future<?>> futures = new LinkedList<>();
+
 		for (String toM : (getExtension().isForge() ? Arrays.asList("named", "intermediary", "srg") : Arrays.asList("named", "intermediary"))) {
-			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
+			futures.add(executor.submit(() -> {
+				try {
+					Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
 
-			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+					getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-			TinyRemapper remapper = getTinyRemapper(fromM, toM);
+					TinyRemapper remapper = getTinyRemapper(fromM, toM);
 
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				if (getExtension().isForge()) {
-					outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
-				} else {
-					outputConsumer.addNonClassFiles(input);
-				}
-
-				remapper.readClassPath(getRemapClasspath());
-				remapper.readInputs(input);
-				remapper.apply(outputConsumer);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
-			} finally {
-				remapper.finish();
-			}
-
-			if (getExtension().isForge() && !"srg".equals(toM)) {
-				getProject().getLogger().lifecycle(":running forge finalising tasks");
-
-				// TODO: Relocate this to its own class
-				try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
-					Path manifestPath = fs.getPath("META-INF", "MANIFEST.MF");
-					Manifest minecraftManifest;
-					Manifest forgeManifest;
-
-					try (InputStream in = Files.newInputStream(manifestPath)) {
-						minecraftManifest = new Manifest(in);
-					}
-
-					try (InputStream in = new FileInputStream(getExtension().getForgeUniversalProvider().getForgeManifest())) {
-						forgeManifest = new Manifest(in);
-					}
-
-					for (Map.Entry<String, Attributes> forgeEntry : forgeManifest.getEntries().entrySet()) {
-						if (forgeEntry.getKey().endsWith("/")) {
-							minecraftManifest.getEntries().put(forgeEntry.getKey(), forgeEntry.getValue());
+					try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
+						if (getExtension().isForge()) {
+							outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
+						} else {
+							outputConsumer.addNonClassFiles(input);
 						}
+
+						remapper.readClassPath(getRemapClasspath());
+						remapper.readInputs(input);
+						remapper.apply(outputConsumer);
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
+					} finally {
+						remapper.finish();
 					}
 
-					Files.delete(manifestPath);
+					if (getExtension().isForge() && !"srg".equals(toM)) {
+						getProject().getLogger().info(":running forge finalising tasks");
 
-					try (OutputStream out = Files.newOutputStream(manifestPath)) {
-						minecraftManifest.write(out);
+						// TODO: Relocate this to its own class
+						try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
+							Path manifestPath = fs.getPath("META-INF", "MANIFEST.MF");
+							Manifest minecraftManifest;
+							Manifest forgeManifest;
+
+							try (InputStream in = Files.newInputStream(manifestPath)) {
+								minecraftManifest = new Manifest(in);
+							}
+
+							try (InputStream in = new FileInputStream(getExtension().getForgeUniversalProvider().getForgeManifest())) {
+								forgeManifest = new Manifest(in);
+							}
+
+							for (Map.Entry<String, Attributes> forgeEntry : forgeManifest.getEntries().entrySet()) {
+								if (forgeEntry.getKey().endsWith("/")) {
+									minecraftManifest.getEntries().put(forgeEntry.getKey(), forgeEntry.getValue());
+								}
+							}
+
+							Files.delete(manifestPath);
+
+							try (OutputStream out = Files.newOutputStream(manifestPath)) {
+								minecraftManifest.write(out);
+							}
+						}
+
+						TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
+						AtRemapper.remap(getProject().getLogger(), output, yarnWithSrg);
+						CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
 					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
+			}));
+		}
 
-				TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
-				AtRemapper.remap(getProject().getLogger(), output, yarnWithSrg);
-				CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
-			}
+		for (Future<?> future : futures) {
+			future.get();
 		}
 	}
 

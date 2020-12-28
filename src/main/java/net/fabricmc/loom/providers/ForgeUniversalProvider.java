@@ -27,7 +27,7 @@ package net.fabricmc.loom.providers;
 import java.io.File;
 import java.util.function.Consumer;
 
-import com.google.common.io.Files;
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.Constants;
@@ -49,7 +49,7 @@ public class ForgeUniversalProvider extends DependencyProvider {
 
 		if (!forge.exists() || isRefreshDeps()) {
 			File dep = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve Forge"));
-			Files.copy(dep, forge);
+			FileUtils.copyFile(dep, forge);
 		}
 
 		if (!forgeManifest.exists() || isRefreshDeps()) {

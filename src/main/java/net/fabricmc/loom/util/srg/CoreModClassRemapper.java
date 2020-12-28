@@ -58,7 +58,7 @@ public final class CoreModClassRemapper {
 			Path coremodsJsonPath = fs.getPath("META-INF", "coremods.json");
 
 			if (Files.notExists(coremodsJsonPath)) {
-				logger.lifecycle(":no coremods in " + jar.getFileName());
+				logger.info(":no coremods in " + jar.getFileName());
 				return;
 			}
 
@@ -73,7 +73,7 @@ public final class CoreModClassRemapper {
 				Path js = fs.getPath(file);
 
 				if (Files.exists(js)) {
-					logger.lifecycle(":remapping coremod '" + file + "'");
+					logger.info(":remapping coremod '" + file + "'");
 					remap(js, mappings);
 				} else {
 					logger.warn("Coremod '" + file + "' listed in coremods.json but not found");

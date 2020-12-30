@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
+import net.fabricmc.loom.providers.*;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -52,14 +53,6 @@ import org.gradle.api.plugins.BasePluginConvention;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.processors.JarProcessor;
 import net.fabricmc.loom.processors.JarProcessorManager;
-import net.fabricmc.loom.providers.ForgeProvider;
-import net.fabricmc.loom.providers.ForgeUniversalProvider;
-import net.fabricmc.loom.providers.ForgeUserdevProvider;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.MinecraftMappedProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.PatchProvider;
-import net.fabricmc.loom.providers.McpConfigProvider;
 import net.fabricmc.loom.util.function.LazyBool;
 import net.fabricmc.loom.util.LoomDependencyManager;
 import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
@@ -83,6 +76,8 @@ public class LoomGradleExtension {
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 	private final List<JarProcessor> jarProcessors = new ArrayList<>();
+	private boolean silentMojangMappingsLicense = false;
+	public Boolean generateSrgTiny = null;
 
 	// Not to be set in the build.gradle
 	private final Project project;
@@ -94,7 +89,6 @@ public class LoomGradleExtension {
 	private final LazyBool forge;
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 	private final List<String> tasksBeforeRun = Collections.synchronizedList(new ArrayList<>());
-	private boolean silentMojangMappingsLicense = false;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -397,6 +391,10 @@ public class LoomGradleExtension {
 	public McpConfigProvider getMcpConfigProvider() {
 		return getDependencyManager().getProvider(McpConfigProvider.class);
 	}
+	
+	public SrgProvider getSrgProvider() {
+		return getDependencyManager().getProvider(SrgProvider.class);
+	}
 
 	public ForgeUniversalProvider getForgeUniversalProvider() {
 		return getDependencyManager().getProvider(ForgeUniversalProvider.class);
@@ -428,7 +426,12 @@ public class LoomGradleExtension {
 
 	public String getRefmapName() {
 		if (refmapName == null || refmapName.isEmpty()) {
-			String defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+			String defaultRefmapName;
+			if (isRootProject()) {
+				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+			} else {
+				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-" + project.getPath().replaceFirst(":", "") + "-refmap.json";
+			}
 			project.getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
 			refmapName = defaultRefmapName;
 		}
@@ -468,6 +471,14 @@ public class LoomGradleExtension {
 
 	public boolean isForge() {
 		return forge.getAsBoolean();
+	}
+	
+	public boolean shouldGenerateSrgTiny() {
+		if (generateSrgTiny != null) {
+			return generateSrgTiny;
+		}
+		
+		return isForge();
 	}
 
 	// Creates a new file each time its called, this is then held onto later when remapping the output jar

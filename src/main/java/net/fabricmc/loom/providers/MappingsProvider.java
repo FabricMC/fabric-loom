@@ -101,11 +101,11 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	public TinyTree getMappingsWithSrg() throws IOException {
-		if (getExtension().isForge()) {
+		if (getExtension().shouldGenerateSrgTiny()) {
 			return MappingsCache.INSTANCE.get(tinyMappingsWithSrg);
 		}
 
-		throw new UnsupportedOperationException("Not running with Forge support.");
+		throw new UnsupportedOperationException("Not running with Forge support / Tiny srg support.");
 	}
 
 	@Override
@@ -163,12 +163,18 @@ public class MappingsProvider extends DependencyProvider {
 		if (!tinyMappingsJar.exists() || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
 		}
-
-		if (getExtension().isForge()) {
+		
+		if (getExtension().shouldGenerateSrgTiny()) {
 			if (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps()) {
-				SrgMerger.mergeSrg(getExtension().getMcpConfigProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
+				SrgMerger.mergeSrg(getExtension().getSrgProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
 			}
-
+		}
+		
+		if (getExtension().isForge()) {
+			if (!getExtension().shouldGenerateSrgTiny()) {
+				throw new IllegalStateException("We have to generate srg tiny in a forge environment!");
+			}
+			
 			if (!mixinTinyMappingsWithSrg.exists() || isRefreshDeps()) {
 				List<String> lines = new ArrayList<>(Files.readAllLines(tinyMappingsWithSrg));
 				lines.set(0, lines.get(0).replace("intermediary", "yraidemretni").replace("srg", "intermediary"));

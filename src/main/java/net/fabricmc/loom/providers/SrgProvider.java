@@ -24,20 +24,20 @@
 
 package net.fabricmc.loom.providers;
 
+import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
 import org.gradle.api.Project;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.net.URI;
+import java.nio.file.*;
 import java.util.function.Consumer;
 
-public class McpConfigProvider extends DependencyProvider {
-	private File mcp;
+public class SrgProvider extends DependencyProvider {
+	private File srg;
 
-	public McpConfigProvider(Project project) {
+	public SrgProvider(Project project) {
 		super(project);
 	}
 
@@ -45,27 +45,29 @@ public class McpConfigProvider extends DependencyProvider {
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		init(dependency.getDependency().getVersion());
 
-		if (mcp.exists() && !isRefreshDeps()) {
+		if (srg.exists() && !isRefreshDeps()) {
 			return; // No work for us to do here
 		}
 
-		Path mcpZip = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve MCPConfig")).toPath();
+		Path srgZip = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve srg")).toPath();
 
-		if (!mcp.exists() || isRefreshDeps()) {
-			Files.copy(mcpZip, mcp.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		if (!srg.exists() || isRefreshDeps()) {
+			try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + srgZip.toUri()), ImmutableMap.of("create", false))) {
+				Files.copy(fs.getPath("config", "joined.tsrg"), srg.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
 		}
 	}
 
 	private void init(String version) {
-		mcp = new File(getExtension().getUserCache(), "mcp-" + version + ".zip");
+		srg = new File(getExtension().getUserCache(), "srg-" + version + ".tsrg");
 	}
 
-	public File getMcp() {
-		return mcp;
+	public File getSrg() {
+		return srg;
 	}
 
 	@Override
 	public String getTargetConfig() {
-		return Constants.Configurations.MCP_CONFIG;
+		return Constants.Configurations.SRG;
 	}
 }

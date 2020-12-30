@@ -108,6 +108,13 @@ public class AbstractPlugin implements Plugin<Project> {
 		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
 		minecraftConfig.setTransitive(false);
 
+		project.afterEvaluate(project1 -> {
+			if (project.getExtensions().getByType(LoomGradleExtension.class).shouldGenerateSrgTiny()) {
+				Configuration srg = project.getConfigurations().maybeCreate(Constants.Configurations.SRG);
+				srg.setTransitive(false);
+			}
+		});
+
 		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
 			Configuration forgeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.FORGE);
 			forgeConfig.setTransitive(false);
@@ -236,15 +243,23 @@ public class AbstractPlugin implements Plugin<Project> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
+			dependencyManager.addProvider(new MinecraftProvider(getProject()));
+
 			if (extension.isForge()) {
 				dependencyManager.addProvider(new ForgeProvider(getProject()));
 				dependencyManager.addProvider(new ForgeUserdevProvider(getProject()));
+			}
+
+			if (extension.shouldGenerateSrgTiny()) {
+				dependencyManager.addProvider(new SrgProvider(getProject()));
+			}
+
+			if (extension.isForge()) {
 				dependencyManager.addProvider(new McpConfigProvider(getProject()));
 				dependencyManager.addProvider(new PatchProvider(getProject()));
 				dependencyManager.addProvider(new ForgeUniversalProvider(getProject()));
 			}
-
-			dependencyManager.addProvider(new MinecraftProvider(getProject()));
+			
 			dependencyManager.addProvider(new MappingsProvider(getProject()));
 			dependencyManager.addProvider(new LaunchProvider(getProject()));
 

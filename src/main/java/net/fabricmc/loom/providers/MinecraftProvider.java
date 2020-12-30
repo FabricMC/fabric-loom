@@ -69,6 +69,10 @@ public class MinecraftProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		minecraftVersion = dependency.getDependency().getVersion();
+		
+		if (getExtension().shouldGenerateSrgTiny() && !getExtension().isForge()) {
+			addDependency("de.oceanlabs.mcp:mcp_config:" + minecraftVersion, Constants.Configurations.SRG);
+		}
 
 		boolean offline = getProject().getGradle().getStartParameter().isOffline();
 

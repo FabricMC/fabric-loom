@@ -76,14 +76,13 @@ public class ModCompileRemapper {
 				String group = artifact.getModuleVersion().getId().getGroup();
 				String name = artifact.getModuleVersion().getId().getName();
 				String version = artifact.getModuleVersion().getId().getVersion();
-				String classifierSuffix = artifact.getClassifier() == null ? "" : (":" + artifact.getClassifier());
 
 				if (!isFabricMod(logger, artifact)) {
 					addToRegularCompile(project, regularConfig, artifact);
 					continue;
 				}
 
-				ModDependencyInfo info = new ModDependencyInfo(group, name, version, classifierSuffix, artifact.getFile(), remappedConfig, remapData);
+				ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
 
 				if (refreshDeps) {
 					info.forceRemap();
@@ -91,16 +90,16 @@ public class ModCompileRemapper {
 
 				modDependencies.add(info);
 
-				String remappedLog = group + ":" + name + ":" + version + classifierSuffix + " (" + mappingsSuffix + ")";
+				String remappedLog = group + ":" + name + ":" + version + (artifact.getClassifier() == null ? "" : ":" + artifact.getClassifier()) + " (" + mappingsSuffix + ")";
 				project.getLogger().info(":providing " + remappedLog);
 
-				File remappedSources = new File(info.getRemappedOutput().getAbsolutePath().replace(".jar", "-sources.jar"));
+				File remappedSources = info.getRemappedOutput("sources");
 
 				if (!remappedSources.exists() || refreshDeps) {
 					File sources = findSources(dependencies, artifact);
 
 					if (sources != null) {
-						scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), info.getRemappedOutput(), modStore);
+						scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), remappedSources);
 					}
 				}
 			}
@@ -113,7 +112,7 @@ public class ModCompileRemapper {
 
 			// Add all of the remapped mods onto the config
 			for (ModDependencyInfo info : modDependencies) {
-				project.getDependencies().add(info.targetConfig.getName(), project.getDependencies().module(info.getRemappedNotation()));
+				project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
 			}
 		}
 	}
@@ -165,10 +164,9 @@ public class ModCompileRemapper {
 		return null;
 	}
 
-	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, File remappedJar, File modStore) {
+	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, File sources, String remappedLog, File remappedSources) {
 		project.getLogger().debug(":providing " + remappedLog + " sources");
 
-		File remappedSources = new File(remappedJar.getAbsolutePath().replace(".jar", "-sources.jar"));
 		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified() || refreshDeps) {

@@ -36,6 +36,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.artifacts.Configuration;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 
@@ -43,6 +44,7 @@ public class ModDependencyInfo {
 	private final String group;
 	public final String name;
 	public final String version;
+	@Nullable
 	public final String classifier;
 	public final File inputFile;
 	public final Configuration targetConfig;
@@ -51,7 +53,7 @@ public class ModDependencyInfo {
 
 	private boolean forceRemap = false;
 
-	public ModDependencyInfo(String group, String name, String version, String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
+	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
@@ -62,31 +64,35 @@ public class ModDependencyInfo {
 	}
 
 	public String getRemappedNotation() {
-		if (classifier == null || classifier.isEmpty()) {
+		if (!hasClassifier()) {
 			return String.format("%s:%s:%s", getGroup(), name, version);
 		}
 
 		return String.format("%s:%s:%s:%s", getGroup(), name, version, classifier);
 	}
 
-	private String getRemappedFilename() {
-		if (classifier == null || classifier.isEmpty()) {
+	public String getRemappedFilename(boolean withClassifier) {
+		if (!hasClassifier() || !withClassifier) {
 			return String.format("%s-%s", name, version);
 		}
 
-		return String.format("%s-%s@%s", name, version, classifier.replace(':', '-'));
+		return String.format("%s-%s-%s", name, version, classifier);
 	}
 
-	private File getRemappedDir() {
+	public File getRemappedDir() {
 		return new File(remapData.modStore, String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
 	}
 
 	public File getRemappedOutput() {
-		return new File(getRemappedDir(), getRemappedFilename() + ".jar");
+		return new File(getRemappedDir(), getRemappedFilename(true) + ".jar");
+	}
+
+	public File getRemappedOutput(String classifier) {
+		return new File(getRemappedDir(), getRemappedFilename(false) + "-" + classifier + ".jar");
 	}
 
 	private File getRemappedPom() {
-		return new File(getRemappedOutput().getAbsolutePath().replace(".jar", ".pom"));
+		return new File(getRemappedDir(), String.format("%s-%s", name, version) + ".pom");
 	}
 
 	private String getGroup() {
@@ -135,7 +141,11 @@ public class ModDependencyInfo {
 
 	@Override
 	public String toString() {
-		return String.format("%s:%s:%s:%s", group, name, version, classifier);
+		return getRemappedNotation();
+	}
+
+	public boolean hasClassifier() {
+		return classifier != null && !classifier.isEmpty();
 	}
 
 	public String getAccessWidener() throws IOException {

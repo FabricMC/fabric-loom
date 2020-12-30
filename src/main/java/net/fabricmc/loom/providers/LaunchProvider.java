@@ -87,10 +87,17 @@ public class LaunchProvider extends DependencyProvider {
 					.property("net.minecraftforge.gradle.GradleStart.srg.srg-mcp", getExtension().getMappingsProvider().srgToNamedSrg.getAbsolutePath());
 
 			String mixinConfig = getExtension().mixinConfig;
+			List<String> mixinConfigs = getExtension().mixinConfigs;
 
 			if (mixinConfig != null) {
 				launchConfig.argument("-mixin.config");
 				launchConfig.argument(mixinConfig);
+			}
+			if (mixinConfigs != null) {
+				for (String config : mixinConfigs) {
+					launchConfig.argument("-mixin.config");
+					launchConfig.argument(config);
+				}
 			}
 		}
 

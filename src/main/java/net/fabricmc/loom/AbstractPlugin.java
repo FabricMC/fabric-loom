@@ -24,14 +24,17 @@
 
 package net.fabricmc.loom;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
+import net.fabricmc.loom.providers.*;
+import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.task.RemapAllSourcesTask;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.util.*;
+import net.fabricmc.loom.util.mixin.JavaApInvoker;
+import net.fabricmc.loom.util.mixin.KaptApInvoker;
+import net.fabricmc.loom.util.mixin.ScalaApInvoker;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -52,32 +55,8 @@ import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-import net.fabricmc.loom.providers.ForgeProvider;
-import net.fabricmc.loom.providers.ForgeUniversalProvider;
-import net.fabricmc.loom.providers.ForgeUserdevProvider;
-import net.fabricmc.loom.providers.LaunchProvider;
-import net.fabricmc.loom.providers.MappingsCache;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.McpConfigProvider;
-import net.fabricmc.loom.providers.MinecraftProvider;
-import net.fabricmc.loom.providers.PatchProvider;
-import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.task.RemapAllSourcesTask;
-import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.FabricApiExtension;
-import net.fabricmc.loom.util.GroovyXmlUtil;
-import net.fabricmc.loom.util.JarRemapper;
-import net.fabricmc.loom.util.LoomDependencyManager;
-import net.fabricmc.loom.util.NestedJars;
-import net.fabricmc.loom.util.RemappedConfigurationEntry;
-import net.fabricmc.loom.util.SetupIntelijRunConfigs;
-import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.mixin.JavaApInvoker;
-import net.fabricmc.loom.util.mixin.KaptApInvoker;
-import net.fabricmc.loom.util.mixin.ScalaApInvoker;
+import java.io.IOException;
+import java.util.*;
 
 public class AbstractPlugin implements Plugin<Project> {
 	protected Project project;
@@ -295,9 +274,14 @@ public class AbstractPlugin implements Plugin<Project> {
 				if (extension.isForge()) {
 					remapJarTask.getToM().set("srg");
 					((Jar) jarTask).manifest(manifest -> {
+						List<String> configs = new ArrayList<>();
 						if (extension.mixinConfig != null) {
-							manifest.attributes(ImmutableMap.of("MixinConfigs", extension.mixinConfig));
+							configs.add(extension.mixinConfig);
 						}
+						if (extension.mixinConfigs != null) {
+							configs.addAll(extension.mixinConfigs);
+						}
+						manifest.attributes(ImmutableMap.of("MixinConfigs", String.join(",", configs)));
 					});
 				}
 

@@ -107,6 +107,8 @@ public class ModCompileRemapper {
 			try {
 				ModProcessor.processMods(project, modDependencies);
 			} catch (IOException e) {
+				// Failed to remap, lets clean up to ensure we try again next time
+				modDependencies.forEach(info -> info.getRemappedOutput().delete());
 				throw new RuntimeException("Failed to remap mods", e);
 			}
 
@@ -170,14 +172,7 @@ public class ModCompileRemapper {
 		boolean refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		if (!remappedSources.exists() || sources.lastModified() <= 0 || sources.lastModified() > remappedSources.lastModified() || refreshDeps) {
-			try {
-				sourceRemapper.scheduleRemapSources(sources, remappedSources, false, true); // Depenedency sources are used in ide only so don't need to be reproducable
-
-				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
-				remappedSources.setLastModified(sources.lastModified());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			sourceRemapper.scheduleRemapSources(sources, remappedSources, false, true); // Depenedency sources are used in ide only so don't need to be reproducable
 		} else {
 			project.getLogger().info(remappedSources.getName() + " is up to date with " + sources.getName());
 		}

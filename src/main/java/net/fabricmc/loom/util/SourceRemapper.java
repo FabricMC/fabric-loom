@@ -72,13 +72,18 @@ public class SourceRemapper {
 		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
 	}
 
-	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws Exception {
+	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
 		remapTasks.add((logger) -> {
 			try {
 				logger.progress("remapping sources - " + source.getName());
 				remapSourcesInner(source, destination);
 				ZipReprocessorUtil.reprocessZip(destination, reproducibleFileOrder, preserveFileTimestamps);
+
+				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+				destination.setLastModified(source.lastModified());
 			} catch (Exception e) {
+				// Failed to remap, lets clean up to ensure we try again next time
+				destination.delete();
 				throw new RuntimeException("Failed to remap sources for " + source, e);
 			}
 		});

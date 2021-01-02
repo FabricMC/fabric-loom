@@ -213,7 +213,7 @@ public class ModProcessor {
 				if (ZipUtil.containsEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF")) {
 					ZipUtil.transformEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF", (in, zipEntry, out) -> {
 						Manifest manifest = new Manifest(in);
-						manifest.getEntries().clear();
+						fixManifest(manifest);
 						out.putNextEntry(new ZipEntry(zipEntry.getName()));
 						manifest.write(out);
 						out.closeEntry();
@@ -230,6 +230,27 @@ public class ModProcessor {
 				});
 				ZipUtil.removeEntries(info.getRemappedOutput(), filesToRemove.toArray(new String[0]));
 			}
+		}
+	}
+
+	private static void fixManifest(Manifest manifest) {
+		Attributes mainAttrs = manifest.getMainAttributes();
+		
+		mainAttrs.remove(Attributes.Name.SIGNATURE_VERSION);
+
+		for (Iterator<Attributes> it = manifest.getEntries().values().iterator(); it.hasNext(); ) {
+			Attributes attrs = it.next();
+
+			for (Iterator<Object> it2 = attrs.keySet().iterator(); it2.hasNext(); ) {
+				Attributes.Name attrName = (Attributes.Name) it2.next();
+				String name = attrName.toString();
+
+				if (name.endsWith("-Digest") || name.contains("-Digest-") || name.equals("Magic")) {
+					it2.remove();
+				}
+			}
+
+			if (attrs.isEmpty()) it.remove();
 		}
 	}
 

@@ -6,7 +6,7 @@ A [Gradle](https://gradle.org/) plugin to setup a deobfuscated development envir
 * Utilises the Fernflower and CFR decompilers to generate source code with comments.
 * Designed to support modern versions of Minecraft (Tested with 1.14.4 and upwards)
 * Built in support for IntelliJ IDEA, Eclipse and Visual Studio Code to generate run configurations for Minecraft.
-* Loom target a wide range of Gradle versions. _Tested with 4.9 up to 6.7_
+* Loom targets a wide range of Gradle versions. _Tested with 4.9 up to 6.7_
 * Supports the latest version of Java all the way down to Java 8
 
 ## Use Loom to develop mods

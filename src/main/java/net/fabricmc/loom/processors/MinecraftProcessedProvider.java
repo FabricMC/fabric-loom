@@ -50,7 +50,9 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
+		boolean isForgeAtDirty = getExtension().isForge() && getExtension().getMappingsProvider().patchedProvider.isAtDirty();
+		
+		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps() || isForgeAtDirty) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
 			invalidateJars();
 

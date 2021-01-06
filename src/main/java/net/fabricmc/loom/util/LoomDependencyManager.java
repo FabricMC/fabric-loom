@@ -132,7 +132,8 @@ public class LoomDependencyManager {
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsProvider.mappingsVersion;
+		String platformSuffix = extension.isForge() ? "_forge" : "";
+		String mappingsKey = mappingsProvider.mappingsName + "." + mappingsProvider.minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + platformSuffix + "." + mappingsProvider.mappingsVersion;
 
 		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
 

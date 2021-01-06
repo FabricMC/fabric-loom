@@ -150,6 +150,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 						remapper.readInputs(input);
 						remapper.apply(outputConsumer);
 					} catch (Exception e) {
+						Files.deleteIfExists(output);
 						throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
 					} finally {
 						remapper.finish();
@@ -204,6 +205,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().isForge() ? getExtension().getMappingsProvider().getMappingsWithSrg() : getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
 				.renameInvalidLocals(true)
+				.ignoreConflicts(getExtension().isForge())
 				.rebuildSourceFilenames(true);
 
 		if (getExtension().isForge()) {

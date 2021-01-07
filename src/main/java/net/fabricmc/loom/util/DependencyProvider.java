@@ -185,7 +185,7 @@ public abstract class DependencyProvider {
 			this.resolvedFiles = files;
 			switch (files.size()) {
 			case 0: //Don't think Gradle would ever let you do this
-				throw new IllegalStateException("Empty dependency?");
+				throw new IllegalStateException("Empty dependency for " + configuration.getName());
 
 			case 1: //Single file dependency
 				classifierToFile.put("", Iterables.getOnlyElement(files));

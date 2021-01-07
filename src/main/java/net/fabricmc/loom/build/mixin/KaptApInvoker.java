@@ -35,9 +35,9 @@ import java.util.stream.Collectors;
 import kotlin.Unit;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -92,8 +92,17 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 		// Kapt generates an AP configuration for every source set based off of the getKaptConfigurationName method.
 		return AnnotationProcessorInvoker.getNonTestSourceSets(project)
 						.map(sourceSet -> project.getConfigurations()
-										.getByName(Kapt3KotlinGradleSubplugin.Companion.getKaptConfigurationName(sourceSet.getName()))
+										.getByName(getKaptConfigurationName(sourceSet.getName()))
 						).collect(Collectors.toList());
+	}
+
+	// Pulled out from the internal class: https://github.com/JetBrains/kotlin/blob/33a0ec9b4f40f3d6f1f96b2db504ade4c2fafe03/libraries/tools/kotlin-gradle-plugin/src/main/kotlin/org/jetbrains/kotlin/gradle/internal/kapt/Kapt3KotlinGradleSubplugin.kt#L92
+	private static String getKaptConfigurationName(String sourceSetName) {
+		if (!sourceSetName.equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+			return "kapt" + (sourceSetName.substring(0, 1).toUpperCase() + sourceSetName.substring(1));
+		}
+
+		return "kapt";
 	}
 
 	@Override

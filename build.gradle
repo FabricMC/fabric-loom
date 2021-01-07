@@ -35,6 +35,7 @@ sourceSets {
 repositories {
 	maven { url "https://maven.fabricmc.net/" }
 	maven { url "https://files.minecraftforge.net/maven/" }
+	maven { url "https://dl.bintray.com/shedaniel/cloth" }
 	mavenCentral()
 }
 
@@ -49,6 +50,7 @@ dependencies {
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.4.6+build.74') {
+		exclude module: 'mercury'
 		exclude module: 'enigma'
 	}
 
@@ -69,7 +71,7 @@ dependencies {
 	implementation ('org.benf:cfr:0.150')
 
 	// source code remapping
-	implementation ('org.cadixdev:mercury:0.1.0-rc1')
+	implementation ('org.cadixdev:mercury:0.2.8')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72')

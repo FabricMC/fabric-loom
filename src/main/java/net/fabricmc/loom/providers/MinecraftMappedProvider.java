@@ -30,12 +30,13 @@ import net.fabricmc.loom.util.DependencyProvider;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.srg.AtRemapper;
 import net.fabricmc.loom.util.srg.CoreModClassRemapper;
+import net.fabricmc.loom.util.srg.InnerClassRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import org.gradle.api.Project;
-import org.zeroturnaround.zip.ZipUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.net.URI;
@@ -137,7 +138,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 					getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-					TinyRemapper remapper = getTinyRemapper(fromM, toM);
+					TinyRemapper remapper = getTinyRemapper(input, fromM, toM);
 
 					try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 						if (getExtension().isForge()) {
@@ -201,7 +202,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		}
 	}
 
-	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
+	public TinyRemapper getTinyRemapper(@Nullable Path fromJar, String fromM, String toM) throws IOException {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().isForge() ? getExtension().getMappingsProvider().getMappingsWithSrg() : getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
 				.renameInvalidLocals(true)
@@ -213,6 +214,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			 * They won't get remapped to their proper packages, so IllegalAccessErrors will happen without ._.
 			 */
 			builder.fixPackageAccess(true);
+			if (fromJar != null) {
+				builder.withMappings(InnerClassRemapper.of(fromJar, getExtension().getMappingsProvider().getMappingsWithSrg(), fromM, toM));
+			}
 		} else {
 			builder.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass));
 		}

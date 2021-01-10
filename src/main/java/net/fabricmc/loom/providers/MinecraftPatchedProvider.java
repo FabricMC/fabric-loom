@@ -25,18 +25,19 @@
 package net.fabricmc.loom.providers;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonParser;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
 import net.fabricmc.loom.util.*;
 import net.fabricmc.loom.util.function.FsPathConsumer;
 import net.fabricmc.loom.util.srg.InnerClassRemapper;
+import net.fabricmc.loom.util.srg.SpecialSourceExecutor;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.minecraftforge.accesstransformer.TransformerProcessor;
 import net.minecraftforge.binarypatcher.ConsoleTool;
-import net.minecraftforge.gradle.mcp.util.MCPRuntime;
-import net.minecraftforge.gradle.mcp.util.MCPWrapper;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -52,6 +53,8 @@ import org.zeroturnaround.zip.ZipUtil;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.*;
 import java.util.*;
@@ -192,27 +195,33 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void createSrgJars(Logger logger) throws Exception {
-		// TODO: FORGE: Get rid of *this*
-		logger.lifecycle(":remapping minecraft (MCPRuntime, official -> srg)");
-
 		McpConfigProvider mcpProvider = getExtension().getMcpConfigProvider();
-		File root = new File(getExtension().getUserCache(), "mcp_root");
-		root.mkdirs();
-		MCPWrapper wrapper = new MCPWrapper(mcpProvider.getMcp(), root);
 
-		// Client
-		{
-			MCPRuntime runtime = wrapper.getRuntime(getProject(), "client");
-			File output = runtime.execute(logger, "rename");
-			FileUtils.copyFile(output, minecraftClientSrgJar);
+		logger.lifecycle(":remapping minecraft (SpecialSource, official -> srg)");
+		MinecraftProvider minecraftProvider = getExtension().getMinecraftProvider();
+
+		String[] mappingsPath = {null};
+		if (!ZipUtil.handle(mcpProvider.getMcp(), "config.json", (in, zipEntry) -> {
+			mappingsPath[0] = new JsonParser().parse(new InputStreamReader(in)).getAsJsonObject().get("data").getAsJsonObject().get("mappings").getAsString();
+		})) {
+			throw new IllegalStateException("Failed to find 'config.json' in " + mcpProvider.getMcp().getAbsolutePath() + "!");
 		}
 
-		// Server
-		{
-			MCPRuntime runtime = wrapper.getRuntime(getProject(), "server");
-			File output = runtime.execute(logger, "rename");
-			FileUtils.copyFile(output, minecraftServerSrgJar);
+		Path[] tmpSrg = {null};
+		if (!ZipUtil.handle(mcpProvider.getMcp(), mappingsPath[0], (in, zipEntry) -> {
+			tmpSrg[0] = Files.createTempFile(null, null);
+			try (BufferedWriter writer = Files.newBufferedWriter(tmpSrg[0])) {
+				IOUtils.copy(in, writer, StandardCharsets.UTF_8);
+			}
+		})) {
+			throw new IllegalStateException("Failed to find mappings '" + mappingsPath[0] + "' in " + mcpProvider.getMcp().getAbsolutePath() + "!");
 		}
+
+		File specialSourceJar = new File(getExtension().getUserCache(), "SpecialSource-1.8.3-shaded.jar");
+		DownloadUtil.downloadIfChanged(new URL("https://repo1.maven.org/maven2/net/md-5/SpecialSource/1.8.3/SpecialSource-1.8.3-shaded.jar"), specialSourceJar, getProject().getLogger(), true);
+
+		Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), specialSourceJar,minecraftProvider.minecraftClientJar.toPath(), tmpSrg[0]), minecraftClientSrgJar.toPath());
+		Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), specialSourceJar, minecraftProvider.minecraftServerJar.toPath(), tmpSrg[0]), minecraftServerSrgJar.toPath());
 	}
 
 	private void fixParameterAnnotation(File jarFile) throws Exception {
@@ -319,9 +328,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 
 					Path input = environment.patchedSrgJar.apply(this).toPath();
 					Path output = environment.patchedOfficialJar.apply(this).toPath();
-					
+
 					Files.deleteIfExists(output);
-					
+
 					TinyRemapper remapper = TinyRemapper.newRemapper()
 							.withMappings(TinyRemapperMappingsHelper.create(mappingsWithSrg, "srg", "official", true))
 							.withMappings(InnerClassRemapper.of(input, mappingsWithSrg, "srg", "official"))
@@ -349,10 +358,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			future.get();
 		}
 	}
-	
-	
 
-	
 
 	private void patchJars(Logger logger) throws Exception {
 		logger.lifecycle(":patching jars");

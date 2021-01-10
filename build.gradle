@@ -80,9 +80,9 @@ dependencies {
 	implementation ('net.minecraftforge:binarypatcher:1.1.1')
 	implementation ('org.cadixdev:lorenz:0.5.3')
 	implementation ('org.cadixdev:lorenz-asm:0.5.3')
-	implementation ('net.minecraftforge.gradle:ForgeGradle:3.0.179')
 	implementation ('net.minecraftforge:accesstransformers:2.2.0')
 	implementation ('de.oceanlabs.mcp:mcinjector:3.8.0')
+	implementation ('net.md-5:SpecialSource:1.8.3')
 
 	// Forge injection
 	forgeInjectShadow ('net.fabricmc:tiny-mappings-parser:0.2.2.14')

@@ -26,7 +26,7 @@ package net.fabricmc.loom.util.srg;
 
 import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.TinyTree;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.gradle.api.logging.Logger;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
@@ -52,15 +52,15 @@ public final class AtRemapper {
 			protected String transform(ZipEntry zipEntry, String input) {
 				String[] lines = input.split("\n");
 				List<String> output = new ArrayList<>(lines.length);
-				
+
 				for (int i = 0; i < lines.length; i++) {
 					String line = lines[i].trim();
-					
-					if (line.startsWith("#") || StringUtils.isBlank(line)) {
+
+					if (line.startsWith("#") || Strings.isBlank(line)) {
 						output.add(i, line);
 						continue;
 					}
-					
+
 					String[] parts = line.split("\\s+");
 					if (parts.length < 2) {
 						logger.warn("Invalid AT Line: " + line);
@@ -82,15 +82,15 @@ public final class AtRemapper {
 							});
 						}
 					}
-					
+
 					output.add(i, String.join(" ", parts));
 				}
-				
+
 				return String.join("\n", output);
 			}
 		}))});
 	}
-	
+
 	private static String remapDescriptor(String original, UnaryOperator<String> classMappings) {
 		try {
 			StringReader reader = new StringReader(original);

@@ -10,10 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class SrgNamedWriter {
-	public static void writeTo(Logger logger, Path srgFile, TinyTree mappings) throws IOException {
+	public static void writeTo(Logger logger, Path srgFile, TinyTree mappings, String from, String to) throws IOException {
 		Files.deleteIfExists(srgFile);
 		try (SrgWriter writer = new SrgWriter(Files.newBufferedWriter(srgFile))) {
-			try (TinyMappingsReader reader = new TinyMappingsReader(mappings, "srg", "named")) {
+			try (TinyMappingsReader reader = new TinyMappingsReader(mappings, from, to)) {
 				writer.write(reader.read());
 			}
 		}

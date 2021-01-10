@@ -35,8 +35,6 @@ loom {
 ## Limitations
 
 - Launching via IDE run configs doesn't work on Eclipse or VSCode.
-- You have to use Gradle 5, like with FG. I've reused it as a library
-  in some places. 
 - The srg -> yarn remapper used for coremod class names is *really* simple,
   and might break with coremods that have multiple class names per line.
 

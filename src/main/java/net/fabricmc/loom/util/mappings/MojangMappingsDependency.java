@@ -45,9 +45,12 @@ import org.cadixdev.lorenz.model.FieldMapping;
 import org.cadixdev.lorenz.model.InnerClassMapping;
 import org.cadixdev.lorenz.model.MethodMapping;
 import org.cadixdev.lorenz.model.TopLevelClassMapping;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.SelfResolvingDependency;
+import org.gradle.api.artifacts.*;
+import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
+import org.gradle.api.internal.artifacts.ModuleVersionSelectorStrictSpec;
+import org.gradle.api.internal.artifacts.dependencies.*;
 import org.gradle.api.tasks.TaskDependency;
 import org.zeroturnaround.zip.ByteSource;
 import org.zeroturnaround.zip.ZipEntrySource;
@@ -59,7 +62,7 @@ import net.fabricmc.loom.util.MinecraftVersionInfo;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 
-public class MojangMappingsDependency implements SelfResolvingDependency {
+public class MojangMappingsDependency extends AbstractModuleDependency implements SelfResolvingDependency, ExternalModuleDependency {
 	public static final String GROUP = "net.minecraft";
 	public static final String MODULE = "mappings";
 	// Keys in dependency manifest
@@ -69,9 +72,49 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	private final Project project;
 	private final LoomGradleExtension extension;
 
+	private boolean changing;
+	private boolean force;
+
 	public MojangMappingsDependency(Project project, LoomGradleExtension extension) {
+		super(null);
 		this.project = project;
 		this.extension = extension;
+	}
+	
+	@Override
+	public ExternalModuleDependency copy() {
+		MojangMappingsDependency copiedProjectDependency = new MojangMappingsDependency(project, extension);
+		this.copyTo(copiedProjectDependency);
+		return copiedProjectDependency;
+	}
+
+	@Override
+	public void version(Action<? super MutableVersionConstraint> action) {
+		
+	}
+
+	@Override
+	public boolean isForce() {
+		return this.force;
+	}
+	
+	@Override
+	public ExternalModuleDependency setForce(boolean force) {
+		this.validateMutation(this.force, force);
+		this.force = force;
+		return this;
+	}
+	
+	@Override
+	public boolean isChanging() {
+		return this.changing;
+	}
+	
+	@Override
+	public ExternalModuleDependency setChanging(boolean changing) {
+		this.validateMutation(this.changing, changing);
+		this.changing = changing;
+		return this;
 	}
 
 	@Override
@@ -208,17 +251,27 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	}
 
 	@Override
+	public VersionConstraint getVersionConstraint() {
+		return new DefaultMutableVersionConstraint(getVersion());
+	}
+
+	@Override
+	public boolean matchesStrictly(ModuleVersionIdentifier identifier) {
+		return (new ModuleVersionSelectorStrictSpec(this)).isSatisfiedBy(identifier);
+	}
+
+	@Override
+	public ModuleIdentifier getModule() {
+		return DefaultModuleIdentifier.newId(GROUP, MODULE);
+	}
+
+	@Override
 	public boolean contentEquals(Dependency dependency) {
 		if (dependency instanceof MojangMappingsDependency) {
 			return ((MojangMappingsDependency) dependency).extension.getMinecraftProvider().getMinecraftVersion().equals(getVersion());
 		}
 
 		return false;
-	}
-
-	@Override
-	public Dependency copy() {
-		return new MojangMappingsDependency(project, extension);
 	}
 
 	@Override

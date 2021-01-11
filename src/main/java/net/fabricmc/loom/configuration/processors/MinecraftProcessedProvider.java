@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.processors;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -56,8 +57,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		if (jarProcessorManager.hasStage(JarProcessor.Stage.OBF) &&
-				(jarProcessorManager.isInvalid(projectObfJar, JarProcessor.Stage.OBF) || isRefreshDeps())) {
+		if (jarProcessorManager.hasStage(JarProcessor.Stage.OBF)
+				&& (jarProcessorManager.isInvalid(projectObfJar, JarProcessor.Stage.OBF) || isRefreshDeps())) {
 			System.out.println(jarProcessorManager.isInvalid(projectObfJar, JarProcessor.Stage.OBF));
 			getProject().getLogger().lifecycle(":processing obf jar");
 			invalidateJars(JarProcessor.Stage.OBF);
@@ -72,8 +73,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 			jarProcessorManager.process(projectObfJar, JarProcessor.Stage.OBF);
 		}
 
-		if ((jarProcessorManager.hasStage(JarProcessor.Stage.INTERMEDIARY) || jarProcessorManager.hasStage(JarProcessor.Stage.OBF)) &&
-				(jarProcessorManager.isInvalid(projectIntJar, JarProcessor.Stage.INTERMEDIARY) || intInvalidated)) {
+		if ((jarProcessorManager.hasStage(JarProcessor.Stage.INTERMEDIARY) || jarProcessorManager.hasStage(JarProcessor.Stage.OBF))
+				&& (jarProcessorManager.isInvalid(projectIntJar, JarProcessor.Stage.INTERMEDIARY) || intInvalidated)) {
 			getProject().getLogger().lifecycle(":processing intermediary jar");
 			invalidateJars(JarProcessor.Stage.INTERMEDIARY);
 			intInvalidated = false;
@@ -81,7 +82,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 			try {
 				if (projectObfJar.exists()) {
-					this.mapMinecraftJar(projectObfJar.toPath(), projectIntJar.toPath(), "official", "intermediary");
+					this.mapMinecraftJarSafe(projectObfJar.toPath(), projectIntJar.toPath(), "official", "intermediary");
 				} else {
 					FileUtils.copyFile(super.getIntermediaryJar(), projectIntJar);
 				}
@@ -100,7 +101,6 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		}
 	}
 
-
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
 		if (jarProcessorManager.isInvalid(projectMappedJar, JarProcessor.Stage.MAPPED) || mappedInvalidated) {
@@ -110,12 +110,12 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 			try {
 				if (projectIntJar.exists()) {
-					this.mapMinecraftJar(projectIntJar.toPath(), projectMappedJar.toPath(), "intermediary", "named");
+					this.mapMinecraftJarSafe(projectIntJar.toPath(), projectMappedJar.toPath(), "intermediary", "named");
 				} else {
 					FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
 				}
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to copy source jar", e);
+				throw new UncheckedIOException("Failed to copy source jar", e);
 			}
 
 			jarProcessorManager.process(projectMappedJar, JarProcessor.Stage.MAPPED);
@@ -155,10 +155,21 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		}
 	}
 
+	private void mapMinecraftJarSafe(Path input, Path output, String left, String right) {
+		try {
+			mapMinecraftJar(input, output, left, right);
+		} catch (Throwable t) {
+			projectIntJar.delete();
+			projectMappedJar.delete();
+			getExtension().getMappingsProvider().cleanFiles();
+			throw new RuntimeException(t);
+		}
+	}
+
 	@Override
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
-		projectObfJar = new File(getObfJarDirectory(PROJECT_OBF_CLASSIFIER), "minecraft-" + minecraftProvider.getMinecraftVersion() + "-projectobf" + ".jar");
+		projectObfJar = new File(getObfJarDirectory(PROJECT_OBF_CLASSIFIER), "minecraft-" + minecraftProvider.getMinecraftVersion() + "-" + PROJECT_OBF_CLASSIFIER + ".jar");
 		projectIntJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_INT_CLASSIFIER),
 				"minecraft-" + getJarVersionString(PROJECT_INT_CLASSIFIER) + ".jar");
 		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER),

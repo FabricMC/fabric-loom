@@ -27,7 +27,6 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 

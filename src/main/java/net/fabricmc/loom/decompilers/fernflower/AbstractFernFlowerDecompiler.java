@@ -99,46 +99,48 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		Map<String, ProgressLogger> inUseLoggers = new HashMap<>();
 
 		progressGroup.started();
-		ExecResult result = ForkingJavaExec.javaexec(project.getRootProject(), spec -> {
-			spec.setMain(fernFlowerExecutor().getName());
-			spec.jvmArgs("-Xms200m", "-Xmx3G");
-			spec.setArgs(args);
-			spec.setErrorOutput(System.err);
-			spec.setStandardOutput(new ConsumingOutputStream(line -> {
-				if (line.startsWith("Listening for transport") || !line.contains("::")) {
-					System.out.println(line);
-					return;
-				}
-
-				int sepIdx = line.indexOf("::");
-				String id = line.substring(0, sepIdx).trim();
-				String data = line.substring(sepIdx + 2).trim();
-
-				ProgressLogger logger = inUseLoggers.get(id);
-
-				String[] segs = data.split(" ");
-
-				if (segs[0].equals("waiting")) {
-					if (logger != null) {
-						logger.progress("Idle..");
-						inUseLoggers.remove(id);
-						freeLoggers.push(logger);
-					}
-				} else {
-					if (logger == null) {
-						if (!freeLoggers.isEmpty()) {
-							logger = freeLoggers.pop();
-						} else {
-							logger = loggerFactory.get();
+		ExecResult result = ForkingJavaExec.javaexec(
+				project.getRootProject().getPlugins().hasPlugin("fabric-loom") ? project.getRootProject() : project,
+				spec -> {
+					spec.setMain(fernFlowerExecutor().getName());
+					spec.jvmArgs("-Xms200m", "-Xmx3G");
+					spec.setArgs(args);
+					spec.setErrorOutput(System.err);
+					spec.setStandardOutput(new ConsumingOutputStream(line -> {
+						if (line.startsWith("Listening for transport") || !line.contains("::")) {
+							System.out.println(line);
+							return;
 						}
 
-						inUseLoggers.put(id, logger);
-					}
+						int sepIdx = line.indexOf("::");
+						String id = line.substring(0, sepIdx).trim();
+						String data = line.substring(sepIdx + 2).trim();
 
-					logger.progress(data);
-				}
-			}));
-		});
+						ProgressLogger logger = inUseLoggers.get(id);
+
+						String[] segs = data.split(" ");
+
+						if (segs[0].equals("waiting")) {
+							if (logger != null) {
+								logger.progress("Idle..");
+								inUseLoggers.remove(id);
+								freeLoggers.push(logger);
+							}
+						} else {
+							if (logger == null) {
+								if (!freeLoggers.isEmpty()) {
+									logger = freeLoggers.pop();
+								} else {
+									logger = loggerFactory.get();
+								}
+
+								inUseLoggers.put(id, logger);
+							}
+
+							logger.progress(data);
+						}
+					}));
+				});
 		inUseLoggers.values().forEach(ProgressLogger::completed);
 		freeLoggers.forEach(ProgressLogger::completed);
 		progressGroup.completed();

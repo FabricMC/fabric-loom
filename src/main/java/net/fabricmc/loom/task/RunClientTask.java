@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.util.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public class RunClientTask extends AbstractRunTask {
 	public RunClientTask() {

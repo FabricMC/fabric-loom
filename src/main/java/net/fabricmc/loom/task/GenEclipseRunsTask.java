@@ -32,7 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.util.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 
 public class GenEclipseRunsTask extends AbstractLoomTask {
 	@TaskAction

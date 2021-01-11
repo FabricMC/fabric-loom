@@ -41,9 +41,10 @@ import org.gradle.api.artifacts.Dependency;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.providers.LaunchProvider;
-import net.fabricmc.loom.util.progress.ProgressLogger;
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.providers.LaunchProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
@@ -62,16 +63,27 @@ public class SourceRemapper {
 
 	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
-		sourceRemapper.scheduleRemapSources(input, output);
+		sourceRemapper.scheduleRemapSources(input, output, false, true);
 		sourceRemapper.remapAll();
 	}
 
+	@Deprecated
 	public void scheduleRemapSources(File source, File destination) throws Exception {
+		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
+	}
+
+	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
 		remapTasks.add((logger) -> {
 			try {
 				logger.progress("remapping sources - " + source.getName());
 				remapSourcesInner(source, destination);
+				ZipReprocessorUtil.reprocessZip(destination, reproducibleFileOrder, preserveFileTimestamps);
+
+				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
+				destination.setLastModified(source.lastModified());
 			} catch (Exception e) {
+				// Failed to remap, lets clean up to ensure we try again next time
+				destination.delete();
 				throw new RuntimeException("Failed to remap sources for " + source, e);
 			}
 		});
@@ -214,7 +226,7 @@ public class SourceRemapper {
 		Mercury m = new Mercury();
 		m.setGracefulClasspathChecks(true);
 
-		for (File file : project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()) {
+		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
 			m.getClassPath().add(file.toPath());
 		}
 

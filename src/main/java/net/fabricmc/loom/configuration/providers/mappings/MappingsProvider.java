@@ -78,6 +78,8 @@ public class MappingsProvider extends DependencyProvider {
 	// The mappings we use in practice
 	public File tinyMappings;
 	public File tinyMappingsJar;
+	private File unpickDefinitionsFile;
+	private boolean hasUnpickDefinitions;
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -142,14 +144,29 @@ public class MappingsProvider extends DependencyProvider {
 		}
 
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
+		unpickDefinitionsFile = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".unpick").toFile();
 		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
+		} else {
+			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), (ClassLoader) null)) {
+				extractUnpickDefinitions(fileSystem, unpickDefinitionsFile.toPath());
+			}
 		}
 
 		if (!tinyMappingsJar.exists() || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings)}, tinyMappingsJar);
+		}
+
+		if (hasUnpickDefinitions()) {
+			String notation = String.format("%s:%s:%s:constants",
+					dependency.getDependency().getGroup(),
+					dependency.getDependency().getName(),
+					dependency.getDependency().getVersion()
+			);
+
+			getProject().getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
 		}
 
 		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);
@@ -180,6 +197,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
+			extractUnpickDefinitions(fileSystem, unpickDefinitionsFile.toPath());
 		}
 
 		if (baseMappingsAreV2()) {
@@ -219,6 +237,17 @@ public class MappingsProvider extends DependencyProvider {
 
 	public static void extractMappings(FileSystem jar, Path extractTo) throws IOException {
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	private void extractUnpickDefinitions(FileSystem jar, Path extractTo) throws IOException {
+		Path unpickPath = jar.getPath("extras/definitions.unpick");
+
+		if (!Files.exists(unpickPath)) {
+			return;
+		}
+
+		Files.copy(unpickPath, extractTo, StandardCopyOption.REPLACE_EXISTING);
+		hasUnpickDefinitions = true;
 	}
 
 	private void extractIntermediary(Path intermediaryJar, Path intermediaryTiny) throws IOException {
@@ -342,5 +371,13 @@ public class MappingsProvider extends DependencyProvider {
 
 	public String getMappingsKey() {
 		return mappingsName + "." + minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + mappingsVersion;
+	}
+
+	public File getUnpickDefinitionsFile() {
+		return unpickDefinitionsFile;
+	}
+
+	public boolean hasUnpickDefinitions() {
+		return hasUnpickDefinitions;
 	}
 }

@@ -82,6 +82,9 @@ public final class CompileConfiguration {
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPING_CONSTANTS);
+		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
+
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
 

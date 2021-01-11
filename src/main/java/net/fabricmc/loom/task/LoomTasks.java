@@ -24,11 +24,14 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
+
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class LoomTasks {
@@ -98,10 +101,29 @@ public final class LoomTasks {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		project.afterEvaluate((p) -> {
+			MappingsProvider mappingsProvider = extension.getMappingsProvider();
+			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
+
+			if (mappingsProvider.hasUnpickDefinitions()) {
+				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
+
+				tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
+					unpickJarTask.setUnpickDefinition(mappingsProvider.getUnpickDefinitionsFile());
+					unpickJarTask.setInputJar(mappingsProvider.mappedProvider.getMappedJar());
+					unpickJarTask.setOutputJar(outputJar);
+				});
+
+				inputJar = outputJar;
+			}
+
 			for (LoomDecompiler decompiler : extension.getDecompilers()) {
 				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
-				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
+				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler, inputJar).get();
+
+				if (mappingsProvider.hasUnpickDefinitions()) {
+					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));
+				}
 			}
 		});
 	}

@@ -52,7 +52,6 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.*;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -65,6 +64,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class MinecraftPatchedProvider extends DependencyProvider {
+	private final MappingsProvider mappingsProvider;
 	private File minecraftClientSrgJar;
 	private File minecraftServerSrgJar;
 	private File minecraftClientPatchedSrgJar;
@@ -77,8 +77,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	private File projectAt = null;
 	private boolean atDirty = false;
 
-	public MinecraftPatchedProvider(Project project) {
+	public MinecraftPatchedProvider(MappingsProvider mappingsProvider, Project project) {
 		super(project);
+		this.mappingsProvider = mappingsProvider;
 	}
 
 	public void initFiles() throws IOException {
@@ -196,7 +197,6 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	private void createSrgJars(Logger logger) throws Exception {
 		McpConfigProvider mcpProvider = getExtension().getMcpConfigProvider();
 
-		logger.lifecycle(":remapping minecraft (SpecialSource, official -> srg)");
 		MinecraftProvider minecraftProvider = getExtension().getMinecraftProvider();
 
 		String[] mappingsPath = {null};
@@ -220,9 +220,9 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		DownloadUtil.downloadIfChanged(new URL("https://repo1.maven.org/maven2/net/md-5/SpecialSource/1.8.3/SpecialSource-1.8.3-shaded.jar"), specialSourceJar, getProject().getLogger(), true);
 
 		ThreadingUtils.run(() -> {
-			Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), specialSourceJar, minecraftProvider.minecraftClientJar.toPath(), tmpSrg[0]), minecraftClientSrgJar.toPath());
+			Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), mappingsProvider, "client", specialSourceJar, minecraftProvider.minecraftClientJar.toPath(), tmpSrg[0]), minecraftClientSrgJar.toPath());
 		}, () -> {
-			Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), specialSourceJar, minecraftProvider.minecraftServerJar.toPath(), tmpSrg[0]), minecraftServerSrgJar.toPath());
+			Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), mappingsProvider, "server", specialSourceJar, minecraftProvider.minecraftServerJar.toPath(), tmpSrg[0]), minecraftServerSrgJar.toPath());
 		});
 	}
 
@@ -267,7 +267,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			FileUtils.copyInputStreamToFile(in, injection);
 		}
 
-		ThreadingUtils.run(Arrays.asList(Environment.values()), environment -> {
+		for (Environment environment : Environment.values()) {
 			String side = environment.side();
 			File target = environment.patchedSrgJar.apply(this);
 			walkFileSystems(injection, target, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
@@ -291,7 +291,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			}
 
 			TransformerProcessor.main(args);
-		});
+		};
 	}
 
 	private enum Environment {
@@ -397,7 +397,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	private void walkFileSystems(File source, File target, Predicate<Path> filter, Function<FileSystem, Iterable<Path>> toWalk, FsPathConsumer action)
 			throws IOException {
 		try (FileSystemUtil.FileSystemDelegate sourceFs = FileSystemUtil.getJarFileSystem(source, false);
-			 FileSystemUtil.FileSystemDelegate targetFs = FileSystemUtil.getJarFileSystem(target, false)) {
+		     FileSystemUtil.FileSystemDelegate targetFs = FileSystemUtil.getJarFileSystem(target, false)) {
 			for (Path sourceDir : toWalk.apply(sourceFs.get())) {
 				Path dir = sourceDir.toAbsolutePath();
 				Files.walk(dir)

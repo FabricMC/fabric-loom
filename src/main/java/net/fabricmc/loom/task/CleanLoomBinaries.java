@@ -43,7 +43,7 @@ public class CleanLoomBinaries extends AbstractLoomTask {
 		Optional.ofNullable(extension.getMinecraftMappedProvider().getSrgJar()).ifPresent(File::delete);
 		if (extension.isForge()) {
 			try {
-				MinecraftPatchedProvider provider = new MinecraftPatchedProvider(getProject());
+				MinecraftPatchedProvider provider = new MinecraftPatchedProvider(extension.getMappingsProvider(), getProject());
 				provider.initFiles();
 				provider.cleanCache();
 			} catch (IOException e) {

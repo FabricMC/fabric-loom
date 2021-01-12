@@ -201,6 +201,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		if (extension.isForge()) {
 			patchedProvider = new MinecraftPatchedProvider(this, getProject());
+			patchedProvider.provide(dependency, postPopulationScheduler);
 		}
 
 		if (processorManager.active() || (extension.isForge() && patchedProvider.usesProjectCache())) {
@@ -210,9 +211,6 @@ public class MappingsProvider extends DependencyProvider {
 			mappedProvider = new MinecraftMappedProvider(getProject());
 		}
 
-		if (extension.isForge()) {
-			patchedProvider.provide(dependency, postPopulationScheduler);
-		}
 		mappedProvider.initFiles(minecraftProvider, this);
 		mappedProvider.provide(dependency, postPopulationScheduler);
 	}

@@ -45,7 +45,7 @@ public class CleanLoomBinaries extends AbstractLoomTask {
 			try {
 				MinecraftPatchedProvider provider = new MinecraftPatchedProvider(extension.getMappingsProvider(), getProject());
 				provider.initFiles();
-				provider.cleanCache();
+				provider.cleanAllCache();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

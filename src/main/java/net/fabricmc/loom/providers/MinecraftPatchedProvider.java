@@ -128,6 +128,10 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		PatchProvider patchProvider = getExtension().getPatchProvider();
 		String minecraftVersion = minecraftProvider.getMinecraftVersion();
 		String jarSuffix = "-patched-forge-" + patchProvider.forgeVersion;
+		if (getExtension().useFabricMixin) {
+			jarSuffix += "-fabric-mixin";
+		}
+
 		minecraftProvider.setJarSuffix(jarSuffix);
 
 		File globalCache = getExtension().getUserCache();
@@ -301,7 +305,12 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		for (Environment environment : Environment.values()) {
 			String side = environment.side();
 			File target = environment.patchedSrgJar.apply(this);
-			walkFileSystems(injection, target, it -> !it.getFileName().toString().equals("MANIFEST.MF"), this::copyReplacing);
+			walkFileSystems(injection, target, it -> {
+				if (it.getFileName().toString().equals("MANIFEST.MF")) {
+					return false;
+				}
+				return getExtension().useFabricMixin || !it.getFileName().toString().endsWith("cpw.mods.modlauncher.api.ITransformationService");
+			}, this::copyReplacing);
 		}
 	}
 

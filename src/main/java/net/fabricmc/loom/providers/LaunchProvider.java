@@ -83,8 +83,13 @@ public class LaunchProvider extends DependencyProvider {
 					.argument("server", "--launchTarget")
 					.argument("server", "fmluserdevserver")
 					
-					.property("mixin.env.remapRefMap", "true")
-					.property("net.minecraftforge.gradle.GradleStart.srg.srg-mcp", getExtension().getMappingsProvider().srgToNamedSrg.getAbsolutePath());
+					.property("mixin.env.remapRefMap", "true");
+			
+			if (getExtension().useFabricMixin) {
+				launchConfig.property("mixin.forgeloom.inject.mappings.srg-named", getExtension().getMappingsProvider().mixinTinyMappingsWithSrg.getAbsolutePath());
+			} else {
+				launchConfig.property("net.minecraftforge.gradle.GradleStart.srg.srg-mcp", getExtension().getMappingsProvider().srgToNamedSrg.getAbsolutePath());
+			}
 
 			String mixinConfig = getExtension().mixinConfig;
 			List<String> mixinConfigs = getExtension().mixinConfigs;

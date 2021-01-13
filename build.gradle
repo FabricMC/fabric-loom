@@ -87,6 +87,9 @@ dependencies {
 	// Forge injection
 	forgeInjectShadow ('net.fabricmc:tiny-mappings-parser:0.2.2.14')
 	forgeInjectImplementation ('cpw.mods:modlauncher:6.1.3')
+	forgeInjectImplementation ('org.spongepowered:mixin:0.8.2')
+	forgeInjectImplementation ('com.google.code.gson:gson:2.8.6')
+	forgeInjectImplementation ('com.google.guava:guava:21.0')
 
 	// Testing
 	testImplementation(gradleTestKit())

@@ -24,24 +24,19 @@
 
 package net.fabricmc.loom.providers;
 
-import java.io.File;
-import java.io.Reader;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.function.Consumer;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.gradle.api.Project;
-
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DependencyProvider;
+import org.gradle.api.Project;
+
+import java.io.File;
+import java.io.Reader;
+import java.net.URI;
+import java.nio.file.*;
+import java.util.function.Consumer;
 
 public class ForgeUserdevProvider extends DependencyProvider {
 	private File userdevJar;
@@ -79,7 +74,11 @@ public class ForgeUserdevProvider extends DependencyProvider {
 		addDependency(json.get("universal").getAsString(), Constants.Configurations.FORGE_UNIVERSAL);
 
 		for (JsonElement lib : json.get("libraries").getAsJsonArray()) {
-			addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
+			if (!getExtension().useFabricMixin || !lib.getAsString().startsWith("org.spongepowered:mixin:")) {
+				addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
+			} else {
+				addDependency("net.fabricmc:sponge-mixin:0.8+build.18", Constants.Configurations.FORGE_DEPENDENCIES);
+			}
 		}
 
 		// TODO: Read launch configs from the JSON too

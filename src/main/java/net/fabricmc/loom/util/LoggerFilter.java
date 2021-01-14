@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.util;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.PrintStream;
+
+import org.jetbrains.annotations.NotNull;
 
 public class LoggerFilter {
 	public static void replaceSystemOut() {
@@ -38,10 +38,12 @@ public class LoggerFilter {
 					if (format.equals("unknown invokedynamic bsm: %s/%s%s (tag=%d iif=%b)%n")) {
 						return this;
 					}
+
 					return super.printf(format, args);
 				}
 			});
 		} catch (SecurityException ignored) {
+			// Failed to replace logger filter, just ignore
 		}
 	}
 }

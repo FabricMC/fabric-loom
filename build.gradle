@@ -15,7 +15,7 @@ targetCompatibility = 1.8
 
 group = 'me.shedaniel'
 archivesBaseName = project.name
-def baseVersion = '0.5'
+def baseVersion = '0.6'
 
 def build = "release #${System.getenv("GITHUB_RUN_NUMBER") == null ? "custom" : System.getenv("GITHUB_RUN_NUMBER")}"
 version = baseVersion + "." + (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
@@ -67,7 +67,7 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:procyon-fabric-compilertools:0.5.35.13')
-	implementation ('org.jetbrains:intellij-fernflower:1.2.1.16')
+	implementation ('net.fabricmc:fabric-fernflower:1.3.0')
 	implementation ('org.benf:cfr:0.150')
 
 	// source code remapping
@@ -96,6 +96,9 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:1.3-groovy-2.4') {
 		exclude module: 'groovy-all'
 	}
+
+	compileOnly 'org.jetbrains:annotations:20.1.0'
+
 }
 
 task forgeInjectJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {

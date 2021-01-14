@@ -24,14 +24,6 @@
 
 package net.fabricmc.loom.util.srg;
 
-import net.fabricmc.loom.util.function.CollectionUtil;
-import net.fabricmc.mapping.tree.TinyTree;
-import org.apache.logging.log4j.util.Strings;
-import org.gradle.api.logging.Logger;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
@@ -40,6 +32,15 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.zip.ZipEntry;
 
+import org.apache.logging.log4j.util.Strings;
+import org.gradle.api.logging.Logger;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+
+import net.fabricmc.loom.util.function.CollectionUtil;
+import net.fabricmc.mapping.tree.TinyTree;
+
 /**
  * Remaps AT classes from SRG to Yarn.
  *
@@ -47,7 +48,7 @@ import java.util.zip.ZipEntry;
  */
 public final class AtRemapper {
 	public static void remap(Logger logger, Path jar, TinyTree mappings) throws IOException {
-		ZipUtil.transformEntries(jar.toFile(), new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("META-INF/accesstransformer.cfg", new StringZipEntryTransformer() {
+		ZipUtil.transformEntries(jar.toFile(), new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("META-INF/accesstransformer.cfg", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) {
 				String[] lines = input.split("\n");
@@ -62,16 +63,19 @@ public final class AtRemapper {
 					}
 
 					String[] parts = line.split("\\s+");
+
 					if (parts.length < 2) {
 						logger.warn("Invalid AT Line: " + line);
 						output.add(i, line);
 						continue;
 					}
+
 					String name = parts[1].replace('.', '/');
 					parts[1] = CollectionUtil.find(
 							mappings.getClasses(),
 							def -> def.getName("srg").equals(name)
 					).map(def -> def.getName("named")).orElse(name).replace('/', '.');
+
 					if (parts.length >= 3) {
 						if (parts[2].contains("(")) {
 							parts[2] = parts[2].substring(0, parts[2].indexOf('(')) + remapDescriptor(parts[2].substring(parts[2].indexOf('(')), s -> {
@@ -97,25 +101,31 @@ public final class AtRemapper {
 			StringBuilder result = new StringBuilder();
 			boolean insideClassName = false;
 			StringBuilder className = new StringBuilder();
+
 			while (true) {
 				int c = reader.read();
+
 				if (c == -1) {
 					break;
 				}
+
 				if ((char) c == ';') {
 					insideClassName = false;
 					result.append(classMappings.apply(className.toString()));
 				}
+
 				if (insideClassName) {
 					className.append((char) c);
 				} else {
 					result.append((char) c);
 				}
+
 				if (!insideClassName && (char) c == 'L') {
 					insideClassName = true;
 					className.setLength(0);
 				}
 			}
+
 			return result.toString();
 		} catch (IOException e) {
 			throw new AssertionError(e);

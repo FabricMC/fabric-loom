@@ -4,13 +4,26 @@ Talk to us on [Discord](https://discord.gg/C2RdJDpRBP)!
 
 A fork of [Juuxel's Loom fork]("https://github.com/Juuxel/fabric-loom") that is a fork of [Fabric Loom](https://github.com/FabricMC/fabric-loom) that supports the Forge modding toolchain.
 
-Note that if ForgeGradle works fine for you, *use it*.
-This is not meant to be a complete replacement for ForgeGradle,
-and there are probably many bugs and limitations here that FG doesn't have.
+A [Gradle](https://gradle.org/) plugin to setup a deobfuscated development environment for Minecraft mods. Primarily used in the Fabric toolchain.
+
+* Has built in support for tiny mappings (Used by [Yarn](https://github.com/FabricMC/yarn))
+* Utilises the Fernflower and CFR decompilers to generate source code with comments.
+* Designed to support modern versions of Minecraft (Tested with 1.14.4 and upwards)
+* ~~Built in support for IntelliJ IDEA, Eclipse and Visual Studio Code to generate run configurations for Minecraft.~~
+* Loom targets a wide range of Gradle versions. _Tested with 4.9 up to 6.7_
+* Supports the latest version of Java all the way down to Java 8
 
 ## Usage
 
 Starting with a Fabric project similar to the example mod,
+
+## Use Loom to develop mods
+
+To get started developing your own mods please follow the guide on [Setting up a mod development environment](https://fabricmc.net/wiki/tutorial:setup).
+
+## Debugging Loom (Only needed if you want to work on Loom itself)
+
+_This guide assumes you are using IntelliJ IDEA, other IDE's have not been tested; your experience may vary._
 
 Then you need to set `loom.forge = true` in your `gradle.properties`,
 and add the Forge dependency:

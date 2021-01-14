@@ -1,13 +1,5 @@
 package net.fabricmc.loom.util.srg;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.util.GradleVersion;
-import org.zeroturnaround.zip.ZipUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +12,15 @@ import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Project;
+import org.gradle.api.tasks.JavaExec;
+import org.gradle.util.GradleVersion;
+import org.zeroturnaround.zip.ZipUtil;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+
 public class SpecialSourceExecutor {
 	public static Path produceSrgJar(Project project, MappingsProvider provider, String side, File specialSourceJar, Path officialJar, Path srgPath)
 			throws Exception {
@@ -30,6 +31,7 @@ public class SpecialSourceExecutor {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Path stripped = extension.getProjectBuildCache().toPath().resolve(officialJar.getFileName().toString().substring(0, officialJar.getFileName().toString().length() - 4) + "-filtered.jar");
 		Files.deleteIfExists(stripped);
+
 		try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(stripped))) {
 			ZipUtil.iterate(officialJar.toFile(), (in, zipEntry) -> {
 				if (filter.contains(zipEntry.getName())) {
@@ -39,10 +41,11 @@ public class SpecialSourceExecutor {
 				}
 			});
 		}
+
 		Path output = extension.getProjectBuildCache().toPath().resolve(officialJar.getFileName().toString().substring(0, officialJar.getFileName().toString().length() - 4) + "-srg-output.jar");
 		Files.deleteIfExists(output);
 
-		String[] args = new String[]{
+		String[] args = new String[] {
 				"--in-jar",
 				stripped.toAbsolutePath().toString(),
 				"--out-jar",
@@ -59,6 +62,7 @@ public class SpecialSourceExecutor {
 		java.setMain("net.md_5.specialsource.SpecialSource");
 		java.setStandardOutput(System.out);
 		java.exec();
+
 		if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
 			java.setEnabled(false);
 		} else {

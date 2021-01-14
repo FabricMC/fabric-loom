@@ -34,16 +34,17 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.fabricmc.loom.util.*;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -53,21 +54,29 @@ import org.gradle.jvm.tasks.Jar;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MappingsProvider;
-import net.fabricmc.loom.util.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.build.JarRemapper;
+import net.fabricmc.loom.build.MixinRefmapHelper;
+import net.fabricmc.loom.build.NestedJars;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.util.LoggerFilter;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
+import net.fabricmc.loom.util.gradle.GradleSupport;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
+	private final List<Action<TinyRemapper.Builder>> remapOptions = new ArrayList<>();
 	private final Property<String> fromM;
 	private final Property<String> toM;
 	public JarRemapper jarRemapper;
+	private FileCollection classpath;
 
 	public RemapJarTask() {
 		super();
@@ -106,11 +115,8 @@ public class RemapJarTask extends Jar {
 		String fromM = this.fromM.get();
 		String toM = this.toM.get();
 
-		Set<File> classpathFiles = new LinkedHashSet<>(
-				project.getConfigurations().getByName("compileClasspath").getFiles()
-		);
-		Path[] classpath = classpathFiles.stream().map(File::toPath).filter((p) -> !input.equals(p) && Files.exists(p)).toArray(Path[]::new);
-		
+		Path[] classpath = getRemapClasspath();
+
 		LoggerFilter.replaceSystemOut();
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
 
@@ -120,6 +126,11 @@ public class RemapJarTask extends Jar {
 			if (mixinMapFile.exists()) {
 				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
 			}
+		}
+
+		// Apply any requested options to tiny remapper
+		for (Action<TinyRemapper.Builder> remapOption : this.remapOptions) {
+			remapOption.execute(remapperBuilder);
 		}
 
 		project.getLogger().lifecycle(":remapping " + input.getFileName());
@@ -157,23 +168,25 @@ public class RemapJarTask extends Jar {
 		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), extension.getMixinJsonVersion(), output)) {
 			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 		}
-		
+
 		if (extension.isForge()) {
 			try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
 				Path refmapPath = fs.getPath(extension.getRefmapName());
-				
+
 				if (Files.exists(refmapPath)) {
 					try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
 						JsonObject refmapElement = new JsonParser().parse(refmapReader).getAsJsonObject().deepCopy();
 						Files.delete(refmapPath);
+
 						if (refmapElement.has("data")) {
 							JsonObject data = refmapElement.get("data").getAsJsonObject();
-							
+
 							if (data.has("named:intermediary")) {
 								data.add("searge", data.get("named:intermediary").deepCopy());
 								data.remove("named:intermediary");
 							}
 						}
+
 						Files.write(refmapPath, new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create().toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
 					}
 				}
@@ -186,16 +199,9 @@ public class RemapJarTask extends Jar {
 			}
 		}
 
-		/*try {
-			if (modJar.exists()) {
-				Files.move(modJar, modJarUnmappedCopy);
-				extension.addUnmappedMod(modJarUnmappedCopy);
-			}
-
-			Files.move(modJarOutput, modJar);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}*/
+		if (isReproducibleFileOrder() || isPreserveFileTimestamps()) {
+			ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
+		}
 	}
 
 	public void scheduleRemap() throws Throwable {
@@ -214,16 +220,7 @@ public class RemapJarTask extends Jar {
 		String toM = this.toM.get();
 
 		if (extension.isRootProject()) {
-			Set<File> classpathFiles = new LinkedHashSet<>(
-					project.getConfigurations().getByName("compileClasspath").getFiles()
-			);
-
-			Path[] classpath = classpathFiles.stream()
-					.map(File::toPath)
-					.filter(Files::exists)
-					.toArray(Path[]::new);
-
-			jarRemapper.addToClasspath(classpath);
+			jarRemapper.addToClasspath(getRemapClasspath());
 
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 		}
@@ -233,6 +230,9 @@ public class RemapJarTask extends Jar {
 				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
 			}
 		}
+
+		// Add remap options to the jar remapper
+		jarRemapper.addOptions(this.remapOptions);
 
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
@@ -276,6 +276,19 @@ public class RemapJarTask extends Jar {
 				});
 	}
 
+	private Path[] getRemapClasspath() {
+		FileCollection files = this.classpath;
+
+		if (files == null) {
+			files = getProject().getConfigurations().getByName("compileClasspath");
+		}
+
+		return files.getFiles().stream()
+				.map(File::toPath)
+				.filter(Files::exists)
+				.toArray(Path[]::new);
+	}
+
 	@InputFile
 	public RegularFileProperty getInput() {
 		return input;
@@ -289,6 +302,20 @@ public class RemapJarTask extends Jar {
 	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
+	}
+
+	public void remapOptions(Action<TinyRemapper.Builder> action) {
+		this.remapOptions.add(action);
+	}
+
+	public RemapJarTask classpath(FileCollection collection) {
+		if (this.classpath == null) {
+			this.classpath = collection;
+		} else {
+			this.classpath = this.classpath.plus(collection);
+		}
+
+		return this;
 	}
 
 	@Input

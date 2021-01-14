@@ -1,12 +1,15 @@
 package net.fabricmc.loom.util;
 
-import org.gradle.internal.impldep.com.google.api.client.repackaged.com.google.common.base.Function;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ThreadingUtils {
@@ -24,6 +27,7 @@ public class ThreadingUtils {
 		try {
 			ExecutorService service = Executors.newFixedThreadPool(Math.min(jobs.size(), Runtime.getRuntime().availableProcessors() / 2));
 			List<Future<?>> futures = new LinkedList<>();
+
 			for (UnsafeRunnable runnable : jobs) {
 				futures.add(service.submit(() -> {
 					try {
@@ -33,9 +37,11 @@ public class ThreadingUtils {
 					}
 				}));
 			}
+
 			for (Future<?> future : futures) {
 				future.get();
 			}
+
 			service.shutdownNow();
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
@@ -57,6 +63,8 @@ public class ThreadingUtils {
 		try {
 			ExecutorService service = Executors.newFixedThreadPool(Math.min(jobs.size(), Runtime.getRuntime().availableProcessors() / 2));
 			List<Future<T>> futures = new LinkedList<>();
+			List<T> result = new ArrayList<>();
+
 			for (UnsafeCallable<T> runnable : jobs) {
 				futures.add(service.submit(() -> {
 					try {
@@ -66,10 +74,11 @@ public class ThreadingUtils {
 					}
 				}));
 			}
-			List<T> result = new ArrayList<>();
+
 			for (Future<T> future : futures) {
 				result.add(future.get());
 			}
+
 			service.shutdownNow();
 			return result;
 		} catch (InterruptedException | ExecutionException e) {

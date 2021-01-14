@@ -3,7 +3,7 @@ name: Java CI
 on:
   push:
     branches:
-      - 'dev/0.5-forge'
+      - 'dev/0.6-forge'
 
 jobs:
   build:

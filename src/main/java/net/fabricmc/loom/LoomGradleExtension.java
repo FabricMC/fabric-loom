@@ -38,10 +38,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
 import com.google.gson.JsonObject;
-import net.fabricmc.loom.providers.*;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
@@ -49,13 +46,23 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.processors.JarProcessor;
-import net.fabricmc.loom.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.forge.ForgeProvider;
+import net.fabricmc.loom.configuration.providers.forge.ForgeUniversalProvider;
+import net.fabricmc.loom.configuration.providers.forge.ForgeUserdevProvider;
+import net.fabricmc.loom.configuration.providers.forge.McpConfigProvider;
+import net.fabricmc.loom.configuration.providers.forge.PatchProvider;
+import net.fabricmc.loom.configuration.providers.forge.SrgProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.function.LazyBool;
-import net.fabricmc.loom.util.LoomDependencyManager;
-import net.fabricmc.loom.util.mappings.MojangMappingsDependency;
 
 public class LoomGradleExtension {
 	private static final String FORGE_PROPERTY = "loom.forge";
@@ -117,32 +124,32 @@ public class LoomGradleExtension {
 	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
-	
+
 	public void addTaskBeforeRun(String task) {
-		synchronized(this.tasksBeforeRun) {
+		synchronized (this.tasksBeforeRun) {
 			this.tasksBeforeRun.add(task);
 		}
 	}
-	
+
 	public List<String> getTasksBeforeRun() {
 		return tasksBeforeRun;
 	}
-	
+
 	public void silentMojangMappingsLicense() {
 		this.silentMojangMappingsLicense = true;
 	}
-	
+
 	public boolean isSilentMojangMappingsLicenseEnabled() {
 		return silentMojangMappingsLicense;
 	}
-	
+
 	public Dependency officialMojangMappings() {
 		return new MojangMappingsDependency(project, this);
 	}
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
-		this.autoGenIDERuns = AbstractPlugin.isRootProject(project);
+		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
 		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
 	}
@@ -162,8 +169,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-			.map(File::toPath)
-			.collect(Collectors.toList());
+				.map(File::toPath)
+				.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -263,10 +270,8 @@ public class LoomGradleExtension {
 	}
 
 	public File getNativesDirectory() {
-		Object customNativesDir = project.getProperties().get("fabric.loom.natives.dir");
-
-		if (customNativesDir != null) {
-			return new File((String) customNativesDir);
+		if (project.hasProperty("fabric.loom.natives.dir")) {
+			return new File((String) project.property("fabric.loom.natives.dir"));
 		}
 
 		File natives = new File(getUserCache(), "natives/" + getMinecraftProvider().getMinecraftVersion());
@@ -308,7 +313,7 @@ public class LoomGradleExtension {
 		Project p = this.project;
 		T result;
 
-		while (!AbstractPlugin.isRootProject(p)) {
+		while (p != p.getRootProject()) {
 			if ((result = projectTFunction.apply(p)) != null) {
 				return result;
 			}
@@ -392,7 +397,7 @@ public class LoomGradleExtension {
 	public McpConfigProvider getMcpConfigProvider() {
 		return getDependencyManager().getProvider(McpConfigProvider.class);
 	}
-	
+
 	public SrgProvider getSrgProvider() {
 		return getDependencyManager().getProvider(SrgProvider.class);
 	}
@@ -428,11 +433,13 @@ public class LoomGradleExtension {
 	public String getRefmapName() {
 		if (refmapName == null || refmapName.isEmpty()) {
 			String defaultRefmapName;
+
 			if (isRootProject()) {
 				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
 			} else {
 				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-" + project.getPath().replaceFirst(":", "") + "-refmap.json";
 			}
+
 			project.getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
 			refmapName = defaultRefmapName;
 		}
@@ -473,12 +480,12 @@ public class LoomGradleExtension {
 	public boolean isForge() {
 		return forge.getAsBoolean();
 	}
-	
+
 	public boolean shouldGenerateSrgTiny() {
 		if (generateSrgTiny != null) {
 			return generateSrgTiny;
 		}
-		
+
 		return isForge();
 	}
 
@@ -492,5 +499,9 @@ public class LoomGradleExtension {
 
 	public Set<File> getAllMixinMappings() {
 		return Collections.unmodifiableSet(mixinMappings);
+	}
+
+	public List<LoomDecompiler> getDecompilers() {
+		return decompilers;
 	}
 }

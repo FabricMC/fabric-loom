@@ -24,26 +24,31 @@
 
 package net.fabricmc.loom.util.srg;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import net.fabricmc.loom.util.function.CollectionUtil;
-import net.fabricmc.mapping.tree.TinyTree;
-import org.apache.logging.log4j.util.Strings;
-import org.gradle.api.logging.Logger;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.apache.logging.log4j.util.Strings;
+import org.gradle.api.logging.Logger;
+
+import net.fabricmc.loom.util.function.CollectionUtil;
+import net.fabricmc.mapping.tree.TinyTree;
 
 /**
  * Remaps coremod class names from SRG to Yarn.
@@ -101,7 +106,7 @@ public final class CoreModClassRemapper {
 				}
 			}
 		}
-		
+
 		if (!lines.equals(output)) {
 			try (Writer writer = Files.newBufferedWriter(js, StandardCharsets.UTF_8, StandardOpenOption.WRITE)) {
 				writer.write(String.join(Strings.LINE_SEPARATOR, output));

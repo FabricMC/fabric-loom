@@ -94,6 +94,7 @@ dependencies {
 	forgeInjectImplementation ('org.spongepowered:mixin:0.8.2')
 	forgeInjectImplementation ('com.google.code.gson:gson:2.8.6')
 	forgeInjectImplementation ('com.google.guava:guava:21.0')
+	forgeInjectImplementation ('org.apache.logging.log4j:log4j-api:2.11.2')
 
 	// Testing
 	testImplementation(gradleTestKit())

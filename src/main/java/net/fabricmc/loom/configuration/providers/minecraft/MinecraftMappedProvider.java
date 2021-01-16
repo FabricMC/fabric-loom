@@ -136,6 +136,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 		Path outputSrg = minecraftSrgJar == null ? null : minecraftSrgJar.toPath();
 
+		Path[] libraries = getRemapClasspath(getProject());
+
 		ThreadingUtils.run(getExtension().isForge() ? Arrays.asList("named", "intermediary", "srg") : Arrays.asList("named", "intermediary"), toM -> {
 			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
 
@@ -150,7 +152,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 					outputConsumer.addNonClassFiles(input);
 				}
 
-				remapper.readClassPath(getRemapClasspath());
+				remapper.readClassPath(libraries);
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);
 			} catch (Exception e) {
@@ -220,8 +222,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		return builder.build();
 	}
 
-	public Path[] getRemapClasspath() {
-		return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
+	public static Path[] getRemapClasspath(Project project) {
+		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 

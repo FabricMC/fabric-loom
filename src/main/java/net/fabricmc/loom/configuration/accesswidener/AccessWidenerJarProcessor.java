@@ -54,6 +54,7 @@ import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -88,7 +89,8 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		if (!accessWidener.getNamespace().equals("named")) {
 			try {
 				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper(null, "official", "named");
-				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
+				loomGradleExtension.getMinecraftMappedProvider();
+				tinyRemapper.readClassPath(MinecraftMappedProvider.getRemapClasspath(project));
 
 				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "named");
 				accessWidener = remapper.remap();

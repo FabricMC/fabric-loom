@@ -75,6 +75,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -415,11 +416,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void remapPatchedJars(Logger logger) throws Exception {
-		Path[] libraries = getProject().getConfigurations()
-				.getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES)
-				.getFiles()
-				.stream().map(File::toPath)
-				.toArray(Path[]::new);
+		Path[] libraries = MinecraftMappedProvider.getRemapClasspath(getProject());
 
 		ThreadingUtils.run(Arrays.asList(Environment.values()), environment -> {
 			logger.lifecycle(":remapping minecraft (TinyRemapper, " + environment.side() + ", srg -> official)");

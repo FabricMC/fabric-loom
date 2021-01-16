@@ -28,9 +28,12 @@ import java.lang.reflect.Method;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.util.GradleVersion;
 
 // This is used to bridge the gap over large gradle api changes.
 public class GradleSupport {
+	public static final boolean IS_GRADLE_7_OR_NEWER = isIsGradle7OrNewer();
+
 	public static RegularFileProperty getfileProperty(Project project) {
 		try {
 			// First try the new method, if that fails fall back.
@@ -58,5 +61,10 @@ public class GradleSupport {
 		Method method = object.getClass().getDeclaredMethod("fileProperty");
 		method.setAccessible(true);
 		return (RegularFileProperty) method.invoke(object);
+	}
+
+	public static boolean isIsGradle7OrNewer() {
+		String version = GradleVersion.current().getVersion();
+		return Integer.parseInt(version.substring(0, version.indexOf("."))) >= 7;
 	}
 }

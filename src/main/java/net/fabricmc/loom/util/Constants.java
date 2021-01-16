@@ -43,7 +43,7 @@ public class Constants {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	private static final List<RemappedConfigurationEntry> LEGACY_MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
+			new RemappedConfigurationEntry("modCompile", Configurations.COMPILE, true, "compile"),
 			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
 			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
 			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, ""),
@@ -76,6 +76,8 @@ public class Constants {
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
+		@Deprecated // Not to be used in gradle 7+
+		public static final String COMPILE = "compile";
 
 		private Configurations() {
 		}

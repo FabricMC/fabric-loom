@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -294,7 +295,7 @@ public class LoomGradleExtension {
 	@Nullable
 	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
 		for (Configuration config : configs) {
-			for (Dependency dependency : config.getDependencies()) {
+			for (Dependency dependency : config.getAllDependencies()) {
 				String group = dependency.getGroup();
 				String name = dependency.getName();
 
@@ -328,7 +329,7 @@ public class LoomGradleExtension {
 	@Nullable
 	private Dependency getMixinDependency() {
 		return recurseProjects((p) -> {
-			List<Configuration> configs = new ArrayList<>();
+			Set<Configuration> configs = new LinkedHashSet<>();
 			// check compile classpath first
 			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
 

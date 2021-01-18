@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
@@ -74,7 +75,16 @@ public final class CompileConfiguration {
 	public static void setupConfigurations(Project project) {
 		// Force add Mojang and Forge repositories
 		addMavenRepo(project, "Mojang", "https://libraries.minecraft.net/");
-		addMavenRepo(project, "Forge", "https://files.minecraftforge.net/maven/");
+		addMavenRepo(project, "Forge", "https://files.minecraftforge.net/maven/", repo -> {
+			repo.metadataSources(sources -> {
+				sources.mavenPom();
+				try {
+					MavenArtifactRepository.MetadataSources.class.getDeclaredMethod("ignoreGradleMetadataRedirection")
+							.invoke(sources);
+				} catch (Throwable ignored) {
+				}
+			});
+		});
 
 		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
@@ -154,9 +164,15 @@ public final class CompileConfiguration {
 	 * @return An object containing the name and the URL of the repository that can be modified later
 	 */
 	public static MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
+		return addMavenRepo(target, name, url, repo -> {
+		});
+	}
+
+	public static MavenArtifactRepository addMavenRepo(Project target, final String name, final String url, final Action<MavenArtifactRepository> action) {
 		return target.getRepositories().maven(repo -> {
 			repo.setName(name);
 			repo.setUrl(url);
+			action.execute(repo);
 		});
 	}
 

@@ -253,6 +253,7 @@ public class MojangMappingsDependency extends AbstractModuleDependency implement
 
 	@Override
 	public String getVersion() {
+		if (extension.getDependencyManager() == null) return "1.0.0";
 		return extension.getMinecraftProvider().getMinecraftVersion();
 	}
 

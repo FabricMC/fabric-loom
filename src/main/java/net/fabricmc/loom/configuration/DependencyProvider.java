@@ -63,10 +63,6 @@ public abstract class DependencyProvider {
 
 	public abstract String getTargetConfig();
 
-	public void addDependency(Object object) {
-		addDependency(object, "compile");
-	}
-
 	public Dependency addDependency(Object object, String target) {
 		if (object instanceof File) {
 			object = project.files(object);

@@ -78,10 +78,12 @@ public final class CompileConfiguration {
 		addMavenRepo(project, "Forge", "https://files.minecraftforge.net/maven/", repo -> {
 			repo.metadataSources(sources -> {
 				sources.mavenPom();
+
 				try {
 					MavenArtifactRepository.MetadataSources.class.getDeclaredMethod("ignoreGradleMetadataRedirection")
 							.invoke(sources);
 				} catch (Throwable ignored) {
+					// Method not available
 				}
 			});
 		});

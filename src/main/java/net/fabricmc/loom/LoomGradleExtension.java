@@ -314,7 +314,7 @@ public class LoomGradleExtension {
 		Project p = this.project;
 		T result;
 
-		while (p != p.getRootProject()) {
+		while (p.getRootProject() != p) {
 			if ((result = projectTFunction.apply(p)) != null) {
 				return result;
 			}

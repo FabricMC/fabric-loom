@@ -51,6 +51,7 @@ import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -96,7 +97,7 @@ public class ModCompileRemapper {
 
 				File remappedSources = info.getRemappedOutput("sources");
 
-				if (!remappedSources.exists() || refreshDeps) {
+				if ((!remappedSources.exists() || refreshDeps) && !OperatingSystem.isCIBuild()) {
 					File sources = findSources(dependencies, artifact);
 
 					if (sources != null) {

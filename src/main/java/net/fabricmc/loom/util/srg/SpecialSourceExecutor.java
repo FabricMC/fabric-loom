@@ -31,15 +31,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.UUID;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.JavaExec;
-import org.gradle.util.GradleVersion;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -79,19 +76,17 @@ public class SpecialSourceExecutor {
 		};
 
 		project.getLogger().lifecycle(":remapping minecraft (SpecialSource, " + side + ", official -> srg)");
-		JavaExec java = project.getTasks().create("PleaseIgnore_JavaExec_" + UUID.randomUUID().toString().replace("-", ""), JavaExec.class);
-		java.setArgs(Arrays.asList(args));
-		java.setClasspath(project.files(specialSourceJar));
-		java.setWorkingDir(tmpDir().toFile());
-		java.setMain("net.md_5.specialsource.SpecialSource");
-		java.setStandardOutput(System.out);
-		java.exec();
 
-		if (GradleVersion.current().compareTo(GradleVersion.version("6.0.0")) >= 0) {
-			java.setEnabled(false);
-		} else {
-			project.getTasks().remove(java);
-		}
+		Path workingDir = tmpDir();
+
+		project.javaexec(spec -> {
+			spec.setArgs(Arrays.asList(args));
+			spec.setClasspath(project.files(specialSourceJar));
+			spec.workingDir(workingDir.toFile());
+			spec.setMain("net.md_5.specialsource.SpecialSource");
+			spec.setStandardOutput(System.out);
+			spec.setErrorOutput(System.out);
+		}).rethrowFailure().assertNormalExitValue();
 
 		Files.deleteIfExists(stripped);
 

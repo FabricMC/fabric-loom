@@ -140,6 +140,8 @@ apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.g
 
 license {
 	exclude '**/loom/util/DownloadUtil.java'
+	exclude '**/loom/util/FileSystemUtil.java'
+	exclude '**/loom/inject/mixin/MixinIntermediaryDevRemapper.java'
 }
 
 checkstyle {

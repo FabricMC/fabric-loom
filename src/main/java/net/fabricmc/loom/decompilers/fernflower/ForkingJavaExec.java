@@ -42,7 +42,8 @@ public class ForkingJavaExec {
 	public static ExecResult javaexec(Project project, Action<? super JavaExecSpec> action) {
 		ConfigurationContainer configurations = project.getBuildscript().getConfigurations();
 		DependencyHandler handler = project.getDependencies();
-		FileCollection classpath = configurations.getByName("classpath")//
+		FileCollection classpath = project.getBuildscript().getConfigurations().getByName("classpath")
+						.plus(project.getRootProject().getBuildscript().getConfigurations().getByName("classpath"))
 						.plus(configurations.detachedConfiguration(handler.localGroovy()));
 
 		return project.javaexec(spec -> {

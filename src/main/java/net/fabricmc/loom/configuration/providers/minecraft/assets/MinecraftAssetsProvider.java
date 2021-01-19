@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -91,9 +92,11 @@ public class MinecraftAssetsProvider {
 			index = new Gson().fromJson(fileReader, AssetIndex.class);
 		}
 
+		Stopwatch stopwatch = Stopwatch.createStarted();
+
 		Map<String, AssetObject> parent = index.getFileMap();
 
-		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
+		parent.entrySet().parallelStream().forEach(entry -> {
 			AssetObject object = entry.getValue();
 			String sha1 = object.getHash();
 			String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
@@ -140,7 +143,9 @@ public class MinecraftAssetsProvider {
 					});
 				}
 			}
-		}
+		});
+
+		project.getLogger().info("Took " + stopwatch.stop() + " to iterate " + parent.size() + " asset index.");
 
 		//Wait for the assets to all download
 		executor.shutdown();

@@ -46,8 +46,8 @@ public class DownloadUtil {
 	 * @param logger The logger to print everything to, typically from {@link Project#getLogger()}
 	 * @throws IOException If an exception occurs during the process
 	 */
-	public static void downloadIfChanged(URL from, File to, Logger logger) throws IOException {
-		downloadIfChanged(from, to, logger, false);
+	public static boolean downloadIfChanged(URL from, File to, Logger logger) throws IOException {
+		return downloadIfChanged(from, to, logger, false);
 	}
 
 	/**
@@ -59,7 +59,7 @@ public class DownloadUtil {
 	 * @param quiet Whether to only print warnings (when <code>true</code>) or everything
 	 * @throws IOException If an exception occurs during the process
 	 */
-	public static void downloadIfChanged(URL from, File to, Logger logger, boolean quiet) throws IOException {
+	public static boolean downloadIfChanged(URL from, File to, Logger logger, boolean quiet) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
 
 		if (LoomGradlePlugin.refreshDeps) {
@@ -99,7 +99,7 @@ public class DownloadUtil {
 				logger.info("'{}' Not Modified, skipping.", to);
 			}
 
-			return; //What we've got is already fine
+			return false; //What we've got is already fine
 		}
 
 		long contentLength = connection.getContentLengthLong();
@@ -131,6 +131,8 @@ public class DownloadUtil {
 
 			saveETag(to, eTag, logger);
 		}
+
+		return true;
 	}
 
 	/**

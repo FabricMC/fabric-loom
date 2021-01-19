@@ -44,8 +44,9 @@ public class Checksum {
 
 		try {
 			HashCode hash = Files.asByteSource(file).hash(Hashing.sha1());
-			log.debug("Checksum check: '" + hash.toString() + "' == '" + checksum + "'?");
-			return hash.toString().equals(checksum);
+			String hashString = hash.toString();
+			log.debug("Checksum check: '" + hashString + "' == '" + checksum + "'?");
+			return hashString.equals(checksum);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

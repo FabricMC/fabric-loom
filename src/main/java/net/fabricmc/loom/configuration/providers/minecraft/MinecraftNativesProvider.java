@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
+import com.google.common.base.Stopwatch;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
@@ -35,6 +36,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.ThreadingUtils;
 
 public class MinecraftNativesProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
@@ -53,7 +55,9 @@ public class MinecraftNativesProvider {
 			return;
 		}
 
-		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
+		Stopwatch stopwatch = Stopwatch.createStarted();
+
+		ThreadingUtils.run(versionInfo.libraries, library -> {
 			File libJarFile = library.getFile(jarStore);
 
 			if (library.allowed() && library.isNative() && libJarFile != null) {
@@ -68,6 +72,8 @@ public class MinecraftNativesProvider {
 				// TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
 				ZipUtil.unpack(libJarFile, nativesDir);
 			}
-		}
+		});
+
+		project.getLogger().info("Took " + stopwatch.stop() + " to provide " + versionInfo.libraries.size() + " natives.");
 	}
 }

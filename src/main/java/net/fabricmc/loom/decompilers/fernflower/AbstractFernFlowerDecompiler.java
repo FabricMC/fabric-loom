@@ -45,6 +45,7 @@ import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ConsumingOutputStream;
 import net.fabricmc.loom.util.OperatingSystem;
 
@@ -100,7 +101,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 
 		progressGroup.started();
 		ExecResult result = ForkingJavaExec.javaexec(
-				project.getRootProject().getPlugins().hasPlugin("forgified-fabric-loom") ? project.getRootProject() : project,
+				project.getRootProject().getPlugins().hasPlugin(Constants.PLUGIN_ID) ? project.getRootProject() : project,
 				spec -> {
 					spec.setMain(fernFlowerExecutor().getName());
 					spec.jvmArgs("-Xms200m", "-Xmx3G");

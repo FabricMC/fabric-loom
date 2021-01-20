@@ -59,6 +59,7 @@ import net.fabricmc.loom.configuration.providers.forge.PatchProvider;
 import net.fabricmc.loom.configuration.providers.forge.SrgProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.task.GenVsCodeProjectTask;
 import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
@@ -247,6 +248,7 @@ public final class CompileConfiguration {
 
 			if (extension.autoGenIDERuns) {
 				SetupIntelijRunConfigs.setup(project1);
+				GenVsCodeProjectTask.generate(project1);
 			}
 
 			// Enables the default mod remapper

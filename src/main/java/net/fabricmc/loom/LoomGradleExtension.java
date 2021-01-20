@@ -27,6 +27,7 @@ package net.fabricmc.loom;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,11 +43,14 @@ import java.util.stream.Collectors;
 import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -98,6 +102,12 @@ public class LoomGradleExtension {
 	private final LazyBool forge;
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 	private final List<String> tasksBeforeRun = Collections.synchronizedList(new ArrayList<>());
+	public final List<Supplier<SourceSet>> forgeLocalMods = Collections.synchronizedList(new ArrayList<>(Arrays.asList(new Supplier<SourceSet>() {
+		@Override
+		public SourceSet get() {
+			return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
+		}
+	})));
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -126,10 +136,28 @@ public class LoomGradleExtension {
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
 
-	public void addTaskBeforeRun(String task) {
-		synchronized (this.tasksBeforeRun) {
-			this.tasksBeforeRun.add(task);
+	public void localMods(Action<SourceSetConsumer> action) {
+		if (!isForge()) {
+			throw new UnsupportedOperationException("Not running with Forge support.");
 		}
+
+		action.execute(new SourceSetConsumer());
+	}
+
+	public class SourceSetConsumer {
+		public void add(Object... sourceSets) {
+			for (Object sourceSet : sourceSets) {
+				if (sourceSet instanceof SourceSet) {
+					forgeLocalMods.add(() -> (SourceSet) sourceSet);
+				} else {
+					forgeLocalMods.add(() -> project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName(String.valueOf(forgeLocalMods)));
+				}
+			}
+		}
+	}
+
+	public void addTaskBeforeRun(String task) {
+		this.tasksBeforeRun.add(task);
 	}
 
 	public List<String> getTasksBeforeRun() {

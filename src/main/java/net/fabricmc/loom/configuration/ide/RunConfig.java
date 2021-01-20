@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -45,7 +47,6 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.w3c.dom.Document;
@@ -156,16 +157,20 @@ public class RunConfig {
 		}
 
 		if (extension.isForge()) {
-			SourceSet main = project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
+			List<String> modClasses = new ArrayList<>();
 
-			String modClasses = Stream.concat(
-					Stream.of(main.getOutput().getResourcesDir().getAbsolutePath()),
-					StreamSupport.stream(main.getOutput().getClassesDirs().spliterator(), false)
-							.map(File::getAbsolutePath)
-			).map(s -> "loom%%" + s)
-					.collect(Collectors.joining(File.pathSeparator));
+			for (Supplier<SourceSet> sourceSetSupplier : extension.forgeLocalMods) {
+				SourceSet sourceSet = sourceSetSupplier.get();
+				String sourceSetName = sourceSet.getName() + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 7);
 
-			runConfig.envVariables.put("MOD_CLASSES", modClasses);
+				Stream.concat(
+						Stream.of(sourceSet.getOutput().getResourcesDir().getAbsolutePath()),
+						StreamSupport.stream(sourceSet.getOutput().getClassesDirs().spliterator(), false)
+								.map(File::getAbsolutePath)
+				).map(s -> sourceSetName + "%%" + s).collect(Collectors.toCollection(() -> modClasses));
+			}
+
+			runConfig.envVariables.put("MOD_CLASSES", String.join(File.pathSeparator, modClasses));
 		}
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {

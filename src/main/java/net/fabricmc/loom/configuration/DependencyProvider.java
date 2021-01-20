@@ -48,6 +48,7 @@ import org.gradle.api.artifacts.SelfResolvingDependency;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 
 public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
@@ -88,7 +89,7 @@ public abstract class DependencyProvider {
 	}
 
 	public boolean isRefreshDeps() {
-		return getProject().getGradle().getStartParameter().isRefreshDependencies();
+		return LoomGradlePlugin.refreshDeps;
 	}
 
 	public static class DependencyInfo {

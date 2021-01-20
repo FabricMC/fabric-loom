@@ -91,9 +91,11 @@ public class SourceRemapper {
 	}
 
 	public void remapAll() {
-		if (!remapTasks.isEmpty()) {
-			project.getLogger().lifecycle(":remapping sources");
+		if (remapTasks.isEmpty()) {
+			return;
 		}
+
+		project.getLogger().lifecycle(":remapping sources");
 
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, SourceRemapper.class.getName());
 		progressLogger.start("Remapping dependency sources", "sources");

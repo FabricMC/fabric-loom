@@ -47,15 +47,14 @@ public class ForkingJavaExec {
 		});
 	}
 
-	private static Set<Configuration> getForkedFernflowerClasspath(Project project) {
+	private static Configuration[] getForkedFernflowerClasspath(Project project) {
 		Set<Configuration> allConfigurations = new HashSet<>();
-		Project p = project;
+		allConfigurations.addAll(project.getBuildscript().getConfigurations());
 
-		do {
-			allConfigurations.addAll(p.getBuildscript().getConfigurations());
-			p = p.getRootProject();
-		} while (p != p.getRootProject());
+		if (project.getRootProject() != project) {
+			allConfigurations.addAll(project.getRootProject().getBuildscript().getConfigurations());
+		}
 
-		return allConfigurations;
+		return allConfigurations.toArray(new Configuration[0]);
 	}
 }

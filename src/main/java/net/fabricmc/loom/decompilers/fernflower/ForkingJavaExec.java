@@ -24,12 +24,11 @@
 
 package net.fabricmc.loom.decompilers.fernflower;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
 import org.gradle.process.ExecResult;
 import org.gradle.process.JavaExecSpec;
 
@@ -41,20 +40,14 @@ import org.gradle.process.JavaExecSpec;
  */
 public class ForkingJavaExec {
 	public static ExecResult javaexec(Project project, Action<? super JavaExecSpec> action) {
+		ConfigurationContainer configurations = project.getBuildscript().getConfigurations();
+		DependencyHandler handler = project.getDependencies();
+		FileCollection classpath = configurations.getByName("classpath")//
+						.plus(configurations.detachedConfiguration(handler.localGroovy()));
+
 		return project.javaexec(spec -> {
-			spec.classpath(getForkedFernflowerClasspath(project));
+			spec.classpath(classpath);
 			action.execute(spec);
 		});
-	}
-
-	private static Configuration[] getForkedFernflowerClasspath(Project project) {
-		Set<Configuration> allConfigurations = new HashSet<>();
-		allConfigurations.addAll(project.getBuildscript().getConfigurations());
-
-		if (project.getRootProject() != project) {
-			allConfigurations.addAll(project.getRootProject().getBuildscript().getConfigurations());
-		}
-
-		return allConfigurations.toArray(new Configuration[0]);
 	}
 }

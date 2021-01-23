@@ -52,7 +52,7 @@
 	</Appenders>
 	<Loggers>
 		<Logger level="${sys:fabric.log.level:-info}" name="net.minecraft"/>
-        <Logger level="warn" name="cpw.mods.modlauncher.ClassTransformer"/>
+		<Logger level="warn" name="cpw.mods.modlauncher.ClassTransformer"/>
 		<Root level="all">
 			<AppenderRef ref="DebugFile" level="${sys:fabric.log.debug.level:-debug}"/>
 			<AppenderRef ref="SysOut" level="${sys:fabric.log.level:-info}"/>

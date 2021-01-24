@@ -54,6 +54,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
@@ -81,7 +82,7 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 		Path clientMappings = mappingsDir.resolve(String.format("%s.%s-%s-client.map", GROUP, MODULE, getVersion()));
 		Path serverMappings = mappingsDir.resolve(String.format("%s.%s-%s-server.map", GROUP, MODULE, getVersion()));
 
-		if (!Files.exists(mappingsFile) || project.getGradle().getStartParameter().isRefreshDependencies()) {
+		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
 			MappingSet mappingSet;
 
 			try {

@@ -32,6 +32,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
@@ -93,6 +94,12 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
 		if (!accessWidener.getNamespace().equals("named")) {
 			try {
+				List<String> validNamespaces = loomGradleExtension.getMappingsProvider().getMappings().getMetadata().getNamespaces();
+
+				if (!validNamespaces.contains(accessWidener.getNamespace())) {
+					throw new UnsupportedOperationException(String.format("Access Widener namespace '%s' is not a valid namespace, it must be one of: '%s'", accessWidener.getNamespace(), String.join(", ", validNamespaces)));
+				}
+
 				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper("official", "named");
 				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
 

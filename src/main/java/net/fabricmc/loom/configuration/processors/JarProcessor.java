@@ -26,8 +26,6 @@ package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
 
-import net.fabricmc.loom.processors.Environment;
-
 public interface JarProcessor {
 	Environment getEnvironment();
 

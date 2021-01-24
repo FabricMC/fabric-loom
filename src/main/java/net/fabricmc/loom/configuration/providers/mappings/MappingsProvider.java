@@ -46,7 +46,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.processors.EnumWidenerJarProcessor;
+import net.fabricmc.loom.configuration.enumwidener.EnumWidenerJarProcessor;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;

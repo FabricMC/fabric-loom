@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.processors;
+package net.fabricmc.loom.configuration.processors;
 
 public enum Environment {
 	COMPILE,

@@ -35,7 +35,6 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
-import net.fabricmc.loom.processors.Environment;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {

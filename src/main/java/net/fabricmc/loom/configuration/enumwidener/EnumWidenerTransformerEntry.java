@@ -22,42 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.enumwidener;
+package net.fabricmc.loom.configuration.enumwidener;
 
+import java.util.zip.ZipEntry;
+
+import org.gradle.api.Project;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.ClassWriter;
+import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 
 import net.fabricmc.loom.util.Constants;
 
-public class EnumWidenerClassVisitor extends ClassVisitor {
-	public EnumWidenerClassVisitor(int api, ClassVisitor classVisitor) {
-		super(api, classVisitor);
+public class EnumWidenerTransformerEntry extends ByteArrayZipEntryTransformer {
+	private final Project project;
+	private final String klass;
+
+	public EnumWidenerTransformerEntry(Project project, String klass) {
+		this.project = project;
+		this.klass = klass;
 	}
 
 	@Override
-	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-		int widenedAccess = access & ~Opcodes.ACC_ENUM;
+	protected byte[] transform(ZipEntry zipEntry, byte[] input) {
+		ClassWriter writer = new ClassWriter(0);
+		ClassVisitor node = new EnumWidenerClassVisitor(Constants.ASM_VERSION, writer);
 
-		if (widenedAccess == access) {
-			throw new IllegalArgumentException(name + " is not an enum");
-		}
+		this.project.getLogger().lifecycle(String.format("Applying EnumWidener to %s.", klass));
 
-		super.visit(version, widenedAccess, name, signature, superName, interfaces);
-	}
+		new ClassReader(input).accept(node, 0);
 
-	@Override
-	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		return super.visitField(access & ~(Opcodes.ACC_ENUM | Opcodes.ACC_SYNTHETIC), name, descriptor, signature, value);
-	}
-
-	@Override
-	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		return new EnumWidenerMethodVisitor(
-			Constants.ASM_VERSION,
-			super.visitMethod(access, name, descriptor, signature != null && name.equals("<init>") ? signature.replace("(", "(Ljava/lang/String;I") : signature, exceptions),
-			name.equals("<init>")
-		);
+		return writer.toByteArray();
 	}
 }

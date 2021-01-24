@@ -34,29 +34,22 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
@@ -220,19 +213,10 @@ public class ModProcessor {
 				AtRemapper.remap(project.getLogger(), info.getRemappedOutput().toPath(), mappings);
 				CoreModClassRemapper.remapJar(info.getRemappedOutput().toPath(), mappings, project.getLogger());
 
-				Set<String> mixinConfigs = new HashSet<>();
-				Set<String> presentMixinConfigs = new HashSet<>();
-
 				if (ZipUtil.containsEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF")) {
 					ZipUtil.transformEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF", (in, zipEntry, out) -> {
 						Manifest manifest = new Manifest(in);
 						fixManifest(manifest);
-						String configs = manifest.getMainAttributes().getValue("MixinConfigs");
-
-						if (configs != null) {
-							mixinConfigs.addAll(Arrays.asList(configs.split(",")));
-						}
-
 						out.putNextEntry(new ZipEntry(zipEntry.getName()));
 						manifest.write(out);
 						out.closeEntry();
@@ -245,27 +229,9 @@ public class ModProcessor {
 						if (zipEntry.getName().startsWith("META-INF")) {
 							filesToRemove.add(zipEntry.getName());
 						}
-					} else if (mixinConfigs.contains(zipEntry.getName())) {
-						presentMixinConfigs.add(zipEntry.getName());
 					}
 				});
 				ZipUtil.removeEntries(info.getRemappedOutput(), filesToRemove.toArray(new String[0]));
-				Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-				ZipUtil.transformEntries(info.getRemappedOutput(), presentMixinConfigs.stream()
-						.map(path -> new ZipEntryTransformerEntry(path, new ByteArrayZipEntryTransformer() {
-							@Override
-							protected byte[] transform(ZipEntry zipEntry, byte[] input) {
-								try (InputStreamReader reader = new InputStreamReader(new ByteArrayInputStream(input))) {
-									JsonObject object = JsonParser.parseReader(reader).getAsJsonObject();
-									object.remove("minVersion");
-									object.addProperty("minVersion", "0.8");
-									return gson.toJson(object).getBytes(StandardCharsets.UTF_8);
-								} catch (IOException exception) {
-									throw new RuntimeException(exception);
-								}
-							}
-						}))
-						.toArray(ZipEntryTransformerEntry[]::new));
 			}
 
 			info.finaliseRemapping();

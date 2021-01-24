@@ -24,6 +24,10 @@
 
 package net.fabricmc.loom;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -44,7 +48,14 @@ public class LoomGradlePlugin implements Plugin<Project> {
 
 	@Override
 	public void apply(Project project) {
-		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+		String loomVersion = LoomGradlePlugin.class.getPackage().getImplementationVersion();
+		Set<String> loggedVersions = new HashSet<>(Arrays.asList(System.getProperty("loom.printed.logged", "").split(",")));
+
+		if (!loggedVersions.contains(loomVersion)) {
+			loggedVersions.add(loomVersion);
+			System.setProperty("loom.printed.logged", String.join(",", loggedVersions));
+			project.getLogger().lifecycle("Fabric Loom: " + loomVersion);
+		}
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 

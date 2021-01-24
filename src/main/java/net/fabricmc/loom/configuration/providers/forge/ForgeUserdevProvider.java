@@ -79,11 +79,14 @@ public class ForgeUserdevProvider extends DependencyProvider {
 		addDependency(json.get("universal").getAsString(), Constants.Configurations.FORGE_UNIVERSAL);
 
 		for (JsonElement lib : json.get("libraries").getAsJsonArray()) {
-			if (!getExtension().useFabricMixin || !lib.getAsString().startsWith("org.spongepowered:mixin:")) {
-				addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
-			} else {
-				addDependency("net.fabricmc:sponge-mixin:0.8+build.18", Constants.Configurations.FORGE_DEPENDENCIES);
+			if (lib.getAsString().startsWith("org.spongepowered:mixin:")) {
+				if (getExtension().useFabricMixin) {
+					addDependency("net.fabricmc:sponge-mixin:0.8.2+build.24", Constants.Configurations.FORGE_DEPENDENCIES);
+					continue;
+				}
 			}
+
+			addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
 		}
 
 		// TODO: Read launch configs from the JSON too

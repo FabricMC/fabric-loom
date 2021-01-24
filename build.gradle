@@ -16,9 +16,17 @@ targetCompatibility = 1.8
 group = 'me.shedaniel'
 archivesBaseName = project.name
 def baseVersion = '0.6'
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
 
-def build = "release #${System.getenv("GITHUB_RUN_NUMBER") == null ? "custom" : System.getenv("GITHUB_RUN_NUMBER")}"
-version = baseVersion + "." + (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
+def isSnapshot = System.getenv("PR_NUM") != null
+
+def build = "release #$runNumber"
+
+if (!isSnapshot) {
+	version = baseVersion + "." + runNumber
+} else {
+	version = baseVersion + "-PR." + System.getenv("PR_NUM") + "." + runNumber
+}
 
 logger.lifecycle(":building plugin v${version}")
 

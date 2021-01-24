@@ -26,6 +26,8 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -33,19 +35,29 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
 	private Object output;
 	private String direction = "intermediary";
 	private SourceRemapper sourceRemapper = null;
+	private final Property<Boolean> archivePreserveFileTimestamps;
+	private final Property<Boolean> archiveReproducibleFileOrder;
+
+	public RemapSourcesJarTask() {
+		ObjectFactory objectFactory = getProject().getObjects();
+		archivePreserveFileTimestamps = objectFactory.property(Boolean.class);
+		archiveReproducibleFileOrder = objectFactory.property(Boolean.class);
+	}
 
 	@TaskAction
 	public void remap() throws Exception {
 		if (sourceRemapper == null) {
 			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
+			ZipReprocessorUtil.reprocessZip(getOutput(), archivePreserveFileTimestamps.getOrElse(true), archiveReproducibleFileOrder.getOrElse(false));
 		} else {
-			sourceRemapper.scheduleRemapSources(getInput(), getOutput());
+			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), archivePreserveFileTimestamps.getOrElse(true), archiveReproducibleFileOrder.getOrElse(false));
 		}
 	}
 

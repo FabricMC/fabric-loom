@@ -27,24 +27,37 @@ package net.fabricmc.loom.util;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import org.gradle.api.plugins.JavaPlugin;
 import org.objectweb.asm.Opcodes;
+
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.util.gradle.GradleSupport;
 
 public class Constants {
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
-	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modCompile", "compile", true, "compile"),
-			new RemappedConfigurationEntry("modApi", "api", true, "compile"),
-			new RemappedConfigurationEntry("modImplementation", "implementation", true, "runtime"),
-			new RemappedConfigurationEntry("modRuntime", "runtimeOnly", false, ""),
-			new RemappedConfigurationEntry("modCompileOnly", "compileOnly", true, "")
+	private static final List<RemappedConfigurationEntry> LEGACY_MOD_COMPILE_ENTRIES = ImmutableList.of(
+			new RemappedConfigurationEntry("modCompile", Configurations.COMPILE, true, "compile"),
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
+			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, ""),
+			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, "")
 	);
+
+	private static final List<RemappedConfigurationEntry> MODERN_MOD_COMPILE_ENTRIES = ImmutableList.of(
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
+			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, ""),
+			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, "")
+	);
+
+	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = GradleSupport.IS_GRADLE_7_OR_NEWER ? MODERN_MOD_COMPILE_ENTRIES : LEGACY_MOD_COMPILE_ENTRIES;
 
 	private Constants() {
 	}
@@ -60,8 +73,13 @@ public class Constants {
 		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
 		public static final String MINECRAFT_NAMED_COMPILE = "minecraftNamedCompile";
 		public static final String MINECRAFT_NAMED_RUNTIME = "minecraftNamedRuntime";
+		public static final String MINECRAFT_REMAP_CLASSPATH = "minecraftRemapClasspath";
+		public static final String MINECRAFT_NAMED = "minecraftNamed";
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
+		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
+		@Deprecated // Not to be used in gradle 7+
+		public static final String COMPILE = "compile";
 
 		private Configurations() {
 		}

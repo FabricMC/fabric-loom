@@ -35,9 +35,9 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-public class DownloadUtil {
-	public static boolean refreshDeps = false;
+import net.fabricmc.loom.LoomGradlePlugin;
 
+public class DownloadUtil {
 	/**
 	 * Download from the given {@link URL} to the given {@link File} so long as there are differences between them.
 	 *
@@ -62,7 +62,7 @@ public class DownloadUtil {
 	public static void downloadIfChanged(URL from, File to, Logger logger, boolean quiet) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
 
-		if (refreshDeps) {
+		if (LoomGradlePlugin.refreshDeps) {
 			getETagFile(to).delete();
 			to.delete();
 		}
@@ -192,7 +192,7 @@ public class DownloadUtil {
 	 * @param bytes The number of bytes
 	 * @return The given number of bytes formatted to kilobytes, megabytes or gigabytes if appropriate
 	 */
-	private static String toNiceSize(long bytes) {
+	public static String toNiceSize(long bytes) {
 		if (bytes < 1024) {
 			return bytes + " B";
 		} else if (bytes < 1024 * 1024) {

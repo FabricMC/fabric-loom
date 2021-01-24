@@ -4,7 +4,7 @@ jobs:
   gradle:
     strategy:
       matrix:
-        gradle: [4.9, 4.10.2, 6.7]
+        gradle: [4.9, 4.10.2, 6.8.0]
         java: [jdk8, jdk11, jdk15]
         exclude: # Dont run older gradle versions on newer java
           - java: jdk15

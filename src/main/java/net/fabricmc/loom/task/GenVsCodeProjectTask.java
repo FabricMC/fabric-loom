@@ -186,14 +186,16 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		public Map<String, String> env = new LinkedHashMap<>();
 		public transient List<String> tasksBeforeRun = new ArrayList<>();
 		public String preLaunchTask = null;
+		public String projectName = null;
 
 		VsCodeConfiguration(RunConfig runConfig) {
 			this.name = runConfig.configName;
 			this.mainClass = runConfig.mainClass;
 			this.vmArgs = runConfig.vmArgs;
 			this.args = runConfig.programArgs;
+			this.projectName = runConfig.vscodeProjectName;
 			this.env.putAll(runConfig.envVariables);
-			this.tasksBeforeRun.addAll(runConfig.tasksBeforeRun);
+			this.tasksBeforeRun.addAll(runConfig.vscodeBeforeRun);
 		}
 	}
 

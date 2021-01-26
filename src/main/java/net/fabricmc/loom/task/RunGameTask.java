@@ -24,40 +24,11 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.tasks.TaskAction;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
-public class GenEclipseRunsTask extends AbstractLoomTask {
-	@TaskAction
-	public void genRuns() throws IOException {
-		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
-		LoomGradleExtension extension = getExtension();
-
-		for (RunConfigSettings settings : extension.getRuns()) {
-			String name = settings.getName();
-
-			File configs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
-			RunConfig configInst = RunConfig.runConfig(getProject(), settings);
-			String config = configInst.fromDummy("eclipse_run_config_template.xml");
-
-			if (!configs.exists() || RunConfig.needsUpgrade(configs, configInst)) {
-				FileUtils.writeStringToFile(configs, config, StandardCharsets.UTF_8);
-			}
-		}
-
-		File runDir = new File(getProject().getRootDir(), getExtension().runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
+public class RunGameTask extends AbstractRunTask {
+	public RunGameTask(RunConfigSettings settings) {
+		super(proj -> RunConfig.runConfig(proj, settings));
 	}
 }

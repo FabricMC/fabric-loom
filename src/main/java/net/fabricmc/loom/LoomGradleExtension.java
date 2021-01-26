@@ -39,8 +39,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
+import groovy.lang.Closure;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -50,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -58,6 +62,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependen
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
 public class LoomGradleExtension {
+	@Deprecated // Configured in run configurations now
 	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;
@@ -81,6 +86,8 @@ public class LoomGradleExtension {
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
+
+	private NamedDomainObjectContainer<RunConfigSettings> runs;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -117,6 +124,8 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
+		this.runs = project.container(RunConfigSettings.class,
+				baseName -> new RunConfigSettings(project, baseName));
 	}
 
 	/**
@@ -134,8 +143,8 @@ public class LoomGradleExtension {
 	@Deprecated
 	public List<Path> getUnmappedMods() {
 		return unmappedMods.getFiles().stream()
-			.map(File::toPath)
-			.collect(Collectors.toList());
+				.map(File::toPath)
+				.collect(Collectors.toList());
 	}
 
 	public ConfigurableFileCollection getUnmappedModCollection() {
@@ -292,7 +301,7 @@ public class LoomGradleExtension {
 
 	@Nullable
 	private Dependency getMixinDependency() {
-		return recurseProjects((p) -> {
+		return recurseProjects(p -> {
 			List<Configuration> configs = new ArrayList<>();
 			// check compile classpath first
 			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
@@ -309,11 +318,7 @@ public class LoomGradleExtension {
 					return true;
 				}
 
-				if (name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc")) {
-					return true;
-				}
-
-				return false;
+				return name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc");
 			});
 		});
 	}
@@ -425,5 +430,18 @@ public class LoomGradleExtension {
 
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
+	}
+
+	public void runs(Closure<?> conf) {
+		runs.configure(conf);
+	}
+
+	// Workaround for ugly closures in Kotlin DSL buildscripts
+	public void run(String name, Action<RunConfigSettings> settingsAction) {
+		runs.create(name, settingsAction);
+	}
+
+	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
+		return runs;
 	}
 }

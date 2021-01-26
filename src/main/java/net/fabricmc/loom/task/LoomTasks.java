@@ -29,6 +29,7 @@ import org.gradle.api.tasks.TaskContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class LoomTasks {
@@ -40,7 +41,7 @@ public final class LoomTasks {
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
-			t.getOutputs().upToDateWhen((o) -> false);
+			t.getOutputs().upToDateWhen(o -> false);
 		});
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
@@ -52,7 +53,7 @@ public final class LoomTasks {
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
 		registerIDETasks(tasks);
-		registerRunTasks(tasks);
+		registerRunTasks(tasks, project);
 		registerDecompileTasks(tasks, project);
 	}
 
@@ -81,25 +82,30 @@ public final class LoomTasks {
 		});
 	}
 
-	private static void registerRunTasks(TaskContainer tasks) {
-		tasks.register("runClient", RunClientTask.class, t -> {
-			t.setDescription("Starts a development version of the Minecraft client.");
-			t.dependsOn("downloadAssets");
-			t.setGroup("fabric");
-		});
+	private static void registerRunTasks(TaskContainer tasks, Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		extension.getRuns().create("client", RunConfigSettings::configureClient);
+		extension.getRuns().create("server", RunConfigSettings::configureServer);
 
-		tasks.register("runServer", RunServerTask.class, t -> {
-			t.setDescription("Starts a development version of the Minecraft server.");
-			t.setGroup("fabric");
+		project.afterEvaluate(p -> {
+			for (RunConfigSettings config : extension.getRuns()) {
+				String configName = config.getName();
+				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
+
+				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
+					t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
+					t.setGroup("fabric");
+				});
+			}
 		});
 	}
 
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		project.afterEvaluate((p) -> {
+		project.afterEvaluate(p -> {
 			for (LoomDecompiler decompiler : extension.getDecompilers()) {
-				String taskName = (decompiler instanceof FabricFernFlowerDecompiler) ? "genSources" : "genSourcesWith" + decompiler.name();
+				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				tasks.register(taskName, GenerateSourcesTask.class, decompiler);
 			}

@@ -247,9 +247,7 @@ public final class RunConfigSettings implements Named {
 	 * a convenient way to remove it if wanted.
 	 */
 	public void serverWithGui() {
-		while (programArgs.remove("nogui")) {
-			// N/A, the condition does the work
-		}
+		programArgs.removeIf("nogui"::equals);
 	}
 
 	/**

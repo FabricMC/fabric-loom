@@ -35,11 +35,16 @@ import org.gradle.api.Named;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
+/**
+ * Experimental for now, please make sure to direct any suggests towards the github.
+ */
+@ApiStatus.Experimental
 public final class RunConfigSettings implements Named {
 	/**
 	 * Arguments for the JVM, such as system properties.
@@ -62,11 +67,6 @@ public final class RunConfigSettings implements Named {
 	 * <p>By default this is determined from the base name.
 	 */
 	private String name;
-
-	/**
-	 * Whether the run config is for the client, i.e. uses natives and needs {@code -XstartOnFirstThread} on OSX.
-	 */
-	private Boolean client;
 
 	/**
 	 * The default main class of the run configuration.
@@ -253,6 +253,24 @@ public final class RunConfigSettings implements Named {
 	}
 
 	/**
+	 * Configure run config with the default client options.
+	 */
+	public void client() {
+		startFirstThread();
+		mode("client");
+		defaultMainClass(Constants.Knot.KNOT_CLIENT);
+	}
+
+	/**
+	 * Configure run config with the default server options.
+	 */
+	public void server() {
+		programArg("nogui");
+		mode("server");
+		defaultMainClass(Constants.Knot.KNOT_SERVER);
+	}
+
+	/**
 	 * Copies settings from another run configuration.
 	 */
 	public void inherit(RunConfigSettings parent) {
@@ -263,17 +281,5 @@ public final class RunConfigSettings implements Named {
 		name = parent.name;
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
-	}
-
-	public static void configureClient(RunConfigSettings settings) {
-		settings.startFirstThread();
-		settings.mode("client");
-		settings.defaultMainClass(Constants.Knot.KNOT_CLIENT);
-	}
-
-	public static void configureServer(RunConfigSettings settings) {
-		settings.programArg("nogui");
-		settings.mode("server");
-		settings.defaultMainClass(Constants.Knot.KNOT_SERVER);
 	}
 }

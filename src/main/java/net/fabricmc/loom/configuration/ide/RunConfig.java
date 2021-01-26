@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration.ide;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +35,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
@@ -109,6 +107,7 @@ public class RunConfig {
 		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.vmArgs = "";
+		runConfig.programArgs = "";
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch"; // TODO What about custom tweakers for run configs?
@@ -169,16 +168,7 @@ public class RunConfig {
 		String defaultMain = settings.getDefaultMainClass();
 
 		if (defaultMain == null) {
-			if (name.equals("client")) {
-				defaultMain = Constants.Knot.KNOT_CLIENT;
-			} else if (name.equals("server")) {
-				defaultMain = Constants.Knot.KNOT_SERVER;
-			} else {
-				// throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'defaultMainClass'");
-
-				// Can go for above exception, or just assume user wants to start client (because that one is used most often)
-				defaultMain = Constants.Knot.KNOT_CLIENT;
-			}
+			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'defaultMainClass'");
 		}
 
 		if (configName == null) {
@@ -225,15 +215,6 @@ public class RunConfig {
 		runConfig.vmArgs = runConfig.vmArgs.trim();
 
 		return runConfig;
-	}
-
-	// This can be removed at some point, its not ideal but its the best solution I could think of
-	public static boolean needsUpgrade(File file, RunConfig config) throws IOException {
-		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		return !contents.contains("net.fabricmc.devlaunchinjector.Main")
-				|| !contents.contains(config.mainClass)
-				|| !contents.contains(config.vmArgs)
-				|| !contents.contains(config.programArgs);
 	}
 
 	public String fromDummy(String dummy) throws IOException {

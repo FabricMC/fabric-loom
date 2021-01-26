@@ -49,6 +49,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -432,15 +433,18 @@ public class LoomGradleExtension {
 		return decompilers;
 	}
 
+	@ApiStatus.Experimental
 	public void runs(Closure<?> conf) {
 		runs.configure(conf);
 	}
 
 	// Workaround for ugly closures in Kotlin DSL buildscripts
+	@ApiStatus.Experimental
 	public void run(String name, Action<RunConfigSettings> settingsAction) {
 		runs.create(name, settingsAction);
 	}
 
+	@ApiStatus.Experimental
 	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
 		return runs;
 	}

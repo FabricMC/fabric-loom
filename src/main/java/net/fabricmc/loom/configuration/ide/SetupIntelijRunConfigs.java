@@ -84,7 +84,7 @@ public class SetupIntelijRunConfigs {
 			File runConfigs = new File(runConfigsDir, name + projectPath + ".xml");
 			String runConfigXml = config.fromDummy("idea_run_config_template.xml");
 
-			if (!runConfigs.exists() || RunConfig.needsUpgrade(runConfigs, config)) {
+			if (!runConfigs.exists()) {
 				FileUtils.writeStringToFile(runConfigs, runConfigXml, StandardCharsets.UTF_8);
 			}
 		}

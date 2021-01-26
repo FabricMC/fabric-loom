@@ -39,7 +39,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
-import groovy.lang.Closure;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
@@ -434,14 +433,8 @@ public class LoomGradleExtension {
 	}
 
 	@ApiStatus.Experimental
-	public void runs(Closure<?> conf) {
-		runs.configure(conf);
-	}
-
-	// Workaround for ugly closures in Kotlin DSL buildscripts
-	@ApiStatus.Experimental
-	public void run(String name, Action<RunConfigSettings> settingsAction) {
-		runs.create(name, settingsAction);
+	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
+		action.execute(runs);
 	}
 
 	@ApiStatus.Experimental

@@ -162,8 +162,7 @@ public final class RunConfigSettings implements Named {
 	}
 
 	public void setSource(SourceSet source) {
-		this.source =
-				proj -> source;
+		this.source = proj -> source;
 	}
 
 	public void setSource(Function<Project, SourceSet> sourceFn) {

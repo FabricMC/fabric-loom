@@ -62,8 +62,6 @@ import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependen
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
 public class LoomGradleExtension {
-	@Deprecated // Configured in run configurations now
-	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;

@@ -50,12 +50,6 @@ public class SetupIntelijRunConfigs {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to generate run configs", e);
 		}
-
-		File runDir = new File(project.getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
 	}
 
 	private static void generate(Project project) throws IOException {
@@ -87,6 +81,8 @@ public class SetupIntelijRunConfigs {
 			if (!runConfigs.exists()) {
 				FileUtils.writeStringToFile(runConfigs, runConfigXml, StandardCharsets.UTF_8);
 			}
+
+			settings.makeRunDir();
 		}
 	}
 }

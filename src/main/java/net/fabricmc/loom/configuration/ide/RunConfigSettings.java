@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -278,5 +279,13 @@ public final class RunConfigSettings implements Named {
 		name = parent.name;
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
+	}
+
+	public void makeRunDir() {
+		File file = new File(getProject().getRootDir(), runDir);
+
+		if (!file.exists()) {
+			file.mkdir();
+		}
 	}
 }

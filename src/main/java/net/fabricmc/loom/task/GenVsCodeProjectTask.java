@@ -65,6 +65,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 
 		for (RunConfigSettings settings : getExtension().getRuns()) {
 			launch.add(RunConfig.runConfig(project, settings));
+			settings.makeRunDir();
 		}
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -74,12 +75,6 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			FileUtils.writeStringToFile(launchJson, json, StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to write launch.json", e);
-		}
-
-		File runDir = new File(project.getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
 		}
 	}
 

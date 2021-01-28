@@ -85,6 +85,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 
 		for (RunConfigSettings settings : getExtension().getRuns()) {
 			runManager.appendChild(RunConfig.runConfig(project, settings).genRuns(runManager));
+			settings.makeRunDir();
 		}
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -94,11 +95,5 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 		transformer.transform(source, result);
-
-		File runDir = new File(getProject().getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
 	}
 }

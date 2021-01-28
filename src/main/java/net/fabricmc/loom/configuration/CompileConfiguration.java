@@ -62,9 +62,6 @@ public final class CompileConfiguration {
 	}
 
 	public static void setupConfigurations(Project project) {
-		// Force add Mojang repository
-		addMavenRepo(project, "Mojang", "https://libraries.minecraft.net/");
-
 		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
 		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);

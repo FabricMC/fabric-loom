@@ -83,6 +83,14 @@ public class LaunchProvider extends DependencyProvider {
 					.argument("server", "--launchTarget")
 					.argument("server", "fmluserdevserver")
 
+					.argument("data", "--launchTarget")
+					.argument("data", "fmluserdevdata")
+					.argument("data", "--all")
+					.argument("data", "--mod")
+					.argument("data", String.join(",", getExtension().getDataGenMods()))
+					.argument("data", "--output")
+					.argument("data", getProject().file("src/generated/resources").getAbsolutePath())
+
 					.property("mixin.env.remapRefMap", "true");
 
 			if (getExtension().useFabricMixin) {

@@ -108,6 +108,12 @@ public final class CompileConfiguration {
 				Configuration srg = project.getConfigurations().maybeCreate(Constants.Configurations.SRG);
 				srg.setTransitive(false);
 			}
+
+			if (project.getExtensions().getByType(LoomGradleExtension.class).isDataGenEnabled()) {
+				project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main").resources(files -> {
+					files.srcDir(project.file("src/generated/resources"));
+				});
+			}
 		});
 
 		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {

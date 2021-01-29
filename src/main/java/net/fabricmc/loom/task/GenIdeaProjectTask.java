@@ -85,6 +85,10 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 		runManager.appendChild(RunConfig.clientRunConfig(project).genRuns(runManager));
 		runManager.appendChild(RunConfig.serverRunConfig(project).genRuns(runManager));
 
+		if (extension.isDataGenEnabled()) {
+			runManager.appendChild(RunConfig.dataRunConfig(project).genRuns(runManager));
+		}
+
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
 		DOMSource source = new DOMSource(doc);

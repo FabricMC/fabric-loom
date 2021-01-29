@@ -52,7 +52,7 @@ public final class LoomTasks {
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
 		registerIDETasks(tasks);
-		registerRunTasks(tasks);
+		registerRunTasks(tasks, project);
 		registerDecompileTasks(tasks, project);
 	}
 
@@ -81,7 +81,9 @@ public final class LoomTasks {
 		});
 	}
 
-	private static void registerRunTasks(TaskContainer tasks) {
+	private static void registerRunTasks(TaskContainer tasks, Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
 		tasks.register("runClient", RunClientTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft client.");
 			t.dependsOn("downloadAssets");
@@ -91,6 +93,15 @@ public final class LoomTasks {
 		tasks.register("runServer", RunServerTask.class, t -> {
 			t.setDescription("Starts a development version of the Minecraft server.");
 			t.setGroup("fabric");
+		});
+
+		project.afterEvaluate(p -> {
+			if (extension.isDataGenEnabled()) {
+				tasks.register("runData", RunDataTask.class, t -> {
+					t.setDescription("Starts a development version of the Minecraft data.");
+					t.setGroup("fabric");
+				});
+			}
 		});
 	}
 

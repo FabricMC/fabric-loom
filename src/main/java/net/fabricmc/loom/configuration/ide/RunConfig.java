@@ -213,6 +213,19 @@ public class RunConfig {
 		return ideaServer;
 	}
 
+	public static RunConfig dataRunConfig(Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
+		RunConfig ideaServer = new RunConfig();
+		ideaServer.configName = "Generate Data";
+		ideaServer.programArgs = "";
+		populate(project, extension, ideaServer, "data");
+		ideaServer.vmArgs += " -Dfabric.dli.main=" + getMainClass("data", extension);
+		ideaServer.vscodeBeforeRun = new ArrayList<>(extension.getTasksBeforeRun());
+
+		return ideaServer;
+	}
+
 	// This can be removed at somepoint, its not ideal but its the best solution I could thing of
 	public static boolean needsUpgrade(File file) throws IOException {
 		String contents = FileUtils.readFileToString(file, StandardCharsets.UTF_8);

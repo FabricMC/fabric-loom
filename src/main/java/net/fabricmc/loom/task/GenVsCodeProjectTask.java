@@ -97,6 +97,10 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		launch.add(RunConfig.clientRunConfig(project));
 		launch.add(RunConfig.serverRunConfig(project));
 
+		if (extension.isDataGenEnabled()) {
+			launch.add(RunConfig.dataRunConfig(project));
+		}
+
 		String json = gson.toJson(launch);
 
 		try {

@@ -40,6 +40,7 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
 		File clientRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_client.launch");
 		File serverRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_server.launch");
+		File dataRunConfigs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_data.launch");
 
 		String clientRunConfig = RunConfig.clientRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
 		String serverRunConfig = RunConfig.serverRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
@@ -50,6 +51,14 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 
 		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
 			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+		}
+
+		if (getExtension().isDataGenEnabled()) {
+			String dataRunConfig = RunConfig.dataRunConfig(getProject()).fromDummy("eclipse_run_config_template.xml");
+
+			if (!dataRunConfigs.exists() || RunConfig.needsUpgrade(dataRunConfigs)) {
+				FileUtils.writeStringToFile(dataRunConfigs, dataRunConfig, StandardCharsets.UTF_8);
+			}
 		}
 
 		File runDir = new File(getProject().getRootDir(), getExtension().runDir);

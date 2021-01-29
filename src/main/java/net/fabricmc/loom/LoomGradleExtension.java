@@ -95,6 +95,7 @@ public class LoomGradleExtension {
 
 	// Not to be set in the build.gradle
 	private final Project project;
+	private List<String> dataGenMods = new ArrayList<>();
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
@@ -145,6 +146,14 @@ public class LoomGradleExtension {
 		action.execute(new SourceSetConsumer());
 	}
 
+	public boolean isDataGenEnabled() {
+		return isForge() && !dataGenMods.isEmpty();
+	}
+
+	public List<String> getDataGenMods() {
+		return dataGenMods;
+	}
+
 	public class SourceSetConsumer {
 		public void add(Object... sourceSets) {
 			for (Object sourceSet : sourceSets) {
@@ -157,6 +166,20 @@ public class LoomGradleExtension {
 		}
 	}
 
+	public void dataGen(Action<DataGenConsumer> action) {
+		if (!isForge()) {
+			throw new UnsupportedOperationException("Not running with Forge support.");
+		}
+
+		action.execute(new DataGenConsumer());
+	}
+
+	public class DataGenConsumer {
+		public void mod(String... modIds) {
+			dataGenMods.addAll(Arrays.asList(modIds));
+		}
+	}
+
 	public void addTaskBeforeRun(String task) {
 		this.tasksBeforeRun.add(task);
 	}
@@ -164,7 +187,7 @@ public class LoomGradleExtension {
 	public List<String> getTasksBeforeRun() {
 		return tasksBeforeRun;
 	}
-	
+
 	public void mixinConfig(String config) {
 		mixinConfigs.add(config);
 	}

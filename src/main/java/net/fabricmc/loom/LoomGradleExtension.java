@@ -84,7 +84,7 @@ public class LoomGradleExtension {
 	@Deprecated
 	public String mixinConfig = null; // FORGE: Passed to Minecraft
 	public List<String> mixinConfigs = new ArrayList<>(); // FORGE: Passed to Minecraft
-	public boolean useFabricMixin = false; // FORGE: Use Fabric Mixin for better refmap resolutions
+	public boolean useFabricMixin = true; // FORGE: Use Fabric Mixin for better refmap resolutions
 
 	private final ConfigurableFileCollection unmappedMods;
 

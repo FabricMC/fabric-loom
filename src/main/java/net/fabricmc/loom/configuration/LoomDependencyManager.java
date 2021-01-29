@@ -138,7 +138,7 @@ public class LoomDependencyManager {
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
 		String platformSuffix = extension.isForge() ? "_forge" : "";
-		String mappingsKey = mappingsProvider.getMappingsKey();
+		String mappingsKey = mappingsProvider.getMappingsKey() + platformSuffix;
 
 		if (extension.getInstallerJson() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking

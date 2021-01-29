@@ -494,7 +494,7 @@ public class LoomGradleExtension {
 			if (isRootProject()) {
 				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
 			} else {
-				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-" + project.getPath().replaceFirst(":", "") + "-refmap.json";
+				defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-" + project.getPath().replaceFirst(":", "").replace(':', '_') + "-refmap.json";
 			}
 
 			project.getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);

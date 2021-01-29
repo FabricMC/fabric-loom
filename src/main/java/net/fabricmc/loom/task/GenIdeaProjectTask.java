@@ -46,6 +46,7 @@ import org.xml.sax.SAXException;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
 public class GenIdeaProjectTask extends AbstractLoomTask {
 	@TaskAction
@@ -82,8 +83,10 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to generate IntelliJ run configurations (runManager was not found)");
 		}
 
-		runManager.appendChild(RunConfig.clientRunConfig(project).genRuns(runManager));
-		runManager.appendChild(RunConfig.serverRunConfig(project).genRuns(runManager));
+		for (RunConfigSettings settings : getExtension().getRuns()) {
+			runManager.appendChild(RunConfig.runConfig(project, settings).genRuns(runManager));
+			settings.makeRunDir();
+		}
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
@@ -92,11 +95,5 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 		transformer.transform(source, result);
-
-		File runDir = new File(getProject().getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
 	}
 }

@@ -24,15 +24,14 @@
 
 package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import javax.inject.Inject;
 
-@Deprecated // Replaced by RunGameTask
-public class RunClientTask extends AbstractRunTask {
-	public RunClientTask() {
-		super(project -> {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			return RunConfig.runConfig(project, extension.getRuns().getByName("client"));
-		});
+import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+
+public class RunGameTask extends AbstractRunTask {
+	@Inject
+	public RunGameTask(RunConfigSettings settings) {
+		super(proj -> RunConfig.runConfig(proj, settings));
 	}
 }

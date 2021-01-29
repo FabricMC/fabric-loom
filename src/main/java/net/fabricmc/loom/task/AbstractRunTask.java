@@ -85,8 +85,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		args(argsSplit);
-		LoomGradleExtension extension = this.getProject().getExtensions().getByType(LoomGradleExtension.class);
-		setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
+		setWorkingDir(new File(getProject().getRootDir(), config.runDir));
 
 		super.exec();
 	}

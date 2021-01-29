@@ -46,6 +46,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
 import net.fabricmc.loom.util.Checksum;
@@ -126,7 +127,7 @@ public class MinecraftAssetsProvider {
 				}
 			});
 
-			if (localFileChecksum == null || !localFileChecksum.equals(sha1)) {
+			if (LoomGradlePlugin.refreshDeps || localFileChecksum == null || !localFileChecksum.equals(sha1)) {
 				if (offline) {
 					if (file.exists()) {
 						project.getLogger().warn("Outdated asset " + entry.getKey());
@@ -163,12 +164,8 @@ public class MinecraftAssetsProvider {
 							throw new RuntimeException("Failed to download: " + assetName, e);
 						}
 
-						try {
-							if (localFileChecksum == null) {
-								checksumInfos.put(entry.getKey(), Files.asByteSource(file).hash(Hashing.sha1()).toString());
-							}
-						} catch (IOException e) {
-							throw new RuntimeException("Failed to save checksum: " + assetName, e);
+						if (localFileChecksum == null) {
+							checksumInfos.put(entry.getKey(), sha1);
 						}
 
 						//Give this logger back

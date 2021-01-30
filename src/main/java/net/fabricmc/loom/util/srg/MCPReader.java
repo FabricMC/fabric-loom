@@ -31,10 +31,13 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import au.com.bytecode.opencsv.CSVReader;
 import org.cadixdev.lorenz.MappingSet;
@@ -50,6 +53,7 @@ import net.fabricmc.stitch.commands.tinyv2.TinyClass;
 import net.fabricmc.stitch.commands.tinyv2.TinyField;
 import net.fabricmc.stitch.commands.tinyv2.TinyFile;
 import net.fabricmc.stitch.commands.tinyv2.TinyMethod;
+import net.fabricmc.stitch.commands.tinyv2.TinyMethodParameter;
 import net.fabricmc.stitch.commands.tinyv2.TinyV2Reader;
 
 public class MCPReader {
@@ -65,9 +69,11 @@ public class MCPReader {
 		Map<MemberToken, String> srgTokens = readSrg();
 		TinyFile intermediaryTiny = TinyV2Reader.read(intermediaryTinyPath);
 		Map<String, String> intermediaryToMCPMap = createIntermediaryToMCPMap(intermediaryTiny, srgTokens);
-		injectMcp(mcpJar, intermediaryToMCPMap);
+		Map<String, String[]> intermediaryToDocsMap = new HashMap<>();
+		Map<String, Map<Integer, String>> intermediaryToParamsMap = new HashMap<>();
+		injectMcp(mcpJar, intermediaryToMCPMap, intermediaryToDocsMap, intermediaryToParamsMap);
 
-		mergeTokensIntoIntermediary(intermediaryTiny, intermediaryToMCPMap);
+		mergeTokensIntoIntermediary(intermediaryTiny, intermediaryToMCPMap, intermediaryToDocsMap, intermediaryToParamsMap);
 		return intermediaryTiny;
 	}
 
@@ -107,7 +113,7 @@ public class MCPReader {
 		return map;
 	}
 
-	private void mergeTokensIntoIntermediary(TinyFile tiny, Map<String, String> intermediaryToMCPMap) {
+	private void mergeTokensIntoIntermediary(TinyFile tiny, Map<String, String> intermediaryToMCPMap, Map<String, String[]> intermediaryToDocsMap, Map<String, Map<Integer, String>> intermediaryToParamsMap) {
 		stripTinyWithParametersAndLocal(tiny);
 
 		// We will be adding the "named" namespace with MCP
@@ -119,12 +125,39 @@ public class MCPReader {
 
 			for (TinyField tinyField : tinyClass.getFields()) {
 				String fieldIntermediary = tinyField.getMapping().get(1);
+				String[] docs = intermediaryToDocsMap.get(fieldIntermediary);
 				tinyField.getMapping().add(intermediaryToMCPMap.getOrDefault(fieldIntermediary, fieldIntermediary));
+
+				if (docs != null) {
+					tinyField.getComments().clear();
+					tinyField.getComments().addAll(Arrays.asList(docs));
+				}
 			}
 
 			for (TinyMethod tinyMethod : tinyClass.getMethods()) {
 				String methodIntermediary = tinyMethod.getMapping().get(1);
+				String[] docs = intermediaryToDocsMap.get(methodIntermediary);
 				tinyMethod.getMapping().add(intermediaryToMCPMap.getOrDefault(methodIntermediary, methodIntermediary));
+
+				if (docs != null) {
+					tinyMethod.getComments().clear();
+					tinyMethod.getComments().addAll(Arrays.asList(docs));
+				}
+
+				Map<Integer, String> params = intermediaryToParamsMap.get(methodIntermediary);
+
+				if (params != null) {
+					for (Map.Entry<Integer, String> entry : params.entrySet()) {
+						int lvIndex = entry.getKey();
+						String paramName = entry.getValue();
+
+						ArrayList<String> mappings = new ArrayList<>();
+						mappings.add("");
+						mappings.add("");
+						mappings.add(paramName);
+						tinyMethod.getParameters().add(new TinyMethodParameter(lvIndex, mappings, new ArrayList<>()));
+					}
+				}
 			}
 		}
 	}
@@ -152,23 +185,41 @@ public class MCPReader {
 		return tokens;
 	}
 
-	private void injectMcp(Path mcpJar, Map<String, String> intermediaryToMCPMap) throws IOException {
-		Map<String, List<String>> inverseMap = inverseMap(intermediaryToMCPMap);
+	private void injectMcp(Path mcpJar, Map<String, String> intermediaryToSrgMap, Map<String, String[]> intermediaryToDocsMap, Map<String, Map<Integer, String>> intermediaryToParamsMap)
+			throws IOException {
+		Map<String, List<String>> srgToIntermediary = inverseMap(intermediaryToSrgMap);
+		Map<String, List<String>> simpleSrgToIntermediary = new HashMap<>();
+		Pattern methodPattern = Pattern.compile("(func_\\d*)_.*");
+
+		for (Map.Entry<String, List<String>> entry : srgToIntermediary.entrySet()) {
+			Matcher matcher = methodPattern.matcher(entry.getKey());
+
+			if (matcher.matches()) {
+				simpleSrgToIntermediary.put(matcher.group(1), entry.getValue());
+			}
+		}
 
 		try (FileSystem fs = FileSystems.newFileSystem(mcpJar, null)) {
 			Path fields = fs.getPath("fields.csv");
 			Path methods = fs.getPath("methods.csv");
+			Path params = fs.getPath("params.csv");
+			Pattern paramsPattern = Pattern.compile("p_[^\\d]*(\\d+)_(\\d)+_?");
 
 			try (CSVReader reader = new CSVReader(Files.newBufferedReader(fields, StandardCharsets.UTF_8))) {
 				reader.readNext();
 				String[] line;
 
 				while ((line = reader.readNext()) != null) {
-					List<String> intermediaryField = inverseMap.get(line[0]);
+					List<String> intermediaryField = srgToIntermediary.get(line[0]);
+					String[] docs = line[3].split("\n");
 
 					if (intermediaryField != null) {
 						for (String s : intermediaryField) {
-							intermediaryToMCPMap.put(s, line[1]);
+							intermediaryToSrgMap.put(s, line[1]);
+
+							if (!line[3].trim().isEmpty() && docs.length > 0) {
+								intermediaryToDocsMap.put(s, docs);
+							}
 						}
 					}
 				}
@@ -179,11 +230,39 @@ public class MCPReader {
 				String[] line;
 
 				while ((line = reader.readNext()) != null) {
-					List<String> intermediaryMethod = inverseMap.get(line[0]);
+					List<String> intermediaryMethod = srgToIntermediary.get(line[0]);
+					String[] docs = line[3].split("\n");
 
 					if (intermediaryMethod != null) {
 						for (String s : intermediaryMethod) {
-							intermediaryToMCPMap.put(s, line[1]);
+							intermediaryToSrgMap.put(s, line[1]);
+
+							if (!line[3].trim().isEmpty() && docs.length > 0) {
+								intermediaryToDocsMap.put(s, docs);
+							}
+						}
+					}
+				}
+			}
+
+			try (CSVReader reader = new CSVReader(Files.newBufferedReader(params, StandardCharsets.UTF_8))) {
+				reader.readNext();
+				String[] line;
+
+				while ((line = reader.readNext()) != null) {
+					Matcher param = paramsPattern.matcher(line[0]);
+
+					if (param.matches()) {
+						String named = line[1];
+						String srgMethodStartWith = "func_" + param.group(1);
+						int lvIndex = Integer.parseInt(param.group(2));
+						List<String> intermediaryMethod = simpleSrgToIntermediary.get(srgMethodStartWith);
+
+						if (intermediaryMethod != null) {
+							for (String s : intermediaryMethod) {
+								intermediaryToParamsMap.computeIfAbsent(s, s1 -> new HashMap<>())
+										.put(lvIndex, named);
+							}
 						}
 					}
 				}

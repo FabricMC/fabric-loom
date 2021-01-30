@@ -31,6 +31,7 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -43,6 +44,7 @@ import com.google.common.net.UrlEscapers;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -54,10 +56,12 @@ import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.forge.MinecraftPatchedProvider;
+import net.fabricmc.loom.configuration.providers.forge.SrgProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.srg.MCPReader;
 import net.fabricmc.loom.util.srg.SrgMerger;
 import net.fabricmc.loom.util.srg.SrgNamedWriter;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
@@ -66,6 +70,8 @@ import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
 import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
+import net.fabricmc.stitch.commands.tinyv2.TinyFile;
+import net.fabricmc.stitch.commands.tinyv2.TinyV2Writer;
 
 public class MappingsProvider extends DependencyProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -125,6 +131,13 @@ public class MappingsProvider extends DependencyProvider {
 
 		boolean isV2;
 
+		if (isMCP(mappingsJar.toPath())) {
+			File old = mappingsJar;
+			mappingsJar = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".zip") + "-" + minecraftVersion + ".jar").toFile();
+			FileUtils.copyFile(old, mappingsJar);
+			mappingsName += "-" + minecraftVersion;
+		}
+
 		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
 		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
 			String yarnVersion = dependency.getDependency().getVersion();
@@ -166,7 +179,7 @@ public class MappingsProvider extends DependencyProvider {
 		srgToNamedSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg-named.srg").toFile();
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
-			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
+			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath(), postPopulationScheduler);
 		}
 
 		if (!tinyMappingsJar.exists() || isRefreshDeps()) {
@@ -224,8 +237,14 @@ public class MappingsProvider extends DependencyProvider {
 		mappedProvider.provide(dependency, postPopulationScheduler);
 	}
 
-	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
+	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar, Consumer<Runnable> postPopulationScheduler)
+			throws Exception {
 		project.getLogger().lifecycle(":extracting " + yarnJar.getFileName());
+
+		if (isMCP(yarnJar)) {
+			readAndMergeMCP(yarnJar, postPopulationScheduler);
+			return;
+		}
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
@@ -245,6 +264,34 @@ public class MappingsProvider extends DependencyProvider {
 		}
 	}
 
+	private void readAndMergeMCP(Path mcpJar, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		Path intermediaryTinyPath = getIntermediaryTiny();
+		SrgProvider provider = getExtension().getSrgProvider();
+
+		if (provider == null) {
+			if (!getExtension().shouldGenerateSrgTiny()) {
+				Configuration srg = getProject().getConfigurations().maybeCreate(Constants.Configurations.SRG);
+				srg.setTransitive(false);
+			}
+
+			provider = new SrgProvider(getProject());
+			getProject().getDependencies().add(provider.getTargetConfig(), "de.oceanlabs.mcp:mcp_config:" + minecraftVersion);
+			Configuration configuration = getProject().getConfigurations().getByName(provider.getTargetConfig());
+			provider.provide(DependencyInfo.create(getProject(), configuration.getDependencies().iterator().next(), configuration), postPopulationScheduler);
+		}
+
+		Path srgPath = provider.getSrg().toPath();
+
+		TinyFile file = new MCPReader(intermediaryTinyPath, srgPath).read(mcpJar);
+		TinyV2Writer.write(file, tinyMappings.toPath());
+	}
+
+	private boolean isMCP(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
+			return Files.exists(fs.getPath("fields.csv")) && Files.exists(fs.getPath("methods.csv"));
+		}
+	}
+
 	private boolean baseMappingsAreV2() throws IOException {
 		try (BufferedReader reader = Files.newBufferedReader(baseTinyMappings)) {
 			TinyV2Factory.readMetadata(reader);
@@ -260,7 +307,7 @@ public class MappingsProvider extends DependencyProvider {
 			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
 				TinyV2Factory.readMetadata(reader);
 				return true;
-			} catch (IllegalArgumentException e) {
+			} catch (IllegalArgumentException | NoSuchFileException e) {
 				return false;
 			}
 		}

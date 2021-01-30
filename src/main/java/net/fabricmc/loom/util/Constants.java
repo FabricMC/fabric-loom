@@ -136,4 +136,19 @@ public class Constants {
 		private LaunchWrapper() {
 		}
 	}
+
+	public static final class Knot {
+		public static final String KNOT_CLIENT = "net.fabricmc.loader.launch.knot.KnotClient";
+		public static final String KNOT_SERVER = "net.fabricmc.loader.launch.knot.KnotServer";
+
+		private Knot() {
+		}
+	}
+	
+	public static final class ForgeUserDev {
+		public static final String LAUNCH_TESTING = "net.minecraftforge.userdev.LaunchTesting";
+
+		private ForgeUserDev() {
+		}
+	}
 }

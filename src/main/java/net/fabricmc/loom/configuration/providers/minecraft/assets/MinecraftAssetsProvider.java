@@ -30,23 +30,23 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import au.com.bytecode.opencsv.CSVReader;
-import au.com.bytecode.opencsv.CSVWriter;
 import com.google.common.base.Stopwatch;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
 import net.fabricmc.loom.util.Checksum;
@@ -70,7 +70,7 @@ public class MinecraftAssetsProvider {
 		}
 
 		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.getFabricId(minecraftProvider.getMinecraftVersion()) + ".json");
-		File checksumInfo = new File(assets, "checksum" + File.separator + minecraftProvider.getMinecraftVersion() + ".csv");
+		File checksumInfo = new File(assets, "checksum" + File.separator + minecraftProvider.getMinecraftVersion() + ".json");
 
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
 			project.getLogger().lifecycle(":downloading asset index");
@@ -88,50 +88,46 @@ public class MinecraftAssetsProvider {
 			}
 		}
 
-		Map<String, AssetChecksumInfo> checksumInfos = new ConcurrentHashMap<>();
+		Gson gson = new Gson();
+		Map<String, String> checksumInfos = new HashMap<>();
 
 		if (checksumInfo.exists()) {
-			try (CSVReader reader = new CSVReader(new FileReader(checksumInfo))) {
-				String[] strings;
-
-				while ((strings = reader.readNext()) != null) {
-					checksumInfos.put(strings[0], new AssetChecksumInfo(strings[1], Long.parseLong(strings[2])));
-				}
+			try (FileReader reader = new FileReader(checksumInfo)) {
+				checksumInfos.putAll(gson.fromJson(reader, new TypeToken<Map<String, String>>() {
+				}.getType()));
 			}
 		}
 
-		project.getLogger().lifecycle(":downloading assets...");
-
 		Deque<ProgressLogger> loggers = new ConcurrentLinkedDeque<>();
 		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
+		int toDownload = 0;
 
 		AssetIndex index;
 
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
-			index = new Gson().fromJson(fileReader, AssetIndex.class);
+			index = gson.fromJson(fileReader, AssetIndex.class);
 		}
 
 		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		Map<String, AssetObject> parent = index.getFileMap();
 
-		parent.entrySet().parallelStream().forEach(entry -> {
+		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
 			AssetObject object = entry.getValue();
 			String sha1 = object.getHash();
 			String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
 			File file = new File(assets, filename);
-			long localFileLength = !file.exists() ? -1L : file.length();
 
-			AssetChecksumInfo localFileChecksum = localFileLength == -1L ? null : checksumInfos.computeIfAbsent(entry.getKey(), path -> {
+			String localFileChecksum = !file.exists() ? null : checksumInfos.computeIfAbsent(entry.getKey(), path -> {
 				try {
-					return new AssetChecksumInfo(Files.asByteSource(file).hash(Hashing.sha1()).toString(), localFileLength);
+					return Files.asByteSource(file).hash(Hashing.sha1()).toString();
 				} catch (IOException e) {
 					e.printStackTrace();
 					return null;
 				}
 			});
 
-			if (localFileChecksum == null || localFileChecksum.length != localFileLength || !localFileChecksum.sha1.equals(sha1)) {
+			if (LoomGradlePlugin.refreshDeps || localFileChecksum == null || !localFileChecksum.equals(sha1)) {
 				if (offline) {
 					if (file.exists()) {
 						project.getLogger().warn("Outdated asset " + entry.getKey());
@@ -139,6 +135,7 @@ public class MinecraftAssetsProvider {
 						throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
 					}
 				} else {
+					toDownload++;
 					executor.execute(() -> {
 						ProgressLogger progressLogger;
 
@@ -167,12 +164,8 @@ public class MinecraftAssetsProvider {
 							throw new RuntimeException("Failed to download: " + assetName, e);
 						}
 
-						try {
-							if (localFileChecksum == null) {
-								checksumInfos.put(entry.getKey(), new AssetChecksumInfo(Files.asByteSource(file).hash(Hashing.sha1()).toString(), file.length()));
-							}
-						} catch (IOException e) {
-							throw new RuntimeException("Failed to save checksum: " + assetName, e);
+						if (localFileChecksum == null) {
+							checksumInfos.put(entry.getKey(), sha1);
 						}
 
 						//Give this logger back
@@ -180,22 +173,18 @@ public class MinecraftAssetsProvider {
 					});
 				}
 			}
-		});
+		}
 
 		project.getLogger().info("Took " + stopwatch.stop() + " to iterate " + parent.size() + " asset index.");
 
-		{
-			checksumInfo.getParentFile().mkdirs();
+		if (toDownload > 0) {
+			project.getLogger().lifecycle(":downloading " + toDownload + " asset" + (toDownload == 1 ? "" : "s") + "...");
+		}
 
-			try (CSVWriter writer = new CSVWriter(new FileWriter(checksumInfo))) {
-				checksumInfos.forEach((path, info) -> {
-					writer.writeNext(new String[] {
-							path,
-							info.sha1,
-							String.valueOf(info.length)
-					});
-				});
-			}
+		checksumInfo.getParentFile().mkdirs();
+
+		try (FileWriter writer = new FileWriter(checksumInfo)) {
+			gson.toJson(checksumInfos, writer);
 		}
 
 		//Wait for the assets to all download
@@ -210,15 +199,5 @@ public class MinecraftAssetsProvider {
 		}
 
 		loggers.forEach(ProgressLogger::completed);
-	}
-
-	private static class AssetChecksumInfo {
-		public final String sha1;
-		public long length;
-
-		AssetChecksumInfo(String sha1, long length) {
-			this.sha1 = sha1;
-			this.length = length;
-		}
 	}
 }

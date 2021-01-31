@@ -58,9 +58,9 @@ public final class RunConfigSettings implements Named {
 	private final List<String> programArgs = new ArrayList<>();
 
 	/**
-	 * The mode to run, which is the name of the run config in {@code fabric_installer.[method].json}.
+	 * The environment (or side) to run, usually client or server.
 	 */
-	private String mode;
+	private String environment;
 
 	/**
 	 * The full name of the run configuration, i.e. 'Minecraft Client'.
@@ -100,7 +100,6 @@ public final class RunConfigSettings implements Named {
 		this.project = project;
 		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		mode(baseName);
 		source("main");
 		runDir("run");
 	}
@@ -126,12 +125,12 @@ public final class RunConfigSettings implements Named {
 		return programArgs;
 	}
 
-	public String getMode() {
-		return mode;
+	public String getEnvironment() {
+		return environment;
 	}
 
-	public void setMode(String mode) {
-		this.mode = mode;
+	public void setEnvironment(String environment) {
+		this.environment = environment;
 	}
 
 	public String getConfigName() {
@@ -170,8 +169,8 @@ public final class RunConfigSettings implements Named {
 		this.source = sourceFn;
 	}
 
-	public void mode(String mode) {
-		setMode(mode);
+	public void environment(String environment) {
+		setEnvironment(environment);
 	}
 
 	public void name(String name) {
@@ -255,7 +254,7 @@ public final class RunConfigSettings implements Named {
 	 */
 	public void client() {
 		startFirstThread();
-		mode("client");
+		environment("client");
 		defaultMainClass(Constants.Knot.KNOT_CLIENT);
 	}
 
@@ -264,7 +263,7 @@ public final class RunConfigSettings implements Named {
 	 */
 	public void server() {
 		programArg("nogui");
-		mode("server");
+		environment("server");
 		defaultMainClass(Constants.Knot.KNOT_SERVER);
 	}
 
@@ -275,7 +274,7 @@ public final class RunConfigSettings implements Named {
 		vmArgs.addAll(0, parent.vmArgs);
 		programArgs.addAll(0, parent.programArgs);
 
-		mode = parent.mode;
+		environment = parent.environment;
 		name = parent.name;
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 
@@ -85,20 +86,24 @@ public final class LoomTasks {
 	private static void registerRunTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
+		Preconditions.checkArgument(extension.getRuns().size() == 0, "Run configurations must not be registered before loom");
+
+		extension.getRuns().whenObjectAdded(config -> {
+			String configName = config.getName();
+			String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
+
+			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
+				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
+				t.setGroup("fabric");
+
+				if (config.getEnvironment().equals("client")) {
+					t.dependsOn("downloadAssets");
+				}
+			});
+		});
+
 		extension.getRuns().create("client", RunConfigSettings::client);
 		extension.getRuns().create("server", RunConfigSettings::server);
-
-		project.afterEvaluate(p -> {
-			for (RunConfigSettings config : extension.getRuns()) {
-				String configName = config.getName();
-				String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
-
-				tasks.register(taskName, RunGameTask.class, config).configure(t -> {
-					t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
-					t.setGroup("fabric");
-				});
-			}
-		});
 	}
 
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {

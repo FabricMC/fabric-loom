@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -118,9 +119,19 @@ public class NestedJars {
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
 					if (task instanceof RemapJarTask) {
-						fileList.add(((RemapJarTask) task).getArchivePath());
+						fileList.addAll(prepareForNesting(
+								Collections.singleton(((RemapJarTask) task).getArchivePath()),
+								projectDependency,
+								new ProjectDependencyMetaExtractor(),
+								project
+						));
 					} else if (task instanceof AbstractArchiveTask) {
-						fileList.add(((AbstractArchiveTask) task).getArchivePath());
+						fileList.addAll(prepareForNesting(
+								Collections.singleton(((AbstractArchiveTask) task).getArchivePath()),
+								projectDependency,
+								new ProjectDependencyMetaExtractor(),
+								project
+						));
 					}
 				}
 			}
@@ -136,8 +147,10 @@ public class NestedJars {
 								.stream()
 								.map(ResolvedArtifact::getFile)
 								.collect(Collectors.toSet()),
-						dependency, project)
-				);
+						dependency,
+						new ResolvedDependencyMetaExtractor(),
+						project
+				));
 			}
 		}
 
@@ -178,7 +191,7 @@ public class NestedJars {
 	}
 
 	//This is a good place to do pre-nesting operations, such as adding a fabric.mod.json to a library
-	private static List<File> prepareForNesting(Set<File> files, ResolvedDependency dependency, Project project) {
+	private static <D> List<File> prepareForNesting(Set<File> files, D dependency, DependencyMetaExtractor<D> metaExtractor, Project project) {
 		List<File> fileList = new ArrayList<>();
 
 		for (File file : files) {
@@ -203,7 +216,7 @@ public class NestedJars {
 					throw new RuntimeException("Failed to copy file", e);
 				}
 
-				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency).getBytes());
+				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency, metaExtractor).getBytes());
 				fileList.add(tempFile);
 			} else {
 				// Default copy the jar right in
@@ -215,12 +228,12 @@ public class NestedJars {
 	}
 
 	// Generates a barebones mod for a dependency
-	private static String getMod(ResolvedDependency dependency) {
+	private static <D> String getMod(D dependency, DependencyMetaExtractor<D> metaExtractor) {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
-		jsonObject.addProperty("id", (dependency.getModuleGroup() + "_" + dependency.getModuleName()).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
-		jsonObject.addProperty("version", dependency.getModuleVersion());
-		jsonObject.addProperty("name", dependency.getModuleName());
+		jsonObject.addProperty("id", (metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency)).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
+		jsonObject.addProperty("version", metaExtractor.version(dependency));
+		jsonObject.addProperty("name", metaExtractor.name(dependency));
 
 		JsonObject custom = new JsonObject();
 		custom.addProperty("fabric-loom:generated", true);
@@ -231,5 +244,49 @@ public class NestedJars {
 
 	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {
 		return new ZipEntryTransformerEntry[]{element};
+	}
+
+	private interface DependencyMetaExtractor<D> {
+		String group(D dependency);
+
+		String version(D dependency);
+
+		String name(D dependency);
+	}
+
+	private static final class ProjectDependencyMetaExtractor implements DependencyMetaExtractor<ProjectDependency> {
+
+		@Override
+		public String group(ProjectDependency dependency) {
+			return dependency.getGroup();
+		}
+
+		@Override
+		public String version(ProjectDependency dependency) {
+			return dependency.getVersion();
+		}
+
+		@Override
+		public String name(ProjectDependency dependency) {
+			return dependency.getName();
+		}
+	}
+
+	private static final class ResolvedDependencyMetaExtractor implements DependencyMetaExtractor<ResolvedDependency> {
+
+		@Override
+		public String group(ResolvedDependency dependency) {
+			return dependency.getModuleGroup();
+		}
+
+		@Override
+		public String version(ResolvedDependency dependency) {
+			return dependency.getModuleVersion();
+		}
+
+		@Override
+		public String name(ResolvedDependency dependency) {
+			return dependency.getModuleName();
+		}
 	}
 }

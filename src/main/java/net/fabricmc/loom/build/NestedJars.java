@@ -255,7 +255,6 @@ public class NestedJars {
 	}
 
 	private static final class ProjectDependencyMetaExtractor implements DependencyMetaExtractor<ProjectDependency> {
-
 		@Override
 		public String group(ProjectDependency dependency) {
 			return dependency.getGroup();
@@ -273,7 +272,6 @@ public class NestedJars {
 	}
 
 	private static final class ResolvedDependencyMetaExtractor implements DependencyMetaExtractor<ResolvedDependency> {
-
 		@Override
 		public String group(ResolvedDependency dependency) {
 			return dependency.getModuleGroup();

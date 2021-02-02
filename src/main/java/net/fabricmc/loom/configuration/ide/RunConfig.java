@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -122,7 +123,7 @@ public class RunConfig {
 		return module;
 	}
 
-	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
+	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String environment) {
 		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.vscodeProjectName = extension.isRootProject() ? "" : project.getPath();
@@ -131,10 +132,10 @@ public class RunConfig {
 
 		if ("launchwrapper".equals(extension.getLoaderLaunchMethod())) {
 			runConfig.mainClass = "net.minecraft.launchwrapper.Launch"; // TODO What about custom tweakers for run configs?
-			runConfig.programArgs += "--tweakClass " + ("client".equals(mode) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
+			runConfig.programArgs += "--tweakClass " + ("client".equals(environment) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
-			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + mode.toLowerCase();
+			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + environment.toLowerCase();
 		}
 
 		if (extension.isForge()) {
@@ -159,7 +160,7 @@ public class RunConfig {
 			JsonObject installerJson = extension.getInstallerJson();
 
 			if (installerJson != null) {
-				List<String> sideKeys = ImmutableList.of(mode, "common");
+				List<String> sideKeys = ImmutableList.of(environment, "common");
 
 				// copy launchwrapper tweakers
 				if (installerJson.has("launchwrapper")) {
@@ -199,7 +200,7 @@ public class RunConfig {
 		String name = settings.getName();
 
 		String configName = settings.getConfigName();
-		String mode = settings.getMode();
+		String environment = settings.getEnvironment();
 		SourceSet sourceSet = settings.getSource(project);
 
 		String defaultMain = settings.getDefaultMainClass();
@@ -219,9 +220,7 @@ public class RunConfig {
 			configName += "Minecraft " + capitalizeCamelCaseName(name);
 		}
 
-		if (mode == null) {
-			mode = name;
-		}
+		Objects.requireNonNull(environment, "No environment set for run config");
 
 		String runDir = settings.getRunDir();
 
@@ -231,7 +230,7 @@ public class RunConfig {
 
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
-		populate(project, extension, runConfig, mode);
+		populate(project, extension, runConfig, environment);
 		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
@@ -245,7 +244,7 @@ public class RunConfig {
 			runConfig.vmArgs += " " + vmArg;
 		}
 
-		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(mode, extension, defaultMain);
+		runConfig.vmArgs += " -Dfabric.dli.main=" + getMainClass(environment, extension, defaultMain);
 
 		// Remove unnecessary leading/trailing whitespaces we might have generated
 		runConfig.programArgs = runConfig.programArgs.trim();

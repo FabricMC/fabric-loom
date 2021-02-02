@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.JavaExec;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -46,7 +47,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		setGroup("fabric");
 		this.configProvider = config;
 
-		classpath(getProject().getConfigurations().getByName("runtimeClasspath"));
+		setClasspath(getProject().getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
 		classpath(this.getProject().getExtensions().getByType(LoomGradleExtension.class).getUnmappedModCollection());
 	}
 

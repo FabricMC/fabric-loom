@@ -31,8 +31,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
@@ -178,13 +176,11 @@ public class MinecraftProvider extends DependencyProvider {
 			} else {
 				getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
 
-				String url = optionalVersion.get().url;
-				// Find the sha1 of the json from the url, return true if it matches the local json
-				Pattern sha1Pattern = Pattern.compile("\\b[0-9a-f]{5,40}\\b");
-				Matcher matcher = sha1Pattern.matcher(url);
+				ManifestVersion.Versions version = optionalVersion.get();
+				String url = version.url;
 
-				if (matcher.find()) {
-					HashedDownloadUtil.downloadIfInvalid(new URL(url), minecraftJson, matcher.group(), getProject().getLogger(), true);
+				if (version.sha1 != null) {
+					HashedDownloadUtil.downloadIfInvalid(new URL(url), minecraftJson, version.sha1, getProject().getLogger(), true);
 				} else {
 					// Use the etag if no hash found from url
 					DownloadUtil.downloadIfChanged(new URL(url), minecraftJson, getProject().getLogger());

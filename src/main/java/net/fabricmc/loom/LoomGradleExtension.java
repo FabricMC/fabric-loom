@@ -44,17 +44,20 @@ import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
+import org.jetbrains.annotations.ApiStatus;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -72,7 +75,6 @@ import net.fabricmc.loom.util.function.LazyBool;
 public class LoomGradleExtension {
 	private static final String FORGE_PROPERTY = "loom.forge";
 
-	public String runDir = "run";
 	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
@@ -110,6 +112,8 @@ public class LoomGradleExtension {
 			return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 		}
 	})));
+
+	private NamedDomainObjectContainer<RunConfigSettings> runs;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -177,6 +181,10 @@ public class LoomGradleExtension {
 	public class DataGenConsumer {
 		public void mod(String... modIds) {
 			dataGenMods.addAll(Arrays.asList(modIds));
+
+			if (modIds.length > 0 && getRuns().findByName("data") == null) {
+				getRuns().create("data", RunConfigSettings::data);
+			}
 		}
 	}
 
@@ -209,6 +217,8 @@ public class LoomGradleExtension {
 		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
 		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
+		this.runs = project.container(RunConfigSettings.class,
+				baseName -> new RunConfigSettings(project, baseName));
 	}
 
 	/**
@@ -384,7 +394,7 @@ public class LoomGradleExtension {
 
 	@Nullable
 	private Dependency getMixinDependency() {
-		return recurseProjects((p) -> {
+		return recurseProjects(p -> {
 			Set<Configuration> configs = new LinkedHashSet<>();
 			// check compile classpath first
 			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
@@ -401,11 +411,7 @@ public class LoomGradleExtension {
 					return true;
 				}
 
-				if (name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc")) {
-					return true;
-				}
-
-				return false;
+				return name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc");
 			});
 		});
 	}
@@ -560,5 +566,15 @@ public class LoomGradleExtension {
 
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
+	}
+
+	@ApiStatus.Experimental
+	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
+		action.execute(runs);
+	}
+
+	@ApiStatus.Experimental
+	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
+		return runs;
 	}
 }

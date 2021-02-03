@@ -31,6 +31,6 @@ public class ManifestVersion {
 	public List<Versions> versions = new ArrayList<>();
 
 	public static class Versions {
-		public String id, url;
+		public String id, url, sha1;
 	}
 }

@@ -60,6 +60,7 @@ dependencies {
 	implementation ('org.ow2.asm:asm-commons:9.0')
 	implementation ('org.ow2.asm:asm-tree:9.0')
 	implementation ('org.ow2.asm:asm-util:9.0')
+	implementation ('me.tongfei:progressbar:0.9.0')
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.5.1+build.77') {
@@ -154,7 +155,7 @@ license {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '8.25'
+	toolVersion = '8.39'
 }
 
 checkstyleMain {

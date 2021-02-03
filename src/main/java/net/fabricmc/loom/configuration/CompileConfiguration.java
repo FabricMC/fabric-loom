@@ -74,21 +74,6 @@ public final class CompileConfiguration {
 	}
 
 	public static void setupConfigurations(Project project) {
-		// Force add Mojang and Forge repositories
-		addMavenRepo(project, "Mojang", "https://libraries.minecraft.net/");
-		addMavenRepo(project, "Forge", "https://files.minecraftforge.net/maven/", repo -> {
-			repo.metadataSources(sources -> {
-				sources.mavenPom();
-
-				try {
-					MavenArtifactRepository.MetadataSources.class.getDeclaredMethod("ignoreGradleMetadataRedirection")
-							.invoke(sources);
-				} catch (Throwable ignored) {
-					// Method not available
-				}
-			});
-		});
-
 		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 		modCompileClasspathConfig.setTransitive(true);
 		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
@@ -219,6 +204,17 @@ public final class CompileConfiguration {
 			project1.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Forge");
 				mavenArtifactRepository.setUrl("https://files.minecraftforge.net/maven/");
+
+				mavenArtifactRepository.metadataSources(sources -> {
+					sources.mavenPom();
+
+					try {
+						MavenArtifactRepository.MetadataSources.class.getDeclaredMethod("ignoreGradleMetadataRedirection")
+								.invoke(sources);
+					} catch (Throwable ignored) {
+						// Method not available
+					}
+				});
 			});
 
 			project1.getRepositories().mavenCentral();

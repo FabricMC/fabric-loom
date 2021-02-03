@@ -181,6 +181,10 @@ public class LoomGradleExtension {
 	public class DataGenConsumer {
 		public void mod(String... modIds) {
 			dataGenMods.addAll(Arrays.asList(modIds));
+
+			if (modIds.length > 0 && getRuns().findByName("data") == null) {
+				getRuns().create("data", RunConfigSettings::data);
+			}
 		}
 	}
 

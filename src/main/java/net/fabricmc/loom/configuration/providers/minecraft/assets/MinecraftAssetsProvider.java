@@ -29,10 +29,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +40,10 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import me.tongfei.progressbar.DelegatingProgressBarConsumer;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 
@@ -52,7 +54,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
 
 public class MinecraftAssetsProvider {
 	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
@@ -98,8 +99,7 @@ public class MinecraftAssetsProvider {
 			}
 		}
 
-		Deque<ProgressLogger> loggers = new ConcurrentLinkedDeque<>();
-		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
+		ExecutorService executor = Executors.newFixedThreadPool(Math.min(16, Math.max(Runtime.getRuntime().availableProcessors() * 2, 1)));
 		int toDownload = 0;
 
 		AssetIndex index;
@@ -112,92 +112,101 @@ public class MinecraftAssetsProvider {
 
 		Map<String, AssetObject> parent = index.getFileMap();
 
-		for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
-			AssetObject object = entry.getValue();
-			String sha1 = object.getHash();
-			String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
-			File file = new File(assets, filename);
-
-			String localFileChecksum = !file.exists() ? null : checksumInfos.computeIfAbsent(entry.getKey(), path -> {
-				try {
-					return Files.asByteSource(file).hash(Hashing.sha1()).toString();
-				} catch (IOException e) {
-					e.printStackTrace();
-					return null;
-				}
-			});
-
-			if (LoomGradlePlugin.refreshDeps || localFileChecksum == null || !localFileChecksum.equals(sha1)) {
-				if (offline) {
-					if (file.exists()) {
-						project.getLogger().warn("Outdated asset " + entry.getKey());
-					} else {
-						throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
-					}
-				} else {
-					toDownload++;
-					executor.execute(() -> {
-						ProgressLogger progressLogger;
-
-						if (loggers.isEmpty()) {
-							//Create a new logger if we need one
-							progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
-							progressLogger.start("Downloading assets...", "assets");
-						} else {
-							// use a free logger if we can
-							progressLogger = loggers.pop();
-						}
-
-						String assetName = entry.getKey();
-						int end = assetName.lastIndexOf("/") + 1;
-
-						if (end > 0) {
-							assetName = assetName.substring(end);
-						}
-
-						project.getLogger().debug(":downloading asset " + assetName);
-						progressLogger.progress(String.format("%-30.30s", assetName) + " - " + sha1);
-
-						try {
-							DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
-						} catch (IOException e) {
-							throw new RuntimeException("Failed to download: " + assetName, e);
-						}
-
-						if (localFileChecksum == null) {
-							checksumInfos.put(entry.getKey(), sha1);
-						}
-
-						//Give this logger back
-						loggers.add(progressLogger);
-					});
-				}
-			}
-		}
-
-		project.getLogger().info("Took " + stopwatch.stop() + " to iterate " + parent.size() + " asset index.");
-
-		if (toDownload > 0) {
-			project.getLogger().lifecycle(":downloading " + toDownload + " asset" + (toDownload == 1 ? "" : "s") + "...");
-		}
-
-		checksumInfo.getParentFile().mkdirs();
-
-		try (FileWriter writer = new FileWriter(checksumInfo)) {
-			gson.toJson(checksumInfos, writer);
-		}
-
-		//Wait for the assets to all download
-		executor.shutdown();
+		ProgressBar[] progressBar = {null};
 
 		try {
-			if (executor.awaitTermination(2, TimeUnit.HOURS)) {
-				executor.shutdownNow();
-			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
+			for (Map.Entry<String, AssetObject> entry : parent.entrySet()) {
+				AssetObject object = entry.getValue();
+				String sha1 = object.getHash();
+				String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
+				File file = new File(assets, filename);
 
-		loggers.forEach(ProgressLogger::completed);
+				String localFileChecksum = !file.exists() ? null : checksumInfos.computeIfAbsent(entry.getKey(), path -> {
+					try {
+						return Files.asByteSource(file).hash(Hashing.sha1()).toString();
+					} catch (IOException e) {
+						e.printStackTrace();
+						return null;
+					}
+				});
+
+				if (LoomGradlePlugin.refreshDeps || localFileChecksum == null || !localFileChecksum.equals(sha1)) {
+					if (offline) {
+						if (file.exists()) {
+							project.getLogger().warn("Outdated asset " + entry.getKey());
+						} else {
+							throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
+						}
+					} else {
+						toDownload++;
+
+						if (progressBar[0] == null) {
+							progressBar[0] = new ProgressBarBuilder()
+									.setConsumer(new DelegatingProgressBarConsumer(project.getLogger()::lifecycle))
+									.setInitialMax(toDownload)
+									.setUpdateIntervalMillis(2000)
+									.setTaskName(":downloading assets")
+									.setStyle(ProgressBarStyle.ASCII)
+									.showSpeed()
+									.build();
+						}
+
+						progressBar[0].maxHint(toDownload);
+
+						executor.execute(() -> {
+							String assetName = entry.getKey();
+							int end = assetName.lastIndexOf("/") + 1;
+
+							if (end > 0) {
+								assetName = assetName.substring(end);
+							}
+
+							project.getLogger().debug(":downloading asset " + assetName);
+
+							try {
+								DownloadUtil.downloadIfChanged(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, project.getLogger(), true);
+							} catch (IOException e) {
+								throw new RuntimeException("Failed to download: " + assetName, e);
+							}
+
+							if (localFileChecksum == null) {
+								checksumInfos.put(entry.getKey(), sha1);
+							}
+
+							synchronized (progressBar[0]) {
+								progressBar[0].step();
+							}
+						});
+					}
+				}
+			}
+
+			project.getLogger().info("Took " + stopwatch.stop() + " to iterate " + parent.size() + " asset index.");
+
+			if (toDownload > 0) {
+				project.getLogger().lifecycle(":downloading " + toDownload + " asset" + (toDownload == 1 ? "" : "s") + "...");
+			}
+
+			checksumInfo.getParentFile().mkdirs();
+
+			try (FileWriter writer = new FileWriter(checksumInfo)) {
+				gson.toJson(checksumInfos, writer);
+			}
+
+			//Wait for the assets to all download
+			executor.shutdown();
+
+			try {
+				if (executor.awaitTermination(2, TimeUnit.HOURS)) {
+					executor.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		} finally {
+			if (progressBar[0] != null) {
+				progressBar[0].close();
+			}
+		}
 	}
 }

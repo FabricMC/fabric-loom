@@ -271,7 +271,7 @@ public final class RunConfigSettings implements Named {
 	 * Configure run config with the default server options.
 	 */
 	public void data() {
-		mode("data");
+		environment("data");
 		defaultMainClass(getExtension().isForge() ? Constants.ForgeUserDev.LAUNCH_TESTING : Constants.Knot.KNOT_SERVER);
 	}
 

@@ -73,7 +73,7 @@ public class MinecraftAssetsProvider {
 		File checksumInfo = new File(assets, "checksum" + File.separator + minecraftProvider.getMinecraftVersion() + ".json");
 
 		if (!assetsInfo.exists() || !Checksum.equals(assetsInfo, assetIndex.sha1)) {
-			project.getLogger().lifecycle(":downloading asset index");
+			project.getLogger().info(":downloading asset index");
 
 			if (offline) {
 				if (assetsInfo.exists()) {

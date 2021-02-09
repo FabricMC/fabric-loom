@@ -116,7 +116,7 @@ public class RemapJarTask extends Jar {
 			remapOption.execute(remapperBuilder);
 		}
 
-		project.getLogger().lifecycle(":remapping " + input.getFileName());
+		project.getLogger().info(":remapping " + input.getFileName());
 
 		StringBuilder rc = new StringBuilder("Remap classpath: ");
 

@@ -217,7 +217,7 @@ public class MinecraftProvider extends DependencyProvider {
 	}
 
 	private void mergeJars(Logger logger) throws IOException {
-		logger.lifecycle(":merging jars");
+		logger.info(":merging jars");
 
 		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();

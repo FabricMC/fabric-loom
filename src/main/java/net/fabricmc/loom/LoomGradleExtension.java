@@ -36,6 +36,8 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
@@ -326,16 +328,38 @@ public class LoomGradleExtension {
 		Dependency dependency = getMixinDependency();
 
 		if (dependency != null) {
-			if (dependency.getGroup().equalsIgnoreCase("net.fabricmc")) {
-				if (Objects.requireNonNull(dependency.getVersion()).split("\\.").length >= 4) {
-					return dependency.getVersion().substring(0, dependency.getVersion().lastIndexOf('.')) + "-SNAPSHOT";
-				}
+			final String version = Objects.requireNonNull(dependency.getVersion(), "Mixin version cannot be null");
+			final String group = Objects.requireNonNull(dependency.getGroup(), "Mixin group cannot be null");
+
+			if (group.equalsIgnoreCase("net.fabricmc")) {
+				return parseMixinVersion(version);
 			}
 
-			return dependency.getVersion();
+			return version;
 		}
 
 		return null;
+	}
+
+	public static String parseMixinVersion(String version) {
+		final Pattern pattern = Pattern.compile("(\\+mixin.)([0-9]+.[0-9]+)");
+		final Matcher match = pattern.matcher(version);
+
+		// Handle the new mixin version style such as 0.9.1+mixin.0.8.2
+		if (match.find() && match.groupCount() == 2) {
+			return match.group(2);
+		}
+
+		if (version.contains("+build.")) {
+			version = version.substring(0, version.indexOf('+'));
+			return version.substring(0, version.lastIndexOf('.'));
+		}
+
+		if (version.split("\\.").length >= 4) {
+			return version.substring(0, version.indexOf('.', version.indexOf('.') + 1));
+		}
+
+		return version;
 	}
 
 	public String getLoaderLaunchMethod() {

@@ -29,8 +29,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +90,7 @@ public class MinecraftAssetsProvider {
 		}
 
 		Gson gson = new Gson();
-		Map<String, String> checksumInfos = new HashMap<>();
+		Map<String, String> checksumInfos = new ConcurrentHashMap<>();
 
 		if (checksumInfo.exists()) {
 			try (FileReader reader = new FileReader(checksumInfo)) {

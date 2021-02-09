@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -249,6 +250,10 @@ public class RunConfig {
 		// Remove unnecessary leading/trailing whitespaces we might have generated
 		runConfig.programArgs = runConfig.programArgs.trim();
 		runConfig.vmArgs = runConfig.vmArgs.trim();
+
+		for (Consumer<RunConfig> consumer : extension.settingsPostEdit) {
+			consumer.accept(runConfig);
+		}
 
 		return runConfig;
 	}

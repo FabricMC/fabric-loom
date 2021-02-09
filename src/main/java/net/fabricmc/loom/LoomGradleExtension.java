@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -57,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
@@ -112,6 +114,8 @@ public class LoomGradleExtension {
 			return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
 		}
 	})));
+	@ApiStatus.Experimental
+	public final List<Consumer<RunConfig>> settingsPostEdit = new ArrayList<>();
 
 	private NamedDomainObjectContainer<RunConfigSettings> runs;
 

@@ -7,7 +7,6 @@ plugins {
 	id 'groovy'
 	id 'checkstyle'
 	id 'com.github.johnrengelman.shadow' version '4.0.4'
-	id "com.jfrog.bintray" version "1.8.5"
 }
 
 sourceCompatibility = 1.8
@@ -43,7 +42,7 @@ sourceSets {
 repositories {
 	maven { url "https://maven.fabricmc.net/" }
 	maven { url "https://files.minecraftforge.net/maven/" }
-	maven { url "https://dl.bintray.com/shedaniel/cloth" }
+	maven { url "https://maven.shedaniel.me/" }
 	mavenCentral()
 }
 
@@ -171,25 +170,6 @@ gradlePlugin {
 	}
 }
 
-bintray {
-	user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-	key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_KEY')
-	publications = ["plugin", "maven"]
-	publish = true
-	pkg {
-		repo = "cloth"
-		name = "forgified-fabric-loom"
-		userOrg = "shedaniel"
-		licenses = ["MIT"]
-		version {
-			name = project.version
-			vcsTag = project.version
-			released = new Date()
-			vcsUrl = 'https://github.com/shedaniel/fabric-loom.git'
-		}
-	}
-}
-
 publishing {
 	publications {
 		plugin(MavenPublication) {
@@ -207,6 +187,18 @@ publishing {
 			from components.java
 			artifact sourcesJar
 			artifact javadocJar
+		}
+	}
+	
+	repositories {
+		if (System.getenv("MAVEN_PASS") != null) {
+			maven {
+				url = "https://deploy.shedaniel.me/"
+				credentials {
+					username = "shedaniel"
+					password = System.getenv("MAVEN_PASS")
+				}
+			}
 		}
 	}
 }

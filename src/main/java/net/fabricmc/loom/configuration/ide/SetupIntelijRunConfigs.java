@@ -72,6 +72,10 @@ public class SetupIntelijRunConfigs {
 		}
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
+			if (!settings.shouldGenerateIDEConfig()) {
+				continue;
+			}
+
 			RunConfig config = RunConfig.runConfig(project, settings);
 			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 

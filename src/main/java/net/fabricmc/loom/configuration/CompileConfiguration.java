@@ -168,9 +168,7 @@ public final class CompileConfiguration {
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
 
-			if (extension.autoGenIDERuns) {
-				SetupIntelijRunConfigs.setup(project1);
-			}
+			SetupIntelijRunConfigs.setup(project1);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {

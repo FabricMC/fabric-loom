@@ -60,7 +60,6 @@ public class LoomGradleExtension {
 	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
-	public boolean autoGenIDERuns;
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
@@ -115,7 +114,6 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
-		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));

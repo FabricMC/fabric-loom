@@ -92,6 +92,13 @@ public final class RunConfigSettings implements Named {
 	 */
 	private final String baseName;
 
+	/**
+	 * When true a run configuration file will be generated for IDE's.
+	 *
+	 * <p>By default only run configs on the root project will be generated.
+	 */
+	private boolean generateIDEConfig;
+
 	private final Project project;
 	private final LoomGradleExtension extension;
 
@@ -99,6 +106,7 @@ public final class RunConfigSettings implements Named {
 		this.baseName = baseName;
 		this.project = project;
 		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		this.generateIDEConfig = extension.isRootProject();
 
 		source("main");
 		runDir("run");
@@ -232,6 +240,10 @@ public final class RunConfigSettings implements Named {
 		});
 	}
 
+	public void generateIDEConfig(boolean generateIDEConfig) {
+		this.generateIDEConfig = generateIDEConfig;
+	}
+
 	/**
 	 * Add the {@code -XstartOnFirstThread} JVM argument when on OSX.
 	 */
@@ -286,5 +298,9 @@ public final class RunConfigSettings implements Named {
 		if (!file.exists()) {
 			file.mkdir();
 		}
+	}
+
+	public boolean shouldGenerateIDEConfig() {
+		return generateIDEConfig;
 	}
 }

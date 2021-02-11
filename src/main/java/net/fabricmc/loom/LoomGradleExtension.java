@@ -80,7 +80,7 @@ public class LoomGradleExtension {
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 
-	private NamedDomainObjectContainer<RunConfigSettings> runs;
+	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -117,7 +117,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
-		this.runs = project.container(RunConfigSettings.class,
+		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 	}
 
@@ -351,12 +351,12 @@ public class LoomGradleExtension {
 	}
 
 	@ApiStatus.Experimental
-	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
-		action.execute(runs);
+	public void runConfigs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
+		action.execute(runConfigs);
 	}
 
 	@ApiStatus.Experimental
-	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
-		return runs;
+	public NamedDomainObjectContainer<RunConfigSettings> getRunConfigs() {
+		return runConfigs;
 	}
 }

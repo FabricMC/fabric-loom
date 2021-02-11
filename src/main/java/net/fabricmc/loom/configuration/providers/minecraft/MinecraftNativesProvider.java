@@ -109,7 +109,13 @@ public class MinecraftNativesProvider {
 	}
 
 	private boolean requiresExtract() {
-		for (MinecraftVersionMeta.Classifier library : getNatives()) {
+		List<MinecraftVersionMeta.Classifier> natives = getNatives();
+
+		if (natives.isEmpty()) {
+			throw new IllegalStateException("No natives found for the current system");
+		}
+
+		for (MinecraftVersionMeta.Classifier library : natives) {
 			File libJarFile = library.getRelativeFile(jarStore);
 			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");
 
@@ -135,8 +141,8 @@ public class MinecraftNativesProvider {
 
 	private List<MinecraftVersionMeta.Classifier> getNatives() {
 		return extension.getMinecraftProvider().getVersionInfo().getLibraries().stream()
-				.filter(MinecraftVersionMeta.Library::hasNativesForSystem)
-				.map(MinecraftVersionMeta.Library::getClassifierForSystem)
+				.filter((MinecraftVersionMeta.Library::hasNativesForOS))
+				.map(MinecraftVersionMeta.Library::getClassifierForOS)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 	}

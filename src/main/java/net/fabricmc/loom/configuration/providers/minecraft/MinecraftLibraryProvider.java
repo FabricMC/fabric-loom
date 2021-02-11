@@ -41,7 +41,7 @@ public class MinecraftLibraryProvider {
 		initFiles(project, minecraftProvider);
 
 		for (MinecraftVersionMeta.Library library : versionInfo.getLibraries()) {
-			if (library.isValidForSystem() && !library.hasNatives() && library.getArtifact() != null) {
+			if (library.isValidForOS() && !library.hasNatives() && library.getArtifact() != null) {
 				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.getName()));
 			}
 		}

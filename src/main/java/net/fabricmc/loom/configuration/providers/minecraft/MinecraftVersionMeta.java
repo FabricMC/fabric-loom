@@ -131,13 +131,13 @@ public final class MinecraftVersionMeta {
 		private Map<String, String> natives;
 		private List<Rule> rules;
 
-		public boolean isValidForSystem() {
+		public boolean isValidForOS() {
 			if (rules == null || rules.isEmpty()) {
 				return true;
 			}
 
 			for (Rule rule : rules) {
-				if (!rule.isValidForSystem()) {
+				if (rule.appliesToOS() && !rule.isAllowed()) {
 					return false;
 				}
 			}
@@ -149,20 +149,20 @@ public final class MinecraftVersionMeta {
 			return this.natives != null;
 		}
 
-		public boolean hasNativesForSystem() {
+		public boolean hasNativesForOS() {
 			if (!hasNatives()) {
 				return false;
 			}
 
-			if (!isValidForSystem()) {
+			if (natives.get(OperatingSystem.getOS()) == null) {
 				return false;
 			}
 
-			return natives.get(OperatingSystem.getOS()) != null;
+			return isValidForOS();
 		}
 
-		public Classifier getClassifierForSystem() {
-			return getDownloads().getClassifier(OperatingSystem.getOS());
+		public Classifier getClassifierForOS() {
+			return getDownloads().getClassifier(natives.get(OperatingSystem.getOS()));
 		}
 
 		public Downloads getDownloads() {
@@ -194,8 +194,8 @@ public final class MinecraftVersionMeta {
 		private Artifact artifact;
 		private Map<String, Classifier> classifiers;
 
-		public Classifier getClassifier(String system) {
-			return classifiers.get(system);
+		public Classifier getClassifier(String os) {
+			return classifiers.get(os);
 		}
 
 		public Artifact getArtifact() {
@@ -217,12 +217,12 @@ public final class MinecraftVersionMeta {
 		private String action;
 		private OS os;
 
-		public boolean isValidForSystem() {
-			if (getOS() != null && !getOS().isValidForSystem()) {
-				return false;
-			}
+		public boolean appliesToOS() {
+			return getOS() == null || getOS().isValidForOS();
+		}
 
-			return getAction().equalsIgnoreCase("allow");
+		public boolean isAllowed() {
+			return getAction().equals("allow");
 		}
 
 		public String getAction() {
@@ -234,11 +234,11 @@ public final class MinecraftVersionMeta {
 		}
 	}
 
-	private final class OS {
+	public final class OS {
 		private String name;
 
-		public boolean isValidForSystem() {
-			return getName() == null || OperatingSystem.getOS().equalsIgnoreCase(getName());
+		public boolean isValidForOS() {
+			return getName() == null || getName().equalsIgnoreCase(OperatingSystem.getOS());
 		}
 
 		public String getName() {

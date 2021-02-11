@@ -351,7 +351,7 @@ public class LoomGradleExtension {
 	}
 
 	@ApiStatus.Experimental
-	public void runConfigs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
+	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
 		action.execute(runConfigs);
 	}
 

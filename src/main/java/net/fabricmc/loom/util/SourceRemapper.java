@@ -173,7 +173,7 @@ public class SourceRemapper {
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
 				TinyTree m = mappingsProvider.getMappings();
-				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
+				project.getLogger().info(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyMappingsReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);

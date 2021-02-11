@@ -42,7 +42,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
 
-	public static boolean addRefmapName(String filename, String mixinVersion, Path outputPath) {
+	public static boolean addRefmapName(String filename, Path outputPath) {
 		File output = outputPath.toFile();
 		Set<String> mixinFilenames = findMixins(output, true);
 
@@ -54,10 +54,6 @@ public final class MixinRefmapHelper {
 
 					if (!json.has("refmap")) {
 						json.addProperty("refmap", filename);
-					}
-
-					if (!json.has("minVersion") && mixinVersion != null) {
-						json.addProperty("minVersion", mixinVersion);
 					}
 
 					return LoomGradlePlugin.GSON.toJson(json);

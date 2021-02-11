@@ -27,17 +27,12 @@ package net.fabricmc.loom;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
@@ -46,12 +41,10 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
@@ -263,103 +256,6 @@ public class LoomGradleExtension {
 
 	public File getDevLauncherConfig() {
 		return new File(getProjectPersistentCache(), "launch.cfg");
-	}
-
-	@Nullable
-	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
-		for (Configuration config : configs) {
-			for (Dependency dependency : config.getDependencies()) {
-				String group = dependency.getGroup();
-				String name = dependency.getName();
-
-				if (groupNameFilter.test(group, name)) {
-					p.getLogger().debug("Loom findDependency found: " + group + ":" + name + ":" + dependency.getVersion());
-					return dependency;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	@Nullable
-	private <T> T recurseProjects(Function<Project, T> projectTFunction) {
-		Project p = this.project;
-		T result;
-
-		while (p.getRootProject() != p) {
-			if ((result = projectTFunction.apply(p)) != null) {
-				return result;
-			}
-
-			p = p.getRootProject();
-		}
-
-		result = projectTFunction.apply(p);
-		return result;
-	}
-
-	@Nullable
-	private Dependency getMixinDependency() {
-		return recurseProjects(p -> {
-			List<Configuration> configs = new ArrayList<>();
-			// check compile classpath first
-			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
-
-			if (possibleCompileClasspath != null) {
-				configs.add(possibleCompileClasspath);
-			}
-
-			// failing that, buildscript
-			configs.addAll(p.getBuildscript().getConfigurations());
-
-			return findDependency(p, configs, (group, name) -> {
-				if (name.equalsIgnoreCase("mixin") && group.equalsIgnoreCase("org.spongepowered")) {
-					return true;
-				}
-
-				return name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc");
-			});
-		});
-	}
-
-	@Nullable
-	public String getMixinJsonVersion() {
-		Dependency dependency = getMixinDependency();
-
-		if (dependency != null) {
-			final String version = Objects.requireNonNull(dependency.getVersion(), "Mixin version cannot be null");
-			final String group = Objects.requireNonNull(dependency.getGroup(), "Mixin group cannot be null");
-
-			if (group.equalsIgnoreCase("net.fabricmc")) {
-				return parseMixinVersion(version);
-			}
-
-			return version;
-		}
-
-		return null;
-	}
-
-	public static String parseMixinVersion(String version) {
-		final Pattern pattern = Pattern.compile("(\\+mixin.)([0-9]+.[0-9]+)");
-		final Matcher match = pattern.matcher(version);
-
-		// Handle the new mixin version style such as 0.9.1+mixin.0.8.2
-		if (match.find() && match.groupCount() == 2) {
-			return match.group(2);
-		}
-
-		if (version.contains("+build.")) {
-			version = version.substring(0, version.indexOf('+'));
-			return version.substring(0, version.lastIndexOf('.'));
-		}
-
-		if (version.split("\\.").length >= 4) {
-			return version.substring(0, version.indexOf('.', version.indexOf('.') + 1));
-		}
-
-		return version;
 	}
 
 	public String getLoaderLaunchMethod() {

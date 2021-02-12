@@ -84,7 +84,7 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 		}
 
 		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
-			if (!settings.shouldGenerateIDEConfig()) {
+			if (!settings.isIdeConfigGenerated()) {
 				continue;
 			}
 

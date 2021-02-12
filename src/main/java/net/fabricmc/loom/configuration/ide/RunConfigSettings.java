@@ -97,7 +97,7 @@ public final class RunConfigSettings implements Named {
 	 *
 	 * <p>By default only run configs on the root project will be generated.
 	 */
-	private boolean generateIDEConfig;
+	private boolean ideConfigGenerated;
 
 	private final Project project;
 	private final LoomGradleExtension extension;
@@ -106,7 +106,7 @@ public final class RunConfigSettings implements Named {
 		this.baseName = baseName;
 		this.project = project;
 		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		this.generateIDEConfig = extension.isRootProject();
+		this.ideConfigGenerated = extension.isRootProject();
 
 		source("main");
 		runDir("run");
@@ -240,8 +240,8 @@ public final class RunConfigSettings implements Named {
 		});
 	}
 
-	public void generateIDEConfig(boolean generateIDEConfig) {
-		this.generateIDEConfig = generateIDEConfig;
+	public void ideConfigGenerated(boolean ideConfigGenerated) {
+		this.ideConfigGenerated = ideConfigGenerated;
 	}
 
 	/**
@@ -300,7 +300,11 @@ public final class RunConfigSettings implements Named {
 		}
 	}
 
-	public boolean shouldGenerateIDEConfig() {
-		return generateIDEConfig;
+	public boolean isIdeConfigGenerated() {
+		return ideConfigGenerated;
+	}
+
+	public void setIdeConfigGenerated(boolean ideConfigGenerated) {
+		this.ideConfigGenerated = ideConfigGenerated;
 	}
 }

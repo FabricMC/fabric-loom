@@ -40,11 +40,11 @@ dependencies {
 	implementation ('org.zeroturnaround:zt-zip:1.14')
 	implementation ('com.google.code.gson:gson:2.8.6')
 	implementation ('com.google.guava:guava:30.1-jre')
-	implementation ('org.ow2.asm:asm:9.0')
-	implementation ('org.ow2.asm:asm-analysis:9.0')
-	implementation ('org.ow2.asm:asm-commons:9.0')
-	implementation ('org.ow2.asm:asm-tree:9.0')
-	implementation ('org.ow2.asm:asm-util:9.0')
+	implementation ('org.ow2.asm:asm:9.1')
+	implementation ('org.ow2.asm:asm-analysis:9.1')
+	implementation ('org.ow2.asm:asm-commons:9.1')
+	implementation ('org.ow2.asm:asm-tree:9.1')
+	implementation ('org.ow2.asm:asm-util:9.1')
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.5.1+build.77') {

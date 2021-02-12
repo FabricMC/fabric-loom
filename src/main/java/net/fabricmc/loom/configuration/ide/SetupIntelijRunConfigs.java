@@ -59,7 +59,7 @@ public class SetupIntelijRunConfigs {
 		if (extension.ideSync()) {
 			//Ensures the assets are downloaded when idea is syncing a project
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(project);
 		}
 
 		String projectPath = project == rootProject ? "" : project.getPath().replace(':', '_');

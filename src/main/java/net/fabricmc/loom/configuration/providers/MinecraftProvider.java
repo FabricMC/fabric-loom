@@ -43,7 +43,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftLibraryProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
@@ -52,7 +52,7 @@ import net.fabricmc.stitch.merge.JarMerger;
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
 
-	private MinecraftVersionInfo versionInfo;
+	private MinecraftVersionMeta versionInfo;
 	private MinecraftLibraryProvider libraryProvider;
 
 	private File minecraftJson;
@@ -76,7 +76,7 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson(offline);
 
 		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionInfo.class);
+			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionMeta.class);
 		}
 
 		// Add Loom as an annotation processor
@@ -209,11 +209,11 @@ public class MinecraftProvider extends DependencyProvider {
 			return;
 		}
 
-		MinecraftVersionInfo.Downloads client = versionInfo.downloads.get("client");
-		MinecraftVersionInfo.Downloads server = versionInfo.downloads.get("server");
+		MinecraftVersionMeta.Download client = versionInfo.getDownload("client");
+		MinecraftVersionMeta.Download server = versionInfo.getDownload("server");
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(client.url), minecraftClientJar, client.sha1, logger, false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(server.url), minecraftServerJar, server.sha1, logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(client.getUrl()), minecraftClientJar, client.getSha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(server.getUrl()), minecraftServerJar, server.getSha1(), logger, false);
 	}
 
 	private void mergeJars(Logger logger) throws IOException {
@@ -233,7 +233,7 @@ public class MinecraftProvider extends DependencyProvider {
 		return minecraftVersion;
 	}
 
-	public MinecraftVersionInfo getVersionInfo() {
+	public MinecraftVersionMeta getVersionInfo() {
 		return versionInfo;
 	}
 

@@ -43,7 +43,7 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 		LoomGradleExtension extension = getExtension();
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
-			if (!settings.shouldGenerateIDEConfig()) {
+			if (!settings.isIdeConfigGenerated()) {
 				continue;
 			}
 

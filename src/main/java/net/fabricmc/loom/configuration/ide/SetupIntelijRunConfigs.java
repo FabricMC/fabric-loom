@@ -72,7 +72,7 @@ public class SetupIntelijRunConfigs {
 		}
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
-			if (!settings.shouldGenerateIDEConfig()) {
+			if (!settings.isIdeConfigGenerated()) {
 				continue;
 			}
 

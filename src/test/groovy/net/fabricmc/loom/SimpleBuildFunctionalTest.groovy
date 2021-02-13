@@ -45,8 +45,7 @@ class SimpleBuildFunctionalTest extends Specification {
 		when:
 		def result = GradleRunner.create()
 				.withProjectDir(testProjectDir.root)
-				.withArguments('build',"--stacktrace")
-				.withArguments("--warning-mode", System.getenv().TEST_WARNING_MODE ?: 'all')
+				.withArguments('build',"--stacktrace", "--warning-mode", System.getenv().TEST_WARNING_MODE ?: 'all')
 				.withPluginClasspath()
 				.forwardOutput()
 				.withDebug(true)

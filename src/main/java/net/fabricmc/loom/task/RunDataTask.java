@@ -32,7 +32,7 @@ public class RunDataTask extends AbstractRunTask {
 	public RunDataTask() {
 		super(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			return RunConfig.runConfig(project, extension.getRuns().getByName("data"));
+			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("data"));
 		});
 	}
 }

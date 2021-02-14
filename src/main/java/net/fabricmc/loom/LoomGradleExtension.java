@@ -28,13 +28,11 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -49,10 +47,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
-import org.jetbrains.annotations.ApiStatus;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
@@ -183,8 +180,8 @@ public class LoomGradleExtension {
 		public void mod(String... modIds) {
 			dataGenMods.addAll(Arrays.asList(modIds));
 
-			if (modIds.length > 0 && getRuns().findByName("data") == null) {
-				getRuns().create("data", RunConfigSettings::data);
+			if (modIds.length > 0 && getRunConfigs().findByName("data") == null) {
+				getRunConfigs().create("data", RunConfigSettings::data);
 			}
 		}
 	}

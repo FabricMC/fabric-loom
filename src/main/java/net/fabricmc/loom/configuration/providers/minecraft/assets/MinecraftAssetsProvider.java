@@ -101,7 +101,6 @@ public class MinecraftAssetsProvider {
 				String filename = "objects" + File.separator + sha1.substring(0, 2) + File.separator + sha1;
 				File file = new File(assets, filename);
 
-
 				if (offline) {
 					if (file.exists()) {
 						project.getLogger().warn("Outdated asset " + entry.getKey());
@@ -140,11 +139,6 @@ public class MinecraftAssetsProvider {
 							throw new RuntimeException("Failed to download: " + assetName, e);
 						}
 
-						//Give this logger back
-						if (localFileChecksum == null) {
-							checksumInfos.put(entry.getKey(), sha1);
-						}
-
 						synchronized (progressBar[0]) {
 							progressBar[0].step();
 						}
@@ -153,7 +147,6 @@ public class MinecraftAssetsProvider {
 			}
 
 			project.getLogger().info("Took " + stopwatch.stop() + " to iterate " + parent.size() + " asset index.");
-
 
 			//Wait for the assets to all download
 			executor.shutdown();

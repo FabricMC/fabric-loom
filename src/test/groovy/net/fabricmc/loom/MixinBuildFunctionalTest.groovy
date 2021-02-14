@@ -54,7 +54,7 @@ class MixinBuildFunctionalTest extends Specification {
 		when:
 		def result = GradleRunner.create()
 				.withProjectDir(testProjectDir.root)
-				.withArguments('build','--stacktrace')
+				.withArguments('build','--stacktrace', "--warning-mode", System.getenv().TEST_WARNING_MODE ?: 'all')
 				.withPluginClasspath()
 				.forwardOutput()
 				.build()

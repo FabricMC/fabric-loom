@@ -4,7 +4,7 @@ jobs:
   gradle:
     strategy:
       matrix:
-        gradle: [4.9, 4.10.2, 6.8.0]
+        gradle: [4.9, 4.10.2, 6.8.2]
         java: [jdk8, jdk11, jdk15]
         exclude: # Dont run older gradle versions on newer java
           - java: jdk15
@@ -23,3 +23,15 @@ jobs:
       - uses: actions/checkout@v1
       - uses: gradle/wrapper-validation-action@v1
       - run: gradle build check test --stacktrace
+
+  gradle_pre_release:
+    runs-on: ubuntu-20.04
+    container:
+      image: openjdk:8-jdk
+      options: --user root
+    steps:
+      - uses: actions/checkout@v1
+      - run: ./gradlew wrapper --gradle-version=7.0-milestone-1
+      - run: ./gradlew build check test --stacktrace --warning-mode fail
+        env:
+          TEST_WARNING_MODE: fail

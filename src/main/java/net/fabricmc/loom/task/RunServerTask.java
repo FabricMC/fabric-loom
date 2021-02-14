@@ -32,7 +32,7 @@ public class RunServerTask extends AbstractRunTask {
 	public RunServerTask() {
 		super(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			return RunConfig.runConfig(project, extension.getRuns().getByName("client"));
+			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("client"));
 		});
 	}
 }

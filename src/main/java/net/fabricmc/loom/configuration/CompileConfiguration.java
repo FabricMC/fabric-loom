@@ -248,10 +248,8 @@ public final class CompileConfiguration {
 			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
 			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
 
-			if (extension.autoGenIDERuns) {
-				SetupIntelijRunConfigs.setup(project1);
-				GenVsCodeProjectTask.generate(project1);
-			}
+			SetupIntelijRunConfigs.setup(project1);
+			GenVsCodeProjectTask.generate(project1);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {
@@ -362,6 +360,7 @@ public final class CompileConfiguration {
 			// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
 			System.setProperty("log4j2.disable.jmx", "true");
 			System.setProperty("log4j.shutdownHookEnabled", "false");
+			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
 			new JavaApInvoker(project).configureMixin();

@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -47,7 +46,6 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
@@ -80,7 +78,6 @@ public class LoomGradleExtension {
 	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
-	public boolean autoGenIDERuns;
 	public String customManifest = null;
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
@@ -117,7 +114,7 @@ public class LoomGradleExtension {
 	@ApiStatus.Experimental
 	public final List<Consumer<RunConfig>> settingsPostEdit = new ArrayList<>();
 
-	private NamedDomainObjectContainer<RunConfigSettings> runs;
+	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -218,10 +215,9 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
-		this.autoGenIDERuns = isRootProject();
 		this.unmappedMods = project.files();
 		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
-		this.runs = project.container(RunConfigSettings.class,
+		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 	}
 
@@ -362,81 +358,6 @@ public class LoomGradleExtension {
 		return new File(getProjectPersistentCache(), "launch.cfg");
 	}
 
-	@Nullable
-	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
-		for (Configuration config : configs) {
-			for (Dependency dependency : config.getAllDependencies()) {
-				String group = dependency.getGroup();
-				String name = dependency.getName();
-
-				if (groupNameFilter.test(group, name)) {
-					p.getLogger().debug("Loom findDependency found: " + group + ":" + name + ":" + dependency.getVersion());
-					return dependency;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	@Nullable
-	private <T> T recurseProjects(Function<Project, T> projectTFunction) {
-		Project p = this.project;
-		T result;
-
-		while (p.getRootProject() != p) {
-			if ((result = projectTFunction.apply(p)) != null) {
-				return result;
-			}
-
-			p = p.getRootProject();
-		}
-
-		result = projectTFunction.apply(p);
-		return result;
-	}
-
-	@Nullable
-	private Dependency getMixinDependency() {
-		return recurseProjects(p -> {
-			Set<Configuration> configs = new LinkedHashSet<>();
-			// check compile classpath first
-			Configuration possibleCompileClasspath = p.getConfigurations().findByName("compileClasspath");
-
-			if (possibleCompileClasspath != null) {
-				configs.add(possibleCompileClasspath);
-			}
-
-			// failing that, buildscript
-			configs.addAll(p.getBuildscript().getConfigurations());
-
-			return findDependency(p, configs, (group, name) -> {
-				if (name.equalsIgnoreCase("mixin") && group.equalsIgnoreCase("org.spongepowered")) {
-					return true;
-				}
-
-				return name.equalsIgnoreCase("sponge-mixin") && group.equalsIgnoreCase("net.fabricmc");
-			});
-		});
-	}
-
-	@Nullable
-	public String getMixinJsonVersion() {
-		Dependency dependency = getMixinDependency();
-
-		if (dependency != null) {
-			if (dependency.getGroup().equalsIgnoreCase("net.fabricmc")) {
-				if (Objects.requireNonNull(dependency.getVersion()).split("\\.").length >= 4) {
-					return dependency.getVersion().substring(0, dependency.getVersion().lastIndexOf('.')) + "-SNAPSHOT";
-				}
-			}
-
-			return dependency.getVersion();
-		}
-
-		return null;
-	}
-
 	public String getLoaderLaunchMethod() {
 		return loaderLaunchMethod != null ? loaderLaunchMethod : "";
 	}
@@ -574,11 +495,11 @@ public class LoomGradleExtension {
 
 	@ApiStatus.Experimental
 	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
-		action.execute(runs);
+		action.execute(runConfigs);
 	}
 
 	@ApiStatus.Experimental
-	public NamedDomainObjectContainer<RunConfigSettings> getRuns() {
-		return runs;
+	public NamedDomainObjectContainer<RunConfigSettings> getRunConfigs() {
+		return runConfigs;
 	}
 }

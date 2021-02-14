@@ -59,7 +59,7 @@ public class SetupIntelijRunConfigs {
 		if (extension.ideSync()) {
 			//Ensures the assets are downloaded when idea is syncing a project
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(project);
 		}
 
 		String projectPath = project == rootProject ? "" : project.getPath().replace(':', '_');
@@ -71,7 +71,11 @@ public class SetupIntelijRunConfigs {
 			runConfigsDir.mkdirs();
 		}
 
-		for (RunConfigSettings settings : extension.getRuns()) {
+		for (RunConfigSettings settings : extension.getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
+
 			RunConfig config = RunConfig.runConfig(project, settings);
 			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 

@@ -239,7 +239,7 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar, Consumer<Runnable> postPopulationScheduler)
 			throws Exception {
-		project.getLogger().lifecycle(":extracting " + yarnJar.getFileName());
+		project.getLogger().info(":extracting " + yarnJar.getFileName());
 
 		if (isMCP(yarnJar)) {
 			readAndMergeMCP(yarnJar, postPopulationScheduler);

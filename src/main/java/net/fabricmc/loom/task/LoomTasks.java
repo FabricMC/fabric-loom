@@ -86,9 +86,9 @@ public final class LoomTasks {
 	private static void registerRunTasks(TaskContainer tasks, Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		Preconditions.checkArgument(extension.getRuns().size() == 0, "Run configurations must not be registered before loom");
+		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
 
-		extension.getRuns().whenObjectAdded(config -> {
+		extension.getRunConfigs().whenObjectAdded(config -> {
 			String configName = config.getName();
 			String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 
@@ -102,8 +102,8 @@ public final class LoomTasks {
 			});
 		});
 
-		extension.getRuns().create("client", RunConfigSettings::client);
-		extension.getRuns().create("server", RunConfigSettings::server);
+		extension.getRunConfigs().create("client", RunConfigSettings::client);
+		extension.getRunConfigs().create("server", RunConfigSettings::server);
 	}
 
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {

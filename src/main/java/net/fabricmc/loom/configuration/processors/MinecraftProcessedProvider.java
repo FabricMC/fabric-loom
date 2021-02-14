@@ -53,7 +53,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		boolean isForgeAtDirty = getExtension().isForge() && getExtension().getMappingsProvider().patchedProvider.isAtDirty();
 
 		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps() || isForgeAtDirty) {
-			getProject().getLogger().lifecycle(":processing mapped jar");
+			getProject().getLogger().info(":processing mapped jar");
 			invalidateJars();
 
 			try {

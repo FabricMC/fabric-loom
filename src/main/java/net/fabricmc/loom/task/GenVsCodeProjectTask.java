@@ -95,7 +95,11 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			launch = new VsCodeLaunch();
 		}
 
-		for (RunConfigSettings settings : extension.getRuns()) {
+		for (RunConfigSettings settings : extension.getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
+
 			launch.add(RunConfig.runConfig(project, settings));
 			settings.makeRunDir();
 		}

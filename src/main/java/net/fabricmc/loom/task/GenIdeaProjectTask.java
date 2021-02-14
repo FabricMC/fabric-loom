@@ -83,7 +83,11 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to generate IntelliJ run configurations (runManager was not found)");
 		}
 
-		for (RunConfigSettings settings : getExtension().getRuns()) {
+		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
+
 			runManager.appendChild(RunConfig.runConfig(project, settings).genRuns(runManager));
 			settings.makeRunDir();
 		}

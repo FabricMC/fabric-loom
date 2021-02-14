@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
@@ -64,7 +65,7 @@ public class LaunchProvider extends DependencyProvider {
 				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
 
 				.argument("client", "--assetIndex")
-				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex.getFabricId(getExtension().getMinecraftProvider().getMinecraftVersion()))
+				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().getAssetIndex().getFabricId(getExtension().getMinecraftProvider().getMinecraftVersion()))
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
@@ -125,8 +126,8 @@ public class LaunchProvider extends DependencyProvider {
 		writeLog4jConfig();
 		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, "runtimeOnly");
-		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
+		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
 		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
 
 		if (getExtension().isForge()) {

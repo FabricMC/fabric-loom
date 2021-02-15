@@ -127,11 +127,16 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
+		return getTinyRemapper(fromM, toM, "named".equals(toM));
+	}
+
+	public TinyRemapper getTinyRemapper(String fromM, String toM, boolean fixPackageAccess) throws IOException {
 		return TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
+				.fixPackageAccess(fixPackageAccess)
 				.build();
 	}
 

@@ -77,6 +77,7 @@ public class Constants {
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
+		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String SRG = "srg";
 		public static final String MCP_CONFIG = "mcp";
 		public static final String FORGE = "forge";

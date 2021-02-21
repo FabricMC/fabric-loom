@@ -45,6 +45,7 @@ import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.launch.LaunchProviderSettings;
 import net.fabricmc.loom.util.Constants;
 
 public class LaunchProvider extends DependencyProvider {
@@ -113,6 +114,16 @@ public class LaunchProvider extends DependencyProvider {
 					launchConfig.argument("-mixin.config");
 					launchConfig.argument(config);
 				}
+			}
+		}
+
+		for (LaunchProviderSettings settings : getExtension().getLaunchConfigs()) {
+			for (String argument : settings.getArguments()) {
+				launchConfig.argument(settings.getName(), argument);
+			}
+
+			for (Map.Entry<String, String> property : settings.getProperties()) {
+				launchConfig.property(settings.getName(), property.getKey(), property.getValue());
 			}
 		}
 

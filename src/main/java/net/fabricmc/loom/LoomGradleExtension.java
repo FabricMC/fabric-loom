@@ -55,6 +55,7 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.launch.LaunchProviderSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -112,6 +113,7 @@ public class LoomGradleExtension {
 	public final List<Consumer<RunConfig>> settingsPostEdit = new ArrayList<>();
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
+	private NamedDomainObjectContainer<LaunchProviderSettings> launchConfigs;
 
 	/**
 	 * Loom will generate a new genSources task (with a new name, based off of {@link LoomDecompiler#name()})
@@ -137,6 +139,7 @@ public class LoomGradleExtension {
 	}
 
 	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
+		if (id == -1) return factory.get();
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
 
@@ -216,6 +219,8 @@ public class LoomGradleExtension {
 		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
+		this.launchConfigs = project.container(LaunchProviderSettings.class,
+				baseName -> new LaunchProviderSettings(project, baseName));
 	}
 
 	/**
@@ -496,7 +501,17 @@ public class LoomGradleExtension {
 	}
 
 	@ApiStatus.Experimental
+	public void launches(Action<NamedDomainObjectContainer<LaunchProviderSettings>> action) {
+		action.execute(launchConfigs);
+	}
+
+	@ApiStatus.Experimental
 	public NamedDomainObjectContainer<RunConfigSettings> getRunConfigs() {
 		return runConfigs;
+	}
+
+	@ApiStatus.Experimental
+	public NamedDomainObjectContainer<LaunchProviderSettings> getLaunchConfigs() {
+		return launchConfigs;
 	}
 }

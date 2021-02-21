@@ -107,7 +107,7 @@ public class MinecraftAssetsProvider {
 					} else {
 						throw new GradleException("Asset " + entry.getKey() + " not found at " + file.getAbsolutePath());
 					}
-				} else {
+				} else if (HashedDownloadUtil.requiresDownload(file, sha1, project.getLogger())) {
 					toDownload++;
 
 					if (progressBar[0] == null) {

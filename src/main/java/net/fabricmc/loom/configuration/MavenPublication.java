@@ -34,6 +34,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExcludeRule;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublishingExtension;
 
@@ -46,6 +47,14 @@ public final class MavenPublication {
 
 	public static void configure(Project project) {
 		project.afterEvaluate((p) -> {
+			// add modsCompile to maven-publish
+			PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+
+			if (mavenPublish == null) {
+				p.getLogger().info("No maven publications for project [" + p.getName() + "], skipping configuration.");
+				return;
+			}
+
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 				if (!entry.hasMavenScope()) {
 					continue;
@@ -53,23 +62,20 @@ public final class MavenPublication {
 
 				Configuration compileModsConfig = p.getConfigurations().getByName(entry.getSourceConfiguration());
 
-				// add modsCompile to maven-publish
-				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
-
-				if (mavenPublish != null) {
-					processEntry(entry, compileModsConfig, mavenPublish);
-				}
+				p.getLogger().info("Processing maven publication for project [" + p.getName() + "] of " + entry.getSourceConfiguration());
+				processEntry(p.getLogger(), entry, compileModsConfig, mavenPublish);
 			}
 		});
 	}
 
-	private static void processEntry(RemappedConfigurationEntry entry, Configuration compileModsConfig, PublishingExtension mavenPublish) {
+	private static void processEntry(Logger logger, RemappedConfigurationEntry entry, Configuration compileModsConfig, PublishingExtension mavenPublish) {
 		mavenPublish.publications((publications) -> {
 			for (Publication publication : publications) {
 				if (!(publication instanceof org.gradle.api.publish.maven.MavenPublication)) {
 					continue;
 				}
 
+				logger.info("Processing maven publication [" + publication.getName() + "]");
 				((org.gradle.api.publish.maven.MavenPublication) publication).pom((pom) -> pom.withXml((xml) -> {
 					Node dependencies = GroovyXmlUtil.getOrCreateNode(xml.asNode(), "dependencies");
 					Set<String> foundArtifacts = new HashSet<>();
@@ -85,8 +91,11 @@ public final class MavenPublication {
 
 					for (Dependency dependency : compileModsConfig.getAllDependencies()) {
 						if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
+							logger.info("Found inserted artifact " + dependency.getGroup() + ":" + dependency.getName());
 							continue;
 						}
+
+						logger.info("Inserting artifact " + dependency.getGroup() + ":" + dependency.getName());
 
 						Node depNode = dependencies.appendNode("dependency");
 						depNode.appendNode("groupId", dependency.getGroup());

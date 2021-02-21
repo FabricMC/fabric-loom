@@ -40,6 +40,21 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.LoomGradlePlugin;
 
 public class HashedDownloadUtil {
+	public static boolean requiresDownload(File to, String expectedHash, Logger logger) {
+		if (LoomGradlePlugin.refreshDeps) {
+			return true;
+		}
+
+		if (to.exists()) {
+			String sha1 = getSha1(to, logger);
+
+			// The hash in the sha1 file matches
+			return !expectedHash.equals(sha1);
+		}
+
+		return true;
+	}
+
 	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet) throws IOException {
 		if (LoomGradlePlugin.refreshDeps) {
 			delete(to);

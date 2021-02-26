@@ -66,6 +66,7 @@ public class LoomGradleExtension {
 	public boolean shareCaches = false;
 
 	private final ConfigurableFileCollection unmappedMods;
+	private final ConfigurableFileCollection log4jConfigs;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 	private final List<JarProcessor> jarProcessors = new ArrayList<>();
@@ -117,6 +118,7 @@ public class LoomGradleExtension {
 		this.unmappedMods = project.files();
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
+		this.log4jConfigs = project.files(getDefaultLog4jConfigFile());
 	}
 
 	/**
@@ -346,6 +348,14 @@ public class LoomGradleExtension {
 
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
+	}
+
+	public File getDefaultLog4jConfigFile() {
+		return new File(getProjectPersistentCache(), "log4j.xml");
+	}
+
+	public ConfigurableFileCollection getLog4jConfigs() {
+		return log4jConfigs;
 	}
 
 	@ApiStatus.Experimental

@@ -59,7 +59,7 @@ public class LaunchProvider extends DependencyProvider {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
-				.property("log4j.configurationFile", getLog4jConfigFile().getAbsolutePath())
+				.property("log4j.configurationFile", getAllLog4JConfigFiles())
 
 				.property("client", "java.library.path", getExtension().getNativesDirectory().getAbsolutePath())
 				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
@@ -87,7 +87,13 @@ public class LaunchProvider extends DependencyProvider {
 	}
 
 	private File getLog4jConfigFile() {
-		return new File(getExtension().getDevLauncherConfig().getParentFile(), "log4j.xml");
+		return getExtension().getDefaultLog4jConfigFile();
+	}
+
+	private String getAllLog4JConfigFiles() {
+		return getExtension().getLog4jConfigs().getFiles().stream()
+				.map(File::getAbsolutePath)
+				.collect(Collectors.joining(","));
 	}
 
 	private File getRemapClasspathFile() {

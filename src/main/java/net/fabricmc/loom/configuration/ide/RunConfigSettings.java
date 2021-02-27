@@ -290,6 +290,7 @@ public final class RunConfigSettings implements Named {
 		name = parent.name;
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
+		ideConfigGenerated = parent.ideConfigGenerated;
 	}
 
 	public void makeRunDir() {

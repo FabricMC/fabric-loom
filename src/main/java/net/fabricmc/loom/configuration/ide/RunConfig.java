@@ -57,6 +57,7 @@ public class RunConfig {
 	public String runDir;
 	public String vmArgs;
 	public String programArgs;
+	public SourceSet sourceSet;
 
 	public Element genRuns(Element doc) {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -197,6 +198,7 @@ public class RunConfig {
 		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
+		runConfig.sourceSet = sourceSet;
 
 		// Custom parameters
 		for (String progArg : settings.getProgramArgs()) {

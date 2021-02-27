@@ -86,6 +86,7 @@ public class LoomGradleExtension {
 	public boolean useFabricMixin = true; // FORGE: Use Fabric Mixin for better refmap resolutions
 
 	private final ConfigurableFileCollection unmappedMods;
+	private final ConfigurableFileCollection log4jConfigs;
 
 	final List<LoomDecompiler> decompilers = new ArrayList<>();
 	private final List<JarProcessor> jarProcessors = new ArrayList<>();
@@ -221,6 +222,7 @@ public class LoomGradleExtension {
 				baseName -> new RunConfigSettings(project, baseName));
 		this.launchConfigs = project.container(LaunchProviderSettings.class,
 				baseName -> new LaunchProviderSettings(project, baseName));
+		this.log4jConfigs = project.files(getDefaultLog4jConfigFile());
 	}
 
 	/**
@@ -493,6 +495,14 @@ public class LoomGradleExtension {
 
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
+	}
+
+	public File getDefaultLog4jConfigFile() {
+		return new File(getProjectPersistentCache(), "log4j.xml");
+	}
+
+	public ConfigurableFileCollection getLog4jConfigs() {
+		return log4jConfigs;
 	}
 
 	@ApiStatus.Experimental

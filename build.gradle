@@ -14,12 +14,10 @@ targetCompatibility = 1.8
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '0.6'
+def baseVersion = '0.7'
 
-def build = 'local'
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
-	build = "release #${ENV.BUILD_NUMBER}"
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
 	version = baseVersion + '.local'
@@ -85,7 +83,7 @@ dependencies {
 
 jar {
 	manifest {
-		attributes 'Implementation-Version': project.version + ' Build(' + build + ')'
+		attributes 'Implementation-Version': project.version
 	}
 }
 

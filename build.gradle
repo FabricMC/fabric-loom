@@ -69,7 +69,8 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.3.2')
+	compileOnly ('net.fabricmc:tiny-remapper:0.3.2-architectury.5')
+	shadow ('net.fabricmc:tiny-remapper:0.3.2-architectury.5')
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
 	implementation 'net.fabricmc:access-widener:1.0.0'
@@ -133,6 +134,14 @@ jar {
 	manifest {
 		attributes 'Implementation-Version': project.version + ' Build(' + build + ')'
 	}
+	
+	classifier 'jar'
+}
+
+shadowJar {
+	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
+	configurations = [project.configurations.shadow]
+	classifier null
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -174,6 +183,7 @@ publishing {
 			artifactId 'forgified-fabric-loom.gradle.plugin'
 
 			from components.java
+			artifact shadowJar
 			artifact sourcesJar
 		}
 
@@ -182,6 +192,7 @@ publishing {
 			artifactId project.archivesBaseName
 
 			from components.java
+			artifact shadowJar
 			artifact sourcesJar
 			artifact javadocJar
 		}

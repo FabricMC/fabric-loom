@@ -105,35 +105,39 @@ public class MinecraftAssetsProvider {
 				}
 			} else {
 				executor.execute(() -> {
-					ProgressLogger progressLogger;
-
-					if (loggers.isEmpty()) {
-						//Create a new logger if we need one
-						progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
-						progressLogger.start("Downloading assets...", "assets");
-					} else {
-						// use a free logger if we can
-						progressLogger = loggers.pop();
-					}
-
-					String assetName = entry.getKey();
-					int end = assetName.lastIndexOf("/") + 1;
+					final String[] assetName = {entry.getKey()};
+					int end = assetName[0].lastIndexOf("/") + 1;
 
 					if (end > 0) {
-						assetName = assetName.substring(end);
+						assetName[0] = assetName[0].substring(end);
 					}
 
-					project.getLogger().debug(":downloading asset " + assetName);
-					progressLogger.progress(String.format("%-30.30s", assetName) + " - " + sha1);
+					project.getLogger().debug("validating asset " + assetName[0]);
+
+					final ProgressLogger[] progressLogger = new ProgressLogger[1];
 
 					try {
-						HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true);
+						HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, () -> {
+							if (loggers.isEmpty()) {
+								//Create a new logger if we need one
+								progressLogger[0] = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
+								progressLogger[0].start("Downloading assets...", "assets");
+							} else {
+								// use a free logger if we can
+								progressLogger[0] = loggers.pop();
+							}
+
+							project.getLogger().debug("downloading asset " + assetName[0]);
+							progressLogger[0].progress(String.format("%-30.30s", assetName[0]) + " - " + sha1);
+						});
 					} catch (IOException e) {
-						throw new RuntimeException("Failed to download: " + assetName, e);
+						throw new RuntimeException("Failed to download: " + assetName[0], e);
 					}
 
-					//Give this logger back
-					loggers.add(progressLogger);
+					if (progressLogger[0] != null) {
+						//Give this logger back if we used it
+						loggers.add(progressLogger[0]);
+					}
 				});
 			}
 		}

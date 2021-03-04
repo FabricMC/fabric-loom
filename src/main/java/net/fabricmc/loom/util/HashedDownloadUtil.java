@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -41,18 +42,22 @@ import net.fabricmc.loom.LoomGradlePlugin;
 
 public class HashedDownloadUtil {
 	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet) throws IOException {
+		downloadIfInvalid(from, to, expectedHash, logger, quiet, () -> { });
+	}
+
+	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet, Runnable startDownload) throws IOException {
 		if (LoomGradlePlugin.refreshDeps) {
 			delete(to);
 		}
 
-		if (to.exists()) {
-			String sha1 = getSha1(to, logger);
+		String sha1 = getSha1(to, logger);
 
-			if (expectedHash.equals(sha1)) {
-				// The hash in the sha1 file matches
-				return;
-			}
+		if (expectedHash.equals(sha1)) {
+			// The hash in the sha1 file matches
+			return;
 		}
+
+		startDownload.run();
 
 		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
 		connection.setRequestProperty("Accept-Encoding", "gzip");
@@ -62,6 +67,7 @@ public class HashedDownloadUtil {
 
 		if ((code < 200 || code > 299) && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
 			//Didn't get what we expected
+			delete(to);
 			throw new IOException(connection.getResponseMessage() + " for " + from);
 		}
 
@@ -96,12 +102,11 @@ public class HashedDownloadUtil {
 	private static String getSha1(File to, Logger logger) {
 		File sha1File = getSha1File(to);
 
-		if (!sha1File.exists()) {
-			return null;
-		}
-
 		try {
 			return Files.asCharSource(sha1File, StandardCharsets.UTF_8).read();
+		} catch (FileNotFoundException ignored) {
+			// Quicker to catch this than do an exists check before.
+			return null;
 		} catch (IOException e) {
 			logger.warn("Error reading sha1 file '{}'.", sha1File);
 			return null;

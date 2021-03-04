@@ -56,7 +56,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 
@@ -127,11 +127,11 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 			throw new RuntimeException("Failed to find official mojang mappings for " + getVersion());
 		}
 
-		String clientMappingsUrl = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS).getUrl();
-		String serverMappingsUrl = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS).getUrl();
+		MinecraftVersionMeta.Download clientMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
+		MinecraftVersionMeta.Download serverMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
 
-		DownloadUtil.downloadIfChanged(new URL(clientMappingsUrl), clientMappings.toFile(), project.getLogger());
-		DownloadUtil.downloadIfChanged(new URL(serverMappingsUrl), serverMappings.toFile(), project.getLogger());
+		HashedDownloadUtil.downloadIfInvalid(new URL(clientMappingsDownload.getUrl()), clientMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(serverMappingsDownload.getUrl()), serverMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
 
 		MappingSet mappings = MappingSet.create();
 

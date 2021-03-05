@@ -183,12 +183,16 @@ publishing {
 
 // A task to output a json file with a list of all the test to run
 task writeActionsTestMatrix() {
-	def testMatrix = []
-	file('src/test/groovy/net/fabricmc/loom').eachFile {
-		if (it.name.endsWith("Test.groovy")) {
-			testMatrix.add(it.name.replace(".groovy", ""))
+	doLast {
+		def testMatrix = []
+		file('src/test/groovy/net/fabricmc/loom').eachFile {
+			if (it.name.endsWith("Test.groovy")) {
+				testMatrix.add(it.name.replace(".groovy", ""))
+			}
 		}
+		def json = groovy.json.JsonOutput.toJson(testMatrix)
+		def output = file("build/test_matrix.json")
+		output.parentFile.mkdir()
+		output.text = json
 	}
-	def json = groovy.json.JsonOutput.toJson(testMatrix)
-	file("build/test_matrix.json").text = json
 }

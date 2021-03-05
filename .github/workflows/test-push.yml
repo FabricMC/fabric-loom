@@ -40,7 +40,7 @@ jobs:
       - run: gradle writeActionsTestMatrix --stacktrace
       -
         id: set-matrix
-        run: cat build/test_matrix.json
+        run: echo "::set-output name=matrix::$(cat build/test_matrix.json)"
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}

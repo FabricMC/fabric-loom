@@ -78,7 +78,6 @@ dependencies {
 	}
 
 	compileOnly 'org.jetbrains:annotations:20.1.0'
-
 }
 
 jar {
@@ -100,7 +99,9 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 license {
 	header rootProject.file("HEADER")
 	include "**/*.java"
+	include "**/*.groovy"
 	exclude '**/loom/util/DownloadUtil.java'
+	exclude '**/projects'
 }
 
 checkstyle {
@@ -178,4 +179,16 @@ publishing {
 			}
 		}
 	}
+}
+
+// A task to output a json file with a list of all the test to run
+task writeActionsTestMatrix() {
+	def testMatrix = []
+	file('src/test/groovy/net/fabricmc/loom').eachFile {
+		if (it.name.endsWith("Test.groovy")) {
+			testMatrix.add(it.name.replace(".groovy", ""))
+		}
+	}
+	def json = groovy.json.JsonOutput.toJson(testMatrix)
+	file("build/test_matrix.json").text = json
 }

@@ -320,7 +320,7 @@ public final class CompileConfiguration {
 						rootProject.getTasks().register("remapAllJars", AbstractLoomTask.class, task -> {
 							task.doLast(t -> {
 								try {
-									jarRemapper.remap();
+									jarRemapper.remap(rootProject);
 								} catch (IOException e) {
 									throw new RuntimeException("Failed to remap jars", e);
 								}

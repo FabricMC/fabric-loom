@@ -155,6 +155,7 @@ public class ModProcessor {
 		TinyTree mappings = extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings();
 		LoggerFilter.replaceSystemOut();
 		TinyRemapper remapper = TinyRemapper.newRemapper()
+				.logger(project.getLogger()::lifecycle)
 				.withMappings(TinyRemapperMappingsHelper.create(mappings, fromM, toM, false))
 				.renameInvalidLocals(false)
 				.build();

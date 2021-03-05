@@ -35,6 +35,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.gradle.api.Action;
+import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.util.LoggerFilter;
@@ -64,9 +65,10 @@ public class JarRemapper {
 		return data;
 	}
 
-	public void remap() throws IOException {
+	public void remap(Project project) throws IOException {
 		LoggerFilter.replaceSystemOut();
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
+		remapperBuilder.logger(project.getLogger()::lifecycle);
 		mappingProviders.forEach(remapperBuilder::withMappings);
 
 		if (remapOptions != null) {

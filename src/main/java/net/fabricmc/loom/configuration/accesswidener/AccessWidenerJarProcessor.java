@@ -95,7 +95,8 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 					throw new UnsupportedOperationException(String.format("Access Widener namespace '%s' is not a valid namespace, it must be one of: '%s'", accessWidener.getNamespace(), String.join(", ", validNamespaces)));
 				}
 
-				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper(null, "official", "named");
+				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper();
+				tinyRemapper.replaceMappings(loomGradleExtension.getMinecraftMappedProvider().getMappings(null, "official", "named"));
 				loomGradleExtension.getMinecraftMappedProvider();
 				tinyRemapper.readClassPath(MinecraftMappedProvider.getRemapClasspath(project));
 

@@ -119,7 +119,7 @@ public class RemapJarTask extends Jar {
 
 		LoggerFilter.replaceSystemOut();
 		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
-
+		remapperBuilder.logger(getProject().getLogger()::lifecycle);
 		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {

@@ -428,6 +428,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			Files.deleteIfExists(output);
 
 			TinyRemapper remapper = TinyRemapper.newRemapper()
+					.logger(getProject().getLogger()::lifecycle)
 					.withMappings(TinyRemapperMappingsHelper.create(mappingsWithSrg, "srg", "official", true))
 					.withMappings(InnerClassRemapper.of(input, mappingsWithSrg, "srg", "official"))
 					.renameInvalidLocals(true)

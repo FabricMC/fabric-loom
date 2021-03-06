@@ -44,4 +44,10 @@ class LegacyProjectTest extends Specification implements ProjectTestTrait {
 		then:
 			result.task(":build").outcome == SUCCESS
 	}
+
+	@Override
+	String warningMode() {
+		// Gradle 4.9 doesnt support fail, and well this is a legacy test so deprecations are expected
+		'all'
+	}
 }

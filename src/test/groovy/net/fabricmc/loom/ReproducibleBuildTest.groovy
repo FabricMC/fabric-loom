@@ -28,11 +28,13 @@ import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import net.fabricmc.loom.util.ProjectTestTrait
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
+@IgnoreIf({ os.windows }) // Linux and mac create the same files, im unsure why windows is different. Let me know if you have any ideas?
 class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {

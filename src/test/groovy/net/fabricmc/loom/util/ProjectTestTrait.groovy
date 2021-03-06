@@ -96,8 +96,8 @@ trait ProjectTestTrait {
 		new File(gradleHome, gradleVersion).absolutePath
 	}
 
-	File getOutputFile(String name) {
-		def file = new File(testProjectDir, "build/libs/" + name)
+	File getOutputFile(String name, String project = "") {
+		def file = new File(testProjectDir, "${project}build/libs/${name}")
 
 		if (!file.exists()) {
 			throw new FileNotFoundException("Could not find ${name} at ${file.absolutePath}")

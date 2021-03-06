@@ -22,25 +22,45 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util
+package net.fabricmc.loom
 
-import org.zeroturnaround.zip.ZipUtil
+import net.fabricmc.loom.util.ArchiveAssertionsTrait
+import net.fabricmc.loom.util.ProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-trait ArchiveAssertionsTrait extends ProjectTestTrait {
-	String getArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-		def bytes = ZipUtil.unpackEntry(file, entry)
-
-		if (bytes == null) {
-			throw new FileNotFoundException("Could not find ${entry} in ${name}")
-		}
-
-		new String(bytes as byte[])
+class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
+	@Override
+	String name() {
+		"multiproject"
 	}
 
-	boolean hasArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
-		ZipUtil.unpackEntry(file, entry) != null
+	@Unroll
+	def "build (gradle #gradle)"() {
+		when:
+			def result = create("build", gradle)
+		then:
+			result.task(":build").outcome == SUCCESS
+			result.task(":core:build").outcome == SUCCESS
+			result.task(":example:build").outcome == SUCCESS
+
+			result.task(":remapAllJars").outcome == SUCCESS
+			result.task(":remapAllSources").outcome == SUCCESS
+
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+
+		where:
+			gradle 				| _
+			'6.8.3' 			| _
+			'7.0-milestone-2'	| _
+	}
+
+	@Override
+	String warningMode(String gradleVersion) {
+		"none" // TODO fix this!
 	}
 }

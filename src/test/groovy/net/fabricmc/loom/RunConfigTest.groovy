@@ -22,25 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util
+package net.fabricmc.loom
 
-import org.zeroturnaround.zip.ZipUtil
+import net.fabricmc.loom.util.ProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-trait ArchiveAssertionsTrait extends ProjectTestTrait {
-	String getArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-		def bytes = ZipUtil.unpackEntry(file, entry)
-
-		if (bytes == null) {
-			throw new FileNotFoundException("Could not find ${entry} in ${name}")
-		}
-
-		new String(bytes as byte[])
+// This test runs a mod that exits on mod init
+class RunConfigTest extends Specification implements ProjectTestTrait {
+	@Override
+	String name() {
+		"runconfigs"
 	}
 
-	boolean hasArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
-		ZipUtil.unpackEntry(file, entry) != null
+	@Unroll
+	def "#task"() {
+		when:
+			def result = create(task)
+		then:
+			result.task(":${task}").outcome == SUCCESS
+		where:
+			task 				| _
+			'runClient' 		| _
+			'runServer'			| _
+			'runTestmodClient'	| _
+			'runTestmodServer'	| _
+			'runAutoTestServer'	| _
 	}
 }

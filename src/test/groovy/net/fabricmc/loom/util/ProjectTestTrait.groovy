@@ -54,6 +54,9 @@ trait ProjectTestTrait {
 			tempFile.parentFile.mkdirs()
 			tempFile << file.text
 		}
+
+		// Disable the CI checks to ensure nothing is skipped
+		System.setProperty("fabric.loom.ci", "false")
 	}
 
 	@SuppressWarnings('unused')
@@ -83,6 +86,12 @@ trait ProjectTestTrait {
 	}
 
 	File getOutputFile(String name) {
-		new File(testProjectDir, "build/libs/" + name)
+		def file = new File(testProjectDir, "build/libs/" + name)
+
+		if (!file.exists()) {
+			throw new FileNotFoundException("Could not find ${name} at ${file.absolutePath}")
+		}
+
+		return file
 	}
 }

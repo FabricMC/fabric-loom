@@ -6,6 +6,7 @@ plugins {
 	id 'eclipse'
 	id 'groovy'
 	id 'checkstyle'
+	id 'jacoco'
 	id "org.cadixdev.licenser" version "0.5.0"
 }
 
@@ -115,6 +116,20 @@ gradlePlugin {
 			id = 'fabric-loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
+	}
+}
+
+jacoco {
+	toolVersion = "0.8.6"
+}
+
+// Run to get test coverage.
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.enabled false
+		csv.enabled false
+		html.destination file("${buildDir}/jacocoHtml")
 	}
 }
 

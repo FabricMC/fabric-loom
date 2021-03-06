@@ -6,6 +6,7 @@ plugins {
 	id 'eclipse'
 	id 'groovy'
 	id 'checkstyle'
+	id 'jacoco'
 	id "org.cadixdev.licenser" version "0.5.0"
 }
 
@@ -78,7 +79,6 @@ dependencies {
 	}
 
 	compileOnly 'org.jetbrains:annotations:20.1.0'
-
 }
 
 jar {
@@ -100,7 +100,9 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 license {
 	header rootProject.file("HEADER")
 	include "**/*.java"
+	include "**/*.groovy"
 	exclude '**/loom/util/DownloadUtil.java'
+	exclude '**/projects'
 }
 
 checkstyle {
@@ -114,6 +116,20 @@ gradlePlugin {
 			id = 'fabric-loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
+	}
+}
+
+jacoco {
+	toolVersion = "0.8.6"
+}
+
+// Run to get test coverage.
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.enabled false
+		csv.enabled false
+		html.destination file("${buildDir}/jacocoHtml")
 	}
 }
 
@@ -177,5 +193,26 @@ publishing {
 				}
 			}
 		}
+	}
+}
+
+// A task to output a json file with a list of all the test to run
+task writeActionsTestMatrix() {
+	doLast {
+		def testMatrix = []
+		file('src/test/groovy/net/fabricmc/loom').eachFile {
+			if (it.name.endsWith("Test.groovy")) {
+				if (it.text.contains("@Ignore")) {
+					// A quick hack to disable currently broken tests.
+					return
+				}
+
+				testMatrix.add(it.name.replace(".groovy", ""))
+			}
+		}
+		def json = groovy.json.JsonOutput.toJson(testMatrix)
+		def output = file("build/test_matrix.json")
+		output.parentFile.mkdir()
+		output.text = json
 	}
 }

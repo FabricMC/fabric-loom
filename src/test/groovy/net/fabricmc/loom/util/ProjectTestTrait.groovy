@@ -75,7 +75,7 @@ trait ProjectTestTrait {
 	BuildResult create(String task, String gradleVersion = "6.8.3") {
 		GradleRunner.create()
 			.withProjectDir(testProjectDir)
-			.withArguments(task, "--stacktrace", "--warning-mode", warningMode(), "--gradle-user-home", gradleHomeDirectory(gradleVersion))
+			.withArguments(task, "--stacktrace", "--warning-mode", warningMode(gradleVersion), "--gradle-user-home", gradleHomeDirectory(gradleVersion))
 			.withPluginClasspath()
 			.withGradleVersion(gradleVersion)
 			.forwardOutput()
@@ -83,7 +83,11 @@ trait ProjectTestTrait {
 			.build()
 	}
 
-	String warningMode() {
+	String warningMode(String gradleVersion) {
+		if (gradleVersion == "4.9") {
+			return "all"
+		}
+
 		System.getenv().TEST_WARNING_MODE ?: 'all'
 	}
 

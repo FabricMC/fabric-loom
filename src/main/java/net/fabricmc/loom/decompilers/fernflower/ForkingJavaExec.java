@@ -24,11 +24,10 @@
 
 package net.fabricmc.loom.decompilers.fernflower;
 
+import java.net.URLClassLoader;
+
 import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.file.FileCollection;
 import org.gradle.process.ExecResult;
 import org.gradle.process.JavaExecSpec;
 
@@ -40,13 +39,8 @@ import org.gradle.process.JavaExecSpec;
  */
 public class ForkingJavaExec {
 	public static ExecResult javaexec(Project project, Action<? super JavaExecSpec> action) {
-		ConfigurationContainer configurations = project.getBuildscript().getConfigurations();
-		DependencyHandler handler = project.getDependencies();
-		FileCollection classpath = configurations.getByName("classpath")//
-						.plus(configurations.detachedConfiguration(handler.localGroovy()));
-
 		return project.javaexec(spec -> {
-			spec.classpath(classpath);
+			spec.classpath((Object[]) ((URLClassLoader) ForkingJavaExec.class.getClassLoader()).getURLs());
 			action.execute(spec);
 		});
 	}

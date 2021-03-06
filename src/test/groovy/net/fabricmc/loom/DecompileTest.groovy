@@ -25,30 +25,30 @@
 package net.fabricmc.loom
 
 import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-@Ignore // TODO this fails due to the plugin classpath being setup differently. We need to explore other ways to do this.
 class DecompileTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"simple"
+		"decompile"
 	}
 
 	@Unroll
-	def "#decompiler decompile"() {
+	def "#decompiler gradle #gradle"() {
 		when:
-			def result = create(task)
+			def result = create(task, gradle)
 
 		then:
 			result.task(":${task}").outcome == SUCCESS
 
 		where:
-			decompiler 		| task
-			'fernflower'	| "genSources"
-			'cfr' 			| "genSourcesWithExperimentalCfr"
+			decompiler 		| task								| gradle
+			'fernflower'	| "genSources"						| "6.8.3"
+			'fernflower'	| "genSources"						| "4.9"
+			'fernflower'	| "genSources"						| "7.0-milestone-2"
+			'cfr' 			| "genSourcesWithExperimentalCfr"	| "6.8.3"
 	}
 }

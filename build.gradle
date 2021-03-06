@@ -202,6 +202,11 @@ task writeActionsTestMatrix() {
 		def testMatrix = []
 		file('src/test/groovy/net/fabricmc/loom').eachFile {
 			if (it.name.endsWith("Test.groovy")) {
+				if (it.text.contains("@Ignore")) {
+					// A quick hack to disable currently broken tests.
+					return
+				}
+
 				testMatrix.add(it.name.replace(".groovy", ""))
 			}
 		}

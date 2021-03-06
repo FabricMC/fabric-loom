@@ -64,3 +64,9 @@ jobs:
       - run: gradle test --tests *${{ matrix.test }} --stacktrace
         env:
           TEST_WARNING_MODE: fail
+
+      - uses: actions/upload-artifact@v2
+        if: ${{ always() }}
+        with:
+          name: ${{ matrix.test }} (${{ matrix.java }}) Results
+          path: build/reports/

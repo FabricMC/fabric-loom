@@ -60,6 +60,13 @@ trait ProjectTestTrait {
 	}
 
 	@SuppressWarnings('unused')
+	def cleanup() {
+		// Clean after each test
+		new File(testProjectDir, "build").deleteDir()
+		new File(testProjectDir, ".gradle").deleteDir()
+	}
+
+	@SuppressWarnings('unused')
 	def cleanupSpec() {
 		testProjectDir.deleteDir()
 		gradleHome.deleteDir()

@@ -24,17 +24,15 @@
 
 package net.fabricmc.loom
 
+import com.google.common.hash.HashCode
+import com.google.common.hash.Hashing
+import com.google.common.io.Files
 import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.security.DigestInputStream
-import java.security.MessageDigest
-
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-@Ignore //TODO this is currently failing!
 class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
@@ -51,8 +49,8 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 			getOutputHash("fabric-example-mod-1.0.0-sources.jar") == sourceHash
 		where:
 			gradle 				| modHash								| sourceHash
-			'6.8.3' 			| "e1beb19574f3446800e0a5e289121365"	| "123"
-			'7.0-milestone-2'	| "9759775e1f5440a18667c41cf1961908"	| "123"
+			'6.8.3' 			| "ccd6aaff1b06df01e4dd8c08625b82c9"	| "8bd590dc03b7dd0de3a4a7aeb431d4e8"
+			'7.0-milestone-2'	| "ccd6aaff1b06df01e4dd8c08625b82c9"	| "8bd590dc03b7dd0de3a4a7aeb431d4e8"
 	}
 
 	String getOutputHash(String name) {
@@ -60,11 +58,7 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 	}
 
 	String generateMD5(File file) {
-		file.withInputStream {
-			new DigestInputStream(it, MessageDigest.getInstance('MD5')).withStream {
-				it.eachByte {}
-				it.messageDigest.digest().encodeHex() as String
-			}
-		}
+		HashCode hash = Files.asByteSource(file).hash(Hashing.md5())
+		return hash.asBytes().encodeHex() as String
 	}
 }

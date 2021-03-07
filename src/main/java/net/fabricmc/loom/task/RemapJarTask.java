@@ -35,6 +35,7 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -47,7 +48,9 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
+import net.fabricmc.loom.build.nesting.FileCollectionDependencyProvider;
 import net.fabricmc.loom.build.nesting.JarNester;
+import net.fabricmc.loom.build.nesting.MergedNestedJarProvider;
 import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
 import net.fabricmc.loom.build.nesting.NestedJarProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
@@ -123,7 +126,7 @@ public class RemapJarTask extends Jar {
 		// Add remap options to the jar remapper
 		jarRemapper.addOptions(this.remapOptions);
 
-		NestedJarProvider nestedJarProvider = NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(project, project.getConfigurations().getByName(Constants.Configurations.INCLUDE));
+		NestedJarProvider nestedJarProvider = getNestedJarProvider();
 
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
@@ -165,6 +168,15 @@ public class RemapJarTask extends Jar {
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 				});
+	}
+
+	private NestedJarProvider getNestedJarProvider() {
+		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+
+		return new MergedNestedJarProvider(
+				NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration),
+				new FileCollectionDependencyProvider(nestedJars)
+		);
 	}
 
 	private Path[] getRemapClasspath() {

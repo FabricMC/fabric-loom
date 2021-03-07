@@ -24,13 +24,8 @@
 
 package net.fabricmc.loom.configuration;
 
-import java.io.IOException;
-
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -38,25 +33,15 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
-import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
 import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
-import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.task.RemapAllSourcesTask;
-import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.SourceRemapper;
 
-/**
- * Add Minecraft dependencies to compile time.
- */
 public final class CompileConfiguration {
 	private CompileConfiguration() {
 	}
@@ -110,21 +95,6 @@ public final class CompileConfiguration {
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
 	}
 
-	/**
-	 * Permit to add a Maven repository to a target project.
-	 *
-	 * @param target The target project
-	 * @param name   The name of the repository
-	 * @param url    The URL of the repository
-	 * @return An object containing the name and the URL of the repository that can be modified later
-	 */
-	public static MavenArtifactRepository addMavenRepo(Project target, final String name, final String url) {
-		return target.getRepositories().maven(repo -> {
-			repo.setName(name);
-			repo.setUrl(url);
-		});
-	}
-
 	public static void configureCompile(Project p) {
 		JavaPluginConvention javaModule = (JavaPluginConvention) p.getConvention().getPlugins().get("java");
 
@@ -136,27 +106,7 @@ public final class CompileConfiguration {
 		p.afterEvaluate(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-			project.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
-				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
-				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
-			});
-
-			project.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setUrl(extension.getRemappedModCache());
-				mavenArtifactRepository.setName("UserLocalRemappedMods");
-			});
-
-			project.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("Fabric");
-				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
-			});
-
-			project.getRepositories().maven(mavenArtifactRepository -> {
-				mavenArtifactRepository.setName("Mojang");
-				mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
-			});
-
-			project.getRepositories().mavenCentral();
+			MavenConfiguration.setup(project);
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -175,88 +125,7 @@ public final class CompileConfiguration {
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
-				RemapJarTask remapJarTask = (RemapJarTask) project.getTasks().findByName("remapJar");
-
-				assert remapJarTask != null;
-
-				if (!remapJarTask.getInput().isPresent()) {
-					jarTask.setClassifier("dev");
-					remapJarTask.setClassifier("");
-					remapJarTask.getInput().set(jarTask.getArchivePath());
-				}
-
-				extension.getUnmappedModCollection().from(jarTask);
-				remapJarTask.getAddNestedDependencies().set(true);
-				remapJarTask.getRemapAccessWidener().set(true);
-
-				project.getArtifacts().add("archives", remapJarTask);
-				remapJarTask.dependsOn(jarTask);
-				project.getTasks().getByName("build").dependsOn(remapJarTask);
-
-				project.getTasks().withType(RemapJarTask.class).forEach(task -> {
-					if (task.getAddNestedDependencies().getOrElse(false)) {
-						NestedDependencyProvider.getRequiredTasks(project).forEach(task::dependsOn);
-					}
-				});
-
-				SourceRemapper remapper = null;
-				Task parentTask = project.getTasks().getByName("build");
-
-				if (extension.isShareCaches()) {
-					Project rootProject = project.getRootProject();
-
-					if (extension.isRootProject()) {
-						SourceRemapper sourceRemapper = new SourceRemapper(rootProject, false);
-						JarRemapper jarRemapper = new JarRemapper();
-
-						remapJarTask.jarRemapper = jarRemapper;
-
-						rootProject.getTasks().register("remapAllSources", RemapAllSourcesTask.class, task -> {
-							task.sourceRemapper = sourceRemapper;
-							task.doLast(t -> sourceRemapper.remapAll());
-						});
-
-						parentTask = rootProject.getTasks().getByName("remapAllSources");
-
-						rootProject.getTasks().register("remapAllJars", AbstractLoomTask.class, task -> {
-							task.doLast(t -> {
-								try {
-									jarRemapper.remap();
-								} catch (IOException e) {
-									throw new RuntimeException("Failed to remap jars", e);
-								}
-							});
-						});
-					} else {
-						parentTask = rootProject.getTasks().getByName("remapAllSources");
-						remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
-
-						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
-
-						project.getTasks().getByName("build").dependsOn(parentTask);
-						project.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-						rootProject.getTasks().getByName("remapAllJars").dependsOn(project.getTasks().getByName("remapJar"));
-					}
-				}
-
-				try {
-					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project.getTasks().getByName("sourcesJar");
-
-					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName("remapSourcesJar");
-					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.doLast(task -> project.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
-					remapSourcesJarTask.dependsOn(project.getTasks().getByName("sourcesJar"));
-
-					if (extension.isShareCaches()) {
-						remapSourcesJarTask.setSourceRemapper(remapper);
-					}
-
-					parentTask.dependsOn(remapSourcesJarTask);
-				} catch (UnknownTaskException ignored) {
-					// pass
-				}
+				RemapConfiguration.setupDefaultRemap(project);
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
 				extension.getUnmappedModCollection().from(jarTask);

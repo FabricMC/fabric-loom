@@ -25,15 +25,18 @@
 package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
+import java.util.zip.ZipFile;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.file.FileCollection;
 
 public final class FileCollectionDependencyProvider implements NestedJarProvider {
 	private final Set<File> files;
 
-	private FileCollectionDependencyProvider(FileCollection fileCollection) {
+	public FileCollectionDependencyProvider(FileCollection fileCollection) {
 		this.files = resolve(fileCollection);
 	}
 
@@ -43,6 +46,23 @@ public final class FileCollectionDependencyProvider implements NestedJarProvider
 
 	@Override
 	public Collection<File> provide() {
+		validateFiles();
 		return files;
+	}
+
+	private void validateFiles() {
+		for (File file : files) {
+			Preconditions.checkArgument(file.getName().endsWith(".jar"), String.format("Tried to nest %s but it is not a jar", file.getAbsolutePath()));
+			Preconditions.checkArgument(file.exists(), String.format("Tried to nest jar %s but it does not exist", file.getAbsolutePath()));
+			Preconditions.checkArgument(isMod(file), String.format("Cannot use a file collection to nest none mod jar %s", file.getAbsolutePath()));
+		}
+	}
+
+	private static boolean isMod(File input) {
+		try (ZipFile zipFile = new ZipFile(input)) {
+			return zipFile.getEntry("fabric.mod.json") != null;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 }

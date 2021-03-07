@@ -78,6 +78,7 @@ import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.Pair;
+import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -138,7 +139,8 @@ public class RemapJarTask extends Jar {
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
 			if (mixinMapFile.exists()) {
-				remapperBuilder = remapperBuilder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
+				IMappingProvider provider = TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary");
+				remapperBuilder = remapperBuilder.withMappings(extension.isForge() ? remapToSrg(extension, provider) : provider);
 			}
 		}
 
@@ -317,7 +319,8 @@ public class RemapJarTask extends Jar {
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
 			if (mixinMapFile.exists()) {
-				jarRemapper.addMappings(TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary"));
+				IMappingProvider provider = TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary");
+				jarRemapper.addMappings(extension.isForge() ? remapToSrg(extension, provider) : provider);
 			}
 		}
 
@@ -364,6 +367,57 @@ public class RemapJarTask extends Jar {
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 				});
+	}
+
+	private IMappingProvider remapToSrg(LoomGradleExtension extension, IMappingProvider parent) throws IOException {
+		TinyTree srg = extension.getMappingsProvider().getMappingsWithSrg();
+
+		return sink -> {
+			parent.load(new IMappingProvider.MappingAcceptor() {
+				@Override
+				public void acceptClass(String srcName, String dstName) {
+					String srgName = srg.getClasses()
+							.stream()
+							.filter(it -> Objects.equals(it.getName("intermediary"), dstName))
+							.findFirst()
+							.map(it -> it.getName("srg"))
+							.orElse(dstName);
+					sink.acceptClass(srcName, srgName);
+				}
+
+				@Override
+				public void acceptMethod(IMappingProvider.Member method, String dstName) {
+					String srgName = srg.getClasses()
+							.stream()
+							.flatMap(it -> it.getMethods().stream())
+							.filter(it -> Objects.equals(it.getName("intermediary"), dstName))
+							.findFirst()
+							.map(it -> it.getName("srg"))
+							.orElse(dstName);
+					sink.acceptMethod(method, srgName);
+				}
+
+				@Override
+				public void acceptField(IMappingProvider.Member field, String dstName) {
+					String srgName = srg.getClasses()
+							.stream()
+							.flatMap(it -> it.getFields().stream())
+							.filter(it -> Objects.equals(it.getName("intermediary"), dstName))
+							.findFirst()
+							.map(it -> it.getName("srg"))
+							.orElse(dstName);
+					sink.acceptField(field, srgName);
+				}
+
+				@Override
+				public void acceptMethodArg(IMappingProvider.Member method, int lvIndex, String dstName) {
+				}
+
+				@Override
+				public void acceptMethodVar(IMappingProvider.Member method, int lvIndex, int startOpIdx, int asmIndex, String dstName) {
+				}
+			});
+		};
 	}
 
 	private Path[] getRemapClasspath() {

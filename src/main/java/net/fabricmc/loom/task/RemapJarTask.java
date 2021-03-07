@@ -34,14 +34,23 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import me.shedaniel.architectury.refmapremapper.RefmapRemapper;
+import me.shedaniel.architectury.refmapremapper.remapper.MappingsRemapper;
+import me.shedaniel.architectury.refmapremapper.remapper.ReferenceRemapper;
+import me.shedaniel.architectury.refmapremapper.remapper.Remapper;
+import me.shedaniel.architectury.refmapremapper.remapper.SimpleReferenceRemapper;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
@@ -51,6 +60,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
+import org.jetbrains.annotations.Nullable;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -63,6 +73,10 @@ import net.fabricmc.loom.util.LoggerFilter;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.gradle.GradleSupport;
+import net.fabricmc.mapping.tree.ClassDef;
+import net.fabricmc.mapping.tree.FieldDef;
+import net.fabricmc.mapping.tree.MethodDef;
+import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -175,19 +189,29 @@ public class RemapJarTask extends Jar {
 
 				if (Files.exists(refmapPath)) {
 					try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
-						JsonObject refmapElement = new JsonParser().parse(refmapReader).getAsJsonObject().deepCopy();
-						Files.delete(refmapPath);
+						Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+						JsonObject refmapElement = gson.fromJson(refmapReader, JsonObject.class);
+						refmapElement = RefmapRemapper.remap(new Remapper() {
+							ReferenceRemapper remapper = createReferenceRemapper(extension);
 
-						if (refmapElement.has("data")) {
-							JsonObject data = refmapElement.get("data").getAsJsonObject();
-
-							if (data.has("named:intermediary")) {
-								data.add("searge", data.get("named:intermediary").deepCopy());
-								data.remove("named:intermediary");
+							@Override
+							@Nullable
+							public MappingsRemapper remapMappings() {
+								return className -> remapper;
 							}
-						}
 
-						Files.write(refmapPath, new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create().toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
+							@Override
+							@Nullable
+							public Map.Entry<String, @Nullable MappingsRemapper> remapMappingsData(String data) {
+								if (Objects.equals(data, "named:intermediary")) {
+									return new AbstractMap.SimpleEntry<>("searge", remapMappings());
+								}
+
+								return null;
+							}
+						}, refmapElement);
+						Files.delete(refmapPath);
+						Files.write(refmapPath, gson.toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
 					}
 				}
 			}
@@ -202,6 +226,72 @@ public class RemapJarTask extends Jar {
 		if (isReproducibleFileOrder() || isPreserveFileTimestamps()) {
 			ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
 		}
+	}
+
+	private ReferenceRemapper createReferenceRemapper(LoomGradleExtension extension) throws IOException {
+		TinyTree srg = extension.getMappingsProvider().getMappingsWithSrg();
+
+		return new SimpleReferenceRemapper(new SimpleReferenceRemapper.Remapper() {
+			@Override
+			@Nullable
+			public String mapClass(String value) {
+				return srg.getClasses().stream()
+						.filter(classDef -> Objects.equals(classDef.getName("intermediary"), value))
+						.findFirst()
+						.map(classDef -> classDef.getName("srg"))
+						.orElse(null);
+			}
+
+			@Override
+			@Nullable
+			public String mapMethod(@Nullable String className, String methodName, String methodDescriptor) {
+				if (className != null) {
+					Optional<ClassDef> classDef = srg.getClasses().stream()
+							.filter(c -> Objects.equals(c.getName("intermediary"), className))
+							.findFirst();
+
+					if (classDef.isPresent()) {
+						for (MethodDef methodDef : classDef.get().getMethods()) {
+							if (Objects.equals(methodDef.getName("intermediary"), methodName) && Objects.equals(methodDef.getDescriptor("intermediary"), methodDescriptor)) {
+								return methodDef.getName("srg");
+							}
+						}
+					}
+				}
+
+				return srg.getClasses().stream()
+						.flatMap(classDef -> classDef.getMethods().stream())
+						.filter(methodDef -> Objects.equals(methodDef.getName("intermediary"), methodName) && Objects.equals(methodDef.getDescriptor("intermediary"), methodDescriptor))
+						.findFirst()
+						.map(methodDef -> methodDef.getName("srg"))
+						.orElse(null);
+			}
+
+			@Override
+			@Nullable
+			public String mapField(@Nullable String className, String fieldName, String fieldDescriptor) {
+				if (className != null) {
+					Optional<ClassDef> classDef = srg.getClasses().stream()
+							.filter(c -> Objects.equals(c.getName("intermediary"), className))
+							.findFirst();
+
+					if (classDef.isPresent()) {
+						for (FieldDef fieldDef : classDef.get().getFields()) {
+							if (Objects.equals(fieldDef.getName("intermediary"), fieldName) && Objects.equals(fieldDef.getDescriptor("intermediary"), fieldDescriptor)) {
+								return fieldDef.getName("srg");
+							}
+						}
+					}
+				}
+
+				return srg.getClasses().stream()
+						.flatMap(classDef -> classDef.getFields().stream())
+						.filter(fieldDef -> Objects.equals(fieldDef.getName("intermediary"), fieldName) && Objects.equals(fieldDef.getDescriptor("intermediary"), fieldDescriptor))
+						.findFirst()
+						.map(fieldDef -> fieldDef.getName("srg"))
+						.orElse(null);
+			}
+		});
 	}
 
 	public void scheduleRemap() throws Throwable {

@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
 	id 'java'
 	id 'maven-publish'
@@ -119,7 +121,7 @@ dependencies {
 
 }
 
-task forgeInjectJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {
+task forgeInjectJar(type:  ShadowJar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {
 	configurations = [project.configurations.forgeInjectShadow]
 	classifier = 'forgeinject'
 	from compileForgeInjectJava.outputs
@@ -127,13 +129,6 @@ task forgeInjectJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.Shado
 }
 
 jar {
-	dependsOn forgeInjectJar
-
-	from(forgeInjectJar.outputs) {
-		into "inject"
-		rename { "injection.jar" }
-	}
-
 	manifest {
 		attributes 'Implementation-Version': project.version + ' Build(' + buildNum + ')'
 	}
@@ -144,7 +139,17 @@ jar {
 shadowJar {
 	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
 	configurations = [project.configurations.shadowArchitectury]
-	classifier null
+	classifier "shadow"
+}
+
+task mainJar(type: Jar, dependsOn: shadowJar) {
+	dependsOn forgeInjectJar
+	
+	from zipTree(shadowJar.archivePath)
+	from(forgeInjectJar.outputs) {
+		into "inject"
+		rename { "injection.jar" }
+	}
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -179,7 +184,7 @@ gradlePlugin {
 	}
 }
 
-build.dependsOn shadowJar
+build.dependsOn mainJar
 
 publishing {
 	publications {
@@ -188,7 +193,7 @@ publishing {
 			artifactId 'forgified-fabric-loom.gradle.plugin'
 
 			from components.java
-			artifact shadowJar
+			artifact mainJar
 			artifact sourcesJar
 		}
 
@@ -197,7 +202,7 @@ publishing {
 			artifactId project.archivesBaseName
 
 			from components.java
-			artifact shadowJar
+			artifact mainJar
 			artifact sourcesJar
 			artifact javadocJar
 		}

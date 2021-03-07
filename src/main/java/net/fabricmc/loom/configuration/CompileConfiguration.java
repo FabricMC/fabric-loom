@@ -39,10 +39,10 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
-import net.fabricmc.loom.build.NestedJars;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
+import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
 import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
@@ -125,38 +125,38 @@ public final class CompileConfiguration {
 		});
 	}
 
-	public static void configureCompile(Project project) {
-		JavaPluginConvention javaModule = (JavaPluginConvention) project.getConvention().getPlugins().get("java");
+	public static void configureCompile(Project p) {
+		JavaPluginConvention javaModule = (JavaPluginConvention) p.getConvention().getPlugins().get("java");
 
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-		Javadoc javadoc = (Javadoc) project.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
+		Javadoc javadoc = (Javadoc) p.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
-		project.afterEvaluate(project1 -> {
-			LoomGradleExtension extension = project1.getExtensions().getByType(LoomGradleExtension.class);
+		p.afterEvaluate(project -> {
+			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-			project1.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
+			project.getRepositories().flatDir(flatDirectoryArtifactRepository -> {
 				flatDirectoryArtifactRepository.dir(extension.getRootProjectBuildCache());
 				flatDirectoryArtifactRepository.setName("UserLocalCacheFiles");
 			});
 
-			project1.getRepositories().maven(mavenArtifactRepository -> {
+			project.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setUrl(extension.getRemappedModCache());
 				mavenArtifactRepository.setName("UserLocalRemappedMods");
 			});
 
-			project1.getRepositories().maven(mavenArtifactRepository -> {
+			project.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Fabric");
 				mavenArtifactRepository.setUrl("https://maven.fabricmc.net/");
 			});
 
-			project1.getRepositories().maven(mavenArtifactRepository -> {
+			project.getRepositories().maven(mavenArtifactRepository -> {
 				mavenArtifactRepository.setName("Mojang");
 				mavenArtifactRepository.setUrl("https://libraries.minecraft.net/");
 			});
 
-			project1.getRepositories().mavenCentral();
+			project.getRepositories().mavenCentral();
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -165,18 +165,18 @@ public final class CompileConfiguration {
 			dependencyManager.addProvider(new MappingsProvider(project));
 			dependencyManager.addProvider(new LaunchProvider(project));
 
-			dependencyManager.handleDependencies(project1);
+			dependencyManager.handleDependencies(project);
 
-			project1.getTasks().getByName("idea").finalizedBy(project1.getTasks().getByName("genIdeaWorkspace"));
-			project1.getTasks().getByName("eclipse").finalizedBy(project1.getTasks().getByName("genEclipseRuns"));
-			project1.getTasks().getByName("cleanEclipse").finalizedBy(project1.getTasks().getByName("cleanEclipseRuns"));
+			project.getTasks().getByName("idea").finalizedBy(project.getTasks().getByName("genIdeaWorkspace"));
+			project.getTasks().getByName("eclipse").finalizedBy(project.getTasks().getByName("genEclipseRuns"));
+			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
-			SetupIntelijRunConfigs.setup(project1);
+			SetupIntelijRunConfigs.setup(project);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
-				RemapJarTask remapJarTask = (RemapJarTask) project1.getTasks().findByName("remapJar");
+				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
+				RemapJarTask remapJarTask = (RemapJarTask) project.getTasks().findByName("remapJar");
 
 				assert remapJarTask != null;
 
@@ -190,18 +190,18 @@ public final class CompileConfiguration {
 				remapJarTask.getAddNestedDependencies().set(true);
 				remapJarTask.getRemapAccessWidener().set(true);
 
-				project1.getArtifacts().add("archives", remapJarTask);
+				project.getArtifacts().add("archives", remapJarTask);
 				remapJarTask.dependsOn(jarTask);
-				project1.getTasks().getByName("build").dependsOn(remapJarTask);
+				project.getTasks().getByName("build").dependsOn(remapJarTask);
 
 				project.getTasks().withType(RemapJarTask.class).forEach(task -> {
 					if (task.getAddNestedDependencies().getOrElse(false)) {
-						NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
+						NestedDependencyProvider.getRequiredTasks(project).forEach(task::dependsOn);
 					}
 				});
 
 				SourceRemapper remapper = null;
-				Task parentTask = project1.getTasks().getByName("build");
+				Task parentTask = project.getTasks().getByName("build");
 
 				if (extension.isShareCaches()) {
 					Project rootProject = project.getRootProject();
@@ -234,20 +234,20 @@ public final class CompileConfiguration {
 
 						remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
 
-						project1.getTasks().getByName("build").dependsOn(parentTask);
-						project1.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-						rootProject.getTasks().getByName("remapAllJars").dependsOn(project1.getTasks().getByName("remapJar"));
+						project.getTasks().getByName("build").dependsOn(parentTask);
+						project.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
+						rootProject.getTasks().getByName("remapAllJars").dependsOn(project.getTasks().getByName("remapJar"));
 					}
 				}
 
 				try {
-					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
+					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project.getTasks().getByName("sourcesJar");
 
-					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
+					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName("remapSourcesJar");
 					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
-					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
-					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
+					remapSourcesJarTask.doLast(task -> project.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
+					remapSourcesJarTask.dependsOn(project.getTasks().getByName("sourcesJar"));
 
 					if (extension.isShareCaches()) {
 						remapSourcesJarTask.setSourceRemapper(remapper);
@@ -258,7 +258,7 @@ public final class CompileConfiguration {
 					// pass
 				}
 			} else {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project1.getTasks().getByName("jar");
+				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 
@@ -281,7 +281,7 @@ public final class CompileConfiguration {
 			}
 		});
 
-		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+		if (p.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
 			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
 			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
 		}

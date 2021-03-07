@@ -22,40 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.build.nesting;
 
-import net.fabricmc.loom.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Specification
-import spock.lang.Unroll
+import java.io.File;
+import java.util.Collection;
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"multiproject"
-	}
-
-	@Unroll
-	def "build (gradle #gradle)"() {
-		when:
-			def result = create("build", gradle)
-		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
-
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
-
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
-
-		where:
-			gradle 				| _
-			'6.8.3' 			| _
-			'7.0-milestone-2'	| _
-	}
+public interface NestedJarProvider {
+	// provide all the files to be included, they should already be resolved but can be transformed here
+	Collection<File> provide();
 }

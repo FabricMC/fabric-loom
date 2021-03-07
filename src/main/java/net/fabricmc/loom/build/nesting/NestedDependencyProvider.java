@@ -22,22 +22,18 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build;
+package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -50,121 +46,30 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 
-public class NestedJars {
-	public static boolean addNestedJars(Project project, Path modJarPath) {
-		List<File> containedJars = getContainedJars(project);
+public final class NestedDependencyProvider implements NestedJarProvider {
+	final Project project;
+	final List<DependencyInfo<?>> files;
 
-		if (containedJars.isEmpty()) {
-			return false;
-		}
-
-		File modJar = modJarPath.toFile();
-
-		ZipUtil.addOrReplaceEntries(modJar, containedJars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
-
-		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
-				JsonArray nestedJars = json.getAsJsonArray("jars");
-
-				if (nestedJars == null || !json.has("jars")) {
-					nestedJars = new JsonArray();
-				}
-
-				for (File file : containedJars) {
-					JsonObject jsonObject = new JsonObject();
-					jsonObject.addProperty("file", "META-INF/jars/" + file.getName());
-					nestedJars.add(jsonObject);
-				}
-
-				json.add("jars", nestedJars);
-
-				return LoomGradlePlugin.GSON.toJson(json);
-			}
-		})));
+	private NestedDependencyProvider(Project project, List<DependencyInfo<?>> files) {
+		this.project = project;
+		this.files = files;
 	}
 
-	private static List<File> getContainedJars(Project project) {
-		List<File> fileList = new ArrayList<>();
+	public static NestedDependencyProvider createNestedDependencyProviderFromConfiguration(Project project, Configuration configuration) {
+		List<DependencyInfo<?>> fileList = new ArrayList<>();
+		Set<String> visited = new HashSet<>();
 
-		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
-		ResolvedConfiguration resolvedConfiguration = configuration.getResolvedConfiguration();
-		Set<ResolvedDependency> dependencies = resolvedConfiguration.getFirstLevelModuleDependencies();
+		fileList.addAll(populateProjectDependencies(configuration, visited));
+		fileList.addAll(populateResolvedDependencies(configuration, visited));
 
-		// Bit ugly doing this, id guess there is a better way but this works.
-		Set<String> projectDeps = new HashSet<>();
-
-		for (Dependency dependency : configuration.getDependencies()) {
-			if (dependency instanceof ProjectDependency) {
-				ProjectDependency projectDependency = (ProjectDependency) dependency;
-				Project dependencyProject = projectDependency.getDependencyProject();
-
-				projectDeps.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
-
-				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
-				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
-				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
-
-				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
-					if (task instanceof RemapJarTask) {
-						fileList.addAll(prepareForNesting(
-								Collections.singleton(((RemapJarTask) task).getArchivePath()),
-								projectDependency,
-								new ProjectDependencyMetaExtractor(),
-								project
-						));
-					} else if (task instanceof AbstractArchiveTask) {
-						fileList.addAll(prepareForNesting(
-								Collections.singleton(((AbstractArchiveTask) task).getArchivePath()),
-								projectDependency,
-								new ProjectDependencyMetaExtractor(),
-								project
-						));
-					}
-				}
-			}
-		}
-
-		for (ResolvedDependency dependency : dependencies) {
-			if (projectDeps.contains(dependency.getModuleGroup() + ":" + dependency.getModuleName() + ":" + dependency.getModuleVersion())) {
-				continue;
-			} else {
-				fileList.addAll(prepareForNesting(
-						dependency
-								.getModuleArtifacts()
-								.stream()
-								.map(ResolvedArtifact::getFile)
-								.collect(Collectors.toSet()),
-						dependency,
-						new ResolvedDependencyMetaExtractor(),
-						project
-				));
-			}
-		}
-
-		for (File file : fileList) {
-			if (!file.exists()) {
-				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());
-			}
-
-			if (file.isDirectory() || !file.getName().endsWith(".jar")) {
-				throw new RuntimeException("Failed to include nested jars, as file was not a jar: " + file.getAbsolutePath());
-			}
-		}
-
-		return fileList;
+		return new NestedDependencyProvider(project, fileList);
 	}
 
 	// Looks for any deps that require a sub project to be built first
@@ -190,11 +95,69 @@ public class NestedJars {
 		return remapTasks;
 	}
 
-	//This is a good place to do pre-nesting operations, such as adding a fabric.mod.json to a library
-	private static <D> List<File> prepareForNesting(Set<File> files, D dependency, DependencyMetaExtractor<D> metaExtractor, Project project) {
+	private static List<DependencyInfo<ProjectDependency>> populateProjectDependencies(Configuration configuration, Set<String> visited) {
+		List<DependencyInfo<ProjectDependency>> fileList = new ArrayList<>();
+
+		for (Dependency dependency : configuration.getDependencies()) {
+			if (dependency instanceof ProjectDependency) {
+				ProjectDependency projectDependency = (ProjectDependency) dependency;
+				Project dependencyProject = projectDependency.getDependencyProject();
+
+				visited.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
+
+				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
+				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
+				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
+
+				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
+					if (task instanceof RemapJarTask) {
+						File file = ((RemapJarTask) task).getArchivePath();
+						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
+					} else if (task instanceof AbstractArchiveTask) {
+						File file = ((AbstractArchiveTask) task).getArchivePath();
+						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
+					}
+				}
+			}
+		}
+
+		return fileList;
+	}
+
+	private static List<DependencyInfo<ResolvedDependency>> populateResolvedDependencies(Configuration configuration, Set<String> visited) {
+		ResolvedConfiguration resolvedConfiguration = configuration.getResolvedConfiguration();
+		Set<ResolvedDependency> dependencies = resolvedConfiguration.getFirstLevelModuleDependencies();
+
+		List<DependencyInfo<ResolvedDependency>> fileList = new ArrayList<>();
+
+		for (ResolvedDependency dependency : dependencies) {
+			if (visited.contains(dependency.getModuleGroup() + ":" + dependency.getModuleName() + ":" + dependency.getModuleVersion())) {
+				continue;
+			}
+
+			List<File> files = dependency
+					.getModuleArtifacts()
+					.stream()
+					.map(ResolvedArtifact::getFile)
+					.collect(Collectors.toList());
+
+			for (File file : files) {
+				fileList.add(new DependencyInfo<>(dependency, new ResolvedDependencyMetaExtractor(), file));
+			}
+		}
+
+		return fileList;
+	}
+
+	@Override
+	public List<File> provide() {
 		List<File> fileList = new ArrayList<>();
 
-		for (File file : files) {
+		for (DependencyInfo<?> metaFile : files) {
+			metaFile.validateInputs();
+
+			File file = metaFile.file;
+
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
 			if (!ZipUtil.containsEntry(file, "fabric.mod.json")) {
 				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
@@ -216,7 +179,7 @@ public class NestedJars {
 					throw new RuntimeException("Failed to copy file", e);
 				}
 
-				ZipUtil.addEntry(tempFile, "fabric.mod.json", getMod(dependency, metaExtractor).getBytes());
+				ZipUtil.addEntry(tempFile, "fabric.mod.json", generateModForDependency(metaFile).getBytes());
 				fileList.add(tempFile);
 			} else {
 				// Default copy the jar right in
@@ -228,7 +191,10 @@ public class NestedJars {
 	}
 
 	// Generates a barebones mod for a dependency
-	private static <D> String getMod(D dependency, DependencyMetaExtractor<D> metaExtractor) {
+	private static <D> String generateModForDependency(DependencyInfo<D> info) {
+		DependencyMetaExtractor<D> metaExtractor = info.metaExtractor;
+		D dependency = info.dependency;
+
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
 		jsonObject.addProperty("id", (metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency)).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
@@ -242,8 +208,26 @@ public class NestedJars {
 		return LoomGradlePlugin.GSON.toJson(jsonObject);
 	}
 
-	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {
-		return new ZipEntryTransformerEntry[]{element};
+	private static class DependencyInfo<D> {
+		final D dependency;
+		final DependencyMetaExtractor<D> metaExtractor;
+		final File file;
+
+		DependencyInfo(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
+			this.dependency = dependency;
+			this.metaExtractor = metaExtractor;
+			this.file = file;
+		}
+
+		public void validateInputs() {
+			if (!file.exists()) {
+				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());
+			}
+
+			if (file.isDirectory() || !file.getName().endsWith(".jar")) {
+				throw new RuntimeException("Failed to include nested jars, as file was not a jar: " + file.getAbsolutePath());
+			}
+		}
 	}
 
 	private interface DependencyMetaExtractor<D> {

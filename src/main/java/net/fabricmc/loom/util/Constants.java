@@ -145,7 +145,7 @@ public class Constants {
 		private Knot() {
 		}
 	}
-	
+
 	public static final class ForgeUserDev {
 		public static final String LAUNCH_TESTING = "net.minecraftforge.userdev.LaunchTesting";
 

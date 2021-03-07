@@ -16,11 +16,11 @@ targetCompatibility = 1.8
 group = 'me.shedaniel'
 archivesBaseName = project.name
 def baseVersion = '0.6'
-def runNumber = (System.getenv("GITHUB_RUN_NUMBER") == null ? (((short) new Random().nextInt()).abs() + 1000).toString() : System.getenv("GITHUB_RUN_NUMBER"))
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") == null ? "9999" : System.getenv("GITHUB_RUN_NUMBER"))
 
 def isSnapshot = System.getenv("PR_NUM") != null
 
-def build = "release #$runNumber"
+def buildNum = "release #$runNumber"
 
 if (!isSnapshot) {
 	version = baseVersion + "." + runNumber
@@ -31,6 +31,7 @@ if (!isSnapshot) {
 logger.lifecycle(":building plugin v${version}")
 
 configurations {
+	shadowArchitectury
 	forgeInjectShadow
 	forgeInjectCompileClasspath.extendsFrom(forgeInjectShadow)
 	forgeInjectRuntimeClasspath.extendsFrom(forgeInjectShadow)
@@ -70,7 +71,9 @@ dependencies {
 
 	// tinyfile management
 	compileOnly ('net.fabricmc:tiny-remapper:0.3.2-architectury.6')
-	shadow ('net.fabricmc:tiny-remapper:0.3.2-architectury.6')
+	shadowArchitectury ('net.fabricmc:tiny-remapper:0.3.2-architectury.6') {
+		transitive = false
+	}
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
 	implementation 'net.fabricmc:access-widener:1.0.0'
@@ -132,7 +135,7 @@ jar {
 	}
 
 	manifest {
-		attributes 'Implementation-Version': project.version + ' Build(' + build + ')'
+		attributes 'Implementation-Version': project.version + ' Build(' + buildNum + ')'
 	}
 	
 	classifier 'jar'
@@ -140,7 +143,7 @@ jar {
 
 shadowJar {
 	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
-	configurations = [project.configurations.shadow]
+	configurations = [project.configurations.shadowArchitectury]
 	classifier null
 }
 
@@ -175,6 +178,8 @@ gradlePlugin {
 		}
 	}
 }
+
+build.dependsOn shadowJar
 
 publishing {
 	publications {

@@ -1,12 +1,14 @@
 package net.fabricmc.loom
 
+import net.fabricmc.loom.util.Constants
+
 /**
  * Created by Mitchell Skaggs on 6/12/2019.
  */
-static String genBuildFile(String mappingsDep = "\"net.fabricmc:yarn:\${project.yarn_mappings}\"") {
+static String genBuildFile(String mappingsDep = "\"net.fabricmc:yarn:\${project.yarn_mappings}\"", String pluginId = Constants.PLUGIN_ID) {
 	"""
 plugins {
-	id 'fabric-loom'
+	id '${pluginId}'
 	id 'maven-publish'
 }
 sourceCompatibility = JavaVersion.VERSION_1_8

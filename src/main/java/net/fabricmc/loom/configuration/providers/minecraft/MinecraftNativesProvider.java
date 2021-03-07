@@ -40,7 +40,6 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.HashedDownloadUtil;
-import net.fabricmc.loom.util.ThreadingUtils;
 
 public class MinecraftNativesProvider {
 	private final Project project;

@@ -43,6 +43,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
+import org.jetbrains.annotations.ApiStatus;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -172,9 +173,14 @@ public class RemapJarTask extends Jar {
 
 	private NestedJarProvider getNestedJarProvider() {
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		NestedJarProvider baseProvider = NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration);
+
+		if (nestedJars == null) {
+			return baseProvider;
+		}
 
 		return new MergedNestedJarProvider(
-				NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration),
+				baseProvider,
 				new FileCollectionDependencyProvider(nestedJars)
 		);
 	}
@@ -221,12 +227,14 @@ public class RemapJarTask extends Jar {
 		return this;
 	}
 
-	public RemapJarTask setNestedJars(FileCollection nestedJars) {
+	@ApiStatus.Experimental
+	public RemapJarTask setIncluded(FileCollection nestedJars) {
 		this.nestedJars = nestedJars;
 		return this;
 	}
 
-	public RemapJarTask nestJars(FileCollection nestedJars) {
+	@ApiStatus.Experimental // This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
+	public RemapJarTask include(FileCollection nestedJars) {
 		if (this.nestedJars == null) {
 			this.nestedJars = getProject().files();
 		}

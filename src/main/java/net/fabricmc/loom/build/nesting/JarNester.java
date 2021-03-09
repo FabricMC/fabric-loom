@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
@@ -44,7 +45,7 @@ public class JarNester {
 			return false;
 		}
 
-		ZipUtil.addOrReplaceEntries(modJar, jars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
+		ZipUtil.addEntries(modJar, jars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
 
 		return ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
@@ -57,8 +58,18 @@ public class JarNester {
 				}
 
 				for (File file : jars) {
+					String nestedJarPath = "META-INF/jars/" + file.getName();
+
+					for (JsonElement nestedJar : nestedJars) {
+						JsonObject jsonObject = nestedJar.getAsJsonObject();
+
+						if (jsonObject.has("file")) {
+							throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
+						}
+					}
+
 					JsonObject jsonObject = new JsonObject();
-					jsonObject.addProperty("file", "META-INF/jars/" + file.getName());
+					jsonObject.addProperty("file", nestedJarPath);
 					nestedJars.add(jsonObject);
 				}
 

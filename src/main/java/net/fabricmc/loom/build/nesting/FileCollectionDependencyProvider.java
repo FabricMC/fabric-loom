@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.zip.ZipFile;
 
 import com.google.common.base.Preconditions;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 
 public final class FileCollectionDependencyProvider implements NestedJarProvider {
@@ -41,6 +42,14 @@ public final class FileCollectionDependencyProvider implements NestedJarProvider
 	}
 
 	private Set<File> resolve(FileCollection fileCollection) {
+		if (fileCollection instanceof Configuration) {
+			Configuration configuration = (Configuration) fileCollection;
+
+			// This is done to prevent you from shooting yourself in the foot, if you want to try and work around it feel free but dont compiling when you have stuff you dont want in your mod.
+			Preconditions.checkArgument(!configuration.isTransitive(), "Cannot nest a none transitive configuration.");
+			Preconditions.checkArgument(!configuration.getExtendsFrom().isEmpty(), "Cannot nest a configuration that extends from other configurations.");
+		}
+
 		return fileCollection.getFiles();
 	}
 

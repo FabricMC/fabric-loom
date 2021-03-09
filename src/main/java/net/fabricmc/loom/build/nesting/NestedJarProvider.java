@@ -27,6 +27,9 @@ package net.fabricmc.loom.build.nesting;
 import java.io.File;
 import java.util.Collection;
 
+import org.jetbrains.annotations.ApiStatus;
+
+@ApiStatus.Internal
 public interface NestedJarProvider {
 	// provide all the files to be included, they should already be resolved but can be transformed here
 	Collection<File> provide();

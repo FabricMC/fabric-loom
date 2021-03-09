@@ -1,5 +1,17 @@
 archivesBaseName = "example"
 
+configurations {
+	hardDep {
+		transitive = false
+	}
+}
+
 dependencies {
 	implementation project(path: ":core", configuration: "dev")
+	hardDep 'teamreborn:energy:0.1.1'
+}
+
+remapJar {
+	// Experimental, may change/break
+	include configurations.hardDep
 }

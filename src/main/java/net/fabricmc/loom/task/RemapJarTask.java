@@ -230,6 +230,7 @@ public class RemapJarTask extends Jar {
 	@ApiStatus.Experimental
 	public RemapJarTask setIncluded(FileCollection nestedJars) {
 		this.nestedJars = nestedJars;
+		this.addNestedDependencies.set(true);
 		return this;
 	}
 
@@ -240,6 +241,7 @@ public class RemapJarTask extends Jar {
 		}
 
 		this.nestedJars.plus(nestedJars);
+		this.addNestedDependencies.set(true);
 
 		return this;
 	}

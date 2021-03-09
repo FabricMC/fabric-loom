@@ -26,10 +26,13 @@ package net.fabricmc.loom.configuration;
 
 import java.io.IOException;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
@@ -41,27 +44,48 @@ import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapConfiguration {
+	private static final String DEFAULT_JAR_TASK_NAME = JavaPlugin.JAR_TASK_NAME;
+	private static final String DEFAULT_SOURCES_JAR_TASK_NAME = "sourcesJar";
+	private static final String DEFAULT_REMAP_JAR_TASK_NAME = "remapJar";
+	private static final String DEFAULT_REMAP_SOURCES_JAR_TASK_NAME = "remapSourcesJar";
+	private static final String DEFAULT_REMAP_ALL_JARS_TASK_NAME = "remapAllJars";
+	private static final String DEFAULT_REMAP_ALL_SOURCES_TASK_NAME = "remapAllSources";
+
 	public static void setupDefaultRemap(Project project) {
+		setupRemap(project, true, DEFAULT_JAR_TASK_NAME, DEFAULT_SOURCES_JAR_TASK_NAME, DEFAULT_REMAP_JAR_TASK_NAME, DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, DEFAULT_REMAP_ALL_JARS_TASK_NAME, DEFAULT_REMAP_ALL_SOURCES_TASK_NAME);
+	}
+
+	@ApiStatus.Experimental // This is only an api if you squint really hard, expect it to explode every 5 mins. If you must call in afterEvaluate on all projects
+	public static void setupRemap(Project project, String jarTaskName, String sourcesJarTaskName, String remapJarTaskName, String remapSourcesJarTaskName, String remapAllJarsTaskName, String remapAllSourcesTaskName) {
+		setupRemap(project, false, jarTaskName, sourcesJarTaskName, remapJarTaskName, remapSourcesJarTaskName, remapAllJarsTaskName, remapAllSourcesTaskName);
+	}
+
+	// isDefaultRemap is set to true for the standard remap task, some defaults are left out when this is false.
+	private static void setupRemap(Project project, boolean isDefaultRemap, String jarTaskName, String sourcesJarTaskName, String remapJarTaskName, String remapSourcesJarTaskName, String remapAllJarsTaskName, String remapAllSourcesTaskName) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
-		RemapJarTask remapJarTask = (RemapJarTask) project.getTasks().findByName("remapJar");
+		AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName(jarTaskName);
+		RemapJarTask remapJarTask = (RemapJarTask) project.getTasks().findByName(remapJarTaskName);
 
 		assert remapJarTask != null;
 
-		if (!remapJarTask.getInput().isPresent()) {
+		if (!remapJarTask.getInput().isPresent() && isDefaultRemap) {
 			jarTask.setClassifier("dev");
 			remapJarTask.setClassifier("");
 			remapJarTask.getInput().set(jarTask.getArchivePath());
 		}
 
-		extension.getUnmappedModCollection().from(jarTask);
-		remapJarTask.getAddNestedDependencies().set(true);
-		remapJarTask.getRemapAccessWidener().set(true);
+		if (isDefaultRemap) {
+			extension.getUnmappedModCollection().from(jarTask);
+			remapJarTask.getAddNestedDependencies().set(true);
+			remapJarTask.getRemapAccessWidener().set(true);
 
-		project.getArtifacts().add("archives", remapJarTask);
+			project.getArtifacts().add("archives", remapJarTask);
+		}
+
 		remapJarTask.dependsOn(jarTask);
 		project.getTasks().getByName("build").dependsOn(remapJarTask);
 
+		// TODO this might be wrong?
 		project.getTasks().withType(RemapJarTask.class).forEach(task -> {
 			if (task.getAddNestedDependencies().getOrElse(false)) {
 				NestedDependencyProvider.getRequiredTasks(project).forEach(task::dependsOn);
@@ -69,6 +93,7 @@ public class RemapConfiguration {
 		});
 
 		SourceRemapper remapper = null;
+		// TODO what is this for?
 		Task parentTask = project.getTasks().getByName("build");
 
 		if (extension.isShareCaches()) {
@@ -80,14 +105,14 @@ public class RemapConfiguration {
 
 				remapJarTask.jarRemapper = jarRemapper;
 
-				rootProject.getTasks().register("remapAllSources", RemapAllSourcesTask.class, task -> {
+				rootProject.getTasks().register(remapAllSourcesTaskName, RemapAllSourcesTask.class, task -> {
 					task.sourceRemapper = sourceRemapper;
 					task.doLast(t -> sourceRemapper.remapAll());
 				});
 
-				parentTask = rootProject.getTasks().getByName("remapAllSources");
+				parentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
 
-				rootProject.getTasks().register("remapAllJars", AbstractLoomTask.class, task -> {
+				rootProject.getTasks().register(remapAllJarsTaskName, AbstractLoomTask.class, task -> {
 					task.doLast(t -> {
 						try {
 							jarRemapper.remap();
@@ -97,25 +122,29 @@ public class RemapConfiguration {
 					});
 				});
 			} else {
-				parentTask = rootProject.getTasks().getByName("remapAllSources");
+				parentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
 				remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
+				Preconditions.checkNotNull(remapper);
 
-				remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName("remapJar")).jarRemapper;
+				remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName(remapJarTaskName)).jarRemapper;
 
 				project.getTasks().getByName("build").dependsOn(parentTask);
-				project.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName("remapAllJars"));
-				rootProject.getTasks().getByName("remapAllJars").dependsOn(project.getTasks().getByName("remapJar"));
+				project.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName(remapAllJarsTaskName));
+				rootProject.getTasks().getByName(remapAllJarsTaskName).dependsOn(project.getTasks().getByName(remapJarTaskName));
 			}
 		}
 
 		try {
-			AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project.getTasks().getByName("sourcesJar");
+			AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project.getTasks().getByName(sourcesJarTaskName);
 
-			RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName("remapSourcesJar");
+			RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName(remapSourcesJarTaskName);
 			remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 			remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
-			remapSourcesJarTask.doLast(task -> project.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
-			remapSourcesJarTask.dependsOn(project.getTasks().getByName("sourcesJar"));
+			remapSourcesJarTask.dependsOn(project.getTasks().getByName(sourcesJarTaskName));
+
+			if (isDefaultRemap) {
+				remapSourcesJarTask.doLast(task -> project.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
+			}
 
 			if (extension.isShareCaches()) {
 				remapSourcesJarTask.setSourceRemapper(remapper);

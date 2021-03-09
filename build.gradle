@@ -191,6 +191,10 @@ gradlePlugin {
 
 build.dependsOn mainJar
 
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+
 publishing {
 	publications {
 		plugin(MavenPublication) {
@@ -210,6 +214,37 @@ publishing {
 			artifact mainJar
 			artifact sourcesJar
 			artifact javadocJar
+		}
+
+		mavenSnapshot(MavenPublication) { publication ->
+			groupId project.group
+			artifactId project.archivesBaseName
+			version baseVersion + '-SNAPSHOT'
+
+			from components.java
+			artifact mainJar
+			artifact sourcesJar
+			artifact javadocJar
+		}
+
+		pluginSnapshot(MavenPublication) {
+			groupId 'forgified-fabric-loom'
+			artifactId 'forgified-fabric-loom.gradle.plugin'
+			version baseVersion + '-SNAPSHOT'
+
+			pom.withXml {
+				// Based off org.gradle.plugin.devel.plugins.MavenPluginPublishPlugin
+				Element root = asElement()
+				Document document = root.getOwnerDocument()
+				Node dependencies = root.appendChild(document.createElement('dependencies'))
+				Node dependency = dependencies.appendChild(document.createElement('dependency'))
+				Node groupId = dependency.appendChild(document.createElement('groupId'))
+				groupId.setTextContent(project.group)
+				Node artifactId = dependency.appendChild(document.createElement('artifactId'))
+				artifactId.setTextContent(project.archivesBaseName)
+				Node version = dependency.appendChild(document.createElement('version'))
+				version.setTextContent(baseVersion + '-SNAPSHOT')
+			}
 		}
 	}
 	

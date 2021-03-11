@@ -138,6 +138,7 @@ public class RemapConfiguration {
 			AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project.getTasks().getByName(sourcesJarTaskName);
 
 			RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName(remapSourcesJarTaskName);
+			Preconditions.checkNotNull(remapSourcesJarTask, "Could not find " + remapSourcesJarTaskName + " in " + project.getName());
 			remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 			remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
 			remapSourcesJarTask.dependsOn(project.getTasks().getByName(sourcesJarTaskName));

@@ -63,7 +63,7 @@ public class JarNester {
 					for (JsonElement nestedJar : nestedJars) {
 						JsonObject jsonObject = nestedJar.getAsJsonObject();
 
-						if (jsonObject.has("file")) {
+						if (jsonObject.has("file") && jsonObject.get("file").getAsString().equals(nestedJarPath)) {
 							throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
 						}
 					}

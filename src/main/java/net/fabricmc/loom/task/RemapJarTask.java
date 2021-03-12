@@ -52,7 +52,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
-import net.fabricmc.loom.build.nesting.FileCollectionDependencyProvider;
+import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.MergedNestedJarProvider;
 import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
@@ -180,7 +180,7 @@ public class RemapJarTask extends Jar {
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
 
 		if (!addDefaultNestedDependencies.getOrElse(true)) {
-			return new FileCollectionDependencyProvider(nestedPaths);
+			return new NestedJarPathProvider(nestedPaths);
 		}
 
 		NestedJarProvider baseProvider = NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration);
@@ -191,7 +191,7 @@ public class RemapJarTask extends Jar {
 
 		return new MergedNestedJarProvider(
 				baseProvider,
-				new FileCollectionDependencyProvider(nestedPaths)
+				new NestedJarPathProvider(nestedPaths)
 		);
 	}
 

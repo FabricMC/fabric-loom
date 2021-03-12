@@ -49,7 +49,7 @@ public class JarNester {
 			return;
 		}
 
-		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar" + modJar.getName());
+		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar " + modJar.getName());
 
 		ZipUtil.addEntries(modJar, jars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
 

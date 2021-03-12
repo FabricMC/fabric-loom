@@ -33,10 +33,10 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.ModUtils;
 
-public final class FileCollectionDependencyProvider implements NestedJarProvider {
+public final class NestedJarPathProvider implements NestedJarProvider {
 	private final Set<Object> nestedPaths;
 	private Set<File> files = null;
-	public FileCollectionDependencyProvider(Set<Object> nestedPaths) {
+	public NestedJarPathProvider(Set<Object> nestedPaths) {
 		this.nestedPaths = nestedPaths;
 	}
 
@@ -61,7 +61,7 @@ public final class FileCollectionDependencyProvider implements NestedJarProvider
 		for (File file : files) {
 			Preconditions.checkArgument(file.getName().endsWith(".jar"), String.format("Tried to nest %s but it is not a jar", file.getAbsolutePath()));
 			Preconditions.checkArgument(file.exists(), String.format("Tried to nest jar %s but it does not exist", file.getAbsolutePath()));
-			Preconditions.checkArgument(ModUtils.isMod(file), String.format("Cannot use a file collection to nest none mod jar %s", file.getAbsolutePath()));
+			Preconditions.checkArgument(ModUtils.isMod(file), String.format("Cannot use nest none mod jar %s", file.getAbsolutePath()));
 		}
 	}
 }

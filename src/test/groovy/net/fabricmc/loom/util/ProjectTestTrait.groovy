@@ -88,7 +88,7 @@ trait ProjectTestTrait {
 			return "all"
 		}
 
-		System.getenv().TEST_WARNING_MODE ?: 'all'
+		'fail'
 	}
 
 	String gradleHomeDirectory(String gradleVersion) {

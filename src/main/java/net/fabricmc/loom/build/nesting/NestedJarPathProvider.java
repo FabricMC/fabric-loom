@@ -22,40 +22,46 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.build.nesting;
 
-import net.fabricmc.loom.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Specification
-import spock.lang.Unroll
+import java.io.File;
+import java.util.Collection;
+import java.util.Set;
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+import com.google.common.base.Preconditions;
+import org.gradle.api.Project;
 
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"multiproject"
+import net.fabricmc.loom.util.ModUtils;
+
+public final class NestedJarPathProvider implements NestedJarProvider {
+	private final Set<Object> nestedPaths;
+	private Set<File> files = null;
+	public NestedJarPathProvider(Set<Object> nestedPaths) {
+		this.nestedPaths = nestedPaths;
 	}
 
-	@Unroll
-	def "build (gradle #gradle)"() {
-		when:
-			def result = create("build", gradle)
-		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
+	private Set<File> resolve(Project project) {
+		return project.files(nestedPaths).getFiles();
+	}
 
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
+	@Override
+	public void prepare(Project project) {
+		if (files == null) {
+			files = resolve(project);
+		}
+	}
 
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+	@Override
+	public Collection<File> provide() {
+		validateFiles();
+		return files;
+	}
 
-		where:
-			gradle 				| _
-			'6.8.3' 			| _
-			'7.0-milestone-2'	| _
+	private void validateFiles() {
+		for (File file : files) {
+			Preconditions.checkArgument(file.getName().endsWith(".jar"), String.format("Tried to nest %s but it is not a jar", file.getAbsolutePath()));
+			Preconditions.checkArgument(file.exists(), String.format("Tried to nest jar %s but it does not exist", file.getAbsolutePath()));
+			Preconditions.checkArgument(ModUtils.isMod(file), String.format("Cannot use nest none mod jar %s", file.getAbsolutePath()));
+		}
 	}
 }

@@ -22,40 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.configuration;
 
-import net.fabricmc.loom.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Specification
-import spock.lang.Unroll
+import org.gradle.api.Project;
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+import net.fabricmc.loom.LoomGradleExtension;
 
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"multiproject"
-	}
+public class MavenConfiguration {
+	public static void setup(Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-	@Unroll
-	def "build (gradle #gradle)"() {
-		when:
-			def result = create("build", gradle)
-		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
+		project.getRepositories().flatDir(repo -> {
+			repo.setName("UserLocalCacheFiles");
+			repo.dir(extension.getRootProjectBuildCache());
+		});
 
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
+		project.getRepositories().maven(repo -> {
+			repo.setName("UserLocalRemappedMods");
+			repo.setUrl(extension.getRemappedModCache());
+		});
 
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+		project.getRepositories().maven(repo -> {
+			repo.setName("Fabric");
+			repo.setUrl("https://maven.fabricmc.net/");
+		});
 
-		where:
-			gradle 				| _
-			'6.8.3' 			| _
-			'7.0-milestone-2'	| _
+		project.getRepositories().maven(repo -> {
+			repo.setName("Mojang");
+			repo.setUrl("https://libraries.minecraft.net/");
+		});
+
+		project.getRepositories().mavenCentral();
 	}
 }

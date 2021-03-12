@@ -22,19 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build.nesting;
+package net.fabricmc.loom.util;
 
 import java.io.File;
-import java.util.Collection;
+import java.io.IOException;
+import java.util.zip.ZipFile;
 
-import org.gradle.api.Project;
-import org.jetbrains.annotations.ApiStatus;
+public final class ModUtils {
+	private ModUtils() {
+	}
 
-@ApiStatus.Internal
-public interface NestedJarProvider {
-	// provide all the files to be included, they should already be resolved but can be transformed here
-	Collection<File> provide();
-
-	// Setup the files ready to be provided
-	default void prepare(Project project) { }
+	public static boolean isMod(File input) {
+		try (ZipFile zipFile = new ZipFile(input)) {
+			return zipFile.getEntry("fabric.mod.json") != null;
+		} catch (IOException e) {
+			return false;
+		}
+	}
 }

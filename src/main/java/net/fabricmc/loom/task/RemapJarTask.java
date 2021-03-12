@@ -30,7 +30,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
@@ -66,19 +69,22 @@ import net.fabricmc.tinyremapper.TinyUtils;
 public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
+	private final Property<Boolean> addDefaultNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
 	private final List<Action<TinyRemapper.Builder>> remapOptions = new ArrayList<>();
 	public JarRemapper jarRemapper;
 	private FileCollection classpath;
-	private FileCollection nestedJars;
+	private final Set<Object> nestedPaths = new LinkedHashSet<>();
 
 	public RemapJarTask() {
 		super();
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);
 		// false by default, I have no idea why I have to do it for this property and not the other one
 		remapAccessWidener.set(false);
+		addDefaultNestedDependencies.set(true);
 	}
 
 	@TaskAction
@@ -128,6 +134,7 @@ public class RemapJarTask extends Jar {
 		jarRemapper.addOptions(this.remapOptions);
 
 		NestedJarProvider nestedJarProvider = getNestedJarProvider();
+		nestedJarProvider.prepare(getProject());
 
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
@@ -159,9 +166,7 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (getAddNestedDependencies().getOrElse(false)) {
-						if (JarNester.nestJars(nestedJarProvider.provide(), output.toFile())) {
-							project.getLogger().debug("Added nested jar paths to mod json");
-						}
+						JarNester.nestJars(nestedJarProvider.provide(), output.toFile(), project.getLogger());
 					}
 
 					if (accessWidener != null) {
@@ -173,15 +178,20 @@ public class RemapJarTask extends Jar {
 
 	private NestedJarProvider getNestedJarProvider() {
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+
+		if (!addDefaultNestedDependencies.getOrElse(true)) {
+			return new FileCollectionDependencyProvider(nestedPaths);
+		}
+
 		NestedJarProvider baseProvider = NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration);
 
-		if (nestedJars == null) {
+		if (nestedPaths.isEmpty()) {
 			return baseProvider;
 		}
 
 		return new MergedNestedJarProvider(
 				baseProvider,
-				new FileCollectionDependencyProvider(nestedJars)
+				new FileCollectionDependencyProvider(nestedPaths)
 		);
 	}
 
@@ -209,6 +219,11 @@ public class RemapJarTask extends Jar {
 	}
 
 	@Input
+	public Property<Boolean> getAddDefaultNestedDependencies() {
+		return addDefaultNestedDependencies;
+	}
+
+	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
 	}
@@ -227,20 +242,9 @@ public class RemapJarTask extends Jar {
 		return this;
 	}
 
-	@ApiStatus.Experimental
-	public RemapJarTask setIncluded(FileCollection nestedJars) {
-		this.nestedJars = nestedJars;
-		this.addNestedDependencies.set(true);
-		return this;
-	}
-
 	@ApiStatus.Experimental // This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
-	public RemapJarTask include(FileCollection nestedJars) {
-		if (this.nestedJars == null) {
-			this.nestedJars = getProject().files();
-		}
-
-		this.nestedJars.plus(nestedJars);
+	public RemapJarTask include(Object... paths) {
+		Collections.addAll(nestedPaths, paths);
 		this.addNestedDependencies.set(true);
 
 		return this;

@@ -25,32 +25,30 @@
 package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
-import java.util.zip.ZipFile;
 
 import com.google.common.base.Preconditions;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.util.ModUtils;
 
 public final class FileCollectionDependencyProvider implements NestedJarProvider {
-	private final Set<File> files;
-
-	public FileCollectionDependencyProvider(FileCollection fileCollection) {
-		this.files = resolve(fileCollection);
+	private final Set<Object> nestedPaths;
+	private Set<File> files = null;
+	public FileCollectionDependencyProvider(Set<Object> nestedPaths) {
+		this.nestedPaths = nestedPaths;
 	}
 
-	private Set<File> resolve(FileCollection fileCollection) {
-		if (fileCollection instanceof Configuration) {
-			Configuration configuration = (Configuration) fileCollection;
+	private Set<File> resolve(Project project) {
+		return project.files(nestedPaths).getFiles();
+	}
 
-			// This is done to prevent you from shooting yourself in the foot, if you want to try and work around it feel free but dont compiling when you have stuff you dont want in your mod.
-			Preconditions.checkArgument(!configuration.isTransitive(), "Cannot nest a none transitive configuration.");
-			Preconditions.checkArgument(!configuration.getExtendsFrom().isEmpty(), "Cannot nest a configuration that extends from other configurations.");
+	@Override
+	public void prepare(Project project) {
+		if (files == null) {
+			files = resolve(project);
 		}
-
-		return fileCollection.getFiles();
 	}
 
 	@Override
@@ -63,15 +61,7 @@ public final class FileCollectionDependencyProvider implements NestedJarProvider
 		for (File file : files) {
 			Preconditions.checkArgument(file.getName().endsWith(".jar"), String.format("Tried to nest %s but it is not a jar", file.getAbsolutePath()));
 			Preconditions.checkArgument(file.exists(), String.format("Tried to nest jar %s but it does not exist", file.getAbsolutePath()));
-			Preconditions.checkArgument(isMod(file), String.format("Cannot use a file collection to nest none mod jar %s", file.getAbsolutePath()));
-		}
-	}
-
-	private static boolean isMod(File input) {
-		try (ZipFile zipFile = new ZipFile(input)) {
-			return zipFile.getEntry("fabric.mod.json") != null;
-		} catch (IOException e) {
-			return false;
+			Preconditions.checkArgument(ModUtils.isMod(file), String.format("Cannot use a file collection to nest none mod jar %s", file.getAbsolutePath()));
 		}
 	}
 }

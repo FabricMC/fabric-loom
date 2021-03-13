@@ -66,7 +66,32 @@ jobs:
           TEST_WARNING_MODE: fail
 
       - uses: actions/upload-artifact@v2
-        if: ${{ always() }}
+        if: ${{ failure() }}
+        with:
+          name: ${{ matrix.test }} (${{ matrix.java }}) Results
+          path: build/reports/
+
+  # Special case this test to run across all os's
+  reproducible_build_test:
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 1.8, 11, 15 ]
+        os: [ windows-2019, ubuntu-20.04, macos-11.0 ]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+
+      - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace
+
+      - uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
         with:
           name: ${{ matrix.test }} (${{ matrix.java }}) Results
           path: build/reports/

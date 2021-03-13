@@ -62,6 +62,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.gradle.GradleSupport;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -172,6 +173,14 @@ public class RemapJarTask extends Jar {
 					if (accessWidener != null) {
 						boolean replaced = ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
+					}
+
+					if (isReproducibleFileOrder() || !isPreserveFileTimestamps()) {
+						try {
+							ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to re-process jar", e);
+						}
 					}
 				});
 	}

@@ -211,6 +211,11 @@ task writeActionsTestMatrix() {
 					return
 				}
 
+				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
+					// This test gets a special case to run across all os's
+					return
+				}
+
 				testMatrix.add(it.name.replace(".groovy", ""))
 			}
 		}

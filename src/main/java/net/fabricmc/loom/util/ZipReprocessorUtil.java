@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Comparator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -45,7 +46,7 @@ public class ZipReprocessorUtil {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream().sorted((a, b) -> a.getName().compareTo(b.getName())).toArray(ZipEntry[]::new);
+				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName)).toArray(ZipEntry[]::new);
 			} else {
 				entries = zipFile.stream().toArray(ZipEntry[]::new);
 			}
@@ -54,11 +55,13 @@ public class ZipReprocessorUtil {
 
 			try (ZipOutputStream zipOutputStream = new ZipOutputStream(outZip)) {
 				for (ZipEntry entry : entries) {
+					ZipEntry newEntry = entry;
+
 					if (!preserveFileTimestamps) {
-						entry.setTime(0);
+						newEntry = new ZipEntry(entry.getName());
 					}
 
-					zipOutputStream.putNextEntry(entry);
+					zipOutputStream.putNextEntry(newEntry);
 					InputStream inputStream = zipFile.getInputStream(entry);
 					byte[] buf = new byte[1024];
 					int length;

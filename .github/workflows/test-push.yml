@@ -93,5 +93,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: ${{ failure() }}
         with:
-          name: ${{ matrix.test }} (${{ matrix.java }}) Results
+          name: Reproducible Build ${{ matrix.os }} (${{ matrix.java }}) Results
           path: build/reports/

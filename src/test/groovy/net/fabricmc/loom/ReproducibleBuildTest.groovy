@@ -49,8 +49,8 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 			getOutputHash("fabric-example-mod-1.0.0-sources.jar") == sourceHash
 		where:
 			gradle 				| modHash								| sourceHash
-			'6.8.3' 			| "6132ffb4117adb7e258f663110552952"	| "60f389a46b1e2d9ee4e1559ee9a571d1"
-			'7.0-milestone-2'	| "6132ffb4117adb7e258f663110552952"	| "60f389a46b1e2d9ee4e1559ee9a571d1"
+			'6.8.3' 			| "6132ffb4117adb7e258f663110552952"	| "eda4196688ad04a49c41f316fbecfac4"
+			'7.0-milestone-2'	| "6132ffb4117adb7e258f663110552952"	| "eda4196688ad04a49c41f316fbecfac4"
 	}
 
 	String getOutputHash(String name) {

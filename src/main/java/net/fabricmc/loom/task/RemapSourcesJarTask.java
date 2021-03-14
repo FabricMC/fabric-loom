@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -34,7 +33,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.ZipReprocessorUtil;
 
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;

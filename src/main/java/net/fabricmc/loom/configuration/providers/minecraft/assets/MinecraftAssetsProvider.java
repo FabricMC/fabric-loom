@@ -119,6 +119,7 @@ public class MinecraftAssetsProvider {
 					try {
 						HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, () -> {
 							ProgressLogger logger = loggers.pollFirst();
+
 							if (logger == null) {
 								//Create a new logger if we need one
 								progressLogger[0] = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());

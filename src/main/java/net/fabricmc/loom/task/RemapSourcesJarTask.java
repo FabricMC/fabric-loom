@@ -48,9 +48,9 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	@TaskAction
 	public void remap() throws Exception {
 		if (sourceRemapper == null) {
-			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"), preserveFileTimestamps, reproducibleFileOrder);
+			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"), reproducibleFileOrder, preserveFileTimestamps);
 		} else {
-			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), preserveFileTimestamps, reproducibleFileOrder);
+			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), reproducibleFileOrder, preserveFileTimestamps);
 		}
 	}
 

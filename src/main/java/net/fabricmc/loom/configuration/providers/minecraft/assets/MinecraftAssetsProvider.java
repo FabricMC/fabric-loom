@@ -105,15 +105,12 @@ public class MinecraftAssetsProvider {
 				}
 			} else {
 				executor.execute(() -> {
-					ProgressLogger progressLogger;
+					ProgressLogger progressLogger = loggers.pollFirst();
 
-					if (loggers.isEmpty()) {
+					if (progressLogger == null) {
 						//Create a new logger if we need one
 						progressLogger = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
 						progressLogger.start("Downloading assets...", "assets");
-					} else {
-						// use a free logger if we can
-						progressLogger = loggers.pop();
 					}
 
 					String assetName = entry.getKey();

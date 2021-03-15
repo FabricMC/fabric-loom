@@ -26,7 +26,6 @@ package net.fabricmc.loom.util
 
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
-import spock.lang.Shared
 
 trait ProjectTestTrait {
 	static File gradleHome = File.createTempDir()

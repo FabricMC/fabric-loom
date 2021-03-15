@@ -31,6 +31,8 @@ import net.fabricmc.loom.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.util.OperatingSystem.isWindows
+
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
@@ -49,8 +51,8 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 			getOutputHash("fabric-example-mod-1.0.0-sources.jar") == sourceHash
 		where:
 			gradle 				| modHash								| sourceHash
-			'6.8.3' 			| "6132ffb4117adb7e258f663110552952"	| "be31766e6cafbe4ae3bca9e35ba63169"
-			'7.0-milestone-2'	| "6132ffb4117adb7e258f663110552952"	| "be31766e6cafbe4ae3bca9e35ba63169"
+			'6.8.3' 			| "6132ffb4117adb7e258f663110552952"	| (windows ? "be31766e6cafbe4ae3bca9e35ba63169" : "7348b0bd87d36d7ec6f3bca9c2b66062")
+			'7.0-milestone-2'	| "6132ffb4117adb7e258f663110552952"	| (windows ? "be31766e6cafbe4ae3bca9e35ba63169" : "7348b0bd87d36d7ec6f3bca9c2b66062")
 	}
 
 	String getOutputHash(String name) {

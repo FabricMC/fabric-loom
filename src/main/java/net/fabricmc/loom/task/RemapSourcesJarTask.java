@@ -26,8 +26,6 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 
-import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -35,29 +33,24 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.ZipReprocessorUtil;
 
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
 	private Object output;
 	private String direction = "intermediary";
 	private SourceRemapper sourceRemapper = null;
-	private final Property<Boolean> archivePreserveFileTimestamps;
-	private final Property<Boolean> archiveReproducibleFileOrder;
+	private boolean preserveFileTimestamps = true;
+	private boolean reproducibleFileOrder = false;
 
 	public RemapSourcesJarTask() {
-		ObjectFactory objectFactory = getProject().getObjects();
-		archivePreserveFileTimestamps = objectFactory.property(Boolean.class);
-		archiveReproducibleFileOrder = objectFactory.property(Boolean.class);
 	}
 
 	@TaskAction
 	public void remap() throws Exception {
 		if (sourceRemapper == null) {
-			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"));
-			ZipReprocessorUtil.reprocessZip(getOutput(), archivePreserveFileTimestamps.getOrElse(true), archiveReproducibleFileOrder.getOrElse(false));
+			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"), reproducibleFileOrder, preserveFileTimestamps);
 		} else {
-			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), archivePreserveFileTimestamps.getOrElse(true), archiveReproducibleFileOrder.getOrElse(false));
+			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), reproducibleFileOrder, preserveFileTimestamps);
 		}
 	}
 
@@ -96,5 +89,23 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 
 	public void setTargetNamespace(String value) {
 		this.direction = value;
+	}
+
+	@Input
+	public boolean isPreserveFileTimestamps() {
+		return preserveFileTimestamps;
+	}
+
+	public void setPreserveFileTimestamps(boolean preserveFileTimestamps) {
+		this.preserveFileTimestamps = preserveFileTimestamps;
+	}
+
+	@Input
+	public boolean isReproducibleFileOrder() {
+		return reproducibleFileOrder;
+	}
+
+	public void setReproducibleFileOrder(boolean reproducibleFileOrder) {
+		this.reproducibleFileOrder = reproducibleFileOrder;
 	}
 }

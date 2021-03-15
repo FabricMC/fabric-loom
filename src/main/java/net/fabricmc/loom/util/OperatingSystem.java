@@ -49,6 +49,10 @@ public class OperatingSystem {
 		return System.getProperty("sun.arch.data.model").contains("64");
 	}
 
+	public static boolean isWindows() {
+		return getOS().equals("windows");
+	}
+
 	public static boolean isCIBuild() {
 		String loomProperty = System.getProperty("fabric.loom.ci");
 

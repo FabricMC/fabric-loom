@@ -62,15 +62,10 @@ public class SourceRemapper {
 		this.toNamed = toNamed;
 	}
 
-	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
+	public static void remapSources(Project project, File input, File output, boolean named, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
-		sourceRemapper.scheduleRemapSources(input, output, false, true);
+		sourceRemapper.scheduleRemapSources(input, output, reproducibleFileOrder, preserveFileTimestamps);
 		sourceRemapper.remapAll();
-	}
-
-	@Deprecated
-	public void scheduleRemapSources(File source, File destination) throws Exception {
-		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
 	}
 
 	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {

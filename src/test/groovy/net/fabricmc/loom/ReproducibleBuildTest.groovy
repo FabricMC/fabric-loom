@@ -28,13 +28,11 @@ import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
 import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-@IgnoreIf({ os.windows }) // Linux and mac create the same files, im unsure why windows is different. Let me know if you have any ideas?
 class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
@@ -48,11 +46,11 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 		then:
 			result.task(":build").outcome == SUCCESS
 			getOutputHash("fabric-example-mod-1.0.0.jar") == modHash
-			getOutputHash("fabric-example-mod-1.0.0-sources.jar") == sourceHash
+			getOutputHash("fabric-example-mod-1.0.0-sources.jar") in sourceHash // Done for different line endings.
 		where:
 			gradle 				| modHash								| sourceHash
-			'6.8.3' 			| "ccd6aaff1b06df01e4dd8c08625b82c9"	| "8bd590dc03b7dd0de3a4a7aeb431d4e8"
-			'7.0-milestone-2'	| "ccd6aaff1b06df01e4dd8c08625b82c9"	| "8bd590dc03b7dd0de3a4a7aeb431d4e8"
+			'6.8.3' 			| "6132ffb4117adb7e258f663110552952"	| ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
+			'7.0-milestone-2'	| "6132ffb4117adb7e258f663110552952"	| ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
 	}
 
 	String getOutputHash(String name) {

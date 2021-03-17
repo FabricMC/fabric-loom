@@ -36,6 +36,8 @@ import java.util.Map;
 import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.struct.StructField;
 import org.jetbrains.java.decompiler.struct.StructMethod;
+import org.jetbrains.java.decompiler.struct.StructRecordComponent;
+import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.mapping.tree.ClassDef;
@@ -73,7 +75,54 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 	@Override
 	public String getClassDoc(StructClass structClass) {
 		ClassDef classDef = classes.get(structClass.qualifiedName);
-		return classDef != null ? classDef.getComment() : null;
+
+		if (classDef == null) {
+			return null;
+		}
+
+		if (!isRecord(structClass)) {
+			return classDef.getComment();
+		}
+
+		/**
+		 * Handle the record component docs here.
+		 *
+		 * Record components are mapped via the field name, thus take the docs from the fields and display them on then class.
+		 */
+		List<String> parts = new ArrayList<>();
+
+		if (classDef.getComment() != null) {
+			parts.add(classDef.getComment());
+		}
+
+		boolean addedParam = false;
+
+		for (StructRecordComponent component : structClass.getRecordComponents()) {
+			// The component will always match the field name and descriptor
+			FieldDef fieldDef = fields.get(new EntryTriple(structClass.qualifiedName, component.getName(), component.getDescriptor()));
+
+			if (fieldDef == null) {
+				continue;
+			}
+
+			String comment = fieldDef.getComment();
+
+			if (comment != null) {
+				if (!addedParam && classDef.getComment() != null) {
+					//Add a blank line before components when the class has a comment
+					parts.add("");
+					addedParam = true;
+				}
+
+				parts.add(String.format("@param %s %s", fieldDef.getName(namespace), comment));
+			}
+		}
+
+		if (parts.isEmpty()) {
+			return null;
+		}
+
+		return String.join("\n", parts);
 	}
 
 	@Override
@@ -125,5 +174,9 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read mappings", e);
 		}
+	}
+
+	public static boolean isRecord(StructClass structClass) {
+		return (structClass.getAccessFlags() & Opcodes.ACC_RECORD) != 0;
 	}
 }

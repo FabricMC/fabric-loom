@@ -38,6 +38,7 @@ import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -83,8 +84,9 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				mapMinecraftJar();
 			} catch (Throwable t) {
 				// Cleanup some some things that may be in a bad state now
-				minecraftMappedJar.delete();
-				minecraftIntermediaryJar.delete();
+				DownloadUtil.delete(minecraftMappedJar);
+				DownloadUtil.delete(minecraftIntermediaryJar);
+				getExtension().getMinecraftProvider().deleteFiles();
 				getExtension().getMappingsProvider().cleanFiles();
 				throw new RuntimeException("Failed to remap minecraft", t);
 			}

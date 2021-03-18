@@ -124,7 +124,7 @@ public class MinecraftAssetsProvider {
 					progressLogger.progress(String.format("%-30.30s", assetName) + " - " + sha1);
 
 					try {
-						HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true);
+						HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, false);
 					} catch (IOException e) {
 						throw new RuntimeException("Failed to download: " + assetName, e);
 					}

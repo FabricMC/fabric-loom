@@ -100,6 +100,11 @@ public class HashedDownloadUtil {
 
 	@Nullable
 	private static String getSha1(File to, Logger logger) {
+		if (!to.exists()) {
+			delete(to);
+			return null;
+		}
+
 		File sha1File = getSha1File(to);
 
 		try {

@@ -72,6 +72,8 @@ trait ProjectTestTrait {
 	}
 
 	BuildResult create(String task, String gradleVersion = "6.8.3") {
+		System.setProperty("fabric.loom.test", "true")
+
 		GradleRunner.create()
 			.withProjectDir(testProjectDir)
 			.withArguments(task, "--stacktrace", "--warning-mode", warningMode(gradleVersion), "--gradle-user-home", gradleHomeDirectory(gradleVersion))

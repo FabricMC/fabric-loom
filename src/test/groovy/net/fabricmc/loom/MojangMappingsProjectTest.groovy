@@ -43,8 +43,8 @@ class MojangMappingsProjectTest extends Specification implements ProjectTestTrai
 		then:
 			result.task(":build").outcome == SUCCESS
 		where:
-			gradle 				| _
-			'6.8.3' 			| _
-			'7.0-milestone-2'	| _
+			gradle      | _
+			'6.8.3'     | _
+			'7.0-rc-1'  | _
 	}
 }

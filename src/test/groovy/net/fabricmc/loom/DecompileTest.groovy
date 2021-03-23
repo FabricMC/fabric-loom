@@ -48,7 +48,7 @@ class DecompileTest extends Specification implements ProjectTestTrait {
 			decompiler 		| task								| gradle
 			'fernflower'	| "genSources"						| "6.8.3"
 			'fernflower'	| "genSources"						| "4.9"
-			'fernflower'	| "genSources"						| "7.0-milestone-2"
+			'fernflower'	| "genSources"						| "7.0-rc-1"
 			'cfr' 			| "genSourcesWithExperimentalCfr"	| "6.8.3"
 	}
 }

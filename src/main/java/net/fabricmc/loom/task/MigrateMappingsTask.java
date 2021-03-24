@@ -87,7 +87,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		Project project = getProject();
 		LoomGradleExtension extension = getExtension();
 
-		project.getLogger().lifecycle(":loading mappings");
+		project.getLogger().info(":loading mappings");
 
 		if (!Files.exists(inputDir) || !Files.isDirectory(inputDir)) {
 			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
@@ -161,7 +161,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	private static void migrateMappings(Project project, MinecraftMappedProvider minecraftMappedProvider,
 										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings
 	) throws IOException {
-		project.getLogger().lifecycle(":joining mappings");
+		project.getLogger().info(":joining mappings");
 
 		MappingSet mappingSet = new TinyMappingsJoiner(
 				currentMappings, "named",
@@ -191,7 +191,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 			project.getLogger().warn("Could not remap fully!", e);
 		}
 
-		project.getLogger().lifecycle(":cleaning file descriptors");
+		project.getLogger().info(":cleaning file descriptors");
 		System.gc();
 	}
 }

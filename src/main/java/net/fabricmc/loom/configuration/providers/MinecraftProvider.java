@@ -31,8 +31,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
@@ -45,7 +43,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftLibraryProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
@@ -54,7 +52,7 @@ import net.fabricmc.stitch.merge.JarMerger;
 public class MinecraftProvider extends DependencyProvider {
 	private String minecraftVersion;
 
-	private MinecraftVersionInfo versionInfo;
+	private MinecraftVersionMeta versionInfo;
 	private MinecraftLibraryProvider libraryProvider;
 
 	private File minecraftJson;
@@ -78,7 +76,7 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson(offline);
 
 		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionInfo.class);
+			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionMeta.class);
 		}
 
 		// Add Loom as an annotation processor
@@ -104,8 +102,8 @@ public class MinecraftProvider extends DependencyProvider {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
-				DownloadUtil.delete(minecraftClientJar);
-				DownloadUtil.delete(minecraftServerJar);
+				HashedDownloadUtil.delete(minecraftClientJar);
+				HashedDownloadUtil.delete(minecraftServerJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -170,13 +168,11 @@ public class MinecraftProvider extends DependencyProvider {
 			} else {
 				getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
 
-				String url = optionalVersion.get().url;
-				// Find the sha1 of the json from the url, return true if it matches the local json
-				Pattern sha1Pattern = Pattern.compile("\\b[0-9a-f]{5,40}\\b");
-				Matcher matcher = sha1Pattern.matcher(url);
+				ManifestVersion.Versions version = optionalVersion.get();
+				String url = version.url;
 
-				if (matcher.find()) {
-					HashedDownloadUtil.downloadIfInvalid(new URL(url), minecraftJson, matcher.group(), getProject().getLogger(), true);
+				if (version.sha1 != null) {
+					HashedDownloadUtil.downloadIfInvalid(new URL(url), minecraftJson, version.sha1, getProject().getLogger(), true);
 				} else {
 					// Use the etag if no hash found from url
 					DownloadUtil.downloadIfChanged(new URL(url), minecraftJson, getProject().getLogger());
@@ -213,15 +209,15 @@ public class MinecraftProvider extends DependencyProvider {
 			return;
 		}
 
-		MinecraftVersionInfo.Downloads client = versionInfo.downloads.get("client");
-		MinecraftVersionInfo.Downloads server = versionInfo.downloads.get("server");
+		MinecraftVersionMeta.Download client = versionInfo.getDownload("client");
+		MinecraftVersionMeta.Download server = versionInfo.getDownload("server");
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(client.url), minecraftClientJar, client.sha1, logger, false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(server.url), minecraftServerJar, server.sha1, logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(client.getUrl()), minecraftClientJar, client.getSha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(server.getUrl()), minecraftServerJar, server.getSha1(), logger, false);
 	}
 
 	private void mergeJars(Logger logger) throws IOException {
-		logger.lifecycle(":merging jars");
+		logger.info(":merging jars");
 
 		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
@@ -237,7 +233,7 @@ public class MinecraftProvider extends DependencyProvider {
 		return minecraftVersion;
 	}
 
-	public MinecraftVersionInfo getVersionInfo() {
+	public MinecraftVersionMeta getVersionInfo() {
 		return versionInfo;
 	}
 

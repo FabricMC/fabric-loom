@@ -38,6 +38,7 @@ import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.plugins.JavaPlugin;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -61,15 +62,10 @@ public class SourceRemapper {
 		this.toNamed = toNamed;
 	}
 
-	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
+	public static void remapSources(Project project, File input, File output, boolean named, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
-		sourceRemapper.scheduleRemapSources(input, output, false, true);
+		sourceRemapper.scheduleRemapSources(input, output, reproducibleFileOrder, preserveFileTimestamps);
 		sourceRemapper.remapAll();
-	}
-
-	@Deprecated
-	public void scheduleRemapSources(File source, File destination) throws Exception {
-		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
 	}
 
 	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
@@ -90,9 +86,11 @@ public class SourceRemapper {
 	}
 
 	public void remapAll() {
-		if (!remapTasks.isEmpty()) {
-			project.getLogger().lifecycle(":remapping sources");
+		if (remapTasks.isEmpty()) {
+			return;
 		}
+
+		project.getLogger().lifecycle(":remapping sources");
 
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, SourceRemapper.class.getName());
 		progressLogger.start("Remapping dependency sources", "sources");
@@ -170,7 +168,7 @@ public class SourceRemapper {
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
 				TinyTree m = mappingsProvider.getMappings();
-				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
+				project.getLogger().info(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyMappingsReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -192,7 +190,7 @@ public class SourceRemapper {
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
 
 			Dependency annotationDependency = extension.getDependencyManager().getProvider(LaunchProvider.class).annotationDependency;
-			Set<File> files = project.getConfigurations().getByName("compileOnly")
+			Set<File> files = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
 					.files(annotationDependency);
 
 			for (File file : files) {

@@ -54,8 +54,9 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionInfo;
-import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 
@@ -81,7 +82,7 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 		Path clientMappings = mappingsDir.resolve(String.format("%s.%s-%s-client.map", GROUP, MODULE, getVersion()));
 		Path serverMappings = mappingsDir.resolve(String.format("%s.%s-%s-server.map", GROUP, MODULE, getVersion()));
 
-		if (!Files.exists(mappingsFile) || project.getGradle().getStartParameter().isRefreshDependencies()) {
+		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
 			MappingSet mappingSet;
 
 			try {
@@ -120,17 +121,17 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	}
 
 	private MappingSet getMappingsSet(Path clientMappings, Path serverMappings) throws IOException {
-		MinecraftVersionInfo versionInfo = extension.getMinecraftProvider().getVersionInfo();
+		MinecraftVersionMeta versionInfo = extension.getMinecraftProvider().getVersionInfo();
 
-		if (versionInfo.downloads.get(MANIFEST_CLIENT_MAPPINGS) == null) {
+		if (versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS) == null) {
 			throw new RuntimeException("Failed to find official mojang mappings for " + getVersion());
 		}
 
-		String clientMappingsUrl = versionInfo.downloads.get(MANIFEST_CLIENT_MAPPINGS).url;
-		String serverMappingsUrl = versionInfo.downloads.get(MANIFEST_SERVER_MAPPINGS).url;
+		MinecraftVersionMeta.Download clientMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
+		MinecraftVersionMeta.Download serverMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
 
-		DownloadUtil.downloadIfChanged(new URL(clientMappingsUrl), clientMappings.toFile(), project.getLogger());
-		DownloadUtil.downloadIfChanged(new URL(serverMappingsUrl), serverMappings.toFile(), project.getLogger());
+		HashedDownloadUtil.downloadIfInvalid(new URL(clientMappingsDownload.getUrl()), clientMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(serverMappingsDownload.getUrl()), serverMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
 
 		MappingSet mappings = MappingSet.create();
 

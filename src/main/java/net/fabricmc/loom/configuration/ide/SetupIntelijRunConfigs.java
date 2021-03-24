@@ -50,12 +50,6 @@ public class SetupIntelijRunConfigs {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to generate run configs", e);
 		}
-
-		File runDir = new File(project.getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
 	}
 
 	private static void generate(Project project) throws IOException {
@@ -65,29 +59,34 @@ public class SetupIntelijRunConfigs {
 		if (extension.ideSync()) {
 			//Ensures the assets are downloaded when idea is syncing a project
 			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+			MinecraftNativesProvider.provide(project);
 		}
 
 		String projectPath = project == rootProject ? "" : project.getPath().replace(':', '_');
 
 		File projectDir = rootProject.file(".idea");
 		File runConfigsDir = new File(projectDir, "runConfigurations");
-		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client" + projectPath + ".xml");
-		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server" + projectPath + ".xml");
 
 		if (!runConfigsDir.exists()) {
 			runConfigsDir.mkdirs();
 		}
 
-		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
-		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
+		for (RunConfigSettings settings : extension.getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
 
-		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
-			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		}
+			RunConfig config = RunConfig.runConfig(project, settings);
+			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 
-		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
-			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+			File runConfigs = new File(runConfigsDir, name + projectPath + ".xml");
+			String runConfigXml = config.fromDummy("idea_run_config_template.xml");
+
+			if (!runConfigs.exists()) {
+				FileUtils.writeStringToFile(runConfigs, runConfigXml, StandardCharsets.UTF_8);
+			}
+
+			settings.makeRunDir();
 		}
 	}
 }

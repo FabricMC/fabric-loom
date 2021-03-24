@@ -38,6 +38,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
 // Recommended vscode plugins:
 // https://marketplace.visualstudio.com/items?itemName=redhat.java
@@ -61,8 +62,15 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 
 		VsCodeLaunch launch = new VsCodeLaunch();
-		launch.add(RunConfig.clientRunConfig(project));
-		launch.add(RunConfig.serverRunConfig(project));
+
+		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
+
+			launch.add(RunConfig.runConfig(project, settings));
+			settings.makeRunDir();
+		}
 
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		String json = gson.toJson(launch);
@@ -71,12 +79,6 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			FileUtils.writeStringToFile(launchJson, json, StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to write launch.json", e);
-		}
-
-		File runDir = new File(project.getRootDir(), extension.runDir);
-
-		if (!runDir.exists()) {
-			runDir.mkdirs();
 		}
 	}
 
@@ -94,7 +96,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		public String type = "java";
 		public String name;
 		public String request = "launch";
-		public String cwd = "${workspaceFolder}/run";
+		public String cwd;
 		public String console = "internalConsole";
 		public boolean stopOnEntry = false;
 		public String mainClass;
@@ -106,6 +108,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			this.mainClass = runConfig.mainClass;
 			this.vmArgs = runConfig.vmArgs;
 			this.args = runConfig.programArgs;
+			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
 		}
 	}
 }

@@ -27,24 +27,39 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.util.HashedDownloadUtil;
 
 public class MinecraftNativesProvider {
-	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
-		boolean offline = project.getGradle().getStartParameter().isOffline();
+	private final Project project;
+	private final LoomGradleExtension extension;
+	private final File nativesDir;
+	private final File jarStore;
 
-		File nativesDir = extension.getNativesDirectory();
-		File jarStore = extension.getNativesJarStore();
+	public MinecraftNativesProvider(Project project) {
+		this.project = project;
+		extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
+		nativesDir = extension.getNativesDirectory();
+		jarStore = extension.getNativesJarStore();
+	}
+
+	public static void provide(Project project) throws IOException {
+		new MinecraftNativesProvider(project).provide();
+	}
+
+	private void provide() throws IOException {
 		if (extension.hasCustomNatives()) {
 			if (!nativesDir.exists()) {
 				throw new RuntimeException("Could no find custom natives directory at " + nativesDir.getAbsolutePath());
@@ -53,21 +68,82 @@ public class MinecraftNativesProvider {
 			return;
 		}
 
-		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
-			File libJarFile = library.getFile(jarStore);
+		if (!LoomGradlePlugin.refreshDeps && !requiresExtract()) {
+			project.getLogger().info("Natives do no need extracting, skipping");
+			return;
+		}
 
-			if (library.allowed() && library.isNative() && libJarFile != null) {
-				if (!offline) {
-					DownloadUtil.downloadIfChanged(new URL(library.getURL()), libJarFile, project.getLogger());
-				}
+		extractNatives();
+	}
 
-				if (!libJarFile.exists()) {
-					throw new GradleException("Native jar not found at " + libJarFile.getAbsolutePath());
-				}
+	private void extractNatives() throws IOException {
+		boolean offline = project.getGradle().getStartParameter().isOffline();
 
-				// TODO possibly find a way to prevent needing to re-extract after each run, doesnt seem too slow
-				ZipUtil.unpack(libJarFile, nativesDir);
+		if (nativesDir.exists()) {
+			try {
+				FileUtils.deleteDirectory(nativesDir);
+			} catch (IOException e) {
+				throw new IOException("Failed to delete the natives directory, is the game running?", e);
 			}
 		}
+
+		nativesDir.mkdirs();
+
+		for (MinecraftVersionMeta.Classifier library : getNatives()) {
+			File libJarFile = library.getRelativeFile(jarStore);
+
+			if (!offline) {
+				HashedDownloadUtil.downloadIfInvalid(new URL(library.getUrl()), libJarFile, library.getSha1(), project.getLogger(), false);
+			}
+
+			if (!libJarFile.exists()) {
+				throw new GradleException("Native jar not found at " + libJarFile.getAbsolutePath());
+			}
+
+			ZipUtil.unpack(libJarFile, nativesDir);
+
+			// Store a file containing the hash of the extracted natives, used on subsequent runs to skip extracting all the natives if they haven't changed
+			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");
+			FileUtils.writeStringToFile(libSha1File, library.getSha1(), StandardCharsets.UTF_8);
+		}
+	}
+
+	private boolean requiresExtract() {
+		List<MinecraftVersionMeta.Classifier> natives = getNatives();
+
+		if (natives.isEmpty()) {
+			throw new IllegalStateException("No natives found for the current system");
+		}
+
+		for (MinecraftVersionMeta.Classifier library : natives) {
+			File libJarFile = library.getRelativeFile(jarStore);
+			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");
+
+			if (!libSha1File.exists()) {
+				return true;
+			}
+
+			try {
+				String sha1 = FileUtils.readFileToString(libSha1File, StandardCharsets.UTF_8);
+
+				if (!sha1.equalsIgnoreCase(library.getSha1())) {
+					return true;
+				}
+			} catch (IOException e) {
+				project.getLogger().error("Failed to read " + libSha1File.getAbsolutePath(), e);
+				return true;
+			}
+		}
+
+		// All looks good, no need to re-extract
+		return false;
+	}
+
+	private List<MinecraftVersionMeta.Classifier> getNatives() {
+		return extension.getMinecraftProvider().getVersionInfo().getLibraries().stream()
+				.filter((MinecraftVersionMeta.Library::hasNativesForOS))
+				.map(MinecraftVersionMeta.Library::getClassifierForOS)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
 	}
 }

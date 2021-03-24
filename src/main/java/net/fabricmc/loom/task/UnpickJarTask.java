@@ -25,122 +25,49 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
 
-import com.google.common.collect.ObjectArrays;
-import com.google.common.io.ByteStreams;
-import daomephsta.unpick.api.ConstantUninliner;
-import daomephsta.unpick.api.constantmappers.ConstantMappers;
-import daomephsta.unpick.api.constantresolvers.ConstantResolvers;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.JarClassResolver;
 
-public class UnpickJarTask extends AbstractLoomTask {
-	@InputFile
+public class UnpickJarTask extends JavaExec {
 	File inputJar;
-	@InputFile
 	File unpickDefinition;
 
-	@OutputFile
 	File outputJar;
 
 	public UnpickJarTask() {
 		getOutputs().upToDateWhen(e -> false);
+		classpath(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
+		setMain("daomephsta.unpick.cli.Main");
 	}
 
-	@TaskAction
-	public void doTask() throws Throwable {
-		JarClassResolver minecraftClassResolver = new JarClassResolver(getMinecraftJars());
-		JarClassResolver constantClassResolver = new JarClassResolver(getConstantJars());
+	@Override
+	public void exec() {
+		fileArg(getInputJar(), getOutputJar(), getUnpickDefinition());
+		fileArg(getConstantJar());
 
-		if (outputJar.exists()) {
-			outputJar.delete();
-		}
+		// Classpath
+		fileArg(getExtension().getMinecraftMappedProvider().getMappedJar());
+		fileArg(getMinecraftDependencies());
 
-		try (InputStream unpickDefinitionStream = new FileInputStream(unpickDefinition)) {
-			ConstantUninliner uninliner = new ConstantUninliner(
-					ConstantMappers.dataDriven(minecraftClassResolver, unpickDefinitionStream),
-					ConstantResolvers.bytecodeAnalysis(constantClassResolver)
-			);
-
-			try (JarFile jarFile = new JarFile(inputJar); JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(outputJar))) {
-				Enumeration<JarEntry> entries = jarFile.entries();
-
-				while (entries.hasMoreElements()) {
-					JarEntry entry = entries.nextElement();
-
-					JarEntry outputEntry = new JarEntry(entry.getName());
-					outputEntry.setTime(System.currentTimeMillis());
-
-					InputStream inputStream = jarFile.getInputStream(entry);
-
-					byte[] outputBytes;
-
-					if (entry.getName().endsWith(".class")) {
-						ClassReader classReader = new ClassReader(inputStream);
-						ClassNode classNode = new ClassNode();
-						classReader.accept(classNode, 0);
-
-						uninliner.transform(classNode);
-
-						ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-						classNode.accept(classWriter);
-						outputBytes = classWriter.toByteArray();
-					} else {
-						outputBytes = ByteStreams.toByteArray(inputStream);
-					}
-
-					outputEntry.setSize(outputBytes.length);
-					outputStream.putNextEntry(outputEntry);
-					outputStream.write(outputBytes);
-					outputStream.closeEntry();
-				}
-			}
-		} finally {
-			minecraftClassResolver.close();
-			constantClassResolver.close();
-		}
+		super.exec();
 	}
 
-	private URL[] getMinecraftJars() throws MalformedURLException {
-		return ObjectArrays.concat(
-			getConfigurationURLs(Constants.Configurations.MINECRAFT_DEPENDENCIES),
-			new URL[]{getExtension().getMinecraftMappedProvider().getMappedJar().toURI().toURL()},
-			URL.class
-		);
+	private File[] getMinecraftDependencies() {
+		return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES)
+				.resolve().toArray(new File[0]);
 	}
 
-	private URL[] getConstantJars() throws MalformedURLException {
-		return getConfigurationURLs(Constants.Configurations.MAPPING_CONSTANTS);
+	private File getConstantJar() {
+		return getProject().getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS).getSingleFile();
 	}
 
-	private URL[] getConfigurationURLs(String name) throws MalformedURLException {
-		List<URL> list = new ArrayList<>();
-
-		for (File file : getProject().getConfigurations().getByName(name).resolve()) {
-			list.add(file.toURI().toURL());
-		}
-
-		return list.toArray(new URL[0]);
-	}
-
+	@InputFile
 	public File getInputJar() {
 		return inputJar;
 	}
@@ -150,6 +77,7 @@ public class UnpickJarTask extends AbstractLoomTask {
 		return this;
 	}
 
+	@InputFile
 	public File getUnpickDefinition() {
 		return unpickDefinition;
 	}
@@ -159,6 +87,7 @@ public class UnpickJarTask extends AbstractLoomTask {
 		return this;
 	}
 
+	@OutputFile
 	public File getOutputJar() {
 		return outputJar;
 	}
@@ -166,5 +95,16 @@ public class UnpickJarTask extends AbstractLoomTask {
 	public UnpickJarTask setOutputJar(File outputJar) {
 		this.outputJar = outputJar;
 		return this;
+	}
+
+	private void fileArg(File... files) {
+		for (File file : files) {
+			args(file.getAbsolutePath());
+		}
+	}
+
+	@Internal
+	protected LoomGradleExtension getExtension() {
+		return getProject().getExtensions().getByType(LoomGradleExtension.class);
 	}
 }

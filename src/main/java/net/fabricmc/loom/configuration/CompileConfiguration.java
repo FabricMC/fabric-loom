@@ -70,6 +70,7 @@ public final class CompileConfiguration {
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
 		project.getConfigurations().maybeCreate(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		project.getConfigurations().maybeCreate(Constants.Configurations.UNPICK_CLASSPATH);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());

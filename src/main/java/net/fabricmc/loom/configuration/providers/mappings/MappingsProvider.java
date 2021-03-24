@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -38,6 +39,7 @@ import java.util.function.Consumer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.net.UrlEscapers;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -46,6 +48,7 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
@@ -80,6 +83,7 @@ public class MappingsProvider extends DependencyProvider {
 	public File tinyMappingsJar;
 	private File unpickDefinitionsFile;
 	private boolean hasUnpickDefinitions;
+	private UnpickMetadata unpickMetadata;
 
 	public MappingsProvider(Project project) {
 		super(project);
@@ -167,6 +171,7 @@ public class MappingsProvider extends DependencyProvider {
 			);
 
 			getProject().getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+			populateUnpickClasspath();
 		}
 
 		addDependency(tinyMappingsJar, Constants.Configurations.MAPPINGS_FINAL);
@@ -241,13 +246,36 @@ public class MappingsProvider extends DependencyProvider {
 
 	private void extractUnpickDefinitions(FileSystem jar, Path extractTo) throws IOException {
 		Path unpickPath = jar.getPath("extras/definitions.unpick");
+		Path unpickMetadataPath = jar.getPath("extras/unpick.json");
 
-		if (!Files.exists(unpickPath)) {
+		if (!Files.exists(unpickPath) || !Files.exists(unpickMetadataPath)) {
 			return;
 		}
 
 		Files.copy(unpickPath, extractTo, StandardCopyOption.REPLACE_EXISTING);
+
+		unpickMetadata = parseUnpickMetadata(unpickMetadataPath);
 		hasUnpickDefinitions = true;
+	}
+
+	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
+		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(Files.readAllBytes(input), StandardCharsets.UTF_8), JsonObject.class);
+
+		if (!jsonObject.has("version") || jsonObject.get("version").getAsInt() != 1) {
+			throw new UnsupportedOperationException("Unsupported unpick version");
+		}
+
+		return new UnpickMetadata(
+				jsonObject.get("unpickGroup").getAsString(),
+				jsonObject.get("unpickVersion").getAsString()
+		);
+	}
+
+	private void populateUnpickClasspath() {
+		String unpickCliName = "unpick-cli";
+		getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
+		);
 	}
 
 	private void extractIntermediary(Path intermediaryJar, Path intermediaryTiny) throws IOException {
@@ -379,5 +407,15 @@ public class MappingsProvider extends DependencyProvider {
 
 	public boolean hasUnpickDefinitions() {
 		return hasUnpickDefinitions;
+	}
+
+	public static class UnpickMetadata {
+		public final String unpickGroup;
+		public final String unpickVersion;
+
+		public UnpickMetadata(String unpickGroup, String unpickVersion) {
+			this.unpickGroup = unpickGroup;
+			this.unpickVersion = unpickVersion;
+		}
 	}
 }

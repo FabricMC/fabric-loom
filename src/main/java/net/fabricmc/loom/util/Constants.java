@@ -80,6 +80,7 @@ public class Constants {
 		@Deprecated // Not to be used in gradle 7+
 		public static final String COMPILE = "compile";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
+		public static final String UNPICK_CLASSPATH = "unpick";
 
 		private Configurations() {
 		}

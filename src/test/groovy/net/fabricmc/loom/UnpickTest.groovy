@@ -22,37 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
+import net.fabricmc.loom.util.ProjectTestTrait
+import spock.lang.Specification
 
-import daomephsta.unpick.api.IClassResolver;
-import org.objectweb.asm.ClassReader;
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-public class JarClassResolver implements IClassResolver, Closeable {
-	private final URLClassLoader classLoader;
-
-	public JarClassResolver(URL[] urls) {
-		this.classLoader = new URLClassLoader(urls);
+class UnpickTest extends Specification implements ProjectTestTrait {
+	@Override
+	String name() {
+		"unpick"
 	}
 
-	@Override
-	public ClassReader resolveClass(String internalName) throws IOException {
-		InputStream inputStream = classLoader.getResourceAsStream(internalName + ".class");
-
-		if (inputStream != null) {
-			return new ClassReader(inputStream);
-		}
-
-		throw new IOException("Failed to find " + internalName);
-	}
-
-	@Override
-	public void close() throws IOException {
-		classLoader.close();
+	def "unpick"() {
+		when:
+			def result = create("genSources")
+		then:
+			result.task(":unpick").outcome == SUCCESS
+			result.task(":genSources").outcome == SUCCESS
 	}
 }

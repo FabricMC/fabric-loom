@@ -127,6 +127,11 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 
 	@Override
 	public String getFieldDoc(StructClass structClass, StructField structField) {
+		// None static fields in records are handled in the class javadoc.
+		if (isRecord(structClass) && !isStatic(structField)) {
+			return null;
+		}
+
 		FieldDef fieldDef = fields.get(new EntryTriple(structClass.qualifiedName, structField.getName(), structField.getDescriptor()));
 		return fieldDef != null ? fieldDef.getComment() : null;
 	}
@@ -178,5 +183,9 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 
 	public static boolean isRecord(StructClass structClass) {
 		return (structClass.getAccessFlags() & Opcodes.ACC_RECORD) != 0;
+	}
+
+	public static boolean isStatic(StructField structField) {
+		return (structField.getAccessFlags() & Opcodes.ACC_STATIC) != 0;
 	}
 }

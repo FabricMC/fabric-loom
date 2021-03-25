@@ -50,13 +50,11 @@ import net.fabricmc.stitch.util.StitchUtil;
 public class GenerateSourcesTask extends AbstractLoomTask {
 	public final LoomDecompiler decompiler;
 
-	@InputFile
-	File inputJar;
+	private File inputJar;
 
 	@Inject
-	public GenerateSourcesTask(LoomDecompiler decompiler, File inputJar) {
+	public GenerateSourcesTask(LoomDecompiler decompiler) {
 		this.decompiler = decompiler;
-		this.inputJar = inputJar;
 
 		setGroup("fabric");
 		getOutputs().upToDateWhen((o) -> false);
@@ -113,5 +111,15 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		return new File(path.substring(0, path.length() - 4) + suffix);
+	}
+
+	@InputFile
+	public File getInputJar() {
+		return inputJar;
+	}
+
+	public GenerateSourcesTask setInputJar(File inputJar) {
+		this.inputJar = inputJar;
+		return this;
 	}
 }

@@ -25,6 +25,9 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -32,6 +35,7 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.OutputFile;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.util.Constants;
 
 public class UnpickJarTask extends JavaExec {
@@ -55,7 +59,19 @@ public class UnpickJarTask extends JavaExec {
 		fileArg(getExtension().getMinecraftMappedProvider().getMappedJar());
 		fileArg(getMinecraftDependencies());
 
+		writeUnpickLogConfig();
+		systemProperty("java.util.logging.config.file", getExtension().getUnpickLoggingConfigFile().getAbsolutePath());
+
 		super.exec();
+	}
+
+	private void writeUnpickLogConfig() {
+		try (InputStream is = LaunchProvider.class.getClassLoader().getResourceAsStream("unpick-logging.properties")) {
+			Files.deleteIfExists(getExtension().getUnpickLoggingConfigFile().toPath());
+			Files.copy(is, getExtension().getUnpickLoggingConfigFile().toPath());
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to copy unpick logging config", e);
+		}
 	}
 
 	private File[] getMinecraftDependencies() {

@@ -39,7 +39,6 @@ class UnpickTest extends Specification implements ProjectTestTrait {
 		when:
 			def result = create("genSources")
 		then:
-			result.task(":unpick").outcome == SUCCESS
 			result.task(":genSources").outcome == SUCCESS
 	}
 }

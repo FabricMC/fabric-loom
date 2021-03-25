@@ -7,6 +7,7 @@ plugins {
 	id 'groovy'
 	id 'checkstyle'
 	id 'jacoco'
+	id 'codenarc'
 	id "org.cadixdev.licenser" version "0.5.0"
 }
 
@@ -108,6 +109,11 @@ license {
 checkstyle {
 	configFile = file('checkstyle.xml')
 	toolVersion = '8.39'
+}
+
+codenarc {
+	toolVersion = "2.0.0"
+	configFile = file("codenarc.groovy")
 }
 
 gradlePlugin {

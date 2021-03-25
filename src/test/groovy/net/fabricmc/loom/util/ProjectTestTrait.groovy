@@ -43,7 +43,7 @@ trait ProjectTestTrait {
 			throw new FileNotFoundException("Failed to find project directory at:" + baseProjectDir.absolutePath)
 		}
 
-		baseProjectDir.eachFileRecurse {file ->
+		baseProjectDir.eachFileRecurse { file ->
 			if (file.isDirectory()) {
 				return
 			}

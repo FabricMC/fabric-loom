@@ -43,7 +43,7 @@ class AccessWidenerTest extends Specification implements ProjectTestTrait, Archi
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r','')
+			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
 		where:
 			gradle     | _
 			'6.8.3'    | _

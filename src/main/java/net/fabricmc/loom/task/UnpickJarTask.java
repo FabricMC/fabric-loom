@@ -35,12 +35,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
 public class UnpickJarTask extends JavaExec {
-	@InputFile
 	File inputJar;
-	@InputFile
 	File unpickDefinition;
 
-	@OutputFile
 	File outputJar;
 
 	public UnpickJarTask() {

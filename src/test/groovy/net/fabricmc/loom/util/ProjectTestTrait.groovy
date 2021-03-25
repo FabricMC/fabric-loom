@@ -29,6 +29,7 @@ import org.gradle.testkit.runner.GradleRunner
 
 trait ProjectTestTrait {
 	static File gradleHome = File.createTempDir()
+	final static String DEFAULT_GRADLE = "6.8.3"
 
 	File testProjectDir = File.createTempDir()
 
@@ -71,7 +72,9 @@ trait ProjectTestTrait {
 		gradleHome.deleteDir()
 	}
 
-	BuildResult create(String task, String gradleVersion = "6.8.3") {
+	BuildResult create(String task, String gradleVersion = DEFAULT_GRADLE) {
+		System.setProperty("fabric.loom.test", "true")
+
 		GradleRunner.create()
 			.withProjectDir(testProjectDir)
 			.withArguments(task, "--stacktrace", "--warning-mode", warningMode(gradleVersion), "--gradle-user-home", gradleHomeDirectory(gradleVersion))
@@ -103,5 +106,9 @@ trait ProjectTestTrait {
 		}
 
 		return file
+	}
+
+	File getGeneratedSources(String mappings, String gradleVersion = DEFAULT_GRADLE) {
+		return new File(gradleHomeDirectory(gradleVersion), "caches/fabric-loom/${mappings}/minecraft-${mappings}-sources.jar")
 	}
 }

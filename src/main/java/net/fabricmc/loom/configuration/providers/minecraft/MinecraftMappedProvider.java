@@ -169,6 +169,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		return minecraftMappedJar;
 	}
 
+	public File getUnpickedJar() {
+		return new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("unpicked") + ".jar");
+	}
+
 	@Override
 	public String getTargetConfig() {
 		return Constants.Configurations.MINECRAFT_NAMED;

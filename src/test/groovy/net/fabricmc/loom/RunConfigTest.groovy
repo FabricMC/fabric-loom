@@ -44,11 +44,11 @@ class RunConfigTest extends Specification implements ProjectTestTrait {
 		then:
 			result.task(":${task}").outcome == SUCCESS
 		where:
-			task 				| _
-			'runClient' 		| _
-			'runServer'			| _
-			'runTestmodClient'	| _
-			'runTestmodServer'	| _
-			'runAutoTestServer'	| _
+			task                | _
+			'runClient'         | _
+			'runServer'         | _
+			'runTestmodClient'  | _
+			'runTestmodServer'  | _
+			'runAutoTestServer' | _
 	}
 }

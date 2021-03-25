@@ -1,0 +1,9 @@
+plugins {
+	id 'fabric-loom'
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:21w11a"
+	mappings "net.fabricmc:yarn:21w11a+build.22:v2"
+	modImplementation "net.fabricmc:fabric-loader:0.11.2"
+}

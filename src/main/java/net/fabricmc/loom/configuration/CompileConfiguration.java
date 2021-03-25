@@ -64,9 +64,13 @@ public final class CompileConfiguration {
 		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 		includeConfig.setTransitive(false); // Dont get transitive deps
 
+		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPING_CONSTANTS);
+		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
+
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
 		project.getConfigurations().maybeCreate(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		project.getConfigurations().maybeCreate(Constants.Configurations.UNPICK_CLASSPATH);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());

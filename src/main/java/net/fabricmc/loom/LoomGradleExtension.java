@@ -354,6 +354,10 @@ public class LoomGradleExtension {
 		return new File(getProjectPersistentCache(), "log4j.xml");
 	}
 
+	public File getUnpickLoggingConfigFile() {
+		return new File(getProjectPersistentCache(), "unpick-logging.properties");
+	}
+
 	public ConfigurableFileCollection getLog4jConfigs() {
 		return log4jConfigs;
 	}

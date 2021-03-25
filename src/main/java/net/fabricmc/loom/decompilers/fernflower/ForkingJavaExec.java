@@ -24,10 +24,14 @@
 
 package net.fabricmc.loom.decompilers.fernflower;
 
+import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.file.FileCollection;
 import org.gradle.process.ExecResult;
 import org.gradle.process.JavaExecSpec;
 
@@ -40,8 +44,27 @@ import org.gradle.process.JavaExecSpec;
 public class ForkingJavaExec {
 	public static ExecResult javaexec(Project project, Action<? super JavaExecSpec> action) {
 		return project.javaexec(spec -> {
-			spec.classpath((Object[]) ((URLClassLoader) ForkingJavaExec.class.getClassLoader()).getURLs());
+			spec.classpath(getClasspath(project));
 			action.execute(spec);
 		});
+	}
+
+	private static Object getClasspath(Project project) {
+		if (System.getProperty("fabric.loom.test") != null) {
+			return getTestClasspath();
+		}
+
+		return getRuntimeClasspath(project.getRootProject().getPlugins().hasPlugin("fabric-loom") ? project.getRootProject() : project);
+	}
+
+	private static FileCollection getRuntimeClasspath(Project project) {
+		ConfigurationContainer configurations = project.getBuildscript().getConfigurations();
+		DependencyHandler handler = project.getDependencies();
+		return configurations.getByName("classpath")
+				.plus(configurations.detachedConfiguration(handler.localGroovy()));
+	}
+
+	private static URL[] getTestClasspath() {
+		return ((URLClassLoader) ForkingJavaExec.class.getClassLoader()).getURLs();
 	}
 }

@@ -54,8 +54,8 @@ class MultiProjectTest extends Specification implements ProjectTestTrait, Archiv
 			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
 
 		where:
-			gradle 				| _
-			'6.8.3' 			| _
-			'7.0-milestone-2'	| _
+			gradle      | _
+			'6.8.3'     | _
+			'7.0-rc-1'  | _
 	}
 }

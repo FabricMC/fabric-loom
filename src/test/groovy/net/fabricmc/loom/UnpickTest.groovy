@@ -25,20 +25,38 @@
 package net.fabricmc.loom
 
 import net.fabricmc.loom.util.ProjectTestTrait
+import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
+
+import java.nio.charset.StandardCharsets
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements ProjectTestTrait {
+	static final String MAPPINGS = "21w11a-mapped-net.fabricmc.yarn-21w11a+build.22-v2"
+
 	@Override
 	String name() {
 		"unpick"
 	}
 
-	def "unpick"() {
+	def "unpick decompile"() {
 		when:
 			def result = create("genSources")
 		then:
 			result.task(":genSources").outcome == SUCCESS
+			getClassSource("net/minecraft/block/CakeBlock.java").contains("SetBlockStateFlags.PROPAGATE_CHANGE | SetBlockStateFlags.NOTIFY_LISTENERS")
+	}
+
+	def "unpick build"() {
+		when:
+			def result = create("build")
+		then:
+			result.task(":build").outcome == SUCCESS
+	}
+
+	String getClassSource(String classname, String mappings = MAPPINGS) {
+		File sourcesJar = getGeneratedSources(mappings)
+		return new String(ZipUtil.unpackEntry(sourcesJar, classname), StandardCharsets.UTF_8)
 	}
 }

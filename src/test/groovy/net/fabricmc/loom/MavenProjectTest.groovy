@@ -93,11 +93,4 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Ar
 	String name() {
 		library ? "mavenLibrary" : "maven"
 	}
-
-	@Override
-	void cleanupRun() {
-		["src", "build", ".gradle/loom-cache", "build.gradle", "settings.gradle"].each {
-			assert new File(testProjectDir, it).deleteDir()
-		}
-	}
 }

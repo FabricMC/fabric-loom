@@ -35,16 +35,14 @@ trait ProjectTestTrait {
 
 	abstract String name()
 
-	void cleanupRun() { }
-
 	def copyInputFiles() {
+		println "Project directory: ${testProjectDir}"
+
 		def baseProjectDir = new File("src/test/resources/projects/" + name())
 
 		if (!baseProjectDir.exists()) {
 			throw new FileNotFoundException("Failed to find project directory at:" + baseProjectDir.absolutePath)
 		}
-
-		cleanupRun()
 
 		baseProjectDir.eachFileRecurse { file ->
 			if (file.isDirectory()) {

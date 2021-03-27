@@ -35,13 +35,16 @@ trait ProjectTestTrait {
 
 	abstract String name()
 
-	@SuppressWarnings('unused')
-	def setup() {
+	void cleanupRun() { }
+
+	def copyInputFiles() {
 		def baseProjectDir = new File("src/test/resources/projects/" + name())
 
 		if (!baseProjectDir.exists()) {
 			throw new FileNotFoundException("Failed to find project directory at:" + baseProjectDir.absolutePath)
 		}
+
+		cleanupRun()
 
 		baseProjectDir.eachFileRecurse { file ->
 			if (file.isDirectory()) {
@@ -51,6 +54,11 @@ trait ProjectTestTrait {
 			def path = file.path.replace(baseProjectDir.path, "")
 
 			File tempFile = new File(testProjectDir, path)
+
+			if (tempFile.exists()) {
+				tempFile.delete()
+			}
+
 			tempFile.parentFile.mkdirs()
 			tempFile << file.text
 		}
@@ -74,6 +82,7 @@ trait ProjectTestTrait {
 
 	BuildResult create(String task, String gradleVersion = DEFAULT_GRADLE) {
 		System.setProperty("fabric.loom.test", "true")
+		copyInputFiles()
 
 		GradleRunner.create()
 			.withProjectDir(testProjectDir)

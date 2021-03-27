@@ -26,7 +26,7 @@ package net.fabricmc.loom.util
 
 import org.zeroturnaround.zip.ZipUtil
 
-trait ArchiveAssertionsTrait extends ProjectTestTrait {
+trait ArchiveAssertionsTrait {
 	String getArchiveEntry(String name, String entry, String project = "") {
 		def file = getOutputFile(name, project)
 

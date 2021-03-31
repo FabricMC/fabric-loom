@@ -112,7 +112,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-			Files.delete(output);
+			Files.deleteIfExists(output);
 
 			TinyRemapper remapper = getTinyRemapper(fromM, toM);
 

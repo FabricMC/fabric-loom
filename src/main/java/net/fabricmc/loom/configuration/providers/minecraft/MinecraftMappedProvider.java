@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
@@ -110,6 +111,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+			Files.delete(output);
 
 			TinyRemapper remapper = getTinyRemapper(fromM, toM);
 

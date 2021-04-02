@@ -22,40 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.intergration
 
-import net.fabricmc.loom.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
+import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
+class AccessWidenerTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {
-		"multiproject"
+		"accesswidener"
 	}
 
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "accesswidener (gradle #gradle)"() {
 		when:
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
-
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
-
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
-
+			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
 		where:
-			gradle      | _
-			'6.8.3'     | _
-			'7.0-rc-1'  | _
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
+	}
+
+	String expected() {
+		new File("src/test/resources/accesswidener/expected.accesswidener").text
 	}
 }

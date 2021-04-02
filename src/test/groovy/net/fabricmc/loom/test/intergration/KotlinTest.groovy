@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.intergration
 
-import net.fabricmc.loom.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -43,8 +43,8 @@ class KotlinTest extends Specification implements ProjectTestTrait {
 		then:
 			result.task(":build").outcome == SUCCESS
 		where:
-			gradle      | _
-			'6.8.3'     | _
-			'7.0-rc-1'  | _
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

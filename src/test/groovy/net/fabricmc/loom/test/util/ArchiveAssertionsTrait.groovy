@@ -22,42 +22,25 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.util
 
-import net.fabricmc.loom.util.ProjectTestTrait
-import spock.lang.Specification
-import spock.lang.Unroll
+import org.zeroturnaround.zip.ZipUtil
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+trait ArchiveAssertionsTrait {
+	String getArchiveEntry(String name, String entry, String project = "") {
+		def file = getOutputFile(name, project)
 
-class SimpleProjectTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"simple"
+		def bytes = ZipUtil.unpackEntry(file, entry)
+
+		if (bytes == null) {
+			throw new FileNotFoundException("Could not find ${entry} in ${name}")
+		}
+
+		new String(bytes as byte[])
 	}
 
-	@Unroll
-	def "build (gradle #gradle)"() {
-		when:
-			def result = create("build", gradle)
-		then:
-			result.task(":build").outcome == SUCCESS
-		where:
-			gradle      | _
-			'6.8.3'     | _
-			'7.0-rc-1'  | _
-	}
-
-	@Unroll
-	def "#ide config generation"() {
-		when:
-			def result = create(ide)
-		then:
-			result.task(":${ide}").outcome == SUCCESS
-		where:
-			ide 		| _
-			'idea' 		| _
-			'eclipse'	| _
-			'vscode'	| _
+	boolean hasArchiveEntry(String name, String entry, String project = "") {
+		def file = getOutputFile(name, project)
+		ZipUtil.unpackEntry(file, entry) != null
 	}
 }

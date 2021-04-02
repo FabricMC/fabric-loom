@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util
+package net.fabricmc.loom.test.util
 
 import io.javalin.Javalin
 import org.apache.commons.io.IOUtils

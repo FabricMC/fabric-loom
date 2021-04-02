@@ -22,29 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.intergration
 
-import net.fabricmc.loom.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MojangMappingsProjectTest extends Specification implements ProjectTestTrait {
+class DecompileTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"mojangMappings"
+		"decompile"
 	}
 
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "#decompiler gradle #gradle"() {
 		when:
-			def result = create("build", gradle)
+			def result = create(task, gradle)
+
 		then:
-			result.task(":build").outcome == SUCCESS
+			result.task(":${task}").outcome == SUCCESS
+
 		where:
-			gradle      | _
-			'6.8.3'     | _
-			'7.0-rc-1'  | _
+			decompiler 		| task								| gradle
+			'fernflower'	| "genSources"						| DEFAULT_GRADLE
+			'fernflower'	| "genSources"						| LEGACY_GRADLE
+			'fernflower'	| "genSources"						| PRE_RELEASE_GRADLE
+			'cfr' 			| "genSourcesWithExperimentalCfr"	| DEFAULT_GRADLE
 	}
 }

@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements ProjectTestTrait {
-	static final String MAPPINGS = "21w11a-mapped-net.fabricmc.yarn-21w11a+build.22-v2"
+	static final String MAPPINGS = "21w13a-mapped-net.fabricmc.yarn-21w13a+build.30-v2"
 
 	@Override
 	String name() {
@@ -45,7 +45,7 @@ class UnpickTest extends Specification implements ProjectTestTrait {
 			def result = create("genSources")
 		then:
 			result.task(":genSources").outcome == SUCCESS
-			getClassSource("net/minecraft/block/CakeBlock.java").contains("SetBlockStateFlags.PROPAGATE_CHANGE | SetBlockStateFlags.NOTIFY_LISTENERS")
+			getClassSource("net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
 	}
 
 	def "unpick build"() {

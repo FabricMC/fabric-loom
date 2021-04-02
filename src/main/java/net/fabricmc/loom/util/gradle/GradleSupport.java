@@ -24,44 +24,11 @@
 
 package net.fabricmc.loom.util.gradle;
 
-import java.lang.reflect.Method;
-
-import org.gradle.api.Project;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.util.GradleVersion;
 
 // This is used to bridge the gap over large gradle api changes.
 public class GradleSupport {
 	public static final boolean IS_GRADLE_7_OR_NEWER = isIsGradle7OrNewer();
-
-	public static RegularFileProperty getfileProperty(Project project) {
-		try {
-			// First try the new method, if that fails fall back.
-			return getfilePropertyModern(project);
-		} catch (Exception e) {
-			// Nope
-		}
-
-		try {
-			return getfilePropertyLegacy(project);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to find file property", e);
-		}
-	}
-
-	private static RegularFileProperty getfilePropertyModern(Project project) throws Exception {
-		return getfilePropertyLegacyFromObject(project.getObjects());
-	}
-
-	private static RegularFileProperty getfilePropertyLegacy(Project project) throws Exception {
-		return getfilePropertyLegacyFromObject(project.getLayout());
-	}
-
-	private static RegularFileProperty getfilePropertyLegacyFromObject(Object object) throws Exception {
-		Method method = object.getClass().getDeclaredMethod("fileProperty");
-		method.setAccessible(true);
-		return (RegularFileProperty) method.invoke(object);
-	}
 
 	public static boolean isIsGradle7OrNewer() {
 		String version = GradleVersion.current().getVersion();

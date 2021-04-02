@@ -5,22 +5,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [4.9, 4.10.2, 6.8.3]
-        java: [jdk8, jdk11, jdk15]
-        exclude: # Dont run older gradle versions on newer java
-          - java: jdk15
-            gradle: 4.9
-          - java: jdk15
-            gradle: 4.10.2
-          - java: jdk11
-            gradle: 4.9
-          - java: jdk11
-            gradle: 4.10.2
+        gradle: [7.0-rc-2]
+        java: [8-jdk, 11-jdk, 16-jdk]
     runs-on: ubuntu-20.04
     container:
-      image: gradle:${{ matrix.gradle }}-${{ matrix.java }}
+      image: openjdk:${{ matrix.java }}
       options: --user root
     steps:
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: ${{ matrix.gradle }}
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
       - run: gradle build check -x test --stacktrace
@@ -32,10 +26,13 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:6.8.3-jdk15
+      image: openjdk:16-jdk
       options: --user root
 
     steps:
+      - uses: eskatos/gradle-command-action@v1
+          with:
+            gradle-version: 7.0-rc-2
       - uses: actions/checkout@v2
       - run: gradle writeActionsTestMatrix --stacktrace
       -
@@ -51,15 +48,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [jdk8, jdk11, jdk15]
+        java: [8-jdk, 11-jdk, 15-jdk]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:6.8.3-${{ matrix.java }}
+      image: openjdk:${{ matrix.java }}
       options: --user root
 
     steps:
+      - uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: 7.0-rc-2
       - uses: actions/checkout@v2
       - run: gradle test --tests ${{ matrix.test }} --stacktrace
         env:
@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 1.8, 11, 15 ]
+        java: [ 1.8, 11, 16 ]
         os: [ windows-2019, ubuntu-20.04, macos-10.15 ]
 
     runs-on: ${{ matrix.os }}

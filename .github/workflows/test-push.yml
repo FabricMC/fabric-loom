@@ -31,8 +31,8 @@ jobs:
 
     steps:
       - uses: eskatos/gradle-command-action@v1
-          with:
-            gradle-version: 7.0-rc-2
+        with:
+          gradle-version: 7.0-rc-2
       - uses: actions/checkout@v2
       - run: gradle writeActionsTestMatrix --stacktrace
       -

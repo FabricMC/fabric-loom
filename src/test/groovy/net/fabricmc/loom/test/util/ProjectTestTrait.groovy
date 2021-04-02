@@ -22,15 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util
+package net.fabricmc.loom.test.util
 
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 
 trait ProjectTestTrait {
-	static File gradleHome = File.createTempDir()
+	final static String LEGACY_GRADLE = "4.9"
 	final static String DEFAULT_GRADLE = "6.8.3"
+	final static String PRE_RELEASE_GRADLE = "7.0-rc-2"
 
+	static File gradleHome = File.createTempDir()
 	File testProjectDir = File.createTempDir()
 
 	abstract String name()
@@ -93,7 +95,7 @@ trait ProjectTestTrait {
 	}
 
 	String warningMode(String gradleVersion) {
-		if (gradleVersion == "4.9") {
+		if (gradleVersion == LEGACY_GRADLE) {
 			return "all"
 		}
 

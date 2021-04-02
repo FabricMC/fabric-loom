@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.unit
 
 import groovy.xml.QName
 import net.fabricmc.loom.util.GroovyXmlUtil

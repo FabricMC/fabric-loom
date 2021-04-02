@@ -211,21 +211,21 @@ publishing {
 task writeActionsTestMatrix() {
 	doLast {
 		def testMatrix = []
-		file('src/test/groovy/net/fabricmc/loom').eachFile {
+		file('src/test/groovy/net/fabricmc/loom/test/intergration').eachFile {
 			if (it.name.endsWith("Test.groovy")) {
-				if (it.text.contains("@Ignore")) {
-					// A quick hack to disable currently broken tests.
-					return
-				}
-
 				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
 					// This test gets a special case to run across all os's
 					return
 				}
 
-				testMatrix.add(it.name.replace(".groovy", ""))
+				def className = it.name.replace(".groovy", "")
+				testMatrix.add("net.fabricmc.loom.test.intergration.${className}")
 			}
 		}
+
+		// Run all the unit tests togeather
+		testMatrix.add("net.fabricmc.loom.test.unit.*")
+
 		def json = groovy.json.JsonOutput.toJson(testMatrix)
 		def output = file("build/test_matrix.json")
 		output.parentFile.mkdir()

@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.intergration
 
-import net.fabricmc.loom.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.util.MockMavenServerTrait
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
+import net.fabricmc.loom.test.util.MockMavenServerTrait
 import spock.lang.Specification
 import spock.lang.Stepwise
 import spock.lang.Unroll

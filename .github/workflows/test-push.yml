@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - run: gradle test --tests *${{ matrix.test }} --stacktrace
+      - run: gradle test --tests ${{ matrix.test }} --stacktrace
         env:
           TEST_WARNING_MODE: fail
 

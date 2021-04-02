@@ -22,26 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom
+package net.fabricmc.loom.test.intergration
 
-import net.fabricmc.loom.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ProjectTestTrait
+import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
-import spock.lang.Unroll
+
+import java.nio.charset.StandardCharsets
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test uses gradle 4.9 and 1.14.4 v1 mappings
-class LegacyProjectTest extends Specification implements ProjectTestTrait {
+class UnpickTest extends Specification implements ProjectTestTrait {
+	static final String MAPPINGS = "21w11a-mapped-net.fabricmc.yarn-21w11a+build.22-v2"
+
 	@Override
 	String name() {
-		"legacy"
+		"unpick"
 	}
 
-	@Unroll
-	def "build"() {
+	def "unpick decompile"() {
 		when:
-			def result = create("build", "4.9")
+			def result = create("genSources")
+		then:
+			result.task(":genSources").outcome == SUCCESS
+			getClassSource("net/minecraft/block/CakeBlock.java").contains("SetBlockStateFlags.PROPAGATE_CHANGE | SetBlockStateFlags.NOTIFY_LISTENERS")
+	}
+
+	def "unpick build"() {
+		when:
+			def result = create("build")
 		then:
 			result.task(":build").outcome == SUCCESS
+	}
+
+	String getClassSource(String classname, String mappings = MAPPINGS) {
+		File sourcesJar = getGeneratedSources(mappings)
+		return new String(ZipUtil.unpackEntry(sourcesJar, classname), StandardCharsets.UTF_8)
 	}
 }

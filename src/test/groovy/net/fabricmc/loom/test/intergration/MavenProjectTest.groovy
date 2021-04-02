@@ -41,49 +41,51 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 class MavenProjectTest extends Specification implements MockMavenServerTrait, ArchiveAssertionsTrait {
 	@RestoreSystemProperties
 	@Unroll
-	def "publish lib #version"() {
+	def "publish lib #version #gradle"() {
 		given:
 			setProperty('loom.test.version', version)
 			library = true
 		when:
-			def result = create("publish")
+			def result = create("publish", gradle)
 		then:
 			result.task(":publish").outcome == SUCCESS
 			hasArchiveEntry("fabric-example-lib-${version}.jar", "net/fabricmc/example/ExampleLib.class")
 		where:
-			version           | _
-			'1.0.0'           | _
-			'1.1.0'           | _
-			'1.1.1'           | _
-			'1.2.0+meta'      | _
-			'2.0.0-SNAPSHOT'  | _
-			'2.0.0-SNAPSHOT'  | _ // Publish this twice to give ourselves a bit of a challenge
-			'master-SNAPSHOT' | _
+			version           | gradle
+			'1.0.0'           | DEFAULT_GRADLE
+			'1.0.0'           | PRE_RELEASE_GRADLE
+			'1.1.0'           | DEFAULT_GRADLE
+			'1.1.1'           | DEFAULT_GRADLE
+			'1.2.0+meta'      | DEFAULT_GRADLE
+			'2.0.0-SNAPSHOT'  | DEFAULT_GRADLE
+			'2.0.0-SNAPSHOT'  | DEFAULT_GRADLE // Publish this twice to give ourselves a bit of a challenge
+			'master-SNAPSHOT' | DEFAULT_GRADLE
 	}
 
 	@RestoreSystemProperties
 	@Unroll
-	def "resolve #version"() {
+	def "resolve #version #gradle"() {
 		given:
 			setProperty('loom.test.resolve', "com.example:fabric-example-lib:${version}")
 			library = false
 		when:
-			def result = create("build")
+			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
 			hasArchiveEntry("fabric-example-mod-1.0.0.jar", "net/fabricmc/examplemod/ExampleMod.class")
 		where:
-			version                      | _
-			'1.0.0'                      | _
-			'1.1.+'                      | _
-			'1.2.0+meta'                 | _
-			'2.0.0-SNAPSHOT'             | _
-			'master-SNAPSHOT'            | _
-			'1.0.0:classifier'           | _
-			'1.1.+:classifier'           | _
-			'1.2.0+meta:classifier'      | _
-			'2.0.0-SNAPSHOT:classifier'  | _
-			'master-SNAPSHOT:classifier' | _
+			version                      | gradle
+			'1.0.0'                      | DEFAULT_GRADLE
+			'1.0.0'                      | PRE_RELEASE_GRADLE
+			'1.1.+'                      | DEFAULT_GRADLE
+			'1.2.0+meta'                 | DEFAULT_GRADLE
+			'2.0.0-SNAPSHOT'             | DEFAULT_GRADLE
+			'master-SNAPSHOT'            | DEFAULT_GRADLE
+			'1.0.0:classifier'           | DEFAULT_GRADLE
+			'1.1.+:classifier'           | DEFAULT_GRADLE
+			'1.2.0+meta:classifier'      | DEFAULT_GRADLE
+			'2.0.0-SNAPSHOT:classifier'  | DEFAULT_GRADLE
+			'master-SNAPSHOT:classifier' | DEFAULT_GRADLE
 	}
 
 	// Set to true when to build and publish the mavenLibrary

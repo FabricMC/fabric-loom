@@ -139,7 +139,6 @@ jar {
 shadowJar {
 	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
 	relocate "me.shedaniel.architectury.refmapremapper", "me.shedaniel.architectury.loom.shadowed.impl.me.shedaniel.architectury.refmapremapper"
-	relocate "org.objectweb.asm", "me.shedaniel.architectury.loom.shadowed.impl.org.objectweb.asm"
 	configurations = [project.configurations.shadowArchitectury]
 	classifier "shadow"
 }

@@ -72,8 +72,8 @@ dependencies {
 	}
 
 	// tinyfile management
-	compileOnly ('net.fabricmc:tiny-remapper:0.3.2-architectury.6')
-	shadowArchitectury ('net.fabricmc:tiny-remapper:0.3.2-architectury.6') {
+	compileOnly ('net.fabricmc:tiny-remapper:0.3.2-architectury.7')
+	shadowArchitectury ('net.fabricmc:tiny-remapper:0.3.2-architectury.7') {
 		transitive = false
 	}
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
@@ -139,6 +139,7 @@ jar {
 shadowJar {
 	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
 	relocate "me.shedaniel.architectury.refmapremapper", "me.shedaniel.architectury.loom.shadowed.impl.me.shedaniel.architectury.refmapremapper"
+	relocate "org.objectweb.asm", "me.shedaniel.architectury.loom.shadowed.impl.org.objectweb.asm"
 	configurations = [project.configurations.shadowArchitectury]
 	classifier "shadow"
 }

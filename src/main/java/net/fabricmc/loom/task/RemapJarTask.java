@@ -61,7 +61,6 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.gradle.GradleSupport;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -79,7 +78,7 @@ public class RemapJarTask extends Jar {
 
 	public RemapJarTask() {
 		super();
-		input = GradleSupport.getfileProperty(getProject());
+		input = getProject().getObjects().fileProperty();
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
 		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);

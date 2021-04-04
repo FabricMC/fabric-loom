@@ -5,20 +5,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [4.9, 4.10.2, 6.8.3]
-        java: [jdk8, jdk11, jdk15]
-        exclude: # Dont run older gradle versions on newer java
-          - java: jdk15
-            gradle: 4.9
-          - java: jdk15
-            gradle: 4.10.2
-          - java: jdk11
-            gradle: 4.9
-          - java: jdk11
-            gradle: 4.10.2
+        gradle: [7.0-rc-2]
+        java: [jdk8, jdk11, jdk16]
+        jvm: [hotspot]
     runs-on: ubuntu-20.04
     container:
-      image: gradle:${{ matrix.gradle }}-${{ matrix.java }}
+      image: ghcr.io/modmuss50/gradle:${{ matrix.gradle }}-${{ matrix.java }}-hotspot
       options: --user root
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +24,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:6.8.3-jdk15
+      image: ghcr.io/modmuss50/gradle:7.0-rc-2-jdk16-hotspot
       options: --user root
 
     steps:
@@ -51,12 +43,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [jdk8, jdk11, jdk15]
+        java: [jdk8, jdk11, jdk16]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
+        exclude:
+          - java: jdk16
+            test: net.fabricmc.loom.test.intergration.KotlinTest
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:6.8.3-${{ matrix.java }}
+      image: ghcr.io/modmuss50/gradle:7.0-rc-2-${{ matrix.java }}-hotspot
       options: --user root
 
     steps:
@@ -78,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 1.8, 11, 15 ]
+        java: [ 1.8, 11, 16 ]
         os: [ windows-2019, ubuntu-20.04, macos-10.15 ]
 
     runs-on: ${{ matrix.os }}

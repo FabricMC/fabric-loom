@@ -27,9 +27,6 @@ package net.fabricmc.loom.configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleSupport;
-
 public class RemappedConfigurationEntry {
 	private final String sourceConfiguration;
 	private final String targetConfiguration;
@@ -65,7 +62,7 @@ public class RemappedConfigurationEntry {
 
 	public String getTargetConfiguration(ConfigurationContainer container) {
 		if (container.findByName(targetConfiguration) == null) {
-			return GradleSupport.IS_GRADLE_7_OR_NEWER ? JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME : Constants.Configurations.COMPILE;
+			return JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME;
 		}
 
 		return targetConfiguration;

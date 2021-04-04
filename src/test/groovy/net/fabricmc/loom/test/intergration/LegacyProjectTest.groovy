@@ -40,7 +40,7 @@ class LegacyProjectTest extends Specification implements ProjectTestTrait {
 	@Unroll
 	def "build"() {
 		when:
-			def result = create("build", LEGACY_GRADLE)
+			def result = create("build", DEFAULT_GRADLE)
 		then:
 			result.task(":build").outcome == SUCCESS
 	}

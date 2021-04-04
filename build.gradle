@@ -14,6 +14,15 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+
+	if (JavaVersion.current().isJava9Compatible()) {
+		it.options.release = 8
+	}
+}
+
+
 group = 'net.fabricmc'
 archivesBaseName = project.name
 def baseVersion = '0.7'
@@ -35,9 +44,6 @@ repositories {
 
 dependencies {
 	implementation gradleApi()
-
-	// Compile against groovy 3 to aid with gradle 7 support. Remove when updating to gradle 7
-	compileOnly 'org.codehaus.groovy:groovy-all:3.0.7'
 
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')
@@ -74,11 +80,11 @@ dependencies {
 	implementation ('org.cadixdev:mercury:0.1.0-rc1')
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.32')
 
 	// Testing
 	testImplementation(gradleTestKit())
-	testImplementation('org.spockframework:spock-core:1.3-groovy-2.4') {
+	testImplementation('org.spockframework:spock-core:2.0-M5-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'io.javalin:javalin:3.13.4'
@@ -93,12 +99,12 @@ jar {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = 'sources'
+	archiveClassifier = 'sources'
 	from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
+	archiveClassifier = 'javadoc'
 	from javadoc.destinationDir
 }
 
@@ -112,7 +118,7 @@ license {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '8.39'
+	toolVersion = '8.41.1'
 }
 
 codenarc {
@@ -145,6 +151,7 @@ jacocoTestReport {
 
 test {
 	maxHeapSize = "4096m"
+	useJUnitPlatform()
 }
 
 import org.w3c.dom.Document

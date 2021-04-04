@@ -149,6 +149,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
+			Files.deleteIfExists(output);
+
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				if (getExtension().isForge()) {
 					outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
@@ -277,6 +279,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public File getMappedJar() {
 		return minecraftMappedJar;
+	}
+
+	public File getUnpickedJar() {
+		return new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("unpicked") + ".jar");
 	}
 
 	@Override

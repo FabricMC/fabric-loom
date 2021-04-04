@@ -69,6 +69,7 @@ public class RunConfig {
 	public String programArgs;
 	public List<String> vscodeBeforeRun = new ArrayList<>();
 	public final Map<String, String> envVariables = new HashMap<>();
+	public SourceSet sourceSet;
 
 	public Element genRuns(Element doc) {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -235,6 +236,7 @@ public class RunConfig {
 		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
+		runConfig.sourceSet = sourceSet;
 
 		// Custom parameters
 		for (String progArg : settings.getProgramArgs()) {

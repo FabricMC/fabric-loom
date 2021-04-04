@@ -29,11 +29,20 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.attribute.FileTime;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.GregorianCalendar;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class ZipReprocessorUtil {
+	/**
+	 * See {@link org.gradle.api.internal.file.archive.ZipCopyAction} about this.
+	 */
+	private static final long CONSTANT_TIME_FOR_ZIP_ENTRIES = new GregorianCalendar(1980, Calendar.FEBRUARY, 1, 0, 0, 0).getTimeInMillis();
+
 	private ZipReprocessorUtil() { }
 
 	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
@@ -45,7 +54,7 @@ public class ZipReprocessorUtil {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream().sorted((a, b) -> a.getName().compareTo(b.getName())).toArray(ZipEntry[]::new);
+				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName)).toArray(ZipEntry[]::new);
 			} else {
 				entries = zipFile.stream().toArray(ZipEntry[]::new);
 			}
@@ -54,11 +63,16 @@ public class ZipReprocessorUtil {
 
 			try (ZipOutputStream zipOutputStream = new ZipOutputStream(outZip)) {
 				for (ZipEntry entry : entries) {
+					ZipEntry newEntry = entry;
+
 					if (!preserveFileTimestamps) {
-						entry.setTime(0);
+						newEntry = new ZipEntry(entry.getName());
+						newEntry.setTime(CONSTANT_TIME_FOR_ZIP_ENTRIES);
+						newEntry.setLastModifiedTime(FileTime.fromMillis(CONSTANT_TIME_FOR_ZIP_ENTRIES));
+						newEntry.setLastAccessTime(FileTime.fromMillis(CONSTANT_TIME_FOR_ZIP_ENTRIES));
 					}
 
-					zipOutputStream.putNextEntry(entry);
+					zipOutputStream.putNextEntry(newEntry);
 					InputStream inputStream = zipFile.getInputStream(entry);
 					byte[] buf = new byte[1024];
 					int length;

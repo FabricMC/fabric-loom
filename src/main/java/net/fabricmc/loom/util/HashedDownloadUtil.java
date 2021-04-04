@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,6 +61,10 @@ public class HashedDownloadUtil {
 	}
 
 	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet, boolean strict) throws IOException {
+		downloadIfInvalid(from, to, expectedHash, logger, quiet, strict, () -> { });
+	}
+
+	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet, boolean strict, Runnable startDownload) throws IOException {
 		if (LoomGradlePlugin.refreshDeps) {
 			delete(to);
 		}
@@ -79,6 +84,8 @@ public class HashedDownloadUtil {
 				}
 			}
 		}
+
+		startDownload.run();
 
 		HttpURLConnection connection = (HttpURLConnection) from.openConnection();
 		connection.setRequestProperty("Accept-Encoding", "gzip");
@@ -121,14 +128,18 @@ public class HashedDownloadUtil {
 
 	@Nullable
 	private static String getSha1(File to, Logger logger) {
-		File sha1File = getSha1File(to);
-
-		if (!sha1File.exists()) {
+		if (!to.exists()) {
+			delete(to);
 			return null;
 		}
 
+		File sha1File = getSha1File(to);
+
 		try {
 			return Files.asCharSource(sha1File, StandardCharsets.UTF_8).read();
+		} catch (FileNotFoundException ignored) {
+			// Quicker to catch this than do an exists check before.
+			return null;
 		} catch (IOException e) {
 			logger.warn("Error reading sha1 file '{}'.", sha1File);
 			return null;

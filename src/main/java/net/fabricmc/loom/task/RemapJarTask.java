@@ -36,7 +36,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,6 +56,7 @@ import me.shedaniel.architectury.refmapremapper.remapper.Remapper;
 import me.shedaniel.architectury.refmapremapper.remapper.SimpleReferenceRemapper;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -60,19 +64,25 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
-import net.fabricmc.loom.build.NestedJars;
+import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
+import net.fabricmc.loom.build.nesting.JarNester;
+import net.fabricmc.loom.build.nesting.MergedNestedJarProvider;
+import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
+import net.fabricmc.loom.build.nesting.NestedJarProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoggerFilter;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.gradle.GradleSupport;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
@@ -86,17 +96,20 @@ import net.fabricmc.tinyremapper.TinyUtils;
 public class RemapJarTask extends Jar {
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
+	private final Property<Boolean> addDefaultNestedDependencies;
 	private final Property<Boolean> remapAccessWidener;
 	private final List<Action<TinyRemapper.Builder>> remapOptions = new ArrayList<>();
 	private final Property<String> fromM;
 	private final Property<String> toM;
 	public JarRemapper jarRemapper;
 	private FileCollection classpath;
+	private final Set<Object> nestedPaths = new LinkedHashSet<>();
 
 	public RemapJarTask() {
 		super();
 		input = GradleSupport.getfileProperty(getProject());
 		addNestedDependencies = getProject().getObjects().property(Boolean.class);
+		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class);
 		fromM = getProject().getObjects().property(String.class);
 		toM = getProject().getObjects().property(String.class);
@@ -104,18 +117,26 @@ public class RemapJarTask extends Jar {
 		toM.set("intermediary");
 		// false by default, I have no idea why I have to do it for this property and not the other one
 		remapAccessWidener.set(false);
+		addDefaultNestedDependencies.set(true);
 	}
 
 	@TaskAction
 	public void doTask() throws Throwable {
+		boolean singleRemap = false;
+
 		if (jarRemapper == null) {
-			doSingleRemap();
-		} else {
-			scheduleRemap();
+			singleRemap = true;
+			jarRemapper = new JarRemapper();
+		}
+
+		scheduleRemap(singleRemap || getProject().getExtensions().getByType(LoomGradleExtension.class).isRootProject());
+
+		if (singleRemap) {
+			jarRemapper.remap();
 		}
 	}
 
-	public void doSingleRemap() throws Throwable {
+	public void scheduleRemap(boolean isMainRemapTask) throws Throwable {
 		Project project = getProject();
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		Path input = this.getInput().getAsFile().get().toPath();
@@ -130,188 +151,7 @@ public class RemapJarTask extends Jar {
 		String fromM = this.fromM.get();
 		String toM = this.toM.get();
 
-		Path[] classpath = getRemapClasspath();
-
-		LoggerFilter.replaceSystemOut();
-		TinyRemapper.Builder remapperBuilder = TinyRemapper.newRemapper();
-		remapperBuilder.logger(getProject().getLogger()::lifecycle);
-		remapperBuilder = remapperBuilder.withMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
-
-		for (File mixinMapFile : extension.getAllMixinMappings()) {
-			if (mixinMapFile.exists()) {
-				IMappingProvider provider = TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary");
-				remapperBuilder = remapperBuilder.withMappings(extension.isForge() ? remapToSrg(extension, provider) : provider);
-			}
-		}
-
-		// Apply any requested options to tiny remapper
-		for (Action<TinyRemapper.Builder> remapOption : this.remapOptions) {
-			remapOption.execute(remapperBuilder);
-		}
-
-		project.getLogger().info(":remapping " + input.getFileName());
-
-		StringBuilder rc = new StringBuilder("Remap classpath: ");
-
-		for (Path p : classpath) {
-			rc.append("\n - ").append(p.toString());
-		}
-
-		project.getLogger().debug(rc.toString());
-
-		TinyRemapper remapper = remapperBuilder.build();
-
-		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-			outputConsumer.addNonClassFiles(input);
-			remapper.readClassPath(classpath);
-			remapper.readInputs(input);
-			remapper.apply(outputConsumer);
-		} catch (Exception e) {
-			remapper.finish();
-			throw new RuntimeException("Failed to remap " + input + " to " + output, e);
-		}
-
-		if (getRemapAccessWidener().getOrElse(false) && extension.accessWidener != null) {
-			extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class).remapAccessWidener(output, remapper.getRemapper());
-		}
-
-		remapper.finish();
-
-		if (!Files.exists(output)) {
-			throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
-		}
-
-		if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), output)) {
-			project.getLogger().debug("Transformed mixin reference maps in output JAR!");
-		}
-
-		if (extension.isForge()) {
-			try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
-				Path refmapPath = fs.getPath(extension.getRefmapName());
-
-				if (Files.exists(refmapPath)) {
-					try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
-						Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
-						JsonObject refmapElement = gson.fromJson(refmapReader, JsonObject.class);
-						refmapElement = RefmapRemapper.remap(new Remapper() {
-							ReferenceRemapper remapper = createReferenceRemapper(extension);
-
-							@Override
-							@Nullable
-							public MappingsRemapper remapMappings() {
-								return className -> remapper;
-							}
-
-							@Override
-							@Nullable
-							public Map.Entry<String, @Nullable MappingsRemapper> remapMappingsData(String data) {
-								if (Objects.equals(data, "named:intermediary")) {
-									return new AbstractMap.SimpleEntry<>("searge", remapMappings());
-								}
-
-								return null;
-							}
-						}, refmapElement);
-						Files.delete(refmapPath);
-						Files.write(refmapPath, gson.toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
-					}
-				}
-			}
-		}
-
-		if (getAddNestedDependencies().getOrElse(false)) {
-			if (NestedJars.addNestedJars(project, output)) {
-				project.getLogger().debug("Added nested jar paths to mod json");
-			}
-		}
-
-		if (isReproducibleFileOrder() || isPreserveFileTimestamps()) {
-			ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
-		}
-	}
-
-	private ReferenceRemapper createReferenceRemapper(LoomGradleExtension extension) throws IOException {
-		TinyTree srg = extension.getMappingsProvider().getMappingsWithSrg();
-
-		return new SimpleReferenceRemapper(new SimpleReferenceRemapper.Remapper() {
-			@Override
-			@Nullable
-			public String mapClass(String value) {
-				return srg.getClasses().stream()
-						.filter(classDef -> Objects.equals(classDef.getName("intermediary"), value))
-						.findFirst()
-						.map(classDef -> classDef.getName("srg"))
-						.orElse(null);
-			}
-
-			@Override
-			@Nullable
-			public String mapMethod(@Nullable String className, String methodName, String methodDescriptor) {
-				if (className != null) {
-					Optional<ClassDef> classDef = srg.getClasses().stream()
-							.filter(c -> Objects.equals(c.getName("intermediary"), className))
-							.findFirst();
-
-					if (classDef.isPresent()) {
-						for (MethodDef methodDef : classDef.get().getMethods()) {
-							if (Objects.equals(methodDef.getName("intermediary"), methodName) && Objects.equals(methodDef.getDescriptor("intermediary"), methodDescriptor)) {
-								return methodDef.getName("srg");
-							}
-						}
-					}
-				}
-
-				return srg.getClasses().stream()
-						.flatMap(classDef -> classDef.getMethods().stream())
-						.filter(methodDef -> Objects.equals(methodDef.getName("intermediary"), methodName) && Objects.equals(methodDef.getDescriptor("intermediary"), methodDescriptor))
-						.findFirst()
-						.map(methodDef -> methodDef.getName("srg"))
-						.orElse(null);
-			}
-
-			@Override
-			@Nullable
-			public String mapField(@Nullable String className, String fieldName, String fieldDescriptor) {
-				if (className != null) {
-					Optional<ClassDef> classDef = srg.getClasses().stream()
-							.filter(c -> Objects.equals(c.getName("intermediary"), className))
-							.findFirst();
-
-					if (classDef.isPresent()) {
-						for (FieldDef fieldDef : classDef.get().getFields()) {
-							if (Objects.equals(fieldDef.getName("intermediary"), fieldName) && Objects.equals(fieldDef.getDescriptor("intermediary"), fieldDescriptor)) {
-								return fieldDef.getName("srg");
-							}
-						}
-					}
-				}
-
-				return srg.getClasses().stream()
-						.flatMap(classDef -> classDef.getFields().stream())
-						.filter(fieldDef -> Objects.equals(fieldDef.getName("intermediary"), fieldName) && Objects.equals(fieldDef.getDescriptor("intermediary"), fieldDescriptor))
-						.findFirst()
-						.map(fieldDef -> fieldDef.getName("srg"))
-						.orElse(null);
-			}
-		});
-	}
-
-	public void scheduleRemap() throws Throwable {
-		Project project = getProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		Path input = this.getInput().getAsFile().get().toPath();
-		Path output = this.getArchivePath().toPath();
-
-		if (!Files.exists(input)) {
-			throw new FileNotFoundException(input.toString());
-		}
-
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-
-		String fromM = this.fromM.get();
-		String toM = this.toM.get();
-
-		if (extension.isRootProject()) {
+		if (isMainRemapTask) {
 			jarRemapper.addToClasspath(getRemapClasspath());
 
 			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings(), fromM, toM, false));
@@ -326,6 +166,9 @@ public class RemapJarTask extends Jar {
 
 		// Add remap options to the jar remapper
 		jarRemapper.addOptions(this.remapOptions);
+
+		NestedJarProvider nestedJarProvider = getNestedJarProvider();
+		nestedJarProvider.prepare(getProject());
 
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
@@ -357,16 +200,41 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (getAddNestedDependencies().getOrElse(false)) {
-						if (NestedJars.addNestedJars(project, output)) {
-							project.getLogger().debug("Added nested jar paths to mod json");
-						}
+						JarNester.nestJars(nestedJarProvider.provide(), output.toFile(), project.getLogger());
 					}
 
 					if (accessWidener != null) {
 						boolean replaced = ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
+
+					if (isReproducibleFileOrder() || !isPreserveFileTimestamps()) {
+						try {
+							ZipReprocessorUtil.reprocessZip(output.toFile(), isReproducibleFileOrder(), isPreserveFileTimestamps());
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to re-process jar", e);
+						}
+					}
 				});
+	}
+
+	private NestedJarProvider getNestedJarProvider() {
+		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+
+		if (!addDefaultNestedDependencies.getOrElse(true)) {
+			return new NestedJarPathProvider(nestedPaths);
+		}
+
+		NestedJarProvider baseProvider = NestedDependencyProvider.createNestedDependencyProviderFromConfiguration(getProject(), includeConfiguration);
+
+		if (nestedPaths.isEmpty()) {
+			return baseProvider;
+		}
+
+		return new MergedNestedJarProvider(
+				baseProvider,
+				new NestedJarPathProvider(nestedPaths)
+		);
 	}
 
 	private IMappingProvider remapToSrg(LoomGradleExtension extension, IMappingProvider parent) throws IOException {
@@ -444,6 +312,11 @@ public class RemapJarTask extends Jar {
 	}
 
 	@Input
+	public Property<Boolean> getAddDefaultNestedDependencies() {
+		return addDefaultNestedDependencies;
+	}
+
+	@Input
 	public Property<Boolean> getRemapAccessWidener() {
 		return remapAccessWidener;
 	}
@@ -458,6 +331,14 @@ public class RemapJarTask extends Jar {
 		} else {
 			this.classpath = this.classpath.plus(collection);
 		}
+
+		return this;
+	}
+
+	@ApiStatus.Experimental // This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
+	public RemapJarTask include(Object... paths) {
+		Collections.addAll(nestedPaths, paths);
+		this.addNestedDependencies.set(true);
 
 		return this;
 	}

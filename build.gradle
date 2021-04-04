@@ -8,6 +8,8 @@ plugins {
 	id 'eclipse'
 	id 'groovy'
 	id 'checkstyle'
+	id 'jacoco'
+	id 'codenarc'
 	id "org.cadixdev.licenser" version "0.5.0"
 	id 'com.github.johnrengelman.shadow' version '4.0.4'
 }
@@ -17,7 +19,7 @@ targetCompatibility = 1.8
 
 group = 'me.shedaniel'
 archivesBaseName = project.name
-def baseVersion = '0.6'
+def baseVersion = '0.7'
 def runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "9999"
 
 def isSnapshot = System.getenv("PR_NUM") != null
@@ -52,6 +54,9 @@ repositories {
 
 dependencies {
 	implementation gradleApi()
+
+	// Compile against groovy 3 to aid with gradle 7 support. Remove when updating to gradle 7
+	compileOnly 'org.codehaus.groovy:groovy-all:3.0.7'
 
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')
@@ -120,9 +125,9 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:1.3-groovy-2.4') {
 		exclude module: 'groovy-all'
 	}
+	testImplementation 'io.javalin:javalin:3.13.4'
 
 	compileOnly 'org.jetbrains:annotations:20.1.0'
-
 }
 
 task forgeInjectJar(type:  ShadowJar, dependsOn: [compileForgeInjectJava, processForgeInjectResources]) {
@@ -170,7 +175,9 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 license {
 	header rootProject.file("HEADER")
 	include "**/*.java"
+	include "**/*.groovy"
 	exclude '**/loom/util/DownloadUtil.java'
+	exclude '**/projects'
 	exclude '**/loom/util/FileSystemUtil.java'
 	exclude '**/loom/inject/mixin/MixinIntermediaryDevRemapper.java'
 }
@@ -178,6 +185,11 @@ license {
 checkstyle {
 	configFile = file('checkstyle.xml')
 	toolVersion = '8.39'
+}
+
+codenarc {
+	toolVersion = "2.0.0"
+	configFile = file("codenarc.groovy")
 }
 
 gradlePlugin {
@@ -190,6 +202,24 @@ gradlePlugin {
 }
 
 build.dependsOn mainJar
+
+jacoco {
+	toolVersion = "0.8.6"
+}
+
+// Run to get test coverage.
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.enabled false
+		csv.enabled false
+		html.destination file("${buildDir}/jacocoHtml")
+	}
+}
+
+test {
+	maxHeapSize = "4096m"
+}
 
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -260,5 +290,31 @@ publishing {
 				}
 			}
 		}
+	}
+}
+
+// A task to output a json file with a list of all the test to run
+task writeActionsTestMatrix() {
+	doLast {
+		def testMatrix = []
+		file('src/test/groovy/net/fabricmc/loom/test/intergration').eachFile {
+			if (it.name.endsWith("Test.groovy")) {
+				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
+					// This test gets a special case to run across all os's
+					return
+				}
+
+				def className = it.name.replace(".groovy", "")
+				testMatrix.add("net.fabricmc.loom.test.intergration.${className}")
+			}
+		}
+
+		// Run all the unit tests togeather
+		testMatrix.add("net.fabricmc.loom.test.unit.*")
+
+		def json = groovy.json.JsonOutput.toJson(testMatrix)
+		def output = file("build/test_matrix.json")
+		output.parentFile.mkdir()
+		output.text = json
 	}
 }

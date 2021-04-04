@@ -45,6 +45,9 @@ jobs:
       matrix:
         java: [jdk8, jdk11, jdk16]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
+        exclude:
+          - java: jdk16
+            test: net.fabricmc.loom.test.intergration.KotlinTest
 
     runs-on: ubuntu-20.04
     container:

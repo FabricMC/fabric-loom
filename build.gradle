@@ -80,7 +80,7 @@ dependencies {
 	implementation ('org.cadixdev:mercury:0.1.0-rc1')
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.0-M2')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.32')
 
 	// Testing
 	testImplementation(gradleTestKit())

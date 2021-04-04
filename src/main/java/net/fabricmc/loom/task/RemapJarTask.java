@@ -132,7 +132,7 @@ public class RemapJarTask extends Jar {
 		scheduleRemap(singleRemap || getProject().getExtensions().getByType(LoomGradleExtension.class).isRootProject());
 
 		if (singleRemap) {
-			jarRemapper.remap();
+			jarRemapper.remap(getProject());
 		}
 	}
 

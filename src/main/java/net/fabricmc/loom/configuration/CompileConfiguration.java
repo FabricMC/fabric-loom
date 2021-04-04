@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.providers.forge.McpConfigProvider;
 import net.fabricmc.loom.configuration.providers.forge.PatchProvider;
 import net.fabricmc.loom.configuration.providers.forge.SrgProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.task.GenVsCodeProjectTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -179,7 +180,7 @@ public final class CompileConfiguration {
 			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
 			SetupIntelijRunConfigs.setup(project);
-			GenVsCodeProjectTask.generate(project1);
+			GenVsCodeProjectTask.generate(project);
 
 			// Enables the default mod remapper
 			if (extension.remapMod) {

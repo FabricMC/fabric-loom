@@ -80,8 +80,6 @@ public class LoomGradleExtension {
 	public File accessWidener = null;
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 	public boolean shareCaches = false;
-	@Deprecated
-	public String mixinConfig = null; // FORGE: Passed to Minecraft
 	public List<String> mixinConfigs = new ArrayList<>(); // FORGE: Passed to Minecraft
 	public boolean useFabricMixin = true; // FORGE: Use Fabric Mixin for better refmap resolutions
 
@@ -198,8 +196,8 @@ public class LoomGradleExtension {
 		return tasksBeforeRun;
 	}
 
-	public void mixinConfig(String config) {
-		mixinConfigs.add(config);
+	public void mixinConfig(String... config) {
+		mixinConfigs.addAll(Arrays.asList(config));
 	}
 
 	public void silentMojangMappingsLicense() {

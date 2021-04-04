@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import net.fabricmc.loom.LoomGradleExtension;
 
@@ -50,6 +51,22 @@ public class MavenConfiguration {
 		project.getRepositories().maven(repo -> {
 			repo.setName("Mojang");
 			repo.setUrl("https://libraries.minecraft.net/");
+		});
+
+		project.getRepositories().maven(repo -> {
+			repo.setName("Forge");
+			repo.setUrl("https://files.minecraftforge.net/maven/");
+
+			repo.metadataSources(sources -> {
+				sources.mavenPom();
+
+				try {
+					MavenArtifactRepository.MetadataSources.class.getDeclaredMethod("ignoreGradleMetadataRedirection")
+							.invoke(sources);
+				} catch (Throwable ignored) {
+					// Method not available
+				}
+			});
 		});
 
 		project.getRepositories().mavenCentral();

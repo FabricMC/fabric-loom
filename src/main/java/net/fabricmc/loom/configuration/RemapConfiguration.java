@@ -27,11 +27,13 @@ package net.fabricmc.loom.configuration;
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.api.tasks.bundling.Jar;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -72,6 +74,13 @@ public class RemapConfiguration {
 			jarTask.setClassifier("dev");
 			remapJarTask.setClassifier("");
 			remapJarTask.getInput().set(jarTask.getArchivePath());
+		}
+
+		if (extension.isForge()) {
+			remapJarTask.getToM().set("srg");
+			((Jar) jarTask).manifest(manifest -> {
+				manifest.attributes(ImmutableMap.of("MixinConfigs", String.join(",", extension.mixinConfigs)));
+			});
 		}
 
 		if (isDefaultRemap) {
@@ -115,7 +124,7 @@ public class RemapConfiguration {
 				rootProject.getTasks().register(remapAllJarsTaskName, AbstractLoomTask.class, task -> {
 					task.doLast(t -> {
 						try {
-							jarRemapper.remap();
+							jarRemapper.remap(project);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to remap jars", e);
 						}

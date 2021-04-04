@@ -6,15 +6,13 @@ jobs:
       fail-fast: false
       matrix:
         gradle: [7.0-rc-2]
-        java: [8-jdk, 11-jdk, 16-jdk]
+        java: [jdk8, jdk11, jdk16]
+        jvm: [hotspot]
     runs-on: ubuntu-20.04
     container:
-      image: openjdk:${{ matrix.java }}
+      image: ghcr.io/modmuss50/gradle:${{ matrix.gradle }}-${{ matrix.java }}-hotspot
       options: --user root
     steps:
-      - uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: ${{ matrix.gradle }}
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
       - run: gradle build check -x test --stacktrace
@@ -26,13 +24,10 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: openjdk:16-jdk
+      image: ghcr.io/modmuss50/gradle:7.0-rc-2-jdk16-hotspot
       options: --user root
 
     steps:
-      - uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: 7.0-rc-2
       - uses: actions/checkout@v2
       - run: gradle writeActionsTestMatrix --stacktrace
       -
@@ -48,18 +43,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [8-jdk, 11-jdk, 15-jdk]
+        java: [jdk8, jdk11, jdk16]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-20.04
     container:
-      image: openjdk:${{ matrix.java }}
+      image: ghcr.io/modmuss50/gradle:7.0-rc-2-${{ matrix.java }}-hotspot
       options: --user root
 
     steps:
-      - uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: 7.0-rc-2
       - uses: actions/checkout@v2
       - run: gradle test --tests ${{ matrix.test }} --stacktrace
         env:

@@ -117,6 +117,11 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		ZipUtil.addEntry(file, "aw.sha256", inputHash);
 	}
 
+	@Override
+	public boolean doesProcessClass(String classInternalName) {
+		return accessWidener.getTargets().contains(classInternalName.replace('/', '.'));
+	}
+
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
 		return classes.stream()
 				.map(string -> new ZipEntryTransformerEntry(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))

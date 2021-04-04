@@ -47,6 +47,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -54,6 +56,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
+import net.fabricmc.loom.configuration.accesstransformer.AccessTransformerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
@@ -240,6 +243,10 @@ public class MappingsProvider extends DependencyProvider {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
 		}
 
+		if (extension.isForge()) {
+			AccessTransformerJarProcessor.addTo(getProject(), extension);
+		}
+
 		JarProcessorManager processorManager = new JarProcessorManager(extension.getJarProcessors());
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
@@ -249,7 +256,7 @@ public class MappingsProvider extends DependencyProvider {
 			patchedProvider.provide(dependency, postPopulationScheduler);
 		}
 
-		if (processorManager.active() || (extension.isForge() && patchedProvider.usesProjectCache())) {
+		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
 			getProject().getLogger().lifecycle("Using project based jar storage");
 		} else {

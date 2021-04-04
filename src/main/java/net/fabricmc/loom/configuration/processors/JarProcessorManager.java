@@ -50,6 +50,10 @@ public class JarProcessorManager {
 		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
 	}
 
+	public boolean doesProcessClass(String classInternalName) {
+		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.doesProcessClass(classInternalName));
+	}
+
 	public void process(File file) {
 		for (JarProcessor jarProcessor : jarProcessors) {
 			jarProcessor.process(file);

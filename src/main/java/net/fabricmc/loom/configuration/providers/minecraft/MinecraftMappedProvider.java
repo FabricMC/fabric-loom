@@ -89,9 +89,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("input merged jar not found");
 		}
 
-		boolean isForgeAtDirty = getExtension().isForge() && getExtension().getMappingsProvider().patchedProvider.isAtDirty();
-
-		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || (getExtension().isForge() && !getSrgJar().exists()) || isRefreshDeps() || isForgeAtDirty) {
+		if (!minecraftMappedJar.exists() || !getIntermediaryJar().exists() || (getExtension().isForge() && !getSrgJar().exists()) || isRefreshDeps()) {
 			if (minecraftMappedJar.exists()) {
 				minecraftMappedJar.delete();
 			}
@@ -199,7 +197,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				}
 
 				TinyTree yarnWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
-				AtRemapper.remap(getProject().getLogger(), output, yarnWithSrg);
+				AtRemapper.remapSrgToNamed(getProject().getLogger(), output, yarnWithSrg);
 				CoreModClassRemapper.remapJar(output, yarnWithSrg, getProject().getLogger());
 			}
 		}
@@ -278,6 +276,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public File getMappedJar() {
+		return minecraftMappedJar;
+	}
+
+	public final File getUnprocessedMappedJar() {
 		return minecraftMappedJar;
 	}
 

@@ -38,4 +38,8 @@ public interface JarProcessor {
 	 * Return true to make all jar processors run again, return false to use the existing results of jar processing.
 	 */
 	boolean isInvalid(File file);
+
+	default boolean doesProcessClass(String classInternalName) {
+		return false;
+	}
 }

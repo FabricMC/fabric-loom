@@ -35,6 +35,7 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
 	private LoomTasks() {
@@ -50,7 +51,7 @@ public final class LoomTasks {
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
 			t.setDescription("Remaps the built project jar to intermediary mappings.");
-			t.setGroup("fabric");
+			t.setGroup(Constants.TASK_CATEGORY);
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
@@ -59,6 +60,8 @@ public final class LoomTasks {
 		registerIDETasks(tasks);
 		registerRunTasks(tasks, project);
 		registerDecompileTasks(tasks, project);
+
+		tasks.register("cleanSources", CleanSourcesTask.class);
 	}
 
 	private static void registerIDETasks(TaskContainer tasks) {
@@ -97,7 +100,6 @@ public final class LoomTasks {
 
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
-				t.setGroup("fabric");
 
 				if (config.getEnvironment().equals("client")) {
 					t.dependsOn("downloadAssets");
@@ -130,12 +132,20 @@ public final class LoomTasks {
 
 			for (LoomDecompiler decompiler : extension.getDecompilers()) {
 				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
+				String incrementalTaskName = decompiler instanceof FabricFernFlowerDecompiler ? "genIncrementalSources" : "genIncrementalSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();
 				generateSourcesTask.setInputJar(inputJar);
 
 				if (mappingsProvider.hasUnpickDefinitions()) {
 					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));
+				}
+
+				GenerateIncrementalSourcesTask generateIncrementalSourcesTask = tasks.register(incrementalTaskName, GenerateIncrementalSourcesTask.class, decompiler).get();
+				generateIncrementalSourcesTask.setInputJar(inputJar);
+
+				if (mappingsProvider.hasUnpickDefinitions()) {
+					generateIncrementalSourcesTask.dependsOn(tasks.getByName("unpickJar"));
 				}
 			}
 		});

@@ -54,7 +54,7 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		if (!loggedVersions.contains(loomVersion)) {
 			loggedVersions.add(loomVersion);
 			System.setProperty("loom.printed.logged", String.join(",", loggedVersions));
-			project.getLogger().lifecycle("Fabric Loom: " + loomVersion);
+			project.getLogger().lifecycle("Architectury Loom: " + loomVersion);
 		}
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();

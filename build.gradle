@@ -18,7 +18,7 @@ targetCompatibility = 1.8
 group = 'me.shedaniel'
 archivesBaseName = project.name
 def baseVersion = '0.6'
-def runNumber = (System.getenv("GITHUB_RUN_NUMBER") == null ? "9999" : System.getenv("GITHUB_RUN_NUMBER"))
+def runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "9999"
 
 def isSnapshot = System.getenv("PR_NUM") != null
 
@@ -215,6 +215,8 @@ publishing {
 			artifact sourcesJar
 			artifact javadocJar
 		}
+
+		if (isSnapshot) return
 
 		mavenSnapshot(MavenPublication) { publication ->
 			groupId project.group

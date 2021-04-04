@@ -130,7 +130,7 @@ public class LoomDependencyManager {
 					try {
 						provider.provide(info, afterTasks::add);
 					} catch (Exception e) {
-						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.toString(), e);
+						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.toString() + "\n\tEnsure minecraft is not open and try running with --refresh-dependencies. Use --stacktrace to see the full stacktrace.", e);
 					}
 				}
 			}

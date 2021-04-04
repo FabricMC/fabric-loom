@@ -110,8 +110,7 @@ public class MinecraftProvider extends DependencyProvider {
 			try {
 				mergeJars(getProject().getLogger());
 			} catch (ZipError e) {
-				DownloadUtil.delete(minecraftClientJar);
-				DownloadUtil.delete(minecraftServerJar);
+				deleteFiles();
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -125,6 +124,12 @@ public class MinecraftProvider extends DependencyProvider {
 		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
 		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
 		versionManifestJson = new File(getExtension().getUserCache(), "version_manifest.json");
+	}
+
+	public void deleteFiles() {
+		DownloadUtil.delete(minecraftClientJar);
+		DownloadUtil.delete(minecraftServerJar);
+		DownloadUtil.delete(minecraftMergedJar);
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {

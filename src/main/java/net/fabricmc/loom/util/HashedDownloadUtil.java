@@ -56,16 +56,27 @@ public class HashedDownloadUtil {
 	}
 
 	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet) throws IOException {
+		downloadIfInvalid(from, to, expectedHash, logger, quiet, true);
+	}
+
+	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet, boolean strict) throws IOException {
 		if (LoomGradlePlugin.refreshDeps) {
 			delete(to);
 		}
 
 		if (to.exists()) {
-			String sha1 = getSha1(to, logger);
+			if (strict) {
+				if (Checksum.equals(to, expectedHash)) {
+					// The hash matches the target file
+					return;
+				}
+			} else {
+				String sha1 = getSha1(to, logger);
 
-			if (expectedHash.equals(sha1)) {
-				// The hash in the sha1 file matches
-				return;
+				if (expectedHash.equals(sha1)) {
+					// The hash in the sha1 file matches
+					return;
+				}
 			}
 		}
 
@@ -77,6 +88,7 @@ public class HashedDownloadUtil {
 
 		if ((code < 200 || code > 299) && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
 			//Didn't get what we expected
+			delete(to);
 			throw new IOException(connection.getResponseMessage() + " for " + from);
 		}
 

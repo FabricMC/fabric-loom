@@ -221,5 +221,7 @@ public class DownloadUtil {
 		if (etagFile.exists()) {
 			etagFile.delete();
 		}
+
+		HashedDownloadUtil.delete(file);
 	}
 }

@@ -110,18 +110,20 @@ public class MinecraftAssetsProvider {
 				} else if (HashedDownloadUtil.requiresDownload(file, sha1, project.getLogger())) {
 					toDownload++;
 
-					if (progressBar[0] == null) {
-						progressBar[0] = new ProgressBarBuilder()
-								.setConsumer(new DelegatingProgressBarConsumer(project.getLogger()::lifecycle))
-								.setInitialMax(toDownload)
-								.setUpdateIntervalMillis(2000)
-								.setTaskName(":downloading assets")
-								.setStyle(ProgressBarStyle.ASCII)
-								.showSpeed()
-								.build();
-					}
+					synchronized (progressBar) {
+						if (progressBar[0] == null) {
+							progressBar[0] = new ProgressBarBuilder()
+									.setConsumer(new DelegatingProgressBarConsumer(project.getLogger()::lifecycle))
+									.setInitialMax(toDownload)
+									.setUpdateIntervalMillis(2000)
+									.setTaskName(":downloading assets")
+									.setStyle(ProgressBarStyle.ASCII)
+									.showSpeed()
+									.build();
+						}
 
-					progressBar[0].maxHint(toDownload);
+						progressBar[0].maxHint(toDownload);
+					}
 
 					executor.execute(() -> {
 						String assetName = entry.getKey();
@@ -134,12 +136,12 @@ public class MinecraftAssetsProvider {
 						project.getLogger().debug(":downloading asset " + assetName);
 
 						try {
-							HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true);
+							HashedDownloadUtil.downloadIfInvalid(new URL(Constants.RESOURCES_BASE + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, false);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to download: " + assetName, e);
 						}
 
-						synchronized (progressBar[0]) {
+						synchronized (progressBar) {
 							progressBar[0].step();
 						}
 					});

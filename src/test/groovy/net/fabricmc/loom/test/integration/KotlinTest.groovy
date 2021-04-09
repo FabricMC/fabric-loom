@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
@@ -30,14 +30,14 @@ import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MojangMappingsProjectTest extends Specification implements ProjectTestTrait {
+class KotlinTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"mojangMappings"
+		"kotlin"
 	}
 
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "kotlin build (gradle #gradle)"() {
 		when:
 			def result = create("build", gradle)
 		then:

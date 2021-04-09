@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
@@ -30,34 +30,25 @@ import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class SimpleProjectTest extends Specification implements ProjectTestTrait {
+// This test runs a mod that exits on mod init
+class RunConfigTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"simple"
+		"runconfigs"
 	}
 
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "#task"() {
 		when:
-			def result = create("build", gradle)
+			def result = create(task)
 		then:
-			result.task(":build").outcome == SUCCESS
+			result.task(":${task}").outcome == SUCCESS
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
-	}
-
-	@Unroll
-	def "#ide config generation"() {
-		when:
-			def result = create(ide)
-		then:
-			result.task(":${ide}").outcome == SUCCESS
-		where:
-			ide 		| _
-			'idea' 		| _
-			'eclipse'	| _
-			'vscode'	| _
+			task                | _
+			'runClient'         | _
+			'runServer'         | _
+			'runTestmodClient'  | _
+			'runTestmodServer'  | _
+			'runAutoTestServer' | _
 	}
 }

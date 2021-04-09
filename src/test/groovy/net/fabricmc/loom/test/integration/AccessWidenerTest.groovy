@@ -22,26 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test uses gradle 4.9 and 1.14.4 v1 mappings
-class LegacyProjectTest extends Specification implements ProjectTestTrait {
+class AccessWidenerTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {
-		"legacy"
+		"accesswidener"
 	}
 
 	@Unroll
-	def "build"() {
+	def "accesswidener (gradle #gradle)"() {
 		when:
-			def result = create("build", LEGACY_GRADLE)
+			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
+			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
+		where:
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
+	}
+
+	String expected() {
+		new File("src/test/resources/accesswidener/expected.accesswidener").text
 	}
 }

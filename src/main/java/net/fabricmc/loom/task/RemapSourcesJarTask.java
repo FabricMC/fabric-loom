@@ -37,18 +37,25 @@ import net.fabricmc.loom.util.SourceRemapper;
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
 	private Object output;
-	private String direction = "intermediary";
+	private String from = "named";
+	private String direction;
 	private SourceRemapper sourceRemapper = null;
 	private boolean preserveFileTimestamps = true;
 	private boolean reproducibleFileOrder = false;
 
 	public RemapSourcesJarTask() {
+		this.direction = SourceRemapper.intermediary(getProject());
 	}
 
 	@TaskAction
 	public void remap() throws Exception {
 		if (sourceRemapper == null) {
-			SourceRemapper.remapSources(getProject(), getInput(), getOutput(), direction.equals("named"), reproducibleFileOrder, preserveFileTimestamps);
+			if (from.equals(direction)) {
+				SourceRemapper.remapSources(getProject(), getInput(), getOutput(),
+						direction.equals("named") ? SourceRemapper.intermediary(getProject()) : "named", direction, reproducibleFileOrder, preserveFileTimestamps);
+			} else {
+				SourceRemapper.remapSources(getProject(), getInput(), getOutput(), from, direction, reproducibleFileOrder, preserveFileTimestamps);
+			}
 		} else {
 			sourceRemapper.scheduleRemapSources(getInput(), getOutput(), reproducibleFileOrder, preserveFileTimestamps);
 		}
@@ -75,6 +82,11 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	}
 
 	@Input
+	public String getSourceNamespace() {
+		return from;
+	}
+
+	@Input
 	public String getTargetNamespace() {
 		return direction;
 	}
@@ -85,6 +97,10 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 
 	public void setOutput(Object output) {
 		this.output = output;
+	}
+
+	public void setSourceNamespace(String value) {
+		this.from = value;
 	}
 
 	public void setTargetNamespace(String value) {

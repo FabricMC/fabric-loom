@@ -115,6 +115,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				if (getExtension().isForge()) {
 					minecraftSrgJar.delete();
 				}
+
 				getExtension().getMappingsProvider().cleanFiles();
 				throw new RuntimeException("Failed to remap minecraft", t);
 			}

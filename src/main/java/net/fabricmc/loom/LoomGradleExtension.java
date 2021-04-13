@@ -134,11 +134,12 @@ public class LoomGradleExtension {
 	}
 
 	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
+		if (id < 0 || id >= srcMappingCache.length) return factory.get();
 		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());
 	}
 
 	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
-		if (id == -1) return factory.get();
+		if (id < 0 || id >= srcMercuryCache.length) return factory.get();
 		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
 

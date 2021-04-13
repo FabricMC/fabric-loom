@@ -41,7 +41,7 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	private Object input;
 	private Object output;
 	private String from = "named";
-	private String direction = "intermediary";
+	private String direction;
 	private SourceRemapper sourceRemapper = null;
 	private final Property<Boolean> archivePreserveFileTimestamps;
 	private final Property<Boolean> archiveReproducibleFileOrder;
@@ -50,6 +50,7 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 		ObjectFactory objectFactory = getProject().getObjects();
 		archivePreserveFileTimestamps = objectFactory.property(Boolean.class);
 		archiveReproducibleFileOrder = objectFactory.property(Boolean.class);
+		this.direction = SourceRemapper.intermediary(getProject());
 	}
 
 	@TaskAction

@@ -77,7 +77,6 @@ public class RemapConfiguration {
 		}
 
 		if (extension.isForge()) {
-			remapJarTask.getToM().set("srg");
 			((Jar) jarTask).manifest(manifest -> {
 				manifest.attributes(ImmutableMap.of("MixinConfigs", String.join(",", extension.mixinConfigs)));
 			});
@@ -148,9 +147,10 @@ public class RemapConfiguration {
 
 			RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName(remapSourcesJarTaskName);
 			Preconditions.checkNotNull(remapSourcesJarTask, "Could not find " + remapSourcesJarTaskName + " in " + project.getName());
-			remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 			remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
-			remapSourcesJarTask.dependsOn(project.getTasks().getByName(sourcesJarTaskName));
+			sourcesTask.setClassifier(sourcesTask.getClassifier() == null ? "dev" : sourcesTask.getClassifier() + "-dev");
+			remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
+			remapSourcesJarTask.dependsOn(sourcesTask);
 
 			if (isDefaultRemap) {
 				remapSourcesJarTask.doLast(task -> project.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));

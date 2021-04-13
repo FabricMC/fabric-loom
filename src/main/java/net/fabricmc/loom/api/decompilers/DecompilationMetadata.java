@@ -26,24 +26,15 @@ package net.fabricmc.loom.api.decompilers;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.fabricmc.loom.task.GenerateSourcesTask;
 
 public class DecompilationMetadata {
 	public final int numberOfThreads;
 	public final Path javaDocs;
 	public final Collection<Path> libraries;
-	@Nullable
-	public final Predicate<String> classFilter;
 
-	public DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, Function<String, GenerateSourcesTask.SkipState> classFilter) {
+	public DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries) {
 		this.numberOfThreads = numberOfThreads;
 		this.javaDocs = javaDocs;
 		this.libraries = libraries;
-		this.classFilter = s -> GenerateSourcesTask.SkipState.SKIP != classFilter.apply(s);
 	}
 }

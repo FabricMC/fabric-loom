@@ -177,22 +177,6 @@ public class FabricCFRDecompiler implements LoomDecompiler {
 			List<Future<?>> futures = new LinkedList<>();
 
 			for (String clazz : classes) {
-				if (metaData.classFilter != null) {
-					String classInternalName = clazz;
-
-					if (classInternalName.length() >= 1 && classInternalName.charAt(0) == '/') {
-						classInternalName = classInternalName.substring(1);
-					}
-
-					classInternalName = classInternalName.substring(0, classInternalName.length() - 6);
-
-					if (!metaData.classFilter.test(classInternalName)) {
-						return;
-					} else {
-						System.out.println(classInternalName);
-					}
-				}
-
 				futures.add(executorService.submit(() -> {
 					loggerMap.computeIfAbsent(Thread.currentThread().getId(), createLogger).progress(clazz);
 					driver.analyse(Collections.singletonList(clazz));

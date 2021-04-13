@@ -211,7 +211,7 @@ public class ModProcessor {
 			}
 
 			if (extension.isForge()) {
-				AtRemapper.remapSrgToNamed(project.getLogger(), info.getRemappedOutput().toPath(), mappings);
+				AtRemapper.remap(project.getLogger(), info.getRemappedOutput().toPath(), mappings);
 				CoreModClassRemapper.remapJar(info.getRemappedOutput().toPath(), mappings, project.getLogger());
 
 				if (ZipUtil.containsEntry(info.getRemappedOutput(), "META-INF/MANIFEST.MF")) {

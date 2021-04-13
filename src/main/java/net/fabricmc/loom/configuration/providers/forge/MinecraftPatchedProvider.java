@@ -26,12 +26,15 @@ package net.fabricmc.loom.configuration.providers.forge;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -41,7 +44,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,13 +54,18 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonParser;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
+import net.minecraftforge.accesstransformer.AccessTransformerEngine;
+import net.minecraftforge.accesstransformer.TransformerProcessor;
+import net.minecraftforge.accesstransformer.parser.AccessTransformerList;
 import net.minecraftforge.binarypatcher.ConsoleTool;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -65,12 +73,14 @@ import org.objectweb.asm.tree.ClassNode;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
-import net.fabricmc.loom.configuration.accesstransformer.AccessTransformerJarProcessor;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.JarUtil;
 import net.fabricmc.loom.util.ThreadingUtils;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.function.FsPathConsumer;
@@ -88,11 +98,18 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	// Step 2: Binary Patch
 	private File minecraftClientPatchedSrgJar;
 	private File minecraftServerPatchedSrgJar;
-	// Step 3: Remap Patched Jar to Official
+	// Step 3: Access Transform
+	private File minecraftClientPatchedSrgATJar;
+	private File minecraftServerPatchedSrgATJar;
+	// Step 4: Remap Patched AT to Official
 	private File minecraftClientPatchedOfficialJar;
 	private File minecraftServerPatchedOfficialJar;
-	// Step 4: Merge
+	// Step 5: Merge
 	private File minecraftMergedPatchedJar;
+	private File projectAtHash;
+	@Nullable
+	private File projectAt = null;
+	private boolean atDirty = false;
 
 	public MinecraftPatchedProvider(MappingsProvider mappingsProvider, Project project) {
 		super(project);
@@ -100,6 +117,34 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	public void initFiles() throws IOException {
+		projectAtHash = new File(getExtension().getProjectPersistentCache(), "at.sha256");
+
+		SourceSet main = getProject().getConvention().findPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
+
+		for (File srcDir : main.getResources().getSrcDirs()) {
+			File projectAt = new File(srcDir, "META-INF/accesstransformer.cfg");
+
+			if (projectAt.exists()) {
+				this.projectAt = projectAt;
+				break;
+			}
+		}
+
+		if (isRefreshDeps() || !projectAtHash.exists()) {
+			writeAtHash();
+			atDirty = projectAt != null;
+		} else {
+			byte[] expected = com.google.common.io.Files.asByteSource(projectAtHash).read();
+			byte[] current = projectAt != null ? Checksum.sha256(projectAt) : Checksum.sha256("");
+			boolean mismatched = !Arrays.equals(current, expected);
+
+			if (mismatched) {
+				writeAtHash();
+			}
+
+			atDirty = mismatched;
+		}
+
 		MinecraftProvider minecraftProvider = getExtension().getMinecraftProvider();
 		PatchProvider patchProvider = getExtension().getPatchProvider();
 		String minecraftVersion = minecraftProvider.getMinecraftVersion();
@@ -112,18 +157,21 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 		minecraftProvider.setJarSuffix(jarSuffix);
 
 		File globalCache = getExtension().getUserCache();
+		File cache = usesProjectCache() ? getExtension().getProjectPersistentCache() : globalCache;
 
 		minecraftClientSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-client-srg.jar");
 		minecraftServerSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-server-srg.jar");
-		minecraftClientPatchedSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-client-srg-patched" + jarSuffix + ".jar");
-		minecraftServerPatchedSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-server-srg-patched" + jarSuffix + ".jar");
-		minecraftClientPatchedOfficialJar = new File(globalCache, "minecraft-" + minecraftVersion + "-client-patched" + jarSuffix + ".jar");
-		minecraftServerPatchedOfficialJar = new File(globalCache, "minecraft-" + minecraftVersion + "-server-patched" + jarSuffix + ".jar");
-		minecraftMergedPatchedJar = new File(globalCache, "minecraft-" + minecraftVersion + "-merged-patched" + jarSuffix + ".jar");
+		minecraftClientPatchedSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-client-srg" + jarSuffix + ".jar");
+		minecraftServerPatchedSrgJar = new File(globalCache, "minecraft-" + minecraftVersion + "-server-srg" + jarSuffix + ".jar");
+		minecraftClientPatchedSrgATJar = new File(cache, "minecraft-" + minecraftVersion + "-client-srg-at" + jarSuffix + ".jar");
+		minecraftServerPatchedSrgATJar = new File(cache, "minecraft-" + minecraftVersion + "-server-srg-at" + jarSuffix + ".jar");
+		minecraftClientPatchedOfficialJar = new File(cache, "minecraft-" + minecraftVersion + "-client" + jarSuffix + ".jar");
+		minecraftServerPatchedOfficialJar = new File(cache, "minecraft-" + minecraftVersion + "-server" + jarSuffix + ".jar");
+		minecraftMergedPatchedJar = new File(cache, "minecraft-" + minecraftVersion + "-merged" + jarSuffix + ".jar");
 
 		if (isRefreshDeps() || Stream.of(getGlobalCaches()).anyMatch(Predicates.not(File::exists))) {
 			cleanAllCache();
-		} else if (Stream.of(getProjectCache()).anyMatch(Predicates.not(File::exists))) {
+		} else if (atDirty || Stream.of(getProjectCache()).anyMatch(Predicates.not(File::exists))) {
 			cleanProjectCache();
 		}
 	}
@@ -153,6 +201,8 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 
 	private File[] getProjectCache() {
 		return new File[] {
+				minecraftClientPatchedSrgATJar,
+				minecraftServerPatchedSrgATJar,
 				minecraftClientPatchedOfficialJar,
 				minecraftServerPatchedOfficialJar,
 				minecraftMergedPatchedJar
@@ -162,6 +212,10 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		initFiles();
+
+		if (atDirty) {
+			getProject().getLogger().lifecycle(":found dirty access transformers");
+		}
 
 		boolean dirty = false;
 
@@ -175,6 +229,10 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			dirty = true;
 			patchJars(getProject().getLogger());
 			injectForgeClasses(getProject().getLogger());
+		}
+
+		if (atDirty || !minecraftClientPatchedSrgATJar.exists() || !minecraftServerPatchedSrgATJar.exists()) {
+			dirty = true;
 			accessTransformForge(getProject().getLogger());
 		}
 
@@ -184,6 +242,16 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 
 		if (dirty || !minecraftMergedPatchedJar.exists()) {
 			mergeJars(getProject().getLogger());
+		}
+	}
+
+	private void writeAtHash() throws IOException {
+		try (FileOutputStream out = new FileOutputStream(projectAtHash)) {
+			if (projectAt != null) {
+				out.write(Checksum.sha256(projectAt));
+			} else {
+				out.write(Checksum.sha256(""));
+			}
 		}
 	}
 
@@ -212,10 +280,8 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			throw new IllegalStateException("Failed to find mappings '" + mappingsPath[0] + "' in " + mcpProvider.getMcp().getAbsolutePath() + "!");
 		}
 
-		Dependency dependency = getProject().getDependencies().create("net.md-5:SpecialSource:1.8.3:shaded");
-		Set<File> specialSourceJars = getProject().getConfigurations().detachedConfiguration(dependency).resolve();
-		if (specialSourceJars.isEmpty()) throw new IllegalStateException("Failed to resolve net.md-5:SpecialSource:1.8.3:shaded");
-		File specialSourceJar = specialSourceJars.iterator().next();
+		File specialSourceJar = new File(getExtension().getUserCache(), "SpecialSource-1.8.3-shaded.jar");
+		DownloadUtil.downloadIfChanged(new URL("https://repo1.maven.org/maven2/net/md-5/SpecialSource/1.8.3/SpecialSource-1.8.3-shaded.jar"), specialSourceJar, getProject().getLogger(), true);
 
 		ThreadingUtils.run(() -> {
 			Files.copy(SpecialSourceExecutor.produceSrgJar(getProject(), mappingsProvider, "client", specialSourceJar, minecraftProvider.minecraftClientJar.toPath(), tmpSrg[0]), minecraftClientSrgJar.toPath());
@@ -282,30 +348,65 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			String side = environment.side();
 			logger.lifecycle(":access transforming minecraft (" + side + ")");
 
-			File file = environment.patchedSrgJar.apply(this);
-			AccessTransformerJarProcessor.accessTransformForge(file, file, true);
+			File input = environment.patchedSrgJar.apply(this);
+			File inputCopied = File.createTempFile("at" + side, ".jar");
+			FileUtils.copyFile(input, inputCopied);
+			File target = environment.patchedSrgATJar.apply(this);
+			target.delete();
+			File at = File.createTempFile("at" + side, ".cfg");
+			JarUtil.extractFile(inputCopied, "META-INF/accesstransformer.cfg", at);
+			String[] args = new String[] {
+					"--inJar", inputCopied.getAbsolutePath(),
+					"--outJar", target.getAbsolutePath(),
+					"--atFile", at.getAbsolutePath()
+			};
+
+			if (usesProjectCache()) {
+				args = Arrays.copyOf(args, args.length + 2);
+				args[args.length - 2] = "--atFile";
+				args[args.length - 1] = projectAt.getAbsolutePath();
+			}
+
+			resetAccessTransformerEngine();
+			TransformerProcessor.main(args);
+			inputCopied.delete();
 		}
+	}
+
+	private void resetAccessTransformerEngine() throws Exception {
+		// Thank you Forge, I love you
+		Field field = AccessTransformerEngine.class.getDeclaredField("masterList");
+		field.setAccessible(true);
+		AccessTransformerList list = (AccessTransformerList) field.get(AccessTransformerEngine.INSTANCE);
+		field = AccessTransformerList.class.getDeclaredField("accessTransformers");
+		field.setAccessible(true);
+		((Map<?, ?>) field.get(list)).clear();
 	}
 
 	private enum Environment {
 		CLIENT(provider -> provider.minecraftClientSrgJar,
 				provider -> provider.minecraftClientPatchedSrgJar,
+				provider -> provider.minecraftClientPatchedSrgATJar,
 				provider -> provider.minecraftClientPatchedOfficialJar
 		),
 		SERVER(provider -> provider.minecraftServerSrgJar,
 				provider -> provider.minecraftServerPatchedSrgJar,
+				provider -> provider.minecraftServerPatchedSrgATJar,
 				provider -> provider.minecraftServerPatchedOfficialJar
 		);
 
 		final Function<MinecraftPatchedProvider, File> srgJar;
 		final Function<MinecraftPatchedProvider, File> patchedSrgJar;
+		final Function<MinecraftPatchedProvider, File> patchedSrgATJar;
 		final Function<MinecraftPatchedProvider, File> patchedOfficialJar;
 
 		Environment(Function<MinecraftPatchedProvider, File> srgJar,
 				Function<MinecraftPatchedProvider, File> patchedSrgJar,
+				Function<MinecraftPatchedProvider, File> patchedSrgATJar,
 				Function<MinecraftPatchedProvider, File> patchedOfficialJar) {
 			this.srgJar = srgJar;
 			this.patchedSrgJar = patchedSrgJar;
+			this.patchedSrgATJar = patchedSrgATJar;
 			this.patchedOfficialJar = patchedOfficialJar;
 		}
 
@@ -321,7 +422,7 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 			logger.lifecycle(":remapping minecraft (TinyRemapper, " + environment.side() + ", srg -> official)");
 			TinyTree mappingsWithSrg = getExtension().getMappingsProvider().getMappingsWithSrg();
 
-			Path input = environment.patchedSrgJar.apply(this).toPath();
+			Path input = environment.patchedSrgATJar.apply(this).toPath();
 			Path output = environment.patchedOfficialJar.apply(this).toPath();
 
 			Files.deleteIfExists(output);
@@ -467,6 +568,14 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 
 	public File getMergedJar() {
 		return minecraftMergedPatchedJar;
+	}
+
+	public boolean usesProjectCache() {
+		return projectAt != null;
+	}
+
+	public boolean isAtDirty() {
+		return atDirty;
 	}
 
 	@Override

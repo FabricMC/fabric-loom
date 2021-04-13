@@ -26,25 +26,13 @@ package net.fabricmc.loom.decompilers.fernflower;
 
 import static java.text.MessageFormat.format;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Supplier;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
@@ -89,7 +77,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		List<String> args = new ArrayList<>();
 
 		options.forEach((k, v) -> args.add(format("-{0}={1}", k, v)));
-		args.add(absolutePathOf(transformBinary(compiledJar, metaData)));
+		args.add(absolutePathOf(compiledJar));
 		args.add("-o=" + absolutePathOf(sourcesDestination));
 		args.add("-l=" + absolutePathOf(linemapDestination));
 		args.add("-m=" + absolutePathOf(metaData.javaDocs));
@@ -160,52 +148,6 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 
 		result.rethrowFailure();
 		result.assertNormalExitValue();
-	}
-
-	private Path transformBinary(Path compiledJar, DecompilationMetadata metaData) {
-		if (metaData.classFilter == null) return compiledJar;
-
-		try {
-			Path tempFile = Files.createTempFile("loom-", null);
-			Files.deleteIfExists(tempFile);
-			tempFile.toFile().deleteOnExit();
-
-			try (ZipOutputStream tempZipOut = new ZipOutputStream(new FileOutputStream(tempFile.toFile()))) {
-				try (FileSystem compiledJarSystem = FileSystems.newFileSystem(URI.create("jar:" + compiledJar.toUri()), new HashMap<>())) {
-					Files.walkFileTree(compiledJarSystem.getPath("/"), new SimpleFileVisitor<Path>() {
-						@Override
-						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-							if (file.toString().endsWith(".class")) {
-								String sourcePath = file.toString();
-
-								if (sourcePath.length() >= 1 && sourcePath.charAt(0) == '/') {
-									sourcePath = sourcePath.substring(1);
-								}
-
-								sourcePath = sourcePath.substring(0, sourcePath.length() - 6);
-
-								if (!metaData.classFilter.test(sourcePath)) {
-									return FileVisitResult.CONTINUE;
-								} else {
-									System.out.println(sourcePath);
-								}
-							}
-
-							String resourcePath = file.toString();
-							tempZipOut.putNextEntry(new ZipEntry(resourcePath));
-							tempZipOut.write(Files.readAllBytes(file));
-							tempZipOut.closeEntry();
-
-							return FileVisitResult.CONTINUE;
-						}
-					});
-				}
-			}
-
-			return tempFile;
-		} catch (IOException exception) {
-			throw new UncheckedIOException(exception);
-		}
 	}
 
 	private static String absolutePathOf(Path path) {

@@ -35,14 +35,13 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.JavaExec;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.util.Constants;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private final RunConfig config;
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
-		setGroup(Constants.TASK_CATEGORY);
+		setGroup("fabric");
 		this.config = configProvider.apply(getProject());
 
 		setClasspath(config.sourceSet.getRuntimeClasspath());

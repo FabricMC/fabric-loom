@@ -22,41 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
-import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
-
-import java.nio.charset.StandardCharsets
+import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class UnpickTest extends Specification implements ProjectTestTrait {
-	static final String MAPPINGS = "21w13a-mapped-net.fabricmc.yarn-21w13a+build.30-v2"
-
+class MojangMappingsProjectTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"unpick"
+		"mojangMappings"
 	}
 
-	def "unpick decompile"() {
+	@Unroll
+	def "build (gradle #gradle)"() {
 		when:
-			def result = create("genSources")
-		then:
-			result.task(":genSources").outcome == SUCCESS
-			getClassSource("net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
-	}
-
-	def "unpick build"() {
-		when:
-			def result = create("build")
+			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
-	}
-
-	String getClassSource(String classname, String mappings = MAPPINGS) {
-		File sourcesJar = getGeneratedSources(mappings)
-		return new String(ZipUtil.unpackEntry(sourcesJar, classname), StandardCharsets.UTF_8)
+		where:
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

@@ -22,33 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class DecompileTest extends Specification implements ProjectTestTrait {
+class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {
-		"decompile"
+		"multiproject"
 	}
 
 	@Unroll
-	def "#decompiler gradle #gradle"() {
+	def "build (gradle #gradle)"() {
 		when:
-			def result = create(task, gradle)
-
+			def result = create("build", gradle)
 		then:
-			result.task(":${task}").outcome == SUCCESS
+			result.task(":build").outcome == SUCCESS
+			result.task(":core:build").outcome == SUCCESS
+			result.task(":example:build").outcome == SUCCESS
+
+			result.task(":remapAllJars").outcome == SUCCESS
+			result.task(":remapAllSources").outcome == SUCCESS
+
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
 
 		where:
-			decompiler 		| task								| gradle
-			'fernflower'	| "genSources"						| DEFAULT_GRADLE
-			'fernflower'	| "genSources"						| LEGACY_GRADLE
-			'fernflower'	| "genSources"						| PRE_RELEASE_GRADLE
-			'cfr' 			| "genSourcesWithExperimentalCfr"	| DEFAULT_GRADLE
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

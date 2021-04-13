@@ -297,7 +297,7 @@ publishing {
 task writeActionsTestMatrix() {
 	doLast {
 		def testMatrix = []
-		file('src/test/groovy/net/fabricmc/loom/test/intergration').eachFile {
+		file('src/test/groovy/net/fabricmc/loom/test/integration').eachFile {
 			if (it.name.endsWith("Test.groovy")) {
 				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
 					// This test gets a special case to run across all os's
@@ -305,7 +305,7 @@ task writeActionsTestMatrix() {
 				}
 
 				def className = it.name.replace(".groovy", "")
-				testMatrix.add("net.fabricmc.loom.test.intergration.${className}")
+				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
 			}
 		}
 

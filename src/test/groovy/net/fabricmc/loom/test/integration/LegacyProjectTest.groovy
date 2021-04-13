@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
@@ -30,25 +30,18 @@ import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test runs a mod that exits on mod init
-class RunConfigTest extends Specification implements ProjectTestTrait {
+// This test uses gradle 4.9 and 1.14.4 v1 mappings
+class LegacyProjectTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"runconfigs"
+		"legacy"
 	}
 
 	@Unroll
-	def "#task"() {
+	def "build"() {
 		when:
-			def result = create(task)
+			def result = create("build", LEGACY_GRADLE)
 		then:
-			result.task(":${task}").outcome == SUCCESS
-		where:
-			task                | _
-			'runClient'         | _
-			'runServer'         | _
-			'runTestmodClient'  | _
-			'runTestmodServer'  | _
-			'runAutoTestServer' | _
+			result.task(":build").outcome == SUCCESS
 	}
 }

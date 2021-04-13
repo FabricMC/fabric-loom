@@ -99,6 +99,10 @@ public class NestedJars {
 	private static List<File> getContainedJars(Project project) {
 		List<File> fileList = new ArrayList<>();
 
+		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+			return fileList;
+		}
+
 		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		ResolvedConfiguration resolvedConfiguration = configuration.getResolvedConfiguration();
 		Set<ResolvedDependency> dependencies = resolvedConfiguration.getFirstLevelModuleDependencies();

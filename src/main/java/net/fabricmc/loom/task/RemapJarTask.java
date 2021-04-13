@@ -187,36 +187,10 @@ public class RemapJarTask extends Jar {
 		}
 
 		if (extension.isForge()) {
-			try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
-				Path refmapPath = fs.getPath(extension.getRefmapName());
-
-				if (Files.exists(refmapPath)) {
-					try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
-						Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
-						JsonObject refmapElement = gson.fromJson(refmapReader, JsonObject.class);
-						refmapElement = RefmapRemapper.remap(new Remapper() {
-							ReferenceRemapper remapper = createReferenceRemapper(extension, fromM, toM);
-
-							@Override
-							@Nullable
-							public MappingsRemapper remapMappings() {
-								return className -> remapper;
-							}
-
-							@Override
-							@Nullable
-							public Map.Entry<String, @Nullable MappingsRemapper> remapMappingsData(String data) {
-								if (Objects.equals(data, "named:intermediary")) {
-									return new AbstractMap.SimpleEntry<>("searge", remapMappings());
-								}
-
-								return null;
-							}
-						}, refmapElement);
-						Files.delete(refmapPath);
-						Files.write(refmapPath, gson.toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
-					}
-				}
+			try {
+				remapRefmap(extension, output);
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to remap refmap jar", e);
 			}
 		}
 
@@ -359,6 +333,14 @@ public class RemapJarTask extends Jar {
 						project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 					}
 
+					if (extension.isForge()) {
+						try {
+							remapRefmap(extension, output);
+						} catch (IOException e) {
+							throw new RuntimeException("Failed to remap refmap jar", e);
+						}
+					}
+
 					if (getAddNestedDependencies().getOrElse(false)) {
 						if (NestedJars.addNestedJars(project, output)) {
 							project.getLogger().debug("Added nested jar paths to mod json");
@@ -370,6 +352,40 @@ public class RemapJarTask extends Jar {
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 				});
+	}
+
+	private void remapRefmap(LoomGradleExtension extension, Path output) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
+			Path refmapPath = fs.getPath(extension.getRefmapName());
+
+			if (Files.exists(refmapPath)) {
+				try (Reader refmapReader = Files.newBufferedReader(refmapPath, StandardCharsets.UTF_8)) {
+					Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+					JsonObject refmapElement = gson.fromJson(refmapReader, JsonObject.class);
+					refmapElement = RefmapRemapper.remap(new Remapper() {
+						ReferenceRemapper remapper = createReferenceRemapper(extension, fromM.get(), toM.get());
+
+						@Override
+						@Nullable
+						public MappingsRemapper remapMappings() {
+							return className -> remapper;
+						}
+
+						@Override
+						@Nullable
+						public Map.Entry<String, @Nullable MappingsRemapper> remapMappingsData(String data) {
+							if (Objects.equals(data, "named:intermediary")) {
+								return new AbstractMap.SimpleEntry<>("searge", remapMappings());
+							}
+
+							return null;
+						}
+					}, refmapElement);
+					Files.delete(refmapPath);
+					Files.write(refmapPath, gson.toJson(refmapElement).getBytes(StandardCharsets.UTF_8));
+				}
+			}
+		}
 	}
 
 	private IMappingProvider remapToSrg(LoomGradleExtension extension, IMappingProvider parent, String fromM, String toM) throws IOException {

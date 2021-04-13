@@ -268,7 +268,6 @@ public final class CompileConfiguration {
 				}
 
 				if (extension.isForge()) {
-					remapJarTask.getToM().set("srg");
 					((Jar) jarTask).manifest(manifest -> {
 						List<String> configs = new ArrayList<>();
 
@@ -342,10 +341,11 @@ public final class CompileConfiguration {
 					AbstractArchiveTask sourcesTask = (AbstractArchiveTask) project1.getTasks().getByName("sourcesJar");
 
 					RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project1.getTasks().findByName("remapSourcesJar");
-					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
+					sourcesTask.setClassifier(sourcesTask.getClassifier() == null ? "dev" : sourcesTask.getClassifier() + "-dev");
+					remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
 					remapSourcesJarTask.doLast(task -> project1.getArtifacts().add("archives", remapSourcesJarTask.getOutput()));
-					remapSourcesJarTask.dependsOn(project1.getTasks().getByName("sourcesJar"));
+					remapSourcesJarTask.dependsOn(sourcesTask);
 
 					if (extension.isShareCaches()) {
 						remapSourcesJarTask.setSourceRemapper(remapper);

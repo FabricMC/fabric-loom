@@ -52,18 +52,29 @@ import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
 	private final Project project;
-	private final boolean toNamed;
+	private String from;
+	private String to;
 	private final List<Consumer<ProgressLogger>> remapTasks = new ArrayList<>();
 
 	private Mercury mercury;
 
-	public SourceRemapper(Project project, boolean toNamed) {
-		this.project = project;
-		this.toNamed = toNamed;
+	public SourceRemapper(Project project, boolean named) {
+		this(project, named ? intermediary(project) : "named", !named ? intermediary(project) : "named");
 	}
 
-	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
-		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
+	public static String intermediary(Project project) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		return extension.isForge() ? "srg" : "intermediary";
+	}
+
+	public SourceRemapper(Project project, String from, String to) {
+		this.project = project;
+		this.from = from;
+		this.to = to;
+	}
+
+	public static void remapSources(Project project, File input, File output, String from, String to) throws Exception {
+		SourceRemapper sourceRemapper = new SourceRemapper(project, from, to);
 		sourceRemapper.scheduleRemapSources(input, output, false, true);
 		sourceRemapper.remapAll();
 	}
@@ -109,7 +120,7 @@ public class SourceRemapper {
 	}
 
 	private void remapSourcesInner(File source, File destination) throws Exception {
-		project.getLogger().info(":remapping source jar");
+		project.getLogger().info(":remapping source jar " + source.getName() + " from " + from + " to " + to);
 		Mercury mercury = getMercuryInstance();
 
 		if (source.equals(destination)) {
@@ -170,19 +181,27 @@ public class SourceRemapper {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
+		String intermediary = extension.isForge() ? "srg" : "intermediary";
+		int id = -1;
+
+		if (from.equals(intermediary) && to.equals("named")) {
+			id = 1;
+		} else if (to.equals(intermediary) && from.equals("named")) {
+			id = 0;
+		}
+
+		MappingSet mappings = extension.getOrCreateSrcMappingCache(id, () -> {
 			try {
-				String intermediary = extension.isForge() ? "srg" : "intermediary";
-				TinyTree m = extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings();
-				project.getLogger().info(":loading " + (toNamed ? intermediary + " -> named" : "named -> " + intermediary) + " source mappings");
-				return new TinyMappingsReader(m, toNamed ? intermediary : "named", toNamed ? "named" : intermediary).read();
+				TinyTree m = extension.shouldGenerateSrgTiny() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings();
+				project.getLogger().info(":loading " + from + " -> " + to + " source mappings");
+				return new TinyMappingsReader(m, from, to).read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
 
-		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
-			Mercury m = createMercuryWithClassPath(project, toNamed);
+		Mercury mercury = extension.getOrCreateSrcMercuryCache(id, () -> {
+			Mercury m = createMercuryWithClassPath(project, to.equals("named"));
 
 			for (File file : extension.getUnmappedModCollection()) {
 				Path path = file.toPath();

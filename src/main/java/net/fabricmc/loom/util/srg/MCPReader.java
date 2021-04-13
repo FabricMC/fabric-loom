@@ -245,23 +245,24 @@ public class MCPReader {
 				}
 			}
 
-			try (CSVReader reader = new CSVReader(Files.newBufferedReader(params, StandardCharsets.UTF_8))) {
-				reader.readNext();
-				String[] line;
+			if (Files.exists(params)) {
+				try (CSVReader reader = new CSVReader(Files.newBufferedReader(params, StandardCharsets.UTF_8))) {
+					reader.readNext();
+					String[] line;
 
-				while ((line = reader.readNext()) != null) {
-					Matcher param = paramsPattern.matcher(line[0]);
+					while ((line = reader.readNext()) != null) {
+						Matcher param = paramsPattern.matcher(line[0]);
 
-					if (param.matches()) {
-						String named = line[1];
-						String srgMethodStartWith = "func_" + param.group(1);
-						int lvIndex = Integer.parseInt(param.group(2));
-						List<String> intermediaryMethod = simpleSrgToIntermediary.get(srgMethodStartWith);
+						if (param.matches()) {
+							String named = line[1];
+							String srgMethodStartWith = "func_" + param.group(1);
+							int lvIndex = Integer.parseInt(param.group(2));
+							List<String> intermediaryMethod = simpleSrgToIntermediary.get(srgMethodStartWith);
 
-						if (intermediaryMethod != null) {
-							for (String s : intermediaryMethod) {
-								intermediaryToParamsMap.computeIfAbsent(s, s1 -> new HashMap<>())
-										.put(lvIndex, named);
+							if (intermediaryMethod != null) {
+								for (String s : intermediaryMethod) {
+									intermediaryToParamsMap.computeIfAbsent(s, s1 -> new HashMap<>()).put(lvIndex, named);
+								}
 							}
 						}
 					}

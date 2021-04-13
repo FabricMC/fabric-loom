@@ -71,6 +71,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
+import net.fabricmc.loom.build.nesting.EmptyNestedJarProvider;
 import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.MergedNestedJarProvider;
@@ -329,6 +330,10 @@ public class RemapJarTask extends Jar {
 	}
 
 	private NestedJarProvider getNestedJarProvider() {
+		if (getProject().getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+			return EmptyNestedJarProvider.INSTANCE;
+		}
+
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
 
 		if (!addDefaultNestedDependencies.getOrElse(true)) {

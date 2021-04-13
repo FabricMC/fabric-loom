@@ -99,8 +99,10 @@ public final class CompileConfiguration {
 			extendsFrom(Constants.Configurations.MINECRAFT_DEPENDENCIES, Constants.Configurations.FORGE_DEPENDENCIES, project);
 		}
 
-		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
-		includeConfig.setTransitive(false); // Dont get transitive deps
+		if (!project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+			Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
+			includeConfig.setTransitive(false); // Dont get transitive deps
+		}
 
 		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPING_CONSTANTS);
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);

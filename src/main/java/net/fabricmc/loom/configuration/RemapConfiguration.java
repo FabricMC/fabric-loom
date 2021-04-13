@@ -95,7 +95,7 @@ public class RemapConfiguration {
 
 		// TODO this might be wrong?
 		project.getTasks().withType(RemapJarTask.class).forEach(task -> {
-			if (task.getAddNestedDependencies().getOrElse(false)) {
+			if (!extension.isForge() && task.getAddNestedDependencies().getOrElse(false)) {
 				NestedDependencyProvider.getRequiredTasks(project).forEach(task::dependsOn);
 			}
 		});

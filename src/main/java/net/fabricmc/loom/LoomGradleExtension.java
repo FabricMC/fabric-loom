@@ -72,6 +72,7 @@ import net.fabricmc.loom.util.function.LazyBool;
 
 public class LoomGradleExtension {
 	private static final String FORGE_PROPERTY = "loom.forge";
+	private static final String INCLUDE_PROPERTY = "loom.forge.include";
 
 	public String refmapName;
 	public String loaderLaunchMethod;
@@ -100,6 +101,7 @@ public class LoomGradleExtension {
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private final LazyBool forge;
+	private final LazyBool supportsInclude;
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 	private final List<String> tasksBeforeRun = Collections.synchronizedList(new ArrayList<>());
 	public final List<Supplier<SourceSet>> forgeLocalMods = Collections.synchronizedList(new ArrayList<>(Arrays.asList(new Supplier<SourceSet>() {
@@ -217,6 +219,7 @@ public class LoomGradleExtension {
 		this.project = project;
 		this.unmappedMods = project.files();
 		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
+		this.supportsInclude = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(INCLUDE_PROPERTY))));
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.launchConfigs = project.container(LaunchProviderSettings.class,
@@ -470,6 +473,10 @@ public class LoomGradleExtension {
 
 	public boolean isForge() {
 		return forge.getAsBoolean();
+	}
+
+	public boolean supportsInclude() {
+		return !isForge() || supportsInclude.getAsBoolean();
 	}
 
 	public boolean shouldGenerateSrgTiny() {

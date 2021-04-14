@@ -99,7 +99,7 @@ public final class CompileConfiguration {
 			extendsFrom(Constants.Configurations.MINECRAFT_DEPENDENCIES, Constants.Configurations.FORGE_DEPENDENCIES, project);
 		}
 
-		if (!project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+		if (project.getExtensions().getByType(LoomGradleExtension.class).supportsInclude()) {
 			Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 			includeConfig.setTransitive(false); // Dont get transitive deps
 		}

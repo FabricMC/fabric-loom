@@ -330,7 +330,7 @@ public class RemapJarTask extends Jar {
 	}
 
 	private NestedJarProvider getNestedJarProvider() {
-		if (getProject().getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+		if (!getProject().getExtensions().getByType(LoomGradleExtension.class).supportsInclude()) {
 			return EmptyNestedJarProvider.INSTANCE;
 		}
 

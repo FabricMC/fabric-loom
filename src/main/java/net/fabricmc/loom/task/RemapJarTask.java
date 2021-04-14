@@ -137,7 +137,7 @@ public class RemapJarTask extends Jar {
 		}
 	}
 
-	private ReferenceRemapper createReferenceRemapper(LoomGradleExtension extension, String fromM, String toM) throws IOException {
+	private ReferenceRemapper createReferenceRemapper(LoomGradleExtension extension, String from, String to) throws IOException {
 		TinyTree mappings = extension.shouldGenerateSrgTiny() ? extension.getMappingsProvider().getMappingsWithSrg() : extension.getMappingsProvider().getMappings();
 
 		return new SimpleReferenceRemapper(new SimpleReferenceRemapper.Remapper() {
@@ -145,9 +145,9 @@ public class RemapJarTask extends Jar {
 			@Nullable
 			public String mapClass(String value) {
 				return mappings.getClasses().stream()
-						.filter(classDef -> Objects.equals(classDef.getName(fromM), value))
+						.filter(classDef -> Objects.equals(classDef.getName(from), value))
 						.findFirst()
-						.map(classDef -> classDef.getName(toM))
+						.map(classDef -> classDef.getName(to))
 						.orElse(null);
 			}
 
@@ -156,13 +156,13 @@ public class RemapJarTask extends Jar {
 			public String mapMethod(@Nullable String className, String methodName, String methodDescriptor) {
 				if (className != null) {
 					Optional<ClassDef> classDef = mappings.getClasses().stream()
-							.filter(c -> Objects.equals(c.getName(fromM), className))
+							.filter(c -> Objects.equals(c.getName(from), className))
 							.findFirst();
 
 					if (classDef.isPresent()) {
 						for (MethodDef methodDef : classDef.get().getMethods()) {
-							if (Objects.equals(methodDef.getName(fromM), methodName) && Objects.equals(methodDef.getDescriptor(fromM), methodDescriptor)) {
-								return methodDef.getName(toM);
+							if (Objects.equals(methodDef.getName(from), methodName) && Objects.equals(methodDef.getDescriptor(from), methodDescriptor)) {
+								return methodDef.getName(to);
 							}
 						}
 					}
@@ -170,9 +170,9 @@ public class RemapJarTask extends Jar {
 
 				return mappings.getClasses().stream()
 						.flatMap(classDef -> classDef.getMethods().stream())
-						.filter(methodDef -> Objects.equals(methodDef.getName(fromM), methodName) && Objects.equals(methodDef.getDescriptor(fromM), methodDescriptor))
+						.filter(methodDef -> Objects.equals(methodDef.getName(from), methodName) && Objects.equals(methodDef.getDescriptor(from), methodDescriptor))
 						.findFirst()
-						.map(methodDef -> methodDef.getName(toM))
+						.map(methodDef -> methodDef.getName(to))
 						.orElse(null);
 			}
 
@@ -181,13 +181,13 @@ public class RemapJarTask extends Jar {
 			public String mapField(@Nullable String className, String fieldName, String fieldDescriptor) {
 				if (className != null) {
 					Optional<ClassDef> classDef = mappings.getClasses().stream()
-							.filter(c -> Objects.equals(c.getName(fromM), className))
+							.filter(c -> Objects.equals(c.getName(from), className))
 							.findFirst();
 
 					if (classDef.isPresent()) {
 						for (FieldDef fieldDef : classDef.get().getFields()) {
-							if (Objects.equals(fieldDef.getName(fromM), fieldName) && Objects.equals(fieldDef.getDescriptor(fromM), fieldDescriptor)) {
-								return fieldDef.getName(toM);
+							if (Objects.equals(fieldDef.getName(from), fieldName) && Objects.equals(fieldDef.getDescriptor(from), fieldDescriptor)) {
+								return fieldDef.getName(to);
 							}
 						}
 					}
@@ -195,9 +195,9 @@ public class RemapJarTask extends Jar {
 
 				return mappings.getClasses().stream()
 						.flatMap(classDef -> classDef.getFields().stream())
-						.filter(fieldDef -> Objects.equals(fieldDef.getName(fromM), fieldName) && Objects.equals(fieldDef.getDescriptor(fromM), fieldDescriptor))
+						.filter(fieldDef -> Objects.equals(fieldDef.getName(from), fieldName) && Objects.equals(fieldDef.getDescriptor(from), fieldDescriptor))
 						.findFirst()
-						.map(fieldDef -> fieldDef.getName(toM))
+						.map(fieldDef -> fieldDef.getName(to))
 						.orElse(null);
 			}
 		});
@@ -227,7 +227,7 @@ public class RemapJarTask extends Jar {
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
 			if (mixinMapFile.exists()) {
 				IMappingProvider provider = TinyUtils.createTinyMappingProvider(mixinMapFile.toPath(), fromM, "intermediary");
-				jarRemapper.addMappings(!toM.equals("intermediary") ? remapToSrg(extension, provider, fromM, toM) : provider);
+				jarRemapper.addMappings(!toM.equals("intermediary") ? remapToSrg(extension, provider, "intermediary", toM) : provider);
 			}
 		}
 
@@ -268,9 +268,9 @@ public class RemapJarTask extends Jar {
 						project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 					}
 
-					if (extension.isForge()) {
+					if (!toM.equals("intermediary")) {
 						try {
-							remapRefmap(extension, output);
+							remapRefmap(extension, output, "intermediary", toM);
 						} catch (IOException e) {
 							throw new RuntimeException("Failed to remap refmap jar", e);
 						}
@@ -295,7 +295,7 @@ public class RemapJarTask extends Jar {
 				});
 	}
 
-	private void remapRefmap(LoomGradleExtension extension, Path output) throws IOException {
+	private void remapRefmap(LoomGradleExtension extension, Path output, String from, String to) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + output.toUri()), ImmutableMap.of("create", false))) {
 			Path refmapPath = fs.getPath(extension.getRefmapName());
 
@@ -304,7 +304,7 @@ public class RemapJarTask extends Jar {
 					Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 					JsonObject refmapElement = gson.fromJson(refmapReader, JsonObject.class);
 					refmapElement = RefmapRemapper.remap(new Remapper() {
-						ReferenceRemapper remapper = createReferenceRemapper(extension, fromM.get(), toM.get());
+						ReferenceRemapper remapper = createReferenceRemapper(extension, from, to);
 
 						@Override
 						@Nullable
@@ -316,7 +316,7 @@ public class RemapJarTask extends Jar {
 						@Nullable
 						public Map.Entry<String, @Nullable MappingsRemapper> remapMappingsData(String data) {
 							if (Objects.equals(data, "named:intermediary")) {
-								return new AbstractMap.SimpleEntry<>("searge", remapMappings());
+								return new AbstractMap.SimpleEntry<>(Objects.equals(to, "srg") ? "searge" : data, remapMappings());
 							}
 
 							return null;
@@ -352,7 +352,7 @@ public class RemapJarTask extends Jar {
 		);
 	}
 
-	private IMappingProvider remapToSrg(LoomGradleExtension extension, IMappingProvider parent, String fromM, String toM) throws IOException {
+	private IMappingProvider remapToSrg(LoomGradleExtension extension, IMappingProvider parent, String from, String to) throws IOException {
 		TinyTree mappings = extension.shouldGenerateSrgTiny() ? extension.getMappingsProvider().getMappingsWithSrg() : extension.getMappingsProvider().getMappings();
 
 		return sink -> {
@@ -361,9 +361,9 @@ public class RemapJarTask extends Jar {
 				public void acceptClass(String srcName, String dstName) {
 					String srgName = mappings.getClasses()
 							.stream()
-							.filter(it -> Objects.equals(it.getName(fromM), dstName))
+							.filter(it -> Objects.equals(it.getName(from), dstName))
 							.findFirst()
-							.map(it -> it.getName(toM))
+							.map(it -> it.getName(to))
 							.orElse(dstName);
 					sink.acceptClass(srcName, srgName);
 				}
@@ -373,9 +373,9 @@ public class RemapJarTask extends Jar {
 					String srgName = mappings.getClasses()
 							.stream()
 							.flatMap(it -> it.getMethods().stream())
-							.filter(it -> Objects.equals(it.getName(fromM), dstName))
+							.filter(it -> Objects.equals(it.getName(from), dstName))
 							.findFirst()
-							.map(it -> it.getName(toM))
+							.map(it -> it.getName(to))
 							.orElse(dstName);
 					sink.acceptMethod(method, srgName);
 				}
@@ -385,9 +385,9 @@ public class RemapJarTask extends Jar {
 					String srgName = mappings.getClasses()
 							.stream()
 							.flatMap(it -> it.getFields().stream())
-							.filter(it -> Objects.equals(it.getName(fromM), dstName))
+							.filter(it -> Objects.equals(it.getName(from), dstName))
 							.findFirst()
-							.map(it -> it.getName(toM))
+							.map(it -> it.getName(to))
 							.orElse(dstName);
 					sink.acceptField(field, srgName);
 				}

@@ -99,7 +99,7 @@ public class NestedJars {
 	private static List<File> getContainedJars(Project project) {
 		List<File> fileList = new ArrayList<>();
 
-		if (project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+		if (!project.getExtensions().getByType(LoomGradleExtension.class).supportsInclude()) {
 			return fileList;
 		}
 

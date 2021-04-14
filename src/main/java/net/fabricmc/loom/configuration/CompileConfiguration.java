@@ -118,7 +118,7 @@ public final class CompileConfiguration {
 			extendsFrom(Constants.Configurations.MINECRAFT_DEPENDENCIES, Constants.Configurations.FORGE_DEPENDENCIES, project);
 		}
 
-		if (!project.getExtensions().getByType(LoomGradleExtension.class).isForge()) {
+		if (project.getExtensions().getByType(LoomGradleExtension.class).supportsInclude()) {
 			Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
 			includeConfig.setTransitive(false); // Dont get transitive deps
 		}
@@ -294,7 +294,7 @@ public final class CompileConfiguration {
 				project1.getTasks().getByName("build").dependsOn(remapJarTask);
 
 				project.getTasks().withType(RemapJarTask.class).forEach(task -> {
-					if (!extension.isForge() && task.getAddNestedDependencies().getOrElse(false)) {
+					if (extension.supportsInclude() && task.getAddNestedDependencies().getOrElse(false)) {
 						NestedJars.getRequiredTasks(project1).forEach(task::dependsOn);
 					}
 				});

@@ -81,7 +81,7 @@ public class JarRemapper {
 
 		Path[] remapClasspath = classPath.stream()
 				.filter(path ->
-						remapData.stream().noneMatch(remapData -> remapData.input.equals(path))
+						remapData.stream().noneMatch(remapData -> remapData.input.toString().equals(path.toString()))
 				)
 				.toArray(Path[]::new);
 
@@ -90,13 +90,27 @@ public class JarRemapper {
 		for (RemapData data : remapData) {
 			InputTag tag = remapper.createInputTag();
 			data.tag = tag;
-			remapper.readInputsAsync(tag, data.input);
+			project.getLogger().info(":remapper input -> " + data.input.getFileName().toString());
+
+			try {
+				remapper.readInputsAsync(tag, data.input);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to read remapper input " + data.input.getFileName().toString(), e);
+			}
 		}
 
 		List<OutputConsumerPath> outputConsumers = new ArrayList<>();
 
 		for (RemapData data : remapData) {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(data.output).build();
+			OutputConsumerPath outputConsumer;
+			project.getLogger().info(":remapper output -> " + data.output.getFileName().toString());
+
+			try {
+				outputConsumer = new OutputConsumerPath.Builder(data.output).build();
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to create remapper output " + data.output.getFileName().toString(), e);
+			}
+
 			outputConsumers.add(outputConsumer);
 
 			outputConsumer.addNonClassFiles(data.input);

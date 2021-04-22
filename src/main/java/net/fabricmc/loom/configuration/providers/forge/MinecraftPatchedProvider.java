@@ -51,6 +51,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import com.google.common.base.Predicates;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonParser;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
@@ -291,12 +292,16 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 	}
 
 	private void fixParameterAnnotation(File jarFile) throws Exception {
-		getProject().getLogger().info(":fixing parameter annotations for " + jarFile.toString());
+		getProject().getLogger().info(":fixing parameter annotations for " + jarFile.getAbsolutePath());
+		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		try (FileSystem fs = FileSystems.newFileSystem(new URI("jar:" + jarFile.toURI()), ImmutableMap.of("create", false))) {
-			for (Path rootDir : fs.getRootDirectories()) {
-				for (Path file : (Iterable<? extends Path>) Files.walk(rootDir)::iterator) {
-					if (!file.toString().endsWith(".class")) continue;
+			ThreadingUtils.TaskCompleter completer = ThreadingUtils.taskCompleter();
+
+			for (Path file : (Iterable<? extends Path>) Files.walk(fs.getPath("/"))::iterator) {
+				if (!file.toString().endsWith(".class")) continue;
+
+				completer.add(() -> {
 					byte[] bytes = Files.readAllBytes(file);
 					ClassReader reader = new ClassReader(bytes);
 					ClassNode node = new ClassNode();
@@ -311,9 +316,13 @@ public class MinecraftPatchedProvider extends DependencyProvider {
 						Files.delete(file);
 						Files.write(file, out);
 					}
-				}
+				});
 			}
+
+			completer.complete();
 		}
+
+		getProject().getLogger().info(":fixing parameter annotations for " + jarFile.getAbsolutePath() + " in " + stopwatch);
 	}
 
 	private void injectForgeClasses(Logger logger) throws IOException {

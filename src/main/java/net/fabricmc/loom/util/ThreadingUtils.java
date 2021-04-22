@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,5 +121,34 @@ public class ThreadingUtils {
 
 	public interface UnsafeConsumer<T> {
 		void accept(T value) throws Throwable;
+	}
+
+	public static TaskCompleter taskCompleter() {
+		return new TaskCompleter();
+	}
+
+	public static class TaskCompleter {
+		List<CompletableFuture<?>> tasks = new ArrayList<>();
+		ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+		public TaskCompleter add(UnsafeRunnable job) {
+			tasks.add(CompletableFuture.runAsync(() -> {
+				try {
+					job.run();
+				} catch (Throwable throwable) {
+					throw new RuntimeException(throwable);
+				}
+			}, service));
+			return this;
+		}
+
+		public void complete() {
+			try {
+				CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
+				service.shutdownNow();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 }

@@ -26,17 +26,20 @@ package net.fabricmc.loom.util.srg;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
-import java.util.zip.ZipEntry;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.logging.log4j.util.Strings;
 import org.gradle.api.logging.Logger;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.util.function.CollectionUtil;
 import net.fabricmc.mapping.tree.TinyTree;
@@ -48,10 +51,13 @@ import net.fabricmc.mapping.tree.TinyTree;
  */
 public final class AtRemapper {
 	public static void remap(Logger logger, Path jar, TinyTree mappings) throws IOException {
-		ZipUtil.transformEntries(jar.toFile(), new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("META-INF/accesstransformer.cfg", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				String[] lines = input.split("\n");
+		try (FileSystem fs = FileSystems.newFileSystem(URI.create("jar:" + jar.toUri()), ImmutableMap.of("create", false))) {
+			Path atPath = fs.getPath("META-INF/accesstransformer.cfg");
+
+			if (Files.exists(atPath)) {
+				String atContent = new String(Files.readAllBytes(atPath), StandardCharsets.UTF_8);
+
+				String[] lines = atContent.split("\n");
 				List<String> output = new ArrayList<>(lines.length);
 
 				for (int i = 0; i < lines.length; i++) {
@@ -90,9 +96,9 @@ public final class AtRemapper {
 					output.add(i, String.join(" ", parts));
 				}
 
-				return String.join("\n", output);
+				Files.write(atPath, String.join("\n", output).getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
 			}
-		}))});
+		}
 	}
 
 	private static String remapDescriptor(String original, UnaryOperator<String> classMappings) {

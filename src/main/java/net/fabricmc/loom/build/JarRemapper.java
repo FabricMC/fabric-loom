@@ -25,6 +25,7 @@
 package net.fabricmc.loom.build;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -106,6 +107,7 @@ public class JarRemapper {
 			project.getLogger().info(":remapper output -> " + data.output.getFileName().toString());
 
 			try {
+				Files.deleteIfExists(data.output);
 				outputConsumer = new OutputConsumerPath.Builder(data.output).build();
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to create remapper output " + data.output.getFileName().toString(), e);

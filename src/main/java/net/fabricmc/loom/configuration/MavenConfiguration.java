@@ -55,7 +55,7 @@ public class MavenConfiguration {
 
 		project.getRepositories().maven(repo -> {
 			repo.setName("Forge");
-			repo.setUrl("https://files.minecraftforge.net/maven/");
+			repo.setUrl("https://maven.minecraftforge.net/");
 
 			repo.metadataSources(sources -> {
 				sources.mavenPom();

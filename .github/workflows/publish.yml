@@ -18,6 +18,6 @@ jobs:
         with:
           java-version: 1.8
       - name: Upload to Maven
-        run: ./gradlew publish
+        run: ./gradlew publish --stacktrace
         env:
           MAVEN_PASS: ${{ secrets.MAVEN_PASS }}

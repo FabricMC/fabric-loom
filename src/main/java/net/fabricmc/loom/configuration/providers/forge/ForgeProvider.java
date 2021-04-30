@@ -40,7 +40,7 @@ public class ForgeProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		version = new ForgeVersion(dependency.getDependency().getVersion());
+		version = new ForgeVersion(dependency.getResolvedVersion());
 		addDependency(dependency.getDepString() + ":userdev", Constants.Configurations.FORGE_USERDEV);
 		addDependency(dependency.getDepString() + ":installer", Constants.Configurations.FORGE_INSTALLER);
 	}

@@ -17,8 +17,7 @@ import net.fabricmc.loom.util.ThreadingUtils;
 
 public class OutputRemappingHandler {
 	public static void remap(TinyRemapper remapper, Path assets, Path output) throws IOException {
-		remap(remapper, assets, output, (path, bytes) -> {
-		});
+		remap(remapper, assets, output, null);
 	}
 
 	public static void remap(TinyRemapper remapper, Path assets, Path output, BiConsumer<String, byte[]> then) throws IOException {

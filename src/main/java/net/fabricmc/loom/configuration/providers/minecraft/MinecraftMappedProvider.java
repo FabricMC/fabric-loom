@@ -29,17 +29,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -52,15 +50,10 @@ import dev.architectury.tinyremapper.IMappingProvider;
 import dev.architectury.tinyremapper.TinyRemapper;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.commons.ClassRemapper;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.tr.CompiledMappedClassRemapper;
-import net.fabricmc.loom.configuration.providers.minecraft.tr.MappingsCompiled;
 import net.fabricmc.loom.configuration.providers.minecraft.tr.OutputRemappingHandler;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -155,27 +148,38 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		TinyRemapper remapper = getTinyRemapper();
 		remapper.readClassPath(libraries);
 		remapper.prepareClasses();
-		remapper.readInputs(input);
 
 		Path tmpAssets = Files.createTempFile("tmpAssets", null);
 		Files.deleteIfExists(tmpAssets);
 		tmpAssets.toFile().deleteOnExit();
+
+		List<byte[]> inputByteList = new ArrayList<>();
 
 		try (FileSystemUtil.FileSystemDelegate inputFs = FileSystemUtil.getJarFileSystem(input, false)) {
 			ThreadingUtils.TaskCompleter taskCompleter = ThreadingUtils.taskCompleter();
 
 			try (FileSystemUtil.FileSystemDelegate assetsFs = FileSystemUtil.getJarFileSystem(tmpAssets, true)) {
 				for (Path path : (Iterable<? extends Path>) Files.walk(inputFs.get().getPath("/"))::iterator) {
-					if (Files.isRegularFile(path) && !path.getFileName().toString().endsWith(".class")) {
-						Path p = assetsFs.get().getPath(path.toString());
+					if (Files.isRegularFile(path)) {
+						if (path.getFileName().toString().endsWith(".class")) {
+							taskCompleter.add(() -> {
+								byte[] bytes = Files.readAllBytes(path);
 
-						if (p.getParent() != null) {
-							Files.createDirectories(p.getParent());
+								synchronized (inputByteList) {
+									inputByteList.add(bytes);
+								}
+							});
+						} else {
+							Path p = assetsFs.get().getPath(path.toString());
+
+							if (p.getParent() != null) {
+								Files.createDirectories(p.getParent());
+							}
+
+							taskCompleter.add(() -> {
+								Files.copy(path, p);
+							});
 						}
-
-						taskCompleter.add(() -> {
-							Files.copy(path, p);
-						});
 					}
 				}
 
@@ -183,40 +187,19 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			}
 		}
 
-		Files.copy(tmpAssets, outputMapped, StandardCopyOption.REPLACE_EXISTING);
-		FileSystemUtil.FileSystemDelegate systemMapped = FileSystemUtil.getJarFileSystem(outputMapped, true);
-		ThreadingUtils.TaskCompleter mappedRemapper = ThreadingUtils.taskCompleter().onComplete(stopwatch -> {
-			getProject().getLogger().lifecycle(":remapped minecraft (AsmRemapper, intermediary -> named) in " + stopwatch);
-		});
-		MappingsCompiled compiledMapped = new MappingsCompiled(getMappings(input, "intermediary", "named"));
+		byte[][] inputBytes = inputByteList.toArray(new byte[0][0]);
 
-		for (String toM : getExtension().isForge() ? Arrays.asList("intermediary", "srg") : Collections.singletonList("intermediary")) {
-			Path output = "srg".equals(toM) ? outputSrg : outputIntermediary;
+		for (String toM : getExtension().isForge() ? Arrays.asList("intermediary", "srg", "named") : Arrays.asList("intermediary", "named")) {
+			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
 			Stopwatch stopwatch = Stopwatch.createStarted();
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
+			remapper.readInputs(inputBytes);
 			remapper.replaceMappings(getMappings(input, fromM, toM));
-			OutputRemappingHandler.remap(remapper, tmpAssets, output, toM.equals("intermediary") ? (path, bytes) -> {
-				try {
-					Path fsPath = systemMapped.get().getPath(compiledMapped.map(path) + ".class");
-
-					if (fsPath.getParent() != null) {
-						Files.createDirectories(fsPath.getParent());
-					}
-
-					mappedRemapper.add(() -> {
-						ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-						ClassRemapper classRemapper = new CompiledMappedClassRemapper(writer, compiledMapped);
-						new ClassReader(bytes).accept(classRemapper, ClassReader.EXPAND_FRAMES);
-
-						Files.write(fsPath, writer.toByteArray(), StandardOpenOption.CREATE);
-					});
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			} : null);
+			OutputRemappingHandler.remap(remapper, tmpAssets, output);
 
 			getProject().getLogger().lifecycle(":remapped minecraft (TinyRemapper, " + fromM + " -> " + toM + ") in " + stopwatch);
+			remapper.removeInput();
 
 			if (getExtension().isForge() && !"srg".equals(toM)) {
 				getProject().getLogger().info(":running forge finalising tasks");
@@ -255,11 +238,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		}
 
 		remapper.finish();
-
-		getProject().getLogger().lifecycle(":remapping minecraft (AsmRemapper, intermediary -> named)");
-		mappedRemapper.complete();
-
-		systemMapped.close();
 	}
 
 	public TinyRemapper getTinyRemapper() throws IOException {

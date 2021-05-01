@@ -130,7 +130,7 @@ public class ThreadingUtils {
 		return new TaskCompleter();
 	}
 
-	public static class TaskCompleter {
+	public static class TaskCompleter implements Function<Throwable, Void> {
 		Stopwatch stopwatch = Stopwatch.createUnstarted();
 		List<CompletableFuture<?>> tasks = new ArrayList<>();
 		ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -147,7 +147,7 @@ public class ThreadingUtils {
 				} catch (Throwable throwable) {
 					throw new RuntimeException(throwable);
 				}
-			}, service));
+			}, service).exceptionally(this));
 
 			return this;
 		}
@@ -159,7 +159,7 @@ public class ThreadingUtils {
 
 		public void complete() {
 			try {
-				CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
+				CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).exceptionally(this).get();
 				service.shutdownNow();
 				stopwatch.stop();
 
@@ -169,6 +169,12 @@ public class ThreadingUtils {
 			} catch (InterruptedException | ExecutionException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		@Override
+		public Void apply(Throwable throwable) {
+			throwable.printStackTrace();
+			return null;
 		}
 	}
 }

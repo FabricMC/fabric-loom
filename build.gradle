@@ -49,7 +49,6 @@ repositories {
 	maven { url "https://maven.minecraftforge.net/" }
 	maven { url "https://maven.architectury.dev/" }
 	mavenCentral()
-	mavenLocal()
 }
 
 dependencies {

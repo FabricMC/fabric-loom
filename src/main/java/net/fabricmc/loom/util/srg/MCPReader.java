@@ -39,7 +39,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import au.com.bytecode.opencsv.CSVReader;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.lorenz.io.srg.tsrg.TSrgReader;
 import org.cadixdev.lorenz.model.ClassMapping;
@@ -71,7 +72,12 @@ public class MCPReader {
 		Map<String, String> intermediaryToMCPMap = createIntermediaryToMCPMap(intermediaryTiny, srgTokens);
 		Map<String, String[]> intermediaryToDocsMap = new HashMap<>();
 		Map<String, Map<Integer, String>> intermediaryToParamsMap = new HashMap<>();
-		injectMcp(mcpJar, intermediaryToMCPMap, intermediaryToDocsMap, intermediaryToParamsMap);
+
+		try {
+			injectMcp(mcpJar, intermediaryToMCPMap, intermediaryToDocsMap, intermediaryToParamsMap);
+		} catch (CsvValidationException e) {
+			throw new RuntimeException(e);
+		}
 
 		mergeTokensIntoIntermediary(intermediaryTiny, intermediaryToMCPMap, intermediaryToDocsMap, intermediaryToParamsMap);
 		return intermediaryTiny;
@@ -186,7 +192,7 @@ public class MCPReader {
 	}
 
 	private void injectMcp(Path mcpJar, Map<String, String> intermediaryToSrgMap, Map<String, String[]> intermediaryToDocsMap, Map<String, Map<Integer, String>> intermediaryToParamsMap)
-			throws IOException {
+			throws IOException, CsvValidationException {
 		Map<String, List<String>> srgToIntermediary = inverseMap(intermediaryToSrgMap);
 		Map<String, List<String>> simpleSrgToIntermediary = new HashMap<>();
 		Pattern methodPattern = Pattern.compile("(func_\\d*)_.*");

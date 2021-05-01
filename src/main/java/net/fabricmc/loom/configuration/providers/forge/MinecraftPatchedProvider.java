@@ -55,6 +55,8 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonParser;
 import de.oceanlabs.mcp.mcinjector.adaptors.ParameterAnnotationFixer;
+import dev.architectury.tinyremapper.OutputConsumerPath;
+import dev.architectury.tinyremapper.TinyRemapper;
 import net.minecraftforge.accesstransformer.AccessTransformerEngine;
 import net.minecraftforge.accesstransformer.TransformerProcessor;
 import net.minecraftforge.accesstransformer.parser.AccessTransformerList;
@@ -88,8 +90,6 @@ import net.fabricmc.loom.util.function.FsPathConsumer;
 import net.fabricmc.loom.util.srg.InnerClassRemapper;
 import net.fabricmc.loom.util.srg.SpecialSourceExecutor;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MinecraftPatchedProvider extends DependencyProvider {
 	private final MappingsProvider mappingsProvider;

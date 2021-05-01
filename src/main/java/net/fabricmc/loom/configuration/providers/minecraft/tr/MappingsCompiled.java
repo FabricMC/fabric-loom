@@ -4,19 +4,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import net.fabricmc.tinyremapper.IMappingProvider;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import dev.architectury.tinyremapper.IMappingProvider;
+import dev.architectury.tinyremapper.MethodRemapperProvider;
+import org.objectweb.asm.commons.Remapper;
 
-public class MappingsCompiled {
+public class MappingsCompiled extends Remapper implements MethodRemapperProvider {
 	private final Map<String, String> classes;
 	private final Map<String, String> fields;
 	private final Map<String, String> methods;
-	private final Map<String, String> methodArgs;
+	private final Table<String, Integer, String> methodArgs;
+	String lastSuperClass;
+	String[] lastInterfaces;
 
 	public MappingsCompiled(Set<IMappingProvider> mappings) {
 		this.classes = new HashMap<>();
 		this.fields = new HashMap<>();
 		this.methods = new HashMap<>();
-		this.methodArgs = new HashMap<>();
+		this.methodArgs = HashBasedTable.create();
 
 		for (IMappingProvider mapping : mappings) {
 			mapping.load(new IMappingProvider.MappingAcceptor() {
@@ -32,7 +38,7 @@ public class MappingsCompiled {
 
 				@Override
 				public void acceptMethodArg(IMappingProvider.Member method, int lvIndex, String dstName) {
-					methodArgs.put(method.name + "|" + lvIndex, dstName);
+					methodArgs.put(method.owner + "|" + method.name, lvIndex, dstName);
 				}
 
 				@Override
@@ -47,19 +53,55 @@ public class MappingsCompiled {
 		}
 	}
 
-	public String mapClass(String name) {
+	@Override
+	public String map(String name) {
 		return classes.getOrDefault(name, name);
+	}
+
+	@Override
+	public String mapFieldName(String owner, String name, String descriptor) {
+		return mapField(name);
 	}
 
 	public String mapField(String name) {
 		return fields.getOrDefault(name, name);
 	}
 
+	@Override
+	public String mapMethodName(String owner, String name, String descriptor) {
+		return mapMethod(name);
+	}
+
 	public String mapMethod(String name) {
 		return methods.getOrDefault(name, name);
 	}
 
-	public String mapMethodArg(String methodName, int lvIndex, String def) {
-		return methodArgs.getOrDefault(methodName + "|" + lvIndex, def);
+	public String mapMethodArg(String methodOwner, String methodName, int lvIndex, String def) {
+		String arg = methodArgs.get(methodOwner + "|" + methodName, lvIndex);
+		if (arg != null) return arg;
+
+		if (lastSuperClass != null) {
+			arg = methodArgs.get(lastSuperClass + "|" + methodName, lvIndex);
+			if (arg != null) return arg;
+		}
+
+		if (lastInterfaces != null) {
+			for (String lastInterface : lastInterfaces) {
+				arg = methodArgs.get(lastInterface + "|" + methodName, lvIndex);
+				if (arg != null) return arg;
+			}
+		}
+
+		return def;
+	}
+
+	@Override
+	public String mapMethodVar(String methodOwner, String methodName, String methodDesc, int lvIndex, int startOpIdx, int asmIndex, String name) {
+		return name;
+	}
+
+	@Override
+	public String mapMethodArg(String methodOwner, String methodName, String methodDesc, int lvIndex, String name) {
+		return mapMethodArg(methodOwner, methodName, lvIndex, name);
 	}
 }

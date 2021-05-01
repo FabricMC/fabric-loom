@@ -34,8 +34,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Stopwatch;
 
 public class ThreadingUtils {
 	public static <T> void run(Collection<T> values, UnsafeConsumer<T> action) {
@@ -128,10 +131,16 @@ public class ThreadingUtils {
 	}
 
 	public static class TaskCompleter {
+		Stopwatch stopwatch = Stopwatch.createUnstarted();
 		List<CompletableFuture<?>> tasks = new ArrayList<>();
 		ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		List<Consumer<Stopwatch>> completionListener = new ArrayList<>();
 
 		public TaskCompleter add(UnsafeRunnable job) {
+			if (!stopwatch.isRunning()) {
+				stopwatch.start();
+			}
+
 			tasks.add(CompletableFuture.runAsync(() -> {
 				try {
 					job.run();
@@ -139,6 +148,12 @@ public class ThreadingUtils {
 					throw new RuntimeException(throwable);
 				}
 			}, service));
+
+			return this;
+		}
+
+		public TaskCompleter onComplete(Consumer<Stopwatch> consumer) {
+			completionListener.add(consumer);
 			return this;
 		}
 
@@ -146,6 +161,11 @@ public class ThreadingUtils {
 			try {
 				CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).get();
 				service.shutdownNow();
+				stopwatch.stop();
+
+				for (Consumer<Stopwatch> consumer : completionListener) {
+					consumer.accept(stopwatch);
+				}
 			} catch (InterruptedException | ExecutionException e) {
 				throw new RuntimeException(e);
 			}

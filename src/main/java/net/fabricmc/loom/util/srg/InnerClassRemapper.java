@@ -32,11 +32,12 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import dev.architectury.tinyremapper.IMappingProvider;
+
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.FileSystemUtil.FileSystemDelegate;
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
 
 public class InnerClassRemapper {
 	public static IMappingProvider of(Path fromJar, TinyTree mappingsWithSrg, String from, String to) throws IOException {

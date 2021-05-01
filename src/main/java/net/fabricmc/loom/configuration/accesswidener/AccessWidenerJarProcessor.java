@@ -38,6 +38,7 @@ import java.util.zip.ZipEntry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import dev.architectury.tinyremapper.TinyRemapper;
 import org.gradle.api.Project;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -58,7 +59,6 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();

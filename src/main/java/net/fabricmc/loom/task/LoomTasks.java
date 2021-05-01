@@ -35,6 +35,7 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
 	private LoomTasks() {
@@ -50,7 +51,7 @@ public final class LoomTasks {
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
 			t.setDescription("Remaps the built project jar to intermediary mappings.");
-			t.setGroup("fabric");
+			t.setGroup(Constants.TASK_CATEGORY);
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
@@ -97,7 +98,6 @@ public final class LoomTasks {
 
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
-				t.setGroup("fabric");
 
 				if (config.getEnvironment().equals("client")) {
 					t.dependsOn("downloadAssets");

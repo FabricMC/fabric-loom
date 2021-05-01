@@ -8,19 +8,25 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.BiConsumer;
 
+import dev.architectury.tinyremapper.InputTag;
+import dev.architectury.tinyremapper.TinyRemapper;
+
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.FileSystemUtil.FileSystemDelegate;
 import net.fabricmc.loom.util.ThreadingUtils;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class OutputRemappingHandler {
-	public static void remap(TinyRemapper remapper, Path input, Path output) throws IOException {
-		remap(remapper, input, output, (path, bytes) -> {
+	public static void remap(TinyRemapper remapper, Path assets, Path output) throws IOException {
+		remap(remapper, assets, output, (path, bytes) -> {
 		});
 	}
 
-	public static void remap(TinyRemapper remapper, Path input, Path output, BiConsumer<String, byte[]> then) throws IOException {
-		Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
+	public static void remap(TinyRemapper remapper, Path assets, Path output, BiConsumer<String, byte[]> then) throws IOException {
+		remap(remapper, assets, output, then, (InputTag[]) null);
+	}
+
+	public static void remap(TinyRemapper remapper, Path assets, Path output, BiConsumer<String, byte[]> then, InputTag... inputTags) throws IOException {
+		Files.copy(assets, output, StandardCopyOption.REPLACE_EXISTING);
 
 		try (FileSystemDelegate system = FileSystemUtil.getJarFileSystem(output, true)) {
 			ThreadingUtils.TaskCompleter taskCompleter = ThreadingUtils.taskCompleter();
@@ -39,11 +45,13 @@ public class OutputRemappingHandler {
 						Files.write(fsPath, bytes, StandardOpenOption.CREATE);
 					});
 
-					then.accept(path, bytes);
+					if (then != null) {
+						then.accept(path, bytes);
+					}
 				} catch (IOException e) {
 					throw new UncheckedIOException(e);
 				}
-			});
+			}, inputTags);
 
 			taskCompleter.complete();
 		}

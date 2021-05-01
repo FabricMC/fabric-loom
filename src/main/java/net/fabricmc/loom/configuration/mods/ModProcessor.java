@@ -45,7 +45,11 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
+import com.google.common.base.Stopwatch;
 import com.google.gson.JsonObject;
+import dev.architectury.tinyremapper.InputTag;
+import dev.architectury.tinyremapper.OutputConsumerPath;
+import dev.architectury.tinyremapper.TinyRemapper;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
@@ -69,9 +73,6 @@ import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.srg.AtRemapper;
 import net.fabricmc.loom.util.srg.CoreModClassRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.InputTag;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
 	public static void processMods(Project project, List<ModDependencyInfo> processList) throws IOException {
@@ -150,6 +151,7 @@ public class ModProcessor {
 
 		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());
 
+		Stopwatch stopwatch = Stopwatch.createStarted();
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyTree mappings = extension.isForge() ? mappingsProvider.getMappingsWithSrg() : mappingsProvider.getMappings();
@@ -201,6 +203,7 @@ public class ModProcessor {
 		}
 
 		remapper.finish();
+		project.getLogger().lifecycle(":remapped " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ") in " + stopwatch.stop());
 
 		for (ModDependencyInfo info : remapList) {
 			outputConsumerMap.get(info).close();

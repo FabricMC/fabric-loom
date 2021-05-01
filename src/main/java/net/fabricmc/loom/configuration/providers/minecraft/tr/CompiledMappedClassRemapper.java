@@ -1,51 +1,50 @@
 package net.fabricmc.loom.configuration.providers.minecraft.tr;
 
+import java.util.HashMap;
+
+import dev.architectury.tinyremapper.AsmClassRemapper;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.MethodRemapper;
-import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.tree.MethodNode;
 
 public class CompiledMappedClassRemapper extends ClassRemapper {
 	private final MappingsCompiled compiled;
-	private String lastMethodName;
+	private String lastName;
+	private MethodNode lastMethod;
 
 	public CompiledMappedClassRemapper(ClassVisitor classVisitor, MappingsCompiled compiled) {
-		super(Opcodes.ASM9, classVisitor, new Remapper() {
-			@Override
-			public String map(String internalName) {
-				return compiled.mapClass(internalName);
-			}
-
-			@Override
-			public String mapFieldName(String owner, String name, String descriptor) {
-				return compiled.mapField(name);
-			}
-
-			@Override
-			public String mapMethodName(String owner, String name, String descriptor) {
-				return compiled.mapMethod(name);
-			}
-		});
+		super(Opcodes.ASM9, classVisitor, compiled);
 
 		this.compiled = compiled;
 	}
 
 	@Override
+	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+		lastName = name;
+		this.compiled.lastSuperClass = superName;
+		this.compiled.lastInterfaces = interfaces;
+		super.visit(version, access, name, signature, superName, interfaces);
+	}
+
+	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		lastMethodName = name;
+		lastMethod = new MethodNode(api, access, name, descriptor, signature, exceptions);
 		return super.visitMethod(access, name, descriptor, signature, exceptions);
 	}
 
 	@Override
 	protected MethodVisitor createMethodRemapper(MethodVisitor methodVisitor) {
-		return new MethodRemapper(api, methodVisitor, remapper) {
+		return new MethodRemapper(api, lastMethod, remapper) {
 			@Override
-			public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-				super.visitLocalVariable(compiled.mapMethodArg(lastMethodName, index, name),
-						descriptor, signature, start, end, index);
+			public void visitEnd() {
+				lastMethod.localVariables = null;
+				lastMethod.parameters = null;
+				AsmClassRemapper.AsmMethodRemapper.processLocals(compiled, lastName, lastMethod, false, true, new HashMap<>());
+				lastMethod.visitEnd();
+				lastMethod.accept(methodVisitor);
 			}
 		};
 	}

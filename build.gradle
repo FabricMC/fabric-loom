@@ -17,7 +17,7 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'me.shedaniel'
+group = "dev.architectury"
 archivesBaseName = project.name
 def baseVersion = '0.7.1'
 def runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "9999"
@@ -181,7 +181,7 @@ codenarc {
 gradlePlugin {
 	plugins {
 		fabricLoom {
-			id = 'forgified-fabric-loom'
+			id = 'dev.architectury.loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 	}
@@ -214,8 +214,8 @@ import org.w3c.dom.Node
 publishing {
 	publications {
 		plugin(MavenPublication) {
-			groupId 'forgified-fabric-loom'
-			artifactId 'forgified-fabric-loom.gradle.plugin'
+			groupId 'dev.architectury.loom'
+			artifactId 'dev.architectury.loom.gradle.plugin'
 
 			from components.java
 			artifact mainJar
@@ -246,8 +246,8 @@ publishing {
 		}
 
 		pluginSnapshot(MavenPublication) {
-			groupId 'forgified-fabric-loom'
-			artifactId 'forgified-fabric-loom.gradle.plugin'
+			groupId 'dev.architectury.loom'
+			artifactId 'dev.architectury.loom.gradle.plugin'
 			version baseVersion + '-SNAPSHOT'
 
 			pom.withXml {

@@ -19,7 +19,7 @@ targetCompatibility = 1.8
 
 group = 'me.shedaniel'
 archivesBaseName = project.name
-def baseVersion = '0.7.0'
+def baseVersion = '0.7.1'
 def runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "9999"
 
 def isSnapshot = System.getenv("PR_NUM") != null
@@ -92,7 +92,7 @@ dependencies {
 	implementation ('org.benf:cfr:0.150')
 
 	// source code remapping
-	implementation ('org.cadixdev:mercury:0.2.8')
+	implementation ('org.cadixdev:mercury:0.2.9-architectury')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21')

@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -68,10 +69,12 @@ import net.fabricmc.loom.configuration.providers.forge.SrgProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.util.ModPlatform;
 import net.fabricmc.loom.util.function.LazyBool;
 
 public class LoomGradleExtension {
 	private static final String FORGE_PROPERTY = "loom.forge";
+	private static final String PLATFORM_PROPERTY = "loom.platform";
 	private static final String INCLUDE_PROPERTY = "loom.forge.include";
 
 	public String refmapName;
@@ -100,11 +103,11 @@ public class LoomGradleExtension {
 	private JsonObject installerJson;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
-	private final LazyBool forge;
+	private ModPlatform platform;
 	private final LazyBool supportsInclude;
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 	private final List<String> tasksBeforeRun = Collections.synchronizedList(new ArrayList<>());
-	public final List<Supplier<SourceSet>> forgeLocalMods = Collections.synchronizedList(new ArrayList<>(Arrays.asList(new Supplier<SourceSet>() {
+	public final List<Supplier<SourceSet>> forgeLocalMods = Collections.synchronizedList(new ArrayList<>(Collections.singletonList(new Supplier<SourceSet>() {
 		@Override
 		public SourceSet get() {
 			return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName("main");
@@ -218,7 +221,6 @@ public class LoomGradleExtension {
 	public LoomGradleExtension(Project project) {
 		this.project = project;
 		this.unmappedMods = project.files();
-		this.forge = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(FORGE_PROPERTY))));
 		this.supportsInclude = new LazyBool(() -> Boolean.parseBoolean(Objects.toString(project.findProperty(INCLUDE_PROPERTY))));
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
@@ -471,8 +473,30 @@ public class LoomGradleExtension {
 		return shareCaches;
 	}
 
+	@ApiStatus.Experimental
+	public ModPlatform getPlatform() {
+		if (platform == null) {
+			Object platformProperty = project.findProperty(PLATFORM_PROPERTY);
+
+			if (platformProperty != null) {
+				return platform = ModPlatform.valueOf(Objects.toString(platformProperty).toUpperCase(Locale.ROOT));
+			}
+
+			Object forgeProperty = project.findProperty(FORGE_PROPERTY);
+
+			if (forgeProperty != null) {
+				project.getLogger().warn("Project " + project.getPath() + " is using property " + FORGE_PROPERTY + " to enable forge mode. Please use '" + PLATFORM_PROPERTY + " = forge' instead!");
+				return platform = Boolean.parseBoolean(Objects.toString(forgeProperty)) ? ModPlatform.FORGE : ModPlatform.FABRIC;
+			}
+
+			platform = ModPlatform.FABRIC;
+		}
+
+		return platform;
+	}
+
 	public boolean isForge() {
-		return forge.getAsBoolean();
+		return getPlatform() == ModPlatform.FORGE;
 	}
 
 	public boolean supportsInclude() {

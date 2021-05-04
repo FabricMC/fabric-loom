@@ -5,12 +5,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [7.0-rc-2]
+        gradle: [7.0.0]
         java: [jdk8, jdk11, jdk16]
         jvm: [hotspot]
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/modmuss50/gradle:${{ matrix.gradle }}-${{ matrix.java }}-hotspot
+      image: gradle:${{ matrix.gradle }}-${{ matrix.java }}
       options: --user root
     steps:
       - uses: actions/checkout@v2
@@ -24,7 +24,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/modmuss50/gradle:7.0-rc-2-jdk16-hotspot
+      image: 7.0.0-jdk16
       options: --user root
 
     steps:
@@ -51,7 +51,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/modmuss50/gradle:7.0-rc-2-${{ matrix.java }}-hotspot
+      image: gradle:7.0.0-${{ matrix.java }}
       options: --user root
 
     steps:

@@ -46,17 +46,17 @@ sourceSets {
 }
 
 repositories {
-	maven { url "https://maven.fabricmc.net/" }
-	maven { url "https://maven.minecraftforge.net/" }
-	maven { url "https://maven.shedaniel.me/" }
 	mavenCentral()
+	maven { url "https://maven.fabricmc.net/" }
+	maven { url "https://maven.architectury.dev/" }
+	maven { url "https://maven.minecraftforge.net/" }
 }
 
 dependencies {
 	implementation gradleApi()
 
 	// Compile against groovy 3 to aid with gradle 7 support. Remove when updating to gradle 7
-	compileOnly 'org.codehaus.groovy:groovy-all:3.0.7'
+	compileOnly 'org.codehaus.groovy:groovy:3.0.7'
 
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')

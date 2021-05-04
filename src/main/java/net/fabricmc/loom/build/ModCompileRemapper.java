@@ -46,6 +46,7 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.LoomProjectData;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
@@ -64,60 +65,63 @@ public class ModCompileRemapper {
 		final File modStore = extension.getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
 
+		final LoomProjectData data = extension.getProjectData();
+
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			Configuration sourceConfig = project.getConfigurations().getByName(entry.getSourceConfiguration());
-			Configuration remappedConfig = project.getConfigurations().getByName(entry.getRemappedConfiguration());
-			Configuration regularConfig = project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations()));
+			data.getLazyConfigurationProvider(entry.getRemappedConfiguration()).configure(remappedConfig -> {
+				Configuration sourceConfig = project.getConfigurations().getByName(entry.getSourceConfiguration());
+				Configuration regularConfig = project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations()));
 
-			List<ModDependencyInfo> modDependencies = new ArrayList<>();
+				List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
-			for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-				// TODO: This collection doesn't appear to include FileCollection dependencies
-				// Might have to go based on the dependencies, rather than their resolved form?
-				// File dependencies use SelfResolvingDependency, which appears to be handled differently
-				String group = artifact.getModuleVersion().getId().getGroup();
-				String name = artifact.getModuleVersion().getId().getName();
-				String version = artifact.getModuleVersion().getId().getVersion();
+				for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
+					// TODO: This collection doesn't appear to include FileCollection dependencies
+					// Might have to go based on the dependencies, rather than their resolved form?
+					// File dependencies use SelfResolvingDependency, which appears to be handled differently
+					String group = artifact.getModuleVersion().getId().getGroup();
+					String name = artifact.getModuleVersion().getId().getName();
+					String version = artifact.getModuleVersion().getId().getVersion();
 
-				if (!isFabricMod(logger, artifact)) {
-					addToRegularCompile(project, regularConfig, artifact);
-					continue;
-				}
+					if (!isFabricMod(logger, artifact)) {
+						addToRegularCompile(project, regularConfig, artifact);
+						continue;
+					}
 
-				ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
+					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
 
-				if (refreshDeps) {
-					info.forceRemap();
-				}
+					if (refreshDeps) {
+						info.forceRemap();
+					}
 
-				modDependencies.add(info);
+					modDependencies.add(info);
 
-				String remappedLog = group + ":" + name + ":" + version + (artifact.getClassifier() == null ? "" : ":" + artifact.getClassifier()) + " (" + mappingsSuffix + ")";
-				project.getLogger().info(":providing " + remappedLog);
+					String remappedLog = group + ":" + name + ":" + version + (artifact.getClassifier() == null ? "" : ":" + artifact.getClassifier()) + " (" + mappingsSuffix + ")";
+					project.getLogger().info(":providing " + remappedLog);
 
-				File remappedSources = info.getRemappedOutput("sources");
+					File remappedSources = info.getRemappedOutput("sources");
 
-				if ((!remappedSources.exists() || refreshDeps) && !OperatingSystem.isCIBuild()) {
-					File sources = findSources(dependencies, artifact);
+					if ((!remappedSources.exists() || refreshDeps) && !OperatingSystem.isCIBuild()) {
+						File sources = findSources(dependencies, artifact);
 
-					if (sources != null) {
-						scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), remappedSources);
+						if (sources != null) {
+							scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), remappedSources);
+						}
 					}
 				}
-			}
 
-			try {
-				ModProcessor.processMods(project, modDependencies);
-			} catch (IOException e) {
-				// Failed to remap, lets clean up to ensure we try again next time
-				modDependencies.forEach(info -> info.getRemappedOutput().delete());
-				throw new RuntimeException("Failed to remap mods", e);
-			}
+				try {
+					ModProcessor.processMods(project, modDependencies);
+				} catch (IOException e) {
+					// Failed to remap, lets clean up to ensure we try again next time
+					modDependencies.forEach(info -> info.getRemappedOutput().delete());
+					throw new RuntimeException("Failed to remap mods", e);
+				}
 
-			// Add all of the remapped mods onto the config
-			for (ModDependencyInfo info : modDependencies) {
-				project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
-			}
+				// Add all of the remapped mods onto the config
+				for (ModDependencyInfo info : modDependencies) {
+					project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
+				}
+			});
 		}
 	}
 

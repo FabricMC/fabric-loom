@@ -72,11 +72,15 @@ public final class CompileConfiguration {
 		project.getConfigurations().maybeCreate(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
 		project.getConfigurations().maybeCreate(Constants.Configurations.UNPICK_CLASSPATH);
 
+		LoomProjectData data = project.getExtensions().getByType(LoomGradleExtension.class).getProjectData();
+
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
-			compileModsConfig.setTransitive(true);
-			Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfiguration());
-			compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
+			data.createLazyConfiguration(entry.getSourceConfiguration())
+					.configure(configuration -> configuration.setTransitive(true));
+
+			// Don't get transitive deps of already remapped mods
+			data.createLazyConfiguration(entry.getRemappedConfiguration())
+					.configure(configuration -> configuration.setTransitive(false));
 
 			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration(), project);
 

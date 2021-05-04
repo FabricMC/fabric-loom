@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -67,6 +68,7 @@ import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.srg.MCPReader;
 import net.fabricmc.loom.util.srg.SrgMerger;
 import net.fabricmc.loom.util.srg.SrgNamedWriter;
+import net.fabricmc.mapping.reader.v2.TinyMetadata;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.Command;
@@ -274,7 +276,12 @@ public class MappingsProvider extends DependencyProvider {
 			extractUnpickDefinitions(fileSystem, unpickDefinitionsFile.toPath());
 		}
 
-		if (baseMappingsAreV2()) {
+		if (baseMappingsAreMergedV2()) {
+			// Architectury Loom Patch
+			// If a merged tiny v2 mappings file is provided
+			// Skip merging, should save a lot of time
+			Files.copy(baseTinyMappings, tinyMappings.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		} else if (baseMappingsAreV2()) {
 			// These are unmerged v2 mappings
 			mergeAndSaveMappings(project, yarnJar);
 		} else {
@@ -334,6 +341,15 @@ public class MappingsProvider extends DependencyProvider {
 			} catch (IllegalArgumentException | NoSuchFileException e) {
 				return false;
 			}
+		}
+	}
+
+	private boolean baseMappingsAreMergedV2() throws IOException {
+		try (BufferedReader reader = Files.newBufferedReader(baseTinyMappings)) {
+			TinyMetadata metadata = TinyV2Factory.readMetadata(reader);
+			return metadata.getNamespaces().containsAll(Arrays.asList("named", "intermediary", "official"));
+		} catch (IllegalArgumentException e) {
+			return false;
 		}
 	}
 

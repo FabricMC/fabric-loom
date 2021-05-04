@@ -34,12 +34,13 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.gradle.GradleSupport;
 
 public class Constants {
-	public static final String PLUGIN_ID = "forgified-fabric-loom";
+	public static final String PLUGIN_ID = "dev.architectury.loom";
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
 	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
 	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
+	public static final String TASK_CATEGORY = "loom";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.google.common.base.Stopwatch;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
@@ -45,7 +46,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
+import net.fabricmc.loom.configuration.providers.minecraft.tr.MercuryUtils;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
@@ -54,7 +55,7 @@ public class SourceRemapper {
 	private final Project project;
 	private String from;
 	private String to;
-	private final List<Consumer<ProgressLogger>> remapTasks = new ArrayList<>();
+	private final List<Consumer<Mercury>> remapTasks = new ArrayList<>();
 
 	private Mercury mercury;
 
@@ -80,10 +81,9 @@ public class SourceRemapper {
 	}
 
 	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
-		remapTasks.add((logger) -> {
+		remapTasks.add((mercury) -> {
 			try {
-				logger.progress("remapping sources - " + source.getName());
-				remapSourcesInner(source, destination);
+				remapSourcesInner(mercury, source, destination);
 				ZipReprocessorUtil.reprocessZip(destination, reproducibleFileOrder, preserveFileTimestamps);
 
 				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
@@ -101,22 +101,21 @@ public class SourceRemapper {
 			return;
 		}
 
-		project.getLogger().lifecycle(":remapping sources");
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		project.getLogger().lifecycle(":remapping " + remapTasks.size() + " sources");
 
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, SourceRemapper.class.getName());
-		progressLogger.start("Remapping dependency sources", "sources");
+		Mercury mercury = getMercuryInstance();
+		ThreadingUtils.run(remapTasks, consumer -> consumer.accept(MercuryUtils.copyMercury(mercury)));
 
-		remapTasks.forEach(consumer -> consumer.accept(progressLogger));
-
-		progressLogger.completed();
+		project.getLogger().lifecycle(":remapped " + remapTasks.size() + " sources in " + stopwatch.stop());
 
 		// TODO: FIXME - WORKAROUND https://github.com/FabricMC/fabric-loom/issues/45
 		System.gc();
 	}
 
-	private void remapSourcesInner(File source, File destination) throws Exception {
+	private void remapSourcesInner(Mercury mercury, File source, File destination) throws Exception {
+		Stopwatch stopwatch = Stopwatch.createStarted();
 		project.getLogger().info(":remapping source jar " + source.getName() + " from " + from + " to " + to);
-		Mercury mercury = getMercuryInstance();
 
 		if (source.equals(destination)) {
 			if (source.isDirectory()) {
@@ -166,6 +165,8 @@ public class SourceRemapper {
 		if (isSrcTmp) {
 			Files.walkFileTree(srcPath, new DeletingFileVisitor());
 		}
+
+		project.getLogger().info(":remapped source jar " + source.getName() + " from " + from + " to " + to + " in " + stopwatch.stop());
 	}
 
 	private Mercury getMercuryInstance() {

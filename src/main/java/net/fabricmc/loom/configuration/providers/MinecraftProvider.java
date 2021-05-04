@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.ZipError;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -112,6 +113,7 @@ public class MinecraftProvider extends DependencyProvider {
 			} catch (ZipError e) {
 				HashedDownloadUtil.delete(minecraftClientJar);
 				HashedDownloadUtil.delete(minecraftServerJar);
+				HashedDownloadUtil.delete(minecraftMergedJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();
@@ -232,11 +234,14 @@ public class MinecraftProvider extends DependencyProvider {
 
 	private void mergeJars(Logger logger) throws IOException {
 		logger.info(":merging jars");
+		Stopwatch stopwatch = Stopwatch.createStarted();
 
 		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}
+
+		logger.info(":merged jars in " + stopwatch);
 	}
 
 	public File getMergedJar() {

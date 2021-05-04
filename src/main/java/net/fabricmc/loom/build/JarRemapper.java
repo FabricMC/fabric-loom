@@ -35,16 +35,16 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import dev.architectury.tinyremapper.IMappingProvider;
+import dev.architectury.tinyremapper.InputTag;
+import dev.architectury.tinyremapper.OutputConsumerPath;
+import dev.architectury.tinyremapper.TinyRemapper;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.util.LoggerFilter;
 import net.fabricmc.stitch.util.Pair;
-import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.InputTag;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class JarRemapper {
 	private final List<IMappingProvider> mappingProviders = new ArrayList<>();

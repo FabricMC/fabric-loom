@@ -29,12 +29,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.google.common.base.Stopwatch;
 
 public class ThreadingUtils {
 	public static <T> void run(Collection<T> values, UnsafeConsumer<T> action) {
@@ -120,5 +124,57 @@ public class ThreadingUtils {
 
 	public interface UnsafeConsumer<T> {
 		void accept(T value) throws Throwable;
+	}
+
+	public static TaskCompleter taskCompleter() {
+		return new TaskCompleter();
+	}
+
+	public static class TaskCompleter implements Function<Throwable, Void> {
+		Stopwatch stopwatch = Stopwatch.createUnstarted();
+		List<CompletableFuture<?>> tasks = new ArrayList<>();
+		ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		List<Consumer<Stopwatch>> completionListener = new ArrayList<>();
+
+		public TaskCompleter add(UnsafeRunnable job) {
+			if (!stopwatch.isRunning()) {
+				stopwatch.start();
+			}
+
+			tasks.add(CompletableFuture.runAsync(() -> {
+				try {
+					job.run();
+				} catch (Throwable throwable) {
+					throw new RuntimeException(throwable);
+				}
+			}, service).exceptionally(this));
+
+			return this;
+		}
+
+		public TaskCompleter onComplete(Consumer<Stopwatch> consumer) {
+			completionListener.add(consumer);
+			return this;
+		}
+
+		public void complete() {
+			try {
+				CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).exceptionally(this).get();
+				service.shutdownNow();
+				stopwatch.stop();
+
+				for (Consumer<Stopwatch> consumer : completionListener) {
+					consumer.accept(stopwatch);
+				}
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public Void apply(Throwable throwable) {
+			throwable.printStackTrace();
+			return null;
+		}
 	}
 }

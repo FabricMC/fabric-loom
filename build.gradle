@@ -17,9 +17,9 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'me.shedaniel'
+group = "dev.architectury"
 archivesBaseName = project.name
-def baseVersion = '0.7.0'
+def baseVersion = '0.7.1'
 def runNumber = System.getenv("GITHUB_RUN_NUMBER") ?: "9999"
 
 def isSnapshot = System.getenv("PR_NUM") != null
@@ -35,7 +35,6 @@ if (!isSnapshot) {
 logger.lifecycle(":building plugin v${version}")
 
 configurations {
-	shadowArchitectury
 	forgeInjectShadow
 	forgeInjectCompileClasspath.extendsFrom(forgeInjectShadow)
 	forgeInjectRuntimeClasspath.extendsFrom(forgeInjectShadow)
@@ -77,10 +76,7 @@ dependencies {
 	}
 
 	// tinyfile management
-	compileOnly ('net.fabricmc:tiny-remapper:0.3.2-architectury.7')
-	shadowArchitectury ('net.fabricmc:tiny-remapper:0.3.2-architectury.7') {
-		transitive = false
-	}
+	implementation ('dev.architectury:tiny-remapper:1.0.0')
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
 	implementation 'net.fabricmc:access-widener:1.0.0'
@@ -89,17 +85,14 @@ dependencies {
 		transitive = false
 	}
 	implementation ('org.cadixdev:lorenz-io-proguard:0.5.6')
-	compileOnly "me.shedaniel.architectury:refmap-remapper:1.0.4"
-	shadowArchitectury ("me.shedaniel.architectury:refmap-remapper:1.0.4") {
-		transitive = false
-	}
+	implementation "dev.architectury:refmap-remapper:1.0.5"
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:1.3.0')
 	implementation ('org.benf:cfr:0.150')
 
 	// source code remapping
-	implementation ('org.cadixdev:mercury:0.2.8')
+	implementation ('org.cadixdev:mercury:0.2.9-architectury')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21')
@@ -110,7 +103,7 @@ dependencies {
 	implementation ('org.cadixdev:lorenz-asm:0.5.3')
 	implementation ('net.minecraftforge:accesstransformers:2.2.0')
 	implementation ('de.oceanlabs.mcp:mcinjector:3.8.0')
-	implementation ('net.md-5:SpecialSource:1.8.3')
+	implementation ('com.opencsv:opencsv:5.4')
 
 	// Forge injection
 	forgeInjectShadow ('net.fabricmc:tiny-mappings-parser:0.2.2.14')
@@ -141,17 +134,10 @@ jar {
 	classifier 'jar'
 }
 
-shadowJar {
-	relocate "net.fabricmc.tinyremapper", "me.shedaniel.architectury.loom.shadowed.impl.net.fabricmc.tinyremapper"
-	relocate "me.shedaniel.architectury.refmapremapper", "me.shedaniel.architectury.loom.shadowed.impl.me.shedaniel.architectury.refmapremapper"
-	configurations = [project.configurations.shadowArchitectury]
-	classifier "shadow"
-}
-
-task mainJar(type: Jar, dependsOn: shadowJar) {
+task mainJar(type: Jar, dependsOn: jar) {
 	dependsOn forgeInjectJar
 	
-	from zipTree(shadowJar.archivePath)
+	from zipTree(jar.archivePath)
 	from(forgeInjectJar.outputs) {
 		into "inject"
 		rename { "injection.jar" }
@@ -195,7 +181,7 @@ codenarc {
 gradlePlugin {
 	plugins {
 		fabricLoom {
-			id = 'forgified-fabric-loom'
+			id = 'dev.architectury.loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 	}
@@ -228,8 +214,8 @@ import org.w3c.dom.Node
 publishing {
 	publications {
 		plugin(MavenPublication) {
-			groupId 'forgified-fabric-loom'
-			artifactId 'forgified-fabric-loom.gradle.plugin'
+			groupId 'dev.architectury.loom'
+			artifactId 'dev.architectury.loom.gradle.plugin'
 
 			from components.java
 			artifact mainJar
@@ -260,8 +246,8 @@ publishing {
 		}
 
 		pluginSnapshot(MavenPublication) {
-			groupId 'forgified-fabric-loom'
-			artifactId 'forgified-fabric-loom.gradle.plugin'
+			groupId 'dev.architectury.loom'
+			artifactId 'dev.architectury.loom.gradle.plugin'
 			version baseVersion + '-SNAPSHOT'
 
 			pom.withXml {

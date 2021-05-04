@@ -56,7 +56,6 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	public GenerateSourcesTask(LoomDecompiler decompiler) {
 		this.decompiler = decompiler;
 
-		setGroup("fabric");
 		getOutputs().upToDateWhen((o) -> false);
 	}
 

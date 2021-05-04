@@ -25,18 +25,19 @@
 package net.fabricmc.loom.util.srg;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import org.zeroturnaround.zip.ZipUtil;
+import dev.architectury.tinyremapper.IMappingProvider;
 
+import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.FileSystemUtil.FileSystemDelegate;
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
 
 public class InnerClassRemapper {
 	public static IMappingProvider of(Path fromJar, TinyTree mappingsWithSrg, String from, String to) throws IOException {
@@ -46,7 +47,7 @@ public class InnerClassRemapper {
 	}
 
 	private static void remapInnerClass(Path fromJar, TinyTree mappingsWithSrg, String from, String to, BiConsumer<String, String> action) {
-		try (InputStream inputStream = Files.newInputStream(fromJar)) {
+		try (FileSystemDelegate system = FileSystemUtil.getJarFileSystem(fromJar, false)) {
 			Map<String, String> availableClasses = mappingsWithSrg.getClasses().stream()
 					.collect(Collectors.groupingBy(classDef -> classDef.getName(from),
 							Collectors.<ClassDef, String>reducing(
@@ -55,9 +56,15 @@ public class InnerClassRemapper {
 									(first, last) -> last
 							))
 					);
-			ZipUtil.iterate(inputStream, (in, zipEntry) -> {
-				if (!zipEntry.isDirectory() && zipEntry.getName().contains("$") && zipEntry.getName().endsWith(".class")) {
-					String className = zipEntry.getName().substring(0, zipEntry.getName().length() - 6);
+			Iterator<Path> iterator = Files.walk(system.get().getPath("/")).iterator();
+
+			while (iterator.hasNext()) {
+				Path path = iterator.next();
+				String name = path.toString();
+				if (name.startsWith("/")) name = name.substring(1);
+
+				if (!Files.isDirectory(path) && name.contains("$") && name.endsWith(".class")) {
+					String className = name.substring(0, name.length() - 6);
 
 					if (!availableClasses.containsKey(className)) {
 						String parentName = className.substring(0, className.indexOf('$'));
@@ -70,7 +77,7 @@ public class InnerClassRemapper {
 						}
 					}
 				}
-			});
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

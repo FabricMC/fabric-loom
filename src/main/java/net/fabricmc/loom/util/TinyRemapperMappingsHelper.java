@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.util;
 
+import dev.architectury.tinyremapper.IMappingProvider;
+
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.LocalVariableDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.ParameterDef;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
 
 public class TinyRemapperMappingsHelper {
 	private TinyRemapperMappingsHelper() { }

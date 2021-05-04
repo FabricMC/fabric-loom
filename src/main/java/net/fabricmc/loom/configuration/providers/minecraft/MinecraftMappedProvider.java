@@ -34,32 +34,36 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import dev.architectury.tinyremapper.IMappingProvider;
+import dev.architectury.tinyremapper.TinyRemapper;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.tr.OutputRemappingHandler;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.ThreadingUtils;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.srg.AtRemapper;
 import net.fabricmc.loom.util.srg.CoreModClassRemapper;
 import net.fabricmc.loom.util.srg.InnerClassRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.NonClassCopyMode;
-import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MinecraftMappedProvider extends DependencyProvider {
 	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
@@ -145,29 +149,57 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		remapper.readClassPath(libraries);
 		remapper.prepareClasses();
 
-		for (String toM : getExtension().isForge() ? Arrays.asList("named", "intermediary", "srg") : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
+		Path tmpAssets = Files.createTempFile("tmpAssets", null);
+		Files.deleteIfExists(tmpAssets);
+		tmpAssets.toFile().deleteOnExit();
 
-			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+		List<byte[]> inputByteList = new ArrayList<>();
 
-			Files.deleteIfExists(output);
+		try (FileSystemUtil.FileSystemDelegate inputFs = FileSystemUtil.getJarFileSystem(input, false)) {
+			ThreadingUtils.TaskCompleter taskCompleter = ThreadingUtils.taskCompleter();
 
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
-				if (getExtension().isForge()) {
-					outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, remapper);
-				} else {
-					outputConsumer.addNonClassFiles(input);
+			try (FileSystemUtil.FileSystemDelegate assetsFs = FileSystemUtil.getJarFileSystem(tmpAssets, true)) {
+				for (Path path : (Iterable<? extends Path>) Files.walk(inputFs.get().getPath("/"))::iterator) {
+					if (Files.isRegularFile(path)) {
+						if (path.getFileName().toString().endsWith(".class")) {
+							taskCompleter.add(() -> {
+								byte[] bytes = Files.readAllBytes(path);
+
+								synchronized (inputByteList) {
+									inputByteList.add(bytes);
+								}
+							});
+						} else {
+							Path p = assetsFs.get().getPath(path.toString());
+
+							if (p.getParent() != null) {
+								Files.createDirectories(p.getParent());
+							}
+
+							taskCompleter.add(() -> {
+								Files.copy(path, p);
+							});
+						}
+					}
 				}
 
-				remapper.replaceMappings(getMappings(input, fromM, toM));
-				remapper.readInputs(input);
-				remapper.apply(outputConsumer);
-			} catch (Exception e) {
-				Files.deleteIfExists(output);
-				throw new RuntimeException("Failed to remap JAR " + input + " with mappings from " + mappingsProvider.tinyMappings, e);
-			} finally {
-				remapper.removeInput();
+				taskCompleter.complete();
 			}
+		}
+
+		byte[][] inputBytes = inputByteList.toArray(new byte[0][0]);
+
+		for (String toM : getExtension().isForge() ? Arrays.asList("intermediary", "srg", "named") : Arrays.asList("intermediary", "named")) {
+			Path output = "named".equals(toM) ? outputMapped : "srg".equals(toM) ? outputSrg : outputIntermediary;
+			Stopwatch stopwatch = Stopwatch.createStarted();
+			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+			remapper.readInputs(inputBytes);
+			remapper.replaceMappings(getMappings(input, fromM, toM));
+			OutputRemappingHandler.remap(remapper, tmpAssets, output);
+
+			getProject().getLogger().lifecycle(":remapped minecraft (TinyRemapper, " + fromM + " -> " + toM + ") in " + stopwatch);
+			remapper.removeInput();
 
 			if (getExtension().isForge() && !"srg".equals(toM)) {
 				getProject().getLogger().info(":running forge finalising tasks");

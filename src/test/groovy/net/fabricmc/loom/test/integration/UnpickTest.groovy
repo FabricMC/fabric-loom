@@ -22,35 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
+import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
-import spock.lang.Unroll
+
+import java.nio.charset.StandardCharsets
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class AccessWidenerTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
+class UnpickTest extends Specification implements ProjectTestTrait {
+	static final String MAPPINGS = "21w13a-mapped-net.fabricmc.yarn-21w13a+build.30-v2"
+
 	@Override
 	String name() {
-		"accesswidener"
+		"unpick"
 	}
 
-	@Unroll
-	def "accesswidener (gradle #gradle)"() {
+	def "unpick decompile"() {
 		when:
-			def result = create("build", gradle)
+			def result = create("genSources")
+		then:
+			result.task(":genSources").outcome == SUCCESS
+			getClassSource("net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+	}
+
+	def "unpick build"() {
+		when:
+			def result = create("build")
 		then:
 			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
-		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
 	}
 
-	String expected() {
-		new File("src/test/resources/accesswidener/expected.accesswidener").text
+	String getClassSource(String classname, String mappings = MAPPINGS) {
+		File sourcesJar = getGeneratedSources(mappings)
+		return new String(ZipUtil.unpackEntry(sourcesJar, classname), StandardCharsets.UTF_8)
 	}
 }

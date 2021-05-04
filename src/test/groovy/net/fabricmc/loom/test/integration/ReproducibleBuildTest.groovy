@@ -22,19 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
+import com.google.common.hash.HashCode
+import com.google.common.hash.Hashing
+import com.google.common.io.Files
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
+class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"multiproject"
+		"reproducible"
 	}
 
 	@Unroll
@@ -43,19 +45,20 @@ class MultiProjectTest extends Specification implements ProjectTestTrait, Archiv
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
-
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
-
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
-
+			getOutputHash("fabric-example-mod-1.0.0.jar") == modHash
+			getOutputHash("fabric-example-mod-1.0.0-sources.jar") in sourceHash // Done for different line endings.
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			gradle              | modHash                               | sourceHash
+			DEFAULT_GRADLE      | "6132ffb4117adb7e258f663110552952"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
+			PRE_RELEASE_GRADLE  | "6132ffb4117adb7e258f663110552952"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
+	}
+
+	String getOutputHash(String name) {
+		generateMD5(getOutputFile(name))
+	}
+
+	String generateMD5(File file) {
+		HashCode hash = Files.asByteSource(file).hash(Hashing.md5())
+		return hash.asBytes().encodeHex() as String
 	}
 }

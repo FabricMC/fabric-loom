@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.MockMavenServerTrait

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
@@ -30,18 +30,24 @@ import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test uses gradle 4.9 and 1.14.4 v1 mappings
-class LegacyProjectTest extends Specification implements ProjectTestTrait {
+class DecompileTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"legacy"
+		"decompile"
 	}
 
 	@Unroll
-	def "build"() {
+	def "#decompiler gradle #gradle"() {
 		when:
-			def result = create("build", DEFAULT_GRADLE)
+			def result = create(task, gradle)
+
 		then:
-			result.task(":build").outcome == SUCCESS
+			result.task(":${task}").outcome == SUCCESS
+
+		where:
+			decompiler 		| task								| gradle
+			'fernflower'	| "genSources"						| DEFAULT_GRADLE
+			'fernflower'	| "genSources"						| PRE_RELEASE_GRADLE
+			'cfr' 			| "genSourcesWithExperimentalCfr"	| DEFAULT_GRADLE
 	}
 }

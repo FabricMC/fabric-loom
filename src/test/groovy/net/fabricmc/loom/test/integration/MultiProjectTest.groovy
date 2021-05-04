@@ -22,18 +22,19 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class SimpleProjectTest extends Specification implements ProjectTestTrait {
+class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {
-		"simple"
+		"multiproject"
 	}
 
 	@Unroll
@@ -42,22 +43,19 @@ class SimpleProjectTest extends Specification implements ProjectTestTrait {
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
+			result.task(":core:build").outcome == SUCCESS
+			result.task(":example:build").outcome == SUCCESS
+
+			result.task(":remapAllJars").outcome == SUCCESS
+			result.task(":remapAllSources").outcome == SUCCESS
+
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
+			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+
 		where:
 			gradle              | _
 			DEFAULT_GRADLE      | _
 			PRE_RELEASE_GRADLE  | _
-	}
-
-	@Unroll
-	def "#ide config generation"() {
-		when:
-			def result = create(ide)
-		then:
-			result.task(":${ide}").outcome == SUCCESS
-		where:
-			ide 		| _
-			'idea' 		| _
-			'eclipse'	| _
-			'vscode'	| _
 	}
 }

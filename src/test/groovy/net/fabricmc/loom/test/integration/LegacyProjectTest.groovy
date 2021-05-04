@@ -22,31 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
-import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-@IgnoreIf({ jvm.java16Compatible }) // Fails on J16 > due to https://youtrack.jetbrains.com/issue/KT-45566
-class KotlinTest extends Specification implements ProjectTestTrait {
+// This test uses gradle 4.9 and 1.14.4 v1 mappings
+class LegacyProjectTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"kotlin"
+		"legacy"
 	}
 
 	@Unroll
-	def "kotlin build (gradle #gradle)"() {
+	def "build"() {
 		when:
-			def result = create("build", gradle)
+			def result = create("build", DEFAULT_GRADLE)
 		then:
 			result.task(":build").outcome == SUCCESS
-		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
 	}
 }

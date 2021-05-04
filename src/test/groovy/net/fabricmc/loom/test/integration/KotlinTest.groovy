@@ -22,33 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.intergration
+package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ProjectTestTrait
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test runs a mod that exits on mod init
-class RunConfigTest extends Specification implements ProjectTestTrait {
+@IgnoreIf({ jvm.java16Compatible }) // Fails on J16 > due to https://youtrack.jetbrains.com/issue/KT-45566
+class KotlinTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {
-		"runconfigs"
+		"kotlin"
 	}
 
 	@Unroll
-	def "#task"() {
+	def "kotlin build (gradle #gradle)"() {
 		when:
-			def result = create(task)
+			def result = create("build", gradle)
 		then:
-			result.task(":${task}").outcome == SUCCESS
+			result.task(":build").outcome == SUCCESS
 		where:
-			task                | _
-			'runClient'         | _
-			'runServer'         | _
-			'runTestmodClient'  | _
-			'runTestmodServer'  | _
-			'runAutoTestServer' | _
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

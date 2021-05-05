@@ -47,6 +47,8 @@ import java.util.jar.Manifest;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import dev.architectury.tinyremapper.IMappingProvider;
+import dev.architectury.tinyremapper.NonClassCopyMode;
+import dev.architectury.tinyremapper.OutputConsumerPath;
 import dev.architectury.tinyremapper.TinyRemapper;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +57,7 @@ import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.tr.OutputRemappingHandler;
+import net.fabricmc.loom.configuration.sources.ForgeSourcesRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -66,7 +69,7 @@ import net.fabricmc.loom.util.srg.InnerClassRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class MinecraftMappedProvider extends DependencyProvider {
-	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
+	public static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
 			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
 			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
 			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
@@ -132,6 +135,16 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		}
 
 		addDependencies(dependency, postPopulationScheduler);
+
+		getProject().afterEvaluate(project -> {
+			if (getExtension().isForge()) {
+				try {
+					ForgeSourcesRemapper.addBaseForgeSources(project);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 
 	private void mapMinecraftJar() throws Exception {
@@ -158,32 +171,28 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		try (FileSystemUtil.FileSystemDelegate inputFs = FileSystemUtil.getJarFileSystem(input, false)) {
 			ThreadingUtils.TaskCompleter taskCompleter = ThreadingUtils.taskCompleter();
 
-			try (FileSystemUtil.FileSystemDelegate assetsFs = FileSystemUtil.getJarFileSystem(tmpAssets, true)) {
-				for (Path path : (Iterable<? extends Path>) Files.walk(inputFs.get().getPath("/"))::iterator) {
-					if (Files.isRegularFile(path)) {
-						if (path.getFileName().toString().endsWith(".class")) {
-							taskCompleter.add(() -> {
-								byte[] bytes = Files.readAllBytes(path);
+			for (Path path : (Iterable<? extends Path>) Files.walk(inputFs.get().getPath("/"))::iterator) {
+				if (Files.isRegularFile(path)) {
+					if (path.getFileName().toString().endsWith(".class")) {
+						taskCompleter.add(() -> {
+							byte[] bytes = Files.readAllBytes(path);
 
-								synchronized (inputByteList) {
-									inputByteList.add(bytes);
-								}
-							});
-						} else {
-							Path p = assetsFs.get().getPath(path.toString());
-
-							if (p.getParent() != null) {
-								Files.createDirectories(p.getParent());
+							synchronized (inputByteList) {
+								inputByteList.add(bytes);
 							}
-
-							taskCompleter.add(() -> {
-								Files.copy(path, p);
-							});
-						}
+						});
 					}
 				}
+			}
 
-				taskCompleter.complete();
+			taskCompleter.complete();
+		}
+
+		try (OutputConsumerPath tmpAssetsPath = new OutputConsumerPath.Builder(tmpAssets).assumeArchive(true).build()) {
+			if (getExtension().isForge()) {
+				tmpAssetsPath.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, null);
+			} else {
+				tmpAssetsPath.addNonClassFiles(input);
 			}
 		}
 

@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Project;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -42,6 +43,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.sources.ForgeSourcesRemapper;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
@@ -81,6 +83,10 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 			Files.copy(linemappedJarDestination, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
 			Files.delete(linemappedJarDestination);
 		}
+
+		if (getExtension().isForge()) {
+			ForgeSourcesRemapper.addForgeSources(getProject(), sourcesDestination);
+		}
 	}
 
 	private void remapLineNumbers(Path oldCompiledJar, Path linemap, Path linemappedJarDestination) throws IOException {
@@ -100,7 +106,11 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private File getMappedJarFileWithSuffix(String suffix) {
-		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
+		return getMappedJarFileWithSuffix(getProject(), suffix);
+	}
+
+	public static File getMappedJarFileWithSuffix(Project project, String suffix) {
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		String path = mappedJar.getAbsolutePath();

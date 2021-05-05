@@ -86,6 +86,7 @@ public class ForgeUserdevProvider extends DependencyProvider {
 				}
 			}
 
+			if (lib.getAsString().endsWith(":launcher")) continue;
 			addDependency(lib.getAsString(), Constants.Configurations.FORGE_DEPENDENCIES);
 		}
 

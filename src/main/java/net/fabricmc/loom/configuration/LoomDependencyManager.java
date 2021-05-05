@@ -140,7 +140,7 @@ public class LoomDependencyManager {
 		String platformSuffix = extension.isForge() ? "_forge" : "";
 		String mappingsKey = mappingsProvider.getMappingsKey() + platformSuffix;
 
-		if (extension.getInstallerJson() == null) {
+		if (extension.getInstallerJson() == null && !extension.isForge()) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
 			final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
@@ -159,10 +159,10 @@ public class LoomDependencyManager {
 					handleInstallerJson(extension.getInstallerJson(), project);
 				}
 			}
-		}
 
-		if (extension.getInstallerJson() == null && !extension.isForge()) {
-			project.getLogger().warn("fabric-installer.json not found in classpath!");
+			if (extension.getInstallerJson() == null) {
+				project.getLogger().warn("fabric-installer.json not found in classpath!");
+			}
 		}
 
 		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);

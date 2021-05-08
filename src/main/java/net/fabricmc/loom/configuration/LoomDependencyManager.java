@@ -72,7 +72,7 @@ public class LoomDependencyManager {
 		return provider;
 	}
 
-	public <T> T getProvider(Class<T> clazz) {
+	public <T> T getProvider(Class<? extends T> clazz) {
 		for (DependencyProvider provider : dependencyProviderList) {
 			if (provider.getClass() == clazz) {
 				return (T) provider;

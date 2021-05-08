@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.forge;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -42,6 +44,7 @@ public class PatchProvider extends DependencyProvider {
 	public Path clientPatches;
 	public Path serverPatches;
 	public String forgeVersion;
+	public Path projectCacheFolder;
 
 	public PatchProvider(Project project) {
 		super(project);
@@ -65,8 +68,19 @@ public class PatchProvider extends DependencyProvider {
 
 	private void init(String forgeVersion) {
 		this.forgeVersion = forgeVersion;
-		clientPatches = getExtension().getProjectPersistentCache().toPath().resolve("patches-" + forgeVersion + "-client.lzma");
-		serverPatches = getExtension().getProjectPersistentCache().toPath().resolve("patches-" + forgeVersion + "-server.lzma");
+		projectCacheFolder = getExtension().getProjectPersistentCache().toPath().resolve(forgeVersion);
+		clientPatches = projectCacheFolder.resolve("patches-client.lzma");
+		serverPatches = projectCacheFolder.resolve("patches-server.lzma");
+
+		try {
+			Files.createDirectories(projectCacheFolder);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public Path getProjectCacheFolder() {
+		return projectCacheFolder;
 	}
 
 	@Override

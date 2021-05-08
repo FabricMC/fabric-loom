@@ -40,6 +40,12 @@ import java.util.stream.Collectors;
 import com.google.common.base.Stopwatch;
 
 public class ThreadingUtils {
+	public static <T> void run(T[] values, UnsafeConsumer<T> action) {
+		run(Arrays.stream(values)
+				.<UnsafeRunnable>map(t -> () -> action.accept(t))
+				.collect(Collectors.toList()));
+	}
+
 	public static <T> void run(Collection<T> values, UnsafeConsumer<T> action) {
 		run(values.stream()
 				.<UnsafeRunnable>map(t -> () -> action.accept(t))

@@ -60,6 +60,7 @@ import net.fabricmc.loom.configuration.launch.LaunchProviderSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.forge.FieldMigratedMappingsProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeUniversalProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeUserdevProvider;
@@ -387,7 +388,7 @@ public class LoomGradleExtension {
 	}
 
 	public MappingsProvider getMappingsProvider() {
-		return getDependencyManager().getProvider(MappingsProvider.class);
+		return getDependencyManager().getProvider(isForge() ? FieldMigratedMappingsProvider.class : MappingsProvider.class);
 	}
 
 	public McpConfigProvider getMcpConfigProvider() {

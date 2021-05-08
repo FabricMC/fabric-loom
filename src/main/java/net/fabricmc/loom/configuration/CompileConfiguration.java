@@ -40,6 +40,7 @@ import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.forge.FieldMigratedMappingsProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeUniversalProvider;
 import net.fabricmc.loom.configuration.providers.forge.ForgeUserdevProvider;
@@ -173,7 +174,7 @@ public final class CompileConfiguration {
 				dependencyManager.addProvider(new ForgeUniversalProvider(project));
 			}
 
-			dependencyManager.addProvider(new MappingsProvider(project));
+			dependencyManager.addProvider(extension.isForge() ? new FieldMigratedMappingsProvider(project) : new MappingsProvider(project));
 			dependencyManager.addProvider(new LaunchProvider(project));
 
 			dependencyManager.handleDependencies(project);

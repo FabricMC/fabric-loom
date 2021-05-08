@@ -86,7 +86,7 @@ public class MappingsProvider extends DependencyProvider {
 	public String minecraftVersion;
 	public String mappingsVersion;
 
-	private final Path mappingsDir;
+	protected final Path mappingsDir;
 	private final Path mappingsStepsDir;
 	private Path intermediaryTiny;
 	private boolean hasRefreshed = false;
@@ -94,8 +94,8 @@ public class MappingsProvider extends DependencyProvider {
 	private Path baseTinyMappings;
 	// The mappings we use in practice
 	public File tinyMappings;
+	// tinyMappings wrapped in a jar
 	public File tinyMappingsJar;
-	public File mappingsMixinExport;
 	public Path tinyMappingsWithSrg;
 	public File mixinTinyMappingsWithSrg; // FORGE: The mixin mappings have srg names in intermediary.
 	public File srgToNamedSrg; // FORGE: srg to named in srg file format
@@ -181,18 +181,33 @@ public class MappingsProvider extends DependencyProvider {
 			jarClassifier = jarClassifier + depStringSplit[3];
 		}
 
-		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
-		unpickDefinitionsFile = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".unpick").toFile();
-		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
-		tinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg.tiny");
-		mixinTinyMappingsWithSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-mixin-srg.tiny").toFile();
-		srgToNamedSrg = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + "-srg-named.srg").toFile();
+		String removeSuffix = StringUtils.removeSuffix(mappingsJar.getName(), ".jar");
+		tinyMappings = mappingsDir.resolve(removeSuffix + ".tiny").toFile();
+		unpickDefinitionsFile = mappingsDir.resolve(removeSuffix + ".unpick").toFile();
+		tinyMappingsJar = new File(getExtension().getUserCache(), removeSuffix + "-" + jarClassifier + ".jar");
+		tinyMappingsWithSrg = mappingsDir.resolve(removeSuffix + "-srg.tiny");
+		mixinTinyMappingsWithSrg = mappingsDir.resolve(removeSuffix + "-mixin-srg.tiny").toFile();
+		srgToNamedSrg = mappingsDir.resolve(removeSuffix + "-srg-named.srg").toFile();
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath(), postPopulationScheduler);
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), (ClassLoader) null)) {
 				extractUnpickDefinitions(fileSystem, unpickDefinitionsFile.toPath());
+			}
+		}
+
+		if (getExtension().isForge()) {
+			patchedProvider = new MinecraftPatchedProvider(getProject());
+			patchedProvider.provide(dependency, postPopulationScheduler);
+		}
+
+		manipulateMappings(mappingsJar.toPath());
+
+		if (getExtension().shouldGenerateSrgTiny()) {
+			if (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps()) {
+				// Merge tiny mappings with srg
+				SrgMerger.mergeSrg(getExtension().getSrgProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
 			}
 		}
 
@@ -209,12 +224,6 @@ public class MappingsProvider extends DependencyProvider {
 
 			getProject().getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
 			populateUnpickClasspath();
-		}
-
-		if (getExtension().shouldGenerateSrgTiny()) {
-			if (Files.notExists(tinyMappingsWithSrg) || isRefreshDeps()) {
-				SrgMerger.mergeSrg(getExtension().getSrgProvider().getSrg().toPath(), tinyMappings.toPath(), tinyMappingsWithSrg, true);
-			}
 		}
 
 		if (getExtension().isForge()) {
@@ -247,8 +256,7 @@ public class MappingsProvider extends DependencyProvider {
 		processorManager.setupProcessors();
 
 		if (extension.isForge()) {
-			patchedProvider = new MinecraftPatchedProvider(this, getProject());
-			patchedProvider.provide(dependency, postPopulationScheduler);
+			patchedProvider.finishProvide();
 		}
 
 		if (processorManager.active() || (extension.isForge() && patchedProvider.usesProjectCache())) {
@@ -261,6 +269,8 @@ public class MappingsProvider extends DependencyProvider {
 		mappedProvider.initFiles(minecraftProvider, this);
 		mappedProvider.provide(dependency, postPopulationScheduler);
 	}
+
+	public void manipulateMappings(Path mappingsJar) throws IOException { }
 
 	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar, Consumer<Runnable> postPopulationScheduler)
 			throws Exception {

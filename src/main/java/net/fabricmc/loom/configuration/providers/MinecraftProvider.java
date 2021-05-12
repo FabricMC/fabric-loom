@@ -101,13 +101,13 @@ public class MinecraftProvider extends DependencyProvider {
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
-			} catch (ZipError e) {
+			} catch (Throwable e) {
 				HashedDownloadUtil.delete(minecraftClientJar);
 				HashedDownloadUtil.delete(minecraftServerJar);
 				minecraftMergedJar.delete();
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw new RuntimeException();
+				throw new RuntimeException(e);
 			}
 		}
 	}

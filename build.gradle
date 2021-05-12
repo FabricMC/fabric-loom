@@ -54,7 +54,7 @@ dependencies {
 	implementation ('org.ow2.asm:asm-util:9.1')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.5.1+build.77') {
+	implementation ('net.fabricmc:stitch:0.6.1') {
 		exclude module: 'enigma'
 	}
 

@@ -31,7 +31,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
 import com.google.gson.GsonBuilder;

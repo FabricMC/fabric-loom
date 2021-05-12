@@ -104,6 +104,7 @@ public class MinecraftProvider extends DependencyProvider {
 			} catch (ZipError e) {
 				HashedDownloadUtil.delete(minecraftClientJar);
 				HashedDownloadUtil.delete(minecraftServerJar);
+				minecraftMergedJar.delete();
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw new RuntimeException();

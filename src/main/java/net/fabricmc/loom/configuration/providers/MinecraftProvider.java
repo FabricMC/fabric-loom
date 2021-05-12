@@ -31,7 +31,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
 import com.google.gson.GsonBuilder;
@@ -101,11 +100,11 @@ public class MinecraftProvider extends DependencyProvider {
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
-			} catch (ZipError e) {
+			} catch (Throwable e) {
 				deleteFiles();
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw new RuntimeException();
+				throw e;
 			}
 		}
 	}

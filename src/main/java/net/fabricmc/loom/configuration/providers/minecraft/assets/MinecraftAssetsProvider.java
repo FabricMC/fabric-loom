@@ -84,7 +84,7 @@ public class MinecraftAssetsProvider {
 		AssetIndex index;
 
 		try (FileReader fileReader = new FileReader(assetsInfo)) {
-			index = LoomGradlePlugin.GSON.fromJson(fileReader, AssetIndex.class);
+			index = LoomGradlePlugin.OBJECT_MAPPER.readValue(fileReader, AssetIndex.class);
 		}
 
 		Stopwatch stopwatch = Stopwatch.createStarted();

@@ -29,20 +29,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.gson.JsonObject;
-
 import net.fabricmc.loom.util.OperatingSystem;
 
 @SuppressWarnings("unused")
 public final record MinecraftVersionMeta(
-		JsonObject arguments,
+		Object arguments,
 		AssetIndex assetIndex,
 		String assets,
 		int complianceLevel,
 		Map<String, Download> downloads,
 		String id,
 		List<Library> libraries,
-		JsonObject logging,
+		Object logging,
 		String mainClass,
 		int minimumLauncherVersion,
 		String releaseTime,
@@ -53,13 +51,13 @@ public final record MinecraftVersionMeta(
 		return downloads().get(key);
 	}
 
-	public final record AssetIndex(String id, long totleSize, String path, String sha1, long size, String url) {
+	public final record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
 		public String fabricId(String version) {
 			return id.equals(version) ? version : version + "-" + id;
 		}
 	}
 
-	public final record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules) {
+	public final record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
 		public boolean isValidForOS() {
 			if (rules == null || rules.isEmpty()) {
 				return true;

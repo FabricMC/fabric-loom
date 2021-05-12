@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import com.google.common.io.Files;
-import com.google.gson.GsonBuilder;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -75,7 +74,7 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson(offline);
 
 		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionMeta.class);
+			versionInfo = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, MinecraftVersionMeta.class);
 		}
 
 		// Add Loom as an annotation processor
@@ -140,7 +139,7 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 
 		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();
-		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
+		ManifestVersion mcManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(versionManifest, ManifestVersion.class);
 
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
 
@@ -153,7 +152,7 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 
 		if (!optionalVersion.isPresent()) {
-			optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+			optionalVersion = mcManifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 		}
 
 		if (optionalVersion.isPresent()) {
@@ -197,8 +196,8 @@ public class MinecraftProvider extends DependencyProvider {
 			return false;
 		}
 
-		ManifestVersion manifest = new GsonBuilder().create().fromJson(Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read(), ManifestVersion.class);
-		Optional<ManifestVersion.Versions> version = manifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+		ManifestVersion manifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read(), ManifestVersion.class);
+		Optional<ManifestVersion.Versions> version = manifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 
 		// fail if the expected mc version was not found, will download the file again.
 		return version.isPresent();

@@ -29,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.PluginAware;
 
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
@@ -38,36 +39,42 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
 
-public class LoomGradlePlugin implements Plugin<Project> {
+public class LoomGradlePlugin implements Plugin<PluginAware> {
 	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 	@Override
-	public void apply(Project project) {
-		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+	public void apply(PluginAware target) {
+		target.getPlugins().apply(LoomRepositoryPlugin.class);
 
-		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
+		if (target instanceof Project) {
+			Project project = (Project) target;
 
-		if (refreshDeps) {
-			MappingsCache.INSTANCE.invalidate();
-			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
+			project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+
+			refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
+
+			if (refreshDeps) {
+				MappingsCache.INSTANCE.invalidate();
+				project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
+			}
+
+			// Apply default plugins
+			project.apply(ImmutableMap.of("plugin", "java"));
+			project.apply(ImmutableMap.of("plugin", "eclipse"));
+			project.apply(ImmutableMap.of("plugin", "idea"));
+
+			// Setup extensions, loom shadows minecraft
+			project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+			project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
+			project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
+
+			CompileConfiguration.setupConfigurations(project);
+			IdeConfiguration.setup(project);
+			CompileConfiguration.configureCompile(project);
+			MavenPublication.configure(project);
+			LoomTasks.registerTasks(project);
+			DecompilerConfiguration.setup(project);
 		}
-
-		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java"));
-		project.apply(ImmutableMap.of("plugin", "eclipse"));
-		project.apply(ImmutableMap.of("plugin", "idea"));
-
-		// Setup extensions, loom shadows minecraft
-		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
-		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
-		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
-
-		CompileConfiguration.setupConfigurations(project);
-		IdeConfiguration.setup(project);
-		CompileConfiguration.configureCompile(project);
-		MavenPublication.configure(project);
-		LoomTasks.registerTasks(project);
-		DecompilerConfiguration.setup(project);
 	}
 }

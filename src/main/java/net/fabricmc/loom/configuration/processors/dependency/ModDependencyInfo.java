@@ -80,7 +80,7 @@ public class ModDependencyInfo {
 	}
 
 	public File getRemappedDir() {
-		return new File(remapData.modStore, String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
+		return new File(remapData.modStore(), String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
 	}
 
 	public File getRemappedOutput() {
@@ -96,7 +96,7 @@ public class ModDependencyInfo {
 	}
 
 	private String getGroup() {
-		return getMappingsPrefix(remapData.mappingsSuffix) + "." + group;
+		return getMappingsPrefix(remapData.mappingsSuffix()) + "." + group;
 	}
 
 	public static String getMappingsPrefix(String mappings) {

@@ -67,7 +67,7 @@ public final class CompileConfiguration {
 		data.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			data.createLazyConfiguration(entry.getSourceConfiguration())
+			data.createLazyConfiguration(entry.sourceConfiguration())
 					.configure(configuration -> configuration.setTransitive(true));
 
 			// Don't get transitive deps of already remapped mods
@@ -77,7 +77,7 @@ public final class CompileConfiguration {
 			extendsFrom(entry.getTargetConfiguration(configurations), entry.getRemappedConfiguration(), project);
 
 			if (entry.isOnModCompileClasspath()) {
-				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration(), project);
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.sourceConfiguration(), project);
 				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration(), project);
 			}
 		}

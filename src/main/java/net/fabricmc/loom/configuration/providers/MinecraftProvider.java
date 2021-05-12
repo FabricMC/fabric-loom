@@ -209,11 +209,11 @@ public class MinecraftProvider extends DependencyProvider {
 			return;
 		}
 
-		MinecraftVersionMeta.Download client = versionInfo.getDownload("client");
-		MinecraftVersionMeta.Download server = versionInfo.getDownload("server");
+		MinecraftVersionMeta.Download client = versionInfo.download("client");
+		MinecraftVersionMeta.Download server = versionInfo.download("server");
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(client.getUrl()), minecraftClientJar, client.getSha1(), logger, false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(server.getUrl()), minecraftServerJar, server.getSha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(client.url()), minecraftClientJar, client.sha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(server.url()), minecraftServerJar, server.sha1(), logger, false);
 	}
 
 	private void mergeJars(Logger logger) throws IOException {

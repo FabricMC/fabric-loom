@@ -30,23 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings("unused")
-public class AssetIndex {
-	private final Map<String, AssetObject> objects;
-	private boolean virtual;
-
+public record AssetIndex(Map<String, AssetObject> objects, boolean virtual) {
 	public AssetIndex() {
-		this.objects = new LinkedHashMap<>();
-	}
-
-	public Map<String, AssetObject> getFileMap() {
-		return this.objects;
+		this(new LinkedHashMap<>(), false);
 	}
 
 	public Set<AssetObject> getUniqueObjects() {
 		return new HashSet<>(this.objects.values());
-	}
-
-	public boolean isVirtual() {
-		return this.virtual;
 	}
 }

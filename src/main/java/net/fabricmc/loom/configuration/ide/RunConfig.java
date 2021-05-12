@@ -116,7 +116,7 @@ public class RunConfig {
 			runConfig.programArgs += "--tweakClass " + ("client".equals(environment) ? Constants.LaunchWrapper.DEFAULT_FABRIC_CLIENT_TWEAKER : Constants.LaunchWrapper.DEFAULT_FABRIC_SERVER_TWEAKER);
 		} else {
 			runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
-			runConfig.vmArgs = "-Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + environment.toLowerCase();
+			runConfig.vmArgs = "-XX:+ShowCodeDetailsInExceptionMessages -Dfabric.dli.config=" + encodeEscaped(extension.getDevLauncherConfig().getAbsolutePath()) + " -Dfabric.dli.env=" + environment.toLowerCase();
 		}
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {

@@ -5,8 +5,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [7.0.0]
-        java: [jdk8, jdk11, jdk16]
+        gradle: [7.0.1]
+        java: [jdk16]
         jvm: [hotspot]
     runs-on: ubuntu-20.04
     container:
@@ -24,7 +24,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:7.0.0-jdk16
+      image: gradle:7.0.1-jdk16
       options: --user root
 
     steps:
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [jdk8, jdk11, jdk16]
+        java: [jdk16]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
         exclude:
           - java: jdk16
@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 1.8, 11, 16 ]
+        java: [ 16 ]
         os: [ windows-2019, ubuntu-20.04, macos-10.15 ]
 
     runs-on: ${{ matrix.os }}

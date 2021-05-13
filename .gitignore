@@ -21,3 +21,4 @@
 !/Jenkinsfile
 !/checkstyle.xml
 !/codenarc.groovy
+!/bootstrap

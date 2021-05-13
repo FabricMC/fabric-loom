@@ -42,6 +42,8 @@ repositories {
 dependencies {
 	implementation gradleApi()
 
+	implementation project(":bootstrap")
+
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')
 	implementation ('org.zeroturnaround:zt-zip:1.14')
@@ -94,6 +96,8 @@ jar {
 	manifest {
 		attributes 'Implementation-Version': project.version
 	}
+
+	from project(":bootstrap").sourceSets.main.output
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -128,7 +132,7 @@ gradlePlugin {
 	plugins {
 		fabricLoom {
 			id = 'fabric-loom'
-			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
+			implementationClass = 'net.fabricmc.loom.bootstrap.LoomGradlePluginBootstrap'
 		}
 	}
 }

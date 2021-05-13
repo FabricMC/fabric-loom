@@ -72,20 +72,20 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:1.3.0')
-	implementation ('org.benf:cfr:0.150')
+	implementation ('org.benf:cfr:0.151')
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0-rc1')
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.32')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.0')
 
 	// Testing
 	testImplementation(gradleTestKit())
 	testImplementation('org.spockframework:spock-core:2.0-M5-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'io.javalin:javalin:3.13.4'
+	testImplementation 'io.javalin:javalin:3.13.7'
 
 	compileOnly 'org.jetbrains:annotations:20.1.0'
 }
@@ -116,11 +116,11 @@ license {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '8.41.1'
+	toolVersion = '8.42'
 }
 
 codenarc {
-	toolVersion = "2.0.0"
+	toolVersion = "2.1.0"
 	configFile = file("codenarc.groovy")
 }
 

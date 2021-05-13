@@ -34,7 +34,6 @@ import java.util.jar.JarFile;
 
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,7 +120,7 @@ public class ModDependencyInfo {
 			String pomTemplate;
 
 			try (InputStream input = ModDependencyInfo.class.getClassLoader().getResourceAsStream("mod_compile_template.pom")) {
-				pomTemplate = IOUtils.toString(input, StandardCharsets.UTF_8);
+				pomTemplate = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 			}
 
 			pomTemplate = pomTemplate

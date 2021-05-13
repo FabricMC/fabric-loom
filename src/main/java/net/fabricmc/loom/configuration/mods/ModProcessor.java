@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.JsonObject;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
@@ -229,7 +228,7 @@ public class ModProcessor {
 				}
 
 				try (InputStream inputstream = jarFile.getInputStream(entry)) {
-					jsonStr = IOUtils.toString(inputstream, StandardCharsets.UTF_8);
+					jsonStr = new String(inputstream.readAllBytes(), StandardCharsets.UTF_8);
 				}
 			}
 

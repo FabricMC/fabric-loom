@@ -206,7 +206,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		return LoomGradlePlugin.GSON.toJson(jsonObject);
 	}
 
-	private record DependencyInfo<D>(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
+	private final record DependencyInfo<D>(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
 		public void validateInputs() {
 			if (!file.exists()) {
 				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());

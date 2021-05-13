@@ -123,7 +123,7 @@ public final record MinecraftVersionMeta(
 		}
 	}
 
-	public record Download(String path, String sha1, long size, String url) {
+	public final record Download(String path, String sha1, long size, String url) {
 		public File relativeFile(File baseDirectory) {
 			Objects.requireNonNull(path(), "Cannot get relative file from a null path");
 			return new File(baseDirectory, path());

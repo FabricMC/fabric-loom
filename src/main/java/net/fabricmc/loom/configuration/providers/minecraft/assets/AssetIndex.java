@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings("unused")
-public record AssetIndex(Map<String, AssetObject> objects, boolean virtual) {
+public final record AssetIndex(Map<String, AssetObject> objects, boolean virtual) {
 	public AssetIndex() {
 		this(new LinkedHashMap<>(), false);
 	}

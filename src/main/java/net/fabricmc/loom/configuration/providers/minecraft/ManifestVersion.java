@@ -27,7 +27,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.Map;
 
-public record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
+public final record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
 	public static class Versions {
 		public String id, url, sha1;
 	}

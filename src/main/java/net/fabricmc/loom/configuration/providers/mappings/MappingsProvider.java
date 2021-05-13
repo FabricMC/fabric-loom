@@ -408,6 +408,6 @@ public class MappingsProvider extends DependencyProvider {
 		return hasUnpickDefinitions;
 	}
 
-	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
+	public final record UnpickMetadata(String unpickGroup, String unpickVersion) {
 	}
 }

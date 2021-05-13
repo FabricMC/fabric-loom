@@ -27,7 +27,7 @@ package net.fabricmc.loom.configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 
-public final record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
 	public boolean hasMavenScope() {
 		return mavenScope != null && !mavenScope.isEmpty();
 	}

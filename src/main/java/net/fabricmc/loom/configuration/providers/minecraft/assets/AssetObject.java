@@ -25,5 +25,5 @@
 package net.fabricmc.loom.configuration.providers.minecraft.assets;
 
 @SuppressWarnings("unused")
-public final record AssetObject(String hash, long size) {
+public record AssetObject(String hash, long size) {
 }

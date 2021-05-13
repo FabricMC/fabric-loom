@@ -32,7 +32,7 @@ import java.util.Objects;
 import net.fabricmc.loom.util.OperatingSystem;
 
 @SuppressWarnings("unused")
-public final record MinecraftVersionMeta(
+public record MinecraftVersionMeta(
 		Object arguments,
 		AssetIndex assetIndex,
 		String assets,
@@ -51,13 +51,13 @@ public final record MinecraftVersionMeta(
 		return downloads().get(key);
 	}
 
-	public final record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
+	public record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
 		public String fabricId(String version) {
 			return id.equals(version) ? version : version + "-" + id;
 		}
 	}
 
-	public final record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
+	public record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
 		public boolean isValidForOS() {
 			if (rules == null || rules.isEmpty()) {
 				return true;
@@ -101,13 +101,13 @@ public final record MinecraftVersionMeta(
 		}
 	}
 
-	public final record Downloads(Download artifact, Map<String, Download> classifiers) {
+	public record Downloads(Download artifact, Map<String, Download> classifiers) {
 		public Download classifier(String os) {
 			return classifiers.get(os);
 		}
 	}
 
-	public final record Rule(String action, OS os) {
+	public record Rule(String action, OS os) {
 		public boolean appliesToOS() {
 			return os() == null || os().isValidForOS();
 		}
@@ -117,13 +117,13 @@ public final record MinecraftVersionMeta(
 		}
 	}
 
-	public final record OS(String name) {
+	public record OS(String name) {
 		public boolean isValidForOS() {
 			return name() == null || name().equalsIgnoreCase(OperatingSystem.getOS());
 		}
 	}
 
-	public final record Download(String path, String sha1, long size, String url) {
+	public record Download(String path, String sha1, long size, String url) {
 		public File relativeFile(File baseDirectory) {
 			Objects.requireNonNull(path(), "Cannot get relative file from a null path");
 			return new File(baseDirectory, path());

@@ -100,8 +100,8 @@ public abstract class DependencyProvider {
 		private String resolvedVersion = null;
 
 		public static DependencyInfo create(Project project, Dependency dependency, Configuration sourceConfiguration) {
-			if (dependency instanceof SelfResolvingDependency) {
-				return new FileDependencyInfo(project, (SelfResolvingDependency) dependency, sourceConfiguration);
+			if (dependency instanceof SelfResolvingDependency selfResolvingDependency) {
+				return new FileDependencyInfo(project, selfResolvingDependency, sourceConfiguration);
 			} else {
 				return new DependencyInfo(project, dependency, sourceConfiguration);
 			}
@@ -138,8 +138,8 @@ public abstract class DependencyProvider {
 		}
 
 		public Set<File> resolve() {
-			if (dependency instanceof SelfResolvingDependency) {
-				return ((SelfResolvingDependency) dependency).resolve();
+			if (dependency instanceof SelfResolvingDependency selfResolvingDependency) {
+				return selfResolvingDependency.resolve();
 			}
 
 			return sourceConfiguration.files(dependency);
@@ -189,14 +189,11 @@ public abstract class DependencyProvider {
 			Set<File> files = dependency.resolve();
 			this.resolvedFiles = files;
 			switch (files.size()) {
-			case 0: //Don't think Gradle would ever let you do this
-				throw new IllegalStateException("Empty dependency?");
-
-			case 1: //Single file dependency
-				classifierToFile.put("", Iterables.getOnlyElement(files));
-				break;
-
-			default: //File collection, try work out the classifiers
+			case 0 -> //Don't think Gradle would ever let you do this
+					throw new IllegalStateException("Empty dependency?");
+			case 1 -> //Single file dependency
+					classifierToFile.put("", Iterables.getOnlyElement(files));
+			default -> { //File collection, try work out the classifiers
 				List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparingInt(String::length))).collect(Collectors.toList());
 				//First element in sortedFiles is the one with the shortest name, we presume all the others are different classifier types of this
 				File shortest = sortedFiles.remove(0);
@@ -222,6 +219,7 @@ public abstract class DependencyProvider {
 						throw new InvalidUserDataException("Duplicate classifiers for " + this + " (\"" + file.getName().substring(start) + "\" in " + files + ')');
 					}
 				}
+			}
 			}
 
 			if (dependency.getGroup() != null && dependency.getVersion() != null) {

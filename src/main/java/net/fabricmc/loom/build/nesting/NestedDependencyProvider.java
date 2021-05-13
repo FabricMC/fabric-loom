@@ -80,13 +80,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		DependencySet dependencies = configuration.getDependencies();
 
 		for (Dependency dependency : dependencies) {
-			if (dependency instanceof ProjectDependency) {
-				ProjectDependency projectDependency = (ProjectDependency) dependency;
+			if (dependency instanceof ProjectDependency projectDependency) {
 				Project dependencyProject = projectDependency.getDependencyProject();
 
 				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
-					if (task instanceof RemapJarTask) {
-						remapTasks.add((RemapJarTask) task);
+					if (task instanceof RemapJarTask remapJarTask) {
+						remapTasks.add(remapJarTask);
 					}
 				}
 			}
@@ -99,8 +98,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		List<DependencyInfo<ProjectDependency>> fileList = new ArrayList<>();
 
 		for (Dependency dependency : configuration.getDependencies()) {
-			if (dependency instanceof ProjectDependency) {
-				ProjectDependency projectDependency = (ProjectDependency) dependency;
+			if (dependency instanceof ProjectDependency projectDependency) {
 				Project dependencyProject = projectDependency.getDependencyProject();
 
 				visited.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
@@ -110,11 +108,11 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
-					if (task instanceof RemapJarTask) {
-						File file = ((RemapJarTask) task).getArchivePath();
+					if (task instanceof RemapJarTask remapJarTask) {
+						File file = remapJarTask.getArchiveFile().get().getAsFile();
 						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
-					} else if (task instanceof AbstractArchiveTask) {
-						File file = ((AbstractArchiveTask) task).getArchivePath();
+					} else if (task instanceof AbstractArchiveTask abstractArchiveTask) {
+						File file = abstractArchiveTask.getArchiveFile().get().getAsFile();
 						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
 					}
 				}
@@ -208,17 +206,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		return LoomGradlePlugin.GSON.toJson(jsonObject);
 	}
 
-	private static class DependencyInfo<D> {
-		final D dependency;
-		final DependencyMetaExtractor<D> metaExtractor;
-		final File file;
-
-		DependencyInfo(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
-			this.dependency = dependency;
-			this.metaExtractor = metaExtractor;
-			this.file = file;
-		}
-
+	private record DependencyInfo<D>(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
 		public void validateInputs() {
 			if (!file.exists()) {
 				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());

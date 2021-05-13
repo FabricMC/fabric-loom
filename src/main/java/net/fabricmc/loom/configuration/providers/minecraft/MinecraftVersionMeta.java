@@ -29,108 +29,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.gson.JsonObject;
-
 import net.fabricmc.loom.util.OperatingSystem;
 
 @SuppressWarnings("unused")
-public final class MinecraftVersionMeta {
-	private JsonObject arguments;
-	private AssetIndex assetIndex;
-	private String assets;
-	private int complianceLevel;
-	private Map<String, Download> downloads;
-	private String id;
-	private List<Library> libraries;
-	private JsonObject logging;
-	private String mainClass;
-	private int minimumLauncherVersion;
-	private String releaseTime;
-	private String time;
-	private String type;
-
-	public Download getDownload(String key) {
-		return getDownloads().get(key);
+public record MinecraftVersionMeta(
+		Object arguments,
+		AssetIndex assetIndex,
+		String assets,
+		int complianceLevel,
+		Map<String, Download> downloads,
+		String id,
+		List<Library> libraries,
+		Object logging,
+		String mainClass,
+		int minimumLauncherVersion,
+		String releaseTime,
+		String time,
+		String type
+) {
+	public Download download(String key) {
+		return downloads().get(key);
 	}
 
-	public JsonObject getArguments() {
-		return arguments;
-	}
-
-	public AssetIndex getAssetIndex() {
-		return assetIndex;
-	}
-
-	public String getAssets() {
-		return assets;
-	}
-
-	public int getComplianceLevel() {
-		return complianceLevel;
-	}
-
-	public Map<String, Download> getDownloads() {
-		return downloads;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public List<Library> getLibraries() {
-		return libraries;
-	}
-
-	public JsonObject getLogging() {
-		return logging;
-	}
-
-	public String getMainClass() {
-		return mainClass;
-	}
-
-	public int getMinimumLauncherVersion() {
-		return minimumLauncherVersion;
-	}
-
-	public String getReleaseTime() {
-		return releaseTime;
-	}
-
-	public String getTime() {
-		return time;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public final class AssetIndex extends Downloadable {
-		private String id;
-		private long totalSize;
-
-		public String getFabricId(String version) {
+	public record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
+		public String fabricId(String version) {
 			return id.equals(version) ? version : version + "-" + id;
 		}
-
-		public String getId() {
-			return id;
-		}
-
-		public long getTotalSize() {
-			return totalSize;
-		}
 	}
 
-	public final class Download extends Downloadable {
-	}
-
-	public final class Library {
-		private Downloads downloads;
-		private String name;
-		private Map<String, String> natives;
-		private List<Rule> rules;
-
+	public record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
 		public boolean isValidForOS() {
 			if (rules == null || rules.isEmpty()) {
 				return true;
@@ -161,117 +88,45 @@ public final class MinecraftVersionMeta {
 			return isValidForOS();
 		}
 
-		public Classifier getClassifierForOS() {
-			return getDownloads().getClassifier(natives.get(OperatingSystem.getOS()));
+		public Download classifierForOS() {
+			return downloads().classifier(natives.get(OperatingSystem.getOS()));
 		}
 
-		public Downloads getDownloads() {
-			return downloads;
-		}
-
-		public Artifact getArtifact() {
-			if (getDownloads() == null) {
+		public Download artifact() {
+			if (downloads() == null) {
 				return null;
 			}
 
-			return getDownloads().getArtifact();
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public Map<String, String> getNatives() {
-			return natives;
-		}
-
-		public List<Rule> getRules() {
-			return rules;
+			return downloads().artifact();
 		}
 	}
 
-	public final class Downloads {
-		private Artifact artifact;
-		private Map<String, Classifier> classifiers;
-
-		public Classifier getClassifier(String os) {
+	public record Downloads(Download artifact, Map<String, Download> classifiers) {
+		public Download classifier(String os) {
 			return classifiers.get(os);
 		}
-
-		public Artifact getArtifact() {
-			return artifact;
-		}
-
-		public Map<String, Classifier> getClassifiers() {
-			return classifiers;
-		}
 	}
 
-	public final class Artifact extends Downloadable {
-	}
-
-	public final class Classifier extends Downloadable {
-	}
-
-	public final class Rule {
-		private String action;
-		private OS os;
-
+	public record Rule(String action, OS os) {
 		public boolean appliesToOS() {
-			return getOS() == null || getOS().isValidForOS();
+			return os() == null || os().isValidForOS();
 		}
 
 		public boolean isAllowed() {
-			return getAction().equals("allow");
-		}
-
-		public String getAction() {
-			return action;
-		}
-
-		public OS getOS() {
-			return os;
+			return action().equals("allow");
 		}
 	}
 
-	public final class OS {
-		private String name;
-
+	public record OS(String name) {
 		public boolean isValidForOS() {
-			return getName() == null || getName().equalsIgnoreCase(OperatingSystem.getOS());
-		}
-
-		public String getName() {
-			return name;
+			return name() == null || name().equalsIgnoreCase(OperatingSystem.getOS());
 		}
 	}
 
-	// A base class for everything that can be downloaded
-	public abstract class Downloadable {
-		private String path;
-		private String sha1;
-		private long size;
-		private String url;
-
-		public File getRelativeFile(File baseDirectory) {
-			Objects.requireNonNull(getPath(), "Cannot get relative file from a null path");
-			return new File(baseDirectory, getPath());
-		}
-
-		public String getPath() {
-			return path;
-		}
-
-		public String getSha1() {
-			return sha1;
-		}
-
-		public long getSize() {
-			return size;
-		}
-
-		public String getUrl() {
-			return url;
+	public record Download(String path, String sha1, long size, String url) {
+		public File relativeFile(File baseDirectory) {
+			Objects.requireNonNull(path(), "Cannot get relative file from a null path");
+			return new File(baseDirectory, path());
 		}
 	}
 }

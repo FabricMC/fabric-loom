@@ -65,12 +65,12 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 
 		project.getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
 
-		Map<String, Object> options = new HashMap<String, Object>() {{
+		Map<String, Object> options = new HashMap<>() {{
 				put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
 				put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 				put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 				put(IFernflowerPreferences.LOG_LEVEL, "trace");
-				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads);
+				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads());
 			}};
 
 		List<String> args = new ArrayList<>();
@@ -79,10 +79,10 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		args.add(absolutePathOf(compiledJar));
 		args.add("-o=" + absolutePathOf(sourcesDestination));
 		args.add("-l=" + absolutePathOf(linemapDestination));
-		args.add("-m=" + absolutePathOf(metaData.javaDocs));
+		args.add("-m=" + absolutePathOf(metaData.javaDocs()));
 
 		// TODO, Decompiler breaks on jemalloc, J9 module-info.class?
-		for (Path library : metaData.libraries) {
+		for (Path library : metaData.libraries()) {
 			args.add("-e=" + absolutePathOf(library));
 		}
 

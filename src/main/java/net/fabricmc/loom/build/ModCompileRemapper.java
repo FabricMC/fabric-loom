@@ -69,7 +69,7 @@ public class ModCompileRemapper {
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			data.getLazyConfigurationProvider(entry.getRemappedConfiguration()).configure(remappedConfig -> {
-				Configuration sourceConfig = project.getConfigurations().getByName(entry.getSourceConfiguration());
+				Configuration sourceConfig = project.getConfigurations().getByName(entry.sourceConfiguration());
 				Configuration regularConfig = project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations()));
 
 				List<ModDependencyInfo> modDependencies = new ArrayList<>();
@@ -149,8 +149,8 @@ public class ModCompileRemapper {
 		Dependency dep = dependencies.module(artifact.getModuleVersion().toString()
 						+ (artifact.getClassifier() == null ? "" : ':' + artifact.getClassifier())); // the owning module of the artifact
 
-		if (dep instanceof ModuleDependency) {
-			((ModuleDependency) dep).setTransitive(false);
+		if (dep instanceof ModuleDependency moduleDependency) {
+			moduleDependency.setTransitive(false);
 		}
 
 		dependencies.add(regularCompile.getName(), dep);

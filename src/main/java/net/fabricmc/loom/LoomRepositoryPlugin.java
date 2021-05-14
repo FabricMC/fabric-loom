@@ -39,16 +39,12 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	public void apply(PluginAware target) {
 		RepositoryHandler repositories = null;
 
-		if (target instanceof Settings) {
-			Settings settings = (Settings) target;
-
+		if (target instanceof Settings settings) {
 			repositories = settings.getDependencyResolutionManagement().getRepositories();
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
-		} else if (target instanceof Project) {
-			Project project = (Project) target;
-
+		} else if (target instanceof Project project) {
 			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
 				return;
 			}
@@ -115,10 +111,10 @@ final class Cache {
 	File getUserCache() {
 		File gradleUserHomeDir = null;
 
-		if (target instanceof Settings) {
-			gradleUserHomeDir = ((Settings) target).getGradle().getGradleUserHomeDir();
-		} else if (target instanceof Project) {
-			gradleUserHomeDir = ((Project) target).getGradle().getGradleUserHomeDir();
+		if (target instanceof Settings settings) {
+			gradleUserHomeDir = settings.getGradle().getGradleUserHomeDir();
+		} else if (target instanceof Project project) {
+			gradleUserHomeDir = project.getGradle().getGradleUserHomeDir();
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
 		}
@@ -135,10 +131,10 @@ final class Cache {
 	public File getRootPersistentCache() {
 		File rootDir = null;
 
-		if (target instanceof Settings) {
-			rootDir = ((Settings) target).getRootDir();
-		} else if (target instanceof Project) {
-			rootDir = ((Project) target).getRootDir();
+		if (target instanceof Settings settings) {
+			rootDir = settings.getRootDir();
+		} else if (target instanceof Project project) {
+			rootDir = project.getRootDir();
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
 		}
@@ -155,10 +151,10 @@ final class Cache {
 	public File getRootBuildCache() {
 		File rootDir = null;
 
-		if (target instanceof Settings) {
-			rootDir = ((Settings) target).getRootDir();
-		} else if (target instanceof Project) {
-			rootDir = ((Project) target).getRootDir();
+		if (target instanceof Settings settings) {
+			rootDir = settings.getRootDir();
+		} else if (target instanceof Project project) {
+			rootDir = project.getRootDir();
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
 		}

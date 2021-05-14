@@ -50,34 +50,36 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 	public void apply(PluginAware target) {
 		target.getPlugins().apply(LoomRepositoryPlugin.class);
 
-		if (target instanceof Project) {
-			Project project = (Project) target;
-
-			project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
-
-			refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
-
-			if (refreshDeps) {
-				MappingsCache.INSTANCE.invalidate();
-				project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
-			}
-
-			// Apply default plugins
-			project.apply(ImmutableMap.of("plugin", "java"));
-			project.apply(ImmutableMap.of("plugin", "eclipse"));
-			project.apply(ImmutableMap.of("plugin", "idea"));
-
-			// Setup extensions, loom shadows minecraft
-			project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
-			project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
-			project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
-
-			CompileConfiguration.setupConfigurations(project);
-			IdeConfiguration.setup(project);
-			CompileConfiguration.configureCompile(project);
-			MavenPublication.configure(project);
-			LoomTasks.registerTasks(project);
-			DecompilerConfiguration.setup(project);
+		if (target instanceof Project project) {
+			apply(project);
 		}
+	}
+
+	public void apply(Project project) {
+		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+
+		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
+
+		if (refreshDeps) {
+			MappingsCache.INSTANCE.invalidate();
+			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
+		}
+
+		// Apply default plugins
+		project.apply(ImmutableMap.of("plugin", "java"));
+		project.apply(ImmutableMap.of("plugin", "eclipse"));
+		project.apply(ImmutableMap.of("plugin", "idea"));
+
+		// Setup extensions, loom shadows minecraft
+		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
+		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
+
+		CompileConfiguration.setupConfigurations(project);
+		IdeConfiguration.setup(project);
+		CompileConfiguration.configureCompile(project);
+		MavenPublication.configure(project);
+		LoomTasks.registerTasks(project);
+		DecompilerConfiguration.setup(project);
 	}
 }

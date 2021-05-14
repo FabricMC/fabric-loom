@@ -29,13 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-public class MergedNestedJarProvider implements NestedJarProvider {
-	private final NestedJarProvider[] parents;
-
-	public MergedNestedJarProvider(NestedJarProvider... parents) {
-		this.parents = parents;
-	}
-
+public record MergedNestedJarProvider(NestedJarProvider... parents) implements NestedJarProvider {
 	@Override
 	public Collection<File> provide() {
 		return Arrays.stream(parents)

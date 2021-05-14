@@ -34,7 +34,6 @@ import java.util.jar.JarFile;
 
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +79,7 @@ public class ModDependencyInfo {
 	}
 
 	public File getRemappedDir() {
-		return new File(remapData.modStore, String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
+		return new File(remapData.modStore(), String.format("%s/%s/%s", getGroup().replace(".", "/"), name, version));
 	}
 
 	public File getRemappedOutput() {
@@ -96,7 +95,7 @@ public class ModDependencyInfo {
 	}
 
 	private String getGroup() {
-		return getMappingsPrefix(remapData.mappingsSuffix) + "." + group;
+		return getMappingsPrefix(remapData.mappingsSuffix()) + "." + group;
 	}
 
 	public static String getMappingsPrefix(String mappings) {
@@ -121,7 +120,7 @@ public class ModDependencyInfo {
 			String pomTemplate;
 
 			try (InputStream input = ModDependencyInfo.class.getClassLoader().getResourceAsStream("mod_compile_template.pom")) {
-				pomTemplate = IOUtils.toString(input, StandardCharsets.UTF_8);
+				pomTemplate = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 			}
 
 			pomTemplate = pomTemplate

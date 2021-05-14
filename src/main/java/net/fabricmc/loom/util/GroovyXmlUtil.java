@@ -36,8 +36,8 @@ public final class GroovyXmlUtil {
 
 	public static Node getOrCreateNode(Node parent, String name) {
 		for (Object object : parent.children()) {
-			if (object instanceof Node && isSameName(((Node) object).name(), name)) {
-				return (Node) object;
+			if (object instanceof Node node && isSameName(node.name(), name)) {
+				return node;
 			}
 		}
 
@@ -46,8 +46,8 @@ public final class GroovyXmlUtil {
 
 	public static Optional<Node> getNode(Node parent, String name) {
 		for (Object object : parent.children()) {
-			if (object instanceof Node && isSameName(((Node) object).name(), name)) {
-				return Optional.of((Node) object);
+			if (object instanceof Node node && isSameName(node.name(), name)) {
+				return Optional.of(node);
 			}
 		}
 
@@ -59,13 +59,13 @@ public final class GroovyXmlUtil {
 			return nodeName.equals(givenName);
 		}
 
-		if (nodeName instanceof QName) {
-			return ((QName) nodeName).matches(givenName);
+		if (nodeName instanceof QName qName) {
+			return qName.matches(givenName);
 		}
 
 		// New groovy 3 (gradle 7) class
-		if (nodeName instanceof groovy.namespace.QName) {
-			return ((groovy.namespace.QName) nodeName).matches(givenName);
+		if (nodeName instanceof groovy.namespace.QName qName) {
+			return qName.matches(givenName);
 		}
 
 		throw new UnsupportedOperationException("Cannot determine if " + nodeName.getClass() + " is the same as a String");

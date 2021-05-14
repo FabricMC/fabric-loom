@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -259,7 +258,7 @@ public class MappingsProvider extends DependencyProvider {
 	}
 
 	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(Files.readAllBytes(input), StandardCharsets.UTF_8), JsonObject.class);
+		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input), JsonObject.class);
 
 		if (!jsonObject.has("version") || jsonObject.get("version").getAsInt() != 1) {
 			throw new UnsupportedOperationException("Unsupported unpick version");
@@ -409,13 +408,6 @@ public class MappingsProvider extends DependencyProvider {
 		return hasUnpickDefinitions;
 	}
 
-	public static class UnpickMetadata {
-		public final String unpickGroup;
-		public final String unpickVersion;
-
-		public UnpickMetadata(String unpickGroup, String unpickVersion) {
-			this.unpickGroup = unpickGroup;
-			this.unpickVersion = unpickVersion;
-		}
+	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
 	}
 }

@@ -24,12 +24,10 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-public class ManifestVersion {
-	public List<Versions> versions = new ArrayList<>();
-
+public record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
 	public static class Versions {
 		public String id, url, sha1;
 	}

@@ -89,7 +89,7 @@ public class LineNumberRemapper {
 	}
 
 	public void process(ProgressLogger logger, Path input, Path output) throws IOException {
-		Files.walkFileTree(input, new SimpleFileVisitor<Path>() {
+		Files.walkFileTree(input, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				String rel = input.relativize(file).toString();

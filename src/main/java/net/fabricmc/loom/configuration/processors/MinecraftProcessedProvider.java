@@ -39,20 +39,20 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {
-	public final String PROJECT_MAPPED_CLASSIFIER;
+	public final String projectMappedClassifier;
 
 	private File projectMappedJar;
 
 	private final JarProcessorManager jarProcessorManager;
 
-	private static String getProjectUUID(Project project) {
+	private static String getProjectUuid(Project project) {
 		return UUID.nameUUIDFromBytes(project.getProjectDir().toString().getBytes(StandardCharsets.UTF_8)).toString();
 	}
 
 	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
 		super(project);
 		this.jarProcessorManager = jarProcessorManager;
-		this.PROJECT_MAPPED_CLASSIFIER = "project-" + getProjectUUID(project) + "-mapped";
+		this.projectMappedClassifier = "project-" + getProjectUuid(project) + "-mapped";
 	}
 
 	@Override
@@ -71,11 +71,11 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		}
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
+				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(projectMappedClassifier)));
 	}
 
 	private void invalidateJars() {
-		File dir = getJarDirectory(getExtension().getUserCache(), PROJECT_MAPPED_CLASSIFIER);
+		File dir = getJarDirectory(getExtension().getUserCache(), projectMappedClassifier);
 
 		if (dir.exists()) {
 			getProject().getLogger().warn("Invalidating project jars");
@@ -92,7 +92,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		projectMappedJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedClassifier) + ".jar");
 	}
 
 	@Override

@@ -29,6 +29,7 @@ import java.io.File;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginAware;
@@ -86,9 +87,16 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.patternLayout(layout -> {
 				layout.artifact("[revision]/[artifact]-[revision](.[ext])");
 			});
-			repo.metadataSources(meta -> {
-				meta.artifact();
+			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
+		});
+
+		// MinecraftProcessedProvider.java
+		repositories.ivy(repo -> {
+			repo.setUrl(cache.getRootPersistentCache());
+			repo.patternLayout(layout -> {
+				layout.artifact("[revision]/[artifact]-[revision](.[ext])");
 			});
+			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 	}
 }

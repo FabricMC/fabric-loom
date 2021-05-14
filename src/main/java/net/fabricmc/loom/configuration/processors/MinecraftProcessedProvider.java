@@ -26,6 +26,8 @@ package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -37,15 +39,20 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {
-	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
+	public final String PROJECT_MAPPED_CLASSIFIER;
 
 	private File projectMappedJar;
 
 	private final JarProcessorManager jarProcessorManager;
 
+	private static String getProjectUUID(Project project) {
+		return UUID.nameUUIDFromBytes(project.getProjectDir().toString().getBytes(StandardCharsets.UTF_8)).toString();
+	}
+
 	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
 		super(project);
 		this.jarProcessorManager = jarProcessorManager;
+		this.PROJECT_MAPPED_CLASSIFIER = "project-" + getProjectUUID(project) + "-mapped";
 	}
 
 	@Override
@@ -62,8 +69,6 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 			jarProcessorManager.process(projectMappedJar);
 		}
-
-		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER)));
@@ -87,7 +92,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
+		projectMappedJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
 	}
 
 	@Override

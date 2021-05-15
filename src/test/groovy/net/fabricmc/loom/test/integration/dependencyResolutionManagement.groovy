@@ -24,14 +24,13 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class DependencyResolutionManagementTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
+class DependencyResolutionManagementTest extends Specification implements ProjectTestTrait {
     @Override
     String name() {
         "dependencyResolutionManagement"

@@ -1,2 +1,2 @@
 accessWidener   v1   named
-extendable   class   FluidState
+extendable   class   net/minecraft/fluid/FluidState

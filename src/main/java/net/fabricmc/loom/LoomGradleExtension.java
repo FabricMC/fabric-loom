@@ -367,12 +367,10 @@ public class LoomGradleExtension {
 		return log4jConfigs;
 	}
 
-	@ApiStatus.Experimental
 	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
 		action.execute(runConfigs);
 	}
 
-	@ApiStatus.Experimental
 	public NamedDomainObjectContainer<RunConfigSettings> getRunConfigs() {
 		return runConfigs;
 	}

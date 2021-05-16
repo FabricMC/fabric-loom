@@ -192,7 +192,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
-		jsonObject.addProperty("id", (metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency)).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
+
+		jsonObject.addProperty("id",
+				(metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency) + info.getClassifierSuffix())
+						.replaceAll("\\.", "_")
+						.toLowerCase(Locale.ENGLISH)
+		);
 		jsonObject.addProperty("version", metaExtractor.version(dependency));
 		jsonObject.addProperty("name", metaExtractor.name(dependency));
 
@@ -204,13 +209,21 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 	}
 
 	private record DependencyInfo<D>(D dependency, DependencyMetaExtractor<D> metaExtractor, File file, @Nullable String classifier) {
-		public void validateInputs() {
+		void validateInputs() {
 			if (!file.exists()) {
 				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());
 			}
 
 			if (file.isDirectory() || !file.getName().endsWith(".jar")) {
 				throw new RuntimeException("Failed to include nested jars, as file was not a jar: " + file.getAbsolutePath());
+			}
+		}
+
+		String getClassifierSuffix() {
+			if (classifier == null) {
+				return "";
+			} else {
+				return "_" + classifier;
 			}
 		}
 	}

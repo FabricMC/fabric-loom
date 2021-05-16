@@ -103,7 +103,6 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 
 				visited.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
 
-				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
 				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
 				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
 

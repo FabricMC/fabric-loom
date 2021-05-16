@@ -108,11 +108,8 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
-					if (task instanceof RemapJarTask remapJarTask) {
-						File file = remapJarTask.getArchiveFile().get().getAsFile();
-						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
-					} else if (task instanceof AbstractArchiveTask abstractArchiveTask) {
-						File file = abstractArchiveTask.getArchiveFile().get().getAsFile();
+					if (task instanceof AbstractArchiveTask) {
+						File file = task.getArchiveFile().get().getAsFile();
 						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
 					}
 				}

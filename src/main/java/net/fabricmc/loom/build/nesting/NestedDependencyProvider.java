@@ -109,7 +109,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
 					if (task instanceof AbstractArchiveTask abstractArchiveTask) {
 						File file = abstractArchiveTask.getArchiveFile().get().getAsFile();
-						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file, abstractArchiveTask.getArchiveClassifier().getOrNull()));
+						fileList.add(new DependencyInfo<>(
+								projectDependency,
+								new ProjectDependencyMetaExtractor(),
+								file,
+								abstractArchiveTask.getArchiveClassifier().getOrNull()
+						));
 					}
 				}
 			}
@@ -129,16 +134,14 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				continue;
 			}
 
-			dependency
-					.getModuleArtifacts()
-					.forEach((artifact) -> fileList.add(
-							new DependencyInfo<>(
-									dependency,
-									new ResolvedDependencyMetaExtractor(),
-									artifact.getFile(),
-									artifact.getClassifier()
-							))
-					);
+			for (var artifact : dependency.getModuleArtifacts()) {
+				fileList.add(new DependencyInfo<>(
+						dependency,
+						new ResolvedDependencyMetaExtractor(),
+						artifact.getFile(),
+						artifact.getClassifier()
+				));
+			}
 		}
 
 		return fileList;

@@ -26,8 +26,6 @@ package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
@@ -45,14 +43,11 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 
 	private final JarProcessorManager jarProcessorManager;
 
-	private static String getProjectUuid(Project project) {
-		return UUID.nameUUIDFromBytes(project.getProjectDir().toString().getBytes(StandardCharsets.UTF_8)).toString();
-	}
-
 	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
 		super(project);
 		this.jarProcessorManager = jarProcessorManager;
-		this.projectMappedClassifier = "project-" + getProjectUuid(project) + "-mapped";
+		this.projectMappedClassifier = "project-" + project.getPath().replace(':', '@')
+				+ "-mapped";
 	}
 
 	@Override

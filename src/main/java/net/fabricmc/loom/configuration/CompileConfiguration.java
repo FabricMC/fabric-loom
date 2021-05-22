@@ -107,8 +107,6 @@ public final class CompileConfiguration {
 		p.afterEvaluate(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-			MavenConfiguration.setup(project);
-
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 

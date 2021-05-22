@@ -45,6 +45,7 @@ import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.LoomRepositoryPlugin;
 
 public class LoomDependencyManager {
 	private static class ProviderList {
@@ -193,7 +194,9 @@ public class LoomDependencyManager {
 
 			project.getLogger().debug("Loom adding " + name + " from installer JSON");
 
-			if (jsonElement.getAsJsonObject().has("url")) {
+			// If user choose to use dependencyResolutionManagement, then they should declare
+			// these repositories manually in the settings file.
+			if (jsonElement.getAsJsonObject().has("url") && !project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
 				String url = jsonElement.getAsJsonObject().get("url").getAsString();
 				long count = project.getRepositories().stream().filter(artifactRepository -> artifactRepository instanceof MavenArtifactRepository)
 						.map(artifactRepository -> (MavenArtifactRepository) artifactRepository)

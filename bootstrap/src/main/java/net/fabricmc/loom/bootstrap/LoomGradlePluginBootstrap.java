@@ -1,8 +1,10 @@
 package net.fabricmc.loom.bootstrap;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
-import org.gradle.api.Project;
 import org.gradle.api.plugins.PluginAware;
 import org.gradle.util.GradleVersion;
 
@@ -18,12 +20,18 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 
 	@Override
 	public void apply(PluginAware project) {
+		List<String> errors = new ArrayList<>();
+
 		if (!isValidGradleRuntime()) {
-			throw new UnsupportedOperationException(String.format("Outdated Gradle version: %s, Gradle %d or higher is required.", getMajorGradleVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
+			errors.add(String.format("Outdated Gradle version (%s). Gradle %d or higher is required.", getMajorGradleVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
 		}
 
 		if (!isValidJavaRuntime()) {
-			throw new UnsupportedOperationException(String.format("Outdated Java version: %s, Java %d or higher is required.", JavaVersion.current().getMajorVersion(), MIN_SUPPORTED_MAJOR_JAVA_VERSION));
+			errors.add(String.format("Outdated Java version (%s). Java %d or higher is required.", JavaVersion.current().getMajorVersion(), MIN_SUPPORTED_MAJOR_JAVA_VERSION));
+		}
+
+		if (!errors.isEmpty()) {
+			throw new UnsupportedOperationException(String.join("\n\n", errors));
 		}
 
 		getActivePlugin().apply(project);

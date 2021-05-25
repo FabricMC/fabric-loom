@@ -97,8 +97,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 8, 11, 16 ]
+        java: [ 8, 11, 15, 16 ]
         gradle: [ 6.9, 7.0.2 ]
+        exclude:
+          - java: 16
+            gradle: 6.9
     runs-on: ubuntu-20.04
     container:
       image: gradle:7.0.2-jdk16
@@ -118,7 +121,6 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
 
-      - run: java --version
       - run: ./gradlew --version
         working-directory: bootstrap/test-project
       - run: ./gradlew build

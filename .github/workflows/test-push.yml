@@ -98,18 +98,18 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 8, 11, 15, 16 ]
-        gradle: [ 4.9, 5.2, 6.0, 6.9, 7.0.2 ]
+        gradle: [ 4.9, 5.2, 6.0.1, 6.9, 7.0.2 ]
         exclude:
           - java: 16
             gradle: 6.9
           - java: 16
-            gradle: 6.0
+            gradle: 6.0.1
           - java: 16
             gradle: 5.2
           - java: 16
             gradle: 4.9
           - java: 15
-            gradle: 6.0
+            gradle: 6.0.1
           - java: 15
             gradle: 5.2
           - java: 15

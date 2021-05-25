@@ -22,36 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration;
+package net.fabricmc.loom.test.integration
 
-import org.gradle.api.Project;
+import net.fabricmc.loom.test.util.ProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-import net.fabricmc.loom.LoomGradleExtension;
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-public class MavenConfiguration {
-	public static void setup(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+class DependencyResolutionManagementTest extends Specification implements ProjectTestTrait {
+    @Override
+    String name() {
+        "dependencyResolutionManagement"
+    }
 
-		project.getRepositories().flatDir(repo -> {
-			repo.setName("UserLocalCacheFiles");
-			repo.dir(extension.getRootProjectBuildCache());
-		});
+    @Unroll
+    def "build (gradle #gradle)"() {
+        when:
+            def result = create("build", gradle)
+        then:
+            result.task(":basic:build").outcome == SUCCESS
+            result.task(":projmap:build").outcome == SUCCESS
 
-		project.getRepositories().maven(repo -> {
-			repo.setName("UserLocalRemappedMods");
-			repo.setUrl(extension.getRemappedModCache());
-		});
-
-		project.getRepositories().maven(repo -> {
-			repo.setName("Fabric");
-			repo.setUrl("https://maven.fabricmc.net/");
-		});
-
-		project.getRepositories().maven(repo -> {
-			repo.setName("Mojang");
-			repo.setUrl("https://libraries.minecraft.net/");
-		});
-
-		project.getRepositories().mavenCentral();
-	}
+        where:
+        gradle              | _
+        DEFAULT_GRADLE      | _
+        PRE_RELEASE_GRADLE  | _
+    }
 }

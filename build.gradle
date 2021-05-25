@@ -81,7 +81,7 @@ dependencies {
 	implementation ('org.cadixdev:lorenz-io-proguard:0.5.6')
 
 	// decompilers
-	implementation ('net.fabricmc:fabric-fernflower:1.4.0')
+	implementation ('net.fabricmc:fabric-fernflower:1.4.1')
 	implementation ('org.benf:cfr:0.151')
 
 	// source code remapping

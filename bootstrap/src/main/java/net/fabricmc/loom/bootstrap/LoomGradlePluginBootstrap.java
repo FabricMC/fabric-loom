@@ -3,20 +3,21 @@ package net.fabricmc.loom.bootstrap;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.PluginAware;
 import org.gradle.util.GradleVersion;
 
 /**
  * This bootstrap is compiled against a minimal gradle API and java 8, this allows us to show a nice error to users who run on unsupported configurations.
  */
 @SuppressWarnings("unused")
-public class LoomGradlePluginBootstrap implements Plugin<Project> {
+public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final int MIN_SUPPORTED_MAJOR_GRADLE_VERSION = 7;
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 16;
 
 	private static final String pluginClassName = "net.fabricmc.loom.LoomGradlePlugin";
 
 	@Override
-	public void apply(Project project) {
+	public void apply(PluginAware project) {
 		if (!isValidGradleRuntime()) {
 			throw new UnsupportedOperationException(String.format("Outdated Gradle version: %s, Gradle %d or higher is required.", getMajorGradleVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
 		}

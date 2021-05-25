@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.PluginAware;
 
 import net.fabricmc.loom.bootstrap.BootstrappedPlugin;
 import net.fabricmc.loom.configuration.CompileConfiguration;
@@ -46,6 +47,14 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 	@Override
+	public void apply(PluginAware target) {
+		target.getPlugins().apply(LoomRepositoryPlugin.class);
+
+		if (target instanceof Project project) {
+			apply(project);
+		}
+	}
+
 	public void apply(Project project) {
 		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
 

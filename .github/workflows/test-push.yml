@@ -123,7 +123,7 @@ jobs:
 
       - run: ./gradlew --version
         working-directory: bootstrap/test-project
-      - run: ./gradlew build
+      - run: ./gradlew build --stacktrace
         working-directory: bootstrap/test-project
         continue-on-error: true
 

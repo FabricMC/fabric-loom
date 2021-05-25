@@ -4,3 +4,4 @@
 !/src
 !/build.gradle
 !/.gitignore
+!/test-project

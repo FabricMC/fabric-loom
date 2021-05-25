@@ -1,0 +1,3 @@
+plugins {
+	id 'fabric-loom' version '0.8.local'
+}

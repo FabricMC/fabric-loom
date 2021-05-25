@@ -98,10 +98,18 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 8, 11, 15, 16 ]
-        gradle: [ 6.9, 7.0.2 ]
+        gradle: [ 4.9, 5.2, 6.9, 7.0.2 ]
         exclude:
           - java: 16
             gradle: 6.9
+          - java: 16
+            gradle: 5.2
+          - java: 16
+            gradle: 4.9
+          - java: 15
+            gradle: 5.2
+          - java: 15
+            gradle: 4.9
     runs-on: ubuntu-20.04
     container:
       image: gradle:7.0.2-jdk16

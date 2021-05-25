@@ -100,29 +100,27 @@ jobs:
         java: [ 8, 11, 16 ]
         gradle: [ 6.9, 7.0.2 ]
     runs-on: ubuntu-20.04
+    container:
+      image: 7.0.2-jdk16
+      options: --user root
 
     steps:
       # Build loom and publish to maven local
       - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
-        with:
-          java-version: 16
-          distribution: 'adopt'
-      - run: ./gradlew build publishToMavenLocal -x test
-      # Run the example mod using that version of loom, against the test matrix
+      - run: gradle build publishToMavenLocal -x test
+
+      - run: gradle wrapper --gradle-version=${{ matrix.gradle }}
+        working-directory: bootstrap/test-project
+      - run: gradle --stop
+
       - uses: actions/setup-java@v2
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
-      - uses: eskatos/gradle-command-action@v1
-        with:
-          gradle-version: 7.0.2
-          build-root-directory: bootstrap/test-project
-          arguments: wrapper --gradle-version=${{ matrix.gradle }}
 
       - run: java --version
-      - run: gradle --version
-
+      - run: ./gradlew --version
+        working-directory: bootstrap/test-project
       - run: ./gradlew build
         working-directory: bootstrap/test-project
         continue-on-error: true

@@ -38,7 +38,8 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	}
 
 	private static boolean isValidJavaRuntime() {
-		return JavaVersion.current().isCompatibleWith(JavaVersion.toVersion(MIN_SUPPORTED_MAJOR_JAVA_VERSION));
+		// Note use compareTo to ensure compatibility with gradle < 6.0
+		return JavaVersion.current().compareTo(JavaVersion.toVersion(MIN_SUPPORTED_MAJOR_JAVA_VERSION)) >= 0;
 	}
 
 	private static boolean isValidGradleRuntime() {

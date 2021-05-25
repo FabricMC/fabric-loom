@@ -101,13 +101,13 @@ jobs:
         gradle: [ 6.9, 7.0.2 ]
     runs-on: ubuntu-20.04
     container:
-      image: 7.0.2-jdk16
+      image: gradle:7.0.2-jdk16
       options: --user root
 
     steps:
       # Build loom and publish to maven local
       - uses: actions/checkout@v2
-      - run: gradle build publishToMavenLocal -x test
+      - run: gradle build publishToMavenLocal -x test -x check
 
       - run: gradle wrapper --gradle-version=${{ matrix.gradle }}
         working-directory: bootstrap/test-project

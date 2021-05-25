@@ -31,7 +31,7 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 		}
 
 		if (!errors.isEmpty()) {
-			throw new UnsupportedOperationException(String.join("\n\n", errors));
+			throw new UnsupportedOperationException(String.join("\n", errors));
 		}
 
 		getActivePlugin().apply(project);

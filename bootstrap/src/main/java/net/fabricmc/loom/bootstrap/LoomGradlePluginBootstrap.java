@@ -23,11 +23,17 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 		List<String> errors = new ArrayList<>();
 
 		if (!isValidGradleRuntime()) {
-			errors.add(String.format("Outdated Gradle version (%s). Gradle %d or higher is required.", getMajorGradleVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
+			errors.add(String.format("You are using an outdated version of Gradle (%s). Gradle %d or higher is required.", GradleVersion.current().getVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
 		}
 
 		if (!isValidJavaRuntime()) {
-			errors.add(String.format("Outdated Java version (%s). Java %d or higher is required.", JavaVersion.current().getMajorVersion(), MIN_SUPPORTED_MAJOR_JAVA_VERSION));
+			errors.add(String.format("You are using an outdated version of Java (%s). Java %d or higher is required.", JavaVersion.current().getMajorVersion(), MIN_SUPPORTED_MAJOR_JAVA_VERSION));
+
+			String javaHome = System.getenv("JAVA_HOME");
+
+			if (javaHome != null) {
+				errors.add(String.format("The JAVA_HOME environment variable is currently set to (%s).", javaHome));
+			}
 		}
 
 		if (!errors.isEmpty()) {

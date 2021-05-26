@@ -16,7 +16,7 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final int MIN_SUPPORTED_MAJOR_GRADLE_VERSION = 7;
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 16;
 
-	private static final String pluginClassName = "net.fabricmc.loom.LoomGradlePlugin";
+	private static final String PLUGIN_CLASS_NAME = "net.fabricmc.loom.LoomGradlePlugin";
 
 	@Override
 	public void apply(PluginAware project) {
@@ -53,7 +53,7 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 
 	BootstrappedPlugin getActivePlugin() {
 		try {
-			return (BootstrappedPlugin) Class.forName(pluginClassName).getConstructor().newInstance();
+			return (BootstrappedPlugin) Class.forName(PLUGIN_CLASS_NAME).getConstructor().newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to bootstrap loom", e);
 		}

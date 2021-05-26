@@ -90,3 +90,53 @@ jobs:
         with:
           name: Reproducible Build ${{ matrix.os }} (${{ matrix.java }}) Results
           path: build/reports/
+
+  bootstrap_tests:
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 8, 11, 15, 16 ]
+        gradle: [ 4.9, 5.2, 6.0.1, 6.9, 7.0.2 ]
+        exclude:
+          - java: 16
+            gradle: 6.9
+          - java: 16
+            gradle: 6.0.1
+          - java: 16
+            gradle: 5.2
+          - java: 16
+            gradle: 4.9
+          - java: 15
+            gradle: 6.0.1
+          - java: 15
+            gradle: 5.2
+          - java: 15
+            gradle: 4.9
+    runs-on: ubuntu-20.04
+    container:
+      image: gradle:7.0.2-jdk16
+      options: --user root
+
+    steps:
+      # Build loom and publish to maven local
+      - uses: actions/checkout@v2
+      - run: gradle build publishToMavenLocal -x test -x check
+
+      - run: gradle wrapper --gradle-version=${{ matrix.gradle }}
+        working-directory: bootstrap/test-project
+      - run: gradle --stop
+
+      - uses: actions/setup-java@v2
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'adopt'
+
+      - run: ./gradlew --version
+        working-directory: bootstrap/test-project
+      - run: ./gradlew build
+        working-directory: bootstrap/test-project
+        continue-on-error: true
+
+      # TODO check the output of the previous step here

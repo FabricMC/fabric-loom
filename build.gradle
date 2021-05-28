@@ -267,3 +267,7 @@ task writeActionsTestMatrix() {
 		output.text = json
 	}
 }
+
+tasks.named('wrapper') {
+	distributionType = Wrapper.DistributionType.ALL
+}

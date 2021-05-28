@@ -81,7 +81,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		repositories.ivy(repo -> {
 			repo.setUrl(cache.getUserCache());
 			repo.patternLayout(layout -> {
-				layout.artifact("[revision]/[artifact]-[revision](.[ext])");
+				layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])");
 			});
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
@@ -90,7 +90,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		repositories.ivy(repo -> {
 			repo.setUrl(cache.getRootPersistentCache());
 			repo.patternLayout(layout -> {
-				layout.artifact("[revision]/[artifact]-[revision](.[ext])");
+				layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])");
 			});
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});

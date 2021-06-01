@@ -22,26 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build.nesting;
+package net.fabricmc.loom.test.unit
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
+import net.fabricmc.loom.build.nesting.MergedNestedJarProvider
+import net.fabricmc.loom.build.nesting.NestedJarProvider
+import org.gradle.api.Project
+import spock.lang.Specification
 
-import org.gradle.api.Project;
+class MergedNestedJarProviderTest extends Specification {
+    def "empty test"() {
+        given:
+            def nestedJarProvider = new MergedNestedJarProvider(new TestNestedJarProvider())
+        when:
+            nestedJarProvider.prepare(null)
+        then:
+            nestedJarProvider.provide() != null
+    }
 
-public record MergedNestedJarProvider(NestedJarProvider... children) implements NestedJarProvider {
-	@Override
-	public Collection<File> provide() {
-		return Arrays.stream(children)
-				.map(NestedJarProvider::provide)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toList());
-	}
+    private class TestNestedJarProvider implements NestedJarProvider {
+        private Collection<File> files = null
 
-	@Override
-	public void prepare(Project project) {
-		Arrays.stream(children).forEach(nestedJarProvider -> nestedJarProvider.prepare(project));
-	}
+        @Override
+        Collection<File> provide() {
+            return files
+        }
+
+        @Override
+        void prepare(Project project) {
+            files = []
+        }
+    }
 }

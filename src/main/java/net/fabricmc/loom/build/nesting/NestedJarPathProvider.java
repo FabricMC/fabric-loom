@@ -58,6 +58,8 @@ public final class NestedJarPathProvider implements NestedJarProvider {
 	}
 
 	private void validateFiles() {
+		Preconditions.checkNotNull(files, "null files to nest, was prepare called?");
+
 		for (File file : files) {
 			Preconditions.checkArgument(file.getName().endsWith(".jar"), String.format("Tried to nest %s but it is not a jar", file.getAbsolutePath()));
 			Preconditions.checkArgument(file.exists(), String.format("Tried to nest jar %s but it does not exist", file.getAbsolutePath()));

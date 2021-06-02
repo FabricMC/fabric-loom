@@ -85,7 +85,7 @@ dependencies {
 	implementation ('org.benf:cfr:0.151')
 
 	// source code remapping
-	implementation ('org.cadixdev:mercury:0.1.0-rc1')
+	implementation ('net.fabricmc:mercury:0.2.0')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.0')

@@ -50,7 +50,8 @@ import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
@@ -123,7 +124,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 					throw new UnsupportedOperationException("Migrating Mojang mappings is currently only supported for the specified minecraft version");
 				}
 
-				files = new MojangMappingsDependency(project, getExtension()).resolve();
+				files = new MojangMappingsDependency(project, getExtension(), new MojangMappingsSpec()).resolve();
 			} else {
 				Dependency dependency = project.getDependencies().create(mappings);
 				files = project.getConfigurations().detachedConfiguration(dependency).resolve();

@@ -54,7 +54,8 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
 public class LoomGradleExtension {
@@ -114,7 +115,13 @@ public class LoomGradleExtension {
 	}
 
 	public Dependency officialMojangMappings() {
-		return new MojangMappingsDependency(project, this);
+		return new MojangMappingsDependency(project, this, new MojangMappingsSpec());
+	}
+
+	public Dependency officialMojangMappings(Action<MojangMappingsSpec> mojangMappingsSpecAction) {
+		var mojangMappingsSpec = new MojangMappingsSpec();
+		mojangMappingsSpecAction.execute(mojangMappingsSpec);
+		return new MojangMappingsDependency(project, this, mojangMappingsSpec);
 	}
 
 	public LoomGradleExtension(Project project) {

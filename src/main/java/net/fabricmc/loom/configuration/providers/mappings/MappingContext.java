@@ -22,30 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.mojmap;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import java.io.File;
 
-public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {
-	// Keys in dependency manifest
-	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
-	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+import org.gradle.api.logging.Logger;
 
-	@Override
-	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
-			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
-		}
+public interface MappingContext {
+	File mavenFile(Object mavenNotation);
 
-		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
-				context.getLogger()
-		);
+	MappingsProvider mappingsProvider();
+
+	MinecraftProvider minecraftProvider();
+
+	default String minecraftVersion() {
+		return minecraftProvider().minecraftVersion();
 	}
+
+	/**
+	 * Creates a temporary working dir to be used to store working files.
+	 */
+	File workingDirectory(String name);
+
+	Logger getLogger();
 }

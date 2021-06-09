@@ -31,8 +31,8 @@ import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 
@@ -84,7 +84,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	}
 
 	@Override
-	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
+	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
 		projectMappedJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedClassifier) + ".jar");

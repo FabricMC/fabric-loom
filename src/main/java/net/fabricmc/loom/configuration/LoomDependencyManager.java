@@ -42,7 +42,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.LoomRepositoryPlugin;
@@ -86,7 +86,7 @@ public class LoomDependencyManager {
 	public void handleDependencies(Project project) {
 		List<Runnable> afterTasks = new ArrayList<>();
 
-		MappingsProvider mappingsProvider = null;
+		MappingsProviderImpl mappingsProvider = null;
 
 		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
@@ -100,8 +100,8 @@ public class LoomDependencyManager {
 				return list;
 			}).providers.add(provider);
 
-			if (provider instanceof MappingsProvider) {
-				mappingsProvider = (MappingsProvider) provider;
+			if (provider instanceof MappingsProviderImpl) {
+				mappingsProvider = (MappingsProviderImpl) provider;
 			}
 		}
 

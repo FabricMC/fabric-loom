@@ -131,11 +131,17 @@ public record ParchmentTreeV1(
 
 	public record Parameter(
 			int index,
-			String name
+			String name,
+			@Nullable
+			String javadoc
 	) {
 		public void visit(MappingVisitor visitor) {
 			// TODO is this the lvt index or what?
 			visitor.visitMethodArg(index, index, name);
+
+			if (javadoc() != null) {
+				visitor.visitComment(MappedElementKind.METHOD_ARG, javadoc);
+			}
 		}
 	}
 

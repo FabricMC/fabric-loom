@@ -22,33 +22,50 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.File;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
+public class GradleMappingContext implements MappingContext {
+	private final Project project;
+	private final LoomGradleExtension extension;
 
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+	public GradleMappingContext(Project project) {
+		this.project = project;
+		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	@Override
+	public File mavenFile(Object mavenNotation) {
+		Configuration configuration = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mavenNotation));
+		return configuration.getSingleFile();
+	}
+
+	@Override
+	public MappingsProvider mappingsProvider() {
+		return extension.getMappingsProvider();
+	}
+
+	@Override
+	public MinecraftProvider minecraftProvider() {
+		return extension.getMinecraftProvider();
+	}
+
+	@Override
+	public File workingDirectory(String name) {
+		// TODO create a dir
+		return null;
+	}
+
+	@Override
+	public Logger getLogger() {
+		return project.getLogger();
 	}
 }

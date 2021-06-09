@@ -22,30 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.mojmap;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
-public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {
-	// Keys in dependency manifest
-	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
-	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec;
 
-	@Override
-	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
+public class LayeredMappingSpecBuilder {
+	private final List<MappingsSpec<?>> layers = new LinkedList<>();
 
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
-			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
-		}
+	public void officalMojangMappings() {
+		layers.add(new MojangMappingsSpec());
+	}
 
-		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
-				context.getLogger()
-		);
+	public void parchment(String mavenDef) {
+		layers.add(new ParchmentMappingsSpec(mavenDef, false));
+	}
+
+	// TODO create a parchment builder to allow setting options on it
+
+	public LayeredMappingSpec build() {
+		// Intermediary is always the base layer
+		layers.add(new IntermediaryMappingsSpec());
+
+		return new LayeredMappingSpec(Collections.unmodifiableList(layers));
 	}
 }

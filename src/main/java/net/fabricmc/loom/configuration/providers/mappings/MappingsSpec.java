@@ -22,33 +22,8 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Objects;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
-import net.fabricmc.loom.LoomGradlePlugin;
-
-public class ParchmentDataReader {
-	public static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
-
-	private final ParchmentFileResolver parchmentFileResolver;
-
-	public ParchmentDataReader(ParchmentFileResolver parchmentFileResolver) {
-		this.parchmentFileResolver = parchmentFileResolver;
-	}
-
-	public ParchmentTreeV1 getParchmentData() throws IOException {
-		try (var zipFile = new ZipFile(parchmentFileResolver.resolve())) {
-			ZipEntry zipFileEntry = zipFile.getEntry(PARCHMENT_DATA_FILE_NAME);
-			Objects.requireNonNull(zipFileEntry, "Could not find %s in parchment data file".formatted(PARCHMENT_DATA_FILE_NAME));
-
-			try (var reader = new InputStreamReader(zipFile.getInputStream(zipFileEntry))) {
-				return LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, ParchmentTreeV1.class);
-			}
-		}
-	}
+public interface MappingsSpec<L extends MappingLayer> {
+	L createLayer(MappingContext context);
 }

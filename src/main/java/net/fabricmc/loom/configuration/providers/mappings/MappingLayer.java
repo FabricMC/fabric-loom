@@ -22,33 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.File;
+import java.io.IOException;
 
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
+import net.fabricmc.mappingio.MappingVisitor;
 
-import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
-
-public class GradleParchmentFileResolver implements ParchmentFileResolver {
-	private final Project project;
-	private final MojangMappingsSpec mojangMappingsSpec;
-
-	public GradleParchmentFileResolver(Project project, MojangMappingsSpec mojangMappingsSpec) {
-		this.project = project;
-		this.mojangMappingsSpec = mojangMappingsSpec;
-	}
-
-	@Override
-	public File resolve() {
-		Dependency dependency = createDependency();
-		Configuration configuration = project.getConfigurations().detachedConfiguration(dependency);
-		return configuration.getSingleFile();
-	}
-
-	private Dependency createDependency() {
-		return project.getDependencies().create(mojangMappingsSpec.getParchment());
-	}
+public interface MappingLayer {
+	void visit(MappingVisitor mappingVisitor) throws IOException;
 }

@@ -25,7 +25,35 @@
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
-public interface ParchmentFileResolver {
-	File resolve();
+import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.mappingio.MappingVisitor;
+
+public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) implements MappingLayer {
+	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
+
+	@Override
+	public void visit(MappingVisitor mappingVisitor) throws IOException {
+		ParchmentTreeV1 parchmentData = getParchmentData();
+
+		parchmentData.visit(mappingVisitor, Constants.MappingNamespace.NAMED);
+	}
+
+	private ParchmentTreeV1 getParchmentData() throws IOException {
+		try (var zipFile = new ZipFile(parchmentFile())) {
+			ZipEntry zipFileEntry = zipFile.getEntry(PARCHMENT_DATA_FILE_NAME);
+			Objects.requireNonNull(zipFileEntry, "Could not find %s in parchment data file".formatted(PARCHMENT_DATA_FILE_NAME));
+
+			try (var reader = new InputStreamReader(zipFile.getInputStream(zipFileEntry))) {
+				return LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, ParchmentTreeV1.class);
+			}
+		}
+	}
 }

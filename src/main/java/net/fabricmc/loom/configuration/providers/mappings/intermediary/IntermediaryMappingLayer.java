@@ -22,30 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.mojmap;
+package net.fabricmc.loom.configuration.providers.mappings.intermediary;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
-public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {
-	// Keys in dependency manifest
-	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
-	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.format.Tiny2Reader;
 
+public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 	@Override
-	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
-
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
-			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
+	public void visit(MappingVisitor mappingVisitor) throws IOException {
+		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
+			Tiny2Reader.read(reader, mappingVisitor);
+			mappingVisitor.reset();
 		}
-
-		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
-				context.getLogger()
-		);
 	}
 }

@@ -27,9 +27,9 @@ package net.fabricmc.loom.configuration.providers.mappings.parchment;
 import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
 
-public record ParchmentMappingsSpec(String mavenDef, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
+public record ParchmentMappingsSpec(String mavenNotation, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
 	@Override
 	public ParchmentMappingLayer createLayer(MappingContext context) {
-		return new ParchmentMappingLayer(context.mavenFile(mavenDef()), removePrefix());
+		return new ParchmentMappingLayer(context.mavenFile(mavenNotation()), removePrefix());
 	}
 }

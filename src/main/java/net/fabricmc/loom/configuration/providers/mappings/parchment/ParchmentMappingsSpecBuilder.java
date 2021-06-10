@@ -22,29 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import java.io.File;
+public class ParchmentMappingsSpecBuilder {
+	private final String mavenNotation;
 
-import org.gradle.api.logging.Logger;
+	private boolean removePrefix;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
-public interface MappingContext {
-	File mavenFile(String mavenNotation);
-
-	MappingsProvider mappingsProvider();
-
-	MinecraftProvider minecraftProvider();
-
-	default String minecraftVersion() {
-		return minecraftProvider().minecraftVersion();
+	private ParchmentMappingsSpecBuilder(String mavenNotation) {
+		this.mavenNotation = mavenNotation;
 	}
 
-	/**
-	 * Creates a temporary working dir to be used to store working files.
-	 */
-	File workingDirectory(String name);
+	public static ParchmentMappingsSpecBuilder builder(String depNotation) {
+		return new ParchmentMappingsSpecBuilder(depNotation);
+	}
 
-	Logger getLogger();
+	public ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix) {
+		this.removePrefix = removePrefix;
+		return this;
+	}
+
+	public ParchmentMappingsSpec build() {
+		return new ParchmentMappingsSpec(mavenNotation, removePrefix);
+	}
 }

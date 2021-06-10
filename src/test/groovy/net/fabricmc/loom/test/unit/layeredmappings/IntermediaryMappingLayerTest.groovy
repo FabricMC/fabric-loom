@@ -22,29 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.test.unit.layeredmappings
 
-import java.io.File;
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 
-import org.gradle.api.logging.Logger;
+class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
+    def "Read intermediary mappings" () {
+        setup:
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_URL, "intermediary.jar"), "mappings/mappings.tiny")
+        when:
+            def mappings = getSingleMapping(new IntermediaryMappingsSpec())
+            def tiny = getTiny(mappings)
+        then:
+            mappings.srcNamespace == "official"
+            mappings.dstNamespaces == ["intermediary", "named"]
+            mappings.classes.size() == 6107
+            mappings.getClass("abc").getDstName(0) == "net/minecraft/class_3191"
+            mappings.getClass("abc").getDstName(1) == "net/minecraft/class_3191"
+    }
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
-public interface MappingContext {
-	File mavenFile(String mavenNotation);
-
-	MappingsProvider mappingsProvider();
-
-	MinecraftProvider minecraftProvider();
-
-	default String minecraftVersion() {
-		return minecraftProvider().minecraftVersion();
-	}
-
-	/**
-	 * Creates a temporary working dir to be used to store working files.
-	 */
-	File workingDirectory(String name);
-
-	Logger getLogger();
+    private final String INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.17/intermediary-1.17-v2.jar"
 }

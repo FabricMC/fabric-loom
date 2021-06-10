@@ -29,5 +29,7 @@ import java.io.IOException;
 import net.fabricmc.mappingio.MappingVisitor;
 
 public interface MappingLayer {
+	MappingNamespace getSourceNamespace();
+
 	void visit(MappingVisitor mappingVisitor) throws IOException;
 }

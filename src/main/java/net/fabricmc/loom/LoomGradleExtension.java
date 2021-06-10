@@ -53,11 +53,12 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
-import net.fabricmc.loom.configuration.providers.mappings.LayredMappingsDependency;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 
 public class LoomGradleExtension {
 	public String refmapName;
@@ -122,7 +123,8 @@ public class LoomGradleExtension {
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
 		LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder();
 		action.execute(builder);
-		return new LayredMappingsDependency(new GradleMappingContext(project), builder.build());
+		LayeredMappingSpec builtSpec = builder.build();
+		return new LayeredMappingsDependency(new GradleMappingContext(project, "layers_" + builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
 	}
 
 	public LoomGradleExtension(Project project) {

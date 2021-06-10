@@ -29,17 +29,38 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collections;
 
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
+import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 	@Override
+	public MappingNamespace getSourceNamespace() {
+		return MappingNamespace.OFFICIAL;
+	}
+
+	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
+		// Populate named with intermediary
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()));
+
+		// TODO can we save creating a tree just to add a namespace?
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+
 		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
-			Tiny2Reader.read(reader, mappingVisitor);
-			mappingVisitor.reset();
+			Tiny2Reader.read(reader, mappingTree);
+			mappingTree.reset();
 		}
+
+		// Add a "named" namespace
+		mappingTree.visitNamespaces(MappingNamespace.OFFICIAL.stringValue(), Collections.singletonList(MappingNamespace.NAMED.stringValue()));
+		mappingTree.reset();
+
+		mappingTree.accept(nsCompleter);
 	}
 }

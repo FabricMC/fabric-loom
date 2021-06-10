@@ -124,13 +124,4 @@ public class Constants {
 		private Knot() {
 		}
 	}
-
-	public static final class MappingNamespace {
-		public static final String OFFICIAL = "official";
-		public static final String NAMED = "named";
-		public static final String INTERMEDIARY = "intermediary";
-
-		private MappingNamespace() {
-		}
-	}
 }

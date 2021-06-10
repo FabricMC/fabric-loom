@@ -36,14 +36,16 @@ import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 public class GradleMappingContext implements MappingContext {
 	private final Project project;
 	private final LoomGradleExtension extension;
+	private final String workingDirName;
 
-	public GradleMappingContext(Project project) {
+	public GradleMappingContext(Project project, String workingDirName) {
 		this.project = project;
 		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		this.workingDirName = workingDirName;
 	}
 
 	@Override
-	public File mavenFile(Object mavenNotation) {
+	public File mavenFile(String mavenNotation) {
 		Configuration configuration = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mavenNotation));
 		return configuration.getSingleFile();
 	}
@@ -60,8 +62,9 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public File workingDirectory(String name) {
-		// TODO create a dir
-		return null;
+		File tempDir = new File(mappingsProvider().getMappingsDir().toFile(), workingDirName);
+		tempDir.mkdirs();
+		return new File(tempDir, name);
 	}
 
 	@Override

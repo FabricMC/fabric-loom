@@ -35,8 +35,8 @@ import java.nio.file.Path;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
+import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -47,6 +47,11 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 									File workingDir,
 									Logger logger) implements MappingLayer {
 	@Override
+	public MappingNamespace getSourceNamespace() {
+		return MappingNamespace.OFFICIAL;
+	}
+
+	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		var clientMappings = new File(workingDir(), "client.txt");
 		var serverMappings = new File(workingDir(), "server.txt");
@@ -55,13 +60,14 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 
 		printMappingsLicense(clientMappings.toPath());
 
+		// Make named the source namespace
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingNamespace.OFFICIAL.stringValue());
+
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings.toPath(), StandardCharsets.UTF_8);
 				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings.toPath(), StandardCharsets.UTF_8)) {
-			MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(mappingVisitor, Constants.MappingNamespace.OFFICIAL);
-
-			ProGuardReader.read(clientBufferedReader, Constants.MappingNamespace.NAMED, Constants.MappingNamespace.OFFICIAL, sourceNsSwitch);
+			ProGuardReader.read(clientBufferedReader, MappingNamespace.NAMED.stringValue(), MappingNamespace.OFFICIAL.stringValue(), nsSwitch);
 			mappingVisitor.reset();
-			ProGuardReader.read(serverBufferedReader, Constants.MappingNamespace.NAMED, Constants.MappingNamespace.OFFICIAL, sourceNsSwitch);
+			ProGuardReader.read(serverBufferedReader, MappingNamespace.NAMED.stringValue(), MappingNamespace.OFFICIAL.stringValue(), nsSwitch);
 			mappingVisitor.reset();
 		}
 	}

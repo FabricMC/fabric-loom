@@ -24,27 +24,14 @@
 
 package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.File;
+import java.util.Locale;
 
-import org.gradle.api.logging.Logger;
+public enum MappingNamespace {
+	OFFICIAL,
+	INTERMEDIARY,
+	NAMED;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
-public interface MappingContext {
-	File mavenFile(String mavenNotation);
-
-	MappingsProvider mappingsProvider();
-
-	MinecraftProvider minecraftProvider();
-
-	default String minecraftVersion() {
-		return minecraftProvider().minecraftVersion();
+	public String stringValue() {
+		return name().toLowerCase(Locale.ROOT);
 	}
-
-	/**
-	 * Creates a temporary working dir to be used to store working files.
-	 */
-	File workingDirectory(String name);
-
-	Logger getLogger();
 }

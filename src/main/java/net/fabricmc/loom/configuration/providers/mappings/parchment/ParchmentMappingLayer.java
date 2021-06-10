@@ -33,17 +33,26 @@ import java.util.zip.ZipFile;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 
 public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) implements MappingLayer {
 	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
 
 	@Override
+	public MappingNamespace getSourceNamespace() {
+		return MappingNamespace.NAMED;
+	}
+
+	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		ParchmentTreeV1 parchmentData = getParchmentData();
 
-		parchmentData.visit(mappingVisitor, Constants.MappingNamespace.NAMED);
+		if (removePrefix()) {
+			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingVisitor);
+		}
+
+		parchmentData.visit(mappingVisitor, MappingNamespace.NAMED.stringValue());
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {

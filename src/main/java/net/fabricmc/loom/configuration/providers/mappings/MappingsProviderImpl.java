@@ -411,7 +411,11 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	@Override
 	public File intermediaryTinyFile() {
-		return intermediaryTiny.toFile();
+		try {
+			return getIntermediaryTiny().toFile();
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to get intermediary", e);
+		}
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {

@@ -43,22 +43,23 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class LayredMappingsDependency implements SelfResolvingDependency {
+public class LayeredMappingsDependency implements SelfResolvingDependency {
 	private static final String GROUP = "loom";
 	private static final String MODULE = "mappings";
 
 	private final MappingContext mappingContext;
 	private final LayeredMappingSpec layeredMappingSpec;
-	// Version based off the spec hash, if the spec changes we rebuild
-	private final int layerHash;
+	private final String version;
 
-	public LayredMappingsDependency(MappingContext mappingContext, LayeredMappingSpec layeredMappingSpec) {
+	public LayeredMappingsDependency(MappingContext mappingContext, LayeredMappingSpec layeredMappingSpec, String version) {
 		this.mappingContext = mappingContext;
 		this.layeredMappingSpec = layeredMappingSpec;
-		layerHash = this.layeredMappingSpec.hashCode();
+		this.version = version;
 	}
 
 	@Override
@@ -67,19 +68,16 @@ public class LayredMappingsDependency implements SelfResolvingDependency {
 		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
 
 		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
-			MemoryMappingTree mappingTree = new MemoryMappingTree();
-
 			try {
-				MappingContext context = null; // TODO
-
-				for (MappingsSpec<?> spec : layeredMappingSpec.layers()) {
-					MappingLayer layer = spec.createLayer(context);
-					layer.visit(mappingTree);
-				}
+				var processor = new LayeredMappingsProcessor(layeredMappingSpec);
+				MemoryMappingTree mappings = processor.getMappings(mappingContext);
 
 				try (Writer writer = new StringWriter()) {
 					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
-					mappingTree.accept(tiny2Writer);
+
+					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingNamespace.NAMED.stringValue()));
+					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue());
+					mappings.accept(nsSwitch);
 
 					Files.deleteIfExists(mappingsFile);
 
@@ -117,13 +115,13 @@ public class LayredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public String getVersion() {
-		return "layered+hash.%d".formatted(layerHash);
+		return version;
 	}
 
 	@Override
 	public boolean contentEquals(Dependency dependency) {
-		if (dependency instanceof LayredMappingsDependency layredMappingsDependency) {
-			return Objects.equals(layredMappingsDependency.getVersion(), this.getVersion());
+		if (dependency instanceof LayeredMappingsDependency layeredMappingsDependency) {
+			return Objects.equals(layeredMappingsDependency.getVersion(), this.getVersion());
 		}
 
 		return false;
@@ -131,7 +129,7 @@ public class LayredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public Dependency copy() {
-		return new LayredMappingsDependency(mappingContext, layeredMappingSpec);
+		return new LayeredMappingsDependency(mappingContext, layeredMappingSpec, version);
 	}
 
 	@Override

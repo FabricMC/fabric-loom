@@ -28,9 +28,11 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.gradle.api.Action;
+
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
-import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
 
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
@@ -39,16 +41,22 @@ public class LayeredMappingSpecBuilder {
 		layers.add(new MojangMappingsSpec());
 	}
 
-	public void parchment(String mavenDef) {
-		layers.add(new ParchmentMappingsSpec(mavenDef, false));
+	public void parchment(String mavenNotation) {
+		parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
 	}
 
-	// TODO create a parchment builder to allow setting options on it
+	public void parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
+		var builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
+		action.execute(builder);
+		layers.add(builder.build());
+	}
 
 	public LayeredMappingSpec build() {
+		List<MappingsSpec<?>> builtLayers = new LinkedList<>();
 		// Intermediary is always the base layer
-		layers.add(new IntermediaryMappingsSpec());
+		builtLayers.add(new IntermediaryMappingsSpec());
+		builtLayers.addAll(layers);
 
-		return new LayeredMappingSpec(Collections.unmodifiableList(layers));
+		return new LayeredMappingSpec(Collections.unmodifiableList(builtLayers));
 	}
 }

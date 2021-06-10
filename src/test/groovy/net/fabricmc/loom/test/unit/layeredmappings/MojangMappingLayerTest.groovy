@@ -43,6 +43,9 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
             mappings.srcNamespace == "named"
             mappings.dstNamespaces == ["intermediary", "official"]
             mappings.classes.size() == 6113
+            mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+            mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+            mappings.classes[0].methods[0].args.size() == 0 // No Args
     }
 
     private final String INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.17/intermediary-1.17-v2.jar"

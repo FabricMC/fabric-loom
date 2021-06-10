@@ -46,6 +46,9 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             mappings.srcNamespace == "named"
             mappings.dstNamespaces == ["intermediary", "official"]
             mappings.classes.size() == 5747
+            mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
+            mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
+            mappings.classes[0].methods[0].args[0].srcName == "pStack"
     }
 
     def "Read parchment mappings remove prefix" () {
@@ -64,6 +67,9 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             mappings.srcNamespace == "named"
             mappings.dstNamespaces == ["intermediary", "official"]
             mappings.classes.size() == 5747
+            mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
+            mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
+            mappings.classes[0].methods[0].args[0].srcName == "stack"
     }
 
     private final String PARCHMENT_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"

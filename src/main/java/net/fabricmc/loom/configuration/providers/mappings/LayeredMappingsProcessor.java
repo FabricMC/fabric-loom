@@ -25,6 +25,8 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
@@ -39,8 +41,18 @@ public class LayeredMappingsProcessor {
 	public MemoryMappingTree getMappings(MappingContext context) throws IOException {
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
+		List<Class<? extends MappingLayer>> visitedLayers = new ArrayList<>();
+
 		for (MappingsSpec<?> spec : layeredMappingSpec.layers()) {
 			MappingLayer layer = spec.createLayer(context);
+
+			for (Class<? extends MappingLayer> dependentLayer : layer.dependsOn()) {
+				if (!visitedLayers.contains(dependentLayer)) {
+					throw new RuntimeException("Layer %s depends on %s".formatted(layer.getClass().getName(), dependentLayer.getName()));
+				}
+			}
+
+			visitedLayers.add(layer.getClass());
 
 			// We have to rebuild a new tree to work on when a layer doesnt merge into layered
 			boolean rebuild = layer.getSourceNamespace() != MappingNamespace.NAMED;

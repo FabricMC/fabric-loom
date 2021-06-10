@@ -95,7 +95,7 @@ dependencies {
 
 	// Testing
 	testImplementation(gradleTestKit())
-	testImplementation('org.spockframework:spock-core:2.0-M5-groovy-3.0') {
+	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'io.javalin:javalin:3.13.7'

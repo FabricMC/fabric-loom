@@ -40,11 +40,6 @@ public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) im
 	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
 
 	@Override
-	public MappingNamespace getSourceNamespace() {
-		return MappingNamespace.NAMED;
-	}
-
-	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		ParchmentTreeV1 parchmentData = getParchmentData();
 

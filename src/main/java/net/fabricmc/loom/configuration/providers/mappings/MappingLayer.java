@@ -25,11 +25,19 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import net.fabricmc.mappingio.MappingVisitor;
 
 public interface MappingLayer {
-	MappingNamespace getSourceNamespace();
-
 	void visit(MappingVisitor mappingVisitor) throws IOException;
+
+	default MappingNamespace getSourceNamespace() {
+		return MappingNamespace.NAMED;
+	}
+
+	default List<Class<? extends MappingLayer>> dependsOn() {
+		return Collections.emptyList();
+	}
 }

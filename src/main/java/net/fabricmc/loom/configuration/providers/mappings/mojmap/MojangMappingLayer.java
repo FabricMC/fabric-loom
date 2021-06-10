@@ -31,12 +31,14 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
 import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -46,11 +48,6 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 									MinecraftVersionMeta.Download serverDownload,
 									File workingDir,
 									Logger logger) implements MappingLayer {
-	@Override
-	public MappingNamespace getSourceNamespace() {
-		return MappingNamespace.OFFICIAL;
-	}
-
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		var clientMappings = new File(workingDir(), "client.txt");
@@ -93,5 +90,15 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read client mappings", e);
 		}
+	}
+
+	@Override
+	public MappingNamespace getSourceNamespace() {
+		return MappingNamespace.OFFICIAL;
+	}
+
+	@Override
+	public List<Class<? extends MappingLayer>> dependsOn() {
+		return List.of(IntermediaryMappingLayer.class);
 	}
 }

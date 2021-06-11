@@ -79,9 +79,6 @@ jobs:
             test: net.fabricmc.loom.test.integration.KotlinTest
 
     runs-on: windows-2019
-    container:
-      image: gradle:7.0.0-${{ matrix.java }}
-      options: --user root
 
     steps:
       - uses: actions/checkout@v2

@@ -37,18 +37,21 @@ import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMap
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
 
-	public void officalMojangMappings() {
+	public LayeredMappingSpecBuilder officalMojangMappings() {
 		layers.add(new MojangMappingsSpec());
+		return this;
 	}
 
-	public void parchment(String mavenNotation) {
+	public LayeredMappingSpecBuilder parchment(String mavenNotation) {
 		parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
+		return this;
 	}
 
-	public void parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
+	public LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
 		var builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
 		action.execute(builder);
 		layers.add(builder.build());
+		return this;
 	}
 
 	public LayeredMappingSpec build() {

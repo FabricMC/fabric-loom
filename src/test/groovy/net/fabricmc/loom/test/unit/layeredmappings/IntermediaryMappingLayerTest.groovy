@@ -29,7 +29,7 @@ import net.fabricmc.loom.configuration.providers.mappings.intermediary.Intermedi
 class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
     def "Read intermediary mappings" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
         when:
             def mappings = getSingleMapping(new IntermediaryMappingsSpec())
             def tiny = getTiny(mappings)
@@ -40,6 +40,4 @@ class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
             mappings.getClass("abc").getDstName(0) == "net/minecraft/class_3191"
             mappings.getClass("abc").getDstName(1) == "net/minecraft/class_3191"
     }
-
-    private final String INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.17/intermediary-1.17-v2.jar"
 }

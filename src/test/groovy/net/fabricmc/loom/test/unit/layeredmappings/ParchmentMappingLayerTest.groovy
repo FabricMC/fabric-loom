@@ -32,8 +32,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
     def "Read parchment mappings" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_URL, "intermediary.jar"), "mappings/mappings.tiny")
-            mockMinecraftProvider.getVersionInfo() >> versionMeta
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_16_5_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
         when:
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
             def mappings = getLayeredMappings(
@@ -53,8 +53,8 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 
     def "Read parchment mappings remove prefix" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_URL, "intermediary.jar"), "mappings/mappings.tiny")
-            mockMinecraftProvider.getVersionInfo() >> versionMeta
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_16_5_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
         when:
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
             def mappings = getLayeredMappings(
@@ -71,13 +71,4 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
             mappings.classes[0].methods[0].args[0].srcName == "stack"
     }
-
-    private final String PARCHMENT_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"
-    private final String PARCHMENT_URL = "https://ldtteam.jfrog.io/artifactory/parchmentmc-snapshots/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
-    private final String INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.16.5/intermediary-1.16.5-v2.jar"
-    private final Map<String, MinecraftVersionMeta.Download> downloads = [
-        client_mappings:new MinecraftVersionMeta.Download(null, "e3dfb0001e1079a1af72ee21517330edf52e6192", 5746047, "https://launcher.mojang.com/v1/objects/e3dfb0001e1079a1af72ee21517330edf52e6192/client.txt"),
-        server_mappings:new MinecraftVersionMeta.Download(null, "81d5c793695d8cde63afddb40dde88e3a88132ac", 4400926, "https://launcher.mojang.com/v1/objects/81d5c793695d8cde63afddb40dde88e3a88132ac/server.txt")
-    ]
-    private final MinecraftVersionMeta versionMeta = new MinecraftVersionMeta(null, null, null, 0, downloads, null, null, null, null, 0, null, null, null)
 }

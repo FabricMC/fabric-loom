@@ -40,7 +40,7 @@ import spock.lang.Specification
 
 import java.util.zip.ZipFile
 
-abstract class LayeredMappingsSpecification extends Specification {
+abstract class LayeredMappingsSpecification extends Specification implements LayeredMappingsTestConstants {
     Logger mockLogger = Mock(Logger)
     MappingsProvider mockMappingsProvider = Mock(MappingsProvider)
     MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)

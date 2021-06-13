@@ -89,11 +89,11 @@ public class MinecraftNativesProvider {
 
 		nativesDir.mkdirs();
 
-		for (MinecraftVersionMeta.Classifier library : getNatives()) {
-			File libJarFile = library.getRelativeFile(jarStore);
+		for (MinecraftVersionMeta.Download library : getNatives()) {
+			File libJarFile = library.relativeFile(jarStore);
 
 			if (!offline) {
-				HashedDownloadUtil.downloadIfInvalid(new URL(library.getUrl()), libJarFile, library.getSha1(), project.getLogger(), false);
+				HashedDownloadUtil.downloadIfInvalid(new URL(library.url()), libJarFile, library.sha1(), project.getLogger(), false);
 			}
 
 			if (!libJarFile.exists()) {
@@ -104,19 +104,19 @@ public class MinecraftNativesProvider {
 
 			// Store a file containing the hash of the extracted natives, used on subsequent runs to skip extracting all the natives if they haven't changed
 			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");
-			FileUtils.writeStringToFile(libSha1File, library.getSha1(), StandardCharsets.UTF_8);
+			FileUtils.writeStringToFile(libSha1File, library.sha1(), StandardCharsets.UTF_8);
 		}
 	}
 
 	private boolean requiresExtract() {
-		List<MinecraftVersionMeta.Classifier> natives = getNatives();
+		List<MinecraftVersionMeta.Download> natives = getNatives();
 
 		if (natives.isEmpty()) {
 			throw new IllegalStateException("No natives found for the current system");
 		}
 
-		for (MinecraftVersionMeta.Classifier library : natives) {
-			File libJarFile = library.getRelativeFile(jarStore);
+		for (MinecraftVersionMeta.Download library : natives) {
+			File libJarFile = library.relativeFile(jarStore);
 			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");
 
 			if (!libSha1File.exists()) {
@@ -126,7 +126,7 @@ public class MinecraftNativesProvider {
 			try {
 				String sha1 = FileUtils.readFileToString(libSha1File, StandardCharsets.UTF_8);
 
-				if (!sha1.equalsIgnoreCase(library.getSha1())) {
+				if (!sha1.equalsIgnoreCase(library.sha1())) {
 					return true;
 				}
 			} catch (IOException e) {
@@ -139,10 +139,10 @@ public class MinecraftNativesProvider {
 		return false;
 	}
 
-	private List<MinecraftVersionMeta.Classifier> getNatives() {
-		return extension.getMinecraftProvider().getVersionInfo().getLibraries().stream()
+	private List<MinecraftVersionMeta.Download> getNatives() {
+		return extension.getMinecraftProvider().getVersionInfo().libraries().stream()
 				.filter((MinecraftVersionMeta.Library::hasNativesForOS))
-				.map(MinecraftVersionMeta.Library::getClassifierForOS)
+				.map(MinecraftVersionMeta.Library::classifierForOS)
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 	}

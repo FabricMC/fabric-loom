@@ -31,15 +31,13 @@ import java.util.stream.Stream;
 import groovy.util.Node;
 import groovy.xml.QName;
 
-import net.fabricmc.loom.util.gradle.GradleSupport;
-
 public final class GroovyXmlUtil {
 	private GroovyXmlUtil() { }
 
 	public static Node getOrCreateNode(Node parent, String name) {
 		for (Object object : parent.children()) {
-			if (object instanceof Node && isSameName(((Node) object).name(), name)) {
-				return (Node) object;
+			if (object instanceof Node node && isSameName(node.name(), name)) {
+				return node;
 			}
 		}
 
@@ -48,8 +46,8 @@ public final class GroovyXmlUtil {
 
 	public static Optional<Node> getNode(Node parent, String name) {
 		for (Object object : parent.children()) {
-			if (object instanceof Node && isSameName(((Node) object).name(), name)) {
-				return Optional.of((Node) object);
+			if (object instanceof Node node && isSameName(node.name(), name)) {
+				return Optional.of(node);
 			}
 		}
 
@@ -61,21 +59,16 @@ public final class GroovyXmlUtil {
 			return nodeName.equals(givenName);
 		}
 
-		if (nodeName instanceof QName) {
-			return ((QName) nodeName).matches(givenName);
+		if (nodeName instanceof QName qName) {
+			return qName.matches(givenName);
 		}
 
 		// New groovy 3 (gradle 7) class
-		if (GradleSupport.IS_GRADLE_7_OR_NEWER && nodeName.getClass().getName().equals("groovy.namespace.QName")) {
-			return isSameNameGroovy3(nodeName, givenName);
+		if (nodeName instanceof groovy.namespace.QName qName) {
+			return qName.matches(givenName);
 		}
 
 		throw new UnsupportedOperationException("Cannot determine if " + nodeName.getClass() + " is the same as a String");
-	}
-
-	// TODO Move out of its own method when requiring gradle 7
-	private static boolean isSameNameGroovy3(Object nodeName, String givenName) {
-		return ((groovy.namespace.QName) nodeName).matches(givenName);
 	}
 
 	public static Stream<Node> childrenNodesStream(Node node) {

@@ -123,15 +123,15 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 	private MappingSet getMappingsSet(Path clientMappings, Path serverMappings) throws IOException {
 		MinecraftVersionMeta versionInfo = extension.getMinecraftProvider().getVersionInfo();
 
-		if (versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS) == null) {
+		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
 			throw new RuntimeException("Failed to find official mojang mappings for " + getVersion());
 		}
 
-		MinecraftVersionMeta.Download clientMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
-		MinecraftVersionMeta.Download serverMappingsDownload = versionInfo.getDownload(MANIFEST_CLIENT_MAPPINGS);
+		MinecraftVersionMeta.Download clientMappingsDownload = versionInfo.download(MANIFEST_CLIENT_MAPPINGS);
+		MinecraftVersionMeta.Download serverMappingsDownload = versionInfo.download(MANIFEST_CLIENT_MAPPINGS);
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(clientMappingsDownload.getUrl()), clientMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(serverMappingsDownload.getUrl()), serverMappings.toFile(), clientMappingsDownload.getSha1(), project.getLogger(), false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(clientMappingsDownload.url()), clientMappings.toFile(), clientMappingsDownload.sha1(), project.getLogger(), false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(serverMappingsDownload.url()), serverMappings.toFile(), clientMappingsDownload.sha1(), project.getLogger(), false);
 
 		MappingSet mappings = MappingSet.create();
 
@@ -208,8 +208,8 @@ public class MojangMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public boolean contentEquals(Dependency dependency) {
-		if (dependency instanceof MojangMappingsDependency) {
-			return ((MojangMappingsDependency) dependency).extension.getMinecraftProvider().getMinecraftVersion().equals(getVersion());
+		if (dependency instanceof MojangMappingsDependency mojangMappingsDependency) {
+			return mojangMappingsDependency.extension.getMinecraftProvider().getMinecraftVersion().equals(getVersion());
 		}
 
 		return false;

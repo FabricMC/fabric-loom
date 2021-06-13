@@ -31,10 +31,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.ZipError;
 
 import com.google.common.io.Files;
-import com.google.gson.GsonBuilder;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -76,7 +74,7 @@ public class MinecraftProvider extends DependencyProvider {
 		downloadMcJson(offline);
 
 		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = LoomGradlePlugin.GSON.fromJson(reader, MinecraftVersionMeta.class);
+			versionInfo = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, MinecraftVersionMeta.class);
 		}
 
 		// Add Loom as an annotation processor
@@ -101,12 +99,13 @@ public class MinecraftProvider extends DependencyProvider {
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {
 				mergeJars(getProject().getLogger());
-			} catch (ZipError e) {
+			} catch (Throwable e) {
 				HashedDownloadUtil.delete(minecraftClientJar);
 				HashedDownloadUtil.delete(minecraftServerJar);
+				minecraftMergedJar.delete();
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw new RuntimeException();
+				throw e;
 			}
 		}
 	}
@@ -140,7 +139,7 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 
 		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();
-		ManifestVersion mcManifest = new GsonBuilder().create().fromJson(versionManifest, ManifestVersion.class);
+		ManifestVersion mcManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(versionManifest, ManifestVersion.class);
 
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
 
@@ -153,7 +152,7 @@ public class MinecraftProvider extends DependencyProvider {
 		}
 
 		if (!optionalVersion.isPresent()) {
-			optionalVersion = mcManifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+			optionalVersion = mcManifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 		}
 
 		if (optionalVersion.isPresent()) {
@@ -197,8 +196,8 @@ public class MinecraftProvider extends DependencyProvider {
 			return false;
 		}
 
-		ManifestVersion manifest = new GsonBuilder().create().fromJson(Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read(), ManifestVersion.class);
-		Optional<ManifestVersion.Versions> version = manifest.versions.stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+		ManifestVersion manifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read(), ManifestVersion.class);
+		Optional<ManifestVersion.Versions> version = manifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 
 		// fail if the expected mc version was not found, will download the file again.
 		return version.isPresent();
@@ -209,11 +208,11 @@ public class MinecraftProvider extends DependencyProvider {
 			return;
 		}
 
-		MinecraftVersionMeta.Download client = versionInfo.getDownload("client");
-		MinecraftVersionMeta.Download server = versionInfo.getDownload("server");
+		MinecraftVersionMeta.Download client = versionInfo.download("client");
+		MinecraftVersionMeta.Download server = versionInfo.download("server");
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(client.getUrl()), minecraftClientJar, client.getSha1(), logger, false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(server.getUrl()), minecraftServerJar, server.getSha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(client.url()), minecraftClientJar, client.sha1(), logger, false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(server.url()), minecraftServerJar, server.sha1(), logger, false);
 	}
 
 	private void mergeJars(Logger logger) throws IOException {

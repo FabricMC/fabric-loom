@@ -48,6 +48,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.LoomProjectData;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
@@ -79,6 +80,9 @@ public class LoomGradleExtension {
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
+
+	@ApiStatus.Internal
+	private final LoomProjectData projectData;
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
@@ -119,6 +123,7 @@ public class LoomGradleExtension {
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.log4jConfigs = project.files(getDefaultLog4jConfigFile());
+		projectData = new LoomProjectData(project);
 	}
 
 	/**
@@ -362,13 +367,16 @@ public class LoomGradleExtension {
 		return log4jConfigs;
 	}
 
-	@ApiStatus.Experimental
 	public void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action) {
 		action.execute(runConfigs);
 	}
 
-	@ApiStatus.Experimental
 	public NamedDomainObjectContainer<RunConfigSettings> getRunConfigs() {
 		return runConfigs;
+	}
+
+	@ApiStatus.Internal
+	public LoomProjectData getProjectData() {
+		return projectData;
 	}
 }

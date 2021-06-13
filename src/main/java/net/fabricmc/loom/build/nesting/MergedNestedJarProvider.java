@@ -29,18 +29,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-public class MergedNestedJarProvider implements NestedJarProvider {
-	private final NestedJarProvider[] parents;
+import org.gradle.api.Project;
 
-	public MergedNestedJarProvider(NestedJarProvider... parents) {
-		this.parents = parents;
-	}
-
+public record MergedNestedJarProvider(NestedJarProvider... children) implements NestedJarProvider {
 	@Override
 	public Collection<File> provide() {
-		return Arrays.stream(parents)
+		return Arrays.stream(children)
 				.map(NestedJarProvider::provide)
 				.flatMap(Collection::stream)
 				.collect(Collectors.toList());
+	}
+
+	@Override
+	public void prepare(Project project) {
+		Arrays.stream(children).forEach(nestedJarProvider -> nestedJarProvider.prepare(project));
 	}
 }

@@ -51,7 +51,7 @@ public final class MavenPublication {
 					continue;
 				}
 
-				Configuration compileModsConfig = p.getConfigurations().getByName(entry.getSourceConfiguration());
+				Configuration compileModsConfig = p.getConfigurations().getByName(entry.sourceConfiguration());
 
 				// add modsCompile to maven-publish
 				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
@@ -92,7 +92,7 @@ public final class MavenPublication {
 						depNode.appendNode("groupId", dependency.getGroup());
 						depNode.appendNode("artifactId", dependency.getName());
 						depNode.appendNode("version", dependency.getVersion());
-						depNode.appendNode("scope", entry.getMavenScope());
+						depNode.appendNode("scope", entry.mavenScope());
 
 						if (!(dependency instanceof ModuleDependency)) {
 							continue;

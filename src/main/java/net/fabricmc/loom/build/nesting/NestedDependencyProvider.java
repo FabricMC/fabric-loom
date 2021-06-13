@@ -32,7 +32,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
@@ -42,7 +43,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
-import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
@@ -80,13 +80,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		DependencySet dependencies = configuration.getDependencies();
 
 		for (Dependency dependency : dependencies) {
-			if (dependency instanceof ProjectDependency) {
-				ProjectDependency projectDependency = (ProjectDependency) dependency;
+			if (dependency instanceof ProjectDependency projectDependency) {
 				Project dependencyProject = projectDependency.getDependencyProject();
 
 				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
-					if (task instanceof RemapJarTask) {
-						remapTasks.add((RemapJarTask) task);
+					if (task instanceof RemapJarTask remapJarTask) {
+						remapTasks.add(remapJarTask);
 					}
 				}
 			}
@@ -99,23 +98,22 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		List<DependencyInfo<ProjectDependency>> fileList = new ArrayList<>();
 
 		for (Dependency dependency : configuration.getDependencies()) {
-			if (dependency instanceof ProjectDependency) {
-				ProjectDependency projectDependency = (ProjectDependency) dependency;
+			if (dependency instanceof ProjectDependency projectDependency) {
 				Project dependencyProject = projectDependency.getDependencyProject();
 
 				visited.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion());
 
-				// TODO change this to allow just normal jar tasks, so a project can have a none loom sub project
 				Collection<Task> remapJarTasks = dependencyProject.getTasksByName("remapJar", false);
 				Collection<Task> jarTasks = dependencyProject.getTasksByName("jar", false);
 
 				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
-					if (task instanceof RemapJarTask) {
-						File file = ((RemapJarTask) task).getArchivePath();
-						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
-					} else if (task instanceof AbstractArchiveTask) {
-						File file = ((AbstractArchiveTask) task).getArchivePath();
-						fileList.add(new DependencyInfo<>(projectDependency, new ProjectDependencyMetaExtractor(), file));
+					if (task instanceof AbstractArchiveTask abstractArchiveTask) {
+						fileList.add(new DependencyInfo<>(
+								projectDependency,
+								new ProjectDependencyMetaExtractor(),
+								abstractArchiveTask.getArchiveFile().get().getAsFile(),
+								abstractArchiveTask.getArchiveClassifier().getOrNull()
+						));
 					}
 				}
 			}
@@ -135,14 +133,13 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				continue;
 			}
 
-			List<File> files = dependency
-					.getModuleArtifacts()
-					.stream()
-					.map(ResolvedArtifact::getFile)
-					.collect(Collectors.toList());
-
-			for (File file : files) {
-				fileList.add(new DependencyInfo<>(dependency, new ResolvedDependencyMetaExtractor(), file));
+			for (var artifact : dependency.getModuleArtifacts()) {
+				fileList.add(new DependencyInfo<>(
+						dependency,
+						new ResolvedDependencyMetaExtractor(),
+						artifact.getFile(),
+						artifact.getClassifier()
+				));
 			}
 		}
 
@@ -197,7 +194,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
-		jsonObject.addProperty("id", (metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency)).replaceAll("\\.", "_").toLowerCase(Locale.ENGLISH));
+
+		jsonObject.addProperty("id",
+				(metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency) + info.getClassifierSuffix())
+						.replaceAll("\\.", "_")
+						.toLowerCase(Locale.ENGLISH)
+		);
 		jsonObject.addProperty("version", metaExtractor.version(dependency));
 		jsonObject.addProperty("name", metaExtractor.name(dependency));
 
@@ -208,24 +210,22 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		return LoomGradlePlugin.GSON.toJson(jsonObject);
 	}
 
-	private static class DependencyInfo<D> {
-		final D dependency;
-		final DependencyMetaExtractor<D> metaExtractor;
-		final File file;
-
-		DependencyInfo(D dependency, DependencyMetaExtractor<D> metaExtractor, File file) {
-			this.dependency = dependency;
-			this.metaExtractor = metaExtractor;
-			this.file = file;
-		}
-
-		public void validateInputs() {
+	private record DependencyInfo<D>(D dependency, DependencyMetaExtractor<D> metaExtractor, File file, @Nullable String classifier) {
+		void validateInputs() {
 			if (!file.exists()) {
 				throw new RuntimeException("Failed to include nested jars, as it could not be found @ " + file.getAbsolutePath());
 			}
 
 			if (file.isDirectory() || !file.getName().endsWith(".jar")) {
 				throw new RuntimeException("Failed to include nested jars, as file was not a jar: " + file.getAbsolutePath());
+			}
+		}
+
+		String getClassifierSuffix() {
+			if (classifier == null) {
+				return "";
+			} else {
+				return "_" + classifier;
 			}
 		}
 	}

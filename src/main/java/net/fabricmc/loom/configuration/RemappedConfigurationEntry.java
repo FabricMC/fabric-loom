@@ -27,36 +27,9 @@ package net.fabricmc.loom.configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleSupport;
-
-public class RemappedConfigurationEntry {
-	private final String sourceConfiguration;
-	private final String targetConfiguration;
-	private final String mavenScope;
-	private final boolean isOnModCompileClasspath;
-
-	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
-		this.sourceConfiguration = sourceConfiguration;
-		this.targetConfiguration = targetConfiguration;
-		this.isOnModCompileClasspath = isOnModCompileClasspath;
-		this.mavenScope = mavenScope;
-	}
-
-	public String getMavenScope() {
-		return mavenScope;
-	}
-
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
 	public boolean hasMavenScope() {
 		return mavenScope != null && !mavenScope.isEmpty();
-	}
-
-	public boolean isOnModCompileClasspath() {
-		return isOnModCompileClasspath;
-	}
-
-	public String getSourceConfiguration() {
-		return sourceConfiguration;
 	}
 
 	public String getRemappedConfiguration() {
@@ -65,7 +38,7 @@ public class RemappedConfigurationEntry {
 
 	public String getTargetConfiguration(ConfigurationContainer container) {
 		if (container.findByName(targetConfiguration) == null) {
-			return GradleSupport.IS_GRADLE_7_OR_NEWER ? JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME : Constants.Configurations.COMPILE;
+			return JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME;
 		}
 
 		return targetConfiguration;

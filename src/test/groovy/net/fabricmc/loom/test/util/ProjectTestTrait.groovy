@@ -28,9 +28,8 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 
 trait ProjectTestTrait {
-	final static String LEGACY_GRADLE = "4.9"
-	final static String DEFAULT_GRADLE = "6.8.3"
-	final static String PRE_RELEASE_GRADLE = "7.0-rc-2"
+	final static String DEFAULT_GRADLE = "7.0.1"
+	final static String PRE_RELEASE_GRADLE = "7.2-20210612220215+0000"
 
 	static File gradleHome = File.createTempDir()
 	File testProjectDir = File.createTempDir()
@@ -95,10 +94,6 @@ trait ProjectTestTrait {
 	}
 
 	String warningMode(String gradleVersion) {
-		if (gradleVersion == LEGACY_GRADLE) {
-			return "all"
-		}
-
 		'fail'
 	}
 

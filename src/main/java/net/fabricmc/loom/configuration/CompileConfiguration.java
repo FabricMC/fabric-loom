@@ -25,11 +25,12 @@
 package net.fabricmc.loom.configuration;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -47,41 +48,37 @@ public final class CompileConfiguration {
 	}
 
 	public static void setupConfigurations(Project project) {
-		Configuration modCompileClasspathConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH);
-		modCompileClasspathConfig.setTransitive(true);
-		Configuration modCompileClasspathMappedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
-		modCompileClasspathMappedConfig.setTransitive(false);
+		final ConfigurationContainer configurations = project.getConfigurations();
+		LoomProjectData data = project.getExtensions().getByType(LoomGradleExtension.class).getProjectData();
 
-		Configuration minecraftNamedConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_NAMED);
-		minecraftNamedConfig.setTransitive(false); // The launchers do not recurse dependencies
-		Configuration minecraftDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT_DEPENDENCIES);
-		minecraftDependenciesConfig.setTransitive(false);
-		Configuration loaderDependenciesConfig = project.getConfigurations().maybeCreate(Constants.Configurations.LOADER_DEPENDENCIES);
-		loaderDependenciesConfig.setTransitive(false);
-		Configuration minecraftConfig = project.getConfigurations().maybeCreate(Constants.Configurations.MINECRAFT);
-		minecraftConfig.setTransitive(false);
+		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
+		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED).configure(configuration -> configuration.setTransitive(false));
+		data.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED).configure(configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
+		data.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
+		data.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
+		data.createLazyConfiguration(Constants.Configurations.MINECRAFT).configure(configuration -> configuration.setTransitive(false));
+		data.createLazyConfiguration(Constants.Configurations.INCLUDE).configure(configuration -> configuration.setTransitive(false)); // Dont get transitive deps
+		data.createLazyConfiguration(Constants.Configurations.MAPPING_CONSTANTS);
 
-		Configuration includeConfig = project.getConfigurations().maybeCreate(Constants.Configurations.INCLUDE);
-		includeConfig.setTransitive(false); // Dont get transitive deps
-
-		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPING_CONSTANTS);
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
 
-		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS);
-		project.getConfigurations().maybeCreate(Constants.Configurations.MAPPINGS_FINAL);
-		project.getConfigurations().maybeCreate(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		project.getConfigurations().maybeCreate(Constants.Configurations.UNPICK_CLASSPATH);
+		data.createLazyConfiguration(Constants.Configurations.MAPPINGS);
+		data.createLazyConfiguration(Constants.Configurations.MAPPINGS_FINAL);
+		data.createLazyConfiguration(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		data.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			Configuration compileModsConfig = project.getConfigurations().maybeCreate(entry.getSourceConfiguration());
-			compileModsConfig.setTransitive(true);
-			Configuration compileModsMappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfiguration());
-			compileModsMappedConfig.setTransitive(false); // Don't get transitive deps of already remapped mods
+			data.createLazyConfiguration(entry.sourceConfiguration())
+					.configure(configuration -> configuration.setTransitive(true));
 
-			extendsFrom(entry.getTargetConfiguration(project.getConfigurations()), entry.getRemappedConfiguration(), project);
+			// Don't get transitive deps of already remapped mods
+			data.createLazyConfiguration(entry.getRemappedConfiguration())
+					.configure(configuration -> configuration.setTransitive(false));
+
+			extendsFrom(entry.getTargetConfiguration(configurations), entry.getRemappedConfiguration(), project);
 
 			if (entry.isOnModCompileClasspath()) {
-				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.getSourceConfiguration(), project);
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.sourceConfiguration(), project);
 				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration(), project);
 			}
 		}
@@ -97,6 +94,7 @@ public final class CompileConfiguration {
 		extendsFrom(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
+		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
 	}
 
 	public static void configureCompile(Project p) {
@@ -107,10 +105,13 @@ public final class CompileConfiguration {
 		Javadoc javadoc = (Javadoc) p.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
+		p.getTasks().withType(JavaCompile.class).configureEach(compile -> {
+			// Fork the java compiler to ensure that it does not keep any files open.
+			compile.getOptions().setFork(true);
+		});
+
 		p.afterEvaluate(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-
-			MavenConfiguration.setup(project);
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -161,6 +162,6 @@ public final class CompileConfiguration {
 	}
 
 	private static void extendsFrom(String a, String b, Project project) {
-		project.getConfigurations().getByName(a).extendsFrom(project.getConfigurations().getByName(b));
+		project.getConfigurations().getByName(a, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(b)));
 	}
 }

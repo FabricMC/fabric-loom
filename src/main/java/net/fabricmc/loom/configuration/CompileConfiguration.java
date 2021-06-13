@@ -30,6 +30,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -103,6 +104,11 @@ public final class CompileConfiguration {
 
 		Javadoc javadoc = (Javadoc) p.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+
+		p.getTasks().withType(JavaCompile.class).configureEach(compile -> {
+			// Fork the java compiler to ensure that it does not keep any files open.
+			compile.getOptions().setFork(true);
+		});
 
 		p.afterEvaluate(project -> {
 			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);

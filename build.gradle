@@ -22,7 +22,7 @@ tasks.withType(JavaCompile).configureEach {
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '0.8'
+def baseVersion = '0.9'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {

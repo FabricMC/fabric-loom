@@ -46,7 +46,7 @@ public record ParchmentTreeV1(
 			}
 
 			if (visitor.visitContent()) {
-				if (classes() != null && visitor.visitElementContent(MappedElementKind.CLASS)) {
+				if (classes() != null) {
 					for (Class c : classes()) {
 						c.visit(visitor);
 					}
@@ -56,8 +56,6 @@ public record ParchmentTreeV1(
 			if (visitor.visitEnd()) {
 				break;
 			}
-
-			visitor.reset();
 		}
 	}
 
@@ -72,19 +70,23 @@ public record ParchmentTreeV1(
 	) {
 		public void visit(MappingVisitor visitor) {
 			if (visitor.visitClass(name())) {
-				if (fields() != null && visitor.visitElementContent(MappedElementKind.FIELD)) {
+				if (!visitor.visitElementContent(MappedElementKind.CLASS)) {
+					return;
+				}
+
+				if (fields() != null) {
 					for (Field field : fields()) {
 						field.visit(visitor);
 					}
 				}
 
-				if (methods() != null && visitor.visitElementContent(MappedElementKind.METHOD)) {
+				if (methods() != null) {
 					for (Method method : methods()) {
 						method.visit(visitor);
 					}
 				}
 
-				if (javadoc() != null && visitor.visitElementContent(MappedElementKind.CLASS)) {
+				if (javadoc() != null) {
 					visitor.visitComment(MappedElementKind.CLASS, String.join("\n", javadoc()));
 				}
 			}
@@ -99,7 +101,11 @@ public record ParchmentTreeV1(
 	) {
 		public void visit(MappingVisitor visitor) {
 			if (visitor.visitField(name, descriptor)) {
-				if (javadoc() != null && visitor.visitElementContent(MappedElementKind.FIELD)) {
+				if (!visitor.visitElementContent(MappedElementKind.FIELD)) {
+					return;
+				}
+
+				if (javadoc() != null) {
 					visitor.visitComment(MappedElementKind.FIELD, String.join("\n", javadoc()));
 				}
 			}
@@ -116,13 +122,17 @@ public record ParchmentTreeV1(
 	) {
 		public void visit(MappingVisitor visitor) {
 			if (visitor.visitMethod(name, descriptor)) {
-				if (parameters() != null && visitor.visitElementContent(MappedElementKind.METHOD_ARG)) {
+				if (!visitor.visitElementContent(MappedElementKind.METHOD)) {
+					return;
+				}
+
+				if (parameters() != null) {
 					for (Parameter parameter : parameters()) {
 						parameter.visit(visitor);
 					}
 				}
 
-				if (javadoc() != null && visitor.visitElementContent(MappedElementKind.METHOD)) {
+				if (javadoc() != null) {
 					visitor.visitComment(MappedElementKind.METHOD, String.join("\n", javadoc()));
 				}
 			}
@@ -136,11 +146,14 @@ public record ParchmentTreeV1(
 			String javadoc
 	) {
 		public void visit(MappingVisitor visitor) {
-			// TODO is this the lvt index or what?
-			visitor.visitMethodArg(index, index, name);
+			if (visitor.visitMethodArg(index, index, name)) {
+				if (!visitor.visitElementContent(MappedElementKind.METHOD_ARG)) {
+					return;
+				}
 
-			if (javadoc() != null) {
-				visitor.visitComment(MappedElementKind.METHOD_ARG, javadoc);
+				if (javadoc() != null) {
+					visitor.visitComment(MappedElementKind.METHOD_ARG, javadoc);
+				}
 			}
 		}
 	}

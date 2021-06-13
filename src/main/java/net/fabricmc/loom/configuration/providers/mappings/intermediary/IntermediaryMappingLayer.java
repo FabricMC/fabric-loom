@@ -54,12 +54,10 @@ public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 
 		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, mappingTree);
-			mappingTree.reset();
 		}
 
 		// Add a "named" namespace
 		mappingTree.visitNamespaces(MappingNamespace.OFFICIAL.stringValue(), Collections.singletonList(MappingNamespace.NAMED.stringValue()));
-		mappingTree.reset();
 
 		mappingTree.accept(nsCompleter);
 	}

@@ -41,6 +41,7 @@ import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.process.ExecResult;
+import org.gradle.process.JavaExecSpec;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
@@ -56,6 +57,14 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 	}
 
 	public abstract Class<? extends AbstractForkedFFExecutor> fernFlowerExecutor();
+
+	/**
+	 * Configures the {@link JavaExecSpec} used to run FernFlower.
+	 *
+	 * @param spec the configured spec
+	 */
+	protected void configureJavaExec(JavaExecSpec spec) {
+	}
 
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
@@ -148,6 +157,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 							logger.progress(data);
 						}
 					}));
+					configureJavaExec(spec);
 				});
 		inUseLoggers.values().forEach(ProgressLogger::completed);
 		freeLoggers.forEach(ProgressLogger::completed);

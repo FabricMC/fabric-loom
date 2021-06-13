@@ -165,8 +165,7 @@ jobs:
 
       - run: ./gradlew --version
         working-directory: bootstrap/test-project
-      - run: ./gradlew build
+      - run: ./gradlew build || true
         working-directory: bootstrap/test-project
-        continue-on-error: true
 
       # TODO check the output of the previous step here

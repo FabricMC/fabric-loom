@@ -71,6 +71,7 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 				put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 				put(IFernflowerPreferences.LOG_LEVEL, "trace");
 				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads());
+				put(IFernflowerPreferences.INDENT_STRING, "\t");
 			}};
 
 		List<String> args = new ArrayList<>();

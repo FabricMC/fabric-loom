@@ -41,14 +41,14 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
 
 public class MinecraftAssetsProvider {
-	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
+	public static void provide(MinecraftProviderImpl minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 
@@ -62,7 +62,7 @@ public class MinecraftAssetsProvider {
 			assets.mkdirs();
 		}
 
-		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.fabricId(minecraftProvider.getMinecraftVersion()) + ".json");
+		File assetsInfo = new File(assets, "indexes" + File.separator + assetIndex.fabricId(minecraftProvider.minecraftVersion()) + ".json");
 
 		project.getLogger().info(":downloading asset index");
 

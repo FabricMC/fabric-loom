@@ -22,33 +22,22 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
-import org.gradle.api.Project;
+import net.fabricmc.mappingio.MappingVisitor;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
+public interface MappingLayer {
+	void visit(MappingVisitor mappingVisitor) throws IOException;
 
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+	default MappingNamespace getSourceNamespace() {
+		return MappingNamespace.NAMED;
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	default List<Class<? extends MappingLayer>> dependsOn() {
+		return Collections.emptyList();
 	}
 }

@@ -22,33 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import java.io.File;
+import java.util.Locale;
 
-import org.gradle.api.Project;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+public final class ParchmentPrefixStripingMappingVisitor extends ForwardingMappingVisitor {
+	protected ParchmentPrefixStripingMappingVisitor(MappingVisitor next) {
+		super(next);
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	@Override
+	public boolean visitMethodArg(int argPosition, int lvIndex, String srcName) {
+		return super.visitMethodArg(argPosition, lvIndex, stripMethodArg(srcName));
+	}
+
+	public static String stripMethodArg(String arg) {
+		if (arg.length() > 1 && arg.startsWith("p") && Character.isUpperCase(arg.charAt(1))) {
+			String a2 = arg.substring(1); // Remove p
+			return a2.substring(0, 1).toLowerCase(Locale.ROOT) + a2.substring(1); // Make first char lowercase
+		}
+
+		return arg;
 	}
 }

@@ -22,33 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.File;
+import java.util.Locale;
 
-import org.gradle.api.Project;
+public enum MappingNamespace {
+	OFFICIAL,
+	INTERMEDIARY,
+	NAMED;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
-	}
-
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	public String stringValue() {
+		return name().toLowerCase(Locale.ROOT);
 	}
 }

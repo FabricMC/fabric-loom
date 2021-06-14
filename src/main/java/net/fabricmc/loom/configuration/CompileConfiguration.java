@@ -39,8 +39,8 @@ import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -116,8 +116,8 @@ public final class CompileConfiguration {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
-			dependencyManager.addProvider(new MinecraftProvider(project));
-			dependencyManager.addProvider(new MappingsProvider(project));
+			dependencyManager.addProvider(new MinecraftProviderImpl(project));
+			dependencyManager.addProvider(new MappingsProviderImpl(project));
 			dependencyManager.addProvider(new LaunchProvider(project));
 
 			dependencyManager.handleDependencies(project);

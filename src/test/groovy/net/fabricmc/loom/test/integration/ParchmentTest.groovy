@@ -22,33 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.test.integration
 
-import java.io.File;
+import net.fabricmc.loom.test.util.ProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-import org.gradle.api.Project;
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+class ParchmentTest extends Specification implements ProjectTestTrait {
+	@Override
+	String name() {
+		"parchment"
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	@Unroll
+	def "parchment #gradle"() {
+		when:
+			def result = create("build", gradle)
+
+		then:
+			result.task(":build").outcome == SUCCESS
+
+		where:
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

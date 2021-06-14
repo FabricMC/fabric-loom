@@ -65,7 +65,7 @@ public class LaunchProvider extends DependencyProvider {
 				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
 
 				.argument("client", "--assetIndex")
-				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().getMinecraftVersion()))
+				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 

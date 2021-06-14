@@ -22,33 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.File;
 
-import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
+public interface MappingContext {
+	File mavenFile(String mavenNotation);
 
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
+	MappingsProvider mappingsProvider();
 
-		initFiles(project, minecraftProvider);
+	MinecraftProvider minecraftProvider();
 
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+	default String minecraftVersion() {
+		return minecraftProvider().minecraftVersion();
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
-	}
+	/**
+	 * Creates a temporary working dir to be used to store working files.
+	 */
+	File workingDirectory(String name);
+
+	Logger getLogger();
 }

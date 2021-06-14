@@ -22,33 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import java.io.File;
+public class ParchmentMappingsSpecBuilder {
+	private final String mavenNotation;
 
-import org.gradle.api.Project;
+	private boolean removePrefix;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+	private ParchmentMappingsSpecBuilder(String mavenNotation) {
+		this.mavenNotation = mavenNotation;
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	public static ParchmentMappingsSpecBuilder builder(String depNotation) {
+		return new ParchmentMappingsSpecBuilder(depNotation);
+	}
+
+	public ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix) {
+		this.removePrefix = removePrefix;
+		return this;
+	}
+
+	public ParchmentMappingsSpec build() {
+		return new ParchmentMappingsSpec(mavenNotation, removePrefix);
 	}
 }

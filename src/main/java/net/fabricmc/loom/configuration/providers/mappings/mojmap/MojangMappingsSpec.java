@@ -22,33 +22,30 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
-import java.io.File;
+import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 
-import org.gradle.api.Project;
+public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {
+	// Keys in dependency manifest
+	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
+	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
+	@Override
+	public MojangMappingLayer createLayer(MappingContext context) {
+		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
 
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
+		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
+			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
 		}
-	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+		return new MojangMappingLayer(
+				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
+				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
+				context.workingDirectory("mojang"),
+				context.getLogger()
+		);
 	}
 }

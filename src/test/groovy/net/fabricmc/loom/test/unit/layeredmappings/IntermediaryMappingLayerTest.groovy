@@ -22,33 +22,22 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.test.unit.layeredmappings
 
-import java.io.File;
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
-	}
-
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
-	}
+class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
+    def "Read intermediary mappings" () {
+        setup:
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
+        when:
+            def mappings = getSingleMapping(new IntermediaryMappingsSpec())
+            def tiny = getTiny(mappings)
+        then:
+            mappings.srcNamespace == "official"
+            mappings.dstNamespaces == ["intermediary", "named"]
+            mappings.classes.size() == 6107
+            mappings.getClass("abc").getDstName(0) == "net/minecraft/class_3191"
+            mappings.getClass("abc").getDstName(1) == "net/minecraft/class_3191"
+    }
 }

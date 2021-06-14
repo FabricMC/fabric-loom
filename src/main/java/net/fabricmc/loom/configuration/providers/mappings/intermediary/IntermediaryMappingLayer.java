@@ -22,33 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.mappings.intermediary;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Collections;
 
-import org.gradle.api.Project;
+import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
+import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.MappingNsCompleter;
+import net.fabricmc.mappingio.format.Tiny2Reader;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
-
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
-		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
-
-		initFiles(project, minecraftProvider);
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
-			}
-		}
+public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
+	@Override
+	public MappingNamespace getSourceNamespace() {
+		return MappingNamespace.OFFICIAL;
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
+	@Override
+	public void visit(MappingVisitor mappingVisitor) throws IOException {
+		// Populate named with intermediary and add Add a "named" namespace
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()), true);
+
+		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
+			Tiny2Reader.read(reader, nsCompleter);
+		}
 	}
 }

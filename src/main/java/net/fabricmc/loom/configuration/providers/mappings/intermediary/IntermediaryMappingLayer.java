@@ -36,7 +36,6 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 	@Override
@@ -46,19 +45,11 @@ public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		// Populate named with intermediary
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()));
-
-		// TODO can we save creating a tree just to add a namespace?
-		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		// Populate named with intermediary and add Add a "named" namespace
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()), true);
 
 		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
-			Tiny2Reader.read(reader, mappingTree);
+			Tiny2Reader.read(reader, nsCompleter);
 		}
-
-		// Add a "named" namespace
-		mappingTree.visitNamespaces(MappingNamespace.OFFICIAL.stringValue(), Collections.singletonList(MappingNamespace.NAMED.stringValue()));
-
-		mappingTree.accept(nsCompleter);
 	}
 }

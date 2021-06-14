@@ -57,7 +57,7 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 
 		printMappingsLicense(clientMappings.toPath());
 
-		// Make named the source namespace
+		// Make official the source namespace
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingNamespace.OFFICIAL.stringValue());
 
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings.toPath(), StandardCharsets.UTF_8);

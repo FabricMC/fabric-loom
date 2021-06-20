@@ -37,7 +37,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
     def "simple mojmap" () {
         when:
             def spec = layered() {
-                officalMojangMappings()
+                officialMojangMappings()
             }
             def layers = spec.layers()
         then:
@@ -50,7 +50,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
     def "simple mojmap with parchment" () {
         when:
             def spec = layered() {
-                officalMojangMappings()
+                officialMojangMappings()
                 parchment("I like cake")
             }
             def layers = spec.layers()
@@ -68,7 +68,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
     def "simple mojmap with parchment keep prefix" () {
         when:
             def spec = layered() {
-                officalMojangMappings()
+                officialMojangMappings()
                 parchment("I like cake") {
                     it.removePrefix = false
                 }
@@ -88,7 +88,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
     def "simple mojmap with parchment keep prefix alternate hash" () {
         when:
             def spec = layered() {
-                officalMojangMappings()
+                officialMojangMappings()
                 parchment("I really like cake") {
                     it.removePrefix = false
                 }

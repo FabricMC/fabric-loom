@@ -124,7 +124,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 					throw new UnsupportedOperationException("Migrating Mojang mappings is currently only supported for the specified minecraft version");
 				}
 
-				LayeredMappingsDependency dep = (LayeredMappingsDependency) getExtension().layered(LayeredMappingSpecBuilder::officalMojangMappings);
+				LayeredMappingsDependency dep = (LayeredMappingsDependency) getExtension().layered(LayeredMappingSpecBuilder::officialMojangMappings);
 				files = dep.resolve();
 			} else {
 				Dependency dependency = project.getDependencies().create(mappings);

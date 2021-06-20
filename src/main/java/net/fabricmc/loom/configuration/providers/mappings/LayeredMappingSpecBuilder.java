@@ -37,7 +37,7 @@ import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMap
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
 
-	public LayeredMappingSpecBuilder officalMojangMappings() {
+	public LayeredMappingSpecBuilder officialMojangMappings() {
 		layers.add(new MojangMappingsSpec());
 		return this;
 	}

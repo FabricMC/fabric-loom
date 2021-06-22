@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
@@ -35,8 +36,8 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -52,7 +53,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
-	private MinecraftProvider minecraftProvider;
+	private MinecraftProviderImpl minecraftProvider;
 
 	public MinecraftMappedProvider(Project project) {
 		super(project);
@@ -100,7 +101,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	private void mapMinecraftJar() throws IOException {
 		String fromM = "official";
 
-		MappingsProvider mappingsProvider = getExtension().getMappingsProvider();
+		MappingsProviderImpl mappingsProvider = getExtension().getMappingsProvider();
 
 		Path input = minecraftProvider.getMergedJar().toPath();
 		Path outputMapped = minecraftMappedJar.toPath();
@@ -110,6 +111,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+
+			Files.deleteIfExists(output);
 
 			TinyRemapper remapper = getTinyRemapper(fromM, toM);
 
@@ -141,15 +144,13 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getUserCache(), "mapped")));
-
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_RUNTIME,
 					getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString("mapped")));
 	}
 
-	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
+	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
 		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
@@ -160,7 +161,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	protected String getJarVersionString(String type) {
-		return String.format("%s-%s-%s-%s", minecraftProvider.getMinecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion);
+		return String.format("%s-%s-%s-%s", minecraftProvider.minecraftVersion(), type, getExtension().getMappingsProvider().mappingsName, getExtension().getMappingsProvider().mappingsVersion);
 	}
 
 	public File getIntermediaryJar() {
@@ -169,6 +170,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public File getMappedJar() {
 		return minecraftMappedJar;
+	}
+
+	public File getUnpickedJar() {
+		return new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("unpicked") + ".jar");
 	}
 
 	@Override

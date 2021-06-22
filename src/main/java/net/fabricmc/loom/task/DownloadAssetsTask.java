@@ -40,6 +40,6 @@ public class DownloadAssetsTask extends AbstractLoomTask {
 		LoomGradleExtension extension = getExtension();
 
 		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+		MinecraftNativesProvider.provide(project);
 	}
 }

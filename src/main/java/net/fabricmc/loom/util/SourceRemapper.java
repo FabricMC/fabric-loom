@@ -44,7 +44,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
@@ -62,15 +62,10 @@ public class SourceRemapper {
 		this.toNamed = toNamed;
 	}
 
-	public static void remapSources(Project project, File input, File output, boolean named) throws Exception {
+	public static void remapSources(Project project, File input, File output, boolean named, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, named);
-		sourceRemapper.scheduleRemapSources(input, output, false, true);
+		sourceRemapper.scheduleRemapSources(input, output, reproducibleFileOrder, preserveFileTimestamps);
 		sourceRemapper.remapAll();
-	}
-
-	@Deprecated
-	public void scheduleRemapSources(File source, File destination) throws Exception {
-		scheduleRemapSources(source, destination, false, true); // Not reproducable by default, old behavior
 	}
 
 	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps) {
@@ -168,12 +163,12 @@ public class SourceRemapper {
 		}
 
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
 				TinyTree m = mappingsProvider.getMappings();
-				project.getLogger().lifecycle(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
+				project.getLogger().info(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyMappingsReader(m, toNamed ? "intermediary" : "named", toNamed ? "named" : "intermediary").read();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -239,7 +234,7 @@ public class SourceRemapper {
 			}
 		} else {
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
+				for (File inputFile : project.getConfigurations().getByName(entry.sourceConfiguration()).getFiles()) {
 					m.getClassPath().add(inputFile.toPath());
 				}
 			}

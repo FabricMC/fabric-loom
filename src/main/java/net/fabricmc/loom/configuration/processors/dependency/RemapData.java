@@ -26,12 +26,5 @@ package net.fabricmc.loom.configuration.processors.dependency;
 
 import java.io.File;
 
-public class RemapData {
-	public final String mappingsSuffix;
-	public final File modStore;
-
-	public RemapData(String mappingsSuffix, File modStore) {
-		this.mappingsSuffix = mappingsSuffix;
-		this.modStore = modStore;
-	}
+public record RemapData(String mappingsSuffix, File modStore) {
 }

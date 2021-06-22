@@ -89,6 +89,7 @@ public class DownloadUtil {
 
 		if ((code < 200 || code > 299) && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
 			//Didn't get what we expected
+			delete(to);
 			throw new IOException(connection.getResponseMessage() + " for " + from);
 		}
 
@@ -111,7 +112,7 @@ public class DownloadUtil {
 		try { // Try download to the output
 			FileUtils.copyInputStreamToFile(connection.getInputStream(), to);
 		} catch (IOException e) {
-			to.delete(); // Probably isn't good if it fails to copy/save
+			delete(to); // Probably isn't good if it fails to copy/save
 			throw e;
 		}
 

@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
@@ -58,13 +59,13 @@ public class LaunchProvider extends DependencyProvider {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
-				.property("log4j.configurationFile", getLog4jConfigFile().getAbsolutePath())
+				.property("log4j.configurationFile", getAllLog4JConfigFiles())
 
 				.property("client", "java.library.path", getExtension().getNativesDirectory().getAbsolutePath())
 				.property("client", "org.lwjgl.librarypath", getExtension().getNativesDirectory().getAbsolutePath())
 
 				.argument("client", "--assetIndex")
-				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex.getFabricId(getExtension().getMinecraftProvider().getMinecraftVersion()))
+				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
 				.argument("client", new File(getExtension().getUserCache(), "assets").getAbsolutePath());
 
@@ -78,15 +79,21 @@ public class LaunchProvider extends DependencyProvider {
 		writeLog4jConfig();
 		FileUtils.writeStringToFile(getExtension().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 
-		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, "runtimeOnly");
-		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, "runtimeOnly");
-		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, "compileOnly");
+		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		annotationDependency = addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME);
 
 		postPopulationScheduler.accept(this::writeRemapClassPath);
 	}
 
 	private File getLog4jConfigFile() {
-		return new File(getExtension().getDevLauncherConfig().getParentFile(), "log4j.xml");
+		return getExtension().getDefaultLog4jConfigFile();
+	}
+
+	private String getAllLog4JConfigFiles() {
+		return getExtension().getLog4jConfigs().getFiles().stream()
+				.map(File::getAbsolutePath)
+				.collect(Collectors.joining(","));
 	}
 
 	private File getRemapClasspathFile() {
@@ -105,7 +112,7 @@ public class LaunchProvider extends DependencyProvider {
 	private void writeRemapClassPath() {
 		List<String> inputConfigurations = new ArrayList<>();
 		inputConfigurations.add(Constants.Configurations.LOADER_DEPENDENCIES);
-		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::getSourceConfiguration).collect(Collectors.toList()));
+		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::sourceConfiguration).collect(Collectors.toList()));
 
 		List<File> remapClasspath = new ArrayList<>();
 
@@ -120,7 +127,7 @@ public class LaunchProvider extends DependencyProvider {
 				.collect(Collectors.joining(File.pathSeparator));
 
 		try {
-			Files.write(getRemapClasspathFile().toPath(), str.getBytes(StandardCharsets.UTF_8));
+			Files.writeString(getRemapClasspathFile().toPath(), str);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to generate remap classpath", e);
 		}

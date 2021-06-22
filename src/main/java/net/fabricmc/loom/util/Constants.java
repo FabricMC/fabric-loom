@@ -31,33 +31,22 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
-import net.fabricmc.loom.util.gradle.GradleSupport;
 
 public class Constants {
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
-	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
+	public static final String RESOURCES_BASE = "https://resources.download.minecraft.net/";
 	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	private static final List<RemappedConfigurationEntry> LEGACY_MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modCompile", Configurations.COMPILE, true, "compile"),
+	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
 			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
 			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
 			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, ""),
 			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, "")
 	);
-
-	private static final List<RemappedConfigurationEntry> MODERN_MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
-			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
-			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, ""),
-			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, "")
-	);
-
-	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = GradleSupport.IS_GRADLE_7_OR_NEWER ? MODERN_MOD_COMPILE_ENTRIES : LEGACY_MOD_COMPILE_ENTRIES;
 
 	private Constants() {
 	}
@@ -78,8 +67,9 @@ public class Constants {
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
-		@Deprecated // Not to be used in gradle 7+
-		public static final String COMPILE = "compile";
+		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
+		public static final String MAPPING_CONSTANTS = "mappingsConstants";
+		public static final String UNPICK_CLASSPATH = "unpick";
 
 		private Configurations() {
 		}
@@ -101,7 +91,7 @@ public class Constants {
 		 * Constants for versions of dependencies.
 		 */
 		public static final class Versions {
-			public static final String MIXIN_COMPILE_EXTENSIONS = "0.3.2.6";
+			public static final String MIXIN_COMPILE_EXTENSIONS = "0.4.4";
 			public static final String DEV_LAUNCH_INJECTOR = "0.2.1+build.8";
 			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
 			public static final String JETBRAINS_ANNOTATIONS = "19.0.0";
@@ -126,6 +116,14 @@ public class Constants {
 		public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
 
 		private LaunchWrapper() {
+		}
+	}
+
+	public static final class Knot {
+		public static final String KNOT_CLIENT = "net.fabricmc.loader.launch.knot.KnotClient";
+		public static final String KNOT_SERVER = "net.fabricmc.loader.launch.knot.KnotServer";
+
+		private Knot() {
 		}
 	}
 }

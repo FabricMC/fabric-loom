@@ -32,15 +32,15 @@ import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftProcessedProvider extends MinecraftMappedProvider {
-	public static final String PROJECT_MAPPED_CLASSIFIER = "projectmapped";
-	public static final String PROJECT_MAPPED_COMPILE_CLASSIFIER = "projectmapped-compile";
-	public static final String PROJECT_MAPPED_RUNTIME_CLASSIFIER = "projectmapped-runtime";
+	public final String projectMappedClassifier;
+	public final String projectMappedCompileClassifier;
+	public final String projectMappedRuntimeClassifier;
 
 	private File projectMappedCommonJar;
 	private File projectMappedCompileJar;
@@ -53,17 +53,17 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
 		super(project);
 		this.jarProcessorManager = jarProcessorManager;
+		this.projectMappedClassifier = "project-" + project.getPath().replace(':', '@')
+				+ "-mapped";
+		this.projectMappedCompileClassifier = this.projectMappedClassifier + "-compile";
+		this.projectMappedRuntimeClassifier = this.projectMappedClassifier + "-runtime";
 	}
 
 	@Override
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		boolean invalid;
-
-		if (this.split) {
-			invalid = this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(Environment.RUNTIME, this.projectMappedRuntimeJar);
-		} else {
-			invalid = this.jarProcessorManager.isInvalid(Environment.BOTH, this.projectMappedCommonJar);
-		}
+		boolean invalid = this.split
+				? this.jarProcessorManager.isInvalid(Environment.COMPILE, this.projectMappedCompileJar) || this.jarProcessorManager.isInvalid(Environment.RUNTIME, this.projectMappedRuntimeJar)
+				: this.jarProcessorManager.isInvalid(Environment.BOTH, this.projectMappedCommonJar);
 
 		if (invalid || isRefreshDeps()) {
 			getProject().getLogger().lifecycle(":processing mapped jar");
@@ -94,10 +94,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 			}
 		}
 
-		getProject().getRepositories().flatDir(repository -> repository.dir(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER)));
-
-		String compileClassifier = this.split ? PROJECT_MAPPED_COMPILE_CLASSIFIER : PROJECT_MAPPED_CLASSIFIER;
-		String runtimeClassifier = this.split ? PROJECT_MAPPED_RUNTIME_CLASSIFIER : PROJECT_MAPPED_CLASSIFIER;
+		String compileClassifier = this.split ? projectMappedCompileClassifier : projectMappedClassifier;
+		String runtimeClassifier = this.split ? projectMappedRuntimeClassifier : projectMappedClassifier;
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED_COMPILE,
 				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(compileClassifier))
@@ -108,7 +106,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	}
 
 	private void invalidateJars() {
-		File dir = getJarDirectory(getExtension().getUserCache(), PROJECT_MAPPED_CLASSIFIER);
+		File dir = getJarDirectory(getExtension().getUserCache(), projectMappedClassifier);
 
 		if (dir.exists()) {
 			getProject().getLogger().warn("Invalidating project jars");
@@ -122,12 +120,12 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	}
 
 	@Override
-	public void initFiles(MinecraftProvider minecraftProvider, MappingsProvider mappingsProvider) {
+	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		this.projectMappedCommonJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_CLASSIFIER) + ".jar");
-		this.projectMappedCompileJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_COMPILE_CLASSIFIER) + ".jar");
-		this.projectMappedRuntimeJar = new File(getJarDirectory(getExtension().getProjectPersistentCache(), PROJECT_MAPPED_CLASSIFIER), "minecraft-" + getJarVersionString(PROJECT_MAPPED_RUNTIME_CLASSIFIER) + ".jar");
+		this.projectMappedCommonJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedClassifier) + ".jar");
+		this.projectMappedCompileJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedCompileClassifier) + ".jar");
+		this.projectMappedRuntimeJar = new File(getJarDirectory(getExtension().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedRuntimeClassifier) + ".jar");
 
 		this.split = this.jarProcessorManager.hasEnvironment(Environment.COMPILE) || this.jarProcessorManager.hasEnvironment(Environment.RUNTIME);
 	}

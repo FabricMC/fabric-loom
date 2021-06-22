@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.JsonObject;
-import org.apache.commons.io.IOUtils;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
@@ -57,7 +56,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
@@ -133,7 +132,7 @@ public class ModProcessor {
 		String toM = "named";
 
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-		MappingsProvider mappingsProvider = extension.getMappingsProvider();
+		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
 		Path mc = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
@@ -156,7 +155,7 @@ public class ModProcessor {
 		final Map<ModDependencyInfo, byte[]> accessWidenerMap = new HashMap<>();
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			for (File inputFile : project.getConfigurations().getByName(entry.getSourceConfiguration()).getFiles()) {
+			for (File inputFile : project.getConfigurations().getByName(entry.sourceConfiguration()).getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 
@@ -229,7 +228,7 @@ public class ModProcessor {
 				}
 
 				try (InputStream inputstream = jarFile.getInputStream(entry)) {
-					jsonStr = IOUtils.toString(inputstream, StandardCharsets.UTF_8);
+					jsonStr = new String(inputstream.readAllBytes(), StandardCharsets.UTF_8);
 				}
 			}
 

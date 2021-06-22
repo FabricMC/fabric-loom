@@ -65,12 +65,13 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 
 		project.getLogging().captureStandardOutput(LogLevel.LIFECYCLE);
 
-		Map<String, Object> options = new HashMap<String, Object>() {{
+		Map<String, Object> options = new HashMap<>() {{
 				put(IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1");
 				put(IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1");
 				put(IFernflowerPreferences.REMOVE_SYNTHETIC, "1");
 				put(IFernflowerPreferences.LOG_LEVEL, "trace");
-				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads);
+				put(IFernflowerPreferences.THREADS, metaData.numberOfThreads());
+				put(IFernflowerPreferences.INDENT_STRING, "\t");
 			}};
 
 		List<String> args = new ArrayList<>();
@@ -79,10 +80,10 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 		args.add(absolutePathOf(compiledJar));
 		args.add("-o=" + absolutePathOf(sourcesDestination));
 		args.add("-l=" + absolutePathOf(linemapDestination));
-		args.add("-m=" + absolutePathOf(metaData.javaDocs));
+		args.add("-m=" + absolutePathOf(metaData.javaDocs()));
 
 		// TODO, Decompiler breaks on jemalloc, J9 module-info.class?
-		for (Path library : metaData.libraries) {
+		for (Path library : metaData.libraries()) {
 			args.add("-e=" + absolutePathOf(library));
 		}
 
@@ -100,12 +101,19 @@ public abstract class AbstractFernFlowerDecompiler implements LoomDecompiler {
 
 		progressGroup.started();
 		ExecResult result = ForkingJavaExec.javaexec(
-				project.getRootProject().getPlugins().hasPlugin("fabric-loom") ? project.getRootProject() : project,
+				project,
 				spec -> {
-					spec.setMain(fernFlowerExecutor().getName());
+					spec.getMainClass().set(fernFlowerExecutor().getName());
 					spec.jvmArgs("-Xms200m", "-Xmx3G");
 					spec.setArgs(args);
-					spec.setErrorOutput(System.err);
+					spec.setErrorOutput(new ConsumingOutputStream(line -> {
+						if (line.startsWith("Inconsistent inner class entries")) {
+							// Suppress this
+							return;
+						}
+
+						System.err.println(line);
+					}));
 					spec.setStandardOutput(new ConsumingOutputStream(line -> {
 						if (line.startsWith("Listening for transport") || !line.contains("::")) {
 							System.out.println(line);

@@ -29,34 +29,25 @@ import java.io.File;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftLibraryProvider {
 	public File MINECRAFT_LIBS;
 
-	public void provide(MinecraftProvider minecraftProvider, Project project) {
-		MinecraftVersionInfo versionInfo = minecraftProvider.getVersionInfo();
+	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
+		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 
 		initFiles(project, minecraftProvider);
 
-		for (MinecraftVersionInfo.Library library : versionInfo.libraries) {
-			if (library.allowed() && !library.isNative() && library.getFile(MINECRAFT_LIBS) != null) {
-				// TODO: Add custom library locations
-
-				// By default, they are all available on all sides
-				/* boolean isClientOnly = false;
-
-				if (library.name.contains("java3d") || library.name.contains("paulscode") || library.name.contains("lwjgl") || library.name.contains("twitch") || library.name.contains("jinput") || library.name.contains("text2speech") || library.name.contains("objc")) {
-					isClientOnly = true;
-				} */
-
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.getArtifactName()));
+		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
+			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
+				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
 			}
 		}
 	}
 
-	private void initFiles(Project project, MinecraftProvider minecraftProvider) {
+	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MINECRAFT_LIBS = new File(extension.getUserCache(), "libraries");
 	}

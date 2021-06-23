@@ -22,7 +22,7 @@ tasks.withType(JavaCompile).configureEach {
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '0.9'
+def baseVersion = '0.9-enum'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -265,12 +265,11 @@ publishing {
 	}
 	repositories {
 		maven {
-			if (ENV.MAVEN_URL) {
-				url ENV.MAVEN_URL
-				credentials {
-					username ENV.MAVEN_USERNAME
-					password ENV.MAVEN_PASSWORD
-				}
+			url = "https://auoeke.jfrog.io/artifactory/maven"
+
+			credentials {
+				username = System.properties["maven.username"]
+				password = System.properties["maven.password"]
 			}
 		}
 	}

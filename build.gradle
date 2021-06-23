@@ -33,6 +33,12 @@ repositories {
 	mavenCentral()
 }
 
+configurations.all {
+	resolutionStrategy {
+		failOnNonReproducibleResolution()
+	}
+}
+
 dependencies {
 	implementation gradleApi()
 
@@ -72,6 +78,27 @@ dependencies {
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0-rc1')
+	implementation ('org.cadixdev:mercury:[0.1.0-rc1]')
+
+	// Mercury pulls all of these deps in, however eclipse does not specify the exact version to use so they can get updated without us knowing.
+	// Depend specifically on these versions to prevent them from being updated under our feet.
+	// The POM is also patched later on to as this strict versioning does not make it through.
+	implementation ('org.eclipse.jdt:org.eclipse.jdt.core:[3.21.0]')
+	implementation ('org.eclipse.platform:org.eclipse.compare.core:[3.6.1000]')
+	implementation ('org.eclipse.platform:org.eclipse.core.commands:[3.9.800]')
+	implementation ('org.eclipse.platform:org.eclipse.core.contenttype:[3.7.900]')
+	implementation ('org.eclipse.platform:org.eclipse.core.expressions:[3.7.100]')
+	implementation ('org.eclipse.platform:org.eclipse.core.filesystem:[1.7.700]')
+	implementation ('org.eclipse.platform:org.eclipse.core.jobs:[3.10.1100]')
+	implementation ('org.eclipse.platform:org.eclipse.core.resources:[3.14.0]')
+	implementation ('org.eclipse.platform:org.eclipse.core.runtime:[3.20.100]')
+	implementation ('org.eclipse.platform:org.eclipse.equinox.app:[1.5.100]')
+	implementation ('org.eclipse.platform:org.eclipse.equinox.common:[3.14.100]')
+	implementation ('org.eclipse.platform:org.eclipse.equinox.preferences:[3.8.200]')
+	implementation ('org.eclipse.platform:org.eclipse.equinox.registry:[3.10.100]')
+	implementation ('org.eclipse.platform:org.eclipse.osgi:[3.16.200]')
+	implementation ('org.eclipse.platform:org.eclipse.team.core:[3.8.1100]')
+	implementation ('org.eclipse.platform:org.eclipse.text:[3.11.0]')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21')
@@ -151,6 +178,18 @@ import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
+def patchPom(groovy.util.Node node) {
+	node.dependencies.first().each {
+		def groupId = it.get("groupId").first().value().first()
+
+		// Patch all eclipse deps to use a strict version
+		if (groupId.startsWith("org.eclipse.")) {
+			def version = it.get("version").first().value().first()
+			it.get("version").first().value = new groovy.util.NodeList(["[$version]"])
+		}
+	}
+}
+
 publishing {
 	publications {
 		plugin(MavenPublication) { publication ->
@@ -162,6 +201,10 @@ publishing {
 
 			artifact sourcesJar
 			artifact javadocJar
+
+			pom.withXml {
+				patchPom(asNode())
+			}
 		}
 
 		// Also publish a snapshot so people can use the latest version if they wish
@@ -174,6 +217,10 @@ publishing {
 
 			artifact sourcesJar
 			artifact javadocJar
+
+			pom.withXml {
+				patchPom(asNode())
+			}
 		}
 
 		// Manually crate the plugin marker for snapshot versions

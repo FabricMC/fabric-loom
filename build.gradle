@@ -11,8 +11,7 @@ plugins {
 	id "org.cadixdev.licenser" version "0.5.0"
 }
 
-sourceCompatibility = 16
-targetCompatibility = 16
+sourceCompatibility = targetCompatibility = JavaVersion.VERSION_16
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"

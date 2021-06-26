@@ -37,7 +37,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
@@ -50,11 +49,11 @@ import net.fabricmc.loom.util.Constants;
 public abstract class AnnotationProcessorInvoker<T extends Task> {
 	protected final Project project;
 	private final Collection<Configuration> annotationProcessorConfigurations;
-	protected final TaskCollection<T> invokerTasks;
+	protected final Collection<T> invokerTasks;
 
 	protected AnnotationProcessorInvoker(Project project,
 										Collection<Configuration> annotationProcessorConfigurations,
-										TaskCollection<T> invokerTasks) {
+										Collection<T> invokerTasks) {
 		this.project = project;
 		this.annotationProcessorConfigurations = annotationProcessorConfigurations;
 		this.invokerTasks = invokerTasks;

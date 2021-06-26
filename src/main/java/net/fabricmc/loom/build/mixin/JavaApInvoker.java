@@ -25,6 +25,8 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +37,13 @@ import org.gradle.api.tasks.compile.JavaCompile;
 
 public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public JavaApInvoker(Project project) {
-		super(project, getConfigurations(project), project.getTasks().withType(JavaCompile.class));
+		super(project, getConfigurations(project), getInvokerTasks(project));
+	}
+
+	private static Collection<JavaCompile> getInvokerTasks(Project project) {
+		Collection<JavaCompile> tasks = new HashSet<>();
+		project.getRootProject().getAllprojects().forEach(p -> tasks.addAll(p.getTasks().withType(JavaCompile.class)));
+		return tasks;
 	}
 
 	@Override

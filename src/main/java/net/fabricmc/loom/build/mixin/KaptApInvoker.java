@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,7 +50,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	private final File dummyRefmapDirectory;
 
 	public KaptApInvoker(Project project) {
-		super(project, getConfigurations(project), project.getTasks().withType(JavaCompile.class));
+		super(project, getConfigurations(project), getInvokerTasks(project));
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();
@@ -60,6 +62,12 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 
 		// Needed for mixin AP to run
 		kaptExtension.setIncludeCompileClasspath(false);
+	}
+
+	private static Collection<JavaCompile> getInvokerTasks(Project project) {
+		Collection<JavaCompile> tasks = new HashSet<>();
+		project.getRootProject().getAllprojects().forEach(p -> tasks.addAll(p.getTasks().withType(JavaCompile.class)));
+		return tasks;
 	}
 
 	@Override

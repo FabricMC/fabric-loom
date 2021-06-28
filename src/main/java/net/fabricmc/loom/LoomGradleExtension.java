@@ -61,7 +61,6 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDepende
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 
 public class LoomGradleExtension {
-	public String refmapName;
 	public String loaderLaunchMethod;
 	public boolean remapMod = true;
 	public String customManifest = null;
@@ -69,6 +68,7 @@ public class LoomGradleExtension {
 	public Function<String, Object> intermediaryUrl = mcVer -> "https://maven.fabricmc.net/net/fabricmc/intermediary/" + mcVer + "/intermediary-" + mcVer + "-v2.jar";
 	public boolean shareCaches = false;
 
+	private String refmapName;
 	private final ConfigurableFileCollection unmappedMods;
 	private final ConfigurableFileCollection log4jConfigs;
 
@@ -307,6 +307,10 @@ public class LoomGradleExtension {
 
 	public List<JarProcessor> getJarProcessors() {
 		return jarProcessors;
+	}
+
+	public void setRefmapName(String name) {
+		refmapName = name;
 	}
 
 	public String getRefmapName() {

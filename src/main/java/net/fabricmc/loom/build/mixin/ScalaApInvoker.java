@@ -32,10 +32,11 @@ import org.gradle.api.tasks.scala.ScalaCompile;
 
 public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	public ScalaApInvoker(Project project) {
-		super(project,
-						// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
-						ImmutableList.of(),
-						project.getTasks().withType(ScalaCompile.class));
+		super(
+				project,
+				// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
+				ImmutableList.of(),
+				project.getTasks().withType(ScalaCompile.class));
 	}
 
 	@Override

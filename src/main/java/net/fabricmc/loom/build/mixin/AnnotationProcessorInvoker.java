@@ -29,7 +29,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -39,6 +40,7 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskCollection;
 
+import net.fabricmc.loom.MixinGradleExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -110,9 +112,20 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		}
 	}
 
-	static Stream<SourceSet> getNonTestSourceSets(Project project) {
-		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
-						.stream()
-						.filter(sourceSet -> !sourceSet.getName().equals("test"));
+	static Collection<SourceSet> getSourceSets(Project project) {
+		MixinGradleExtension mixin = project.getExtensions().getByType(MixinGradleExtension.class);
+
+		if (mixin.isEmpty()) {
+			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
+					.forEach(mixin::add);
+		}
+
+		return mixin.getRefmapNames().keySet();
+	}
+
+	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {
+		return getSourceSets(project).stream()
+				.map(sourceSet -> project.getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
+				.collect(Collectors.toSet());
 	}
 }

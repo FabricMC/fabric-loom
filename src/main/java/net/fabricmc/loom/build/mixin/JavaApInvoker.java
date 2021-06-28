@@ -25,17 +25,17 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public JavaApInvoker(Project project) {
-		super(project, getConfigurations(project), project.getTasks().withType(JavaCompile.class));
+		super(
+				project,
+				AnnotationProcessorInvoker.getConfigurations(project, JavaApInvoker::getAptConfigurationName),
+				project.getTasks().withType(JavaCompile.class));
 	}
 
 	@Override
@@ -46,14 +46,6 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	@Override
 	protected File getDestinationDir(JavaCompile task) {
 		return task.getDestinationDir();
-	}
-
-	private static List<Configuration> getConfigurations(Project project) {
-		// java plugin generates an AP configuration for every source set based off of the getAptConfigurationName method.
-		return AnnotationProcessorInvoker.getNonTestSourceSets(project)
-						.map(sourceSet -> project.getConfigurations()
-										.getByName(getAptConfigurationName(sourceSet.getName()))
-						).collect(Collectors.toList());
 	}
 
 	private static String getAptConfigurationName(String sourceSet) {

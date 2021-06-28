@@ -29,15 +29,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import kotlin.Unit;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -48,7 +44,10 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	private final File dummyRefmapDirectory;
 
 	public KaptApInvoker(Project project) {
-		super(project, getConfigurations(project), project.getTasks().withType(JavaCompile.class));
+		super(
+				project,
+				AnnotationProcessorInvoker.getConfigurations(project, KaptApInvoker::getKaptConfigurationName),
+				project.getTasks().withType(JavaCompile.class));
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();
@@ -85,15 +84,6 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 				}
 			});
 		}
-	}
-
-	@NotNull
-	private static List<Configuration> getConfigurations(Project project) {
-		// Kapt generates an AP configuration for every source set based off of the getKaptConfigurationName method.
-		return AnnotationProcessorInvoker.getNonTestSourceSets(project)
-						.map(sourceSet -> project.getConfigurations()
-										.getByName(getKaptConfigurationName(sourceSet.getName()))
-						).collect(Collectors.toList());
 	}
 
 	// Pulled out from the internal class: https://github.com/JetBrains/kotlin/blob/33a0ec9b4f40f3d6f1f96b2db504ade4c2fafe03/libraries/tools/kotlin-gradle-plugin/src/main/kotlin/org/jetbrains/kotlin/gradle/internal/kapt/Kapt3KotlinGradleSubplugin.kt#L92

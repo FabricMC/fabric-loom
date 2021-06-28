@@ -43,7 +43,7 @@ public class MixinGradleExtension {
 	}
 
 	/**
-	 * Apply Mixin AP to sourceSet
+	 * Apply Mixin AP to sourceSet.
 	 * @param sourceSet the sourceSet that applies Mixin AP
 	 * @param refmapName the output ref-map name
 	 */
@@ -54,14 +54,16 @@ public class MixinGradleExtension {
 	public void add(String sourceSetName, String refmapName) {
 		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
 				.getSourceSets().findByName(sourceSetName);
+
 		if (sourceSet == null) {
 			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
 		}
+
 		add(sourceSet, refmapName);
 	}
 
 	/**
-	 * Apply Mixin AP to sourceSet with output ref-map name equal to {@code loom.refmapName}
+	 * Apply Mixin AP to sourceSet with output ref-map name equal to {@code loom.refmapName}.
 	 * @param sourceSet the sourceSet that applies Mixin AP
 	 */
 	public void add(SourceSet sourceSet) {
@@ -72,9 +74,11 @@ public class MixinGradleExtension {
 	public void add(String sourceSetName) {
 		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
 				.getSourceSets().findByName(sourceSetName);
+
 		if (sourceSet == null) {
 			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
 		}
+
 		add(sourceSet);
 	}
 

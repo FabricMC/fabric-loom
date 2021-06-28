@@ -12,7 +12,7 @@ repositories {
 dependencies {
 	minecraft "com.mojang:minecraft:1.16.5"
 	mappings loom.layered() {
-		officalMojangMappings()
+		officialMojangMappings()
 		parchment("org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip")
 	}
 

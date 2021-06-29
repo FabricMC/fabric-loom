@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableMap;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -36,8 +36,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.NotNull;
 
 public class MixinGradleExtension {
-	private Project project;
-	private Map<SourceSet, String> refmapNames;			// record sourceSet -> refMap name
+	private final Project project;
+	private final Map<SourceSet, String> refmapNames;			// record sourceSet -> refMap name
 
 	public MixinGradleExtension(Project project) {
 		this.project = project;
@@ -89,10 +89,21 @@ public class MixinGradleExtension {
 		add(sourceSetName, extension.getRefmapName());
 	}
 
+	/**
+	 * @deprecated Incorrect
+	 */
 	@NotNull
+	@Deprecated
 	public Project getProjectFromSourceSet(SourceSet sourceSet) {
 		Project result = project.getRootProject().getAllprojects().stream()
-				.filter(proj -> proj.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().contains(sourceSet))
+				.filter(proj -> {
+					try {
+						// TODO: this gets incorrect project, because sourceSet.equal compares name only
+						return proj.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().contains(sourceSet);
+					} catch (IllegalStateException e) {
+						return false;
+					}
+				})
 				.findFirst().orElse(null);
 
 		if (result == null) {
@@ -104,7 +115,7 @@ public class MixinGradleExtension {
 
 	@NotNull
 	public Map<SourceSet, String> getRefmapNames() {
-		return ImmutableMap.copyOf(refmapNames);
+		return Collections.unmodifiableMap(refmapNames);
 	}
 
 	public boolean isEmpty() {

@@ -116,6 +116,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		MixinGradleExtension mixin = project.getExtensions().getByType(MixinGradleExtension.class);
 
 		if (mixin.isEmpty()) {
+			// TODO: ignore test set
 			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
 					.forEach(mixin::add);
 		}
@@ -126,8 +127,9 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {
 		MixinGradleExtension mixin = project.getExtensions().getByType(MixinGradleExtension.class);
 
+		// TODO: incorrect configuration passed
 		return getSourceSets(project).stream()
-				.map(sourceSet -> mixin.getProjectFromSourceSet(sourceSet).getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
+				.map(sourceSet -> project.getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
 				.collect(Collectors.toSet());
 	}
 }

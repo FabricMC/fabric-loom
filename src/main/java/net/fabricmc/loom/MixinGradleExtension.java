@@ -26,12 +26,14 @@ package net.fabricmc.loom;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.NotNull;
 
 public class MixinGradleExtension {
 	private Project project;
@@ -52,11 +54,22 @@ public class MixinGradleExtension {
 	}
 
 	public void add(String sourceSetName, String refmapName) {
+		// try to find sourceSet with name sourceSetName in this project
 		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
 				.getSourceSets().findByName(sourceSetName);
 
 		if (sourceSet == null) {
-			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
+			// no sourceSet with name sourceSetName found in this project, let's try to find it in
+			// across all projects
+			Stream<SourceSet> stream = project.getRootProject().getAllprojects().stream()
+					.map(proj -> proj.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName(sourceSetName));
+			sourceSet = switch ((int) stream.count()) {
+			// still no sourceSet found
+			case 0 -> throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
+			case 1 -> stream.findFirst().orElseThrow();
+			// multiple sourceSet name found
+			default -> throw new InvalidUserDataException("Ambiguous sourceSet name " + sourceSetName);
+			};
 		}
 
 		add(sourceSet, refmapName);
@@ -72,16 +85,24 @@ public class MixinGradleExtension {
 	}
 
 	public void add(String sourceSetName) {
-		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
-				.getSourceSets().findByName(sourceSetName);
-
-		if (sourceSet == null) {
-			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
-		}
-
-		add(sourceSet);
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		add(sourceSetName, extension.getRefmapName());
 	}
 
+	@NotNull
+	public Project getProjectFromSourceSet(SourceSet sourceSet) {
+		Project result = project.getRootProject().getAllprojects().stream()
+				.filter(proj -> proj.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().contains(sourceSet))
+				.findFirst().orElse(null);
+
+		if (result == null) {
+			throw new RuntimeException("Cannot find Project corresponding to SourceSet " + sourceSet.getName());
+		}
+
+		return result;
+	}
+
+	@NotNull
 	public Map<SourceSet, String> getRefmapNames() {
 		return ImmutableMap.copyOf(refmapNames);
 	}

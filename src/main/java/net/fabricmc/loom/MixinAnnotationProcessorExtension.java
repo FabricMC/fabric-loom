@@ -168,7 +168,7 @@ public class MixinAnnotationProcessorExtension {
 	@NotNull
 	@Input
 	public Collection<SourceSet> getMixinSourceSets() {
-		if (!isDefault) {
+		if (isDefault) {
 			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().forEach(this::add);
 		}
 

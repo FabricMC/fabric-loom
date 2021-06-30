@@ -84,14 +84,17 @@ public class MixinAnnotationProcessorExtension {
 			this.initialized = true;
 		}
 
+		@NotNull
 		public Project getProject() {
 			return project;
 		}
 
+		@NotNull
 		public String getRefmapName() {
 			return refmapName;
 		}
 
+		@NotNull
 		public Collection<String> getMixinJsonNames() {
 			return Collections.unmodifiableCollection(mixinJsonNames);
 		}
@@ -188,6 +191,12 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	public void init() {
+		if (mixinSourceSets.isEmpty()) {
+			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
+					.filter(sourceSet -> !sourceSet.getName().equals("test"))
+					.forEach(this::add);
+		}
+
 		if (isAcrossProject) {
 			project.getLogger().warn("You set acrossProject = true for Mixin Annotation Processor. "
 					+ "Please note this is highly discouraged and should not be used unless is necessary.");

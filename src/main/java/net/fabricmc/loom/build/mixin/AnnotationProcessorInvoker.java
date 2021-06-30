@@ -114,15 +114,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	static Collection<SourceSet> getSourceSets(Project project) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-
-		if (mixin.getMixinSourceSets().isEmpty()) {
-			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
-					.filter(sourceSet -> !sourceSet.getName().equals("test"))
-					.forEach(mixin::add);
-		}
-
-		return mixin.getMixinSourceSets();
+		return project.getExtensions().getByType(MixinAnnotationProcessorExtension.class).getMixinSourceSets();
 	}
 
 	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {

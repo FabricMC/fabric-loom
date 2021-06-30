@@ -40,7 +40,7 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskCollection;
 
-import net.fabricmc.loom.MixinGradleExtension;
+import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -113,19 +113,19 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	static Collection<SourceSet> getSourceSets(Project project) {
-		MixinGradleExtension mixin = project.getExtensions().getByType(MixinGradleExtension.class);
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
 
-		if (mixin.isEmpty()) {
+		if (mixin.getMixinSourceSets().isEmpty()) {
 			// TODO: ignore test set
 			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
 					.forEach(mixin::add);
 		}
 
-		return mixin.getRefmapNames().keySet();
+		return mixin.getMixinSourceSets();
 	}
 
 	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {
-		MixinGradleExtension mixin = project.getExtensions().getByType(MixinGradleExtension.class);
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
 
 		// TODO: incorrect configuration passed
 		return getSourceSets(project).stream()

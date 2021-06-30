@@ -23,12 +23,12 @@ repositories {
 	// for more information about repositories.
 }
 
-val mixin by sourceSets.registering {
+val mixin0 by sourceSets.register("mixin") {
 	this.compileClasspath += sourceSets.main.get().compileClasspath
 	this.runtimeClasspath += sourceSets.main.get().runtimeClasspath
 }
 
-val mixin1 by sourceSets.registering {
+val mixin1 by sourceSets.register("mixin1") {
 	this.compileClasspath += sourceSets.main.get().compileClasspath
 	this.runtimeClasspath += sourceSets.main.get().runtimeClasspath
 }
@@ -75,12 +75,12 @@ tasks {
 
 	val mixinJar by registering(Jar::class) {
 		archiveClassifier.set("mixin")
-		from(mixin.get().output)
+		from(mixin0.output)
 	}
 
 	val mixin1Jar by registering(Jar::class) {
 		archiveClassifier.set("mixin1")
-		from(mixin1.get().output)
+		from(mixin1.output)
 	}
 
 	assemble {
@@ -96,7 +96,7 @@ loom {
 
 mixin {
 	add(sourceSets.main.get(), "main-refmap0000.json")
-	add(mixin.get())
+	add(mixin0)
 }
 
 java {

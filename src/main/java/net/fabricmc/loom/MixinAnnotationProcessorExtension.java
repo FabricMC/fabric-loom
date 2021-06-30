@@ -34,10 +34,12 @@ import java.util.stream.Stream;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A gradle extension to configure mixin annotation processor.
@@ -172,8 +174,8 @@ public class MixinAnnotationProcessorExtension {
 
 	private void initForProject(Project project0) {
 		project0.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().forEach(sourceSet -> {
-			MixinAPInfoContainer container = (MixinAPInfoContainer) sourceSet.getExtensions()
-					.getExtraProperties().get(MIXIN_AP_CONFIG_CONTAINER);
+			MixinAPInfoContainer container = getMixinAPInfoContainer(sourceSet);
+
 			if (container != null && container.isConfiguredByLoom(loomId)) {
 				// only proceed if there is a MixinAPInfoContainer and is configured by this fabric-loom
 				Collection<String> mixinJsonNames = sourceSet.getAllSource().getFiles().stream()
@@ -193,6 +195,12 @@ public class MixinAnnotationProcessorExtension {
 		} else {
 			initForProject(project);
 		}
+	}
+
+	@Nullable
+	public static MixinAPInfoContainer getMixinAPInfoContainer(SourceSet sourceSet) {
+		ExtraPropertiesExtension extra = sourceSet.getExtensions().getExtraProperties();
+		return extra.has(MIXIN_AP_CONFIG_CONTAINER) ? (MixinAPInfoContainer) extra.get(MIXIN_AP_CONFIG_CONTAINER) : null;
 	}
 
 	@NotNull

@@ -116,8 +116,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
 
 		if (mixin.getMixinSourceSets().isEmpty()) {
-			// TODO: ignore test set
-			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
+			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
+					.filter(sourceSet -> !sourceSet.getName().equals("test"))
 					.forEach(mixin::add);
 		}
 

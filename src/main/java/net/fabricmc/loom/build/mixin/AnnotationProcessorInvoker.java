@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -125,11 +126,9 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-
-		// TODO: incorrect configuration passed
 		return getSourceSets(project).stream()
-				.map(sourceSet -> project.getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
+				.map(sourceSet -> Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinAPInfoContainer(sourceSet))
+						.getProject().getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
 				.collect(Collectors.toSet());
 	}
 }

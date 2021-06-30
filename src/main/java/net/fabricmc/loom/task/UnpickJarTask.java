@@ -47,7 +47,7 @@ public class UnpickJarTask extends JavaExec {
 	public UnpickJarTask() {
 		getOutputs().upToDateWhen(e -> false);
 		classpath(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
-		setMain("daomephsta.unpick.cli.Main");
+		getMainClass().set("daomephsta.unpick.cli.Main");
 	}
 
 	@Override

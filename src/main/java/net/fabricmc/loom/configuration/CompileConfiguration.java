@@ -34,7 +34,6 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
@@ -143,9 +142,6 @@ public final class CompileConfiguration {
 			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
-			MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-			mixin.init();
-
 			new JavaApInvoker(project).configureMixin();
 
 			if (project.getPluginManager().hasPlugin("scala")) {

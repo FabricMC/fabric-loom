@@ -33,7 +33,7 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 class MixinApSimpleTest extends Specification implements ProjectTestTrait {
     @Override
     String name() {
-        "simple"
+        "mixinApSimple"
     }
 
     @Unroll

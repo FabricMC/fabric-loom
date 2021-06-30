@@ -29,7 +29,7 @@ import org.gradle.testkit.runner.GradleRunner
 
 trait ProjectTestTrait {
 	final static String DEFAULT_GRADLE = "7.0.1"
-	final static String PRE_RELEASE_GRADLE = "7.2-20210612220215+0000"
+	final static String PRE_RELEASE_GRADLE = "7.2-20210629235357+0000"
 
 	static File gradleHome = File.createTempDir()
 	File testProjectDir = File.createTempDir()

@@ -66,9 +66,8 @@ public class MixinAnnotationProcessorExtension {
 											String loomId,
 											PatternSet mixinJsonPattern) {
 		@NotNull
-		public Stream<String> getMixinJson() {
-			return sourceSet.getResources().matching(mixinJsonPattern)
-					.getFiles().stream().map(File::getName);
+		public Collection<String> getMixinJson() {
+			return sourceSet.getAllSource().matching(mixinJsonPattern).getFiles().stream().map(File::getPath).collect(Collectors.toSet());
 		}
 
 		public boolean isConfiguredByLoom(String loomId) {
@@ -110,7 +109,7 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	private PatternSet add0(SourceSet sourceSet, String refmapName) {
-		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
+		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixin.json"));
 		setMixinInformationContainer(sourceSet, new MixinInformationContainer(sourceSet, refmapName, loomId, pattern));
 
 		isDefault = false;
@@ -204,7 +203,7 @@ public class MixinAnnotationProcessorExtension {
 
 	@NotNull
 	@Input
-	public Collection<SourceSet> getSourceSets() {
+	public Collection<SourceSet> getMixinSourceSets() {
 		if (isCrossProject) {
 			return project.getRootProject().getAllprojects().stream()
 					.flatMap(this::getSourceSets).collect(Collectors.toList());

@@ -29,6 +29,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,17 +64,47 @@ public class MixinAnnotationProcessorExtension {
 	 * for configure mixin annotation processor. It stores
 	 * in [SourceSet].ext.mixin.
 	 */
-	public record MixinInformationContainer(SourceSet sourceSet, String refmapName,
-											String loomId,
-											PatternSet mixinJsonPattern) {
+	public static final class MixinInformationContainer {
+		private final SourceSet sourceSet;
+		private final String refmapName;
+		private final String loomId;
+		private final PatternSet mixinJsonPattern;
+
+		private Stream<String> mixinJsonNames;
+
+		public MixinInformationContainer(@NotNull SourceSet sourceSet,
+										 @NotNull String refmapName,
+										 @NotNull String loomId,
+										 @NotNull PatternSet mixinJsonPattern) {
+			this.sourceSet = sourceSet;
+			this.refmapName = refmapName;
+			this.loomId = loomId;
+			this.mixinJsonPattern = mixinJsonPattern;
+		}
+
+		private void setMixinJsonNames(Stream<String> mixinJsonNames) {
+			if (this.mixinJsonNames == null) {
+				this.mixinJsonNames = mixinJsonNames;
+			}
+		}
+
 		@NotNull
 		public Stream<String> getMixinJsonNames() {
-			return sourceSet.getResources().matching(mixinJsonPattern)
-					.getFiles().stream().map(File::getName);
+			return Objects.requireNonNull(mixinJsonNames);
 		}
 
 		public boolean isConfiguredByLoom(String loomId) {
 			return this.loomId.equals(loomId);
+		}
+
+		@NotNull
+		public SourceSet getSourceSet() {
+			return sourceSet;
+		}
+
+		@NotNull
+		public String getRefmapName() {
+			return refmapName;
 		}
 	}
 
@@ -190,7 +221,15 @@ public class MixinAnnotationProcessorExtension {
 		return project0.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
 				.filter(sourceSet -> {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
-					return container != null && container.isConfiguredByLoom(loomId);
+					if (container != null && container.isConfiguredByLoom(loomId)) {
+						PatternSet pattern = container.mixinJsonPattern;
+						container.setMixinJsonNames(
+								project0.files(sourceSet.getResources()).getAsFileTree()
+										.matching(pattern).getFiles().stream()
+										.map(File::getName));
+						return true;
+					}
+					return false;
 				});
 	}
 

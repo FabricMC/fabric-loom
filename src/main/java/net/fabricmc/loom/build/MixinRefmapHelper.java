@@ -52,7 +52,7 @@ public final class MixinRefmapHelper {
 					MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)
 			);
 			Stream<String> mixinJsonNames = container.getMixinJsonNames();
-			String refmapName = container.refmapName();
+			String refmapName = container.getRefmapName();
 
 			return ZipUtil.transformEntries(output, mixinJsonNames.map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
 				@Override

@@ -88,7 +88,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
 			LoomGradleExtension loom = project.getExtensions().getByType(LoomGradleExtension.class);
-			String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).refmapName();
+			String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
 			Map<String, String> args = new HashMap<>() {{
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.getCanonicalPath());
 					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, loom.getNextMixinMappings().getCanonicalPath());

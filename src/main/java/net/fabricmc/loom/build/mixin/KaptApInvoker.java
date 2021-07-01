@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import kotlin.Unit;
 import org.gradle.api.Project;
@@ -37,6 +39,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
+import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 
 public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
@@ -48,7 +51,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 		super(
 				project,
 				AnnotationProcessorInvoker.getApConfigurations(project, KaptApInvoker::getKaptConfigurationName),
-				new HashMap<>());
+				getInvokerTasks(project));
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();
@@ -60,6 +63,19 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 
 		// Needed for mixin AP to run
 		kaptExtension.setIncludeCompileClasspath(false);
+	}
+
+	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+
+		if (mixin.getIsCrossProject()) {
+			return project.getRootProject().getAllprojects().stream()
+					.flatMap(project0 -> mixin.getInvokerTasks(project0, AnnotationProcessorInvoker.JAVA))
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
+		} else {
+			return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.JAVA)
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
+		}
 	}
 
 	@Override

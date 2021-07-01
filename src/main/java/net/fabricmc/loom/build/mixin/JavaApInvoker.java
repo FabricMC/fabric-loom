@@ -25,18 +25,36 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
+
+import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 
 public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public JavaApInvoker(Project project) {
 		super(
 				project,
 				AnnotationProcessorInvoker.getApConfigurations(project, JavaApInvoker::getAptConfigurationName),
-				new HashMap<>());
+				getInvokerTasks(project));
+	}
+
+	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+
+		if (mixin.getIsCrossProject()) {
+			return project.getRootProject().getAllprojects().stream()
+					.flatMap(project0 -> mixin.getInvokerTasks(project0, AnnotationProcessorInvoker.JAVA))
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
+		} else {
+			return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.JAVA)
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
+		}
 	}
 
 	@Override

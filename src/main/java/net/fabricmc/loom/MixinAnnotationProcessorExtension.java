@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -182,9 +183,13 @@ public class MixinAnnotationProcessorExtension {
 	@NotNull
 	public Stream<Map.Entry<SourceSet, Task>> getInvokerTasks(Project project0, String compileTaskLanguage) {
 		return getSourceSets(project0)
-				.map(sourceSet -> {
-					Task task = project0.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
-					return new AbstractMap.SimpleEntry<>(sourceSet, task);
+				.flatMap(sourceSet -> {
+					try {
+						Task task = project0.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
+						return Stream.of(new AbstractMap.SimpleEntry<>(sourceSet, task));
+					} catch (UnknownTaskException ignored) {
+						return Stream.empty();
+					}
 				});
 	}
 

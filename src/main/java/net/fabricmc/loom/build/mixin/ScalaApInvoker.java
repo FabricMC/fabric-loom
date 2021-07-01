@@ -25,11 +25,16 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.scala.ScalaCompile;
+
+import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 
 public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	public ScalaApInvoker(Project project) {
@@ -37,7 +42,20 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 				project,
 				// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
 				ImmutableList.of(),
-				new HashMap<>());
+				getInvokerTasks(project));
+	}
+
+	private static Map<SourceSet, ScalaCompile> getInvokerTasks(Project project) {
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+
+		if (mixin.getIsCrossProject()) {
+			return project.getRootProject().getAllprojects().stream()
+					.flatMap(project0 -> mixin.getInvokerTasks(project0, AnnotationProcessorInvoker.SCALA))
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
+		} else {
+			return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.SCALA)
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
+		}
 	}
 
 	@Override

@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -123,11 +124,16 @@ public class MixinAnnotationProcessorExtension {
 	 * @param sourceSet the sourceSet that applies Mixin AP
 	 * @param refmapName the output ref-map name
 	 */
-	public PatternSet add(SourceSet sourceSet, String refmapName) {
-		return add0(sourceSet, refmapName);
+	public void add(SourceSet sourceSet, String refmapName, Action<PatternSet> action) {
+		PatternSet pattern = add0(sourceSet, refmapName);
+		action.execute(pattern);
 	}
 
-	public PatternSet add(String sourceSetName, String refmapName) {
+	public void add(SourceSet sourceSet, String refmapName) {
+		add(sourceSet, refmapName, x -> { });
+	}
+
+	public void add(String sourceSetName, String refmapName, Action<PatternSet> action) {
 		// try to find sourceSet with name sourceSetName in this project
 		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
 				.getSourceSets().findByName(sourceSetName);
@@ -149,21 +155,34 @@ public class MixinAnnotationProcessorExtension {
 			}
 		}
 
-		return add0(sourceSet, refmapName);
+		PatternSet pattern = add0(sourceSet, refmapName);
+		action.execute(pattern);
+	}
+
+	public void add(String sourceSetName, String refmapName) {
+		add(sourceSetName, refmapName, x -> { });
 	}
 
 	/**
 	 * Apply Mixin AP to sourceSet with output ref-map name equal to {@code loom.refmapName}.
 	 * @param sourceSet the sourceSet that applies Mixin AP
 	 */
-	public PatternSet add(SourceSet sourceSet) {
+	public void add(SourceSet sourceSet, Action<PatternSet> action) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		return add(sourceSet, extension.getRefmapName());
+		add(sourceSet, extension.getRefmapName(), action);
 	}
 
-	public PatternSet add(String sourceSetName) {
+	public void add(SourceSet sourceSet) {
+		add(sourceSet, x -> { });
+	}
+
+	public void add(String sourceSetName, Action<PatternSet> action) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-		return add(sourceSetName, extension.getRefmapName());
+		add(sourceSetName, extension.getRefmapName(), action);
+	}
+
+	public void add(String sourceSetName) {
+		add(sourceSetName, x -> { });
 	}
 
 	@NotNull

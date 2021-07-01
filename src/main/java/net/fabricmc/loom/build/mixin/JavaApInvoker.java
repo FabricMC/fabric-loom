@@ -46,15 +46,8 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-
-		if (mixin.getIsCrossProject()) {
-			return project.getRootProject().getAllprojects().stream()
-					.flatMap(project0 -> mixin.getInvokerTasks(project0, AnnotationProcessorInvoker.JAVA))
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
-		} else {
-			return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.JAVA)
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
-		}
+		return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.JAVA)
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
 	}
 
 	@Override

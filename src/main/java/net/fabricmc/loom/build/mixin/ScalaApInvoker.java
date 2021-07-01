@@ -47,15 +47,8 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 
 	private static Map<SourceSet, ScalaCompile> getInvokerTasks(Project project) {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-
-		if (mixin.getIsCrossProject()) {
-			return project.getRootProject().getAllprojects().stream()
-					.flatMap(project0 -> mixin.getInvokerTasks(project0, AnnotationProcessorInvoker.SCALA))
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
-		} else {
-			return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.SCALA)
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
-		}
+		return mixin.getInvokerTasks(project, AnnotationProcessorInvoker.SCALA)
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
 	}
 
 	@Override

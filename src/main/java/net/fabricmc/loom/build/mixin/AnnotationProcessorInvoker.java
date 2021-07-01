@@ -66,15 +66,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-
-		if (mixin.getIsCrossProject()) {
-			return project.getRootProject().getAllprojects().stream()
-					.flatMap(project0 -> mixin.getApConfigurations(project0, getApConfigNameFunc))
-					.collect(Collectors.toList());
-		} else {
-			return mixin.getApConfigurations(project, getApConfigNameFunc)
-					.collect(Collectors.toList());
-		}
+		return mixin.getApConfigurations(project, getApConfigNameFunc).collect(Collectors.toList());
 	}
 
 	protected abstract void passArgument(T compileTask, String key, String value);

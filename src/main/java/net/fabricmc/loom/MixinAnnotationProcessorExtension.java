@@ -56,8 +56,6 @@ public class MixinAnnotationProcessorExtension {
 	private boolean isDefault;
 
 	private final Project project;
-	private final String loomId;
-	private boolean isCrossProject;
 
 	/**
 	 * A information container stores necessary information
@@ -67,18 +65,15 @@ public class MixinAnnotationProcessorExtension {
 	public static final class MixinInformationContainer {
 		private final SourceSet sourceSet;
 		private final String refmapName;
-		private final String loomId;
 		private final PatternSet mixinJsonPattern;
 
 		private Stream<String> mixinJsonNames;
 
 		public MixinInformationContainer(@NotNull SourceSet sourceSet,
 										@NotNull String refmapName,
-										@NotNull String loomId,
 										@NotNull PatternSet mixinJsonPattern) {
 			this.sourceSet = sourceSet;
 			this.refmapName = refmapName;
-			this.loomId = loomId;
 			this.mixinJsonPattern = mixinJsonPattern;
 		}
 
@@ -91,10 +86,6 @@ public class MixinAnnotationProcessorExtension {
 		@NotNull
 		public Stream<String> getMixinJsonNames() {
 			return Objects.requireNonNull(mixinJsonNames);
-		}
-
-		public boolean isConfiguredByLoom(String loomId) {
-			return this.loomId.equals(loomId);
 		}
 
 		@NotNull
@@ -110,24 +101,7 @@ public class MixinAnnotationProcessorExtension {
 
 	public MixinAnnotationProcessorExtension(Project project) {
 		this.isDefault = true;
-
 		this.project = project;
-		this.isCrossProject = false;
-		this.loomId = project.getPath().equals(":") ? ":fabric-loom" : project.getPath() + ":fabric-loom";
-	}
-
-	/**
-	 * Set true if you want to configure annotation processor for another project.
-	 * Notice that this is highly discouraged. Use at your own risk.
-	 * @param crossProject a boolean
-	 */
-	public void setIsCrossProject(boolean crossProject) {
-		isCrossProject = crossProject;
-	}
-
-	@Input
-	public boolean getIsCrossProject() {
-		return isCrossProject;
 	}
 
 	@Nullable
@@ -149,7 +123,7 @@ public class MixinAnnotationProcessorExtension {
 
 	private PatternSet add0(SourceSet sourceSet, String refmapName) {
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
-		setMixinInformationContainer(sourceSet, new MixinInformationContainer(sourceSet, refmapName, loomId, pattern));
+		setMixinInformationContainer(sourceSet, new MixinInformationContainer(sourceSet, refmapName, pattern));
 
 		isDefault = false;
 
@@ -176,20 +150,7 @@ public class MixinAnnotationProcessorExtension {
 				.getSourceSets().findByName(sourceSetName);
 
 		if (sourceSet == null) {
-			if (isCrossProject) {
-				// let's try to find it in across all projects
-				Stream<SourceSet> stream = project.getRootProject().getAllprojects().stream()
-						.map(proj -> proj.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName(sourceSetName));
-				sourceSet = switch ((int) stream.count()) {
-				// still no sourceSet found
-				case 0 -> throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
-				case 1 -> stream.findFirst().orElseThrow();
-				// multiple sourceSet name found
-				default -> throw new InvalidUserDataException("Ambiguous sourceSet name " + sourceSetName);
-				};
-			} else {
-				throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
-			}
+			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
 		}
 
 		PatternSet pattern = add0(sourceSet, refmapName);
@@ -228,7 +189,7 @@ public class MixinAnnotationProcessorExtension {
 				.filter(sourceSet -> {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
 
-					if (container != null && container.isConfiguredByLoom(loomId)) {
+					if (container != null) {
 						PatternSet pattern = container.mixinJsonPattern;
 						Stream<String> mixinJsonNames = sourceSet.getResources()
 								.matching(pattern).getFiles().stream().map(File::getName);
@@ -270,11 +231,6 @@ public class MixinAnnotationProcessorExtension {
 	@NotNull
 	@Input
 	public Collection<SourceSet> getAllMixinSourceSets() {
-		if (isCrossProject) {
-			return project.getRootProject().getAllprojects().stream()
-					.flatMap(this::getSourceSets).collect(Collectors.toList());
-		} else {
-			return getSourceSets(project).collect(Collectors.toList());
-		}
+		return getSourceSets(project).collect(Collectors.toList());
 	}
 }

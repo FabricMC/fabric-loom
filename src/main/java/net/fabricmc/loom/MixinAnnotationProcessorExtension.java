@@ -73,16 +73,16 @@ public class MixinAnnotationProcessorExtension {
 		private Stream<String> mixinJsonNames;
 
 		public MixinInformationContainer(@NotNull SourceSet sourceSet,
-										 @NotNull String refmapName,
-										 @NotNull String loomId,
-										 @NotNull PatternSet mixinJsonPattern) {
+										@NotNull String refmapName,
+										@NotNull String loomId,
+										@NotNull PatternSet mixinJsonPattern) {
 			this.sourceSet = sourceSet;
 			this.refmapName = refmapName;
 			this.loomId = loomId;
 			this.mixinJsonPattern = mixinJsonPattern;
 		}
 
-		private void setMixinJsonNames(Stream<String> mixinJsonNames) {
+		private void setMixinJsonNames(@NotNull Stream<String> mixinJsonNames) {
 			if (this.mixinJsonNames == null) {
 				this.mixinJsonNames = mixinJsonNames;
 			}
@@ -221,6 +221,7 @@ public class MixinAnnotationProcessorExtension {
 		return project0.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
 				.filter(sourceSet -> {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
+
 					if (container != null && container.isConfiguredByLoom(loomId)) {
 						PatternSet pattern = container.mixinJsonPattern;
 						Stream<String> mixinJsonNames = sourceSet.getResources()
@@ -228,6 +229,7 @@ public class MixinAnnotationProcessorExtension {
 						container.setMixinJsonNames(mixinJsonNames);
 						return true;
 					}
+
 					return false;
 				});
 	}

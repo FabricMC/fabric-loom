@@ -204,7 +204,7 @@ public class MixinAnnotationProcessorExtension {
 
 	@NotNull
 	@Input
-	public Collection<SourceSet> getMixinSourceSets() {
+	public Collection<SourceSet> getAllMixinSourceSets() {
 		if (isCrossProject) {
 			return project.getRootProject().getAllprojects().stream()
 					.flatMap(this::getSourceSets).collect(Collectors.toList());

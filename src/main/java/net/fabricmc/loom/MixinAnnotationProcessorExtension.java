@@ -109,7 +109,7 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	private PatternSet add0(SourceSet sourceSet, String refmapName) {
-		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixin.json"));
+		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
 		setMixinInformationContainer(sourceSet, new MixinInformationContainer(sourceSet, refmapName, loomId, pattern));
 
 		isDefault = false;

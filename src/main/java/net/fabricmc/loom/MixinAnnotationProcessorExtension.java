@@ -223,10 +223,9 @@ public class MixinAnnotationProcessorExtension {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
 					if (container != null && container.isConfiguredByLoom(loomId)) {
 						PatternSet pattern = container.mixinJsonPattern;
-						container.setMixinJsonNames(
-								project0.files(sourceSet.getResources()).getAsFileTree()
-										.matching(pattern).getFiles().stream()
-										.map(File::getName));
+						Stream<String> mixinJsonNames = sourceSet.getResources()
+								.matching(pattern).getFiles().stream().map(File::getName);
+						container.setMixinJsonNames(mixinJsonNames);
 						return true;
 					}
 					return false;

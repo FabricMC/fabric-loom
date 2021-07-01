@@ -66,8 +66,9 @@ public class MixinAnnotationProcessorExtension {
 											String loomId,
 											PatternSet mixinJsonPattern) {
 		@NotNull
-		public Collection<String> getMixinJson() {
-			return sourceSet.getAllSource().matching(mixinJsonPattern).getFiles().stream().map(File::getPath).collect(Collectors.toSet());
+		public Stream<String> getMixinJsonNames() {
+			return sourceSet.getResources().matching(mixinJsonPattern)
+					.getFiles().stream().map(File::getName);
 		}
 
 		public boolean isConfiguredByLoom(String loomId) {

@@ -28,6 +28,8 @@ import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.util.jar.JarFile
+
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MixinApSimpleTest extends Specification implements ProjectTestTrait {
@@ -43,7 +45,15 @@ class MixinApSimpleTest extends Specification implements ProjectTestTrait {
 
         then:
         result.task(":build").outcome == SUCCESS
-        // TODO: verify the result jar
+
+        // verify the ref-map name is correctly generated
+        def main = new JarFile(getOutputFile("fabric-example-mod-1.0.0-dev.jar").absoluteFile)
+        main.getEntry("main-refmap0000.json") != null
+        def mixin = new JarFile(getOutputFile("fabric-example-mod-1.0.0-mixin.jar").absoluteFile)
+        mixin.getEntry("default-refmap0000.json") != null
+        def mixin1 = new JarFile(getOutputFile("fabric-example-mod-1.0.0-mixin1.jar").absoluteFile)
+        mixin1.getEntry("main-refmap0000.json") == null
+        mixin1.getEntry("default-refmap0000.json") == null
 
         where:
         gradle              | _

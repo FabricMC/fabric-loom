@@ -393,4 +393,8 @@ public class LoomGradleExtension {
 	public LoomProjectData getProjectData() {
 		return projectData;
 	}
+
+	public void mixin(Action<MixinAnnotationProcessorExtension> action) {
+		action.execute(project.getExtensions().getByType(MixinAnnotationProcessorExtension.class));
+	}
 }

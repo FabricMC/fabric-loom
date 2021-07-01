@@ -64,7 +64,7 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	}
 
 	@Override
-	protected File getDestinationDir(ScalaCompile task) {
+	protected File getRefmapDestinationDir(ScalaCompile task) {
 		return task.getDestinationDir();
 	}
 }

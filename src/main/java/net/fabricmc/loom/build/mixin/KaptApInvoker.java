@@ -40,7 +40,6 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
 import net.fabricmc.loom.MixinAnnotationProcessorExtension;
-import net.fabricmc.loom.LoomGradleExtension;
 
 public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	private final KaptExtension kaptExtension = project.getExtensions().getByType(KaptExtension.class);
@@ -82,14 +81,16 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public void configureMixin() {
 		super.configureMixin();
 
-		for (JavaCompile task : invokerTasks.values()) {
+		for (Map.Entry<SourceSet, JavaCompile> entry : invokerTasks.entrySet()) {
 			// Kapt only allows specifying javac args to all annotation processors at once. So we need to specify some dummy
 			// target location for the refmap and then move it to the correct place for each sourceset
+			JavaCompile task = entry.getValue();
+			SourceSet sourceSet = entry.getKey();
 			task.doLast(t -> {
 				try {
-					LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-					Path src = Paths.get(getRefmapDestination(task, extension));
-					Path dest = Paths.get(task.getDestinationDir().toString(), extension.getRefmapName());
+					String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).refmapName();
+					Path src = Paths.get(getRefmapDestination(task, refmapName));
+					Path dest = Paths.get(task.getDestinationDir().toString(), refmapName);
 
 					// Possible that no mixin annotations exist
 					if (Files.exists(src)) {
@@ -123,7 +124,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	@Override
-	protected File getDestinationDir(JavaCompile task) {
+	protected File getRefmapDestinationDir(JavaCompile task) {
 		return dummyRefmapDirectory;
 	}
 }

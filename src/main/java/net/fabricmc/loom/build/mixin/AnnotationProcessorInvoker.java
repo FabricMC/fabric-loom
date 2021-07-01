@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -78,23 +79,24 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	protected abstract void passArgument(T compileTask, String key, String value);
 
-	protected abstract File getDestinationDir(T task);
+	protected abstract File getRefmapDestinationDir(T task);
 
-	protected final String getRefmapDestination(T task, LoomGradleExtension extension) throws IOException {
-		return new File(getDestinationDir(task), extension.getRefmapName()).getCanonicalPath();
+	protected final String getRefmapDestination(T task, String refmapName) throws IOException {
+		return new File(getRefmapDestinationDir(task), refmapName).getCanonicalPath();
 	}
 
-	private void passMixinArguments(T task) {
+	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension loom = project.getExtensions().getByType(LoomGradleExtension.class);
+			String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).refmapName();
 			Map<String, String> args = new HashMap<>() {{
-					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, extension.getNextMixinMappings().getCanonicalPath());
-					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, extension));
+					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.getCanonicalPath());
+					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, loom.getNextMixinMappings().getCanonicalPath());
+					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:intermediary");
 				}};
 
-			project.getLogger().debug("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);
+			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);
 			args.forEach((k, v) -> passArgument(task, k, v));
 		} catch (IOException e) {
 			project.getLogger().error("Could not configure mixin annotation processors", e);
@@ -121,8 +123,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 			}
 		}
 
-		for (T task : invokerTasks.values()) {
-			passMixinArguments(task);
+		for (Map.Entry<SourceSet, T> entry : invokerTasks.entrySet()) {
+			passMixinArguments(entry.getValue(), entry.getKey());
 		}
 	}
 }

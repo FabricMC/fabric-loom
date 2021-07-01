@@ -63,7 +63,7 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	@Override
-	protected File getDestinationDir(JavaCompile task) {
+	protected File getRefmapDestinationDir(JavaCompile task) {
 		return task.getDestinationDir();
 	}
 

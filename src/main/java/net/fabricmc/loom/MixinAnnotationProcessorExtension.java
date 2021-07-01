@@ -138,10 +138,12 @@ public class MixinAnnotationProcessorExtension {
 
 	public static void setMixinInformationContainer(SourceSet sourceSet, MixinInformationContainer container) {
 		ExtraPropertiesExtension extra = sourceSet.getExtensions().getExtraProperties();
+
 		if (extra.has(MIXIN_INFORMATION_CONTAINER)) {
 			throw new InvalidUserDataException("The sourceSet " + sourceSet.getName()
 					+ " has been configured for mixin annotation processor multiple times");
 		}
+
 		extra.set(MIXIN_INFORMATION_CONTAINER, container);
 	}
 

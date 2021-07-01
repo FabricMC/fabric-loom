@@ -161,7 +161,7 @@ public class RemapJarTask extends Jar {
 						throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
 					}
 
-					if (MixinRefmapHelper.addRefmapName(extension.getRefmapName(), output)) {
+					if (MixinRefmapHelper.addRefmapName(project, output)) {
 						project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 					}
 

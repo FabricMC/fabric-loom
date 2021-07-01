@@ -25,6 +25,7 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
+import java.util.HashMap;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
@@ -34,8 +35,8 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public JavaApInvoker(Project project) {
 		super(
 				project,
-				AnnotationProcessorInvoker.getConfigurations(project, JavaApInvoker::getAptConfigurationName),
-				project.getTasks().withType(JavaCompile.class));
+				AnnotationProcessorInvoker.getApConfigurations(project, JavaApInvoker::getAptConfigurationName),
+				new HashMap<>());
 	}
 
 	@Override

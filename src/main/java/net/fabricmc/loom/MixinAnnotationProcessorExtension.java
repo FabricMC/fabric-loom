@@ -25,13 +25,18 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Input;
@@ -103,9 +108,11 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	private PatternSet add0(SourceSet sourceSet, String refmapName) {
-		this.isDefault = false;
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixin.json"));
 		setMixinInformationContainer(sourceSet, new MixinInformationContainer(sourceSet, refmapName, loomId, pattern));
+
+		isDefault = false;
+
 		return pattern;
 	}
 
@@ -157,7 +164,8 @@ public class MixinAnnotationProcessorExtension {
 		return add(sourceSetName, extension.getRefmapName());
 	}
 
-	private Stream<SourceSet> getMixinSourceSets(Project project0) {
+	@NotNull
+	public Stream<SourceSet> getSourceSets(Project project0) {
 		return project0.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
 				.filter(sourceSet -> {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
@@ -166,21 +174,36 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	@NotNull
-	@Input
-	public Collection<SourceSet> getMixinSourceSets() {
+	public Stream<Configuration> getApConfigurations(Project project0, Function<String, String> getApConfigNameFunc) {
+		return getSourceSets(project0)
+				.map(sourceSet -> project0.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet.getName())));
+	}
+
+	@NotNull
+	public Stream<Map.Entry<SourceSet, Task>> getInvokerTasks(Project project0, String compileTaskLanguage) {
+		return getSourceSets(project0)
+				.map(sourceSet -> {
+					Task task = project0.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
+					return new AbstractMap.SimpleEntry<>(sourceSet, task);
+				});
+	}
+
+	public void init() {
 		if (isDefault) {
 			project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().forEach(this::add);
 		}
 
-		if (isCrossProject) {
-			project.getLogger().warn("You set isCrossProject = true for Mixin Annotation Processor. "
-					+ "This will apply the mixin annotation processor for the sourceSet you added outside of this project. "
-					+ "Please note this is highly discouraged and should not be used unless is necessary.");
+		isDefault = false;
+	}
 
+	@NotNull
+	@Input
+	public Collection<SourceSet> getMixinSourceSets() {
+		if (isCrossProject) {
 			return project.getRootProject().getAllprojects().stream()
-					.flatMap(this::getMixinSourceSets).collect(Collectors.toList());
+					.flatMap(this::getSourceSets).collect(Collectors.toList());
 		} else {
-			return getMixinSourceSets(project).collect(Collectors.toList());
+			return getSourceSets(project).collect(Collectors.toList());
 		}
 	}
 }

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 
 import kotlin.Unit;
 import org.gradle.api.Project;
@@ -46,8 +47,8 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public KaptApInvoker(Project project) {
 		super(
 				project,
-				AnnotationProcessorInvoker.getConfigurations(project, KaptApInvoker::getKaptConfigurationName),
-				project.getTasks().withType(JavaCompile.class));
+				AnnotationProcessorInvoker.getApConfigurations(project, KaptApInvoker::getKaptConfigurationName),
+				new HashMap<>());
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();
@@ -65,7 +66,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public void configureMixin() {
 		super.configureMixin();
 
-		for (JavaCompile task : invokerTasks) {
+		for (JavaCompile task : invokerTasks.values()) {
 			// Kapt only allows specifying javac args to all annotation processors at once. So we need to specify some dummy
 			// target location for the refmap and then move it to the correct place for each sourceset
 			task.doLast(t -> {

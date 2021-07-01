@@ -37,7 +37,6 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskCollection;
 
 import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.LoomGradleExtension;
@@ -50,15 +49,28 @@ import net.fabricmc.loom.util.Constants;
  */
 public abstract class AnnotationProcessorInvoker<T extends Task> {
 	protected final Project project;
-	private final Collection<Configuration> annotationProcessorConfigurations;
-	protected final TaskCollection<T> invokerTasks;
+	protected final Map<SourceSet, T> invokerTasks;
+	private final Collection<Configuration> apConfigurations;
 
 	protected AnnotationProcessorInvoker(Project project,
-										Collection<Configuration> annotationProcessorConfigurations,
-										TaskCollection<T> invokerTasks) {
+										Collection<Configuration> apConfigurations,
+										Map<SourceSet, T> invokerTasks) {
 		this.project = project;
-		this.annotationProcessorConfigurations = annotationProcessorConfigurations;
+		this.apConfigurations = apConfigurations;
 		this.invokerTasks = invokerTasks;
+	}
+
+	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+
+		if (mixin.getIsCrossProject()) {
+			return project.getRootProject().getAllprojects().stream()
+					.flatMap(project0 -> mixin.getApConfigurations(project0, getApConfigNameFunc))
+					.collect(Collectors.toList());
+		} else {
+			return mixin.getApConfigurations(project, getApConfigNameFunc)
+					.collect(Collectors.toList());
+		}
 	}
 
 	protected abstract void passArgument(T compileTask, String key, String value);
@@ -91,7 +103,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
 		if (!extension.ideSync()) {
-			for (Configuration processorConfig : annotationProcessorConfigurations) {
+			for (Configuration processorConfig : apConfigurations) {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath
 				processorConfig.extendsFrom(
@@ -106,18 +118,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 			}
 		}
 
-		for (T task : invokerTasks) {
+		for (T task : invokerTasks.values()) {
 			passMixinArguments(task);
 		}
-	}
-
-	static Collection<SourceSet> getSourceSets(Project project) {
-		return project.getExtensions().getByType(MixinAnnotationProcessorExtension.class).getMixinSourceSets();
-	}
-
-	static Collection<Configuration> getConfigurations(Project project, Function<String, String> getConfigurationName) {
-		return getSourceSets(project).stream()
-				.map(sourceSet -> project.getConfigurations().getByName(getConfigurationName.apply(sourceSet.getName())))
-				.collect(Collectors.toSet());
 	}
 }

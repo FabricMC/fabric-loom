@@ -189,9 +189,9 @@ public class SourceRemapper {
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
 			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
 
-			Dependency annotationDependency = extension.getDependencyManager().getProvider(LaunchProvider.class).annotationDependency;
-			Set<File> files = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-					.files(annotationDependency);
+			Set<File> files = project.getConfigurations()
+					.detachedConfiguration(project.getDependencies().create(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS))
+					.resolve();
 
 			for (File file : files) {
 				m.getClassPath().add(file.toPath());

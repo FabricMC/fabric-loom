@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
@@ -48,7 +47,6 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.Constants;
 
 public class LaunchProvider extends DependencyProvider {
-
 	public LaunchProvider(Project project) {
 		super(project);
 	}

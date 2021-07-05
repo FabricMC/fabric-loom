@@ -42,17 +42,25 @@ class UnpickTest extends Specification implements ProjectTestTrait {
 
 	def "unpick decompile"() {
 		when:
-			def result = create("genSources")
+			def result = create("genSources", gradle)
 		then:
 			result.task(":genSources").outcome == SUCCESS
 			getClassSource("net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+		where:
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 
 	def "unpick build"() {
 		when:
-			def result = create("build")
+			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
+		where:
+			gradle              | _
+			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 
 	String getClassSource(String classname, String mappings = MAPPINGS) {

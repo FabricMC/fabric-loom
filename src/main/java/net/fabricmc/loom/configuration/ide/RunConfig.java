@@ -120,7 +120,7 @@ public class RunConfig {
 
 		if (extension.getLoaderLaunchMethod().equals("launchwrapper")) {
 			// if installer.json found...
-			JsonObject installerJson = extension.getInstallerJson();
+			JsonObject installerJson = extension.getInstallerData().installerJson();
 
 			if (installerJson != null) {
 				List<String> sideKeys = ImmutableList.of(environment, "common");
@@ -244,7 +244,7 @@ public class RunConfig {
 	}
 
 	private static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
-		JsonObject installerJson = extension.getInstallerJson();
+		JsonObject installerJson = extension.getInstallerData().installerJson();
 
 		if (installerJson != null && installerJson.has("mainClass")) {
 			JsonElement mainClassJson = installerJson.get("mainClass");

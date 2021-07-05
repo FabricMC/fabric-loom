@@ -29,9 +29,9 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
@@ -128,11 +128,14 @@ public final class CompileConfiguration {
 
 			SetupIntelijRunConfigs.setup(project);
 
+			Jar jarTask = (Jar) project.getTasks().getByName("jar");
+			JarManifestConfiguration jarManifestConfiguration = new JarManifestConfiguration(project, jarTask);
+			jarManifestConfiguration.configure();
+
 			// Enables the default mod remapper
 			if (extension.remapMod) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 

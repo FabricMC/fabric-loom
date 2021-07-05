@@ -35,12 +35,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
@@ -60,6 +54,11 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 
 public class LoomGradleExtension {
 	public String refmapName;

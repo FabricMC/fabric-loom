@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.util
 
+import com.google.common.io.Files
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 
@@ -59,7 +60,7 @@ trait ProjectTestTrait {
 			}
 
 			tempFile.parentFile.mkdirs()
-			tempFile << file.text
+			Files.copy(file, tempFile)
 		}
 
 		// Disable the CI checks to ensure nothing is skipped

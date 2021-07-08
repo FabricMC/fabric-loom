@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
@@ -58,6 +59,15 @@ public class Checksum {
 			return hash.asBytes();
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to get file hash");
+		}
+	}
+
+	public static String murmur3(File file) {
+		try {
+			HashCode hash = Files.asByteSource(file).hash(Hashing.murmur3_32());
+			return hash.toString();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to get file hash of " + file, e);
 		}
 	}
 }

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.zip.ZipFile;
 
 import com.google.common.io.Files;
@@ -55,23 +56,19 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModCompileRemapper {
-	// These are placeholders that are used when the actual group/version is missing (null or empty).
-	// This happens when the dependency is a FileCollectionDependency or from a flatDir repository.
+	// This is a placeholder that is used when the actual group is missing (null or empty).
+	// This can happen when the dependency is a FileCollectionDependency or from a flatDir repository.
 	private static final String MISSING_GROUP = "unspecified";
-	private static final String MISSING_VERSION = "unspecified";
 
-	private static String replaceGroupIfMissing(@Nullable String group) {
-		return group == null || group.isEmpty() ? MISSING_GROUP : group;
-	}
-
-	private static String replaceVersionIfMissing(@Nullable String version) {
-		return version == null || version.isEmpty() ? MISSING_VERSION : version;
+	private static String replaceIfNullOrEmpty(@Nullable String s, Supplier<String> fallback) {
+		return s == null || s.isEmpty() ? fallback.get() : s;
 	}
 
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
@@ -92,9 +89,9 @@ public class ModCompileRemapper {
 				List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
 				for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-					String group = replaceGroupIfMissing(artifact.getModuleVersion().getId().getGroup());
+					String group = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getGroup(), () -> MISSING_GROUP);
 					String name = artifact.getModuleVersion().getId().getName();
-					String version = replaceVersionIfMissing(artifact.getModuleVersion().getId().getVersion());
+					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.murmur3(artifact.getFile()));
 
 					if (!isFabricMod(logger, artifact.getFile(), artifact.getId())) {
 						addToRegularCompile(project, regularConfig, artifact);
@@ -118,8 +115,7 @@ public class ModCompileRemapper {
 				// FileCollectionDependency (files/fileTree) doesn't resolve properly,
 				// so we have to "resolve" it on our own. The naming is "abc.jar" => "unspecified:abc:unspecified".
 				for (FileCollectionDependency dependency : sourceConfig.getAllDependencies().withType(FileCollectionDependency.class)) {
-					String group = replaceGroupIfMissing(dependency.getGroup());
-					String version = replaceVersionIfMissing(dependency.getVersion());
+					String group = replaceIfNullOrEmpty(dependency.getGroup(), () -> MISSING_GROUP);
 					FileCollection files = dependency.getFiles();
 
 					// Create a mod dependency for each file in the file collection
@@ -130,6 +126,8 @@ public class ModCompileRemapper {
 						}
 
 						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
+						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.murmur3(artifact));
+
 						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
 						modDependencies.add(info);
 					}

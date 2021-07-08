@@ -115,6 +115,8 @@ public class ModCompileRemapper {
 					}
 				}
 
+				// FileCollectionDependency (files/fileTree) doesn't resolve properly,
+				// so we have to "resolve" it on our own. The naming is "abc.jar" => "unspecified:abc:unspecified".
 				for (FileCollectionDependency dependency : sourceConfig.getAllDependencies().withType(FileCollectionDependency.class)) {
 					String group = replaceGroupIfMissing(dependency.getGroup());
 					String version = replaceVersionIfMissing(dependency.getVersion());

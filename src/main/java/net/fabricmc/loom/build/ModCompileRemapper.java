@@ -30,9 +30,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipFile;
 
+import com.google.common.io.Files;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
@@ -40,9 +42,11 @@ import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
 import org.gradle.api.artifacts.result.ArtifactResult;
 import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.Logger;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -57,6 +61,19 @@ import net.fabricmc.loom.util.SourceRemapper;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModCompileRemapper {
+	// These are placeholders that are used when the actual group/version is missing (null or empty).
+	// This happens when the dependency is a FileCollectionDependency or from a flatDir repository.
+	private static final String MISSING_GROUP = "unspecified";
+	private static final String MISSING_VERSION = "unspecified";
+
+	private static String replaceGroupIfMissing(@Nullable String group) {
+		return group == null || group.isEmpty() ? MISSING_GROUP : group;
+	}
+
+	private static String replaceVersionIfMissing(@Nullable String version) {
+		return version == null || version.isEmpty() ? MISSING_VERSION : version;
+	}
+
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
@@ -75,28 +92,17 @@ public class ModCompileRemapper {
 				List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
 				for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-					// TODO: This collection doesn't appear to include FileCollection dependencies
-					// Might have to go based on the dependencies, rather than their resolved form?
-					// File dependencies use SelfResolvingDependency, which appears to be handled differently
-					String group = artifact.getModuleVersion().getId().getGroup();
+					String group = replaceGroupIfMissing(artifact.getModuleVersion().getId().getGroup());
 					String name = artifact.getModuleVersion().getId().getName();
-					String version = artifact.getModuleVersion().getId().getVersion();
+					String version = replaceVersionIfMissing(artifact.getModuleVersion().getId().getVersion());
 
-					if (!isFabricMod(logger, artifact)) {
+					if (!isFabricMod(logger, artifact.getFile(), artifact.getId())) {
 						addToRegularCompile(project, regularConfig, artifact);
 						continue;
 					}
 
 					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
-
-					if (refreshDeps) {
-						info.forceRemap();
-					}
-
 					modDependencies.add(info);
-
-					String remappedLog = group + ":" + name + ":" + version + (artifact.getClassifier() == null ? "" : ":" + artifact.getClassifier()) + " (" + mappingsSuffix + ")";
-					project.getLogger().info(":providing " + remappedLog);
 
 					File remappedSources = info.getRemappedOutput("sources");
 
@@ -107,6 +113,33 @@ public class ModCompileRemapper {
 							scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), remappedSources);
 						}
 					}
+				}
+
+				for (FileCollectionDependency dependency : sourceConfig.getAllDependencies().withType(FileCollectionDependency.class)) {
+					String group = replaceGroupIfMissing(dependency.getGroup());
+					String version = replaceVersionIfMissing(dependency.getVersion());
+					FileCollection files = dependency.getFiles();
+
+					// Create a mod dependency for each file in the file collection
+					for (File artifact : files) {
+						if (!isFabricMod(logger, artifact, artifact.getName())) {
+							dependencies.add(regularConfig.getName(), project.files(artifact));
+							continue;
+						}
+
+						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
+						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
+						modDependencies.add(info);
+					}
+				}
+
+				for (ModDependencyInfo info : modDependencies) {
+					if (refreshDeps) {
+						info.forceRemap();
+					}
+
+					String remappedLog = info.getRemappedNotation() + " (" + mappingsSuffix + ")";
+					project.getLogger().info(":providing " + remappedLog);
 				}
 
 				try {
@@ -128,12 +161,10 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact) {
-		File input = artifact.getFile();
-
-		try (ZipFile zipFile = new ZipFile(input)) {
+	private static boolean isFabricMod(Logger logger, File artifact, Object id) {
+		try (ZipFile zipFile = new ZipFile(artifact)) {
 			if (zipFile.getEntry("fabric.mod.json") != null) {
-				logger.info("Found Fabric mod in modCompile: {}", artifact.getId());
+				logger.info("Found Fabric mod in modCompile: {}", id);
 				return true;
 			}
 

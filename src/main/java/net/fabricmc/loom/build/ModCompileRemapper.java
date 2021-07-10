@@ -91,7 +91,7 @@ public class ModCompileRemapper {
 				for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
 					String group = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getGroup(), () -> MISSING_GROUP);
 					String name = artifact.getModuleVersion().getId().getName();
-					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.murmur3(artifact.getFile()));
+					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
 
 					if (!isFabricMod(logger, artifact.getFile(), artifact.getId())) {
 						addToRegularCompile(project, regularConfig, artifact);
@@ -126,7 +126,7 @@ public class ModCompileRemapper {
 						}
 
 						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
-						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.murmur3(artifact));
+						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.truncatedSha256(artifact));
 
 						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
 						modDependencies.add(info);

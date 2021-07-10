@@ -62,10 +62,10 @@ public class Checksum {
 		}
 	}
 
-	public static String murmur3(File file) {
+	public static String truncatedSha256(File file) {
 		try {
-			HashCode hash = Files.asByteSource(file).hash(Hashing.murmur3_32());
-			return hash.toString();
+			HashCode hash = Files.asByteSource(file).hash(Hashing.sha256());
+			return hash.toString().substring(0, 12);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to get file hash of " + file, e);
 		}

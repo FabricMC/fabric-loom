@@ -105,7 +105,7 @@ public class FabricApiExtension {
 	private File getApiMavenPom(String fabricApiVersion) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		File mavenPom = new File(extension.getDirectories().getUserCache(), "fabric-api/" + fabricApiVersion + ".pom");
+		File mavenPom = new File(extension.getFiles().getUserCache(), "fabric-api/" + fabricApiVersion + ".pom");
 
 		try {
 			URL url = new URL(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/%1$s/fabric-api-%1$s.pom", fabricApiVersion));

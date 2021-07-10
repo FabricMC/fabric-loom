@@ -30,7 +30,7 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-public final class LoomDirectoriesImpl implements LoomDirectories {
+public final class LoomFilesImpl implements LoomFiles {
 	private final Project project;
 
 	private final File userCache;
@@ -40,7 +40,7 @@ public final class LoomDirectoriesImpl implements LoomDirectories {
 	private final File remappedModCache;
 	private final File nativesJarStore;
 
-	public LoomDirectoriesImpl(Project project) {
+	public LoomFilesImpl(Project project) {
 		this.project = project;
 
 		this.userCache = createFile(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");

@@ -61,7 +61,7 @@ public class ModCompileRemapper {
 		DependencyHandler dependencies = project.getDependencies();
 		boolean refreshDeps = LoomGradlePlugin.refreshDeps;
 
-		final File modStore = extension.getDirectories().getRemappedModCache();
+		final File modStore = extension.getFiles().getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {

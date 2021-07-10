@@ -49,6 +49,6 @@ public class MinecraftLibraryProvider {
 
 	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		MINECRAFT_LIBS = new File(extension.getDirectories().getUserCache(), "libraries");
+		MINECRAFT_LIBS = new File(extension.getFiles().getUserCache(), "libraries");
 	}
 }

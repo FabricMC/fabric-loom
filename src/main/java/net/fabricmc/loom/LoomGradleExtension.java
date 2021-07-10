@@ -24,25 +24,71 @@
 
 package net.fabricmc.loom;
 
-import org.gradle.api.Project;
+import java.io.File;
+import java.util.Set;
+import java.util.function.Supplier;
 
-import net.fabricmc.loom.extension.internal.ConfigurationInternalGradleExtension;
-import net.fabricmc.loom.extension.internal.InstallerInternalGradleExtension;
-import net.fabricmc.loom.extension.internal.MappingCacheInternalGradleExtension;
-import net.fabricmc.loom.extension.internal.MixinInternalGradleExtension;
-import net.fabricmc.loom.extension.internal.ProviderInternalGradleExtension;
-import net.fabricmc.loom.api.extension.LoomGradleExtensionAPI;
-import net.fabricmc.loom.extension.LoomDirectories;
+import com.google.gson.JsonObject;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
+import org.gradle.api.NamedDomainObjectProvider;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
+
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 
-public interface LoomGradleExtension extends LoomGradleExtensionAPI, ConfigurationInternalGradleExtension, InstallerInternalGradleExtension, MappingCacheInternalGradleExtension, ProviderInternalGradleExtension, MixinInternalGradleExtension {
+public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
 		return project.getExtensions().getByType(LoomGradleExtensionImpl.class);
 	}
 
-	LoomDirectories getDirectories();
+	LoomFiles getFiles();
 
-	// TODO bellow this is just misc stuff, might need moving
+	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name);
+
+	NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name);
+
+	MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory);
+
+	Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory);
+
+	ConfigurableFileCollection getUnmappedModCollection();
+
+	void setInstallerJson(JsonObject object);
+
+	JsonObject getInstallerJson();
+
+	void setDependencyManager(LoomDependencyManager dependencyManager);
+
+	LoomDependencyManager getDependencyManager();
+
+	void setJarProcessorManager(JarProcessorManager jarProcessorManager);
+
+	JarProcessorManager getJarProcessorManager();
+
+	default MinecraftProviderImpl getMinecraftProvider() {
+		return getDependencyManager().getProvider(MinecraftProviderImpl.class);
+	}
+
+	default MappingsProviderImpl getMappingsProvider() {
+		return getDependencyManager().getProvider(MappingsProviderImpl.class);
+	}
+
+	default MinecraftMappedProvider getMinecraftMappedProvider() {
+		return getMappingsProvider().mappedProvider;
+	}
+
+	File getNextMixinMappings();
+
+	Set<File> getAllMixinMappings();
 
 	boolean isRootProject();
 

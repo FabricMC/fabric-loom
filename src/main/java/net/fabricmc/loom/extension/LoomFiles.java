@@ -22,16 +22,22 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.extension;
+package net.fabricmc.loom.extension;
 
 import java.io.File;
 
-public interface AccessWidenerExtension {
-	File getAccessWidener();
-	void setAccessWidener(Object file);
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-	@Deprecated // Use the setter above
-	default void accessWidener(Object file) {
-		setAccessWidener(file);
-	}
+public interface LoomFiles {
+	File getUserCache();
+	File getRootProjectPersistentCache();
+	File getProjectPersistentCache();
+	File getProjectBuildCache();
+	File getRemappedModCache();
+	File getNativesJarStore();
+	boolean hasCustomNatives();
+	File getNativesDirectory(MinecraftProvider minecraftProvider);
+	File getDefaultLog4jConfigFile();
+	File getDevLauncherConfig();
+	File getUnpickLoggingConfigFile();
 }

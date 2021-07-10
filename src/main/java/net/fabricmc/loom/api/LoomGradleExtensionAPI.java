@@ -22,14 +22,60 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.extension;
+package net.fabricmc.loom.api;
+
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.processors.JarProcessor;
+
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.ConfigurableFileCollection;
 
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import java.io.File;
+import java.util.List;
 
-public interface RunConfigExtension {
+/**
+ * This is the public api available exposed to build scripts
+ */
+public interface LoomGradleExtensionAPI {
+	File getAccessWidener();
+
+	void setAccessWidener(Object file);
+
+	void setShareCaches(boolean shareCaches);
+
+	default void shareCaches() {
+		setShareCaches(true);
+	}
+
+	List<LoomDecompiler> getDecompilers();
+
+	void addDecompiler(LoomDecompiler decompiler);
+
+	List<JarProcessor> getJarProcessors();
+
+	void addJarProcessor(JarProcessor processor);
+
+	ConfigurableFileCollection getLog4jConfigs();
+
+	default Dependency officialMojangMappings() {
+		return layered(LayeredMappingSpecBuilder::officialMojangMappings);
+	}
+
+	Dependency layered(Action<LayeredMappingSpecBuilder> action);
+
+	String getRefmapName();
+
+	void setRefmapName(String refmapName);
+
+	boolean isRemapMod();
+
+	void setRemapMod(boolean remapMod);
+
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();

@@ -49,7 +49,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.extension.LoomDirectories;
+import net.fabricmc.loom.extension.LoomFiles;
 
 public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
@@ -89,8 +89,8 @@ public abstract class DependencyProvider {
 		return extension;
 	}
 
-	public LoomDirectories getDirectories() {
-		return getExtension().getDirectories();
+	public LoomFiles getDirectories() {
+		return getExtension().getFiles();
 	}
 
 	public boolean isRefreshDeps() {

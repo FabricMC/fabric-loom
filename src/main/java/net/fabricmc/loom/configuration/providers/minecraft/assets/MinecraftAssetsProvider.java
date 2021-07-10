@@ -56,7 +56,7 @@ public class MinecraftAssetsProvider {
 		MinecraftVersionMeta.AssetIndex assetIndex = versionInfo.assetIndex();
 
 		// get existing cache files
-		File assets = new File(extension.getDirectories().getUserCache(), "assets");
+		File assets = new File(extension.getFiles().getUserCache(), "assets");
 
 		if (!assets.exists()) {
 			assets.mkdirs();

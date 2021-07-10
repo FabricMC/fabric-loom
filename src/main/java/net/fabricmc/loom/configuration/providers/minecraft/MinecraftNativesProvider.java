@@ -51,8 +51,8 @@ public class MinecraftNativesProvider {
 		this.project = project;
 		extension = LoomGradleExtension.get(project);
 
-		nativesDir = extension.getDirectories().getNativesDirectory(extension.getMinecraftProvider());
-		jarStore = extension.getDirectories().getNativesJarStore();
+		nativesDir = extension.getFiles().getNativesDirectory(extension.getMinecraftProvider());
+		jarStore = extension.getFiles().getNativesJarStore();
 	}
 
 	public static void provide(Project project) throws IOException {
@@ -60,7 +60,7 @@ public class MinecraftNativesProvider {
 	}
 
 	private void provide() throws IOException {
-		if (extension.getDirectories().hasCustomNatives()) {
+		if (extension.getFiles().hasCustomNatives()) {
 			if (!nativesDir.exists()) {
 				throw new RuntimeException("Could no find custom natives directory at " + nativesDir.getAbsolutePath());
 			}

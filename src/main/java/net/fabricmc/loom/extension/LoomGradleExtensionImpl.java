@@ -47,7 +47,7 @@ import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
-	private final LoomDirectories loomDirectories;
+	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
 	private final Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
@@ -59,10 +59,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
 
-	public LoomGradleExtensionImpl(Project project, LoomDirectories directories) {
-		super(project, directories);
+	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
+		super(project, files);
 		this.project = project;
-		this.loomDirectories = directories;
+		this.loomFiles = files;
 		this.unmappedMods = project.files();
 	}
 
@@ -72,13 +72,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public LoomDirectories getDirectories() {
-		return loomDirectories;
+	public LoomFiles getFiles() {
+		return loomFiles;
 	}
 
 	@Override
 	public synchronized File getNextMixinMappings() {
-		File mixinMapping = new File(getDirectories().getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().minecraftVersion() + "-" + getMappingsProvider().mappingsVersion + "." + mixinMappings.size() + ".tiny");
+		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().minecraftVersion() + "-" + getMappingsProvider().mappingsVersion + "." + mixinMappings.size() + ".tiny");
 		mixinMappings.add(mixinMapping);
 		return mixinMapping;
 	}

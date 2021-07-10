@@ -37,7 +37,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.api.extension.LoomGradleExtensionAPI;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
@@ -60,7 +60,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
-	protected LoomGradleExtensionApiImpl(Project project, LoomDirectories directories) {
+	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
@@ -155,7 +155,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	protected abstract Project getProject();
 
-	protected abstract LoomDirectories getDirectories();
+	protected abstract LoomFiles getFiles();
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
@@ -170,7 +170,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		protected LoomDirectories getDirectories() {
+		protected LoomFiles getFiles() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

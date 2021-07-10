@@ -36,7 +36,7 @@ import org.gradle.api.tasks.OutputFile;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
-import net.fabricmc.loom.extension.LoomDirectories;
+import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.util.Constants;
 
 public class UnpickJarTask extends JavaExec {
@@ -125,7 +125,7 @@ public class UnpickJarTask extends JavaExec {
 		return LoomGradleExtension.get(getProject());
 	}
 
-	private LoomDirectories getDirectories() {
-		return getExtension().getDirectories();
+	private LoomFiles getDirectories() {
+		return getExtension().getFiles();
 	}
 }

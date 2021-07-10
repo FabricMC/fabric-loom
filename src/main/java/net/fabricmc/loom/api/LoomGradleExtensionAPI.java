@@ -24,22 +24,21 @@
 
 package net.fabricmc.loom.api;
 
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
-import net.fabricmc.loom.configuration.processors.JarProcessor;
-
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
+import java.io.File;
+import java.util.List;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 
-import java.io.File;
-import java.util.List;
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 
 /**
- * This is the public api available exposed to build scripts
+ * This is the public api available exposed to build scripts.
  */
 public interface LoomGradleExtensionAPI {
 	File getAccessWidener();

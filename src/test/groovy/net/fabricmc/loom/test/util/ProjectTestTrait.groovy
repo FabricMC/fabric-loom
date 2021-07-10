@@ -59,7 +59,7 @@ trait ProjectTestTrait {
 			}
 
 			tempFile.parentFile.mkdirs()
-			tempFile << file.text
+			tempFile.bytes = file.bytes
 		}
 
 		// Disable the CI checks to ensure nothing is skipped

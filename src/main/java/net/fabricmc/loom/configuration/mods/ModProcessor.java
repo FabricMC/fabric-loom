@@ -175,7 +175,14 @@ public class ModProcessor {
 
 		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
 		for (ModDependencyInfo info : remapList) {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+			OutputConsumerPath outputConsumer;
+
+			try {
+				outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+			} catch (Exception e) {
+				throw new IOException("Could not create output consumer for " + info.getRemappedOutput().getAbsolutePath());
+			}
+
 			outputConsumer.addNonClassFiles(info.getInputFile().toPath());
 			outputConsumerMap.put(info, outputConsumer);
 			String accessWidener = info.getAccessWidener();

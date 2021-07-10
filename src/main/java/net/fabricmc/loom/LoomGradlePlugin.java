@@ -39,6 +39,7 @@ import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
+import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
@@ -71,7 +72,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		// Setup extensions, loom shadows minecraft
-		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().create(LoomGradleExtension.class, "minecraft", LoomGradleExtensionImpl.class, project);
 		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 

@@ -100,7 +100,7 @@ public final class RunConfigSettings implements Named {
 	public RunConfigSettings(Project project, String baseName) {
 		this.baseName = baseName;
 		this.project = project;
-		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		this.extension = LoomGradleExtension.get(project);
 		this.ideConfigGenerated = extension.isRootProject();
 
 		source("main");

@@ -22,20 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.extension.internal;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import java.io.File;
+import java.util.Set;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import org.jetbrains.annotations.ApiStatus;
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
+@ApiStatus.Internal
+public interface MixinInternalGradleExtension {
+	File getNextMixinMappings();
 
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+	Set<File> getAllMixinMappings();
 }

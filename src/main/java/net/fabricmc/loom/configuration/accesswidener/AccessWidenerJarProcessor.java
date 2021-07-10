@@ -71,15 +71,15 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void setup() {
-		LoomGradleExtension loomGradleExtension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension loomGradleExtension = LoomGradleExtension.get(project);
 
-		if (!loomGradleExtension.accessWidener.exists()) {
-			throw new RuntimeException("Could not find access widener file @ " + loomGradleExtension.accessWidener.getAbsolutePath());
+		if (!loomGradleExtension.getAccessWidener().exists()) {
+			throw new RuntimeException("Could not find access widener file @ " + loomGradleExtension.getAccessWidener().getAbsolutePath());
 		}
 
-		inputHash = Checksum.sha256(loomGradleExtension.accessWidener);
+		inputHash = Checksum.sha256(loomGradleExtension.getAccessWidener());
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.accessWidener))) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.getAccessWidener()))) {
 			accessWidenerReader.read(reader);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read project access widener file");

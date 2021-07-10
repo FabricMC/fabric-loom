@@ -22,20 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.api.extension;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+public interface RemapExtension {
+	String getRefmapName();
+	void setRefmapName(String refmapName);
 
-import net.fabricmc.loom.LoomGradleExtension;
-
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
-
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+	boolean isRemapMod();
+	void setRemapMod(boolean remapMod);
 }

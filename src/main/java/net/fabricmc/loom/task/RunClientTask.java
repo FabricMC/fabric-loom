@@ -31,7 +31,7 @@ import net.fabricmc.loom.configuration.ide.RunConfig;
 public class RunClientTask extends AbstractRunTask {
 	public RunClientTask() {
 		super(project -> {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension extension = LoomGradleExtension.get(project);
 			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("client"));
 		});
 	}

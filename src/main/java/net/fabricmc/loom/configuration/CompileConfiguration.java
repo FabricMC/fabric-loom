@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.extension.internal.ConfigurationInternalGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -49,7 +50,8 @@ public final class CompileConfiguration {
 
 	public static void setupConfigurations(Project project) {
 		final ConfigurationContainer configurations = project.getConfigurations();
-		LoomProjectData data = project.getExtensions().getByType(LoomGradleExtension.class).getProjectData();
+
+		ConfigurationInternalGradleExtension data = LoomGradleExtension.get(project);
 
 		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
 		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED).configure(configuration -> configuration.setTransitive(false));
@@ -111,7 +113,7 @@ public final class CompileConfiguration {
 		});
 
 		p.afterEvaluate(project -> {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -129,7 +131,7 @@ public final class CompileConfiguration {
 			SetupIntelijRunConfigs.setup(project);
 
 			// Enables the default mod remapper
-			if (extension.remapMod) {
+			if (extension.isRemapMod()) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
 				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");

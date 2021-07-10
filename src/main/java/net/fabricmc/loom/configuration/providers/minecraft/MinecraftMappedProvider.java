@@ -150,8 +150,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
-		minecraftIntermediaryJar = new File(getExtension().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
-		minecraftMappedJar = new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
+		minecraftIntermediaryJar = new File(getDirectories().getUserCache(), "minecraft-" + getJarVersionString("intermediary") + ".jar");
+		minecraftMappedJar = new File(getJarDirectory(getDirectories().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("mapped") + ".jar");
 	}
 
 	protected File getJarDirectory(File parentDirectory, String type) {
@@ -171,7 +171,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public File getUnpickedJar() {
-		return new File(getJarDirectory(getExtension().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("unpicked") + ".jar");
+		return new File(getJarDirectory(getDirectories().getUserCache(), "mapped"), "minecraft-" + getJarVersionString("unpicked") + ".jar");
 	}
 
 	@Override

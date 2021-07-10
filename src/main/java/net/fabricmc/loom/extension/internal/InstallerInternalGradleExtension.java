@@ -22,20 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.extension.internal;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import com.google.gson.JsonObject;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.LoomGradleExtension;
-
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
-
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+@ApiStatus.Internal
+public interface InstallerInternalGradleExtension {
+	void setInstallerJson(JsonObject object);
+	JsonObject getInstallerJson();
 }

@@ -22,20 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.api.extension;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import java.util.List;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
-
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+public interface DecompilerExtension {
+	List<LoomDecompiler> getDecompilers();
+	void addDecompiler(LoomDecompiler decompiler);
 }

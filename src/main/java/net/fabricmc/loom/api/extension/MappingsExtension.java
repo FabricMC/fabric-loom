@@ -22,20 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.api.extension;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import org.gradle.api.Action;
+import org.gradle.api.artifacts.Dependency;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
+public interface MappingsExtension {
+	default Dependency officialMojangMappings() {
+		return layered(LayeredMappingSpecBuilder::officialMojangMappings);
 	}
 
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 }

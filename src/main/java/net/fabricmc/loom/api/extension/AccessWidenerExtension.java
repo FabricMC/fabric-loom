@@ -22,20 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.api.extension;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import java.io.File;
 
-import net.fabricmc.loom.LoomGradleExtension;
+public interface AccessWidenerExtension {
+	File getAccessWidener();
+	void setAccessWidener(Object file);
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
-
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
+	@Deprecated // Use the setter above
+	default void accessWidener(Object file) {
+		setAccessWidener(file);
 	}
 }

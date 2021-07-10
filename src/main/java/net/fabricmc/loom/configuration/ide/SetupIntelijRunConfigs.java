@@ -37,7 +37,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAsset
 
 public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		File projectDir = project.getRootProject().file(".idea");
 
@@ -54,7 +54,7 @@ public class SetupIntelijRunConfigs {
 
 	private static void generate(Project project) throws IOException {
 		Project rootProject = project.getRootProject();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.ideSync()) {
 			//Ensures the assets are downloaded when idea is syncing a project

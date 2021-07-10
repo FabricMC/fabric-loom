@@ -22,20 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.extension.internal;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import java.util.function.Supplier;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import org.cadixdev.lorenz.MappingSet;
+import org.cadixdev.mercury.Mercury;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.jetbrains.annotations.ApiStatus;
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
+@ApiStatus.Internal
+public interface MappingCacheInternalGradleExtension {
+	MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory);
 
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+	Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory);
+
+	ConfigurableFileCollection getUnmappedModCollection();
 }

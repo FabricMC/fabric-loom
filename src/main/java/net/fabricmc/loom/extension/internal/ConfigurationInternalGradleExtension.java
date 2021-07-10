@@ -22,20 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.extension.internal;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import org.gradle.api.NamedDomainObjectProvider;
+import org.gradle.api.artifacts.Configuration;
 
-import net.fabricmc.loom.LoomGradleExtension;
+public interface ConfigurationInternalGradleExtension {
+	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name);
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
-	}
-
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
-	}
+	NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name);
 }

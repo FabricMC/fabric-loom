@@ -71,7 +71,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 			// target location for the refmap and then move it to the correct place for each sourceset
 			task.doLast(t -> {
 				try {
-					LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+					LoomGradleExtension extension = LoomGradleExtension.get(project);
 					Path src = Paths.get(getRefmapDestination(task, extension));
 					Path dest = Paths.get(task.getDestinationDir().toString(), extension.getRefmapName());
 

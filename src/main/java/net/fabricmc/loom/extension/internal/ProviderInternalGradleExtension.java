@@ -22,20 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.extension.internal;
 
-import org.gradle.api.DefaultTask;
-import org.gradle.api.tasks.Internal;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 
-public abstract class AbstractLoomTask extends DefaultTask {
-	public AbstractLoomTask() {
-		setGroup("fabric");
+@ApiStatus.Internal
+public interface ProviderInternalGradleExtension {
+	void setDependencyManager(LoomDependencyManager dependencyManager);
+	LoomDependencyManager getDependencyManager();
+
+	void setJarProcessorManager(JarProcessorManager jarProcessorManager);
+	JarProcessorManager getJarProcessorManager();
+
+	default MinecraftProviderImpl getMinecraftProvider() {
+		return getDependencyManager().getProvider(MinecraftProviderImpl.class);
 	}
 
-	@Internal
-	protected LoomGradleExtension getExtension() {
-		return LoomGradleExtension.get(getProject());
+	default MappingsProviderImpl getMappingsProvider() {
+		return getDependencyManager().getProvider(MappingsProviderImpl.class);
+	}
+
+	default MinecraftMappedProvider getMinecraftMappedProvider() {
+		return getMappingsProvider().mappedProvider;
 	}
 }

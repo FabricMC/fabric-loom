@@ -34,6 +34,7 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.BasePluginConvention;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.extension.LoomGradleExtensionAPI;
@@ -59,10 +60,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
-	protected LoomGradleExtensionApiImpl() {
-		this.runConfigs = getProject().container(RunConfigSettings.class,
-				baseName -> new RunConfigSettings(getProject(), baseName));
-		this.log4jConfigs = getProject().files(getDirectories().getDefaultLog4jConfigFile());
+	protected LoomGradleExtensionApiImpl(Project project, LoomDirectories directories) {
+		this.runConfigs = project.container(RunConfigSettings.class,
+				baseName -> new RunConfigSettings(project, baseName));
+		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 	}
 
 	@Override
@@ -94,7 +95,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public List<JarProcessor> getJarProcessors() {
-		return getJarProcessors();
+		return jarProcessors;
 	}
 
 	@Override
@@ -113,6 +114,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public String getRefmapName() {
+		if (refmapName == null || refmapName.isEmpty()) {
+			String defaultRefmapName = getProject().getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+			getProject().getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
+			refmapName = defaultRefmapName;
+		}
+
 		return refmapName;
 	}
 
@@ -153,6 +160,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
 		private EnsureCompile() {
+			super(null, null);
 			throw new RuntimeException();
 		}
 

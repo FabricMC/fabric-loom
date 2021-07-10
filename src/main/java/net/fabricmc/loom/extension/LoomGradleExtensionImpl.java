@@ -59,9 +59,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private JarProcessorManager jarProcessorManager;
 	private JsonObject installerJson;
 
-	public LoomGradleExtensionImpl(Project project) {
+	public LoomGradleExtensionImpl(Project project, LoomDirectories directories) {
+		super(project, directories);
 		this.project = project;
-		this.loomDirectories = new LoomDirectoriesImpl(project);
+		this.loomDirectories = directories;
 		this.unmappedMods = project.files();
 	}
 

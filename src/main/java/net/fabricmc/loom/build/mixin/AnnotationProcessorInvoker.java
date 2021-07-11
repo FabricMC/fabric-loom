@@ -66,7 +66,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
-		return mixin.getApConfigurations(project, getApConfigNameFunc).collect(Collectors.toList());
+		return mixin.getApConfigurationsStream(getApConfigNameFunc).collect(Collectors.toList());
 	}
 
 	protected abstract void passArgument(T compileTask, String key, String value);

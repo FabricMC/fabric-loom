@@ -184,8 +184,8 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	@NotNull
-	public Stream<SourceSet> getSourceSets(Project project0) {
-		return project0.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
+	public Stream<SourceSet> getMixinSourceSetsStream() {
+		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
 				.filter(sourceSet -> {
 					MixinInformationContainer container = getMixinInformationContainer(sourceSet);
 
@@ -202,17 +202,17 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	@NotNull
-	public Stream<Configuration> getApConfigurations(Project project0, Function<String, String> getApConfigNameFunc) {
-		return getSourceSets(project0)
-				.map(sourceSet -> project0.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet.getName())));
+	public Stream<Configuration> getApConfigurationsStream(Function<String, String> getApConfigNameFunc) {
+		return getMixinSourceSetsStream()
+				.map(sourceSet -> project.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet.getName())));
 	}
 
 	@NotNull
-	public Stream<Map.Entry<SourceSet, Task>> getInvokerTasks(Project project0, String compileTaskLanguage) {
-		return getSourceSets(project0)
+	public Stream<Map.Entry<SourceSet, Task>> getInvokerTasksStream(String compileTaskLanguage) {
+		return getMixinSourceSetsStream()
 				.flatMap(sourceSet -> {
 					try {
-						Task task = project0.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
+						Task task = project.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
 						return Stream.of(new AbstractMap.SimpleEntry<>(sourceSet, task));
 					} catch (UnknownTaskException ignored) {
 						return Stream.empty();
@@ -230,7 +230,7 @@ public class MixinAnnotationProcessorExtension {
 
 	@NotNull
 	@Input
-	public Collection<SourceSet> getAllMixinSourceSets() {
-		return getSourceSets(project).collect(Collectors.toList());
+	public Collection<SourceSet> getMixinSourceSets() {
+		return getMixinSourceSetsStream().collect(Collectors.toList());
 	}
 }

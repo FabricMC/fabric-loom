@@ -25,7 +25,6 @@
 package net.fabricmc.loom.build;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -47,7 +46,7 @@ public final class MixinRefmapHelper {
 		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
 		File output = outputPath.toFile();
 
-		return mixin.getAllMixinSourceSets().stream().map(sourceSet -> {
+		return mixin.getMixinSourceSetsStream().map(sourceSet -> {
 			MixinAnnotationProcessorExtension.MixinInformationContainer container = Objects.requireNonNull(
 					MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)
 			);
@@ -56,7 +55,7 @@ public final class MixinRefmapHelper {
 
 			return ZipUtil.transformEntries(output, mixinJsonNames.map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
 				@Override
-				protected String transform(ZipEntry zipEntry, String input) throws IOException {
+				protected String transform(ZipEntry zipEntry, String input) {
 					JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
 
 					if (!json.has("refmap")) {

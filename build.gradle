@@ -8,7 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	id "org.cadixdev.licenser" version "0.5.0"
+	id "com.diffplug.spotless" version "5.14.1"
 }
 
 sourceCompatibility = 16
@@ -147,17 +147,20 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 	from javadoc.destinationDir
 }
 
-license {
-	header rootProject.file("HEADER")
-	include "**/*.java"
-	include "**/*.groovy"
-	exclude '**/loom/util/DownloadUtil.java'
-	exclude '**/projects'
+spotless {
+	java {
+		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+		targetExclude("**/loom/util/DownloadUtil.java")
+	}
+
+	groovy {
+		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+	}
 }
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '8.42'
+	toolVersion = '8.44'
 }
 
 codenarc {

@@ -143,7 +143,7 @@ public final class CompileConfiguration {
 			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
-			MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+			MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
 			mixin.init();
 
 			new JavaApInvoker(project).configureMixin();

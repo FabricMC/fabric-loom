@@ -36,6 +36,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 
@@ -43,7 +44,7 @@ public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
 
 	public static boolean addRefmapName(Project project, Path outputPath) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
 		File output = outputPath.toFile();
 
 		return mixin.getMixinSourceSetsStream().map(sourceSet -> {

@@ -76,6 +76,7 @@ public class LoomGradleExtension {
 	private final List<JarProcessor> jarProcessors = new ArrayList<>();
 
 	// Not to be set in the build.gradle
+	public final MixinAnnotationProcessorExtension mixinExtension;
 	private final Project project;
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
@@ -129,6 +130,7 @@ public class LoomGradleExtension {
 
 	public LoomGradleExtension(Project project) {
 		this.project = project;
+		this.mixinExtension = new MixinAnnotationProcessorExtension(project);
 		this.unmappedMods = project.files();
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
@@ -395,6 +397,6 @@ public class LoomGradleExtension {
 	}
 
 	public void mixin(Action<MixinAnnotationProcessorExtension> action) {
-		action.execute(project.getExtensions().getByType(MixinAnnotationProcessorExtension.class));
+		action.execute(mixinExtension);
 	}
 }

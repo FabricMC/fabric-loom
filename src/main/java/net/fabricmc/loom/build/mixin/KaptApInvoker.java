@@ -39,6 +39,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 
 public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
@@ -65,7 +66,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(MixinAnnotationProcessorExtension.class);
+		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.JAVA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
 	}

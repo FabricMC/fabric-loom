@@ -128,14 +128,11 @@ public final class CompileConfiguration {
 
 			SetupIntelijRunConfigs.setup(project);
 
-			Jar jarTask = (Jar) project.getTasks().getByName("jar");
-			JarManifestConfiguration jarManifestConfiguration = new JarManifestConfiguration(project, jarTask);
-			jarManifestConfiguration.configure();
-
 			// Enables the default mod remapper
 			if (extension.remapMod) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
+				Jar jarTask = (Jar) project.getTasks().getByName("jar");
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 

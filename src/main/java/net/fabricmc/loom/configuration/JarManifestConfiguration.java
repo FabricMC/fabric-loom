@@ -25,47 +25,38 @@
 package net.fabricmc.loom.configuration;
 
 import java.util.Optional;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
-import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.java.archives.Attributes;
-import org.gradle.jvm.tasks.Jar;
 import org.gradle.util.GradleVersion;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
-public final record JarManifestConfiguration(Project project, Jar jar) {
-	public void configure() {
-		// Done in doFirst to ensure that everyone else has had time to modify the manifest
-		// and to ensure that the compile classpath has already been resolved.
-		jar.doFirst(configureManifestAction());
-	}
+public final record JarManifestConfiguration(Project project) {
+	public void configure(Manifest manifest) {
+		// Dont set when running the reproducible build tests as it will break them when anything updates
+		if (Boolean.getBoolean("loom.test.reproducible")) {
+			return;
+		}
 
-	private Action<Task> configureManifestAction() {
-		//noinspection Convert2Lambda
-		return new Action<Task>() {
-			@Override
-			public void execute(Task task) {
-				jar.manifest(manifest -> {
-					Attributes attributes = manifest.getAttributes();
+		Attributes attributes = manifest.getMainAttributes();
+		var tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());
 
-					attributes.put("Loom-Version", LoomGradlePlugin.LOOM_VERSION);
-					attributes.put("Gradle-Version", GradleVersion.current().getVersion());
-					attributes.put("Mixin-Compile-Extensions-Version", Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
-					attributes.put("Tiny-Remapper-Version", "TODO"); // TODO this needs to be the version used by gradle/loom
-					getLoaderVersion().ifPresent(s -> attributes.put("Fabric-Loader-Version", s));
+		attributes.putValue("Fabric-Gradle-Version", GradleVersion.current().getVersion());
+		attributes.putValue("Fabric-Loom-Version", LoomGradlePlugin.LOOM_VERSION);
+		attributes.putValue("Fabric-Mixin-Compile-Extensions-Version", Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
+		tinyRemapperVersion.ifPresent(s -> attributes.putValue("Fabric-Tiny-Remapper-Version", s));
+		getLoaderVersion().ifPresent(s -> attributes.putValue("Fabric-Loader-Version", s));
 
-					// This can be overridden by mods if required
-					if (!attributes.containsKey("Mixin-Version")) {
-						addMixinVersion(attributes);
-					}
-				});
-			}
-		};
+		// This can be overridden by mods if required
+		if (!attributes.containsKey("Fabric-Mixin-Version")) {
+			addMixinVersion(attributes);
+		}
 	}
 
 	private void addMixinVersion(Attributes attributes) {
@@ -82,7 +73,7 @@ public final record JarManifestConfiguration(Project project, Jar jar) {
 			return;
 		}
 
-		attributes.put("Mixin-Version", version.get());
+		attributes.putValue("Fabric-Mixin-Version", version.get());
 	}
 
 	private Optional<String> getLoaderVersion() {

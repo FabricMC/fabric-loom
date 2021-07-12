@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2019-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.zip.ZipFile;
 
+import com.google.common.io.Files;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
@@ -40,9 +43,11 @@ import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
 import org.gradle.api.artifacts.result.ArtifactResult;
 import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.Logger;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -51,12 +56,21 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModCompileRemapper {
+	// This is a placeholder that is used when the actual group is missing (null or empty).
+	// This can happen when the dependency is a FileCollectionDependency or from a flatDir repository.
+	private static final String MISSING_GROUP = "unspecified";
+
+	private static String replaceIfNullOrEmpty(@Nullable String s, Supplier<String> fallback) {
+		return s == null || s.isEmpty() ? fallback.get() : s;
+	}
+
 	public static void remapDependencies(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		Logger logger = project.getLogger();
 		DependencyHandler dependencies = project.getDependencies();
@@ -75,28 +89,17 @@ public class ModCompileRemapper {
 				List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
 				for (ResolvedArtifact artifact : sourceConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-					// TODO: This collection doesn't appear to include FileCollection dependencies
-					// Might have to go based on the dependencies, rather than their resolved form?
-					// File dependencies use SelfResolvingDependency, which appears to be handled differently
-					String group = artifact.getModuleVersion().getId().getGroup();
+					String group = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getGroup(), () -> MISSING_GROUP);
 					String name = artifact.getModuleVersion().getId().getName();
-					String version = artifact.getModuleVersion().getId().getVersion();
+					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
 
-					if (!isFabricMod(logger, artifact)) {
+					if (!isFabricMod(logger, artifact.getFile(), artifact.getId())) {
 						addToRegularCompile(project, regularConfig, artifact);
 						continue;
 					}
 
 					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
-
-					if (refreshDeps) {
-						info.forceRemap();
-					}
-
 					modDependencies.add(info);
-
-					String remappedLog = group + ":" + name + ":" + version + (artifact.getClassifier() == null ? "" : ":" + artifact.getClassifier()) + " (" + mappingsSuffix + ")";
-					project.getLogger().info(":providing " + remappedLog);
 
 					File remappedSources = info.getRemappedOutput("sources");
 
@@ -107,6 +110,36 @@ public class ModCompileRemapper {
 							scheduleSourcesRemapping(project, sourceRemapper, sources, info.getRemappedNotation(), remappedSources);
 						}
 					}
+				}
+
+				// FileCollectionDependency (files/fileTree) doesn't resolve properly,
+				// so we have to "resolve" it on our own. The naming is "abc.jar" => "unspecified:abc:unspecified".
+				for (FileCollectionDependency dependency : sourceConfig.getAllDependencies().withType(FileCollectionDependency.class)) {
+					String group = replaceIfNullOrEmpty(dependency.getGroup(), () -> MISSING_GROUP);
+					FileCollection files = dependency.getFiles();
+
+					// Create a mod dependency for each file in the file collection
+					for (File artifact : files) {
+						if (!isFabricMod(logger, artifact, artifact.getName())) {
+							dependencies.add(regularConfig.getName(), project.files(artifact));
+							continue;
+						}
+
+						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
+						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.truncatedSha256(artifact));
+
+						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
+						modDependencies.add(info);
+					}
+				}
+
+				for (ModDependencyInfo info : modDependencies) {
+					if (refreshDeps) {
+						info.forceRemap();
+					}
+
+					String remappedLog = info.getRemappedNotation() + " (" + mappingsSuffix + ")";
+					project.getLogger().info(":providing " + remappedLog);
 				}
 
 				try {
@@ -128,12 +161,10 @@ public class ModCompileRemapper {
 	/**
 	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
 	 */
-	private static boolean isFabricMod(Logger logger, ResolvedArtifact artifact) {
-		File input = artifact.getFile();
-
-		try (ZipFile zipFile = new ZipFile(input)) {
+	private static boolean isFabricMod(Logger logger, File artifact, Object id) {
+		try (ZipFile zipFile = new ZipFile(artifact)) {
 			if (zipFile.getEntry("fabric.mod.json") != null) {
-				logger.info("Found Fabric mod in modCompile: {}", artifact.getId());
+				logger.info("Found Fabric mod in modCompile: {}", id);
 				return true;
 			}
 

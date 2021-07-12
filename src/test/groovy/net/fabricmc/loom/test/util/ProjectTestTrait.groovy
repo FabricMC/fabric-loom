@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ trait ProjectTestTrait {
 			}
 
 			tempFile.parentFile.mkdirs()
-			tempFile << file.text
+			tempFile.bytes = file.bytes
 		}
 
 		// Disable the CI checks to ensure nothing is skipped

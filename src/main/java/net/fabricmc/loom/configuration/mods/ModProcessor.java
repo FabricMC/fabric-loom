@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2018-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -175,7 +175,14 @@ public class ModProcessor {
 
 		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
 		for (ModDependencyInfo info : remapList) {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+			OutputConsumerPath outputConsumer;
+
+			try {
+				outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+			} catch (Exception e) {
+				throw new IOException("Could not create output consumer for " + info.getRemappedOutput().getAbsolutePath());
+			}
+
 			outputConsumer.addNonClassFiles(info.getInputFile().toPath());
 			outputConsumerMap.put(info, outputConsumer);
 			String accessWidener = info.getAccessWidener();

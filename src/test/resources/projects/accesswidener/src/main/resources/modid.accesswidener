@@ -5,3 +5,5 @@ extendable  method  net/minecraft/world/GameRules$Type <init>  (Ljava/util/funct
 
 accessible  class   net/minecraft/world/GameRules$Acceptor
 accessible  class   net/minecraft/client/gui/screen/world/EditGameRulesScreen$RuleWidgetFactory
+
+accessible  field  net/minecraft/screen/slot/Slot  x  I

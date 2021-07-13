@@ -5,7 +5,7 @@ plugins {
 repositories {
 	maven {
 		name = "ldtteam"
-		url = "https://ldtteam.jfrog.io/artifactory/parchmentmc-snapshots/"
+		url = "https://maven.parchmentmc.net/"
 	}
 }
 

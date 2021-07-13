@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -140,28 +140,30 @@ public class LoomDependencyManager {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
 		String mappingsKey = mappingsProvider.getMappingsKey();
 
-		if (extension.getInstallerJson() == null) {
+		if (extension.getInstallerData() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
 			final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 
-			for (File input : configuration.resolve()) {
-				JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
+			for (Dependency dependency : configuration.getAllDependencies()) {
+				for (File input : configuration.files(dependency)) {
+					JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
 
-				if (jsonObject != null) {
-					if (extension.getInstallerJson() != null) {
-						project.getLogger().info("Found another installer JSON in, ignoring it! " + input);
-						continue;
+					if (jsonObject != null) {
+						if (extension.getInstallerData() != null) {
+							project.getLogger().info("Found another installer JSON in, ignoring it! " + input);
+							continue;
+						}
+
+						project.getLogger().info("Found installer JSON in " + input);
+						extension.setInstallerData(new InstallerData(dependency.getVersion(), jsonObject));
+						handleInstallerJson(jsonObject, project);
 					}
-
-					project.getLogger().info("Found installer JSON in " + input);
-					extension.setInstallerJson(jsonObject);
-					handleInstallerJson(extension.getInstallerJson(), project);
 				}
 			}
 		}
 
-		if (extension.getInstallerJson() == null) {
+		if (extension.getInstallerData() == null) {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
 

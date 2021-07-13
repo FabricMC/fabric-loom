@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,6 +114,14 @@ public final class LoomTasks {
 
 		project.afterEvaluate(p -> {
 			MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+
+			if (mappingsProvider.mappedProvider == null) {
+				// If this is ever null something has gone badly wrong,
+				// for some reason for another this afterEvaluate still gets called when something has gone badly
+				// wrong, returning here seems to produce nicer errors.
+				return;
+			}
+
 			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
 
 			if (mappingsProvider.hasUnpickDefinitions()) {

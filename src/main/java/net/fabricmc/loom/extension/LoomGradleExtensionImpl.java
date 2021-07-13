@@ -33,7 +33,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.NamedDomainObjectProvider;
@@ -42,6 +41,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 
@@ -57,7 +57,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
-	private JsonObject installerJson;
+	private InstallerData installerData;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
@@ -123,14 +123,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		return unmappedMods;
 	}
 
-	@Override
-	public void setInstallerJson(JsonObject object) {
-		this.installerJson = object;
+	public void setInstallerData(InstallerData object) {
+		this.installerData = object;
 	}
 
 	@Override
-	public JsonObject getInstallerJson() {
-		return installerJson;
+	public InstallerData getInstallerData() {
+		return installerData;
 	}
 
 	@Override

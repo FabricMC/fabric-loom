@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -207,7 +207,7 @@ public class RunConfig {
 	}
 
 	private static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
-		JsonObject installerJson = extension.getInstallerJson();
+		JsonObject installerJson = extension.getInstallerData().installerJson();
 
 		if (installerJson != null && installerJson.has("mainClass")) {
 			JsonElement mainClassJson = installerJson.get("mainClass");

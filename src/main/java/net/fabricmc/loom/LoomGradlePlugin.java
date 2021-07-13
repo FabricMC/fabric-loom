@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016, 2017, 2018 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,8 @@
  */
 
 package net.fabricmc.loom;
+
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +49,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
 	@Override
 	public void apply(PluginAware target) {
@@ -58,7 +61,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 	}
 
 	public void apply(Project project) {
-		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 

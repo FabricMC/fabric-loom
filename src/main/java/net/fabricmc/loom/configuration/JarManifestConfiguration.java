@@ -29,7 +29,6 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.util.GradleVersion;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -44,12 +43,15 @@ public final record JarManifestConfiguration(Project project) {
 			return;
 		}
 
+		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+
 		Attributes attributes = manifest.getMainAttributes();
 		var tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());
 
 		attributes.putValue("Fabric-Gradle-Version", GradleVersion.current().getVersion());
 		attributes.putValue("Fabric-Loom-Version", LoomGradlePlugin.LOOM_VERSION);
 		attributes.putValue("Fabric-Mixin-Compile-Extensions-Version", Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
+		attributes.putValue("Fabric-Mixin-Minecraft-Version", extension.getMinecraftProvider().minecraftVersion());
 		tinyRemapperVersion.ifPresent(s -> attributes.putValue("Fabric-Tiny-Remapper-Version", s));
 		getLoaderVersion().ifPresent(s -> attributes.putValue("Fabric-Loader-Version", s));
 
@@ -61,19 +63,19 @@ public final record JarManifestConfiguration(Project project) {
 
 	private void addMixinVersion(Attributes attributes) {
 		// Not super ideal that this uses the mod compile classpath, should prob look into making this not a thing at somepoint
-		var version = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
+		var dependency = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
 				.getDependencies()
 				.stream()
-				.filter(dependency -> "sponge-mixin".equals(dependency.getName()))
-				.map(Dependency::getVersion)
+				.filter(dep -> "sponge-mixin".equals(dep.getName()))
 				.findFirst();
 
-		if (version.isEmpty()) {
+		if (dependency.isEmpty()) {
 			project.getLogger().warn("Could not determine Mixin version for jar manifest");
 			return;
 		}
 
-		attributes.putValue("Fabric-Mixin-Version", version.get());
+		attributes.putValue("Fabric-Mixin-Version", dependency.get().getVersion());
+		attributes.putValue("Fabric-Mixin-Group", dependency.get().getGroup());
 	}
 
 	private Optional<String> getLoaderVersion() {

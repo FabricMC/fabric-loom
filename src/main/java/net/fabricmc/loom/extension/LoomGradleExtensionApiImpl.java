@@ -83,6 +83,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public boolean isShareCaches() {
+		return shareCaches;
+	}
+
+	@Override
 	public List<LoomDecompiler> getDecompilers() {
 		return decompilers;
 	}

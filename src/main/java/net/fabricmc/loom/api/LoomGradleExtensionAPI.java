@@ -47,6 +47,8 @@ public interface LoomGradleExtensionAPI {
 
 	void setShareCaches(boolean shareCaches);
 
+	boolean isShareCaches();
+
 	default void shareCaches() {
 		setShareCaches(true);
 	}

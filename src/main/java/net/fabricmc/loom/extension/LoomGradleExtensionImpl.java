@@ -138,11 +138,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public boolean isShareCaches() {
-		return shareCaches;
-	}
-
-	@Override
 	public NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name) {
 		NamedDomainObjectProvider<Configuration> provider = project.getConfigurations().register(name);
 

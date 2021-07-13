@@ -157,8 +157,8 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
 			if (!ZipUtil.containsEntry(file, "fabric.mod.json")) {
-				LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-				File tempDir = new File(extension.getUserCache(), "temp/modprocessing");
+				LoomGradleExtension extension = LoomGradleExtension.get(project);
+				File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 
 				if (!tempDir.exists()) {
 					tempDir.mkdirs();

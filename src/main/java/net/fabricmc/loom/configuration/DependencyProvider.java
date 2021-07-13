@@ -49,6 +49,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.extension.LoomFiles;
 
 public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
@@ -57,7 +58,7 @@ public abstract class DependencyProvider {
 
 	public DependencyProvider(Project project) {
 		this.project = project;
-		this.extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		this.extension = LoomGradleExtension.get(project);
 	}
 
 	public abstract void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception;
@@ -86,6 +87,10 @@ public abstract class DependencyProvider {
 
 	public LoomGradleExtension getExtension() {
 		return extension;
+	}
+
+	public LoomFiles getDirectories() {
+		return getExtension().getFiles();
 	}
 
 	public boolean isRefreshDeps() {

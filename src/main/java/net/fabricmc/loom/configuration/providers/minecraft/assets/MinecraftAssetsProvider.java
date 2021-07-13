@@ -49,14 +49,14 @@ import net.fabricmc.loom.util.gradle.ProgressLogger;
 
 public class MinecraftAssetsProvider {
 	public static void provide(MinecraftProviderImpl minecraftProvider, Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 
 		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		MinecraftVersionMeta.AssetIndex assetIndex = versionInfo.assetIndex();
 
 		// get existing cache files
-		File assets = new File(extension.getUserCache(), "assets");
+		File assets = new File(extension.getFiles().getUserCache(), "assets");
 
 		if (!assets.exists()) {
 			assets.mkdirs();

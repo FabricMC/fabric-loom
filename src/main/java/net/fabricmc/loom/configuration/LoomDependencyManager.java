@@ -89,7 +89,7 @@ public class LoomDependencyManager {
 		MappingsProviderImpl mappingsProvider = null;
 
 		project.getLogger().info(":setting up loom dependencies");
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		Map<String, ProviderList> providerListMap = new HashMap<>();
 		List<ProviderList> targetProviders = new ArrayList<>();
 
@@ -177,7 +177,7 @@ public class LoomDependencyManager {
 	}
 
 	private static void handleInstallerJson(JsonObject jsonObject, Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
 		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);

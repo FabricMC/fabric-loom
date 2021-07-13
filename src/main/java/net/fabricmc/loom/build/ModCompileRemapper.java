@@ -51,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.LoomProjectData;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
@@ -76,13 +75,11 @@ public class ModCompileRemapper {
 		DependencyHandler dependencies = project.getDependencies();
 		boolean refreshDeps = LoomGradlePlugin.refreshDeps;
 
-		final File modStore = extension.getRemappedModCache();
+		final File modStore = extension.getFiles().getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
 
-		final LoomProjectData data = extension.getProjectData();
-
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			data.getLazyConfigurationProvider(entry.getRemappedConfiguration()).configure(remappedConfig -> {
+			extension.getLazyConfigurationProvider(entry.getRemappedConfiguration()).configure(remappedConfig -> {
 				Configuration sourceConfig = project.getConfigurations().getByName(entry.sourceConfiguration());
 				Configuration regularConfig = project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations()));
 

@@ -43,7 +43,7 @@ public final record JarManifestConfiguration(Project project) {
 			return;
 		}
 
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		Attributes attributes = manifest.getMainAttributes();
 		var tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());
@@ -79,7 +79,7 @@ public final record JarManifestConfiguration(Project project) {
 	}
 
 	private Optional<String> getLoaderVersion() {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.getInstallerData() == null) {
 			project.getLogger().warn("Could not determine fabric loader version for jar manifest");

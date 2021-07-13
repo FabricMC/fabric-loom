@@ -127,7 +127,7 @@ public class ModProcessor {
 	}
 
 	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		String fromM = "intermediary";
 		String toM = "named";
 
@@ -210,28 +210,15 @@ public class ModProcessor {
 
 	public static JsonObject readInstallerJson(File file, Project project) {
 		try {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
-			String launchMethod = extension.getLoaderLaunchMethod();
+			LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			String jsonStr;
 
 			try (JarFile jarFile = new JarFile(file)) {
-				ZipEntry entry = null;
-
-				if (!launchMethod.isEmpty()) {
-					entry = jarFile.getEntry("fabric-installer." + launchMethod + ".json");
-
-					if (entry == null) {
-						project.getLogger().warn("Could not find loader launch method '" + launchMethod + "', falling back");
-					}
-				}
+				ZipEntry entry = jarFile.getEntry("fabric-installer.json");
 
 				if (entry == null) {
-					entry = jarFile.getEntry("fabric-installer.json");
-
-					if (entry == null) {
-						return null;
-					}
+					return null;
 				}
 
 				try (InputStream inputstream = jarFile.getInputStream(entry)) {

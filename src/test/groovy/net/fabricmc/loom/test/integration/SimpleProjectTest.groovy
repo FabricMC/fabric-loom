@@ -43,7 +43,7 @@ class SimpleProjectTest extends Specification implements ProjectTestTrait, Archi
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").trim().replace('\r', "") == expected(gradle)
+			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
 		where:
 			gradle              | _
 			DEFAULT_GRADLE      | _
@@ -61,9 +61,5 @@ class SimpleProjectTest extends Specification implements ProjectTestTrait, Archi
 			'idea' 		| _
 			'eclipse'	| _
 			'vscode'	| _
-	}
-
-	String expected(String gradle) {
-		new File("src/test/resources/projects/simple/manifest.txt").text.replace("%GRADLE%", gradle).trim().replace('\r', "")
 	}
 }

@@ -35,7 +35,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.google.gson.JsonObject;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Action;
@@ -47,6 +46,7 @@ import org.gradle.api.plugins.BasePluginConvention;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.LoomProjectData;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -79,7 +79,7 @@ public class LoomGradleExtension {
 	private final Project project;
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
-	private JsonObject installerJson;
+	private InstallerData installerData;
 	private MappingSet[] srcMappingCache = new MappingSet[2];
 	private Mercury[] srcMercuryCache = new Mercury[2];
 	private Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
@@ -159,12 +159,12 @@ public class LoomGradleExtension {
 		return unmappedMods;
 	}
 
-	public void setInstallerJson(JsonObject object) {
-		this.installerJson = object;
+	public void setInstallerData(InstallerData data) {
+		this.installerData = data;
 	}
 
-	public JsonObject getInstallerJson() {
-		return installerJson;
+	public InstallerData getInstallerData() {
+		return installerData;
 	}
 
 	public void accessWidener(Object file) {

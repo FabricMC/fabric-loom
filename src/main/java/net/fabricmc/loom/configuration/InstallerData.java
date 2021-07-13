@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,44 +22,9 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.configuration;
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.test.util.ProjectTestTrait
-import spock.lang.Specification
-import spock.lang.Unroll
+import com.google.gson.JsonObject;
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-
-class SimpleProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"simple"
-	}
-
-	@Unroll
-	def "build (gradle #gradle)"() {
-		when:
-			def result = create("build", gradle)
-		then:
-			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
-		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
-	}
-
-	@Unroll
-	def "#ide config generation"() {
-		when:
-			def result = create(ide)
-		then:
-			result.task(":${ide}").outcome == SUCCESS
-		where:
-			ide 		| _
-			'idea' 		| _
-			'eclipse'	| _
-			'vscode'	| _
-	}
+public record InstallerData(String version, JsonObject installerJson) {
 }

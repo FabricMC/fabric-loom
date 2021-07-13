@@ -27,6 +27,8 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,6 +36,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
@@ -48,15 +52,18 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.ApiStatus;
 import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
-import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.MergedNestedJarProvider;
 import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
+import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.NestedJarProvider;
+import net.fabricmc.loom.configuration.JarManifestConfiguration;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
@@ -67,6 +74,8 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 public class RemapJarTask extends Jar {
+	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+
 	private final RegularFileProperty input;
 	private final Property<Boolean> addNestedDependencies;
 	private final Property<Boolean> addDefaultNestedDependencies;
@@ -173,6 +182,23 @@ public class RemapJarTask extends Jar {
 						boolean replaced = ZipUtil.replaceEntry(data.output.toFile(), accessWidener.getLeft(), accessWidener.getRight());
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
+
+					// Add data to the manifest
+					boolean transformed = ZipUtil.transformEntries(data.output.toFile(), new ZipEntryTransformerEntry[]{
+							new ZipEntryTransformerEntry(MANIFEST_PATH, new StreamZipEntryTransformer() {
+								@Override
+								protected void transform(ZipEntry zipEntry, InputStream in, OutputStream out) throws IOException {
+									var manifest = new Manifest(in);
+									var manifestConfiguration = new JarManifestConfiguration(project);
+
+									manifestConfiguration.configure(manifest);
+									manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", toM);
+
+									manifest.write(out);
+								}
+							})
+					});
+					Preconditions.checkArgument(transformed, "Failed to transform jar manifest");
 
 					if (isReproducibleFileOrder() || !isPreserveFileTimestamps()) {
 						try {

@@ -30,7 +30,9 @@ import com.google.common.io.Files
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+import spock.util.environment.RestoreSystemProperties
 
+import static java.lang.System.setProperty
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
@@ -39,9 +41,11 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 		"reproducible"
 	}
 
+	@RestoreSystemProperties
 	@Unroll
 	def "build (gradle #gradle)"() {
 		when:
+			setProperty('loom.test.reproducible', 'true')
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
@@ -49,8 +53,8 @@ class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
 			getOutputHash("fabric-example-mod-1.0.0-sources.jar") in sourceHash // Done for different line endings.
 		where:
 			gradle              | modHash                               | sourceHash
-			DEFAULT_GRADLE      | "0f954aa060fd8fc005e834c7cd271303"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
-			PRE_RELEASE_GRADLE  | "0f954aa060fd8fc005e834c7cd271303"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
+			DEFAULT_GRADLE      | "ed3306ef60f434c55048cba8de5dab95"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
+			PRE_RELEASE_GRADLE  | "ed3306ef60f434c55048cba8de5dab95"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
 	}
 
 	String getOutputHash(String name) {

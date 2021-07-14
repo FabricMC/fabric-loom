@@ -44,7 +44,7 @@ public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
 
 	public static boolean addRefmapName(Project project, Path outputPath) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
+		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		File output = outputPath.toFile();
 
 		return mixin.getMixinSourceSetsStream().map(sourceSet -> {

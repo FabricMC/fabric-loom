@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -158,9 +159,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		return remapMod;
 	}
 
+	@Override
+	public void mixin(Action<MixinAnnotationProcessorExtension> action) {
+		action.execute(getMixinApExtension());
+	}
+
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	protected abstract MixinAnnotationProcessorExtension getMixinApExtension();
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
@@ -176,6 +184,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected LoomFiles getFiles() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected MixinAnnotationProcessorExtension getMixinApExtension() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

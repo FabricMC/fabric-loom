@@ -166,7 +166,7 @@ public class MixinAnnotationProcessorExtension {
 	 * @param sourceSet the sourceSet that applies Mixin AP
 	 */
 	public void add(SourceSet sourceSet, Action<PatternSet> action) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		add(sourceSet, extension.getRefmapName(), action);
 	}
 
@@ -175,7 +175,7 @@ public class MixinAnnotationProcessorExtension {
 	}
 
 	public void add(String sourceSetName, Action<PatternSet> action) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		add(sourceSetName, extension.getRefmapName(), action);
 	}
 

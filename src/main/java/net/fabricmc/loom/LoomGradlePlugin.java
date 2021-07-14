@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -39,12 +41,15 @@ import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
+import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
+import net.fabricmc.loom.extension.LoomFilesImpl;
 import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
 	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
 	@Override
 	public void apply(PluginAware target) {
@@ -56,7 +61,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 	}
 
 	public void apply(Project project) {
-		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
+		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
@@ -71,7 +76,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
 		// Setup extensions, loom shadows minecraft
-		project.getExtensions().create("minecraft", LoomGradleExtension.class, project);
+		project.getExtensions().create(LoomGradleExtension.class, "minecraft", LoomGradleExtensionImpl.class, project, new LoomFilesImpl(project));
 		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 

@@ -66,7 +66,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
+		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.JAVA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
 	}

@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.test.integration
 
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class SimpleProjectTest extends Specification implements ProjectTestTrait {
+class SimpleProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {
 		"simple"
@@ -42,6 +43,7 @@ class SimpleProjectTest extends Specification implements ProjectTestTrait {
 			def result = create("build", gradle)
 		then:
 			result.task(":build").outcome == SUCCESS
+			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
 		where:
 			gradle              | _
 			DEFAULT_GRADLE      | _

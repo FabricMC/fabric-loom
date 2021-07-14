@@ -86,7 +86,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	public MappingsProviderImpl(Project project) {
 		super(project);
-		mappingsDir = getExtension().getUserCache().toPath().resolve("mappings");
+		mappingsDir = getDirectories().getUserCache().toPath().resolve("mappings");
 		mappingsStepsDir = mappingsDir.resolve("steps");
 	}
 
@@ -148,7 +148,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		tinyMappings = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".tiny").toFile();
 		unpickDefinitionsFile = mappingsDir.resolve(StringUtils.removeSuffix(mappingsJar.getName(), ".jar") + ".unpick").toFile();
-		tinyMappingsJar = new File(getExtension().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
+		tinyMappingsJar = new File(getDirectories().getUserCache(), mappingsJar.getName().replace(".jar", "-" + jarClassifier + ".jar"));
 
 		if (!tinyMappings.exists() || isRefreshDeps()) {
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
@@ -177,7 +177,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		LoomGradleExtension extension = getExtension();
 
-		if (extension.accessWidener != null) {
+		if (extension.getAccessWidener() != null) {
 			extension.addJarProcessor(new AccessWidenerJarProcessor(getProject()));
 		}
 
@@ -386,7 +386,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 				// Download and extract intermediary
 				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftVersion);
-				String intermediaryArtifactUrl = getExtension().getIntermediaryUrl().apply(encodedMinecraftVersion);
+				String intermediaryArtifactUrl = getExtension().getIntermediaryUrl(encodedMinecraftVersion);
 				Path intermediaryJar = mappingsDir.resolve("v2-intermediary-" + minecraftVersion + ".jar");
 				DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar.toFile(), getProject().getLogger());
 

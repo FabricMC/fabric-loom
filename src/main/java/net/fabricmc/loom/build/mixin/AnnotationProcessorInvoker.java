@@ -65,7 +65,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
-		MixinAnnotationProcessorExtension mixin = project.getExtensions().getByType(LoomGradleExtension.class).mixinExtension;
+		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		return mixin.getApConfigurationsStream(getApConfigNameFunc).collect(Collectors.toList());
 	}
 
@@ -79,7 +79,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
-			LoomGradleExtension loom = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension loom = LoomGradleExtension.get(project);
 			String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
 			Map<String, String> args = new HashMap<>() {{
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.getCanonicalPath());
@@ -97,7 +97,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	public void configureMixin() {
 		ConfigurationContainer configs = project.getConfigurations();
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (!extension.ideSync()) {
 			for (Configuration processorConfig : apConfigurations) {

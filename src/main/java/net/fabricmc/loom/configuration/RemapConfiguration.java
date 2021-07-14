@@ -63,7 +63,7 @@ public class RemapConfiguration {
 
 	// isDefaultRemap is set to true for the standard remap task, some defaults are left out when this is false.
 	private static void setupRemap(Project project, boolean isDefaultRemap, String jarTaskName, String sourcesJarTaskName, String remapJarTaskName, String remapSourcesJarTaskName, String remapAllJarsTaskName, String remapAllSourcesTaskName) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName(jarTaskName);
 		RemapJarTask remapJarTask = (RemapJarTask) project.getTasks().findByName(remapJarTaskName);
 

@@ -29,9 +29,9 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.LoomGradleExtension;
@@ -50,30 +50,31 @@ public final class CompileConfiguration {
 
 	public static void setupConfigurations(Project project) {
 		final ConfigurationContainer configurations = project.getConfigurations();
-		LoomProjectData data = project.getExtensions().getByType(LoomGradleExtension.class).getProjectData();
 
-		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
-		data.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED).configure(configuration -> configuration.setTransitive(false));
-		data.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED).configure(configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
-		data.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
-		data.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
-		data.createLazyConfiguration(Constants.Configurations.MINECRAFT).configure(configuration -> configuration.setTransitive(false));
-		data.createLazyConfiguration(Constants.Configurations.INCLUDE).configure(configuration -> configuration.setTransitive(false)); // Dont get transitive deps
-		data.createLazyConfiguration(Constants.Configurations.MAPPING_CONSTANTS);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
+		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED).configure(configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED).configure(configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT).configure(configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.INCLUDE).configure(configuration -> configuration.setTransitive(false)); // Dont get transitive deps
+		extension.createLazyConfiguration(Constants.Configurations.MAPPING_CONSTANTS);
 
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
 
-		data.createLazyConfiguration(Constants.Configurations.MAPPINGS);
-		data.createLazyConfiguration(Constants.Configurations.MAPPINGS_FINAL);
-		data.createLazyConfiguration(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		data.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
+		extension.createLazyConfiguration(Constants.Configurations.MAPPINGS);
+		extension.createLazyConfiguration(Constants.Configurations.MAPPINGS_FINAL);
+		extension.createLazyConfiguration(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		extension.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			data.createLazyConfiguration(entry.sourceConfiguration())
+			extension.createLazyConfiguration(entry.sourceConfiguration())
 					.configure(configuration -> configuration.setTransitive(true));
 
 			// Don't get transitive deps of already remapped mods
-			data.createLazyConfiguration(entry.getRemappedConfiguration())
+			extension.createLazyConfiguration(entry.getRemappedConfiguration())
 					.configure(configuration -> configuration.setTransitive(false));
 
 			extendsFrom(entry.getTargetConfiguration(configurations), entry.getRemappedConfiguration(), project);
@@ -112,7 +113,7 @@ public final class CompileConfiguration {
 		});
 
 		p.afterEvaluate(project -> {
-			LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+			LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
@@ -130,10 +131,10 @@ public final class CompileConfiguration {
 			SetupIntelijRunConfigs.setup(project);
 
 			// Enables the default mod remapper
-			if (extension.remapMod) {
+			if (extension.isRemapMod()) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
-				AbstractArchiveTask jarTask = (AbstractArchiveTask) project.getTasks().getByName("jar");
+				Jar jarTask = (Jar) project.getTasks().getByName("jar");
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 

@@ -111,11 +111,11 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private void initFiles() {
-		minecraftJson = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-info.json");
-		minecraftClientJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
-		minecraftServerJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
-		minecraftMergedJar = new File(getExtension().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
-		versionManifestJson = new File(getExtension().getUserCache(), "version_manifest.json");
+		minecraftJson = new File(getDirectories().getUserCache(), "minecraft-" + minecraftVersion + "-info.json");
+		minecraftClientJar = new File(getDirectories().getUserCache(), "minecraft-" + minecraftVersion + "-client.jar");
+		minecraftServerJar = new File(getDirectories().getUserCache(), "minecraft-" + minecraftVersion + "-server.jar");
+		minecraftMergedJar = new File(getDirectories().getUserCache(), "minecraft-" + minecraftVersion + "-merged.jar");
+		versionManifestJson = new File(getDirectories().getUserCache(), "version_manifest.json");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -143,10 +143,10 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
 
-		if (getExtension().customManifest != null) {
+		if (getExtension().getCustomManifest() != null) {
 			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
 			customVersion.id = minecraftVersion;
-			customVersion.url = getExtension().customManifest;
+			customVersion.url = getExtension().getCustomManifest();
 			optionalVersion = Optional.of(customVersion);
 			getProject().getLogger().lifecycle("Using custom minecraft manifest");
 		}
@@ -183,7 +183,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private boolean hasRecentValidManifest() throws IOException {
-		if (getExtension().customManifest != null) {
+		if (getExtension().getCustomManifest() != null) {
 			return false;
 		}
 

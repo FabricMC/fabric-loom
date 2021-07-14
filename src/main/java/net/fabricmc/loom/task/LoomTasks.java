@@ -87,7 +87,7 @@ public final class LoomTasks {
 	}
 
 	private static void registerRunTasks(TaskContainer tasks, Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
 
@@ -110,10 +110,18 @@ public final class LoomTasks {
 	}
 
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		project.afterEvaluate(p -> {
 			MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+
+			if (mappingsProvider.mappedProvider == null) {
+				// If this is ever null something has gone badly wrong,
+				// for some reason for another this afterEvaluate still gets called when something has gone badly
+				// wrong, returning here seems to produce nicer errors.
+				return;
+			}
+
 			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
 
 			if (mappingsProvider.hasUnpickDefinitions()) {

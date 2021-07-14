@@ -109,14 +109,6 @@ public class Constants {
 		}
 	}
 
-	public static final class LaunchWrapper {
-		public static final String DEFAULT_FABRIC_CLIENT_TWEAKER = "net.fabricmc.loader.launch.FabricClientTweaker";
-		public static final String DEFAULT_FABRIC_SERVER_TWEAKER = "net.fabricmc.loader.launch.FabricServerTweaker";
-
-		private LaunchWrapper() {
-		}
-	}
-
 	public static final class Knot {
 		public static final String KNOT_CLIENT = "net.fabricmc.loader.launch.knot.KnotClient";
 		public static final String KNOT_SERVER = "net.fabricmc.loader.launch.knot.KnotServer";

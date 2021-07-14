@@ -89,7 +89,7 @@ public class LoomDependencyManager {
 		MappingsProviderImpl mappingsProvider = null;
 
 		project.getLogger().info(":setting up loom dependencies");
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		Map<String, ProviderList> providerListMap = new HashMap<>();
 		List<ProviderList> targetProviders = new ArrayList<>();
 
@@ -140,28 +140,30 @@ public class LoomDependencyManager {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
 		String mappingsKey = mappingsProvider.getMappingsKey();
 
-		if (extension.getInstallerJson() == null) {
+		if (extension.getInstallerData() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
 			final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 
-			for (File input : configuration.resolve()) {
-				JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
+			for (Dependency dependency : configuration.getAllDependencies()) {
+				for (File input : configuration.files(dependency)) {
+					JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
 
-				if (jsonObject != null) {
-					if (extension.getInstallerJson() != null) {
-						project.getLogger().info("Found another installer JSON in, ignoring it! " + input);
-						continue;
+					if (jsonObject != null) {
+						if (extension.getInstallerData() != null) {
+							project.getLogger().info("Found another installer JSON in, ignoring it! " + input);
+							continue;
+						}
+
+						project.getLogger().info("Found installer JSON in " + input);
+						extension.setInstallerData(new InstallerData(dependency.getVersion(), jsonObject));
+						handleInstallerJson(jsonObject, project);
 					}
-
-					project.getLogger().info("Found installer JSON in " + input);
-					extension.setInstallerJson(jsonObject);
-					handleInstallerJson(extension.getInstallerJson(), project);
 				}
 			}
 		}
 
-		if (extension.getInstallerJson() == null) {
+		if (extension.getInstallerData() == null) {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
 
@@ -175,7 +177,7 @@ public class LoomDependencyManager {
 	}
 
 	private static void handleInstallerJson(JsonObject jsonObject, Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		JsonObject libraries = jsonObject.get("libraries").getAsJsonObject();
 		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);

@@ -43,5 +43,5 @@ interface LayeredMappingsTestConstants {
     public static final MinecraftVersionMeta VERSION_META_1_16_5 = new MinecraftVersionMeta(null, null, null, 0, DOWNLOADS_1_16_5, null, null, null, null, 0, null, null, null)
 
     public static final String PARCHMENT_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"
-    public static final String PARCHMENT_URL = "https://ldtteam.jfrog.io/artifactory/parchmentmc-snapshots/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
+    public static final String PARCHMENT_URL = "https://maven.parchmentmc.net/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
 }

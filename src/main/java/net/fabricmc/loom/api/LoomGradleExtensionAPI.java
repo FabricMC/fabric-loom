@@ -80,4 +80,8 @@ public interface LoomGradleExtensionAPI {
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
+
+	void setCustomManifest(String customManifest);
+
+	String getCustomManifest();
 }

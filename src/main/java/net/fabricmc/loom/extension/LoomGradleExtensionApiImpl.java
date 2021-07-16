@@ -57,6 +57,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected boolean shareCaches = false;
 	protected String refmapName = null;
 	protected boolean remapMod = true;
+	protected String customManifest;
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
@@ -156,6 +157,17 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public boolean isRemapMod() {
 		return remapMod;
+	}
+
+	@Override
+	public void setCustomManifest(String customManifest) {
+		Objects.requireNonNull(customManifest, "Custom manifest cannot be null");
+		this.customManifest = customManifest;
+	}
+
+	@Override
+	public String getCustomManifest() {
+		return customManifest;
 	}
 
 	protected abstract Project getProject();

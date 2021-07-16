@@ -98,11 +98,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
 	}
 
-	default String getCustomManifest() {
-		// TODO reimplement
-		return null;
-	}
-
 	default String getIntermediaryUrl(String minecraftVersion) {
 		// TODO reimplement a way to change this, was never really supported api anyway
 		return String.format("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar", minecraftVersion);

@@ -26,9 +26,11 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
 
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
@@ -110,7 +112,13 @@ public class DownloadUtil {
 		}
 
 		try { // Try download to the output
-			FileUtils.copyInputStreamToFile(connection.getInputStream(), to);
+			InputStream inputStream = connection.getInputStream();
+
+			if ("gzip".equals(connection.getContentEncoding())) {
+				inputStream = new GZIPInputStream(inputStream);
+			}
+
+			FileUtils.copyInputStreamToFile(inputStream, to);
 		} catch (IOException e) {
 			delete(to); // Probably isn't good if it fails to copy/save
 			throw e;

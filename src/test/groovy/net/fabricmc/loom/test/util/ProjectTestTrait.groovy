@@ -79,9 +79,17 @@ trait ProjectTestTrait {
 		gradleHome.deleteDir()
 	}
 
+	File buildGradle() {
+		return new File(testProjectDir, "build.gradle")
+	}
+
+	def filesReady() {
+	}
+
 	BuildResult create(String task, String gradleVersion = DEFAULT_GRADLE) {
 		System.setProperty("fabric.loom.test", "true")
 		copyInputFiles()
+		filesReady()
 
 		GradleRunner.create()
 			.withProjectDir(testProjectDir)

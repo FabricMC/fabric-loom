@@ -107,6 +107,14 @@ public class FabricApiExtension {
 
 		File mavenPom = new File(extension.getFiles().getUserCache(), "fabric-api/" + fabricApiVersion + ".pom");
 
+		if (project.getGradle().getStartParameter().isOffline()) {
+			if (!mavenPom.exists()) {
+				throw new RuntimeException("Cannot retrieve fabric-api pom due to being offline");
+			}
+
+			return mavenPom;
+		}
+
 		try {
 			URL url = new URL(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/%1$s/fabric-api-%1$s.pom", fabricApiVersion));
 			DownloadUtil.downloadIfChanged(url, mavenPom, project.getLogger());

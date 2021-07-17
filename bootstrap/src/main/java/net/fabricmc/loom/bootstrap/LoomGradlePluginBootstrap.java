@@ -15,8 +15,10 @@ import org.gradle.util.GradleVersion;
 public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final int MIN_SUPPORTED_MAJOR_GRADLE_VERSION = 7;
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 16;
+	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2021;
 
 	private static final String PLUGIN_CLASS_NAME = "net.fabricmc.loom.LoomGradlePlugin";
+	private static final String IDEA_VERSION_PROP_KEY = "idea.version";
 
 	@Override
 	public void apply(PluginAware project) {
@@ -41,6 +43,10 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 			}
 		}
 
+		if (!isValidIdeaRuntime()) {
+			errors.add(String.format("You are using an outdated version of intellij idea (%s). Intellij idea %d or higher is required.", System.getProperty(IDEA_VERSION_PROP_KEY), MIN_SUPPORTED_MAJOR_IDEA_VERSION));
+		}
+
 		if (!errors.isEmpty()) {
 			throw new UnsupportedOperationException(String.join("\n", errors));
 		}
@@ -55,6 +61,17 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 
 	private static boolean isValidGradleRuntime() {
 		return getMajorGradleVersion() >= MIN_SUPPORTED_MAJOR_GRADLE_VERSION;
+	}
+
+	private static boolean isValidIdeaRuntime() {
+		String version = System.getProperty(IDEA_VERSION_PROP_KEY);
+
+		if (version == null) {
+			return true;
+		}
+
+		int ideaYear = Integer.parseInt(version.substring(0, version.indexOf(".")));
+		return ideaYear >= MIN_SUPPORTED_MAJOR_IDEA_VERSION;
 	}
 
 	private static int getMajorGradleVersion() {

@@ -83,4 +83,8 @@ public interface LoomGradleExtensionAPI {
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
 	void mixin(Action<MixinAnnotationProcessorExtension> action);
+	
+	void setCustomManifest(String customManifest);
+
+	String getCustomManifest();
 }

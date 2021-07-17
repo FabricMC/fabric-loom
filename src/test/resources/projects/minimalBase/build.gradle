@@ -1,0 +1,10 @@
+// This is used by a range of tests that append to this file before running the gradle tasks.
+// Can be used for tests that require minimal custom setup
+plugins {
+	id 'fabric-loom'
+	id 'maven-publish'
+}
+
+archivesBaseName = "fabric-example-mod"
+version = "1.0.0"
+group = "com.example"

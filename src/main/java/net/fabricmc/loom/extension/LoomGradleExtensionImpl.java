@@ -41,14 +41,13 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.MixinAnnotationProcessorExtension;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
-	private final MixinAnnotationProcessorExtension mixinApExtension;
+	private final MixinApExtension mixinApExtension;
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
@@ -64,7 +63,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
 		this.project = project;
-		this.mixinApExtension = new MixinAnnotationProcessorExtension(project);
+		this.mixinApExtension = new MixinApExtensionImpl(project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 	}
@@ -165,7 +164,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public MixinAnnotationProcessorExtension getMixinApExtension() {
+	public MixinApExtension getMixinApExtension() {
 		return this.mixinApExtension;
 	}
 }

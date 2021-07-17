@@ -38,18 +38,18 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.MixinAnnotationProcessorExtension;
+import net.fabricmc.loom.extension.MixinApExtension;
 
 public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
 
 	public static boolean addRefmapName(Project project, Path outputPath) {
-		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		File output = outputPath.toFile();
 
 		return mixin.getMixinSourceSetsStream().map(sourceSet -> {
-			MixinAnnotationProcessorExtension.MixinInformationContainer container = Objects.requireNonNull(
-					MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)
+			MixinApExtension.MixinInformationContainer container = Objects.requireNonNull(
+					MixinApExtension.getMixinInformationContainer(sourceSet)
 			);
 			Stream<String> mixinJsonNames = container.getMixinJsonNames();
 			String refmapName = container.getRefmapName();

@@ -40,7 +40,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.MixinAnnotationProcessorExtension;
+import net.fabricmc.loom.extension.MixinApExtension;
 
 public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	private final KaptExtension kaptExtension = project.getExtensions().getByType(KaptExtension.class);
@@ -66,7 +66,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
-		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.JAVA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
 	}
@@ -82,7 +82,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 			SourceSet sourceSet = entry.getKey();
 			task.doLast(t -> {
 				try {
-					String refmapName = Objects.requireNonNull(MixinAnnotationProcessorExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
+					String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
 					Path src = Paths.get(getRefmapDestination(task, refmapName));
 					Path dest = Paths.get(task.getDestinationDir().toString(), refmapName);
 

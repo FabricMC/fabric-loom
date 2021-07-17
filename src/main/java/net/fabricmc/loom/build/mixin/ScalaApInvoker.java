@@ -35,7 +35,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.scala.ScalaCompile;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.MixinAnnotationProcessorExtension;
+import net.fabricmc.loom.extension.MixinApExtension;
 
 public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	public ScalaApInvoker(Project project) {
@@ -47,7 +47,7 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	}
 
 	private static Map<SourceSet, ScalaCompile> getInvokerTasks(Project project) {
-		MixinAnnotationProcessorExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.SCALA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
 	}

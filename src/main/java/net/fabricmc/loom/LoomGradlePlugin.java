@@ -39,6 +39,7 @@ import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements Plugin<Project> {
+	public static Project project;
 	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -47,6 +48,7 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
+		LoomGradlePlugin.project = project;
 
 		if (refreshDeps) {
 			MappingsCache.INSTANCE.invalidate();

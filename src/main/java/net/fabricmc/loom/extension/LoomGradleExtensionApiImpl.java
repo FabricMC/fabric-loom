@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.api.MixinApExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -160,7 +161,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void mixin(Action<MixinApExtension> action) {
+	public void mixin(Action<MixinApExtensionAPI> action) {
 		action.execute(getMixinApExtension());
 	}
 

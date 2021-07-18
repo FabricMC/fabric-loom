@@ -33,7 +33,6 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.extension.MixinApExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -84,7 +83,7 @@ public interface LoomGradleExtensionAPI {
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
 	@ApiStatus.Experimental
-	void mixin(Action<MixinApExtension> action);
+	void mixin(Action<MixinApExtensionAPI> action);
 
 	void setCustomManifest(String customManifest);
 

@@ -90,13 +90,13 @@ tasks.register("mixinJar1", Jar.class) {
 	it.from(sourceSets["mixin1"].output)
 }
 
-		assemble {
+assemble {
 	dependsOn tasks["mixinJar0"]
 	dependsOn tasks["mixinJar1"]
 }
 
 // configure the maven publication
-		publishing {
+publishing {
 	publications {
 		mavenJava(MavenPublication) {
 			// add all the jars that should be included when publishing to maven

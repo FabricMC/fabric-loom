@@ -52,7 +52,7 @@ public interface MixinApExtension extends MixinApExtensionAPI {
 
 	/**
 	 * An information container stores necessary information
-	 * for configure mixin annotation processor. It stores
+	 * for configuring the mixin annotation processor. It's stored
 	 * in [SourceSet].ext.mixin.
 	 */
 	final class MixinInformationContainer {

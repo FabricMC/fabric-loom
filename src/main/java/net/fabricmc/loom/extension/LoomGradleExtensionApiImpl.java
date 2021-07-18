@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
+import net.fabricmc.loom.api.MixinApExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -160,6 +161,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public void mixin(Action<MixinApExtensionAPI> action) {
+		action.execute(getMixinApExtension());
+	}
+
+	@Override
 	public void setCustomManifest(String customManifest) {
 		Objects.requireNonNull(customManifest, "Custom manifest cannot be null");
 		this.customManifest = customManifest;
@@ -173,6 +179,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	protected abstract MixinApExtension getMixinApExtension();
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
@@ -188,6 +196,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected LoomFiles getFiles() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected MixinApExtension getMixinApExtension() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

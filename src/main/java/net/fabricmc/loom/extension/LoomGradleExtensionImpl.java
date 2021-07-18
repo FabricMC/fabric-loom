@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
+	private final MixinApExtension mixinApExtension;
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
@@ -62,6 +63,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
 		this.project = project;
+		this.mixinApExtension = new MixinApExtensionImpl(project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 	}
@@ -159,5 +161,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		}
 
 		return provider;
+	}
+
+	@Override
+	public MixinApExtension getMixinApExtension() {
+		return this.mixinApExtension;
 	}
 }

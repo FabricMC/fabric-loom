@@ -29,16 +29,17 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskCollection;
 
+import net.fabricmc.loom.extension.MixinApExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -48,37 +49,46 @@ import net.fabricmc.loom.util.Constants;
  * See Java and Kapt implementations for a more deep understanding of the things passed by the children.
  */
 public abstract class AnnotationProcessorInvoker<T extends Task> {
+	public static final String JAVA = "java";
+	public static final String SCALA = "scala";
+
 	protected final Project project;
-	private final Collection<Configuration> annotationProcessorConfigurations;
-	protected final TaskCollection<T> invokerTasks;
+	protected final Map<SourceSet, T> invokerTasks;
+	private final Collection<Configuration> apConfigurations;
 
 	protected AnnotationProcessorInvoker(Project project,
-										Collection<Configuration> annotationProcessorConfigurations,
-										TaskCollection<T> invokerTasks) {
+										Collection<Configuration> apConfigurations,
+										Map<SourceSet, T> invokerTasks) {
 		this.project = project;
-		this.annotationProcessorConfigurations = annotationProcessorConfigurations;
+		this.apConfigurations = apConfigurations;
 		this.invokerTasks = invokerTasks;
+	}
+
+	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		return mixin.getApConfigurationsStream(getApConfigNameFunc).collect(Collectors.toList());
 	}
 
 	protected abstract void passArgument(T compileTask, String key, String value);
 
-	protected abstract File getDestinationDir(T task);
+	protected abstract File getRefmapDestinationDir(T task);
 
-	protected final String getRefmapDestination(T task, LoomGradleExtension extension) throws IOException {
-		return new File(getDestinationDir(task), extension.getRefmapName()).getCanonicalPath();
+	protected final String getRefmapDestination(T task, String refmapName) throws IOException {
+		return new File(getRefmapDestinationDir(task), refmapName).getCanonicalPath();
 	}
 
-	private void passMixinArguments(T task) {
+	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
+			LoomGradleExtension loom = LoomGradleExtension.get(project);
+			String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
 			Map<String, String> args = new HashMap<>() {{
-					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, extension.getMappingsProvider().tinyMappings.getCanonicalPath());
-					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, extension.getNextMixinMappings().getCanonicalPath());
-					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, extension));
+					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.getCanonicalPath());
+					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, loom.getNextMixinMappings().getCanonicalPath());
+					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:intermediary");
 				}};
 
-			project.getLogger().debug("Outputting refmap to dir: " + getDestinationDir(task) + " for compile task: " + task);
+			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);
 			args.forEach((k, v) -> passArgument(task, k, v));
 		} catch (IOException e) {
 			project.getLogger().error("Could not configure mixin annotation processors", e);
@@ -90,7 +100,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (!extension.ideSync()) {
-			for (Configuration processorConfig : annotationProcessorConfigurations) {
+			for (Configuration processorConfig : apConfigurations) {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath
 				processorConfig.extendsFrom(
@@ -105,14 +115,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 			}
 		}
 
-		for (T task : invokerTasks) {
-			passMixinArguments(task);
+		for (Map.Entry<SourceSet, T> entry : invokerTasks.entrySet()) {
+			passMixinArguments(entry.getValue(), entry.getKey());
 		}
-	}
-
-	static Stream<SourceSet> getNonTestSourceSets(Project project) {
-		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
-						.stream()
-						.filter(sourceSet -> !sourceSet.getName().equals("test"));
 	}
 }

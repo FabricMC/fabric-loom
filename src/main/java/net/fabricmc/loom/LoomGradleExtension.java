@@ -44,6 +44,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
+import net.fabricmc.loom.extension.MixinApExtension;
 
 public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
@@ -102,4 +103,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		// TODO reimplement a way to change this, was never really supported api anyway
 		return String.format("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar", minecraftVersion);
 	}
+
+	MixinApExtension getMixinApExtension();
 }

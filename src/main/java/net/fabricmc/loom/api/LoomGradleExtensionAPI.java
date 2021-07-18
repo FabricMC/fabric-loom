@@ -31,6 +31,7 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -80,6 +81,9 @@ public interface LoomGradleExtensionAPI {
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
+
+	@ApiStatus.Experimental
+	void mixin(Action<MixinApExtensionAPI> action);
 
 	void setCustomManifest(String customManifest);
 

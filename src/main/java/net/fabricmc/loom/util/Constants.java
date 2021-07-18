@@ -30,17 +30,13 @@ import com.google.common.collect.ImmutableList;
 import org.gradle.api.plugins.JavaPlugin;
 import org.objectweb.asm.Opcodes;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.gradle.GradleSupport;
 
 public class Constants {
-	public static final String LIBRARIES_BASE = LoomGradlePlugin.project.hasProperty("loom_libraries_base") ?
-			"https://libraries.minecraft.net/" : String.valueOf(LoomGradlePlugin.project.property("loom_libraries_base"));
-	public static final String RESOURCES_BASE = LoomGradlePlugin.project.hasProperty("loom_resources_base") ?
-			"http://resources.download.minecraft.net/" : String.valueOf(LoomGradlePlugin.project.property("loom_resources_base"));
-	public static final String VERSION_MANIFESTS = LoomGradlePlugin.project.hasProperty("minecraft_version_manifests")?
-			"https://launchermeta.mojang.com/mc/game/version_manifest_v2.json" : String.valueOf(LoomGradlePlugin.project.property("minecraft_version_manifests"));
+	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
+	public static final String RESOURCES_BASE = "http://resources.download.minecraft.net/";
+	public static final String VERSION_MANIFESTS = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 
 	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
 

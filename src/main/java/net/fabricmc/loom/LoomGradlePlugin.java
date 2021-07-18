@@ -30,6 +30,7 @@ import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.configuration.MirrorConfiguration;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
 import net.fabricmc.loom.configuration.MavenPublication;
@@ -39,7 +40,6 @@ import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements Plugin<Project> {
-	public static Project project;
 	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -48,7 +48,6 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		project.getLogger().lifecycle("Fabric Loom: " + LoomGradlePlugin.class.getPackage().getImplementationVersion());
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
-		LoomGradlePlugin.project = project;
 
 		if (refreshDeps) {
 			MappingsCache.INSTANCE.invalidate();
@@ -65,6 +64,7 @@ public class LoomGradlePlugin implements Plugin<Project> {
 		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
+		MirrorConfiguration.setup(project);
 		CompileConfiguration.setupConfigurations(project);
 		IdeConfiguration.setup(project);
 		CompileConfiguration.configureCompile(project);

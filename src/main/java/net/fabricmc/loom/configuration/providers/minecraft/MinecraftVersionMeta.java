@@ -32,6 +32,7 @@ import java.util.Objects;
 import com.google.gson.JsonObject;
 
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Mirrors;
 import net.fabricmc.loom.util.OperatingSystem;
 
 @SuppressWarnings("unused")
@@ -211,7 +212,7 @@ public final class MinecraftVersionMeta {
 	public final class Artifact extends Downloadable {
 		@Override
 		public String getUrl() {
-			return Constants.LIBRARIES_BASE + super.getPath();
+			return Mirrors.hasMirror() ? Mirrors.LIBRARIES_BASE_MIRRORS : Constants.LIBRARIES_BASE + super.getPath();
 		}
 	}
 

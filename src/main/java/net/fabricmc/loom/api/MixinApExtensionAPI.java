@@ -27,7 +27,9 @@ package net.fabricmc.loom.api;
 import org.gradle.api.Action;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
+import org.jetbrains.annotations.ApiStatus;
 
+@ApiStatus.Experimental
 public interface MixinApExtensionAPI {
 	/**
 	 * Apply Mixin AP to sourceSet.

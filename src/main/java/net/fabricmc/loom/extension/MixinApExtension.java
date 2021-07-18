@@ -37,6 +37,7 @@ import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,7 @@ import net.fabricmc.loom.api.MixinApExtensionAPI;
 /**
  * A gradle extension to configure mixin annotation processor.
  */
+@ApiStatus.Experimental
 public interface MixinApExtension extends MixinApExtensionAPI {
 	String MIXIN_INFORMATION_CONTAINER = "mixin";
 

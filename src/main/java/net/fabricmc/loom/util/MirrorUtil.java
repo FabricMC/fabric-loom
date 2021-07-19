@@ -24,27 +24,46 @@
 
 package net.fabricmc.loom.util;
 
-public class Mirrors {
-	public static String LIBRARIES_BASE_MIRRORS;
-	public static String RESOURCES_BASE_MIRRORS;
-	public static String VERSION_MANIFESTS;
+public class MirrorUtil {
+	private static String librariesBaseMirrors;
+	private static String resourcesBaseMirrors;
+	private static String versionManifests;
+	private static String experimentalVersions;
 
-	public static void changeMirror(String lib, String res, String manifest) {
-		LIBRARIES_BASE_MIRRORS = lib;
-		RESOURCES_BASE_MIRRORS = res;
-		VERSION_MANIFESTS = manifest;
+	public static void setupMirror(String lib, String res, String manifest, String exp) {
+		librariesBaseMirrors = lib;
+		resourcesBaseMirrors = res;
+		versionManifests = manifest;
+		experimentalVersions = exp;
 	}
 
 	public static String getLibrariesBase() {
-		return LIBRARIES_BASE_MIRRORS == null ? Constants.LIBRARIES_BASE : LIBRARIES_BASE_MIRRORS;
+		return librariesBaseMirrors.equals("null") ? Constants.LIBRARIES_BASE : librariesBaseMirrors;
 	}
 
 	public static String getResourcesBase() {
-		return RESOURCES_BASE_MIRRORS == null ? Constants.RESOURCES_BASE : RESOURCES_BASE_MIRRORS;
+		return resourcesBaseMirrors.equals("null") ? Constants.RESOURCES_BASE : resourcesBaseMirrors;
 	}
 
 	public static String getVersionManifests() {
-		return VERSION_MANIFESTS == null ? Constants.VERSION_MANIFESTS : VERSION_MANIFESTS;
+		return versionManifests.equals("null") ? Constants.VERSION_MANIFESTS : versionManifests;
 	}
 
+	public static String getExperimentalVersions() {
+		return experimentalVersions.equals("null") ? Constants.EXPERIMENTAL_VERSIONS : experimentalVersions;
+	}
+
+	public static String mirroredUrl(String path, MirrorSiteType type) {
+		String url;
+		switch (type) {
+			case LIBRARY -> url = MirrorUtil.getLibrariesBase() + path;
+			case RESOURCE -> url = MirrorUtil.getResourcesBase() + path;
+			default -> url = path;
+		}
+		return url;
+	}
+
+	public enum MirrorSiteType {
+		LIBRARY, RESOURCE
+	}
 }

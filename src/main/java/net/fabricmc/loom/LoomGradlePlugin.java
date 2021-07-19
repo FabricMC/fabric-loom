@@ -81,7 +81,9 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
+		// Set download site
 		MirrorConfiguration.setup(project);
+
 		CompileConfiguration.setupConfigurations(project);
 		IdeConfiguration.setup(project);
 		CompileConfiguration.configureCompile(project);

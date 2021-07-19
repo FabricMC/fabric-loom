@@ -25,27 +25,28 @@
 package net.fabricmc.loom.configuration;
 
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.Mirrors;
+import net.fabricmc.loom.util.MirrorUtil;
 
 import org.gradle.api.Project;
 
 public class MirrorConfiguration {
-	public static void setup(Project project){
-		if (!(project.hasProperty("loom_libraries_base")
-				|| project.hasProperty("loom_resources_base")
-				|| project.hasProperty("loom_version_manifests"))){
+	public static void setup(Project project) {
+		if (!(project.hasProperty(Constants.PROP_LOOM_LIBRARIES_BASE)
+				|| project.hasProperty(Constants.PROP_LOOM_RESOURCES_BASE)
+				|| project.hasProperty(Constants.PROP_LOOM_VERSION_MANIFESTS)
+				|| project.hasProperty(Constants.PROP_EXPERIMENTAL_VERSIONS))) {
 			return;
 		}
 
-		String LIBRARIES_BASE_MIRRORS = project.hasProperty("loom_libraries_base")
-				? String.valueOf(project.property("loom_libraries_base")) : Constants.LIBRARIES_BASE;
-		String RESOURCES_BASE_MIRRORS = project.hasProperty("loom_resources_base")
-				? String.valueOf(project.property("loom_resources_base")) : Constants.RESOURCES_BASE;
-		String VERSION_MANIFESTS = project.hasProperty("loom_version_manifests")
-				? String.valueOf(project.property("loom_version_manifests")) : Constants.VERSION_MANIFESTS;
+		String librariesBaseMirrors = project.hasProperty(Constants.PROP_LOOM_LIBRARIES_BASE)
+				? String.valueOf(project.property(Constants.PROP_LOOM_LIBRARIES_BASE)) : Constants.LIBRARIES_BASE;
+		String resourcesBaseMirrors = project.hasProperty(Constants.PROP_LOOM_RESOURCES_BASE)
+				? String.valueOf(project.property(Constants.PROP_LOOM_RESOURCES_BASE)) : Constants.RESOURCES_BASE;
+		String versionManifests = project.hasProperty(Constants.PROP_LOOM_VERSION_MANIFESTS)
+				? String.valueOf(project.property(Constants.PROP_LOOM_VERSION_MANIFESTS)) : Constants.VERSION_MANIFESTS;
+		String experimentalVersion = project.hasProperty(Constants.PROP_EXPERIMENTAL_VERSIONS)
+				? String.valueOf(project.property(Constants.PROP_EXPERIMENTAL_VERSIONS)) : Constants.EXPERIMENTAL_VERSIONS;
 
-		Mirrors.changeMirror(LIBRARIES_BASE_MIRRORS
-				,RESOURCES_BASE_MIRRORS
-				,VERSION_MANIFESTS);
+		MirrorUtil.setupMirror(librariesBaseMirrors, resourcesBaseMirrors, versionManifests, experimentalVersion);
 	}
 }

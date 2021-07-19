@@ -137,7 +137,7 @@ public class MinecraftProvider extends DependencyProvider {
 			}
 		} else {
 			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL(Mirrors.hasMirror() ? Mirrors.VERSION_MANIFESTS : Constants.VERSION_MANIFESTS), versionManifestJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(Mirrors.getVersionManifests()), versionManifestJson, getProject().getLogger());
 		}
 
 		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();

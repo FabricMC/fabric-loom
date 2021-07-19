@@ -212,7 +212,7 @@ public final class MinecraftVersionMeta {
 	public final class Artifact extends Downloadable {
 		@Override
 		public String getUrl() {
-			return Mirrors.hasMirror() ? Mirrors.LIBRARIES_BASE_MIRRORS : Constants.LIBRARIES_BASE + super.getPath();
+			return Mirrors.getLibrariesBase() + super.getPath();
 		}
 	}
 

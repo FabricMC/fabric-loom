@@ -38,28 +38,29 @@ public class MirrorUtil {
 	}
 
 	public static String getLibrariesBase() {
-		return librariesBaseMirrors.equals("null") ? Constants.LIBRARIES_BASE : librariesBaseMirrors;
+		return librariesBaseMirrors == null ? Constants.LIBRARIES_BASE : librariesBaseMirrors;
 	}
 
 	public static String getResourcesBase() {
-		return resourcesBaseMirrors.equals("null") ? Constants.RESOURCES_BASE : resourcesBaseMirrors;
+		return resourcesBaseMirrors == null ? Constants.RESOURCES_BASE : resourcesBaseMirrors;
 	}
 
 	public static String getVersionManifests() {
-		return versionManifests.equals("null") ? Constants.VERSION_MANIFESTS : versionManifests;
+		return versionManifests == null ? Constants.VERSION_MANIFESTS : versionManifests;
 	}
 
 	public static String getExperimentalVersions() {
-		return experimentalVersions.equals("null") ? Constants.EXPERIMENTAL_VERSIONS : experimentalVersions;
+		return experimentalVersions == null ? Constants.EXPERIMENTAL_VERSIONS : experimentalVersions;
 	}
 
 	public static String mirroredUrl(String path, MirrorSiteType type) {
 		String url;
 		switch (type) {
-			case LIBRARY -> url = MirrorUtil.getLibrariesBase() + path;
-			case RESOURCE -> url = MirrorUtil.getResourcesBase() + path;
-			default -> url = path;
+		case LIBRARY -> url = MirrorUtil.getLibrariesBase() + path;
+		case RESOURCE -> url = MirrorUtil.getResourcesBase() + path;
+		default -> url = path;
 		}
+
 		return url;
 	}
 

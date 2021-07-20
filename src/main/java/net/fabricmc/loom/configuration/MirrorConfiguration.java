@@ -24,10 +24,10 @@
 
 package net.fabricmc.loom.configuration;
 
+import org.gradle.api.Project;
+
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MirrorUtil;
-
-import org.gradle.api.Project;
 
 public class MirrorConfiguration {
 	public static void setup(Project project) {

@@ -197,7 +197,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 				return Optional.empty();
 			}
 		} else {
-			DownloadUtil.downloadIfChanged(new URL(Constants.EXPERIMENTAL_VERSIONS), experimentalVersionsJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getExperimentalVersions()), experimentalVersionsJson, getProject().getLogger());
 		}
 
 		String expVersionManifest = Files.asCharSource(experimentalVersionsJson, StandardCharsets.UTF_8).read();

@@ -36,12 +36,11 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.plugins.BasePluginConvention;
 
-import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinApExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
@@ -114,7 +113,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
-		LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder(getMinecraftProvider());
+		LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder();
 		action.execute(builder);
 		LayeredMappingSpec builtSpec = builder.build();
 		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), "layers_" + builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
@@ -183,8 +182,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	protected abstract MixinApExtension getMixinApExtension();
 
-	protected abstract MinecraftProvider getMinecraftProvider();
-
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
 		private EnsureCompile() {
@@ -204,11 +201,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected MixinApExtension getMixinApExtension() {
-			throw new RuntimeException("Yeah... something is really wrong");
-		}
-
-		@Override
-		protected MinecraftProvider getMinecraftProvider() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

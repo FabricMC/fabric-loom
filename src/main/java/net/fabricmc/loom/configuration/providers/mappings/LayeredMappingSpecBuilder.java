@@ -30,21 +30,15 @@ import java.util.List;
 
 import org.gradle.api.Action;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
 
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
-	private final MinecraftProvider minecraftProvider;
-
-	public LayeredMappingSpecBuilder(MinecraftProvider minecraftProvider) {
-		this.minecraftProvider = minecraftProvider;
-	}
 
 	public LayeredMappingSpecBuilder officialMojangMappings() {
-		layers.add(new MojangMappingsSpec(minecraftProvider.minecraftVersion()));
+		layers.add(new MojangMappingsSpec());
 		return this;
 	}
 

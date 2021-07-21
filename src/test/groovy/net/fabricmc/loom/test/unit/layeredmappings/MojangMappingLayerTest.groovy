@@ -35,7 +35,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
         when:
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec()
+                    new MojangMappingsSpec("1.17")
             )
             def tiny = getTiny(mappings)
         then:

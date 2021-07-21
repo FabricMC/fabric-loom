@@ -44,6 +44,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -108,6 +109,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public JarProcessorManager getJarProcessorManager() {
 		return Objects.requireNonNull(jarProcessorManager, "Cannot get JarProcessorManager before it has been setup");
+	}
+
+	@Override
+	public MinecraftProviderImpl getMinecraftProvider() {
+		return getDependencyManager().getProvider(MinecraftProviderImpl.class);
 	}
 
 	@Override

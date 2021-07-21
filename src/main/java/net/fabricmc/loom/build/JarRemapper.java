@@ -25,6 +25,7 @@
 package net.fabricmc.loom.build;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import java.util.function.BiFunction;
 import org.gradle.api.Action;
 import org.objectweb.asm.commons.Remapper;
 
+import net.fabricmc.loom.util.CloseableList;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
@@ -89,22 +91,26 @@ public class JarRemapper {
 			remapper.readInputsAsync(tag, data.input);
 		}
 
-		List<OutputConsumerPath> outputConsumers = new ArrayList<>();
+		//noinspection MismatchedQueryAndUpdateOfCollection
+		try (CloseableList<OutputConsumerPath> outputConsumers = new CloseableList<>()) {
+			for (RemapData data : remapData) {
+				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(data.output).build();
+				outputConsumers.add(outputConsumer);
 
-		for (RemapData data : remapData) {
-			OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(data.output).build();
-			outputConsumers.add(outputConsumer);
+				outputConsumer.addNonClassFiles(data.input);
 
-			outputConsumer.addNonClassFiles(data.input);
+				data.processAccessWidener(remapper.getRemapper());
+				remapper.apply(outputConsumer, data.tag);
+			}
 
-			data.processAccessWidener(remapper.getRemapper());
-			remapper.apply(outputConsumer, data.tag);
-		}
+			remapper.finish();
+		} catch (Exception e) {
+			for (RemapData data : remapData) {
+				// Cleanup bad outputs
+				Files.deleteIfExists(data.output);
+			}
 
-		remapper.finish();
-
-		for (OutputConsumerPath outputConsumer : outputConsumers) {
-			outputConsumer.close();
+			throw new IOException("Failed to remap %s files".formatted(remapData.size()), e);
 		}
 
 		remapData.forEach(RemapData::complete);

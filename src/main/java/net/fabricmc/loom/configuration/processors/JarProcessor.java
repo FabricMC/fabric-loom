@@ -35,7 +35,8 @@ public interface JarProcessor {
 	void process(File file);
 
 	/**
-	 * Return true to make all jar processors run again, return false to use the existing results of jar processing.
+	 * Return a id/hash of the current state, when changed the jar will be re-processed.
+	 * Just return the classname or something unique if there is no state to your JarProcessor
 	 */
-	boolean isInvalid(File file);
+	String getId();
 }

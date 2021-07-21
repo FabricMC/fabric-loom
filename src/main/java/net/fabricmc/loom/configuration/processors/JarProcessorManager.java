@@ -25,10 +25,17 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.zeroturnaround.zip.ZipUtil;
 
 public class JarProcessorManager {
 	private final List<JarProcessor> jarProcessors;
+	private String id;
 
 	public JarProcessorManager(List<JarProcessor> jarProcessors) {
 		this.jarProcessors = jarProcessors;
@@ -36,6 +43,11 @@ public class JarProcessorManager {
 
 	public void setupProcessors() {
 		jarProcessors.forEach(JarProcessor::setup);
+
+		this.id = jarProcessors.stream()
+				.sorted(Comparator.comparing(jarProcessor -> jarProcessor.getClass().getCanonicalName()))
+				.map(JarProcessor::getId)
+				.collect(Collectors.joining(":"));
 	}
 
 	public boolean active() {
@@ -43,11 +55,20 @@ public class JarProcessorManager {
 	}
 
 	public boolean isInvalid(File file) {
+		Objects.requireNonNull(id);
+
 		if (!file.exists()) {
 			return true;
 		}
 
-		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+		byte[] idBytes = ZipUtil.unpackEntry(file, "LoomJarProcessorId");
+
+		if (idBytes == null) {
+			return true;
+		}
+
+		String jarId = new String(idBytes, StandardCharsets.UTF_8);
+		return !jarId.equals(id);
 	}
 
 	public void process(File file) {

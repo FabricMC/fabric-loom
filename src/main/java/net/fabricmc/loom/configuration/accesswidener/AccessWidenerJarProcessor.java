@@ -31,11 +31,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
+import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
@@ -61,7 +61,6 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	private AccessWidener accessWidener = new AccessWidener();
-	private AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 	private final Project project;
 	private byte[] inputHash;
 
@@ -80,7 +79,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		inputHash = Checksum.sha256(loomGradleExtension.getAccessWidener());
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(loomGradleExtension.getAccessWidener()))) {
-			accessWidenerReader.read(reader);
+			new AccessWidenerReader(accessWidener).read(reader);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read project access widener file");
 		}
@@ -111,7 +110,11 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	public void process(File file) {
 		project.getLogger().lifecycle("Processing file: " + file.getName());
 		ZipUtil.transformEntries(file, getTransformers(accessWidener.getTargets()));
-		ZipUtil.addEntry(file, "aw.sha256", inputHash);
+	}
+
+	@Override
+	public String getId() {
+		return BaseEncoding.base64().encode(inputHash);
 	}
 
 	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
@@ -134,23 +137,6 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 				return writer.toByteArray();
 			}
 		};
-	}
-
-	//Called when remapping the mod
-	public void remapAccessWidener(Path modJarPath, Remapper asmRemapper) throws IOException {
-		byte[] bytes = getRemappedAccessWidener(asmRemapper);
-
-		String path = getAccessWidenerPath(modJarPath);
-
-		if (path == null) {
-			throw new RuntimeException("Failed to find accessWidener in fabric.mod.json");
-		}
-
-		boolean replaced = ZipUtil.replaceEntry(modJarPath.toFile(), path, bytes);
-
-		if (!replaced) {
-			project.getLogger().warn("Failed to replace access widener file at " + path);
-		}
 	}
 
 	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
@@ -178,16 +164,5 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		}
 
 		return jsonObject.get("accessWidener").getAsString();
-	}
-
-	@Override
-	public boolean isInvalid(File file) {
-		byte[] hash = ZipUtil.unpackEntry(file, "aw.sha256");
-
-		if (hash == null) {
-			return true;
-		}
-
-		return !Arrays.equals(inputHash, hash); // TODO how do we know if the current jar as the correct access applied? save the hash of the input?
 	}
 }

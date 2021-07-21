@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
@@ -35,41 +34,20 @@ import org.gradle.util.ConfigureUtil
 import spock.lang.Specification
 
 class LayeredMappingSpecBuilderTest extends Specification {
-    MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)
-
     def "simple mojmap" () {
-        setup:
-            mockMinecraftProvider.minecraftVersion() >> "1.17"
         when:
             def spec = layered() {
                 officialMojangMappings()
             }
             def layers = spec.layers()
         then:
-            spec.version == "layered+hash.1506500"
-            layers.size() == 2
-            layers[0].class == IntermediaryMappingsSpec
-            layers[1].class == MojangMappingsSpec
-    }
-
-    def "simple mojmap alternative version" () {
-        setup:
-            mockMinecraftProvider.minecraftVersion() >> "1.17.1"
-        when:
-            def spec = layered() {
-                officialMojangMappings()
-            }
-            def layers = spec.layers()
-        then:
-            spec.version == "layered+hash.1446825415"
+            spec.version == "layered+hash.961"
             layers.size() == 2
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
     }
 
     def "simple mojmap with parchment" () {
-        setup:
-            mockMinecraftProvider.minecraftVersion() >> "1.17"
         when:
             def spec = layered() {
                 officialMojangMappings()
@@ -78,7 +56,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             def layers = spec.layers()
             def parchment = layers[2] as ParchmentMappingsSpec
         then:
-            spec.version == "layered+hash.910386113"
+            spec.version == "layered+hash.863714404"
             layers.size() == 3
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
@@ -88,8 +66,6 @@ class LayeredMappingSpecBuilderTest extends Specification {
     }
 
     def "simple mojmap with parchment keep prefix" () {
-        setup:
-            mockMinecraftProvider.minecraftVersion() >> "1.17"
         when:
             def spec = layered() {
                 officialMojangMappings()
@@ -100,7 +76,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             def layers = spec.layers()
             def parchment = layers[2] as ParchmentMappingsSpec
         then:
-            spec.version == "layered+hash.910386119"
+            spec.version == "layered+hash.863714410"
             layers.size() == 3
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
@@ -110,8 +86,6 @@ class LayeredMappingSpecBuilderTest extends Specification {
     }
 
     def "simple mojmap with parchment keep prefix alternate hash" () {
-        setup:
-            mockMinecraftProvider.minecraftVersion() >> "1.17"
         when:
             def spec = layered() {
                 officialMojangMappings()
@@ -122,7 +96,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             def layers = spec.layers()
             def parchment = layers[2] as ParchmentMappingsSpec
         then:
-            spec.version == "layered+hash.1097793778"
+            spec.version == "layered+hash.1144465487"
             layers.size() == 3
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
@@ -137,7 +111,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
     }
 
     LayeredMappingSpec layeredAction(Action<LayeredMappingSpecBuilder> action) {
-        LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder(mockMinecraftProvider)
+        LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder()
         action.execute(builder)
         return builder.build()
     }

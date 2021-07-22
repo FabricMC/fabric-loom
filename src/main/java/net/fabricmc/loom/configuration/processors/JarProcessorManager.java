@@ -90,7 +90,7 @@ public class JarProcessorManager {
 			return CharSource.wrap(jarProcessorIds)
 					.asByteSource(StandardCharsets.UTF_8)
 					.hash(Hashing.sha256())
-					.toString().substring(0, 12);
+					.toString();
 		} catch (IOException e) {
 			throw new UncheckedIOException("Could not hash jar processor IDs", e);
 		}

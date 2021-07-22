@@ -70,6 +70,11 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	@Override
+	public String getId() {
+		return "loom:access_widener";
+	}
+
+	@Override
 	public void setup() {
 		LoomGradleExtension loomGradleExtension = LoomGradleExtension.get(project);
 

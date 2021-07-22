@@ -26,6 +26,8 @@ package net.fabricmc.loom;
 
 import java.io.File;
 
+import net.fabricmc.loom.util.MirrorUtil;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -38,17 +40,19 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
 	public void apply(PluginAware target) {
 		RepositoryHandler repositories = null;
+		Project rootProject = null;
 
 		if (target instanceof Settings settings) {
 			repositories = settings.getDependencyResolutionManagement().getRepositories();
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
+			rootProject = settings.getGradle().getRootProject();
 		} else if (target instanceof Project project) {
 			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
 				return;
 			}
-
+			rootProject = project;
 			repositories = project.getRepositories();
 		} else if (target instanceof Gradle) {
 			return;
@@ -57,6 +61,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		}
 
 		Cache cache = new Cache(target);
+		Project project = rootProject;
 
 		// MavenConfiguration.java
 		repositories.flatDir(repo -> {
@@ -69,11 +74,11 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		});
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
-			repo.setUrl("https://maven.fabricmc.net/");
+			repo.setUrl(MirrorUtil.getFabricRepository(project));
 		});
 		repositories.maven(repo -> {
 			repo.setName("Mojang");
-			repo.setUrl("https://libraries.minecraft.net/");
+			repo.setUrl(MirrorUtil.getLibrariesBase(project));
 		});
 		repositories.mavenCentral();
 

@@ -24,47 +24,42 @@
 
 package net.fabricmc.loom.util;
 
+import org.gradle.api.Project;
+
 public class MirrorUtil {
-	private static String librariesBaseMirrors;
-	private static String resourcesBaseMirrors;
-	private static String versionManifests;
-	private static String experimentalVersions;
 
-	public static void setupMirror(String lib, String res, String manifest, String exp) {
-		librariesBaseMirrors = lib;
-		resourcesBaseMirrors = res;
-		versionManifests = manifest;
-		experimentalVersions = exp;
-	}
-
-	public static String getLibrariesBase() {
-		return librariesBaseMirrors == null ? Constants.LIBRARIES_BASE : librariesBaseMirrors;
-	}
-
-	public static String getResourcesBase() {
-		return resourcesBaseMirrors == null ? Constants.RESOURCES_BASE : resourcesBaseMirrors;
-	}
-
-	public static String getVersionManifests() {
-		return versionManifests == null ? Constants.VERSION_MANIFESTS : versionManifests;
-	}
-
-	public static String getExperimentalVersions() {
-		return experimentalVersions == null ? Constants.EXPERIMENTAL_VERSIONS : experimentalVersions;
-	}
-
-	public static String mirroredUrl(String path, MirrorSiteType type) {
-		String url;
-		switch (type) {
-		case LIBRARY -> url = MirrorUtil.getLibrariesBase() + path;
-		case RESOURCE -> url = MirrorUtil.getResourcesBase() + path;
-		default -> url = path;
+	public static String getLibrariesBase(Project project) {
+		if (project.hasProperty("loom_libraries_base")) {
+			return String.valueOf(project.property("loom_libraries_base"));
 		}
-
-		return url;
+		return Constants.LIBRARIES_BASE;
 	}
 
-	public enum MirrorSiteType {
-		LIBRARY, RESOURCE
+	public static String getResourcesBase(Project project) {
+		if (project.hasProperty("loom_resources_base")) {
+			return String.valueOf(project.property("loom_resources_base"));
+		}
+		return Constants.RESOURCES_BASE;
+	}
+
+	public static String getVersionManifests(Project project) {
+		if (project.hasProperty("loom_version_manifests")) {
+			return String.valueOf(project.property("loom_version_manifests"));
+		}
+		return Constants.VERSION_MANIFESTS;
+	}
+
+	public static String getExperimentalVersions(Project project) {
+		if (project.hasProperty("loom_experimental_versions")) {
+			return String.valueOf(project.property("loom_experimental_versions"));
+		}
+		return Constants.EXPERIMENTAL_VERSIONS;
+	}
+
+	public static String getFabricRepository(Project project) {
+		if (project.hasProperty("loom_fabric_repository")) {
+			return String.valueOf(project.property("loom_fabric_repository"));
+		}
+		return Constants.FABRIC_REPOSITORY;
 	}
 }

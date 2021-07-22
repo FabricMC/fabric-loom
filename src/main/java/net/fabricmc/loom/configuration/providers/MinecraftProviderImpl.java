@@ -138,7 +138,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 			}
 		} else {
 			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getVersionManifests()), versionManifestJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getVersionManifests(getProject())), versionManifestJson, getProject().getLogger());
 		}
 
 		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();
@@ -197,7 +197,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 				return Optional.empty();
 			}
 		} else {
-			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getExperimentalVersions()), experimentalVersionsJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getExperimentalVersions(getProject())), experimentalVersionsJson, getProject().getLogger());
 		}
 
 		String expVersionManifest = Files.asCharSource(experimentalVersionsJson, StandardCharsets.UTF_8).read();

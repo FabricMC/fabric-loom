@@ -26,8 +26,6 @@ package net.fabricmc.loom;
 
 import java.io.File;
 
-import net.fabricmc.loom.util.MirrorUtil;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -35,6 +33,8 @@ import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginAware;
+
+import net.fabricmc.loom.util.MirrorUtil;
 
 public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
@@ -52,6 +52,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
 				return;
 			}
+
 			rootProject = project;
 			repositories = project.getRepositories();
 		} else if (target instanceof Gradle) {

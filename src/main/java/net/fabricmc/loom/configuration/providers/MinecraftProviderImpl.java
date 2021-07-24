@@ -212,7 +212,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private boolean hasRecentValidManifest() throws IOException {
-		if (getExtension().getCustomManifest() != null) {
+		if (getExtension().getCustomMinecraftManifest().isPresent()) {
 			return false;
 		}
 

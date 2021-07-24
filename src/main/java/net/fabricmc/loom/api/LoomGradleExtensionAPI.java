@@ -51,7 +51,7 @@ public interface LoomGradleExtensionAPI {
 	@Deprecated
 	@ReplacedBy("accessWidenerPath")
 	default File getAccessWidener() {
-		return getAccessWidenerPath().getAsFile().get();
+		return getAccessWidenerPath().getAsFile().getOrNull();
 	}
 
 	@Deprecated
@@ -160,6 +160,6 @@ public interface LoomGradleExtensionAPI {
 	@Deprecated
 	@ReplacedBy("customMinecraftManifest")
 	default String getCustomManifest() {
-		return getCustomMinecraftManifest().get();
+		return getCustomMinecraftManifest().getOrNull();
 	}
 }

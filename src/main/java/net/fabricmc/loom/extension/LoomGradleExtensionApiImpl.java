@@ -43,11 +43,13 @@ import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
  * This class implements the public extension api.
  */
 public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionAPI {
+	protected final DeprecationHelper deprecationHelper;
 	protected final ListProperty<LoomDecompiler> decompilers;
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
@@ -75,6 +77,13 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.remapArchives = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.customManifest = project.getObjects().property(String.class);
+
+		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
+	}
+
+	@Override
+	public DeprecationHelper getDeprecationHelper() {
+		return deprecationHelper;
 	}
 
 	@Override
@@ -84,11 +93,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void setAccessWidener(Object file) {
+		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
 		getAccessWidenerPath().set(getProject().file(file));
 	}
 
 	@Override
-	public Property<Boolean> getShareCaches() {
+	public Property<Boolean> getShareRemapCaches() {
 		return shareCaches;
 	}
 
@@ -162,6 +172,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		private EnsureCompile() {
 			super(null, null);
 			throw new RuntimeException();
+		}
+
+		@Override
+		public DeprecationHelper getDeprecationHelper() {
+			throw new RuntimeException("Yeah... something is really wrong");
 		}
 
 		@Override

@@ -32,7 +32,6 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.model.ReplacedBy;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
@@ -41,68 +40,79 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
  * This is the public api available exposed to build scripts.
  */
 public interface LoomGradleExtensionAPI {
+	@ApiStatus.Internal
+	DeprecationHelper getDeprecationHelper();
+
 	RegularFileProperty getAccessWidenerPath();
 
-	@Deprecated
-	@ReplacedBy("accessWidenerPath")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default File getAccessWidener() {
+		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
 		return getAccessWidenerPath().getAsFile().getOrNull();
 	}
 
-	@Deprecated
-	@ReplacedBy("accessWidenerPath")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	void setAccessWidener(Object file);
 
-	Property<Boolean> getShareCaches();
+	Property<Boolean> getShareRemapCaches();
 
-	@Deprecated
-	@ReplacedBy("shareCaches")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setShareCaches(boolean shareCaches) {
-		getShareCaches().set(shareCaches);
+		getDeprecationHelper().replaceWithInLoom0_11("shareCaches", "shareRemapCaches");
+		getShareRemapCaches().set(shareCaches);
 	}
 
-	@Deprecated
-	@ReplacedBy("shareCaches")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default boolean isShareCaches() {
-		return getShareCaches().get();
+		getDeprecationHelper().replaceWithInLoom0_11("shareCaches", "shareRemapCaches");
+		return getShareRemapCaches().get();
 	}
 
-	@Deprecated
-	@ReplacedBy("shareCaches")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void shareCaches() {
 		setShareCaches(true);
 	}
 
 	ListProperty<LoomDecompiler> getLoomDecompilers();
 
-	@Deprecated
-	@ReplacedBy("loomDecompilers")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default List<LoomDecompiler> getDecompilers() {
+		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "loomDecompilers");
 		return getLoomDecompilers().get();
 	}
 
-	@Deprecated
-	@ReplacedBy("loomDecompilers")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void addDecompiler(LoomDecompiler decompiler) {
+		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "loomDecompilers");
 		getLoomDecompilers().add(decompiler);
 	}
 
 	ListProperty<JarProcessor> getMinecraftJarProcessors();
 
-	@Deprecated
-	@ReplacedBy("minecraftJarProcessors")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default List<JarProcessor> getJarProcessors() {
+		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "minecraftJarProcessors");
 		return getMinecraftJarProcessors().get();
 	}
 
-	@Deprecated
-	@ReplacedBy("minecraftJarProcessors")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void addJarProcessor(JarProcessor processor) {
+		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "minecraftJarProcessors");
 		getMinecraftJarProcessors().add(processor);
 	}
 
@@ -116,29 +126,33 @@ public interface LoomGradleExtensionAPI {
 
 	Property<String> getMixinRefmapName();
 
-	@Deprecated
-	@ReplacedBy("mixinRefmapName")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default String getRefmapName() {
+		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixinRefmapName");
 		return getMixinRefmapName().get();
 	}
 
-	@Deprecated
-	@ReplacedBy("mixinRefmapName")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setRefmapName(String refmapName) {
+		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixinRefmapName");
 		getMixinRefmapName().set(refmapName);
 	}
 
 	Property<Boolean> getRemapArchives();
 
-	@Deprecated
-	@ReplacedBy("remapArchives")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default boolean isRemapMod() {
+		getDeprecationHelper().replaceWithInLoom0_11("remapMod", "remapArchives");
 		return getRemapArchives().get();
 	}
 
-	@Deprecated
-	@ReplacedBy("remapArchives")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setRemapMod(boolean remapMod) {
+		getDeprecationHelper().replaceWithInLoom0_11("remapMod", "remapArchives");
 		getRemapArchives().set(remapMod);
 	}
 
@@ -151,15 +165,17 @@ public interface LoomGradleExtensionAPI {
 
 	Property<String> getCustomMinecraftManifest();
 
-	@Deprecated
-	@ReplacedBy("customMinecraftManifest")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setCustomManifest(String customManifest) {
+		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
 		getCustomMinecraftManifest().set(customManifest);
 	}
 
-	@Deprecated
-	@ReplacedBy("customMinecraftManifest")
+	@Deprecated(forRemoval = true)
+	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default String getCustomManifest() {
+		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
 		return getCustomMinecraftManifest().getOrNull();
 	}
 }

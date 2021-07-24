@@ -121,7 +121,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
-		if (getExtension().getShareCaches().get() && !getExtension().isRootProject() && versionManifestJson.exists() && !isRefreshDeps()) {
+		if (getExtension().getShareRemapCaches().get() && !getExtension().isRootProject() && versionManifestJson.exists() && !isRefreshDeps()) {
 			return;
 		}
 
@@ -233,7 +233,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
-		if (getExtension().getShareCaches().get() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
+		if (getExtension().getShareRemapCaches().get() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
 			return;
 		}
 

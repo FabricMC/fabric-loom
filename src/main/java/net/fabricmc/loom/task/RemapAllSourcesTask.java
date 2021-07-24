@@ -24,7 +24,10 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.IOException;
+
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.util.SourceRemapper;
 
@@ -34,5 +37,14 @@ public class RemapAllSourcesTask extends AbstractLoomTask {
 	@Internal
 	public SourceRemapper getSourceRemapper() {
 		return sourceRemapper;
+	}
+
+	@TaskAction
+	public void remap() {
+		try {
+			sourceRemapper.remapAll();
+		} catch (IOException exception) {
+			throw new RuntimeException("Failed to remap mod", exception);
+		}
 	}
 }

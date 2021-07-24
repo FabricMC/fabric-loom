@@ -38,6 +38,7 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
@@ -58,7 +59,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	}
 
 	@Override
-	protected PatternSet add0(SourceSet sourceSet, String refmapName) {
+	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
 		MixinApExtension.setMixinInformationContainer(sourceSet, new MixinApExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 

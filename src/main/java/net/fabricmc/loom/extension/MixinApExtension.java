@@ -34,6 +34,7 @@ import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
@@ -57,13 +58,13 @@ public interface MixinApExtension extends MixinApExtensionAPI {
 	 */
 	final class MixinInformationContainer {
 		private final SourceSet sourceSet;
-		private final String refmapName;
+		private final Provider<String> refmapName;
 		private Stream<String> mixinJsonNames;
 
 		final PatternSet mixinJsonPattern;
 
 		public MixinInformationContainer(@NotNull SourceSet sourceSet,
-										@NotNull String refmapName,
+										@NotNull Provider<String> refmapName,
 										@NotNull PatternSet mixinJsonPattern) {
 			this.sourceSet = sourceSet;
 			this.refmapName = refmapName;
@@ -88,7 +89,7 @@ public interface MixinApExtension extends MixinApExtensionAPI {
 
 		@NotNull
 		public String getRefmapName() {
-			return refmapName;
+			return refmapName.get();
 		}
 	}
 

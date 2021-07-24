@@ -28,6 +28,7 @@ import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 
@@ -36,7 +37,12 @@ import net.fabricmc.loom.api.MixinApExtensionAPI;
 
 public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 	protected abstract Project getProject();
-	protected abstract PatternSet add0(SourceSet sourceSet, String refmapName);
+
+	protected final PatternSet add0(SourceSet sourceSet, String refmapName) {
+		return add0(sourceSet, getProject().provider(() -> refmapName));
+	}
+
+	protected abstract PatternSet add0(SourceSet sourceSet, Provider<String> refmapName);
 
 	@Override
 	public void add(SourceSet sourceSet, String refmapName, Action<PatternSet> action) {
@@ -51,14 +57,14 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 
 	@Override
 	public void add(String sourceSetName, String refmapName, Action<PatternSet> action) {
-		// try to find sourceSet with name sourceSetName in this project
-		SourceSet sourceSet = getProject().getConvention().getPlugin(JavaPluginConvention.class)
-				.getSourceSets().findByName(sourceSetName);
+		add(sourceSetName, getProject().provider(() -> refmapName), action);
+	}
 
-		if (sourceSet == null) {
-			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
-		}
+	public void add(String sourceSetName, Provider<String> refmapName, Action<PatternSet> action) {
+		add(resolveSourceSet(sourceSetName), refmapName, action);
+	}
 
+	public void add(SourceSet sourceSet, Provider<String> refmapName, Action<PatternSet> action) {
 		PatternSet pattern = add0(sourceSet, refmapName);
 		action.execute(pattern);
 	}
@@ -71,7 +77,7 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 	@Override
 	public void add(SourceSet sourceSet, Action<PatternSet> action) {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		add(sourceSet, extension.getRefmapName(), action);
+		add(sourceSet, extension.getMixinRefmapName(), action);
 	}
 
 	@Override
@@ -82,12 +88,24 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 	@Override
 	public void add(String sourceSetName, Action<PatternSet> action) {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		add(sourceSetName, extension.getRefmapName(), action);
+		add(sourceSetName, extension.getMixinRefmapName(), action);
 	}
 
 	@Override
 	public void add(String sourceSetName) {
 		add(sourceSetName, x -> { });
+	}
+
+	private SourceSet resolveSourceSet(String sourceSetName) {
+		// try to find sourceSet with name sourceSetName in this project
+		SourceSet sourceSet = getProject().getConvention().getPlugin(JavaPluginConvention.class)
+				.getSourceSets().findByName(sourceSetName);
+
+		if (sourceSet == null) {
+			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");
+		}
+
+		return sourceSet;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
@@ -103,7 +121,7 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 		}
 
 		@Override
-		protected PatternSet add0(SourceSet sourceSet, String refmapName) {
+		protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

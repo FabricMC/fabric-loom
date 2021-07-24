@@ -129,9 +129,10 @@ public final class CompileConfiguration {
 			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
 			SetupIntelijRunConfigs.setup(project);
+			extension.getRemapArchives().finalizeValue();
 
 			// Enables the default mod remapper
-			if (extension.isRemapMod()) {
+			if (extension.getRemapArchives().get()) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
 				Jar jarTask = (Jar) project.getTasks().getByName("jar");

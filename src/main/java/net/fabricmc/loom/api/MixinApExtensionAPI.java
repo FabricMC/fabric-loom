@@ -35,7 +35,7 @@ public interface MixinApExtensionAPI {
 	 * Apply Mixin AP to sourceSet.
 	 * @param sourceSet the sourceSet that applies Mixin AP.
 	 * @param refmapName the output ref-map name. By default this will
-	 *                      be {@link net.fabricmc.loom.LoomGradleExtension#getRefmapName()}
+	 *                      be {@link net.fabricmc.loom.LoomGradleExtension#getMixinRefmapName()}
 	 * @param action used for filter the mixin json files. By default this will be all files
 	 *                  with name {@code *.mixins.json} that is inside the {@code resources} folder
 	 *                  of {@code sourceSet}.

@@ -93,8 +93,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	boolean isRootProject();
 
-	boolean isShareCaches();
-
 	default boolean ideSync() {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
 	}

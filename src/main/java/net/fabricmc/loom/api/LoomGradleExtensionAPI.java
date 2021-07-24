@@ -31,6 +31,10 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ReplacedBy;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -42,25 +46,65 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuil
  * This is the public api available exposed to build scripts.
  */
 public interface LoomGradleExtensionAPI {
-	File getAccessWidener();
+	RegularFileProperty getAccessWidenerPath();
 
+	@Deprecated
+	@ReplacedBy("accessWidenerPath")
+	default File getAccessWidener() {
+		return getAccessWidenerPath().getAsFile().get();
+	}
+
+	@Deprecated
+	@ReplacedBy("accessWidenerPath")
 	void setAccessWidener(Object file);
 
-	void setShareCaches(boolean shareCaches);
+	Property<Boolean> getShareCaches();
 
-	boolean isShareCaches();
+	@Deprecated
+	@ReplacedBy("shareCaches")
+	default void setShareCaches(boolean shareCaches) {
+		getShareCaches().set(shareCaches);
+	}
 
+	@Deprecated
+	@ReplacedBy("shareCaches")
+	default boolean isShareCaches() {
+		return getShareCaches().get();
+	}
+
+	@Deprecated
+	@ReplacedBy("shareCaches")
 	default void shareCaches() {
 		setShareCaches(true);
 	}
 
-	List<LoomDecompiler> getDecompilers();
+	ListProperty<LoomDecompiler> getLoomDecompilers();
 
-	void addDecompiler(LoomDecompiler decompiler);
+	@Deprecated
+	@ReplacedBy("loomDecompilers")
+	default List<LoomDecompiler> getDecompilers() {
+		return getLoomDecompilers().get();
+	}
 
-	List<JarProcessor> getJarProcessors();
+	@Deprecated
+	@ReplacedBy("loomDecompilers")
+	default void addDecompiler(LoomDecompiler decompiler) {
+		getLoomDecompilers().add(decompiler);
+	}
 
-	void addJarProcessor(JarProcessor processor);
+	ListProperty<JarProcessor> getMinecraftJarProcessors();
+
+	@Deprecated
+	@ReplacedBy("minecraftJarProcessors")
+	default List<JarProcessor> getJarProcessors() {
+		return getMinecraftJarProcessors().get();
+	}
+
+	@Deprecated
+	@ReplacedBy("minecraftJarProcessors")
+	default void addJarProcessor(JarProcessor processor) {
+		getMinecraftJarProcessors().add(processor);
+	}
 
 	ConfigurableFileCollection getLog4jConfigs();
 
@@ -70,13 +114,33 @@ public interface LoomGradleExtensionAPI {
 
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 
-	String getRefmapName();
+	Property<String> getMixinRefmapName();
 
-	void setRefmapName(String refmapName);
+	@Deprecated
+	@ReplacedBy("mixinRefmapName")
+	default String getRefmapName() {
+		return getMixinRefmapName().get();
+	}
 
-	boolean isRemapMod();
+	@Deprecated
+	@ReplacedBy("mixinRefmapName")
+	default void setRefmapName(String refmapName) {
+		getMixinRefmapName().set(refmapName);
+	}
 
-	void setRemapMod(boolean remapMod);
+	Property<Boolean> getRemapArchives();
+
+	@Deprecated
+	@ReplacedBy("remapArchives")
+	default boolean isRemapMod() {
+		return getRemapArchives().get();
+	}
+
+	@Deprecated
+	@ReplacedBy("remapArchives")
+	default void setRemapMod(boolean remapMod) {
+		getRemapArchives().set(remapMod);
+	}
 
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
 
@@ -85,7 +149,17 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	void mixin(Action<MixinApExtensionAPI> action);
 
-	void setCustomManifest(String customManifest);
+	Property<String> getCustomMinecraftManifest();
 
-	String getCustomManifest();
+	@Deprecated
+	@ReplacedBy("customMinecraftManifest")
+	default void setCustomManifest(String customManifest) {
+		getCustomMinecraftManifest().set(customManifest);
+	}
+
+	@Deprecated
+	@ReplacedBy("customMinecraftManifest")
+	default String getCustomManifest() {
+		return getCustomMinecraftManifest().get();
+	}
 }

@@ -50,7 +50,6 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.stitch.util.StitchUtil;
@@ -91,13 +90,9 @@ public class SourceRemapper {
 			return;
 		}
 
-		// TODO play with these numbers to find what works best.
-		int threads = Math.min(remapTasks.size(), 8);
-		ExecutorService ioExecutor = Executors.newFixedThreadPool(threads);
+		int threads = Math.min(remapTasks.size(), Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
+		ExecutorService ioExecutor = Executors.newFixedThreadPool(2);
 		ExecutorService remapExecutor = Executors.newFixedThreadPool(threads);
-
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(project, SourceRemapper.class.getName());
-		progressLogger.start("Remapping dependency sources", "sources");
 
 		List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
 
@@ -106,7 +101,6 @@ public class SourceRemapper {
 			// TODO refactor this a bit to not do that.
 			var mercuryQueue = new ConcurrentLinkedDeque<Mercury>();
 
-			// TODO are these thread safe? if not make a new one for each instance of Mercury
 			final var remapper = createMercuryRemapper();
 			final var inputClasspath = getInputClasspath(project);
 
@@ -123,9 +117,9 @@ public class SourceRemapper {
 			for (RemapTask remapTask : this.remapTasks) {
 				completableFutures.add(
 						CompletableFuture.supplyAsync(() ->
-							prepareForRemap(remapTask, progressLogger), ioExecutor)
-							.thenApplyAsync(remapData -> doRemap(mercuryThreadLocal.get(), remapData, progressLogger), remapExecutor)
-							.thenAcceptAsync(remapData -> completeRemap(remapData, remapTask, progressLogger), ioExecutor)
+							prepareForRemap(remapTask), ioExecutor)
+							.thenApplyAsync(remapData -> doRemap(mercuryThreadLocal.get(), remapData), remapExecutor)
+							.thenAcceptAsync(remapData -> completeRemap(remapData, remapTask), ioExecutor)
 				);
 			}
 		}
@@ -146,15 +140,13 @@ public class SourceRemapper {
 
 		ioExecutor.shutdown();
 		remapExecutor.shutdown();
-		progressLogger.completed();
 
 		// TODO: FIXME - WORKAROUND https://github.com/FabricMC/fabric-loom/issues/45
 		System.gc();
 	}
 
-	private RemapData prepareForRemap(RemapTask remapTask, ProgressLogger logger) {
+	private RemapData prepareForRemap(RemapTask remapTask) {
 		try {
-			logger.progress("Preparing  " + remapTask.source().getName() + " for remap");
 			File source = remapTask.source();
 			final File destination = remapTask.destination();
 
@@ -197,9 +189,8 @@ public class SourceRemapper {
 		}
 	}
 
-	private RemapData doRemap(Mercury mercury, RemapData remapData, ProgressLogger logger) {
+	private RemapData doRemap(Mercury mercury, RemapData remapData) {
 		try {
-			logger.progress("Remapping  " + remapData.source().getFileName().toString());
 			mercury.rewrite(remapData.source(), remapData.destination());
 		} catch (Exception e) {
 			project.getLogger().warn("Could not remap " + remapData.source().toString() + " fully!", e);
@@ -209,10 +200,8 @@ public class SourceRemapper {
 		return remapData;
 	}
 
-	private void completeRemap(RemapData remapData, RemapTask remapTask, ProgressLogger logger) {
+	private void completeRemap(RemapData remapData, RemapTask remapTask) {
 		try {
-			logger.progress("Completing remap of " + remapTask.destination().getName());
-
 			copyNonJavaFiles(remapData.source(), remapData.destination(), project, remapTask.source());
 
 			if (remapData.dstFs() != null) {

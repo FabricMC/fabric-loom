@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -169,7 +170,15 @@ public class LoomDependencyManager {
 
 		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
 
-		sourceRemapper.remapAll();
+		long start = System.currentTimeMillis();
+
+		try {
+			sourceRemapper.remapAll();
+		} catch (IOException exception) {
+			throw new RuntimeException("Failed to remap mod sources", exception);
+		}
+
+		project.getLogger().info("Source remapping took: %dms".formatted(System.currentTimeMillis() - start));
 
 		for (Runnable runnable : afterTasks) {
 			runnable.run();

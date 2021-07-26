@@ -74,9 +74,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void setAccessWidener(Object file) {
+	public void setAccessWidener(File file) {
 		Objects.requireNonNull(file, "Access widener file cannot be null");
-		this.accessWidener = getProject().file(file);
+		this.accessWidener = file;
 	}
 
 	@Override

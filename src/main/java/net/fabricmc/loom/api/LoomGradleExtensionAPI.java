@@ -108,7 +108,6 @@ public interface LoomGradleExtensionAPI {
 	}
 
 	default void addJarProcessor(JarProcessor processor) {
-		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "gameJarProcessors");
 		getGameJarProcessors().add(processor);
 	}
 

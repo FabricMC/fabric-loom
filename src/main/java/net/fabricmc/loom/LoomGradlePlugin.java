@@ -34,6 +34,7 @@ import com.google.gson.GsonBuilder;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.PluginAware;
 
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.bootstrap.BootstrappedPlugin;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
@@ -43,6 +44,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.extension.LoomFilesImpl;
+import net.fabricmc.loom.extension.MinecraftGradleExtension;
 import net.fabricmc.loom.task.LoomTasks;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
@@ -75,9 +77,9 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
 
-		// Setup extensions, loom shadows minecraft
-		project.getExtensions().create(LoomGradleExtension.class, "minecraft", LoomGradleExtensionImpl.class, project, new LoomFilesImpl(project));
-		project.getExtensions().add("loom", project.getExtensions().getByName("minecraft"));
+		// Setup extensions, minecraft wraps loom
+		var extension = project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, new LoomFilesImpl(project));
+		project.getExtensions().create(LoomGradleExtensionAPI.class, "minecraft", MinecraftGradleExtension.class, extension);
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
 		CompileConfiguration.setupConfigurations(project);

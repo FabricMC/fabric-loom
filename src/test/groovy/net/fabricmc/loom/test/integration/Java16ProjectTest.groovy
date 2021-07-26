@@ -45,5 +45,6 @@ class Java16ProjectTest extends Specification implements ProjectTestTrait {
 		where:
 			gradle              | _
 			DEFAULT_GRADLE      | _
+			PRE_RELEASE_GRADLE  | _
 	}
 }

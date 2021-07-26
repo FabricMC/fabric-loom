@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.extension;
 
+import java.io.File;
+
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
@@ -89,7 +91,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void setAccessWidener(Object file) {
+	public void setAccessWidener(File file) {
 		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
 		getAccessWidenerPath().set(getProject().file(file));
 	}

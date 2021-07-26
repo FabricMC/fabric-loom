@@ -108,7 +108,6 @@ public class RemapConfiguration {
 
 				rootProject.getTasks().register(remapAllSourcesTaskName, RemapAllSourcesTask.class, task -> {
 					task.sourceRemapper = sourceRemapper;
-					task.doLast(t -> sourceRemapper.remapAll());
 				});
 
 				parentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);

@@ -31,7 +31,6 @@ import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-@IgnoreIf({ jvm.java16Compatible }) // Fails on J16 > due to https://youtrack.jetbrains.com/issue/KT-45566
 class KotlinTest extends Specification implements ProjectTestTrait {
 	@Override
 	String name() {

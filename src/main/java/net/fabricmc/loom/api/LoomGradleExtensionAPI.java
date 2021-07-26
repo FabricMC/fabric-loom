@@ -82,7 +82,7 @@ public interface LoomGradleExtensionAPI {
 	}
 
 	default void shareCaches() {
-		setShareCaches(true);
+		getShareRemapCaches().set(true);
 	}
 
 	ListProperty<LoomDecompiler> getGameDecompilers();

@@ -33,6 +33,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
@@ -51,6 +53,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	private final Project project;
 	private final Property<String> defaultRefmapName;
 
+	@Inject
 	public MixinApExtensionImpl(Project project) {
 		this.isDefault = true;
 		this.project = project;

@@ -44,7 +44,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuil
 public interface LoomGradleExtensionAPI {
 	File getAccessWidener();
 
-	void setAccessWidener(Object file);
+	void setAccessWidener(File file);
 
 	void setShareCaches(boolean shareCaches);
 

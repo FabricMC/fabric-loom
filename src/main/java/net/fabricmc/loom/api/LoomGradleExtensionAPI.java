@@ -78,42 +78,37 @@ public interface LoomGradleExtensionAPI {
 		return getShareRemapCaches().get();
 	}
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void shareCaches() {
 		setShareCaches(true);
 	}
 
-	ListProperty<LoomDecompiler> getLoomDecompilers();
+	ListProperty<LoomDecompiler> getGameDecompilers();
 
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default List<LoomDecompiler> getDecompilers() {
-		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "loomDecompilers");
-		return getLoomDecompilers().get();
+		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "gameDecompilers");
+		return getGameDecompilers().get();
 	}
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void addDecompiler(LoomDecompiler decompiler) {
-		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "loomDecompilers");
-		getLoomDecompilers().add(decompiler);
+		getGameDecompilers().add(decompiler);
 	}
 
-	ListProperty<JarProcessor> getMinecraftJarProcessors();
+	ListProperty<JarProcessor> getGameJarProcessors();
 
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default List<JarProcessor> getJarProcessors() {
-		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "minecraftJarProcessors");
-		return getMinecraftJarProcessors().get();
+		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "gameJarProcessors");
+		return getGameJarProcessors().get();
 	}
 
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void addJarProcessor(JarProcessor processor) {
-		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "minecraftJarProcessors");
-		getMinecraftJarProcessors().add(processor);
+		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "gameJarProcessors");
+		getGameJarProcessors().add(processor);
 	}
 
 	ConfigurableFileCollection getLog4jConfigs();
@@ -124,20 +119,18 @@ public interface LoomGradleExtensionAPI {
 
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 
-	Property<String> getMixinRefmapName();
-
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default String getRefmapName() {
-		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixinRefmapName");
-		return getMixinRefmapName().get();
+		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixin.defaultRefmapName");
+		return getMixin().getDefaultRefmapName().get();
 	}
 
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setRefmapName(String refmapName) {
-		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixinRefmapName");
-		getMixinRefmapName().set(refmapName);
+		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixin.defaultRefmapName");
+		getMixin().getDefaultRefmapName().set(refmapName);
 	}
 
 	Property<Boolean> getRemapArchives();
@@ -162,6 +155,9 @@ public interface LoomGradleExtensionAPI {
 
 	@ApiStatus.Experimental
 	void mixin(Action<MixinApExtensionAPI> action);
+
+	@ApiStatus.Experimental
+	MixinApExtensionAPI getMixin();
 
 	Property<String> getCustomMinecraftManifest();
 

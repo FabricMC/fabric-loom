@@ -47,7 +47,7 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 	}
 
 	private static Map<SourceSet, ScalaCompile> getInvokerTasks(Project project) {
-		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixin();
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.SCALA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((ScalaCompile) entry.getValue())));
 	}

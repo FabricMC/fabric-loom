@@ -28,11 +28,11 @@ import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.MixinApExtensionAPI;
 
 public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
@@ -76,8 +76,7 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 
 	@Override
 	public void add(SourceSet sourceSet, Action<PatternSet> action) {
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		add(sourceSet, extension.getMixinRefmapName(), action);
+		add(sourceSet, getDefaultRefmapName(), action);
 	}
 
 	@Override
@@ -87,8 +86,7 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 
 	@Override
 	public void add(String sourceSetName, Action<PatternSet> action) {
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		add(sourceSetName, extension.getMixinRefmapName(), action);
+		add(sourceSetName, getDefaultRefmapName(), action);
 	}
 
 	@Override
@@ -117,6 +115,11 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 
 		@Override
 		protected Project getProject() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		public Property<String> getDefaultRefmapName() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 

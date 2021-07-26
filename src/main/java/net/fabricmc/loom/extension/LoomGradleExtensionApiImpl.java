@@ -55,7 +55,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
 	protected final Property<Boolean> shareCaches;
-	protected final Property<String> refmapName;
 	protected final Property<Boolean> remapArchives;
 	protected final Property<String> customManifest;
 
@@ -72,8 +71,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.accessWidener = project.getObjects().fileProperty();
 		this.shareCaches = project.getObjects().property(Boolean.class)
 				.convention(false);
-		this.refmapName = project.getObjects().property(String.class)
-				.convention(project.provider(this::getDefaultMixinRefmapName));
 		this.remapArchives = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.customManifest = project.getObjects().property(String.class);
@@ -103,12 +100,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public ListProperty<LoomDecompiler> getLoomDecompilers() {
+	public ListProperty<LoomDecompiler> getGameDecompilers() {
 		return decompilers;
 	}
 
 	@Override
-	public ListProperty<JarProcessor> getMinecraftJarProcessors() {
+	public ListProperty<JarProcessor> getGameJarProcessors() {
 		return jarProcessors;
 	}
 
@@ -118,17 +115,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		action.execute(builder);
 		LayeredMappingSpec builtSpec = builder.build();
 		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), "layers_" + builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
-	}
-
-	@Override
-	public Property<String> getMixinRefmapName() {
-		return refmapName;
-	}
-
-	public String getDefaultMixinRefmapName() {
-		String defaultRefmapName = getProject().getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
-		getProject().getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
-		return defaultRefmapName;
 	}
 
 	@Override
@@ -153,7 +139,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void mixin(Action<MixinApExtensionAPI> action) {
-		action.execute(getMixinApExtension());
+		action.execute(getMixin());
 	}
 
 	@Override
@@ -164,8 +150,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
-
-	protected abstract MixinApExtension getMixinApExtension();
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
@@ -190,7 +174,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		protected MixinApExtension getMixinApExtension() {
+		public MixinApExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

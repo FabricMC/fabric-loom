@@ -136,9 +136,9 @@ public final class LoomTasks {
 				inputJar = outputJar;
 			}
 
-			extension.getLoomDecompilers().finalizeValue();
+			extension.getGameDecompilers().finalizeValue();
 
-			for (LoomDecompiler decompiler : extension.getLoomDecompilers().get()) {
+			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
 				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();

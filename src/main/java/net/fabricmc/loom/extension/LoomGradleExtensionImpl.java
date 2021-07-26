@@ -164,7 +164,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public MixinApExtension getMixinApExtension() {
+	public MixinApExtension getMixin() {
 		return this.mixinApExtension;
 	}
 }

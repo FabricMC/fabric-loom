@@ -102,5 +102,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return String.format("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar", minecraftVersion);
 	}
 
-	MixinApExtension getMixinApExtension();
+	@Override
+	MixinApExtension getMixin();
 }

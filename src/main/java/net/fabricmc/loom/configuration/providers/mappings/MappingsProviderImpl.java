@@ -178,12 +178,12 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		LoomGradleExtension extension = getExtension();
 
 		if (extension.getAccessWidenerPath().isPresent()) {
-			extension.getMinecraftJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
+			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
 		}
 
 		extension.getAccessWidenerPath().finalizeValue();
-		extension.getMinecraftJarProcessors().finalizeValue();
-		JarProcessorManager processorManager = new JarProcessorManager(extension.getMinecraftJarProcessors().get());
+		extension.getGameJarProcessors().finalizeValue();
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
 

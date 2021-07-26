@@ -60,7 +60,10 @@ public interface LoomGradleExtensionAPI {
 
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	void setAccessWidener(File file);
+	default void setAccessWidener(File file) {
+		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
+		getAccessWidenerPath().set(file);
+	}
 
 	Property<Boolean> getShareRemapCaches();
 

@@ -24,15 +24,12 @@
 
 package net.fabricmc.loom.extension;
 
-import java.io.File;
-
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.plugins.BasePluginConvention;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
@@ -88,12 +85,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
 		return accessWidener;
-	}
-
-	@Override
-	public void setAccessWidener(File file) {
-		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
-		getAccessWidenerPath().set(getProject().file(file));
 	}
 
 	@Override

@@ -107,8 +107,6 @@ public interface LoomGradleExtensionAPI {
 		return getGameJarProcessors().get();
 	}
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void addJarProcessor(JarProcessor processor) {
 		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "gameJarProcessors");
 		getGameJarProcessors().add(processor);

@@ -147,7 +147,7 @@ public class RemapJarTask extends Jar {
 
 		jarRemapper.scheduleRemap(input, output)
 				.supplyAccessWidener((remapData, remapper) -> {
-					if (getRemapAccessWidener().getOrElse(false) && extension.getAccessWidener() != null) {
+					if (getRemapAccessWidener().getOrElse(false) && extension.getAccessWidenerPath().isPresent()) {
 						AccessWidenerJarProcessor accessWidenerJarProcessor = extension.getJarProcessorManager().getByType(AccessWidenerJarProcessor.class);
 						byte[] data;
 

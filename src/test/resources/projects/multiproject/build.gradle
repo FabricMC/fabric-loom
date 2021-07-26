@@ -40,7 +40,7 @@ allprojects {
 	}
 
 	loom {
-		shareCaches = true
+		shareCaches()
 	}
 
 	java {

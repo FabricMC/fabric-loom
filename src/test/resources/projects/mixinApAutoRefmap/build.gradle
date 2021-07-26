@@ -68,9 +68,8 @@ java {
 }
 
 loom {
-	refmapName = "refmap0000.json"
-
 	mixin {
+		defaultRefmapName = "refmap0000.json"
 		add(sourceSets["main"], "refmap0001.json")
 		add(sourceSets["mixin"], "refmap0002.json")
 		add(sourceSets["mixin1"], "refmap0003.json") {

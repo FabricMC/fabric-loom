@@ -97,7 +97,7 @@ public class RemapConfiguration {
 		// TODO what is this for?
 		Task parentTask = project.getTasks().getByName("build");
 
-		if (extension.isShareCaches()) {
+		if (extension.getShareRemapCaches().get()) {
 			Project rootProject = project.getRootProject();
 
 			if (extension.isRootProject()) {
@@ -154,7 +154,7 @@ public class RemapConfiguration {
 				});
 			}
 
-			if (extension.isShareCaches()) {
+			if (extension.getShareRemapCaches().get()) {
 				remapSourcesJarTask.setSourceRemapper(remapper);
 			}
 

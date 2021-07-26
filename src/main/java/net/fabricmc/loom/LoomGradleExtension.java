@@ -93,8 +93,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	boolean isRootProject();
 
-	boolean isShareCaches();
-
 	default boolean ideSync() {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
 	}
@@ -104,5 +102,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return String.format("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar", minecraftVersion);
 	}
 
-	MixinApExtension getMixinApExtension();
+	@Override
+	MixinApExtension getMixin();
 }

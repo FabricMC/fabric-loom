@@ -129,9 +129,10 @@ public final class CompileConfiguration {
 			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
 			SetupIntelijRunConfigs.setup(project);
+			extension.getRemapArchives().finalizeValue();
 
 			// Enables the default mod remapper
-			if (extension.isRemapMod()) {
+			if (extension.getRemapArchives().get()) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
 				Jar jarTask = (Jar) project.getTasks().getByName("jar");
@@ -144,7 +145,7 @@ public final class CompileConfiguration {
 			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
-			MixinApExtension mixinApExtension = LoomGradleExtension.get(project).getMixinApExtension();
+			MixinApExtension mixinApExtension = LoomGradleExtension.get(project).getMixin();
 			mixinApExtension.init();
 
 			new JavaApInvoker(project).configureMixin();

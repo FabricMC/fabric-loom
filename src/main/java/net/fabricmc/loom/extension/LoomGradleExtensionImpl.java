@@ -63,7 +63,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
 		this.project = project;
-		this.mixinApExtension = new MixinApExtensionImpl(project);
+		// Initiate with newInstance to allow gradle to decorate our extension
+		this.mixinApExtension = project.getObjects().newInstance(MixinApExtensionImpl.class, project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 	}
@@ -164,7 +165,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public MixinApExtension getMixinApExtension() {
+	public MixinApExtension getMixin() {
 		return this.mixinApExtension;
 	}
 }

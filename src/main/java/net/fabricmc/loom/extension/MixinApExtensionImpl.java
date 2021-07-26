@@ -33,11 +33,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.BasePluginConvention;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
@@ -46,10 +51,14 @@ import org.jetbrains.annotations.NotNull;
 public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements MixinApExtension {
 	private boolean isDefault;
 	private final Project project;
+	private final Property<String> defaultRefmapName;
 
+	@Inject
 	public MixinApExtensionImpl(Project project) {
 		this.isDefault = true;
 		this.project = project;
+		this.defaultRefmapName = project.getObjects().property(String.class)
+				.convention(project.provider(this::getDefaultMixinRefmapName));
 	}
 
 	@Override
@@ -58,7 +67,18 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	}
 
 	@Override
-	protected PatternSet add0(SourceSet sourceSet, String refmapName) {
+	public Property<String> getDefaultRefmapName() {
+		return defaultRefmapName;
+	}
+
+	private String getDefaultMixinRefmapName() {
+		String defaultRefmapName = getProject().getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+		getProject().getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
+		return defaultRefmapName;
+	}
+
+	@Override
+	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
 		MixinApExtension.setMixinInformationContainer(sourceSet, new MixinApExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 

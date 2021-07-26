@@ -25,17 +25,19 @@
 package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Experimental
 public interface MixinApExtensionAPI {
+	Property<String> getDefaultRefmapName();
+
 	/**
 	 * Apply Mixin AP to sourceSet.
 	 * @param sourceSet the sourceSet that applies Mixin AP.
-	 * @param refmapName the output ref-map name. By default this will
-	 *                      be {@link net.fabricmc.loom.LoomGradleExtension#getRefmapName()}
+	 * @param refmapName the output ref-map name. By default this will be {@link #getDefaultRefmapName()}
 	 * @param action used for filter the mixin json files. By default this will be all files
 	 *                  with name {@code *.mixins.json} that is inside the {@code resources} folder
 	 *                  of {@code sourceSet}.

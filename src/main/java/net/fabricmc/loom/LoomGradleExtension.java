@@ -43,12 +43,11 @@ import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.extension.LoomFiles;
-import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.extension.MixinApExtension;
 
 public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
-		return project.getExtensions().getByType(LoomGradleExtensionImpl.class);
+		return (LoomGradleExtension) project.getExtensions().getByName("loom");
 	}
 
 	LoomFiles getFiles();

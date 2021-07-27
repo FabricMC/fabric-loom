@@ -24,44 +24,44 @@
 
 package net.fabricmc.loom.util;
 
-import org.gradle.api.Project;
+import org.gradle.api.plugins.ExtensionAware;
 
 public class MirrorUtil {
-	public static String getLibrariesBase(Project project) {
-		if (project.hasProperty("loom_libraries_base")) {
-			return String.valueOf(project.property("loom_libraries_base"));
+	public static String getLibrariesBase(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("loom_libraries_base")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("loom_libraries_base"));
 		}
 
 		return Constants.LIBRARIES_BASE;
 	}
 
-	public static String getResourcesBase(Project project) {
-		if (project.hasProperty("loom_resources_base")) {
-			return String.valueOf(project.property("loom_resources_base"));
+	public static String getResourcesBase(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("loom_resources_base")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("loom_resources_base"));
 		}
 
 		return Constants.RESOURCES_BASE;
 	}
 
-	public static String getVersionManifests(Project project) {
-		if (project.hasProperty("loom_version_manifests")) {
-			return String.valueOf(project.property("loom_version_manifests"));
+	public static String getVersionManifests(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("loom_version_manifests")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("loom_version_manifests"));
 		}
 
 		return Constants.VERSION_MANIFESTS;
 	}
 
-	public static String getExperimentalVersions(Project project) {
-		if (project.hasProperty("loom_experimental_versions")) {
-			return String.valueOf(project.property("loom_experimental_versions"));
+	public static String getExperimentalVersions(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("loom_experimental_versions")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("loom_experimental_versions"));
 		}
 
 		return Constants.EXPERIMENTAL_VERSIONS;
 	}
 
-	public static String getFabricRepository(Project project) {
-		if (project.hasProperty("loom_fabric_repository")) {
-			return String.valueOf(project.property("loom_fabric_repository"));
+	public static String getFabricRepository(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("loom_fabric_repository")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("loom_fabric_repository"));
 		}
 
 		return Constants.FABRIC_REPOSITORY;

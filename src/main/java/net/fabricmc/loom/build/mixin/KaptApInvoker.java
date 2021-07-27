@@ -82,7 +82,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 			SourceSet sourceSet = entry.getKey();
 			task.doLast(t -> {
 				try {
-					String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
+					String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
 					Path src = Paths.get(getRefmapDestination(task, refmapName));
 					Path dest = Paths.get(task.getDestinationDir().toString(), refmapName);
 

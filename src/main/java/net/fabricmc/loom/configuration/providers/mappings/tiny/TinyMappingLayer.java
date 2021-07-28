@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
 import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
+import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Reader;
@@ -68,7 +69,8 @@ public record TinyMappingLayer(File mappingFile, @Nullable String mappingPath) i
 	private void read(MappingVisitor visitor, Reader reader) throws IOException {
 		// we might have official -> intermediary, named here - let's reorder just to be safe
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(visitor, getSourceNamespace().stringValue());
-		Tiny2Reader.read(reader, nsSwitch);
+		DummyNsReplacer nsReplacer = new DummyNsReplacer(nsSwitch);
+		MappingReader.read(reader, null, nsReplacer);
 	}
 
 	@Override

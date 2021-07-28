@@ -41,20 +41,17 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
 	public void apply(PluginAware target) {
 		RepositoryHandler repositories = null;
-		ExtensionAware aware = null;
 
 		if (target instanceof Settings settings) {
 			repositories = settings.getDependencyResolutionManagement().getRepositories();
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
-			aware = settings;
 		} else if (target instanceof Project project) {
 			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
 				return;
 			}
 
-			aware = project;
 			repositories = project.getRepositories();
 		} else if (target instanceof Gradle) {
 			return;
@@ -63,7 +60,6 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		}
 
 		Cache cache = new Cache(target);
-		ExtensionAware finalAware = aware;
 
 		// MavenConfiguration.java
 		repositories.flatDir(repo -> {
@@ -76,11 +72,11 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		});
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
-			repo.setUrl(MirrorUtil.getFabricRepository(finalAware));
+			repo.setUrl(MirrorUtil.getFabricRepository((ExtensionAware) target));
 		});
 		repositories.maven(repo -> {
 			repo.setName("Mojang");
-			repo.setUrl(MirrorUtil.getLibrariesBase(finalAware));
+			repo.setUrl(MirrorUtil.getLibrariesBase((ExtensionAware) target));
 		});
 		repositories.mavenCentral();
 

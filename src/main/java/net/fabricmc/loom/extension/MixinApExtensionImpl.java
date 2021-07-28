@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.extension;
 
-import java.io.File;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,7 +78,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
-		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.mixins.json"));
+		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));
 		MixinApExtension.setMixinInformationContainer(sourceSet, new MixinApExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 
 		isDefault = false;
@@ -91,19 +90,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	@NotNull
 	public Stream<SourceSet> getMixinSourceSetsStream() {
 		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
-				.filter(sourceSet -> {
-					MixinApExtension.MixinInformationContainer container = MixinApExtension.getMixinInformationContainer(sourceSet);
-
-					if (container != null) {
-						PatternSet pattern = container.mixinJsonPattern;
-						Stream<String> mixinJsonNames = sourceSet.getResources()
-								.matching(pattern).getFiles().stream().map(File::getName);
-						container.setMixinJsonNames(mixinJsonNames);
-						return true;
-					}
-
-					return false;
-				});
+				.filter(sourceSet -> MixinApExtension.getMixinInformationContainer(sourceSet) != null);
 	}
 
 	@Override

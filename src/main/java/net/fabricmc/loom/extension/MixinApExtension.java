@@ -26,7 +26,6 @@ package net.fabricmc.loom.extension;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -56,42 +55,7 @@ public interface MixinApExtension extends MixinApExtensionAPI {
 	 * for configuring the mixin annotation processor. It's stored
 	 * in [SourceSet].ext.mixin.
 	 */
-	final class MixinInformationContainer {
-		private final SourceSet sourceSet;
-		private final Provider<String> refmapName;
-		private Stream<String> mixinJsonNames;
-
-		final PatternSet mixinJsonPattern;
-
-		public MixinInformationContainer(@NotNull SourceSet sourceSet,
-										@NotNull Provider<String> refmapName,
-										@NotNull PatternSet mixinJsonPattern) {
-			this.sourceSet = sourceSet;
-			this.refmapName = refmapName;
-			this.mixinJsonPattern = mixinJsonPattern;
-		}
-
-		void setMixinJsonNames(@NotNull Stream<String> mixinJsonNames) {
-			if (this.mixinJsonNames == null) {
-				this.mixinJsonNames = mixinJsonNames;
-			}
-		}
-
-		@NotNull
-		public Stream<String> getMixinJsonNames() {
-			return Objects.requireNonNull(mixinJsonNames);
-		}
-
-		@NotNull
-		public SourceSet getSourceSet() {
-			return sourceSet;
-		}
-
-		@NotNull
-		public String getRefmapName() {
-			return refmapName.get();
-		}
-	}
+	record MixinInformationContainer(SourceSet sourceSet, Provider<String> refmapNameProvider, PatternSet mixinConfigPattern) { }
 
 	@Nullable
 	static MixinInformationContainer getMixinInformationContainer(SourceSet sourceSet) {

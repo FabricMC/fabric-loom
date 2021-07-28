@@ -37,6 +37,7 @@ repositories {
 		url = 'https://maven.fabricmc.net/'
 	}
 	mavenCentral()
+	mavenLocal()
 }
 
 configurations {
@@ -77,7 +78,7 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.4.3')
+	implementation ('net.fabricmc:tiny-remapper:0.5.0+local')
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
 	implementation 'net.fabricmc:access-widener:1.1.0'

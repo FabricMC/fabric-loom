@@ -78,7 +78,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
-		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));		// TODO: should I use `*.json` or `*`?
+		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));
 		MixinApExtension.setMixinInformationContainer(sourceSet, new MixinApExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 
 		isDefault = false;

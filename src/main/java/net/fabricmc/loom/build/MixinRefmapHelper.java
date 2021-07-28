@@ -117,6 +117,6 @@ public final class MixinRefmapHelper {
 					} else {
 						throw new RuntimeException("Incorrect fabric.mod.json format");
 					}
-				}).collect(Collectors.toList());
+				}).collect(Collectors.toSet());
 	}
 }

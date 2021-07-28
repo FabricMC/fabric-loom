@@ -33,6 +33,7 @@ import org.gradle.api.Action;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyMappingsSpec;
 
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
@@ -51,6 +52,20 @@ public class LayeredMappingSpecBuilder {
 		var builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
 		action.execute(builder);
 		layers.add(builder.build());
+		return this;
+	}
+
+	/**
+	 * Adds Tiny-formatted mappings from a dependency resolved using project repositories.
+	 *
+	 * <p>The dependency can either be a bare .tiny file or a jar containing mappings
+	 * at {@code mappings/mappings.tiny}.
+	 *
+	 * @param dependencyNotation the dependency notation (such as {@code net.fabricmc:yarn:1.17.1+build.31:v2})
+	 * @return this builder
+	 */
+	public LayeredMappingSpecBuilder tinyMappings(String dependencyNotation) {
+		layers.add(new TinyMappingsSpec(dependencyNotation));
 		return this;
 	}
 

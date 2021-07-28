@@ -85,8 +85,8 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 							new ByteSource("mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8))
 					}, mappingsFile.toFile());
 				}
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to resolve Mojang mappings", e);
+			} catch (IOException | RuntimeException e) {
+				throw new RuntimeException("Failed to resolve layered mappings", e);
 			}
 		}
 

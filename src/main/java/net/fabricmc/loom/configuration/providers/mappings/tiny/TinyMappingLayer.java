@@ -31,9 +31,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
-import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
 import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
@@ -42,18 +43,16 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 
-public record TinyMappingLayer(File mappingFile) implements MappingLayer {
-	private static final String MAPPING_PATH = "mappings/mappings.tiny";
-
+public record TinyMappingLayer(File mappingFile, @Nullable String mappingPath) implements MappingLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		if (mappingFile.getName().toLowerCase(Locale.ROOT).endsWith(".tiny")) { // bare tiny file
+		if (mappingPath == null) { // bare file
 			try (Reader reader = new FileReader(mappingFile)) {
 				read(mappingVisitor, reader);
 			}
 		} else { // assume a zip/jar
 			try (ZipFile zip = new ZipFile(mappingFile)) {
-				ZipEntry entry = zip.getEntry(MAPPING_PATH);
+				ZipEntry entry = zip.getEntry(mappingPath);
 
 				if (entry == null) {
 					throw new IOException("Could not find mappings inside " + mappingFile);

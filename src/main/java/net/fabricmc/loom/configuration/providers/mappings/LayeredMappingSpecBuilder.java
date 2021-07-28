@@ -33,7 +33,7 @@ import org.gradle.api.Action;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
-import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyMappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyMappingsSpecBuilder;
 
 public class LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
@@ -58,14 +58,29 @@ public class LayeredMappingSpecBuilder {
 	/**
 	 * Adds Tiny-formatted mappings from a dependency resolved using project repositories.
 	 *
-	 * <p>The dependency can either be a bare .tiny file or a jar containing mappings
-	 * at {@code mappings/mappings.tiny}.
+	 * <p>The dependency is expected to be a jar containing mappings at {@code mappings/mappings.tiny}.
 	 *
 	 * @param dependencyNotation the dependency notation (such as {@code net.fabricmc:yarn:1.17.1+build.31:v2})
 	 * @return this builder
 	 */
 	public LayeredMappingSpecBuilder tinyMappings(String dependencyNotation) {
-		layers.add(new TinyMappingsSpec(dependencyNotation));
+		return tinyMappings(dependencyNotation, builder -> {});
+	}
+
+	/**
+	 * Adds Tiny-formatted mappings from a dependency resolved using project repositories.
+	 *
+	 * <p>By default, the dependency is expected to be a jar containing mappings at {@code mappings/mappings.tiny}.
+	 * This can be customized using the builder.
+	 *
+	 * @param dependencyNotation the dependency notation (such as {@code net.fabricmc:yarn:1.17.1+build.31:v2})
+	 * @param action             an action to configure the mappings
+	 * @return this builder
+	 */
+	public LayeredMappingSpecBuilder tinyMappings(String dependencyNotation, Action<TinyMappingsSpecBuilder> action) {
+		var builder = TinyMappingsSpecBuilder.builder(dependencyNotation);
+		action.execute(builder);
+		layers.add(builder.build());
 		return this;
 	}
 

@@ -24,12 +24,14 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.tiny;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
 
-public record TinyMappingsSpec(String dependencyNotation) implements MappingsSpec<TinyMappingLayer> {
+public record TinyMappingsSpec(String dependencyNotation, @Nullable String mappingPath) implements MappingsSpec<TinyMappingLayer> {
 	@Override
 	public TinyMappingLayer createLayer(MappingContext context) {
-		return new TinyMappingLayer(context.mavenFile(dependencyNotation));
+		return new TinyMappingLayer(context.mavenFile(dependencyNotation), mappingPath);
 	}
 }

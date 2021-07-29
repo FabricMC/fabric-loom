@@ -31,8 +31,6 @@ if (ENV.BUILD_NUMBER) {
 	version = baseVersion + '.local'
 }
 
-version = '0.9-fix200.17'
-
 repositories {
 	maven {
 		name = 'Fabric'

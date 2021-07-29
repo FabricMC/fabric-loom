@@ -28,13 +28,13 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
-public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope, @Nullable String replacedWith) {
-	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
-		this(sourceConfiguration, targetConfiguration, isOnModCompileClasspath, mavenScope, null);
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration, @Nullable String replacedWith) {
+	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration) {
+		this(sourceConfiguration, targetConfiguration, compileClasspath, runtimeClasspath, consumerConfiguration, null);
 	}
 
-	public boolean hasMavenScope() {
-		return mavenScope != null && !mavenScope.isEmpty();
+	public boolean hasConsumerConfiguration() {
+		return consumerConfiguration != null && !consumerConfiguration.isEmpty();
 	}
 
 	public String getRemappedConfiguration() {

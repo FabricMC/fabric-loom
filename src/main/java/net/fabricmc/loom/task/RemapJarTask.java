@@ -45,6 +45,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -233,7 +234,7 @@ public class RemapJarTask extends Jar {
 		FileCollection files = this.classpath;
 
 		if (files == null) {
-			files = getProject().getConfigurations().getByName("compileClasspath");
+			files = getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
 		}
 
 		return files.getFiles().stream()

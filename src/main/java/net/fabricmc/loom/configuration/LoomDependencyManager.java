@@ -199,7 +199,8 @@ public class LoomDependencyManager {
 			modDep.setTransitive(false);
 			loaderDepsConfig.getDependencies().add(modDep);
 
-			if (!extension.ideSync()) {
+			// TODO: work around until https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14 is fixed.
+			if (!extension.ideSync() && extension.getUseLegacyMixinAp().get()) {
 				apDepsConfig.getDependencies().add(modDep);
 			}
 

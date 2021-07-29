@@ -91,7 +91,7 @@ public final class SoftwareComponentConfiguration {
 				component.addVariantsFromConfiguration(configuration, details -> details.mapToMavenScope(scope));
 			});
 
-			// because sourcesElements is created too late, we have to set its attributes manually
+			// because sourcesElements is created too late, we have to set the modSourcesElements attributes manually
 			configurations.getByName(Constants.Configurations.MOD_SOURCES_ELEMENTS, configuration -> {
 				configuration.attributes(attributes -> {
 					attributes.attribute(Category.CATEGORY_ATTRIBUTE, project.getObjects().named(Category.class, Category.DOCUMENTATION));

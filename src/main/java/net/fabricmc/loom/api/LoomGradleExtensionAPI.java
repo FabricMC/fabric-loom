@@ -67,6 +67,8 @@ public interface LoomGradleExtensionAPI {
 
 	Property<Boolean> getShareRemapCaches();
 
+	Property<Boolean> getUseLegacyMixinAp();
+
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setShareCaches(boolean shareCaches) {
@@ -154,9 +156,10 @@ public interface LoomGradleExtensionAPI {
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
 	@ApiStatus.Experimental
-	void mixin(Action<MixinApExtensionAPI> action);
+	void mixinAp(Action<MixinApExtensionAPI> action);
 
 	@ApiStatus.Experimental
+	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.
 	MixinApExtensionAPI getMixin();
 
 	Property<String> getCustomMinecraftManifest();

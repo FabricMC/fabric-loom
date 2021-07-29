@@ -73,6 +73,12 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	}
 
 	@Override
+	public Property<Boolean> getUseLegacyMixinAp() {
+		reportDeprecation();
+		return parent.getUseLegacyMixinAp();
+	}
+
+	@Override
 	public ListProperty<LoomDecompiler> getGameDecompilers() {
 		reportDeprecation();
 		return parent.getGameDecompilers();
@@ -115,9 +121,9 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	}
 
 	@Override
-	public void mixin(Action<MixinApExtensionAPI> action) {
+	public void mixinAp(Action<MixinApExtensionAPI> action) {
 		reportDeprecation();
-		parent.mixin(action);
+		parent.mixinAp(action);
 	}
 
 	@Override

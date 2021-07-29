@@ -155,7 +155,6 @@ public interface LoomGradleExtensionAPI {
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
-	@ApiStatus.Experimental
 	void mixinAp(Action<MixinApExtensionAPI> action);
 
 	@ApiStatus.Experimental

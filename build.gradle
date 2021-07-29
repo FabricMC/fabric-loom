@@ -31,7 +31,7 @@ if (ENV.BUILD_NUMBER) {
 	version = baseVersion + '.local'
 }
 
-version = '0.9-fix200.15'
+version = '0.9-fix200.17'
 
 repositories {
 	maven {

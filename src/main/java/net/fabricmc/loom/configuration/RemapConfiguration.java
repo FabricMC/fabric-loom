@@ -62,7 +62,7 @@ public class RemapConfiguration {
 			artifacts.add(Constants.Configurations.MOD_API_ELEMENTS, task);
 			artifacts.add(Constants.Configurations.MOD_RUNTIME_ELEMENTS, task);
 		});
-		project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(Constants.Configurations.MOD_SOURCES_ELEMENTS, project.provider(task::getOutput)));
+		project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(Constants.Configurations.MOD_SOURCES_ELEMENTS, task.getOutput()));
 	}
 
 	@ApiStatus.Experimental // This is only an api if you squint really hard, expect it to explode every 5 mins. If you must call in afterEvaluate on all projects

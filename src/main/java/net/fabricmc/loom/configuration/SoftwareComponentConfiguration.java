@@ -2,6 +2,8 @@ package net.fabricmc.loom.configuration;
 
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import org.gradle.api.Project;
@@ -14,6 +16,7 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.attributes.DocsType;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.component.AdhocComponentWithVariants;
+import org.gradle.api.component.SoftwareComponentFactory;
 import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +58,9 @@ public final class SoftwareComponentConfiguration {
 			});
 
 			// retrieve SoftwareComponentFactory via injecting it
-			var component = extension.getSoftwareComponent();
+			var factory = project.getObjects().newInstance(InjectedServices.class).getSoftwareComponentFactory();
+			var component = factory.adhoc(Constants.SOFTWARE_COMPONENT_NAME);
+			project.getComponents().add(component); // accessible via components.loom/components["loom"]
 
 			CONFIGURATIONS_TO_SCOPES.forEach((name, scope) -> {
 				Configuration configuration = configurations.getByName(name);
@@ -78,6 +83,7 @@ public final class SoftwareComponentConfiguration {
 			});
 
 			// set up other commonly wanted variants that cannot leak dev jars
+			// in afterEvaluate because they're created late (probably in afterEvaluate themselves)
 			project.afterEvaluate(p -> {
 				addDefaultConfiguration(configurations, component, JavaPlugin.JAVADOC_ELEMENTS_CONFIGURATION_NAME);
 			});
@@ -95,7 +101,12 @@ public final class SoftwareComponentConfiguration {
 		@Nullable var configuration = configurations.findByName(name);
 
 		if (configuration != null) {
-			component.addVariantsFromConfiguration(configuration, details -> {});
+			component.addVariantsFromConfiguration(configuration, details -> { });
 		}
+	}
+
+	public interface InjectedServices {
+		@Inject
+		SoftwareComponentFactory getSoftwareComponentFactory();
 	}
 }

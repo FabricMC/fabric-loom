@@ -33,8 +33,6 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.component.AdhocComponentWithVariants;
-import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.file.ConfigurableFileCollection;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
@@ -105,7 +103,4 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	@Override
 	MixinApExtension getMixin();
-
-	@Override
-	AdhocComponentWithVariants getSoftwareComponent();
 }

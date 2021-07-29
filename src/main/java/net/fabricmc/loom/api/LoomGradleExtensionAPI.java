@@ -30,7 +30,6 @@ import java.util.List;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
@@ -175,6 +174,4 @@ public interface LoomGradleExtensionAPI {
 		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
 		return getCustomMinecraftManifest().getOrNull();
 	}
-
-	SoftwareComponent getSoftwareComponent();
 }

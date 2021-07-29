@@ -28,6 +28,8 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.util.Constants;
+
 public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration, @Nullable String replacedWith) {
 	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration) {
 		this(sourceConfiguration, targetConfiguration, compileClasspath, runtimeClasspath, consumerConfiguration, null);
@@ -47,5 +49,19 @@ public record RemappedConfigurationEntry(String sourceConfiguration, String targ
 		}
 
 		return targetConfiguration;
+	}
+
+	// TODO: Remove this in Loom 0.12
+	@Nullable
+	public String mavenScope() {
+		if (hasConsumerConfiguration()) {
+			return switch (consumerConfiguration) {
+			case Constants.Configurations.MOD_API_ELEMENTS, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME -> "compile";
+			case Constants.Configurations.MOD_RUNTIME_ELEMENTS, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME -> "runtime";
+			default -> null;
+			};
+		}
+
+		return null;
 	}
 }

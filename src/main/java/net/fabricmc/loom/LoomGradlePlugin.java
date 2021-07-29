@@ -38,6 +38,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.bootstrap.BootstrappedPlugin;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
+import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.SoftwareComponentConfiguration;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
@@ -85,6 +86,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		CompileConfiguration.setupConfigurations(project);
 		IdeConfiguration.setup(project);
 		CompileConfiguration.configureCompile(project);
+		MavenPublication.configure(project);
 		LoomTasks.registerTasks(project);
 		DecompilerConfiguration.setup(project);
 		SoftwareComponentConfiguration.setup(project);

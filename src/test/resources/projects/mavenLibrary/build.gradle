@@ -30,16 +30,7 @@ java {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			artifact(remapJar) {
-				builtBy remapJar
-			}
-			artifact(remapJar) {
-				builtBy remapJar
-				classifier "classifier"
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
+			from components.loom
 		}
 	}
 

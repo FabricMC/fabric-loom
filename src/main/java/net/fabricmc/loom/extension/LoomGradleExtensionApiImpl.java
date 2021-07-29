@@ -28,7 +28,6 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.component.AdhocComponentWithVariants;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
@@ -57,7 +56,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> shareCaches;
 	protected final Property<Boolean> remapArchives;
 	protected final Property<String> customManifest;
-	private AdhocComponentWithVariants softwareComponent;
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
@@ -146,17 +144,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	protected abstract LoomFiles getFiles();
 
-	@Override
-	public AdhocComponentWithVariants getSoftwareComponent() {
-		if (softwareComponent == null) {
-			softwareComponent = createSoftwareComponent();
-		}
-
-		return softwareComponent;
-	}
-
-	protected abstract AdhocComponentWithVariants createSoftwareComponent();
-
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
 		private EnsureCompile() {
@@ -181,11 +168,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		public MixinApExtension getMixin() {
-			throw new RuntimeException("Yeah... something is really wrong");
-		}
-
-		@Override
-		protected AdhocComponentWithVariants createSoftwareComponent() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

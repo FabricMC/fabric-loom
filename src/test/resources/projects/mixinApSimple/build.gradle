@@ -99,7 +99,7 @@ assemble {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			from components.loom
+			from components.java
 		}
 	}
 

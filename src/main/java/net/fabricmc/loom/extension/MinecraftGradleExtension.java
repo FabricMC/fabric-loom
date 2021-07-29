@@ -131,4 +131,10 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 		reportDeprecation();
 		return parent.getCustomMinecraftManifest();
 	}
+
+	@Override
+	public Property<Boolean> getSetupRemappedVariants() {
+		reportDeprecation();
+		return parent.getSetupRemappedVariants();
+	}
 }

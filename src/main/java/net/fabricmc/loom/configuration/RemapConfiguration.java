@@ -31,6 +31,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.ArtifactHandler;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
@@ -43,7 +44,6 @@ import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapConfiguration {
@@ -57,12 +57,23 @@ public class RemapConfiguration {
 	public static void setupDefaultRemap(Project project) {
 		setupRemap(project, true, DEFAULT_JAR_TASK_NAME, DEFAULT_SOURCES_JAR_TASK_NAME, DEFAULT_REMAP_JAR_TASK_NAME, DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, DEFAULT_REMAP_ALL_JARS_TASK_NAME, DEFAULT_REMAP_ALL_SOURCES_TASK_NAME);
 
-		ArtifactHandler artifacts = project.getArtifacts();
-		project.getTasks().named(DEFAULT_REMAP_JAR_TASK_NAME, task -> {
-			artifacts.add(Constants.Configurations.MOD_API_ELEMENTS, task);
-			artifacts.add(Constants.Configurations.MOD_RUNTIME_ELEMENTS, task);
-		});
-		project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(Constants.Configurations.MOD_SOURCES_ELEMENTS, task.getOutput()));
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		extension.getSetupRemappedVariants().finalizeValue();
+
+		if (extension.getSetupRemappedVariants().get()) {
+			ArtifactHandler artifacts = project.getArtifacts();
+			project.getTasks().named(DEFAULT_REMAP_JAR_TASK_NAME, task -> {
+				artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
+				artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+			});
+			project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput()));
+
+			// Remove -dev jars
+			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
+				Configuration configuration = project.getConfigurations().getByName(configurationName);
+				configuration.getArtifacts().removeIf(artifact -> "dev".equals(artifact.getClassifier()));
+			}
+		}
 	}
 
 	@ApiStatus.Experimental // This is only an api if you squint really hard, expect it to explode every 5 mins. If you must call in afterEvaluate on all projects

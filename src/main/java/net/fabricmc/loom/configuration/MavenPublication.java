@@ -90,7 +90,7 @@ public final class MavenPublication {
 					continue;
 				} else if (!reportedDeprecation.get()) {
 					var deprecationHelper = LoomGradleExtension.get(project).getDeprecationHelper();
-					deprecationHelper.warn("Loom is applying dependency data manually to publications instead of using a software component (from(components[\"loom\"])). This is deprecated and will be removed in Loom 0.12.");
+					deprecationHelper.warn("Loom is applying dependency data manually to publications instead of using a software component (from(components[\"java\"])). This is deprecated and will be removed in Loom 0.12.");
 					reportedDeprecation.set(true);
 				}
 

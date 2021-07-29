@@ -43,13 +43,15 @@ public class Constants {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, Configurations.MOD_API_ELEMENTS),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, Configurations.MOD_RUNTIME_ELEMENTS),
 			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, "", "modRuntimeOnly"),
 			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, ""),
-			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME)
+			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, Configurations.MOD_API_ELEMENTS),
+			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, Configurations.MOD_RUNTIME_ELEMENTS)
 	);
+
+	public static final String SOFTWARE_COMPONENT_NAME = "loom";
 
 	private Constants() {
 	}
@@ -71,6 +73,9 @@ public class Constants {
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
 		public static final String UNPICK_CLASSPATH = "unpick";
+		public static final String MOD_API_ELEMENTS = "modApiElements";
+		public static final String MOD_RUNTIME_ELEMENTS = "modRuntimeElements";
+		public static final String MOD_SOURCES_ELEMENTS = "modSourcesElements";
 
 		private Configurations() {
 		}

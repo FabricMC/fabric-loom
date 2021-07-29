@@ -33,23 +33,29 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import javax.inject.Inject;
+
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.component.AdhocComponentWithVariants;
+import org.gradle.api.component.SoftwareComponentFactory;
 import org.gradle.api.file.ConfigurableFileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.util.Constants;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
 	private final MixinApExtension mixinApExtension;
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
+	private final SoftwareComponentFactory softwareComponentFactory;
 
 	private final Set<File> mixinMappings = Collections.synchronizedSet(new HashSet<>());
 	private final MappingSet[] srcMappingCache = new MappingSet[2];
@@ -60,13 +66,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private JarProcessorManager jarProcessorManager;
 	private InstallerData installerData;
 
-	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
+	@Inject
+	public LoomGradleExtensionImpl(Project project, LoomFiles files, SoftwareComponentFactory softwareComponentFactory) {
 		super(project, files);
 		this.project = project;
 		// Initiate with newInstance to allow gradle to decorate our extension
 		this.mixinApExtension = project.getObjects().newInstance(MixinApExtensionImpl.class, project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
+		this.softwareComponentFactory = softwareComponentFactory;
 	}
 
 	@Override
@@ -167,5 +175,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public MixinApExtension getMixin() {
 		return this.mixinApExtension;
+	}
+
+	@Override
+	protected AdhocComponentWithVariants createSoftwareComponent() {
+		return softwareComponentFactory.adhoc(Constants.SOFTWARE_COMPONENT_NAME);
 	}
 }

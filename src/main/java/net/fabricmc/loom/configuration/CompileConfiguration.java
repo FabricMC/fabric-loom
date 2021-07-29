@@ -65,6 +65,23 @@ public final class CompileConfiguration {
 		extension.createLazyConfiguration(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
 		extension.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
 
+		// Set up mod*Elements configurations for the software component
+		extension.createLazyConfiguration(Constants.Configurations.MOD_API_ELEMENTS)
+				.configure(configuration -> {
+					configuration.setCanBeConsumed(true);
+					configuration.setCanBeResolved(false);
+				});
+		extension.createLazyConfiguration(Constants.Configurations.MOD_RUNTIME_ELEMENTS)
+				.configure(configuration -> {
+					configuration.setCanBeConsumed(true);
+					configuration.setCanBeResolved(false);
+				});
+		extension.createLazyConfiguration(Constants.Configurations.MOD_SOURCES_ELEMENTS)
+				.configure(configuration -> {
+					configuration.setCanBeConsumed(true);
+					configuration.setCanBeResolved(false);
+				});
+
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			extension.createLazyConfiguration(entry.sourceConfiguration())
 					.configure(configuration -> configuration.setTransitive(true));

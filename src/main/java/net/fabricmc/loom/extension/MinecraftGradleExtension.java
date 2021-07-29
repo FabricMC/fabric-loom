@@ -27,6 +27,7 @@ package net.fabricmc.loom.extension;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
@@ -130,5 +131,11 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	public Property<String> getCustomMinecraftManifest() {
 		reportDeprecation();
 		return parent.getCustomMinecraftManifest();
+	}
+
+	@Override
+	public SoftwareComponent getSoftwareComponent() {
+		reportDeprecation();
+		return parent.getSoftwareComponent();
 	}
 }

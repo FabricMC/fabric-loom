@@ -43,6 +43,7 @@ import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapAllSourcesTask;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapConfiguration {
@@ -58,10 +59,10 @@ public class RemapConfiguration {
 
 		ArtifactHandler artifacts = project.getArtifacts();
 		project.getTasks().named(DEFAULT_REMAP_JAR_TASK_NAME, task -> {
-			artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
-			artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+			artifacts.add(Constants.Configurations.MOD_API_ELEMENTS, task);
+			artifacts.add(Constants.Configurations.MOD_RUNTIME_ELEMENTS, task);
 		});
-		project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, project.provider(task::getOutput)));
+		project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(Constants.Configurations.MOD_SOURCES_ELEMENTS, project.provider(task::getOutput)));
 	}
 
 	@ApiStatus.Experimental // This is only an api if you squint really hard, expect it to explode every 5 mins. If you must call in afterEvaluate on all projects

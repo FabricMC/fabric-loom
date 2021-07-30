@@ -26,8 +26,6 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
 public abstract class LoomFilesBaseImpl implements LoomFiles {
 	protected abstract File getGradleUserHomeDir();
 	protected abstract File getRootDir();

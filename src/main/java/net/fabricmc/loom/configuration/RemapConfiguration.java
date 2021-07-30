@@ -66,12 +66,23 @@ public class RemapConfiguration {
 				artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
 				artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
 			});
-			project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput()));
+			project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
+				var artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput());
 
-			// Remove -dev jars
+				// Remove the existing artifact that does not run remapSourcesJar.
+				// It doesn't seem to hurt, but I'm not sure if the file-level duplicates cause issues.
+				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
+				configuration.getArtifacts().removeIf(a -> a != artifact && artifact.getFile().equals(a.getFile()));
+			});
+
+			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
 				Configuration configuration = project.getConfigurations().getByName(configurationName);
-				configuration.getArtifacts().removeIf(artifact -> "dev".equals(artifact.getClassifier()));
+				configuration.getArtifacts().removeIf(artifact -> {
+					Task jarTask = project.getTasks().getByName(DEFAULT_JAR_TASK_NAME);
+					// if the artifact is a -dev jar and "builtBy jar"
+					return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
+				});
 			}
 		}
 	}

@@ -26,8 +26,6 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
 public interface LoomFiles {
 	File getUserCache();
 	File getRootProjectPersistentCache();
@@ -36,7 +34,6 @@ public interface LoomFiles {
 	File getRemappedModCache();
 	File getNativesJarStore();
 	boolean hasCustomNatives();
-	File getNativesDirectory(MinecraftProvider minecraftProvider);
 	File getDefaultLog4jConfigFile();
 	File getDevLauncherConfig();
 	File getUnpickLoggingConfigFile();

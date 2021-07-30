@@ -51,7 +51,7 @@ public class MinecraftNativesProvider {
 		this.project = project;
 		extension = LoomGradleExtension.get(project);
 
-		nativesDir = extension.getFiles().getNativesDirectory(extension.getMinecraftProvider());
+		nativesDir = extension.getMinecraftProvider().nativesDir();
 		jarStore = extension.getFiles().getNativesJarStore();
 	}
 

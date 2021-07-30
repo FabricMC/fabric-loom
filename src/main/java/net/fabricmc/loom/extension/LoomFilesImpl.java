@@ -97,21 +97,6 @@ public final class LoomFilesImpl implements LoomFiles {
 	}
 
 	@Override
-	public File getNativesDirectory(MinecraftProvider minecraftProvider) {
-		if (hasCustomNatives()) {
-			return new File((String) project.property("fabric.loom.natives.dir"));
-		}
-
-		File natives = new File(getUserCache(), "natives/" + minecraftProvider.minecraftVersion());
-
-		if (!natives.exists()) {
-			natives.mkdirs();
-		}
-
-		return natives;
-	}
-
-	@Override
 	public File getDefaultLog4jConfigFile() {
 		return new File(getProjectPersistentCache(), "log4j.xml");
 	}

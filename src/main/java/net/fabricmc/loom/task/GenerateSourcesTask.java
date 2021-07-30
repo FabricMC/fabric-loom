@@ -62,7 +62,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	@TaskAction
 	public void doTask() throws Throwable {
 		int threads = Runtime.getRuntime().availableProcessors();
-		Path javaDocs = getExtension().getMappingsProvider().tinyMappings.toPath();
+		Path javaDocs = getExtension().getMappingsProvider().tinyMappings;
 		Collection<Path> libraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
 						.stream().map(File::toPath).collect(Collectors.toSet());
 

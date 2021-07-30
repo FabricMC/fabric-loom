@@ -66,7 +66,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		}
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(projectMappedClassifier)));
+				getProject().getDependencies().module("net.minecraft:minecraft-" + projectMappedClassifier + ":" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
 	}
 
 	private void invalidateJars() {
@@ -87,7 +87,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getFiles().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedClassifier) + ".jar");
+		projectMappedJar = new File(getExtension().getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-" + projectMappedClassifier + ".jar");
 	}
 
 	@Override

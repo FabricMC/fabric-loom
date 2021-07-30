@@ -24,9 +24,19 @@
 
 package net.fabricmc.loom.configuration.providers;
 
+import java.io.File;
+
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 
 public interface MinecraftProvider {
+	File workingDir();
+
+	File nativesDir();
+
+	File dir(String path);
+
+	File file(String path);
+
 	String minecraftVersion();
 
 	MinecraftVersionMeta getVersionInfo();

@@ -38,6 +38,9 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+
 import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
@@ -91,6 +94,10 @@ public abstract class DependencyProvider {
 
 	public LoomFiles getDirectories() {
 		return getExtension().getFiles();
+	}
+
+	public MinecraftProvider getMinecraftProvider() {
+		return getExtension().getMinecraftProvider();
 	}
 
 	public boolean isRefreshDeps() {

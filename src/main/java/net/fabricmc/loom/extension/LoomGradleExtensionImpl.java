@@ -81,7 +81,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	@Override
 	public synchronized File getNextMixinMappings() {
-		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMinecraftProvider().minecraftVersion() + "-" + getMappingsProvider().mappingsVersion + "." + mixinMappings.size() + ".tiny");
+		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMappingsProvider().mappingsIdentifier() + "." + mixinMappings.size() + ".tiny");
 		mixinMappings.add(mixinMapping);
 		return mixinMapping;
 	}

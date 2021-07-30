@@ -139,7 +139,7 @@ public class LoomDependencyManager {
 		}
 
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsKey = mappingsProvider.getMappingsKey();
+		String mappingsIdentifier = mappingsProvider.mappingsIdentifier();
 
 		if (extension.getInstallerData() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
@@ -168,7 +168,7 @@ public class LoomDependencyManager {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");
 		}
 
-		ModCompileRemapper.remapDependencies(project, mappingsKey, extension, sourceRemapper);
+		ModCompileRemapper.remapDependencies(project, mappingsIdentifier, extension, sourceRemapper);
 
 		long start = System.currentTimeMillis();
 

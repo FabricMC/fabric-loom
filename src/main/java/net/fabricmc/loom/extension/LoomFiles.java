@@ -26,9 +26,20 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 
+import org.gradle.api.Project;
+import org.gradle.api.initialization.Settings;
+
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
 public interface LoomFiles {
+	static LoomFiles create(Project project) {
+		return new LoomFilesProjectImpl(project);
+	}
+
+	static LoomFiles create(Settings settings) {
+		return new LoomFilesSettingsImpl(settings);
+	}
+
 	File getUserCache();
 	File getRootProjectPersistentCache();
 	File getProjectPersistentCache();

@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,14 +37,19 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExcludeRule;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.publish.Publication;
 import org.gradle.api.publish.PublishingExtension;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 
 public final class MavenPublication {
+	private static final Map<String, String> CONFIGURATION_TO_SCOPE = Map.of(
+			JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, "compile",
+			JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, "runtime"
+	);
+
 	private MavenPublication() {
 	}
 
@@ -51,20 +57,16 @@ public final class MavenPublication {
 		project.afterEvaluate((p) -> {
 			AtomicBoolean reportedDeprecation = new AtomicBoolean(false);
 
-			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				if (!entry.hasConsumerConfiguration()) {
-					continue;
-				}
-
-				Configuration compileModsConfig = p.getConfigurations().getByName(entry.sourceConfiguration());
+			CONFIGURATION_TO_SCOPE.forEach((configurationName, scope) -> {
+				Configuration config = p.getConfigurations().getByName(configurationName);
 
 				// add modsCompile to maven-publish
 				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
 
 				if (mavenPublish != null) {
-					processEntry(project, entry, compileModsConfig, mavenPublish, reportedDeprecation);
+					processEntry(project, scope, config, mavenPublish, reportedDeprecation);
 				}
-			}
+			});
 		});
 	}
 
@@ -79,7 +81,7 @@ public final class MavenPublication {
 	}
 
 	// TODO: Remove this in Loom 0.12
-	private static void processEntry(Project project, RemappedConfigurationEntry entry, Configuration compileModsConfig, PublishingExtension mavenPublish, AtomicBoolean reportedDeprecation) {
+	private static void processEntry(Project project, String scope, Configuration config, PublishingExtension mavenPublish, AtomicBoolean reportedDeprecation) {
 		mavenPublish.publications((publications) -> {
 			for (Publication publication : publications) {
 				if (!(publication instanceof org.gradle.api.publish.maven.MavenPublication mavenPublication)) {
@@ -107,7 +109,7 @@ public final class MavenPublication {
 						}
 					});
 
-					for (Dependency dependency : compileModsConfig.getAllDependencies()) {
+					for (Dependency dependency : config.getAllDependencies()) {
 						if (foundArtifacts.contains(dependency.getGroup() + ":" + dependency.getName())) {
 							continue;
 						}
@@ -116,7 +118,7 @@ public final class MavenPublication {
 						depNode.appendNode("groupId", dependency.getGroup());
 						depNode.appendNode("artifactId", dependency.getName());
 						depNode.appendNode("version", dependency.getVersion());
-						depNode.appendNode("scope", entry.mavenScope());
+						depNode.appendNode("scope", scope);
 
 						if (!(dependency instanceof ModuleDependency)) {
 							continue;

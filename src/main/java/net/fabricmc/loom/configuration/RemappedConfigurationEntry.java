@@ -48,18 +48,4 @@ public record RemappedConfigurationEntry(String sourceConfiguration, String targ
 
 		return targetConfiguration;
 	}
-
-	// TODO: Remove this in Loom 0.12
-	@Nullable
-	public String mavenScope() {
-		if (hasConsumerConfiguration()) {
-			return switch (consumerConfiguration) {
-			case JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME -> "compile";
-			case JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME -> "runtime";
-			default -> null;
-			};
-		}
-
-		return null;
-	}
 }

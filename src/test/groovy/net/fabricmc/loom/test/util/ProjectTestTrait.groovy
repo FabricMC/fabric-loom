@@ -121,6 +121,6 @@ trait ProjectTestTrait {
 	}
 
 	File getGeneratedSources(String mappings, String gradleVersion = DEFAULT_GRADLE) {
-		return new File(gradleHomeDirectory(gradleVersion), "caches/fabric-loom/${mappings}/minecraft-${mappings}-sources.jar")
+		return new File(gradleHomeDirectory(gradleVersion), "caches/fabric-loom/${mappings}/minecraft-mapped-sources.jar")
 	}
 }

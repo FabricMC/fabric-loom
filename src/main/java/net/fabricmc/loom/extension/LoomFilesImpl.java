@@ -28,8 +28,6 @@ import java.io.File;
 
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
 public final class LoomFilesImpl implements LoomFiles {
 	private final Project project;
 

@@ -38,9 +38,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
 import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
@@ -52,6 +49,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 
 public abstract class DependencyProvider {

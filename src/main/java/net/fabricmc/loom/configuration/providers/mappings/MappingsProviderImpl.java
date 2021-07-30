@@ -40,13 +40,6 @@ import java.util.function.Consumer;
 import com.google.common.base.Stopwatch;
 import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
-
-import net.fabricmc.mappingio.adapter.MappingNsCompleter;
-import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
-import net.fabricmc.mappingio.format.Tiny2Reader;
-import net.fabricmc.mappingio.format.Tiny2Writer;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
-
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.FileSource;
@@ -66,6 +59,11 @@ import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.mapping.reader.v2.TinyV2Factory;
 import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.adapter.MappingNsCompleter;
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
+import net.fabricmc.mappingio.format.Tiny2Reader;
+import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
@@ -165,12 +163,13 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		if (depStringSplit.length >= 4) {
 			return "-" + depStringSplit[3] + (isV2 ? "-v2" : "");
 		}
-		
+
 		return isV2 ? "-v2" : "";
 	}
 
 	private boolean isV2(DependencyInfo dependency, File mappingsJar) throws IOException {
 		String minecraftVersion = getMinecraftProvider().minecraftVersion();
+
 		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
 		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
 			String yarnVersion = dependency.getDependency().getVersion();

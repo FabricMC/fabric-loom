@@ -60,7 +60,7 @@ public class MinecraftNativesProvider {
 	}
 
 	private void provide() throws IOException {
-		if (extension.getFiles().hasCustomNatives()) {
+		if (extension.getMinecraftProvider().hasCustomNatives()) {
 			if (!nativesDir.exists()) {
 				throw new RuntimeException("Could no find custom natives directory at " + nativesDir.getAbsolutePath());
 			}

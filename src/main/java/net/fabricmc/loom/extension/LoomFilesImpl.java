@@ -90,11 +90,6 @@ public final class LoomFilesImpl implements LoomFiles {
 	}
 
 	@Override
-	public boolean hasCustomNatives() {
-		return project.getProperties().get("fabric.loom.natives.dir") != null;
-	}
-
-	@Override
 	public File getDefaultLog4jConfigFile() {
 		return new File(getProjectPersistentCache(), "log4j.xml");
 	}

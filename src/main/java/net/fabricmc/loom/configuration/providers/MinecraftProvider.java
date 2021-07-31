@@ -31,6 +31,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 public interface MinecraftProvider {
 	File workingDir();
 
+	boolean hasCustomNatives();
+
 	File nativesDir();
 
 	File dir(String path);

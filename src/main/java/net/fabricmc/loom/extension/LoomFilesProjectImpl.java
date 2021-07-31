@@ -25,70 +25,37 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.util.Objects;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-public final class LoomFilesImpl implements LoomFiles {
+public final class LoomFilesProjectImpl extends LoomFilesBaseImpl {
 	private final Project project;
 
-	private final File userCache;
-	private final File rootProjectPersistentCache;
-	private final File projectPersistentCache;
-	private final File projectBuildCache;
-	private final File remappedModCache;
-	private final File nativesJarStore;
-
-	public LoomFilesImpl(Project project) {
-		this.project = project;
-
-		this.userCache = createFile(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
-		this.rootProjectPersistentCache = createFile(project.getRootProject().file(".gradle"), "loom-cache");
-		this.projectPersistentCache = createFile(project.file(".gradle"), "loom-cache");
-		this.projectBuildCache = createFile(project.getBuildDir(), "loom-cache");
-		this.remappedModCache = createFile(getRootProjectPersistentCache(), "remapped_mods");
-		this.nativesJarStore = createFile(getUserCache(), "natives/jars");
-	}
-
-	private File createFile(File parent, String child) {
-		File file = new File(parent, child);
-
-		if (!file.exists()) {
-			file.mkdirs();
-		}
-
-		return file;
+	public LoomFilesProjectImpl(Project project) {
+		this.project = Objects.requireNonNull(project);
 	}
 
 	@Override
-	public File getUserCache() {
-		return userCache;
+	protected File getGradleUserHomeDir() {
+		return project.getGradle().getGradleUserHomeDir();
 	}
 
 	@Override
-	public File getRootProjectPersistentCache() {
-		return rootProjectPersistentCache;
+	protected File getRootDir() {
+		return project.getRootDir();
 	}
 
 	@Override
-	public File getProjectPersistentCache() {
-		return projectPersistentCache;
+	protected File getProjectDir() {
+		return project.getProjectDir();
 	}
 
 	@Override
-	public File getProjectBuildCache() {
-		return projectBuildCache;
-	}
-
-	@Override
-	public File getRemappedModCache() {
-		return remappedModCache;
-	}
-
-	@Override
-	public File getNativesJarStore() {
-		return nativesJarStore;
+	protected File getBuildDir() {
+		return project.getBuildDir();
 	}
 
 	@Override
@@ -109,20 +76,5 @@ public final class LoomFilesImpl implements LoomFiles {
 		}
 
 		return natives;
-	}
-
-	@Override
-	public File getDefaultLog4jConfigFile() {
-		return new File(getProjectPersistentCache(), "log4j.xml");
-	}
-
-	@Override
-	public File getDevLauncherConfig() {
-		return new File(getProjectPersistentCache(), "launch.cfg");
-	}
-
-	@Override
-	public File getUnpickLoggingConfigFile() {
-		return new File(getProjectPersistentCache(), "unpick-logging.properties");
 	}
 }

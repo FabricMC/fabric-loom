@@ -25,30 +25,46 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.util.Objects;
 
-import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
 
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+public class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
+	private final Settings settings;
+
+	public LoomFilesSettingsImpl(Settings settings) {
+		this.settings = Objects.requireNonNull(settings);
 	}
 
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
+	@Override
+	public boolean hasCustomNatives() {
+		return false;
 	}
 
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesJarStore();
-	boolean hasCustomNatives();
-	File getNativesDirectory(MinecraftProvider minecraftProvider);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
+	@Override
+	public File getNativesDirectory(MinecraftProvider minecraftProvider) {
+		throw new IllegalStateException("You can not access natives directory from setting stage");
+	}
+
+	@Override
+	protected File getGradleUserHomeDir() {
+		return settings.getGradle().getGradleUserHomeDir();
+	}
+
+	@Override
+	protected File getRootDir() {
+		return settings.getRootDir();
+	}
+
+	@Override
+	protected File getProjectDir() {
+		throw new IllegalStateException("You can not access project directory from setting stage");
+	}
+
+	@Override
+	protected File getBuildDir() {
+		throw new IllegalStateException("You can not access project build directory from setting stage");
+	}
 }

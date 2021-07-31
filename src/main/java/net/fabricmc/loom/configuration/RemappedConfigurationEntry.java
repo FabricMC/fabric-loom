@@ -26,8 +26,13 @@ package net.fabricmc.loom.configuration;
 
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
-public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope, @Nullable String replacedWith) {
+	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
+		this(sourceConfiguration, targetConfiguration, isOnModCompileClasspath, mavenScope, null);
+	}
+
 	public boolean hasMavenScope() {
 		return mavenScope != null && !mavenScope.isEmpty();
 	}

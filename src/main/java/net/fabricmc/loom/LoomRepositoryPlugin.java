@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom;
 
-import java.io.File;
-
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -33,14 +31,15 @@ import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.PluginAware;
+import org.jetbrains.annotations.NotNull;
+
+import net.fabricmc.loom.extension.LoomFiles;
 
 public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
-	public void apply(PluginAware target) {
-		RepositoryHandler repositories = null;
-
+	public void apply(@NotNull PluginAware target) {
 		if (target instanceof Settings settings) {
-			repositories = settings.getDependencyResolutionManagement().getRepositories();
+			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings));
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
@@ -49,23 +48,18 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 				return;
 			}
 
-			repositories = project.getRepositories();
+			declareRepositories(project.getRepositories(), LoomFiles.create(project));
 		} else if (target instanceof Gradle) {
 			return;
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
 		}
+	}
 
-		Cache cache = new Cache(target);
-
-		// MavenConfiguration.java
-		repositories.flatDir(repo -> {
-			repo.setName("UserLocalCacheFiles");
-			repo.dir(cache.getRootBuildCache());
-		});
+	private void declareRepositories(RepositoryHandler repositories, LoomFiles files) {
 		repositories.maven(repo -> {
 			repo.setName("UserLocalRemappedMods");
-			repo.setUrl(cache.getRemappedModCache());
+			repo.setUrl(files.getRemappedModCache());
 		});
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
@@ -77,124 +71,16 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		});
 		repositories.mavenCentral();
 
-		// MinecraftMappedProvider.java
 		repositories.ivy(repo -> {
-			repo.setUrl(cache.getUserCache());
-			repo.patternLayout(layout -> {
-				layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])");
-			});
+			repo.setUrl(files.getUserCache());
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 
-		// MinecraftProcessedProvider.java
 		repositories.ivy(repo -> {
-			repo.setUrl(cache.getRootPersistentCache());
-			repo.patternLayout(layout -> {
-				layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])");
-			});
+			repo.setUrl(files.getRootProjectPersistentCache());
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
-	}
-}
-
-final class Cache {
-	private PluginAware target;
-
-	Cache(PluginAware target) {
-		if (target instanceof Project || target instanceof Settings) {
-			this.target = target;
-		} else {
-			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
-		}
-	}
-
-	File getUserCache() {
-		File gradleUserHomeDir = null;
-
-		if (target instanceof Settings settings) {
-			gradleUserHomeDir = settings.getGradle().getGradleUserHomeDir();
-		} else if (target instanceof Project project) {
-			gradleUserHomeDir = project.getGradle().getGradleUserHomeDir();
-		} else {
-			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
-		}
-
-		File userCache = new File(gradleUserHomeDir, "caches" + File.separator + "fabric-loom");
-
-		if (!userCache.exists()) {
-			userCache.mkdirs();
-		}
-
-		return userCache;
-	}
-
-	public File getRootPersistentCache() {
-		File rootDir = null;
-
-		if (target instanceof Settings settings) {
-			rootDir = settings.getRootDir();
-		} else if (target instanceof Project project) {
-			rootDir = project.getRootDir();
-		} else {
-			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
-		}
-
-		File persistentCache = new File(rootDir, ".gradle" + File.separator + "loom-cache");
-
-		if (!persistentCache.exists()) {
-			persistentCache.mkdirs();
-		}
-
-		return persistentCache;
-	}
-
-	public File getRootBuildCache() {
-		File rootDir = null;
-
-		if (target instanceof Settings settings) {
-			rootDir = settings.getRootDir();
-		} else if (target instanceof Project project) {
-			rootDir = project.getRootDir();
-		} else {
-			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
-		}
-
-		File buildCache = new File(rootDir, "build" + File.separator + "loom-cache");
-
-		if (!buildCache.exists()) {
-			buildCache.mkdirs();
-		}
-
-		return buildCache;
-	}
-
-	public File getRemappedModCache() {
-		File remappedModCache = new File(getRootPersistentCache(), "remapped_mods");
-
-		if (!remappedModCache.exists()) {
-			remappedModCache.mkdir();
-		}
-
-		return remappedModCache;
-	}
-
-	public File getNestedModCache() {
-		File nestedModCache = new File(getRootPersistentCache(), "nested_mods");
-
-		if (!nestedModCache.exists()) {
-			nestedModCache.mkdir();
-		}
-
-		return nestedModCache;
-	}
-
-	public File getNativesJarStore() {
-		File natives = new File(getUserCache(), "natives/jars");
-
-		if (!natives.exists()) {
-			natives.mkdirs();
-		}
-
-		return natives;
 	}
 }

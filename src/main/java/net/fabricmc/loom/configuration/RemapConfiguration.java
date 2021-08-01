@@ -139,8 +139,8 @@ public class RemapConfiguration {
 
 			RemapSourcesJarTask remapSourcesJarTask = (RemapSourcesJarTask) project.getTasks().findByName(remapSourcesJarTaskName);
 			Preconditions.checkNotNull(remapSourcesJarTask, "Could not find " + remapSourcesJarTaskName + " in " + project.getName());
-			remapSourcesJarTask.setInput(sourcesTask.getArchivePath());
-			remapSourcesJarTask.setOutput(sourcesTask.getArchivePath());
+			remapSourcesJarTask.getInput().set(sourcesTask.getArchiveFile());
+			remapSourcesJarTask.getOutput().set(sourcesTask.getArchiveFile());
 			remapSourcesJarTask.dependsOn(project.getTasks().getByName(sourcesJarTaskName));
 
 			if (isDefaultRemap) {

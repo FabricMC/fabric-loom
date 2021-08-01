@@ -32,6 +32,8 @@ import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Experimental
 public interface MixinExtensionAPI {
+	Property<Boolean> getUseLegacyMixinAp();
+
 	Property<String> getDefaultRefmapName();
 
 	/**

@@ -67,8 +67,6 @@ public interface LoomGradleExtensionAPI {
 
 	Property<Boolean> getShareRemapCaches();
 
-	Property<Boolean> getUseLegacyMixinAp();
-
 	@Deprecated(forRemoval = true)
 	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
 	default void setShareCaches(boolean shareCaches) {

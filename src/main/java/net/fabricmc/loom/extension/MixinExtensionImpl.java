@@ -49,20 +49,14 @@ import org.jetbrains.annotations.NotNull;
 
 public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
-	private final Project project;
 	private final Property<String> defaultRefmapName;
 
 	@Inject
 	public MixinExtensionImpl(Project project) {
+		super(project);
 		this.isDefault = true;
-		this.project = project;
 		this.defaultRefmapName = project.getObjects().property(String.class)
 				.convention(project.provider(this::getDefaultMixinRefmapName));
-	}
-
-	@Override
-	public Project getProject() {
-		return this.project;
 	}
 
 	@Override
@@ -71,13 +65,15 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	}
 
 	private String getDefaultMixinRefmapName() {
-		String defaultRefmapName = getProject().getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
-		getProject().getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
+		String defaultRefmapName = project.getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
+		project.getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
 		return defaultRefmapName;
 	}
 
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
+		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));
 		MixinExtension.setMixinInformationContainer(sourceSet, new MixinExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 

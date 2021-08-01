@@ -54,7 +54,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
 	protected final Property<Boolean> shareCaches;
-	protected final Property<Boolean> useMixinAp;
 	protected final Property<Boolean> remapArchives;
 	protected final Property<String> customManifest;
 
@@ -73,8 +72,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.convention(false);
 		this.remapArchives = project.getObjects().property(Boolean.class)
 				.convention(true);
-		this.useMixinAp = project.getObjects().property(Boolean.class)
-				.convention(false);
 		this.customManifest = project.getObjects().property(String.class);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
@@ -93,11 +90,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getShareRemapCaches() {
 		return shareCaches;
-	}
-
-	@Override
-	public Property<Boolean> getUseLegacyMixinAp() {
-		return useMixinAp;
 	}
 
 	@Override
@@ -140,10 +132,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void mixin(Action<MixinExtensionAPI> action) {
-		if (!this.getUseLegacyMixinAp().get()) {
-			throw new IllegalStateException("Cannot config mixin annotation processor while useLegacyMixinAp = false");
-		}
-
 		action.execute(getMixin());
 	}
 

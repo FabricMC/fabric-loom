@@ -133,7 +133,7 @@ public final class CompileConfiguration {
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 
-			if (extension.getUseLegacyMixinAp().get()) {
+			if (extension.getMixin().getUseLegacyMixinAp().get()) {
 				// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
 				System.setProperty("log4j2.disable.jmx", "true");
 				System.setProperty("log4j.shutdownHookEnabled", "false");

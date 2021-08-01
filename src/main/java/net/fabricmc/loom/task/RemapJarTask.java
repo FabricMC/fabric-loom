@@ -96,7 +96,7 @@ public class RemapJarTask extends Jar {
 		remapAccessWidener.set(false);
 		addDefaultNestedDependencies.set(true);
 
-		if (!LoomGradleExtension.get(getProject()).getUseLegacyMixinAp().get()) {
+		if (!LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp().get()) {
 			remapOptions.add(b -> b.extension(new MixinExtension()));
 		}
 	}
@@ -175,7 +175,7 @@ public class RemapJarTask extends Jar {
 						throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
 					}
 
-					if (extension.getUseLegacyMixinAp().get()) {
+					if (extension.getMixin().getUseLegacyMixinAp().get()) {
 						if (MixinRefmapHelper.addRefmapName(project, output)) {
 							project.getLogger().debug("Transformed mixin reference maps in output JAR!");
 						}

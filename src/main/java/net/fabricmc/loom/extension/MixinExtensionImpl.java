@@ -61,6 +61,8 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	public Property<String> getDefaultRefmapName() {
+		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+
 		return defaultRefmapName;
 	}
 

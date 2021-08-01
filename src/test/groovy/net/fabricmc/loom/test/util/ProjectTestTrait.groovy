@@ -111,13 +111,17 @@ trait ProjectTestTrait {
 	}
 
 	File getOutputFile(String name, String project = "") {
-		def file = new File(testProjectDir, "${project}build/libs/${name}")
+		def file = getFutureOutputFile(name, project)
 
 		if (!file.exists()) {
 			throw new FileNotFoundException("Could not find ${name} at ${file.absolutePath}")
 		}
 
 		return file
+	}
+
+	File getFutureOutputFile(String name, String project = "") {
+		return new File(testProjectDir, "${project}build/libs/${name}")
 	}
 
 	File getGeneratedSources(String mappings, String gradleVersion = DEFAULT_GRADLE) {

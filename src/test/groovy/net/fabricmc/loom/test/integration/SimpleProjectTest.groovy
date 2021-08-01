@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -38,12 +39,20 @@ class SimpleProjectTest extends Specification implements ProjectTestTrait, Archi
 	}
 
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "build and run (gradle #gradle)"() {
+		given:
+			def server = ServerRunner.create(testProjectDir, "1.16.5")
+										.withMod(getFutureOutputFile("fabric-example-mod-1.0.0.jar"))
+										.withFabricApi()
 		when:
 			def result = create("build", gradle)
+			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
 			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+
+			serverResult.successful()
+			serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
 		where:
 			gradle              | _
 			DEFAULT_GRADLE      | _

@@ -25,9 +25,27 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+
+import com.google.common.hash.Hashing;
+import com.google.common.io.CharSource;
+import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
+import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 public class JarProcessorManager {
+	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+	private static final String JAR_PROCESSOR_HASH_ATTRIBUTE = "Loom-Jar-Processor-Hash";
 	private final List<JarProcessor> jarProcessors;
 
 	public JarProcessorManager(List<JarProcessor> jarProcessors) {
@@ -47,12 +65,55 @@ public class JarProcessorManager {
 			return true;
 		}
 
+		String jarProcessorHash = getJarProcessorHash();
+
+		try (JarFile jar = new JarFile(file)) {
+			Attributes attributes = jar.getManifest().getMainAttributes();
+
+			if (!jarProcessorHash.equals(attributes.getValue(JAR_PROCESSOR_HASH_ATTRIBUTE))) {
+				return true;
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not check jar manifest of " + file, e);
+		}
+
 		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+	}
+
+	private String getJarProcessorHash() {
+		String jarProcessorIds = jarProcessors.stream()
+				.map(JarProcessor::getId)
+				.sorted()
+				.collect(Collectors.joining(";"));
+
+		try {
+			return CharSource.wrap(jarProcessorIds)
+					.asByteSource(StandardCharsets.UTF_8)
+					.hash(Hashing.sha256())
+					.toString();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not hash jar processor IDs", e);
+		}
 	}
 
 	public void process(File file) {
 		for (JarProcessor jarProcessor : jarProcessors) {
 			jarProcessor.process(file);
+		}
+
+		boolean manifestTransformed = ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {
+				new ZipEntryTransformerEntry(MANIFEST_PATH, new StreamZipEntryTransformer() {
+					@Override
+					protected void transform(ZipEntry zipEntry, InputStream in, OutputStream out) throws IOException {
+						Manifest manifest = new Manifest(in);
+						manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
+						manifest.write(out);
+					}
+				})
+		});
+
+		if (!manifestTransformed) {
+			throw new RuntimeException("Could not add data to jar manifest in " + file);
 		}
 	}
 

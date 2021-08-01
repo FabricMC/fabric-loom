@@ -122,7 +122,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
-		if (getExtension().isShareCaches() && !getExtension().isRootProject() && versionManifestJson.exists() && !isRefreshDeps()) {
+		if (getExtension().getShareRemapCaches().get() && !getExtension().isRootProject() && versionManifestJson.exists() && !isRefreshDeps()) {
 			return;
 		}
 
@@ -146,10 +146,10 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 
 		Optional<ManifestVersion.Versions> optionalVersion = Optional.empty();
 
-		if (getExtension().getCustomManifest() != null) {
+		if (getExtension().getCustomMinecraftManifest().isPresent()) {
 			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
 			customVersion.id = minecraftVersion;
-			customVersion.url = getExtension().getCustomManifest();
+			customVersion.url = getExtension().getCustomMinecraftManifest().get();
 			optionalVersion = Optional.of(customVersion);
 			getProject().getLogger().lifecycle("Using custom minecraft manifest");
 		}
@@ -213,7 +213,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private boolean hasRecentValidManifest() throws IOException {
-		if (getExtension().getCustomManifest() != null) {
+		if (getExtension().getCustomMinecraftManifest().isPresent()) {
 			return false;
 		}
 
@@ -234,7 +234,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
-		if (getExtension().isShareCaches() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
+		if (getExtension().getShareRemapCaches().get() && !getExtension().isRootProject() && minecraftClientJar.exists() && minecraftServerJar.exists() && !isRefreshDeps()) {
 			return;
 		}
 

@@ -66,7 +66,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {
-		MixinApExtension mixin = LoomGradleExtension.get(project).getMixinApExtension();
+		MixinApExtension mixin = LoomGradleExtension.get(project).getMixin();
 		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.JAVA)
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Objects.requireNonNull((JavaCompile) entry.getValue())));
 	}
@@ -82,7 +82,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 			SourceSet sourceSet = entry.getKey();
 			task.doLast(t -> {
 				try {
-					String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).getRefmapName();
+					String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
 					Path src = Paths.get(getRefmapDestination(task, refmapName));
 					Path dest = Paths.get(task.getDestinationDir().toString(), refmapName);
 

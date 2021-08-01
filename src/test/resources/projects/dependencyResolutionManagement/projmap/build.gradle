@@ -68,8 +68,8 @@ jar {
 	}
 }
 
-minecraft {
-	accessWidener = file("src/main/resources/modid.accesswidener")
+loom {
+	accessWidenerPath = file("src/main/resources/modid.accesswidener")
 }
 
 // configure the maven publication

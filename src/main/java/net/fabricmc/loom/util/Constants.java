@@ -118,4 +118,12 @@ public class Constants {
 		private Knot() {
 		}
 	}
+
+	public static final class TaskGroup {
+		public static final String FABRIC = "fabric";
+		public static final String IDE = "ide";
+
+		private TaskGroup() {
+		}
+	}
 }

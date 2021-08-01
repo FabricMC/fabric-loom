@@ -23,6 +23,13 @@
     ]
   },
   "mixins": [
+    "main.mixins.json",
+    {
+      "config": "blabla.json",
+      "environment": "client"
+    },
+    "m1_1.mixins.json",
+    "m1_2.mixins.json"
   ],
 
   "depends": {

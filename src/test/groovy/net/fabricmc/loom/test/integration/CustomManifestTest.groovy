@@ -40,7 +40,7 @@ class CustomManifestTest extends Specification implements ProjectTestTrait {
     def filesReady() {
         buildGradle() << '''
             loom {
-                customManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
+                customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
             }
 
             dependencies {

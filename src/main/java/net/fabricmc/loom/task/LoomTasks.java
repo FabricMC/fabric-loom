@@ -35,6 +35,7 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
 	private LoomTasks() {
@@ -50,7 +51,7 @@ public final class LoomTasks {
 
 		tasks.register("remapJar", RemapJarTask.class, t -> {
 			t.setDescription("Remaps the built project jar to intermediary mappings.");
-			t.setGroup("fabric");
+			t.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
@@ -65,24 +66,24 @@ public final class LoomTasks {
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
 			t.dependsOn("idea", "downloadAssets");
-			t.setGroup("ide");
+			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
 			t.dependsOn("downloadAssets");
-			t.setGroup("ide");
+			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
 			t.setDescription("Removes Eclipse run configurations for this project.");
-			t.setGroup("ide");
+			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.setDescription("Generates VSCode launch configurations.");
 			t.dependsOn("downloadAssets");
-			t.setGroup("ide");
+			t.setGroup(Constants.TaskGroup.IDE);
 		});
 	}
 
@@ -97,7 +98,6 @@ public final class LoomTasks {
 
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
-				t.setGroup("fabric");
 
 				if (config.getEnvironment().equals("client")) {
 					t.dependsOn("downloadAssets");
@@ -136,7 +136,9 @@ public final class LoomTasks {
 				inputJar = outputJar;
 			}
 
-			for (LoomDecompiler decompiler : extension.getDecompilers()) {
+			extension.getGameDecompilers().finalizeValue();
+
+			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
 				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();

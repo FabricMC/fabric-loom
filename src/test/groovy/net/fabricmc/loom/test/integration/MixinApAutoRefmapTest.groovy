@@ -56,7 +56,7 @@ class MixinApAutoRefmapTest extends Specification implements ProjectTestTrait {
         def j1 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("main.mixins.json"))))
         j1.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0001.json"
 
-        def j2 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m0.mixins.json"))))
+        def j2 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("blabla.json"))))
         j2.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0002.json"
 
         def j3 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_1.mixins.json"))))
@@ -64,6 +64,9 @@ class MixinApAutoRefmapTest extends Specification implements ProjectTestTrait {
 
         def j4 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_2.mixins.json"))))
         !j4.asJsonObject.has("refmap")
+
+        def j5 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("irrelevant.mixins.json"))))
+        !j5.asJsonObject.has("refmap")
 
         where:
         gradle              | _

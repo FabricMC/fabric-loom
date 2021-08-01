@@ -26,7 +26,6 @@ package net.fabricmc.loom.extension;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -34,6 +33,7 @@ import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
@@ -55,42 +55,7 @@ public interface MixinApExtension extends MixinApExtensionAPI {
 	 * for configuring the mixin annotation processor. It's stored
 	 * in [SourceSet].ext.mixin.
 	 */
-	final class MixinInformationContainer {
-		private final SourceSet sourceSet;
-		private final String refmapName;
-		private Stream<String> mixinJsonNames;
-
-		final PatternSet mixinJsonPattern;
-
-		public MixinInformationContainer(@NotNull SourceSet sourceSet,
-										@NotNull String refmapName,
-										@NotNull PatternSet mixinJsonPattern) {
-			this.sourceSet = sourceSet;
-			this.refmapName = refmapName;
-			this.mixinJsonPattern = mixinJsonPattern;
-		}
-
-		void setMixinJsonNames(@NotNull Stream<String> mixinJsonNames) {
-			if (this.mixinJsonNames == null) {
-				this.mixinJsonNames = mixinJsonNames;
-			}
-		}
-
-		@NotNull
-		public Stream<String> getMixinJsonNames() {
-			return Objects.requireNonNull(mixinJsonNames);
-		}
-
-		@NotNull
-		public SourceSet getSourceSet() {
-			return sourceSet;
-		}
-
-		@NotNull
-		public String getRefmapName() {
-			return refmapName;
-		}
-	}
+	record MixinInformationContainer(SourceSet sourceSet, Provider<String> refmapNameProvider, PatternSet mixinConfigPattern) { }
 
 	@Nullable
 	static MixinInformationContainer getMixinInformationContainer(SourceSet sourceSet) {

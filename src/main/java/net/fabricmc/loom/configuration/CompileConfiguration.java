@@ -29,7 +29,6 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.jvm.tasks.Jar;
 
@@ -107,11 +106,6 @@ public final class CompileConfiguration {
 		Javadoc javadoc = (Javadoc) p.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
-		p.getTasks().withType(JavaCompile.class).configureEach(compile -> {
-			// Fork the java compiler to ensure that it does not keep any files open.
-			compile.getOptions().setFork(true);
-		});
-
 		p.afterEvaluate(project -> {
 			LoomGradleExtension extension = LoomGradleExtension.get(project);
 
@@ -129,9 +123,10 @@ public final class CompileConfiguration {
 			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
 			SetupIntelijRunConfigs.setup(project);
+			extension.getRemapArchives().finalizeValue();
 
 			// Enables the default mod remapper
-			if (extension.isRemapMod()) {
+			if (extension.getRemapArchives().get()) {
 				RemapConfiguration.setupDefaultRemap(project);
 			} else {
 				Jar jarTask = (Jar) project.getTasks().getByName("jar");
@@ -144,7 +139,7 @@ public final class CompileConfiguration {
 			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
-			MixinApExtension mixinApExtension = LoomGradleExtension.get(project).getMixinApExtension();
+			MixinApExtension mixinApExtension = LoomGradleExtension.get(project).getMixin();
 			mixinApExtension.init();
 
 			new JavaApInvoker(project).configureMixin();

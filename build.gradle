@@ -62,9 +62,9 @@ dependencies {
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')
 	implementation ('org.zeroturnaround:zt-zip:1.14')
-	implementation ('com.google.code.gson:gson:2.8.6')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.3')
-	implementation ('com.google.guava:guava:30.1-jre')
+	implementation ('com.google.code.gson:gson:2.8.7')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.4')
+	implementation ('com.google.guava:guava:30.1.1-jre')
 	implementation ('org.ow2.asm:asm:9.2')
 	implementation ('org.ow2.asm:asm-analysis:9.2')
 	implementation ('org.ow2.asm:asm-commons:9.2')
@@ -80,53 +80,32 @@ dependencies {
 	implementation ('net.fabricmc:tiny-remapper:0.4.3')
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
-	implementation 'net.fabricmc:access-widener:1.0.0'
+	implementation 'net.fabricmc:access-widener:1.1.0'
 	implementation 'net.fabricmc:mapping-io:0.1.3'
 
 	implementation ('net.fabricmc:lorenz-tiny:3.0.0') {
 		transitive = false
 	}
-	implementation ('org.cadixdev:lorenz-io-proguard:0.5.6')
+	implementation ('org.cadixdev:lorenz-io-proguard:0.5.7')
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:1.4.1')
 	implementation ('org.benf:cfr:0.151')
 
 	// source code remapping
-	implementation ('org.cadixdev:mercury:[0.1.0-rc1]')
-
-	// Mercury pulls all of these deps in, however eclipse does not specify the exact version to use so they can get updated without us knowing.
-	// Depend specifically on these versions to prevent them from being updated under our feet.
-	// The POM is also patched later on to as this strict versioning does not make it through.
-	implementation ('org.eclipse.jdt:org.eclipse.jdt.core:[3.21.0]')
-	implementation ('org.eclipse.platform:org.eclipse.compare.core:[3.6.1000]')
-	implementation ('org.eclipse.platform:org.eclipse.core.commands:[3.9.800]')
-	implementation ('org.eclipse.platform:org.eclipse.core.contenttype:[3.7.900]')
-	implementation ('org.eclipse.platform:org.eclipse.core.expressions:[3.7.100]')
-	implementation ('org.eclipse.platform:org.eclipse.core.filesystem:[1.7.700]')
-	implementation ('org.eclipse.platform:org.eclipse.core.jobs:[3.10.1100]')
-	implementation ('org.eclipse.platform:org.eclipse.core.resources:[3.14.0]')
-	implementation ('org.eclipse.platform:org.eclipse.core.runtime:[3.20.100]')
-	implementation ('org.eclipse.platform:org.eclipse.equinox.app:[1.5.100]')
-	implementation ('org.eclipse.platform:org.eclipse.equinox.common:[3.14.100]')
-	implementation ('org.eclipse.platform:org.eclipse.equinox.preferences:[3.8.200]')
-	implementation ('org.eclipse.platform:org.eclipse.equinox.registry:[3.10.100]')
-	implementation ('org.eclipse.platform:org.eclipse.osgi:[3.16.200]')
-	implementation ('org.eclipse.platform:org.eclipse.team.core:[3.8.1100]')
-	implementation ('org.eclipse.platform:org.eclipse.text:[3.11.0]')
-
+	implementation ('net.fabricmc:mercury:0.2.4')
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.0')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.21')
 
 	// Testing
 	testImplementation(gradleTestKit())
 	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'io.javalin:javalin:3.13.7'
+	testImplementation 'io.javalin:javalin:3.13.9'
 
-	compileOnly 'org.jetbrains:annotations:20.1.0'
+	compileOnly 'org.jetbrains:annotations:21.0.1'
 }
 
 jar {

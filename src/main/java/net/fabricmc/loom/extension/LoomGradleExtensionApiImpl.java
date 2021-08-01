@@ -24,17 +24,14 @@
 
 package net.fabricmc.loom.extension;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.plugins.BasePluginConvention;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 
 import net.fabricmc.loom.api.MixinApExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -45,70 +42,64 @@ import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
  * This class implements the public extension api.
  */
 public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionAPI {
-	protected final List<LoomDecompiler> decompilers = new ArrayList<>();
-	protected final List<JarProcessor> jarProcessors = new ArrayList<>();
+	protected final DeprecationHelper deprecationHelper;
+	protected final ListProperty<LoomDecompiler> decompilers;
+	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
-
-	protected File accessWidener = null;
-	protected boolean shareCaches = false;
-	protected String refmapName = null;
-	protected boolean remapMod = true;
-	protected String customManifest;
+	protected final RegularFileProperty accessWidener;
+	protected final Property<Boolean> shareCaches;
+	protected final Property<Boolean> remapArchives;
+	protected final Property<String> customManifest;
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
+		this.decompilers = project.getObjects().listProperty(LoomDecompiler.class)
+				.empty();
+		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
+				.empty();
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
+		this.accessWidener = project.getObjects().fileProperty();
+		this.shareCaches = project.getObjects().property(Boolean.class)
+				.convention(false);
+		this.remapArchives = project.getObjects().property(Boolean.class)
+				.convention(true);
+		this.customManifest = project.getObjects().property(String.class);
+
+		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 	}
 
 	@Override
-	public File getAccessWidener() {
+	public DeprecationHelper getDeprecationHelper() {
+		return deprecationHelper;
+	}
+
+	@Override
+	public RegularFileProperty getAccessWidenerPath() {
 		return accessWidener;
 	}
 
 	@Override
-	public void setAccessWidener(Object file) {
-		Objects.requireNonNull(file, "Access widener file cannot be null");
-		this.accessWidener = getProject().file(file);
-	}
-
-	@Override
-	public void setShareCaches(boolean shareCaches) {
-		this.shareCaches = shareCaches;
-	}
-
-	@Override
-	public boolean isShareCaches() {
+	public Property<Boolean> getShareRemapCaches() {
 		return shareCaches;
 	}
 
 	@Override
-	public List<LoomDecompiler> getDecompilers() {
+	public ListProperty<LoomDecompiler> getGameDecompilers() {
 		return decompilers;
 	}
 
 	@Override
-	public void addDecompiler(LoomDecompiler decompiler) {
-		Objects.requireNonNull(decompiler, "Decompiler cannot be null");
-		decompilers.add(decompiler);
-	}
-
-	@Override
-	public List<JarProcessor> getJarProcessors() {
+	public ListProperty<JarProcessor> getGameJarProcessors() {
 		return jarProcessors;
-	}
-
-	@Override
-	public void addJarProcessor(JarProcessor processor) {
-		Objects.requireNonNull(processor, "Jar processor cannot be null");
-		jarProcessors.add(processor);
 	}
 
 	@Override
@@ -120,24 +111,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public String getRefmapName() {
-		if (refmapName == null || refmapName.isEmpty()) {
-			String defaultRefmapName = getProject().getConvention().getPlugin(BasePluginConvention.class).getArchivesBaseName() + "-refmap.json";
-			getProject().getLogger().info("Could not find refmap definition, will be using default name: " + defaultRefmapName);
-			refmapName = defaultRefmapName;
-		}
-
-		return refmapName;
-	}
-
-	@Override
-	public void setRefmapName(String refmapName) {
-		this.refmapName = refmapName;
-	}
-
-	@Override
-	public void setRemapMod(boolean remapMod) {
-		this.remapMod = remapMod;
+	public Property<Boolean> getRemapArchives() {
+		return remapArchives;
 	}
 
 	@Override
@@ -156,23 +131,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public boolean isRemapMod() {
-		return remapMod;
-	}
-
-	@Override
 	public void mixin(Action<MixinApExtensionAPI> action) {
-		action.execute(getMixinApExtension());
+		action.execute(getMixin());
 	}
 
 	@Override
-	public void setCustomManifest(String customManifest) {
-		Objects.requireNonNull(customManifest, "Custom manifest cannot be null");
-		this.customManifest = customManifest;
-	}
-
-	@Override
-	public String getCustomManifest() {
+	public Property<String> getCustomMinecraftManifest() {
 		return customManifest;
 	}
 
@@ -180,13 +144,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	protected abstract LoomFiles getFiles();
 
-	protected abstract MixinApExtension getMixinApExtension();
-
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {
 		private EnsureCompile() {
 			super(null, null);
 			throw new RuntimeException();
+		}
+
+		@Override
+		public DeprecationHelper getDeprecationHelper() {
+			throw new RuntimeException("Yeah... something is really wrong");
 		}
 
 		@Override
@@ -200,7 +167,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		protected MixinApExtension getMixinApExtension() {
+		public MixinApExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

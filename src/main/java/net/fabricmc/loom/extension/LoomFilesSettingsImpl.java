@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,49 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration;
+package net.fabricmc.loom.extension;
 
-import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.plugins.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
+import java.io.File;
+import java.util.Objects;
 
-public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope, @Nullable String replacedWith) {
-	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean isOnModCompileClasspath, String mavenScope) {
-		this(sourceConfiguration, targetConfiguration, isOnModCompileClasspath, mavenScope, null);
+import org.gradle.api.initialization.Settings;
+
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+
+public class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
+	private final Settings settings;
+
+	public LoomFilesSettingsImpl(Settings settings) {
+		this.settings = Objects.requireNonNull(settings);
 	}
 
-	public boolean hasMavenScope() {
-		return mavenScope != null && !mavenScope.isEmpty();
+	@Override
+	public boolean hasCustomNatives() {
+		return false;
 	}
 
-	public String getRemappedConfiguration() {
-		return sourceConfiguration + "Mapped";
+	@Override
+	public File getNativesDirectory(MinecraftProvider minecraftProvider) {
+		throw new IllegalStateException("You can not access natives directory from setting stage");
 	}
 
-	public String getTargetConfiguration(ConfigurationContainer container) {
-		if (container.findByName(targetConfiguration) == null) {
-			return JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME;
-		}
+	@Override
+	protected File getGradleUserHomeDir() {
+		return settings.getGradle().getGradleUserHomeDir();
+	}
 
-		return targetConfiguration;
+	@Override
+	protected File getRootDir() {
+		return settings.getRootDir();
+	}
+
+	@Override
+	protected File getProjectDir() {
+		throw new IllegalStateException("You can not access project directory from setting stage");
+	}
+
+	@Override
+	protected File getBuildDir() {
+		throw new IllegalStateException("You can not access project build directory from setting stage");
 	}
 }

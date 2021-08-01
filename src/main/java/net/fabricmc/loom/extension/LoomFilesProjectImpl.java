@@ -25,26 +25,56 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.util.Objects;
 
 import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+
+public final class LoomFilesProjectImpl extends LoomFilesBaseImpl {
+	private final Project project;
+
+	public LoomFilesProjectImpl(Project project) {
+		this.project = Objects.requireNonNull(project);
 	}
 
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
+	@Override
+	protected File getGradleUserHomeDir() {
+		return project.getGradle().getGradleUserHomeDir();
 	}
 
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesJarStore();
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
+	@Override
+	protected File getRootDir() {
+		return project.getRootDir();
+	}
+
+	@Override
+	protected File getProjectDir() {
+		return project.getProjectDir();
+	}
+
+	@Override
+	protected File getBuildDir() {
+		return project.getBuildDir();
+	}
+
+	@Override
+	public boolean hasCustomNatives() {
+		return project.getProperties().get("fabric.loom.natives.dir") != null;
+	}
+
+	@Override
+	public File getNativesDirectory(MinecraftProvider minecraftProvider) {
+		if (hasCustomNatives()) {
+			return new File((String) project.property("fabric.loom.natives.dir"));
+		}
+
+		File natives = new File(getUserCache(), "natives/" + minecraftProvider.minecraftVersion());
+
+		if (!natives.exists()) {
+			natives.mkdirs();
+		}
+
+		return natives;
+	}
 }

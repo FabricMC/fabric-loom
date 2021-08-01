@@ -139,7 +139,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void mixinAp(Action<MixinApExtensionAPI> action) {
+	public void mixin(Action<MixinApExtensionAPI> action) {
 		if (!this.getUseLegacyMixinAp().get()) {
 			throw new IllegalStateException("Cannot config mixin annotation processor while useLegacyMixinAp = false");
 		}

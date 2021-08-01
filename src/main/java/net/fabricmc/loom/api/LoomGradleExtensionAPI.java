@@ -155,7 +155,7 @@ public interface LoomGradleExtensionAPI {
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
-	void mixinAp(Action<MixinApExtensionAPI> action);
+	void mixin(Action<MixinApExtensionAPI> action);
 
 	@ApiStatus.Experimental
 	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.

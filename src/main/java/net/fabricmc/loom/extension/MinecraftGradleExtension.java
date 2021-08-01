@@ -121,9 +121,9 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	}
 
 	@Override
-	public void mixinAp(Action<MixinApExtensionAPI> action) {
+	public void mixin(Action<MixinApExtensionAPI> action) {
 		reportDeprecation();
-		parent.mixinAp(action);
+		parent.mixin(action);
 	}
 
 	@Override

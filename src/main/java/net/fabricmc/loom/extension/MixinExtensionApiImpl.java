@@ -33,9 +33,9 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 
-import net.fabricmc.loom.api.MixinApExtensionAPI;
+import net.fabricmc.loom.api.MixinExtensionAPI;
 
-public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
+public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	protected abstract Project getProject();
 
 	protected final PatternSet add0(SourceSet sourceSet, String refmapName) {
@@ -107,7 +107,7 @@ public abstract class MixinApExtensionApiImpl implements MixinApExtensionAPI {
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
-	private final class EnsureCompile extends MixinApExtensionApiImpl {
+	private final class EnsureCompile extends MixinExtensionApiImpl {
 		private EnsureCompile() {
 			super();
 			throw new RuntimeException();

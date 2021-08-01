@@ -33,7 +33,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
-import net.fabricmc.loom.api.MixinApExtensionAPI;
+import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -139,7 +139,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void mixin(Action<MixinApExtensionAPI> action) {
+	public void mixin(Action<MixinExtensionAPI> action) {
 		if (!this.getUseLegacyMixinAp().get()) {
 			throw new IllegalStateException("Cannot config mixin annotation processor while useLegacyMixinAp = false");
 		}
@@ -179,7 +179,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		public MixinApExtension getMixin() {
+		public MixinExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

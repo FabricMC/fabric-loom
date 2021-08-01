@@ -47,13 +47,13 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.NotNull;
 
-public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements MixinApExtension {
+public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
 	private final Project project;
 	private final Property<String> defaultRefmapName;
 
 	@Inject
-	public MixinApExtensionImpl(Project project) {
+	public MixinExtensionImpl(Project project) {
 		this.isDefault = true;
 		this.project = project;
 		this.defaultRefmapName = project.getObjects().property(String.class)
@@ -79,7 +79,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));
-		MixinApExtension.setMixinInformationContainer(sourceSet, new MixinApExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
+		MixinExtension.setMixinInformationContainer(sourceSet, new MixinExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 
 		isDefault = false;
 
@@ -90,7 +90,7 @@ public class MixinApExtensionImpl extends MixinApExtensionApiImpl implements Mix
 	@NotNull
 	public Stream<SourceSet> getMixinSourceSetsStream() {
 		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().stream()
-				.filter(sourceSet -> MixinApExtension.getMixinInformationContainer(sourceSet) != null);
+				.filter(sourceSet -> MixinExtension.getMixinInformationContainer(sourceSet) != null);
 	}
 
 	@Override

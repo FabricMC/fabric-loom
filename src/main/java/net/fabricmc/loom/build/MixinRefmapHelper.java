@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,6 +37,7 @@ import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.gradle.api.Project;
@@ -108,7 +110,13 @@ public final class MixinRefmapHelper {
 
 	@NotNull
 	private static Collection<String> getMixinConfigurationFiles(JsonObject fabricModJson) {
-		return StreamSupport.stream(fabricModJson.getAsJsonArray("mixins").spliterator(), false)
+		JsonArray mixins = fabricModJson.getAsJsonArray("mixins");
+
+		if (mixins == null) {
+			return Collections.emptySet();
+		}
+
+		return StreamSupport.stream(mixins.spliterator(), false)
 				.map(e -> {
 					if (e instanceof JsonPrimitive str) {
 						return str.getAsString();

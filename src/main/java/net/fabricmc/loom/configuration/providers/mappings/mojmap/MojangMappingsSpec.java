@@ -42,6 +42,7 @@ public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {
 		}
 
 		return new MojangMappingLayer(
+				context.minecraftVersion(),
 				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
 				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
 				context.workingDirectory("mojang"),

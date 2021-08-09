@@ -41,6 +41,8 @@ public interface MappingContext {
 		return minecraftProvider().minecraftVersion();
 	}
 
+	File workingDirectory();
+
 	/**
 	 * Creates a temporary working dir to be used to store working files.
 	 */

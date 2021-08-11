@@ -44,14 +44,15 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.ProGuardReader;
 
-public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
+public record MojangMappingLayer(String minecraftVersion,
+									MinecraftVersionMeta.Download clientDownload,
 									MinecraftVersionMeta.Download serverDownload,
 									File workingDir,
 									Logger logger) implements MappingLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		var clientMappings = new File(workingDir(), "client.txt");
-		var serverMappings = new File(workingDir(), "server.txt");
+		var clientMappings = new File(workingDir(), "%s.client.txt".formatted(minecraftVersion));
+		var serverMappings = new File(workingDir(), "%s.server.txt".formatted(minecraftVersion));
 
 		download(clientMappings, serverMappings);
 

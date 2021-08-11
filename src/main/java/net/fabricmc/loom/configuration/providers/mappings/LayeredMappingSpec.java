@@ -27,8 +27,8 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.util.List;
 
 public record LayeredMappingSpec(List<MappingsSpec<?>> layers) {
-	public String getVersion() {
+	public String getVersion(MappingContext context) {
 		// TODO something better?
-		return "layered+hash.%d".formatted(Math.abs(hashCode()));
+		return "layered+hash.%d.minecraft.%s".formatted(Math.abs(hashCode()), context.minecraftVersion());
 	}
 }

@@ -73,13 +73,13 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 
 		repositories.ivy(repo -> {
 			repo.setUrl(files.getUserCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 
 		repositories.ivy(repo -> {
 			repo.setUrl(files.getRootProjectPersistentCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 	}

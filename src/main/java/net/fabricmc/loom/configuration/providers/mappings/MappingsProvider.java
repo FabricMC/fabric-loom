@@ -28,7 +28,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 public interface MappingsProvider {
-	Path getMappingsDir();
+	Path mappingsWorkingDir();
 
 	File intermediaryTinyFile();
 }

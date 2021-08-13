@@ -62,9 +62,7 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public File workingDirectory(String name) {
-		File tempDir = new File(mappingsProvider().getMappingsDir().toFile(), workingDirName);
-		tempDir.mkdirs();
-		return new File(tempDir, name);
+		return new File(minecraftProvider().dir("layered/working_dir/" + workingDirName), name);
 	}
 
 	@Override

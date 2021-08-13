@@ -64,7 +64,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public Set<File> resolve() {
-		Path mappingsDir = mappingContext.mappingsProvider().getMappingsDir();
+		Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
 		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
 
 		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {

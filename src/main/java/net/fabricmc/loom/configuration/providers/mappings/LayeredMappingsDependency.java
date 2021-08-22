@@ -75,7 +75,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
 
 					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingNamespace.NAMED.stringValue()));
-					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue());
+					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true);
 					mappings.accept(nsSwitch);
 
 					Files.deleteIfExists(mappingsFile);

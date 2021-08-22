@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
+import java.io.IOException;
 import java.util.Locale;
 
 import net.fabricmc.mappingio.MappingVisitor;
@@ -35,7 +36,7 @@ public final class ParchmentPrefixStripingMappingVisitor extends ForwardingMappi
 	}
 
 	@Override
-	public boolean visitMethodArg(int argPosition, int lvIndex, String srcName) {
+	public boolean visitMethodArg(int argPosition, int lvIndex, String srcName) throws IOException {
 		return super.visitMethodArg(argPosition, lvIndex, stripMethodArg(srcName));
 	}
 

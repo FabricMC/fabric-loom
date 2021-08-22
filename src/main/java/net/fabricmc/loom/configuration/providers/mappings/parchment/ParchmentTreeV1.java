@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public record ParchmentTreeV1(
 		@Nullable
 		List<Package> packages
 ) {
-	public void visit(MappingVisitor visitor, String srcNamespace) {
+	public void visit(MappingVisitor visitor, String srcNamespace) throws IOException {
 		while (true) {
 			if (visitor.visitHeader()) {
 				visitor.visitNamespaces(srcNamespace, Collections.emptyList());
@@ -68,7 +69,7 @@ public record ParchmentTreeV1(
 			@Nullable
 			List<String> javadoc
 	) {
-		public void visit(MappingVisitor visitor) {
+		public void visit(MappingVisitor visitor) throws IOException {
 			if (visitor.visitClass(name())) {
 				if (!visitor.visitElementContent(MappedElementKind.CLASS)) {
 					return;
@@ -99,7 +100,7 @@ public record ParchmentTreeV1(
 			@Nullable
 			List<String> javadoc
 	) {
-		public void visit(MappingVisitor visitor) {
+		public void visit(MappingVisitor visitor) throws IOException {
 			if (visitor.visitField(name, descriptor)) {
 				if (!visitor.visitElementContent(MappedElementKind.FIELD)) {
 					return;
@@ -120,7 +121,7 @@ public record ParchmentTreeV1(
 			@Nullable
 			List<String> javadoc
 	) {
-		public void visit(MappingVisitor visitor) {
+		public void visit(MappingVisitor visitor) throws IOException {
 			if (visitor.visitMethod(name, descriptor)) {
 				if (!visitor.visitElementContent(MappedElementKind.METHOD)) {
 					return;
@@ -145,7 +146,7 @@ public record ParchmentTreeV1(
 			@Nullable
 			String javadoc
 	) {
-		public void visit(MappingVisitor visitor) {
+		public void visit(MappingVisitor visitor) throws IOException {
 			if (visitor.visitMethodArg(index, index, name)) {
 				if (!visitor.visitElementContent(MappedElementKind.METHOD_ARG)) {
 					return;

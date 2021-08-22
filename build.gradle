@@ -81,7 +81,7 @@ dependencies {
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
 	implementation 'net.fabricmc:access-widener:1.1.0'
-	implementation 'net.fabricmc:mapping-io:0.1.3'
+	implementation 'net.fabricmc:mapping-io:0.2.0'
 
 	implementation ('net.fabricmc:lorenz-tiny:3.0.0') {
 		transitive = false

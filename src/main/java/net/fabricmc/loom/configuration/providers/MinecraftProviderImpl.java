@@ -43,6 +43,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftLibraryProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.stitch.merge.JarMerger;
@@ -140,7 +141,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 			}
 		} else {
 			getProject().getLogger().debug("Downloading version manifests");
-			DownloadUtil.downloadIfChanged(new URL(Constants.VERSION_MANIFESTS), versionManifestJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getVersionManifests(getProject())), versionManifestJson, getProject().getLogger());
 		}
 
 		String versionManifest = Files.asCharSource(versionManifestJson, StandardCharsets.UTF_8).read();
@@ -199,7 +200,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 				return Optional.empty();
 			}
 		} else {
-			DownloadUtil.downloadIfChanged(new URL(Constants.EXPERIMENTAL_VERSIONS), experimentalVersionsJson, getProject().getLogger());
+			DownloadUtil.downloadIfChanged(new URL(MirrorUtil.getExperimentalVersions(getProject())), experimentalVersionsJson, getProject().getLogger());
 		}
 
 		String expVersionManifest = Files.asCharSource(experimentalVersionsJson, StandardCharsets.UTF_8).read();

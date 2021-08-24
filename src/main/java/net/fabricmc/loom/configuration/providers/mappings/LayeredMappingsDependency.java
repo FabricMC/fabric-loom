@@ -64,9 +64,9 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 	@Override
 	public Set<File> resolve() {
 		Path mappingsDir = mappingContext.workingDirectory().toPath();
-		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
+		Path mappingsJar = mappingsDir.resolve(String.format("%s-%s-%s.jar", GROUP, MODULE, getVersion()));
 
-		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
+		if (!Files.exists(mappingsJar) || LoomGradlePlugin.refreshDeps) {
 			try {
 				var processor = new LayeredMappingsProcessor(layeredMappingSpec);
 				MemoryMappingTree mappings = processor.getMappings(mappingContext);
@@ -78,18 +78,18 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true);
 					mappings.accept(nsSwitch);
 
-					Files.deleteIfExists(mappingsFile);
+					Files.deleteIfExists(mappingsJar);
 
 					ZipUtil.pack(new ZipEntrySource[] {
 							new ByteSource("mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8))
-					}, mappingsFile.toFile());
+					}, mappingsJar.toFile());
 				}
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to resolve Mojang mappings", e);
+				throw new RuntimeException("Failed to resolve layered mappings", e);
 			}
 		}
 
-		return Collections.singleton(mappingsFile.toFile());
+		return Collections.singleton(mappingsJar.toFile());
 	}
 
 	@Override

@@ -29,6 +29,6 @@ import java.util.List;
 public record LayeredMappingSpec(List<MappingsSpec<?>> layers) {
 	public String getVersion(MappingContext context) {
 		// TODO something better?
-		return "layered+hash.%d.minecraft.%s".formatted(Math.abs(hashCode()), context.minecraftVersion());
+		return "layered.%d.minecraft.%s".formatted(Math.abs(hashCode()), context.minecraftVersion());
 	}
 }

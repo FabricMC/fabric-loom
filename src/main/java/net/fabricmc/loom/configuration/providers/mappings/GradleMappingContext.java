@@ -73,6 +73,8 @@ public class GradleMappingContext implements MappingContext {
 					getLogger().warn("Failed to cleanup layered mappings working directory: {}", e.getMessage());
 				}
 			}
+
+			workingDir.mkdirs();
 		}
 
 		return workingDir;

@@ -35,7 +35,6 @@ import org.gradle.api.plugins.PluginAware;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.extension.LoomFiles;
-
 import net.fabricmc.loom.util.MirrorUtil;
 
 public class LoomRepositoryPlugin implements Plugin<PluginAware> {

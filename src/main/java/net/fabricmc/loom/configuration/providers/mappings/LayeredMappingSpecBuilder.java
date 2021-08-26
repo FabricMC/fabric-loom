@@ -48,6 +48,10 @@ public class LayeredMappingSpecBuilder {
 	}
 
 	public LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
+		if (layers.stream().filter(mappingsSpec -> mappingsSpec instanceof MojangMappingsSpec).findAny().isEmpty()) {
+			throw new UnsupportedOperationException("Parchment requires an official Mojang mappings layer to be defined first.");
+		}
+
 		var builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
 		action.execute(builder);
 		layers.add(builder.build());
@@ -55,6 +59,10 @@ public class LayeredMappingSpecBuilder {
 	}
 
 	public LayeredMappingSpec build() {
+		if (layers.isEmpty()) {
+			throw new UnsupportedOperationException("Cannot build layered mappings without any layers!");
+		}
+
 		List<MappingsSpec<?>> builtLayers = new LinkedList<>();
 		// Intermediary is always the base layer
 		builtLayers.add(new IntermediaryMappingsSpec());

@@ -35,14 +35,13 @@ import org.gradle.api.plugins.PluginAware;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.extension.LoomFiles;
-
 import net.fabricmc.loom.util.MirrorUtil;
 
 public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
 	public void apply(@NotNull PluginAware target) {
 		if (target instanceof Settings settings) {
-			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings));
+			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings), settings);
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
@@ -51,7 +50,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 				return;
 			}
 
-			declareRepositories(project.getRepositories(), LoomFiles.create(project));
+			declareRepositories(project.getRepositories(), LoomFiles.create(project), project);
 		} else if (target instanceof Gradle) {
 			return;
 		} else {
@@ -59,18 +58,18 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		}
 	}
 
-	private void declareRepositories(RepositoryHandler repositories, LoomFiles files) {
+	private void declareRepositories(RepositoryHandler repositories, LoomFiles files, ExtensionAware target) {
 		repositories.maven(repo -> {
 			repo.setName("UserLocalRemappedMods");
 			repo.setUrl(files.getRemappedModCache());
 		});
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
-			repo.setUrl(MirrorUtil.getFabricRepository((ExtensionAware) target));
+			repo.setUrl(MirrorUtil.getFabricRepository(target));
 		});
 		repositories.maven(repo -> {
 			repo.setName("Mojang");
-			repo.setUrl(MirrorUtil.getLibrariesBase((ExtensionAware) target));
+			repo.setUrl(MirrorUtil.getLibrariesBase(target));
 		});
 		repositories.mavenCentral();
 

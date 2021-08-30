@@ -54,10 +54,11 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
 			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["-x", "check"])
+			gradle.printOutputFiles()
+
 			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
-			gradle.printOutputFiles()
 
 			serverResult.successful()
 			serverResult.output.contains("fabric@$API_VERSION")

@@ -48,9 +48,9 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 			result.task(":remapAllJars").outcome == SUCCESS
 			result.task(":remapAllSources").outcome == SUCCESS
 
-			gradle.hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			gradle.hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			gradle.hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
 
 		where:
 			version << STANDARD_TEST_VERSIONS

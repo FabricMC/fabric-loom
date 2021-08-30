@@ -44,9 +44,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 			def gradle = gradleProject(
 					repo: "https://github.com/modmuss50/fabric.git",
-					commit: "16e3a3bd10f9622c325b2f6e5382534bd45531b1",
-					version: version,
-					warningMode: "all" // TODO remove me
+					commit: "cb31cccd34cb91f70cae6bac80208f5ec3650f33",
+					version: version
 			)
 
 			// Set the version to something constant
@@ -55,7 +54,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["-x", "check"]) // Note: checkstyle does not appear to like being ran in a test runner
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["--parallel", "-x", "check"]) // Note: checkstyle does not appear to like being ran in a test runner
 			gradle.printOutputFiles()
 
 			def serverResult = server.run()

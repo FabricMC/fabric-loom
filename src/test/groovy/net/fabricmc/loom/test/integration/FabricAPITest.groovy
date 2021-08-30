@@ -32,13 +32,12 @@ import spock.lang.Unroll
 
 import java.util.concurrent.TimeUnit
 
-import static net.fabricmc.loom.test.LoomTestConstants.DEFAULT_GRADLE
-import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
 class FabricAPITest extends Specification implements GradleProjectTestTrait {
-	private static final String API_VERSION = "0.39.2+local-HEAD"
+	private static final String API_VERSION = "0.0.0+loom"
 
 	@Unroll
 	def "build and run (gradle #version)"() {
@@ -50,10 +49,13 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 					warningMode: "all" // TODO remove me
 			)
 
+			// Set the version to something constant
+			gradle.buildGradle.text = gradle.buildGradle.text.replace('Globals.baseVersion + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+
 			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["-x", "check"])
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["-x", "check"]) // Note: checkstyle does not appear to like being ran in a test runner
 			gradle.printOutputFiles()
 
 			def serverResult = server.run()
@@ -63,8 +65,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			serverResult.successful()
 			serverResult.output.contains("fabric@$API_VERSION")
 		where:
-			version              | _
-			DEFAULT_GRADLE       | _
-			PRE_RELEASE_GRADLE   | _
+			version << STANDARD_TEST_VERSIONS
 	}
 }

@@ -65,21 +65,13 @@ trait GradleProjectTestTrait {
             String repo  = options.repo
             String commit = options.commit
 
-            exec(projectDir, "echo", "clone")
-
             exec(projectDir, "git", "clone", repo, ".")
             exec(projectDir, "git", "checkout", commit)
-
-            if (options.patch) {
-                exec(projectDir, "git", "apply", options.patch as String)
-            }
 
             return
         }
 
         throw new UnsupportedOperationException("No project setup method was supplied")
-
-        // TODO support pulling projects from git and applying patches
     }
 
     private void exec(File projectDir, String... args) {

@@ -28,10 +28,14 @@ import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.ProjectTestTrait
 import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
+import spock.lang.Timeout
 import spock.lang.Unroll
+
+import java.util.concurrent.TimeUnit
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
+@Timeout(value = 20, unit = TimeUnit.MINUTES)
 class SimpleProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
 	@Override
 	String name() {

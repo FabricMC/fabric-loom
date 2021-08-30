@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
@@ -38,7 +37,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
-class FabricAPITest extends Specification implements GradleProjectTestTrait, ArchiveAssertionsTrait {
+class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	private static final String API_VERSION = "0.39.2+local-HEAD"
 
 	@Unroll
@@ -58,6 +57,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait, Arc
 			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
+			gradle.printOutputFiles()
 
 			serverResult.successful()
 			serverResult.output.contains("fabric@$API_VERSION")

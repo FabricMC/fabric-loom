@@ -24,30 +24,25 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class AccessWidenerTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"accesswidener"
-	}
-
+class AccessWidenerTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "accesswidener (gradle #gradle)"() {
+	def "accesswidener (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "accesswidener", version: version)
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
 		then:
 			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
+			gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "modid.accesswidener") == expected().replaceAll('\r', '')
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 
 	String expected() {

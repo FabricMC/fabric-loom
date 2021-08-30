@@ -24,10 +24,8 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.ServerRunner
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
@@ -38,7 +36,7 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static net.fabricmc.loom.test.LoomTestConstants.*
 
 @Timeout(value = 20, unit = TimeUnit.MINUTES)
-class SimpleProjectTest extends Specification implements GradleProjectTestTrait, ArchiveAssertionsTrait {
+class SimpleProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "build and run (gradle #version)"() {
 		setup:
@@ -62,15 +60,10 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait,
 			PRE_RELEASE_GRADLE   | _
 	}
 
-	@Shared
-	File ideProjectDir = File.createTempDir()
-	@Shared
-	File ideGradleHomeDir = File.createTempDir()
-
 	@Unroll
 	def "#ide config generation"() {
 		setup:
-			def gradle = gradleProject(project: "simple", projectDir: ideProjectDir, gradleHomeDir: ideGradleHomeDir)
+			def gradle = gradleProject(project: "simple", sharedFiles: true)
 		when:
 			def result = gradle.run(task: ide)
 		then:

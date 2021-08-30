@@ -24,47 +24,48 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+
 import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
 
 import java.nio.charset.StandardCharsets
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class UnpickTest extends Specification implements ProjectTestTrait {
+class UnpickTest extends Specification implements GradleProjectTestTrait {
 	static final String MAPPINGS = "21w13a/net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
 
-	@Override
-	String name() {
-		"unpick"
-	}
-
 	def "unpick decompile"() {
+		setup:
+			def gradle = gradleProject(project: "unpick", version: version)
+
 		when:
-			def result = create("genSources", gradle)
+			def result = gradle.run(task: "genSources")
 		then:
 			result.task(":genSources").outcome == SUCCESS
-			getClassSource("net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+			getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 
 	def "unpick build"() {
+		setup:
+			def gradle = gradleProject(project: "unpick", version: version)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
+
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 
-	String getClassSource(String classname, String mappings = MAPPINGS) {
-		File sourcesJar = getGeneratedSources(mappings)
+	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
+		File sourcesJar = gradle.getGeneratedSources(mappings)
 		return new String(ZipUtil.unpackEntry(sourcesJar, classname), StandardCharsets.UTF_8)
 	}
 }

@@ -27,38 +27,35 @@ package net.fabricmc.loom.test.integration
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static java.lang.System.setProperty
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class ReproducibleBuildTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"reproducible"
-	}
-
+class ReproducibleBuildTest extends Specification implements GradleProjectTestTrait {
 	@RestoreSystemProperties
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "reproducible", version: version)
+
 		when:
 			setProperty('loom.test.reproducible', 'true')
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
-			getOutputHash("fabric-example-mod-1.0.0.jar") == modHash
-			getOutputHash("fabric-example-mod-1.0.0-sources.jar") in sourceHash // Done for different line endings.
+			generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0.jar")) == modHash
+			generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0-sources.jar")) in sourceHash // Done for different line endings.
+
 		where:
-			gradle              | modHash                               | sourceHash
+			version              | modHash                               | sourceHash
 			DEFAULT_GRADLE      | "ed3306ef60f434c55048cba8de5dab95"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
 			PRE_RELEASE_GRADLE  | "ed3306ef60f434c55048cba8de5dab95"    | ["be31766e6cafbe4ae3bca9e35ba63169", "7348b0bd87d36d7ec6f3bca9c2b66062"]
-	}
-
-	String getOutputHash(String name) {
-		generateMD5(getOutputFile(name))
 	}
 
 	String generateMD5(File file) {

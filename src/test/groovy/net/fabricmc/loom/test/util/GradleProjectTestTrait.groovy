@@ -29,13 +29,21 @@ import net.fabricmc.loom.test.LoomTestConstants
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.zeroturnaround.zip.ZipUtil
+import spock.lang.Shared
 
 trait GradleProjectTestTrait {
+    @Lazy
+    @Shared
+    private static File sharedProjectDir = File.createTempDir()
+    @Lazy
+    @Shared
+    private static File sharedGradleHomeDir = File.createTempDir()
+
     GradleProject gradleProject(Map options) {
-        String gradleVersion = options["version"] as String ?: LoomTestConstants.DEFAULT_GRADLE
-        String warningMode = options["warningMode"] as String ?: "fail"
-        File projectDir = options["projectDir"] as File ?: File.createTempDir()
-        File gradleHomeDir = options["gradleHomeDir"] as File ?: File.createTempDir()
+        String gradleVersion = options.version as String ?: LoomTestConstants.DEFAULT_GRADLE
+        String warningMode = options.warningMode as String ?: "fail"
+        File projectDir = options.projectDir as File ?: options.sharedFiles ? sharedProjectDir : File.createTempDir()
+        File gradleHomeDir = options.gradleHomeDir as File ?: options.sharedFiles ? sharedGradleHomeDir : File.createTempDir()
 
         setupProject(options, projectDir)
 
@@ -48,22 +56,22 @@ trait GradleProjectTestTrait {
     }
 
     private void setupProject(Map options, File projectDir) {
-        if (options["project"]) {
-            copyProjectFromResources(options["project"] as String, projectDir)
+        if (options.project) {
+            copyProjectFromResources(options.project as String, projectDir)
             return
         }
 
         if (options["repo"]) {
-            String repo  = options["repo"]
-            String commit = options["commit"]
+            String repo  = options.repo
+            String commit = options.commit
 
             exec(projectDir, "echo", "clone")
 
             exec(projectDir, "git", "clone", repo, ".")
             exec(projectDir, "git", "checkout", commit)
 
-            if (options["patch"]) {
-                exec(projectDir, "git", "apply", options["patch"] as String)
+            if (options.patch) {
+                exec(projectDir, "git", "apply", options.patch as String)
             }
 
             return
@@ -91,6 +99,11 @@ trait GradleProjectTestTrait {
         if (!projectSourceDir.exists()) {
             throw new FileNotFoundException("Failed to find project directory at: $projectSourceDir.absolutePath")
         }
+
+        // Cleanup some basic things if they already exists
+        new File(projectDir, "src").deleteDir()
+        new File(projectDir, "build.gradle").delete()
+        new File(projectDir, "settings.gradle").delete()
 
         projectSourceDir.eachFileRecurse { file ->
             if (file.isDirectory()) {
@@ -128,16 +141,16 @@ trait GradleProjectTestTrait {
             def runner = this.runner
             def args = []
 
-            if (options["task"]) {
-                args << options["task"]
+            if (options.task) {
+                args << options.task
             }
 
-            args.addAll(options["tasks"] ?: [])
+            args.addAll(options.tasks ?: [])
 
             args << "--stacktrace"
             args << "--warning-mode" << warningMode
             args << "--gradle-user-home" << gradleHomeDir
-            args.addAll(options["args"] ?: [])
+            args.addAll(options.args ?: [])
 
             runner.withArguments(args as String[])
 
@@ -165,6 +178,16 @@ trait GradleProjectTestTrait {
             return new File(getProjectDir(), "build/libs/$filename")
         }
 
+        void printOutputFiles() {
+            new File(getProjectDir(), "build/libs/").listFiles().each {
+                println(it.name)
+            }
+        }
+
+        File getBuildGradle() {
+            return new File(getProjectDir(), "build.gradle")
+        }
+
         String getOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
             def bytes = ZipUtil.unpackEntry(file, entryName)
@@ -174,6 +197,15 @@ trait GradleProjectTestTrait {
             }
 
             new String(bytes as byte[])
+        }
+
+        boolean hasOutputZipEntry(String filename, String entryName) {
+            def file = getOutputFile(filename)
+            return ZipUtil.unpackEntry(file, entryName) != null
+        }
+
+        File getGeneratedSources(String mappings) {
+            return new File(getGradleHomeDir(), "caches/fabric-loom/${mappings}/minecraft-mapped-sources.jar")
         }
     }
 }

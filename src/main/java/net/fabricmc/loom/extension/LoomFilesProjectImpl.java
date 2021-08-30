@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,37 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.extension;
 
 import java.io.File;
-import java.nio.file.Path;
+import java.util.Objects;
 
-public interface MappingsProvider {
-	Path mappingsWorkingDir();
+import org.gradle.api.Project;
 
-	File intermediaryTinyFile();
+public final class LoomFilesProjectImpl extends LoomFilesBaseImpl {
+	private final Project project;
+
+	public LoomFilesProjectImpl(Project project) {
+		this.project = Objects.requireNonNull(project);
+	}
+
+	@Override
+	protected File getGradleUserHomeDir() {
+		return project.getGradle().getGradleUserHomeDir();
+	}
+
+	@Override
+	protected File getRootDir() {
+		return project.getRootDir();
+	}
+
+	@Override
+	protected File getProjectDir() {
+		return project.getProjectDir();
+	}
+
+	@Override
+	protected File getBuildDir() {
+		return project.getBuildDir();
+	}
 }

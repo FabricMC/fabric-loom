@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements ProjectTestTrait {
-	static final String MAPPINGS = "21w13a-mapped-net.fabricmc.yarn-21w13a+build.30-v2"
+	static final String MAPPINGS = "21w13a/net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
 
 	@Override
 	String name() {

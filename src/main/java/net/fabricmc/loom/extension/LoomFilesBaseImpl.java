@@ -26,32 +26,15 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 
-import org.gradle.api.Project;
+public abstract class LoomFilesBaseImpl implements LoomFiles {
+	protected abstract File getGradleUserHomeDir();
+	protected abstract File getRootDir();
+	protected abstract File getProjectDir();
+	protected abstract File getBuildDir();
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+	public LoomFilesBaseImpl() { }
 
-public final class LoomFilesImpl implements LoomFiles {
-	private final Project project;
-
-	private final File userCache;
-	private final File rootProjectPersistentCache;
-	private final File projectPersistentCache;
-	private final File projectBuildCache;
-	private final File remappedModCache;
-	private final File nativesJarStore;
-
-	public LoomFilesImpl(Project project) {
-		this.project = project;
-
-		this.userCache = createFile(project.getGradle().getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
-		this.rootProjectPersistentCache = createFile(project.getRootProject().file(".gradle"), "loom-cache");
-		this.projectPersistentCache = createFile(project.file(".gradle"), "loom-cache");
-		this.projectBuildCache = createFile(project.getBuildDir(), "loom-cache");
-		this.remappedModCache = createFile(getRootProjectPersistentCache(), "remapped_mods");
-		this.nativesJarStore = createFile(getUserCache(), "natives/jars");
-	}
-
-	private File createFile(File parent, String child) {
+	private static File createFile(File parent, String child) {
 		File file = new File(parent, child);
 
 		if (!file.exists()) {
@@ -63,52 +46,32 @@ public final class LoomFilesImpl implements LoomFiles {
 
 	@Override
 	public File getUserCache() {
-		return userCache;
+		return createFile(getGradleUserHomeDir(), "caches" + File.separator + "fabric-loom");
 	}
 
 	@Override
 	public File getRootProjectPersistentCache() {
-		return rootProjectPersistentCache;
+		return createFile(getRootDir(), ".gradle" + File.separator + "loom-cache");
 	}
 
 	@Override
 	public File getProjectPersistentCache() {
-		return projectPersistentCache;
+		return createFile(getProjectDir(), ".gradle" + File.separator + "loom-cache");
 	}
 
 	@Override
 	public File getProjectBuildCache() {
-		return projectBuildCache;
+		return createFile(getBuildDir(), "loom-cache");
 	}
 
 	@Override
 	public File getRemappedModCache() {
-		return remappedModCache;
+		return createFile(getRootProjectPersistentCache(), "remapped_mods");
 	}
 
 	@Override
 	public File getNativesJarStore() {
-		return nativesJarStore;
-	}
-
-	@Override
-	public boolean hasCustomNatives() {
-		return project.getProperties().get("fabric.loom.natives.dir") != null;
-	}
-
-	@Override
-	public File getNativesDirectory(MinecraftProvider minecraftProvider) {
-		if (hasCustomNatives()) {
-			return new File((String) project.property("fabric.loom.natives.dir"));
-		}
-
-		File natives = new File(getUserCache(), "natives/" + minecraftProvider.minecraftVersion());
-
-		if (!natives.exists()) {
-			natives.mkdirs();
-		}
-
-		return natives;
+		return createFile(getUserCache(), "natives/jars");
 	}
 
 	@Override

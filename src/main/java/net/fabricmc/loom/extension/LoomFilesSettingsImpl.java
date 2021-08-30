@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,37 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.extension;
 
 import java.io.File;
-import java.nio.file.Path;
+import java.util.Objects;
 
-public interface MappingsProvider {
-	Path mappingsWorkingDir();
+import org.gradle.api.initialization.Settings;
 
-	File intermediaryTinyFile();
+public class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
+	private final Settings settings;
+
+	public LoomFilesSettingsImpl(Settings settings) {
+		this.settings = Objects.requireNonNull(settings);
+	}
+
+	@Override
+	protected File getGradleUserHomeDir() {
+		return settings.getGradle().getGradleUserHomeDir();
+	}
+
+	@Override
+	protected File getRootDir() {
+		return settings.getRootDir();
+	}
+
+	@Override
+	protected File getProjectDir() {
+		throw new IllegalStateException("You can not access project directory from setting stage");
+	}
+
+	@Override
+	protected File getBuildDir() {
+		throw new IllegalStateException("You can not access project build directory from setting stage");
+	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,46 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
+import spock.lang.Timeout
 import spock.lang.Unroll
 
+import java.util.concurrent.TimeUnit
+
+import static net.fabricmc.loom.test.LoomTestConstants.DEFAULT_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class KotlinTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"kotlin"
-	}
+@Timeout(value = 30, unit = TimeUnit.MINUTES)
+class FabricAPITest extends Specification implements GradleProjectTestTrait, ArchiveAssertionsTrait {
+	private static final String API_VERSION = "0.39.2+local-HEAD"
 
 	@Unroll
-	def "kotlin build (gradle #gradle)"() {
+	def "build and run (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(
+					repo: "https://github.com/modmuss50/fabric.git",
+					commit: "16e3a3bd10f9622c325b2f6e5382534bd45531b1",
+					version: version,
+					warningMode: "all" // TODO remove me
+			)
+
+			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
+										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["-x", "check"])
+			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
+
+			serverResult.successful()
+			serverResult.output.contains("fabric@$API_VERSION")
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version              | _
+			DEFAULT_GRADLE       | _
+			PRE_RELEASE_GRADLE   | _
 	}
 }

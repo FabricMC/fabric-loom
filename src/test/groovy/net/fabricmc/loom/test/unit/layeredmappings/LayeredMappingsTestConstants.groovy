@@ -31,14 +31,14 @@ interface LayeredMappingsTestConstants {
     public static final String INTERMEDIARY_1_16_5_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.16.5/intermediary-1.16.5-v2.jar"
 
     public static final Map<String, MinecraftVersionMeta.Download> DOWNLOADS_1_17 = [
-            client_mappings:new MinecraftVersionMeta.Download(null, "227d16f520848747a59bef6f490ae19dc290a804", 6431705, "https://launcher.mojang.com/v1/objects/227d16f520848747a59bef6f490ae19dc290a804/client.txt"),
-            server_mappings:new MinecraftVersionMeta.Download(null, "84d80036e14bc5c7894a4fad9dd9f367d3000334", 4948536, "https://launcher.mojang.com/v1/objects/84d80036e14bc5c7894a4fad9dd9f367d3000334/server.txt")
+            client_mappings: new MinecraftVersionMeta.Download(null, "227d16f520848747a59bef6f490ae19dc290a804", 6431705, "https://launcher.mojang.com/v1/objects/227d16f520848747a59bef6f490ae19dc290a804/client.txt"),
+            server_mappings: new MinecraftVersionMeta.Download(null, "84d80036e14bc5c7894a4fad9dd9f367d3000334", 4948536, "https://launcher.mojang.com/v1/objects/84d80036e14bc5c7894a4fad9dd9f367d3000334/server.txt")
     ]
     public static final MinecraftVersionMeta VERSION_META_1_17 = new MinecraftVersionMeta(null, null, null, 0, DOWNLOADS_1_17, null, null, null, null, 0, null, null, null)
 
     public static final Map<String, MinecraftVersionMeta.Download> DOWNLOADS_1_16_5 = [
-            client_mappings:new MinecraftVersionMeta.Download(null, "e3dfb0001e1079a1af72ee21517330edf52e6192", 5746047, "https://launcher.mojang.com/v1/objects/e3dfb0001e1079a1af72ee21517330edf52e6192/client.txt"),
-            server_mappings:new MinecraftVersionMeta.Download(null, "81d5c793695d8cde63afddb40dde88e3a88132ac", 4400926, "https://launcher.mojang.com/v1/objects/81d5c793695d8cde63afddb40dde88e3a88132ac/server.txt")
+            client_mappings: new MinecraftVersionMeta.Download(null, "e3dfb0001e1079a1af72ee21517330edf52e6192", 5746047, "https://launcher.mojang.com/v1/objects/e3dfb0001e1079a1af72ee21517330edf52e6192/client.txt"),
+            server_mappings: new MinecraftVersionMeta.Download(null, "81d5c793695d8cde63afddb40dde88e3a88132ac", 4400926, "https://launcher.mojang.com/v1/objects/81d5c793695d8cde63afddb40dde88e3a88132ac/server.txt")
     ]
     public static final MinecraftVersionMeta VERSION_META_1_16_5 = new MinecraftVersionMeta(null, null, null, 0, DOWNLOADS_1_16_5, null, null, null, null, 0, null, null, null)
 

@@ -27,7 +27,6 @@ package net.fabricmc.loom.test.unit.layeredmappings
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 
 class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
     def "Read parchment mappings" () {

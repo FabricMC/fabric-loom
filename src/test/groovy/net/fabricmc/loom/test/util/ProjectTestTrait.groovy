@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.util
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 
+@Deprecated // Use GradleProjectTestTrait
 trait ProjectTestTrait {
 	final static String DEFAULT_GRADLE = "7.0.1"
 	final static String PRE_RELEASE_GRADLE = "7.3-20210827230026+0000"

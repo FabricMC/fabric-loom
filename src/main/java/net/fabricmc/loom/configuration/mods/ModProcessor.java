@@ -24,13 +24,9 @@
 
 package net.fabricmc.loom.configuration.mods;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,15 +38,18 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import com.google.gson.JsonObject;
+
+import net.fabricmc.accesswidener.RemappingDecorator;
+
+import net.fabricmc.loom.util.TinyRemapperHelper;
+
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -59,7 +58,6 @@ import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -108,22 +106,10 @@ public class ModProcessor {
 	}
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
-			AccessWidener accessWidener = new AccessWidener();
-			AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
-			accessWidenerReader.read(bufferedReader);
-
-			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, "named");
-			AccessWidener remapped = accessWidenerRemapper.remap();
-			AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
-
-			try (StringWriter writer = new StringWriter()) {
-				accessWidenerWriter.write(writer);
-				return writer.toString().getBytes(StandardCharsets.UTF_8);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		AccessWidenerWriter writer = new AccessWidenerWriter();
+		AccessWidenerReader reader = new AccessWidenerReader(new RemappingDecorator(writer, (from, to) -> remapper, "named"));
+		reader.read(input);
+		return writer.write();
 	}
 
 	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
@@ -143,7 +129,7 @@ public class ModProcessor {
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+						.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
 						.renameInvalidLocals(false)
 						.build();
 

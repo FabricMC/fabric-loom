@@ -32,6 +32,7 @@ if (ENV.BUILD_NUMBER) {
 }
 
 repositories {
+	mavenLocal()
 	maven {
 		name = 'Fabric'
 		url = 'https://maven.fabricmc.net/'
@@ -81,7 +82,7 @@ dependencies {
 	implementation ('net.fabricmc:tiny-remapper:0.5.0')
 	implementation ('net.fabricmc:tiny-mappings-parser:0.3.0+build.17')
 
-	implementation 'net.fabricmc:access-widener:1.1.0'
+	implementation 'net.fabricmc:access-widener:1.local'
 	implementation 'net.fabricmc:mapping-io:0.2.0'
 
 	implementation ('net.fabricmc:lorenz-tiny:3.0.0') {

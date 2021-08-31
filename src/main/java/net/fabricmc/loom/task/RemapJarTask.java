@@ -40,6 +40,9 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 import com.google.common.base.Preconditions;
+
+import net.fabricmc.loom.util.TinyRemapperHelper;
+
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -68,7 +71,6 @@ import net.fabricmc.loom.configuration.JarManifestConfiguration;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -136,7 +138,7 @@ public class RemapJarTask extends Jar {
 		if (isMainRemapTask) {
 			jarRemapper.addToClasspath(getRemapClasspath());
 
-			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+			jarRemapper.addMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
@@ -158,9 +160,9 @@ public class RemapJarTask extends Jar {
 						byte[] data;
 
 						try {
-							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper);
+							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper, toM);
 						} catch (IOException e) {
-							throw new RuntimeException("Failed to remap access widener");
+							throw new RuntimeException("Failed to remap access widener", e);
 						}
 
 						String awPath = accessWidenerJarProcessor.getAccessWidenerPath(remapData.input);

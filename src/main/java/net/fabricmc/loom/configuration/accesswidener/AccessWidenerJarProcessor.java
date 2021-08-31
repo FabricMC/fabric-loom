@@ -24,21 +24,29 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+
+import net.fabricmc.accesswidener.ForwardingVisitor;
+import net.fabricmc.accesswidener.GlobalOnlyDecorator;
+
+import net.fabricmc.accesswidener.RemappingDecorator;
+
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -50,18 +58,15 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
-	private AccessWidener accessWidener = new AccessWidener();
-	private AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
+	private byte[] modAccessWidener;
+	private final AccessWidener accessWidener = new AccessWidener();
 	private final Project project;
 	private byte[] inputHash;
 
@@ -76,41 +81,52 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void setup() {
-		LoomGradleExtension loomGradleExtension = LoomGradleExtension.get(project);
-		File awPath = loomGradleExtension.getAccessWidenerPath().get().getAsFile();
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		Path awPath = extension.getAccessWidenerPath().get().getAsFile().toPath();
 
-		if (!awPath.exists()) {
-			throw new RuntimeException("Could not find access widener file @ " + awPath.getAbsolutePath());
-		}
-
-		inputHash = Checksum.sha256(awPath);
-
-		try (BufferedReader reader = new BufferedReader(new FileReader(awPath))) {
-			accessWidenerReader.read(reader);
+		// Read our own mod's access widener, used later for producing a version remapped to intermediary
+		try {
+			 modAccessWidener = Files.readAllBytes(awPath);
+	 	} catch (NoSuchFileException e) {
+			throw new RuntimeException("Could not find access widener file @ " + awPath.toAbsolutePath());
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to read project access widener file");
+			throw new RuntimeException("Failed to read access widener: " + awPath);
 		}
 
-		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
-		if (!accessWidener.getNamespace().equals("named")) {
-			try {
-				List<String> validNamespaces = loomGradleExtension.getMappingsProvider().getMappings().getMetadata().getNamespaces();
+		// Write a collated full access widener for hashing it, and forward it to the access widener we'll apply
+		AccessWidenerWriter fullWriter = new AccessWidenerWriter();
+		ForwardingVisitor forwardingVisitor = new ForwardingVisitor(fullWriter, accessWidener);
 
-				if (!validNamespaces.contains(accessWidener.getNamespace())) {
-					throw new UnsupportedOperationException(String.format("Access Widener namespace '%s' is not a valid namespace, it must be one of: '%s'", accessWidener.getNamespace(), String.join(", ", validNamespaces)));
+		try (RemappingProvider remappingProvider = new RemappingProvider(project)) {
+			RemappingDecorator remappingVisitor = new RemappingDecorator(forwardingVisitor, remappingProvider, "named");
+
+			// For our own mod, we include local AWs, and enable strict parsing
+			AccessWidenerReader ownModReader = new AccessWidenerReader(remappingVisitor);
+			ownModReader.setStrictMode(true);
+			ownModReader.read(modAccessWidener);
+
+			// For other mods, we do not use strict mode, and also filter for global AWs
+			AccessWidenerReader globalReader = new AccessWidenerReader(new GlobalOnlyDecorator(remappingVisitor));
+			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+				// Only apply global AWs from mods that are part of the compile classpath
+				if (!entry.compileClasspath()) {
+					continue;
 				}
 
-				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper("official", "named");
-				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
+				extension.getLazyConfigurationProvider(entry.sourceConfiguration()).configure(remappedConfig -> {
+					for (ResolvedArtifact artifact : remappedConfig.getResolvedConfiguration().getResolvedArtifacts()) {
+						String modAwPath = getAccessWidenerPath(artifact.getFile().toPath());
+						if (modAwPath == null) {
+							continue;
+						}
 
-				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "named");
-				accessWidener = remapper.remap();
-
-				tinyRemapper.finish();
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap access widener", e);
+						globalReader.read(ZipUtil.unpackEntry(artifact.getFile(), modAwPath));
+					}
+				});
 			}
 		}
+
+		inputHash = Hashing.sha256().hashBytes(fullWriter.write()).asBytes();
 	}
 
 	@Override
@@ -142,32 +158,13 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		};
 	}
 
-	//Called when remapping the mod
-	public void remapAccessWidener(Path modJarPath, Remapper asmRemapper) throws IOException {
-		byte[] bytes = getRemappedAccessWidener(asmRemapper);
+	public byte[] getRemappedAccessWidener(Remapper asmRemapper, String targetNamespace) throws IOException {
+		AccessWidenerWriter writer = new AccessWidenerWriter();
+		RemappingDecorator remapper = new RemappingDecorator(writer, (from, to) -> asmRemapper, targetNamespace);
+		AccessWidenerReader reader = new AccessWidenerReader(remapper);
+		reader.read(modAccessWidener);
 
-		String path = getAccessWidenerPath(modJarPath);
-
-		if (path == null) {
-			throw new RuntimeException("Failed to find accessWidener in fabric.mod.json");
-		}
-
-		boolean replaced = ZipUtil.replaceEntry(modJarPath.toFile(), path, bytes);
-
-		if (!replaced) {
-			project.getLogger().warn("Failed to replace access widener file at " + path);
-		}
-	}
-
-	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
-		AccessWidener remapped = remapper.remap();
-		AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
-
-		try (StringWriter writer = new StringWriter()) {
-			accessWidenerWriter.write(writer);
-			return writer.toString().getBytes();
-		}
+		return writer.write();
 	}
 
 	public String getAccessWidenerPath(Path modJarPath) {

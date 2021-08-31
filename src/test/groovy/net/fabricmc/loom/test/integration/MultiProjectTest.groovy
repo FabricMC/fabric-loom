@@ -24,23 +24,22 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MultiProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"multiproject"
-	}
-
+class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "multiproject", version: version)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
 			result.task(":core:build").outcome == SUCCESS
@@ -49,13 +48,11 @@ class MultiProjectTest extends Specification implements ProjectTestTrait, Archiv
 			result.task(":remapAllJars").outcome == SUCCESS
 			result.task(":remapAllSources").outcome == SUCCESS
 
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			hasArchiveEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
+			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
 
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 }

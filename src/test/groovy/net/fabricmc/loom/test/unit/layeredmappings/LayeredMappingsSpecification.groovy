@@ -33,7 +33,6 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingLayer
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider
 import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec
 import net.fabricmc.mappingio.format.Tiny2Writer
-import net.fabricmc.mappingio.tree.MappingTree
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import org.gradle.api.logging.Logger
 import spock.lang.Specification

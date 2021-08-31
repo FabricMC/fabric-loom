@@ -54,7 +54,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
 		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
 			getProject().getLogger().info(":processing mapped jar");
-			invalidateJars();
+			invalidateJar();
 
 			try {
 				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
@@ -69,16 +69,14 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 				getProject().getDependencies().module("net.minecraft:minecraft-" + projectMappedClassifier + ":" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
 	}
 
-	private void invalidateJars() {
-		File dir = projectMappedJar.getParentFile();
-
-		if (dir.exists()) {
-			getProject().getLogger().warn("Invalidating project jars");
+	private void invalidateJar() {
+		if (projectMappedJar.exists()) {
+			getProject().getLogger().warn("Invalidating project jar");
 
 			try {
-				FileUtils.cleanDirectory(dir);
+				FileUtils.forceDelete(projectMappedJar);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to invalidate jars, try stopping gradle daemon or closing the game", e);
+				throw new RuntimeException("Failed to invalidate jar, try stopping gradle daemon or closing the game", e);
 			}
 		}
 	}

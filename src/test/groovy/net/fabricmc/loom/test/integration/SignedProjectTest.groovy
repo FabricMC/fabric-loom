@@ -24,14 +24,14 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
-
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.MockMavenServerTrait
 import spock.lang.Specification
 import spock.lang.Stepwise
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static java.lang.System.setProperty
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -39,25 +39,22 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
  * This tests publishing signed artifacts to a maven server
  */
 @Stepwise
-class SignedProjectTest extends Specification implements MockMavenServerTrait, ArchiveAssertionsTrait {
+class SignedProjectTest extends Specification implements MockMavenServerTrait, GradleProjectTestTrait {
 	@Unroll
 	@RestoreSystemProperties
-	def "sign and publish lib #gradle"() {
-		given:
+	def "sign and publish lib #version"() {
+		setup:
 			setProperty('loom.test.secretKey', PRIVATE_KEY)
+			def gradle = gradleProject(project: "signed", version: version)
+
 		when:
-			def result = create("publish", gradle)
+		def result = gradle.run(task: "publish")
+
 		then:
 			result.task(":publish").outcome == SUCCESS
-		where:
-			gradle             | _
-			DEFAULT_GRADLE     | _
-			PRE_RELEASE_GRADLE | _
-	}
 
-	@Override
-	String name() {
-		"signed"
+		where:
+			version << STANDARD_TEST_VERSIONS
 	}
 
 	static final String PRIVATE_KEY = """

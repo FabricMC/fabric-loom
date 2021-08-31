@@ -24,28 +24,27 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class DecompileTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"decompile"
-	}
-
+class DecompileTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "#decompiler gradle #gradle"() {
+	def "#decompiler gradle #version"() {
+		setup:
+			def gradle = gradleProject(project: "decompile", version: version)
+
 		when:
-			def result = create(task, gradle)
+			def result = gradle.run(task: task)
 
 		then:
 			result.task(":${task}").outcome == SUCCESS
 
 		where:
-			decompiler 		| task								| gradle
+			decompiler 		| task								| version
 			'fernflower'	| "genSources"						| DEFAULT_GRADLE
 			'fernflower'	| "genSources"						| PRE_RELEASE_GRADLE
 			'cfr' 			| "genSourcesWithExperimentalCfr"	| DEFAULT_GRADLE

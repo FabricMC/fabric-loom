@@ -24,42 +24,36 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class CustomManifestTest extends Specification implements ProjectTestTrait {
-    @Override
-    String name() {
-        "minimalBase"
-    }
-
-    @Override
-    def filesReady() {
-        buildGradle() << '''
-            loom {
-                customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
-            }
-
-            dependencies {
-                minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
-                mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
-                modImplementation "net.fabricmc:fabric-loader:0.11.6"
-            }
-        '''
-    }
-
+class CustomManifestTest extends Specification implements GradleProjectTestTrait {
     @Unroll
-    def "customManifest (gradle #gradle)"() {
+    def "customManifest (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "minimalBase", version: version)
+            gradle.buildGradle << '''
+                loom {
+                    customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
+                    mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.11.6"
+                }
+            '''
         when:
-            def result = create("build", gradle)
+            def result = gradle.run(task: "build")
+
         then:
             result.task(":build").outcome == SUCCESS
+
         where:
-            gradle              | _
-            DEFAULT_GRADLE      | _
-            PRE_RELEASE_GRADLE  | _
+            version << STANDARD_TEST_VERSIONS
     }
 }

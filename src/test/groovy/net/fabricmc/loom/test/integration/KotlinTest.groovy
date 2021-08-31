@@ -24,28 +24,26 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
-import spock.lang.IgnoreIf
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class KotlinTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"kotlin"
-	}
-
+class KotlinTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "kotlin build (gradle #gradle)"() {
+	def "kotlin build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "kotlin", version: version)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
+
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 }

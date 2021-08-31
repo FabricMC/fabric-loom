@@ -24,27 +24,26 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class Java16ProjectTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"java16"
-	}
-
+class Java16ProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "java16", version: version)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
+
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 }

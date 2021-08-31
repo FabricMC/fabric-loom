@@ -48,7 +48,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             mappings.classes.size() == 5747
             mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
             mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
-            mappings.classes[0].methods[0].args[0].srcName == "stack"
+            mappings.classes[0].methods[0].args[0].srcName.hashCode() == 109757064
             reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
     }
 

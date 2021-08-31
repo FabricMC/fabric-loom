@@ -117,7 +117,7 @@ class ServerRunner {
 
         var builder = new ProcessBuilder()
         builder.directory(serverDir)
-        builder.command(javaExecutablePath, "-jar", "fabric-server-launch.jar", "nogui")
+        builder.command(javaExecutablePath, "-Xmx1G", "-jar", "fabric-server-launch.jar", "nogui")
 
         Process process = builder.start()
         def out = new StringBuffer()

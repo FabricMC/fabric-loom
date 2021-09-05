@@ -31,6 +31,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.publish.maven.MavenPublication;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinApExtensionAPI;
@@ -136,5 +137,11 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	public Property<Boolean> getSetupRemappedVariants() {
 		reportDeprecation();
 		return parent.getSetupRemappedVariants();
+	}
+
+	@Override
+	public void disableDeprecatedPomGeneration(MavenPublication publication) {
+		reportDeprecation();
+		parent.disableDeprecatedPomGeneration(publication);
 	}
 }

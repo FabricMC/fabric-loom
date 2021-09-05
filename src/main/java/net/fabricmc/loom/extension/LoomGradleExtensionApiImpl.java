@@ -32,6 +32,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.publish.maven.MavenPublication;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinApExtensionAPI;
@@ -151,6 +152,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	@Override
+	public void disableDeprecatedPomGeneration(MavenPublication publication) {
+		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
+	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {

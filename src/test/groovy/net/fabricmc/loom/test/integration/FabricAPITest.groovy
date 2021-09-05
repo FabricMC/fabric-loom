@@ -43,9 +43,10 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	def "build and run (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(
-					repo: "https://github.com/modmuss50/fabric.git",
-					commit: "cb31cccd34cb91f70cae6bac80208f5ec3650f33",
-					version: version
+					repo: "https://github.com/FabricMC/fabric.git",
+					commit: "fc40aa9d88e9457957bdf3f8cec9698846828cd3",
+					version: version,
+					warningMode: "all" // TODO remove once api has updated to 0.10
 			)
 
 			// Set the version to something constant

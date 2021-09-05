@@ -174,4 +174,14 @@ public interface LoomGradleExtensionAPI {
 		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
 		return getCustomMinecraftManifest().getOrNull();
 	}
+
+	/**
+	 * If true, Loom will replace the {@code -dev} jars in the {@code *Elements} configurations
+	 * with remapped outgoing variants.
+	 *
+	 * <p>Will only apply if {@link #getRemapArchives()} is also true.
+	 *
+	 * @return the property controlling the setup of remapped variants
+	 */
+	Property<Boolean> getSetupRemappedVariants();
 }

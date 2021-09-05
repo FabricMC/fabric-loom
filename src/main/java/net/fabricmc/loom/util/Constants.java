@@ -44,13 +44,15 @@ public class Constants {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, "compile"),
-			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, "runtime"),
-			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, "", "modRuntimeOnly"),
-			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, ""),
-			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, "compile"),
-			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, "runtime")
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
+			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, "", "modRuntimeOnly"),
+			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, ""),
+			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
+			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME)
 	);
+
+	public static final String SOFTWARE_COMPONENT_NAME = "loom";
 
 	private Constants() {
 	}

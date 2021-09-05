@@ -32,6 +32,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.dsl.ArtifactHandler;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
@@ -67,7 +68,12 @@ public class RemapConfiguration {
 				artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
 			});
 			project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
-				var artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput());
+				if (!project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
+					// Sources jar may not have been created with withSourcesJar
+					return;
+				}
+
+				PublishArtifact artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput());
 
 				// Remove the existing artifact that does not run remapSourcesJar.
 				// It doesn't seem to hurt, but I'm not sure if the file-level duplicates cause issues.

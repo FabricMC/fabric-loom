@@ -1,0 +1,18 @@
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	(revision fc40aa9d88e9457957bdf3f8cec9698846828cd3)
++++ b/build.gradle	(date 1630855787420)
+@@ -270,13 +270,7 @@
+ publishing {
+ 	publications {
+ 		mavenJava(MavenPublication) {
+-			artifact(remapMavenJar) {
+-				builtBy remapMavenJar
+-			}
+-
+-			artifact(sourcesJar) {
+-				builtBy remapSourcesJar
+-			}
++			from components.java
+
+ 			artifact javadocJar
+

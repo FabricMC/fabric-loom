@@ -61,12 +61,22 @@ trait GradleProjectTestTrait {
             return
         }
 
-        if (options["repo"]) {
+        if (options.repo) {
             String repo  = options.repo
             String commit = options.commit
 
             exec(projectDir, "git", "clone", repo, ".")
             exec(projectDir, "git", "checkout", commit)
+
+            if (options.patch) {
+                def patchFile = new File("src/test/resources/patches/${options.patch}.patch")
+
+                if (!patchFile.exists()) {
+                    throw new FileNotFoundException("Could not find patch file at: " + patchFile.absolutePath)
+                }
+
+                exec(projectDir, "git", "apply", patchFile.absolutePath)
+            }
 
             return
         }

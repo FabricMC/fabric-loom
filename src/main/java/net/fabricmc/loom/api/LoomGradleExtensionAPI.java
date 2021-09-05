@@ -34,6 +34,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -184,4 +185,15 @@ public interface LoomGradleExtensionAPI {
 	 * @return the property controlling the setup of remapped variants
 	 */
 	Property<Boolean> getSetupRemappedVariants();
+
+	/**
+	 * Disables the deprecated POM generation for a publication.
+	 * This is useful if you want to suppress deprecation warnings when you're not using software components.
+	 *
+	 * <p>Experimental API: Will be removed in Loom 0.12 together with the deprecated POM generation functionality.
+	 *
+	 * @param publication the maven publication
+	 */
+	@ApiStatus.Experimental
+	void disableDeprecatedPomGeneration(MavenPublication publication);
 }

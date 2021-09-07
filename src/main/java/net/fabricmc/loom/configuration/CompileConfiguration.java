@@ -25,14 +25,12 @@
 package net.fabricmc.loom.configuration;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.jvm.tasks.Jar;
 
-import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
@@ -41,6 +39,7 @@ import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -48,8 +47,6 @@ public final class CompileConfiguration {
 	}
 
 	public static void setupConfigurations(Project project) {
-		final ConfigurationContainer configurations = project.getConfigurations();
-
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
@@ -76,11 +73,18 @@ public final class CompileConfiguration {
 			extension.createLazyConfiguration(entry.getRemappedConfiguration())
 					.configure(configuration -> configuration.setTransitive(false));
 
-			extendsFrom(entry.getTargetConfiguration(configurations), entry.getRemappedConfiguration(), project);
-
-			if (entry.isOnModCompileClasspath()) {
+			if (entry.compileClasspath()) {
 				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, entry.sourceConfiguration(), project);
 				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, entry.getRemappedConfiguration(), project);
+				extendsFrom(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, entry.getRemappedConfiguration(), project);
+			}
+
+			if (entry.runtimeClasspath()) {
+				extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, entry.getRemappedConfiguration(), project);
+			}
+
+			if (entry.hasConsumerConfiguration()) {
+				extendsFrom(entry.consumerConfiguration(), entry.sourceConfiguration(), project);
 			}
 		}
 
@@ -92,7 +96,7 @@ public final class CompileConfiguration {
 		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES, project);
 		extendsFrom(Constants.Configurations.MINECRAFT_NAMED, Constants.Configurations.LOADER_DEPENDENCIES, project);
 
-		extendsFrom(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
 		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);

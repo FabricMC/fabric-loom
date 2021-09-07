@@ -29,8 +29,6 @@ import java.io.File;
 import org.gradle.api.Project;
 import org.gradle.api.initialization.Settings;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
-
 public interface LoomFiles {
 	static LoomFiles create(Project project) {
 		return new LoomFilesProjectImpl(project);
@@ -46,8 +44,6 @@ public interface LoomFiles {
 	File getProjectBuildCache();
 	File getRemappedModCache();
 	File getNativesJarStore();
-	boolean hasCustomNatives();
-	File getNativesDirectory(MinecraftProvider minecraftProvider);
 	File getDefaultLog4jConfigFile();
 	File getDevLauncherConfig();
 	File getUnpickLoggingConfigFile();

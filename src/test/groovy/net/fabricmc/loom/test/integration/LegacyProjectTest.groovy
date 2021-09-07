@@ -24,24 +24,27 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test uses gradle 4.9 and 1.14.4 v1 mappings
-class LegacyProjectTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"legacy"
-	}
-
+class LegacyProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build"() {
+	def "legacy build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "legacy", version: version)
+
 		when:
-			def result = create("build", DEFAULT_GRADLE)
+			def result = gradle.run(task: "build")
+
 		then:
 			result.task(":build").outcome == SUCCESS
+
+		where:
+			version << STANDARD_TEST_VERSIONS
 	}
 }

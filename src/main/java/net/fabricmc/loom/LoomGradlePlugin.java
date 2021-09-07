@@ -73,7 +73,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		}
 
 		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java"));
+		project.apply(ImmutableMap.of("plugin", "java-library"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
 		project.apply(ImmutableMap.of("plugin", "idea"));
 

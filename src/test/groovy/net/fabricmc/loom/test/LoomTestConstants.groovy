@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,11 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.util
+package net.fabricmc.loom.test
 
-import org.zeroturnaround.zip.ZipUtil
+class LoomTestConstants {
+    public final static String DEFAULT_GRADLE = "7.0.1"
+    public final static String PRE_RELEASE_GRADLE = "7.3-20210906222431+0000"
 
-trait ArchiveAssertionsTrait {
-	String getArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
-
-		def bytes = ZipUtil.unpackEntry(file, entry)
-
-		if (bytes == null) {
-			throw new FileNotFoundException("Could not find ${entry} in ${name}")
-		}
-
-		new String(bytes as byte[])
-	}
-
-	boolean hasArchiveEntry(String name, String entry, String project = "") {
-		def file = getOutputFile(name, project)
-		ZipUtil.unpackEntry(file, entry) != null
-	}
+    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
 }

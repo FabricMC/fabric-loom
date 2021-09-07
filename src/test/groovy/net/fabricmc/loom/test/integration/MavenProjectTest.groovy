@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.MockMavenServerTrait
 import spock.lang.Specification
 import spock.lang.Stepwise
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static java.lang.System.setProperty
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -38,20 +39,23 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
  * This tests publishing a range of versions and then tries to resolve and build against them
  */
 @Stepwise
-class MavenProjectTest extends Specification implements MockMavenServerTrait, ArchiveAssertionsTrait {
+class MavenProjectTest extends Specification implements MockMavenServerTrait, GradleProjectTestTrait {
 	@RestoreSystemProperties
 	@Unroll
-	def "publish lib #version #gradle"() {
-		given:
+	def "publish lib #version #gradleVersion"() {
+		setup:
 			setProperty('loom.test.version', version)
-			library = true
+			def gradle = gradleProject(project: "mavenLibrary", version: gradleVersion, sharedFiles: true)
+
 		when:
-			def result = create("publish", gradle)
+			def result = gradle.run(tasks: ["clean", "publish"])
+
 		then:
 			result.task(":publish").outcome == SUCCESS
-			hasArchiveEntry("fabric-example-lib-${version}.jar", "net/fabricmc/example/ExampleLib.class")
+			gradle.hasOutputZipEntry("fabric-example-lib-${version}.jar", "net/fabricmc/example/ExampleLib.class")
+
 		where:
-			version           | gradle
+			version           | gradleVersion
 			'1.0.0'           | DEFAULT_GRADLE
 			'1.0.0'           | PRE_RELEASE_GRADLE
 			'1.1.0'           | DEFAULT_GRADLE
@@ -64,17 +68,20 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Ar
 
 	@RestoreSystemProperties
 	@Unroll
-	def "resolve #version #gradle"() {
+	def "resolve #version #gradleVersion"() {
 		given:
 			setProperty('loom.test.resolve', "com.example:fabric-example-lib:${version}")
-			library = false
+			def gradle = gradleProject(project: "maven", version: gradleVersion, sharedFiles: true)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(tasks: ["clean", "build"])
+
 		then:
 			result.task(":build").outcome == SUCCESS
-			hasArchiveEntry("fabric-example-mod-1.0.0.jar", "net/fabricmc/examplemod/ExampleMod.class")
+			gradle.hasOutputZipEntry("fabric-example-mod-1.0.0.jar", "net/fabricmc/examplemod/ExampleMod.class")
+
 		where:
-			version                      | gradle
+			version                      | gradleVersion
 			'1.0.0'                      | DEFAULT_GRADLE
 			'1.0.0'                      | PRE_RELEASE_GRADLE
 			'1.1.+'                      | DEFAULT_GRADLE
@@ -86,13 +93,5 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Ar
 			'1.2.0+meta:classifier'      | DEFAULT_GRADLE
 			'2.0.0-SNAPSHOT:classifier'  | DEFAULT_GRADLE
 			'master-SNAPSHOT:classifier' | DEFAULT_GRADLE
-	}
-
-	// Set to true when to build and publish the mavenLibrary
-	private boolean library = false
-
-	@Override
-	String name() {
-		library ? "mavenLibrary" : "maven"
 	}
 }

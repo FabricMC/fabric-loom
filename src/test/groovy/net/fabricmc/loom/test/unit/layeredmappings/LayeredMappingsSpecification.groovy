@@ -30,10 +30,12 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.configuration.providers.mappings.MappingContext
 import net.fabricmc.loom.configuration.providers.mappings.MappingLayer
+import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider
 import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec
+import net.fabricmc.mappingio.adapter.MappingDstNsReorder
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
-import net.fabricmc.mappingio.tree.MappingTree
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import org.gradle.api.logging.Logger
 import spock.lang.Specification
@@ -88,6 +90,14 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         def sw = new StringWriter()
         mappingTree.accept(new Tiny2Writer(sw, false))
         return sw.toString()
+    }
+
+    MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
+        def reorderedMappings = new MemoryMappingTree()
+        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingNamespace.NAMED.stringValue()))
+        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true)
+        mappingTree.accept(nsSwitch)
+        return reorderedMappings
     }
 
     @CompileStatic

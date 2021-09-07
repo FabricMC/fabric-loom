@@ -24,53 +24,50 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import com.google.gson.JsonParser;
 import java.util.jar.JarFile
 
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MixinApAutoRefmapTest extends Specification implements ProjectTestTrait {
-    @Override
-    String name() {
-        "mixinApAutoRefmap"
-    }
-
+class MixinApAutoRefmapTest extends Specification implements GradleProjectTestTrait {
     @Unroll
-    def "build (gradle #gradle)"() {
+    def "build (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "mixinApAutoRefmap", version: version)
+
         when:
-        def result = create("build", gradle)
+            def result = gradle.run(task: "build")
 
         then:
-        result.task(":build").outcome == SUCCESS
+            result.task(":build").outcome == SUCCESS
 
-        // verify the ref-map name is correctly generated
-        def jar = new JarFile(getOutputFile("fabric-example-mod-1.0.0-universal.jar").absoluteFile)
-        jar.getEntry("refmap0000.json") == null
-        jar.getEntry("refmap0001.json") != null
-        jar.getEntry("refmap0002.json") != null
-        jar.getEntry("refmap0003.json") != null
+            // verify the ref-map name is correctly generated
+            def jar = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-universal.jar").absoluteFile)
+            jar.getEntry("refmap0000.json") == null
+            jar.getEntry("refmap0001.json") != null
+            jar.getEntry("refmap0002.json") != null
+            jar.getEntry("refmap0003.json") != null
 
-        def j1 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("main.mixins.json"))))
-        j1.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0001.json"
+            def j1 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("main.mixins.json"))))
+            j1.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0001.json"
 
-        def j2 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("blabla.json"))))
-        j2.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0002.json"
+            def j2 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("blabla.json"))))
+            j2.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0002.json"
 
-        def j3 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_1.mixins.json"))))
-        j3.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0003.json"
+            def j3 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_1.mixins.json"))))
+            j3.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0003.json"
 
-        def j4 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_2.mixins.json"))))
-        !j4.asJsonObject.has("refmap")
+            def j4 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("m1_2.mixins.json"))))
+            !j4.asJsonObject.has("refmap")
 
-        def j5 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("irrelevant.mixins.json"))))
-        !j5.asJsonObject.has("refmap")
+            def j5 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("irrelevant.mixins.json"))))
+            !j5.asJsonObject.has("refmap")
 
         where:
-        gradle              | _
-        DEFAULT_GRADLE      | _
-        PRE_RELEASE_GRADLE  | _
+            version << STANDARD_TEST_VERSIONS
     }
 }

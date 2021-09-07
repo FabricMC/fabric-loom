@@ -54,7 +54,7 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
 		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
 			getProject().getLogger().info(":processing mapped jar");
-			invalidateJars();
+			invalidateJar();
 
 			try {
 				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
@@ -66,19 +66,17 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 		}
 
 		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft:" + getJarVersionString(projectMappedClassifier)));
+				getProject().getDependencies().module("net.minecraft:minecraft-" + projectMappedClassifier + ":" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
 	}
 
-	private void invalidateJars() {
-		File dir = getJarDirectory(getExtension().getFiles().getUserCache(), projectMappedClassifier);
-
-		if (dir.exists()) {
-			getProject().getLogger().warn("Invalidating project jars");
+	private void invalidateJar() {
+		if (projectMappedJar.exists()) {
+			getProject().getLogger().warn("Invalidating project jar");
 
 			try {
-				FileUtils.cleanDirectory(dir);
+				FileUtils.forceDelete(projectMappedJar);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to invalidate jars, try stopping gradle daemon or closing the game", e);
+				throw new RuntimeException("Failed to invalidate jar, try stopping gradle daemon or closing the game", e);
 			}
 		}
 	}
@@ -87,7 +85,8 @@ public class MinecraftProcessedProvider extends MinecraftMappedProvider {
 	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		super.initFiles(minecraftProvider, mappingsProvider);
 
-		projectMappedJar = new File(getJarDirectory(getExtension().getFiles().getRootProjectPersistentCache(), projectMappedClassifier), "minecraft-" + getJarVersionString(projectMappedClassifier) + ".jar");
+		projectMappedJar = new File(getDirectories().getRootProjectPersistentCache(), getMinecraftProvider().minecraftVersion() + "/"
+				+ getExtension().getMappingsProvider().mappingsIdentifier() + "/minecraft-" + projectMappedClassifier + ".jar");
 	}
 
 	@Override

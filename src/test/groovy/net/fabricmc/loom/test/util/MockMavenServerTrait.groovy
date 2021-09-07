@@ -27,7 +27,7 @@ package net.fabricmc.loom.test.util
 import io.javalin.Javalin
 import org.apache.commons.io.IOUtils
 
-trait MockMavenServerTrait extends ProjectTestTrait {
+trait MockMavenServerTrait {
     public final int mavenServerPort = 9876
     public final File testMavenDir = File.createTempDir()
     private Javalin server
@@ -74,7 +74,6 @@ trait MockMavenServerTrait extends ProjectTestTrait {
     @SuppressWarnings('unused')
     def cleanupSpec() {
         server.stop()
-        super.cleanupSpec()
     }
 
     File getMavenDirectory() {

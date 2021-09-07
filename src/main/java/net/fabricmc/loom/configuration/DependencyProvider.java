@@ -49,6 +49,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 
 public abstract class DependencyProvider {
@@ -91,6 +92,10 @@ public abstract class DependencyProvider {
 
 	public LoomFiles getDirectories() {
 		return getExtension().getFiles();
+	}
+
+	public MinecraftProvider getMinecraftProvider() {
+		return getExtension().getMinecraftProvider();
 	}
 
 	public boolean isRefreshDeps() {

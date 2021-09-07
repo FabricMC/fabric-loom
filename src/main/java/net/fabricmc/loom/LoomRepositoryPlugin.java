@@ -30,16 +30,18 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.PluginAware;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.util.MirrorUtil;
 
 public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	@Override
 	public void apply(@NotNull PluginAware target) {
 		if (target instanceof Settings settings) {
-			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings));
+			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings), settings);
 
 			// leave a marker so projects don't try to override these
 			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
@@ -48,7 +50,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 				return;
 			}
 
-			declareRepositories(project.getRepositories(), LoomFiles.create(project));
+			declareRepositories(project.getRepositories(), LoomFiles.create(project), project);
 		} else if (target instanceof Gradle) {
 			return;
 		} else {
@@ -56,30 +58,30 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		}
 	}
 
-	private void declareRepositories(RepositoryHandler repositories, LoomFiles files) {
+	private void declareRepositories(RepositoryHandler repositories, LoomFiles files, ExtensionAware target) {
 		repositories.maven(repo -> {
 			repo.setName("UserLocalRemappedMods");
 			repo.setUrl(files.getRemappedModCache());
 		});
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
-			repo.setUrl("https://maven.fabricmc.net/");
+			repo.setUrl(MirrorUtil.getFabricRepository(target));
 		});
 		repositories.maven(repo -> {
 			repo.setName("Mojang");
-			repo.setUrl("https://libraries.minecraft.net/");
+			repo.setUrl(MirrorUtil.getLibrariesBase(target));
 		});
 		repositories.mavenCentral();
 
 		repositories.ivy(repo -> {
 			repo.setUrl(files.getUserCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 
 		repositories.ivy(repo -> {
 			repo.setUrl(files.getRootProjectPersistentCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact]-[revision](-[classifier])(.[ext])"));
+			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
 	}

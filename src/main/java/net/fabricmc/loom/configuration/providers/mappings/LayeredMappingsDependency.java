@@ -64,7 +64,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public Set<File> resolve() {
-		Path mappingsDir = mappingContext.mappingsProvider().getMappingsDir();
+		Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
 		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
 
 		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
@@ -76,7 +76,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
 
 					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingNamespace.NAMED.stringValue()));
-					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue());
+					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true);
 					mappings.accept(nsSwitch);
 
 					Files.deleteIfExists(mappingsFile);

@@ -32,10 +32,11 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.publish.maven.MavenPublication;
 
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
@@ -56,6 +57,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> shareCaches;
 	protected final Property<Boolean> remapArchives;
 	protected final Property<String> customManifest;
+	protected final Property<Boolean> setupRemappedVariants;
 
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
@@ -73,6 +75,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.remapArchives = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.customManifest = project.getObjects().property(String.class);
+		this.setupRemappedVariants = project.getObjects().property(Boolean.class)
+				.convention(true);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 	}
@@ -107,7 +111,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder();
 		action.execute(builder);
 		LayeredMappingSpec builtSpec = builder.build();
-		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), "layers_" + builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
+		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
 	}
 
 	@Override
@@ -140,9 +144,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		return customManifest;
 	}
 
+	@Override
+	public Property<Boolean> getSetupRemappedVariants() {
+		return setupRemappedVariants;
+	}
+
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	@Override
+	public void disableDeprecatedPomGeneration(MavenPublication publication) {
+		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
+	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
 	private final class EnsureCompile extends LoomGradleExtensionApiImpl {

@@ -58,8 +58,8 @@ public class LaunchProvider extends DependencyProvider {
 				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getAllLog4JConfigFiles())
 
-				.property("client", "java.library.path", getDirectories().getNativesDirectory(getExtension().getMinecraftProvider()).getAbsolutePath())
-				.property("client", "org.lwjgl.librarypath", getDirectories().getNativesDirectory(getExtension().getMinecraftProvider()).getAbsolutePath())
+				.property("client", "java.library.path", getExtension().getMinecraftProvider().nativesDir().getAbsolutePath())
+				.property("client", "org.lwjgl.librarypath", getExtension().getMinecraftProvider().nativesDir().getAbsolutePath())
 
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))

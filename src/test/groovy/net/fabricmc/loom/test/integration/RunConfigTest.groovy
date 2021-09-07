@@ -24,25 +24,25 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test runs a mod that exits on mod init
-class RunConfigTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"runconfigs"
-	}
-
+class RunConfigTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "#task"() {
+	def "Run config #task"() {
+		setup:
+			def gradle = gradleProject(project: "runconfigs", sharedFiles: true)
+
 		when:
-			def result = create(task)
+			def result = gradle.run(task: task)
+
 		then:
 			result.task(":${task}").outcome == SUCCESS
+
 		where:
 			task                | _
 			'runClient'         | _

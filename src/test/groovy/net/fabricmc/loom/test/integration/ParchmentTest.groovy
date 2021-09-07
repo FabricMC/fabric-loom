@@ -24,29 +24,26 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class ParchmentTest extends Specification implements ProjectTestTrait {
-	@Override
-	String name() {
-		"parchment"
-	}
-
+class ParchmentTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "parchment #gradle"() {
+	def "parchment #version"() {
+		setup:
+			def gradle = gradleProject(project: "parchment", version: version)
+
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
 
 		then:
 			result.task(":build").outcome == SUCCESS
 
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version << STANDARD_TEST_VERSIONS
 	}
 }

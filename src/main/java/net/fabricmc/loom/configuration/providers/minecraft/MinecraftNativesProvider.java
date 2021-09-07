@@ -40,6 +40,7 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.HashedDownloadUtil;
+import net.fabricmc.loom.util.MirrorUtil;
 
 public class MinecraftNativesProvider {
 	private final Project project;
@@ -51,7 +52,7 @@ public class MinecraftNativesProvider {
 		this.project = project;
 		extension = LoomGradleExtension.get(project);
 
-		nativesDir = extension.getFiles().getNativesDirectory(extension.getMinecraftProvider());
+		nativesDir = extension.getMinecraftProvider().nativesDir();
 		jarStore = extension.getFiles().getNativesJarStore();
 	}
 
@@ -60,7 +61,7 @@ public class MinecraftNativesProvider {
 	}
 
 	private void provide() throws IOException {
-		if (extension.getFiles().hasCustomNatives()) {
+		if (extension.getMinecraftProvider().hasCustomNatives()) {
 			if (!nativesDir.exists()) {
 				throw new RuntimeException("Could no find custom natives directory at " + nativesDir.getAbsolutePath());
 			}
@@ -93,7 +94,7 @@ public class MinecraftNativesProvider {
 			File libJarFile = library.relativeFile(jarStore);
 
 			if (!offline) {
-				HashedDownloadUtil.downloadIfInvalid(new URL(library.url()), libJarFile, library.sha1(), project.getLogger(), false);
+				HashedDownloadUtil.downloadIfInvalid(new URL(MirrorUtil.getLibrariesBase(project) + library.path()), libJarFile, library.sha1(), project.getLogger(), false);
 			}
 
 			if (!libJarFile.exists()) {

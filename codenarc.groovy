@@ -24,7 +24,7 @@ ruleset {
     SpaceAfterSwitch
     SpaceAfterWhile
     SpaceAroundClosureArrow
-    SpaceAroundMapEntryColon
+    SpaceAroundMapEntryColon(characterAfterColonRegex: /\ /)
     SpaceAroundOperator
     SpaceBeforeClosingBrace
     SpaceBeforeOpeningBrace
@@ -60,6 +60,13 @@ ruleset {
     TernaryCouldBeElvis
     FieldTypeRequired
     MethodParameterTypeRequired
+
+    // Imports
+    UnusedImport
+    UnnecessaryGroovyImport
+    NoWildcardImports(ignoreStaticImports: true)
+    ImportFromSamePackage
+    DuplicateImport
 
     //Misc
     LongLiteralWithLowerCaseL

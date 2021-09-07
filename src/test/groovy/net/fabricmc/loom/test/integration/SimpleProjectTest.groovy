@@ -24,36 +24,48 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.ArchiveAssertionsTrait
-import net.fabricmc.loom.test.util.ProjectTestTrait
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
+import spock.lang.Timeout
 import spock.lang.Unroll
 
+import java.util.concurrent.TimeUnit
+
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+import static net.fabricmc.loom.test.LoomTestConstants.*
 
-class SimpleProjectTest extends Specification implements ProjectTestTrait, ArchiveAssertionsTrait {
-	@Override
-	String name() {
-		"simple"
-	}
-
+@Timeout(value = 20, unit = TimeUnit.MINUTES)
+class SimpleProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #gradle)"() {
+	def "build and run (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "simple", version: version)
+
+			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
+										.withMod(gradle.getOutputFile("fabric-example-mod-1.0.0.jar"))
+										.withFabricApi()
 		when:
-			def result = create("build", gradle)
+			def result = gradle.run(task: "build")
+			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
-			getArchiveEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+			gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+
+			serverResult.successful()
+			serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
 		where:
-			gradle              | _
-			DEFAULT_GRADLE      | _
-			PRE_RELEASE_GRADLE  | _
+			version              | _
+			DEFAULT_GRADLE       | _
+			PRE_RELEASE_GRADLE   | _
 	}
 
 	@Unroll
 	def "#ide config generation"() {
+		setup:
+			def gradle = gradleProject(project: "simple", sharedFiles: true)
 		when:
-			def result = create(ide)
+			def result = gradle.run(task: ide)
 		then:
 			result.task(":${ide}").outcome == SUCCESS
 		where:

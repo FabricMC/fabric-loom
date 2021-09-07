@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,24 +25,45 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
+import spock.lang.Timeout
 import spock.lang.Unroll
+
+import java.util.concurrent.TimeUnit
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MojangMappingsProjectTest extends Specification implements GradleProjectTestTrait {
+@Timeout(value = 30, unit = TimeUnit.MINUTES)
+class FabricAPITest extends Specification implements GradleProjectTestTrait {
+	private static final String API_VERSION = "0.0.0+loom"
+
 	@Unroll
-	def "build (gradle #version)"() {
+	def "build and run (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "mojangMappings", version: version)
+			def gradle = gradleProject(
+					repo: "https://github.com/FabricMC/fabric.git",
+					commit: "fc40aa9d88e9457957bdf3f8cec9698846828cd3",
+					version: version,
+					patch: "fabric_api"
+			)
 
+			// Set the version to something constant
+			gradle.buildGradle.text = gradle.buildGradle.text.replace('Globals.baseVersion + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+
+			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
+										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
-			def result = gradle.run(task: "build")
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["--parallel", "-x", "check"]) // Note: checkstyle does not appear to like being ran in a test runner
+			gradle.printOutputFiles()
 
+			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
 
+			serverResult.successful()
+			serverResult.output.contains("fabric@$API_VERSION")
 		where:
 			version << STANDARD_TEST_VERSIONS
 	}

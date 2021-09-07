@@ -34,7 +34,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
-import net.fabricmc.loom.api.MixinApExtensionAPI;
+import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -116,13 +116,13 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	}
 
 	@Override
-	public void mixin(Action<MixinApExtensionAPI> action) {
+	public void mixin(Action<MixinExtensionAPI> action) {
 		reportDeprecation();
 		parent.mixin(action);
 	}
 
 	@Override
-	public MixinApExtensionAPI getMixin() {
+	public MixinExtensionAPI getMixin() {
 		reportDeprecation();
 		return parent.getMixin();
 	}

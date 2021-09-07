@@ -39,7 +39,7 @@ import net.fabricmc.loom.configuration.ide.SetupIntelijRunConfigs;
 import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.extension.MixinApExtension;
+import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -137,14 +137,20 @@ public final class CompileConfiguration {
 				extension.getUnmappedModCollection().from(jarTask);
 			}
 
+			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
+
+			if (!mixin.getUseLegacyMixinAp().get()) {
+				return;
+			}
+
+			mixin.init();
+
 			// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
 			System.setProperty("log4j2.disable.jmx", "true");
 			System.setProperty("log4j.shutdownHookEnabled", "false");
 			System.setProperty("log4j.skipJansi", "true");
 
 			project.getLogger().info("Configuring compiler arguments for Java");
-			MixinApExtension mixinApExtension = LoomGradleExtension.get(project).getMixin();
-			mixinApExtension.init();
 
 			new JavaApInvoker(project).configureMixin();
 

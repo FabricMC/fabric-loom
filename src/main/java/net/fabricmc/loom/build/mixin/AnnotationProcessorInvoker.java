@@ -39,7 +39,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.extension.MixinApExtension;
+import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -65,7 +65,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
-		MixinApExtension mixin = LoomGradleExtension.get(project).getMixin();
+		MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 		return mixin.getApConfigurationsStream(getApConfigNameFunc).collect(Collectors.toList());
 	}
 
@@ -80,7 +80,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
 			LoomGradleExtension loom = LoomGradleExtension.get(project);
-			String refmapName = Objects.requireNonNull(MixinApExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
+			String refmapName = Objects.requireNonNull(MixinExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
 			Map<String, String> args = new HashMap<>() {{
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.toFile().getCanonicalPath());
 					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, loom.getNextMixinMappings().getCanonicalPath());

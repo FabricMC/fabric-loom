@@ -35,7 +35,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
-import net.fabricmc.loom.api.MixinApExtensionAPI;
+import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -135,7 +135,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void mixin(Action<MixinApExtensionAPI> action) {
+	public void mixin(Action<MixinExtensionAPI> action) {
 		action.execute(getMixin());
 	}
 
@@ -181,7 +181,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		public MixinApExtension getMixin() {
+		public MixinExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

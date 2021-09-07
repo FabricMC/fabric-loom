@@ -154,11 +154,11 @@ public interface LoomGradleExtensionAPI {
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
-	@ApiStatus.Experimental
-	void mixin(Action<MixinApExtensionAPI> action);
+	void mixin(Action<MixinExtensionAPI> action);
 
 	@ApiStatus.Experimental
-	MixinApExtensionAPI getMixin();
+	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.
+	MixinExtensionAPI getMixin();
 
 	Property<String> getCustomMinecraftManifest();
 

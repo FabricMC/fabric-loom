@@ -73,6 +73,7 @@ import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public class RemapJarTask extends Jar {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
@@ -95,6 +96,10 @@ public class RemapJarTask extends Jar {
 		// false by default, I have no idea why I have to do it for this property and not the other one
 		remapAccessWidener.set(false);
 		addDefaultNestedDependencies.set(true);
+
+		if (!LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp().get()) {
+			remapOptions.add(b -> b.extension(new MixinExtension()));
+		}
 	}
 
 	@TaskAction
@@ -171,8 +176,10 @@ public class RemapJarTask extends Jar {
 						throw new RuntimeException("Failed to remap " + input + " to " + output + " - file missing!");
 					}
 
-					if (MixinRefmapHelper.addRefmapName(project, output)) {
-						project.getLogger().debug("Transformed mixin reference maps in output JAR!");
+					if (extension.getMixin().getUseLegacyMixinAp().get()) {
+						if (MixinRefmapHelper.addRefmapName(project, output)) {
+							project.getLogger().debug("Transformed mixin reference maps in output JAR!");
+						}
 					}
 
 					if (getAddNestedDependencies().getOrElse(false)) {

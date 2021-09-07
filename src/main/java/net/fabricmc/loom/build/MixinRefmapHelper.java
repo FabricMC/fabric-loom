@@ -48,7 +48,7 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.extension.MixinApExtension;
+import net.fabricmc.loom.extension.MixinExtension;
 
 public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
@@ -57,14 +57,14 @@ public final class MixinRefmapHelper {
 
 	public static boolean addRefmapName(Project project, Path outputPath) {
 		try {
-			MixinApExtension mixin = LoomGradleExtension.get(project).getMixin();
+			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 			File output = outputPath.toFile();
 
 			Collection<String> allMixinConfigs = getMixinConfigurationFiles(readFabricModJson(output));
 
 			return mixin.getMixinSourceSetsStream().map(sourceSet -> {
-				MixinApExtension.MixinInformationContainer container = Objects.requireNonNull(
-						MixinApExtension.getMixinInformationContainer(sourceSet)
+				MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
+						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
 				Stream<String> mixinConfigs = sourceSet.getResources()

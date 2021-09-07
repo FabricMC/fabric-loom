@@ -206,7 +206,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 		String expVersionManifest = Files.asCharSource(experimentalVersionsJson, StandardCharsets.UTF_8).read();
 		ManifestVersion expManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(expVersionManifest, ManifestVersion.class);
 
-		var result = expManifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
+		Optional<ManifestVersion.Versions> result = expManifest.versions().stream().filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion)).findFirst();
 
 		if (result.isPresent()) {
 			getProject().getLogger().lifecycle("Using fallback experimental version {}", minecraftVersion);

@@ -139,35 +139,37 @@ public final class CompileConfiguration {
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 
-			if (!mixin.getUseLegacyMixinAp().get()) {
-				return;
-			}
-
-			mixin.init();
-
-			// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
-			System.setProperty("log4j2.disable.jmx", "true");
-			System.setProperty("log4j.shutdownHookEnabled", "false");
-			System.setProperty("log4j.skipJansi", "true");
-
-			project.getLogger().info("Configuring compiler arguments for Java");
-
-			new JavaApInvoker(project).configureMixin();
-
-			if (project.getPluginManager().hasPlugin("scala")) {
-				project.getLogger().info("Configuring compiler arguments for Scala");
-				new ScalaApInvoker(project).configureMixin();
-			}
-
-			if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-				project.getLogger().info("Configuring compiler arguments for Kapt plugin");
-				new KaptApInvoker(project).configureMixin();
+			if (mixin.getUseLegacyMixinAp().get()) {
+				setupMixinAp(project, mixin);
 			}
 		});
 
 		if (p.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
 			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
 			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
+		}
+	}
+
+	private static void setupMixinAp(Project project, MixinExtension mixin) {
+		mixin.init();
+
+		// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
+		System.setProperty("log4j2.disable.jmx", "true");
+		System.setProperty("log4j.shutdownHookEnabled", "false");
+		System.setProperty("log4j.skipJansi", "true");
+
+		project.getLogger().info("Configuring compiler arguments for Java");
+
+		new JavaApInvoker(project).configureMixin();
+
+		if (project.getPluginManager().hasPlugin("scala")) {
+			project.getLogger().info("Configuring compiler arguments for Scala");
+			new ScalaApInvoker(project).configureMixin();
+		}
+
+		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+			project.getLogger().info("Configuring compiler arguments for Kapt plugin");
+			new KaptApInvoker(project).configureMixin();
 		}
 	}
 

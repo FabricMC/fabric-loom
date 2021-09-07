@@ -43,6 +43,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
@@ -133,7 +134,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 				continue;
 			}
 
-			for (var artifact : dependency.getModuleArtifacts()) {
+			for (ResolvedArtifact artifact : dependency.getModuleArtifacts()) {
 				fileList.add(new DependencyInfo<>(
 						dependency,
 						new ResolvedDependencyMetaExtractor(),

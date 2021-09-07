@@ -29,6 +29,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.util.GradleVersion;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -46,7 +47,7 @@ public final record JarManifestConfiguration(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		Attributes attributes = manifest.getMainAttributes();
-		var tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());
+		Optional<String> tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());
 
 		attributes.putValue("Fabric-Gradle-Version", GradleVersion.current().getVersion());
 		attributes.putValue("Fabric-Loom-Version", LoomGradlePlugin.LOOM_VERSION);
@@ -63,7 +64,7 @@ public final record JarManifestConfiguration(Project project) {
 
 	private void addMixinVersion(Attributes attributes) {
 		// Not super ideal that this uses the mod compile classpath, should prob look into making this not a thing at somepoint
-		var dependency = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
+		Optional<Dependency> dependency = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
 				.getDependencies()
 				.stream()
 				.filter(dep -> "sponge-mixin".equals(dep.getName()))

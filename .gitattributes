@@ -2,6 +2,8 @@
 # and leave all files detected as binary untouched.
 * text=auto
 
+*.patch text eol=lf
+
 #
 # The above will handle all files NOT found below
 #

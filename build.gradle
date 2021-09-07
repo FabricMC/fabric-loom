@@ -63,8 +63,8 @@ dependencies {
 	// libraries
 	implementation ('commons-io:commons-io:2.8.0')
 	implementation ('org.zeroturnaround:zt-zip:1.14')
-	implementation ('com.google.code.gson:gson:2.8.7')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.4')
+	implementation ('com.google.code.gson:gson:2.8.8')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.5')
 	implementation ('com.google.guava:guava:30.1.1-jre')
 	implementation ('org.ow2.asm:asm:9.2')
 	implementation ('org.ow2.asm:asm-analysis:9.2')
@@ -104,10 +104,10 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'io.javalin:javalin:3.13.9'
+	testImplementation 'io.javalin:javalin:3.13.11'
 	testImplementation 'net.fabricmc:fabric-installer:0.7.4'
 
-	compileOnly 'org.jetbrains:annotations:21.0.1'
+	compileOnly 'org.jetbrains:annotations:22.0.0'
 }
 
 jar {

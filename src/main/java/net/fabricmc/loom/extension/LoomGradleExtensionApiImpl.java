@@ -38,6 +38,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.mods.ModVersionParser;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
@@ -59,6 +60,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> setupRemappedVariants;
 
+	private final ModVersionParser versionParser;
+
 	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
@@ -77,6 +80,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.customManifest = project.getObjects().property(String.class);
 		this.setupRemappedVariants = project.getObjects().property(Boolean.class)
 				.convention(true);
+
+		this.versionParser = new ModVersionParser(project);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 	}
@@ -147,6 +152,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getSetupRemappedVariants() {
 		return setupRemappedVariants;
+	}
+
+	@Override
+	public String getModVersion() {
+		return versionParser.getModVersion();
 	}
 
 	protected abstract Project getProject();

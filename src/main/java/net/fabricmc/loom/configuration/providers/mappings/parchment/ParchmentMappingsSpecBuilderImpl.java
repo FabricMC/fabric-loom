@@ -24,19 +24,20 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
+import net.fabricmc.loom.api.mappings.layered.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.ParchmentMappingsSpecBuilder;
 
 public class ParchmentMappingsSpecBuilderImpl implements ParchmentMappingsSpecBuilder {
-	private final String mavenNotation;
+	private final FileSpec fileSpec;
 
 	private boolean removePrefix;
 
-	private ParchmentMappingsSpecBuilderImpl(String mavenNotation) {
-		this.mavenNotation = mavenNotation;
+	private ParchmentMappingsSpecBuilderImpl(FileSpec fileSpec) {
+		this.fileSpec = fileSpec;
 	}
 
-	public static ParchmentMappingsSpecBuilderImpl builder(String depNotation) {
-		return new ParchmentMappingsSpecBuilderImpl(depNotation);
+	public static ParchmentMappingsSpecBuilderImpl builder(FileSpec fileSpec) {
+		return new ParchmentMappingsSpecBuilderImpl(fileSpec);
 	}
 
 	@Override
@@ -46,6 +47,6 @@ public class ParchmentMappingsSpecBuilderImpl implements ParchmentMappingsSpecBu
 	}
 
 	public ParchmentMappingsSpec build() {
-		return new ParchmentMappingsSpec(mavenNotation, removePrefix);
+		return new ParchmentMappingsSpec(fileSpec, removePrefix);
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.configuration.providers.mappings;
+
+import java.io.File;
 
 import net.fabricmc.loom.api.mappings.layered.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
 
-public record ParchmentMappingsSpec(FileSpec fileSpec, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
+public record DependencyFileSpecImpl(String dependencyNotation) implements FileSpec {
 	@Override
-	public ParchmentMappingLayer createLayer(MappingContext context) {
-		return new ParchmentMappingLayer(fileSpec.get(context), removePrefix());
+	public File get(MappingContext context) {
+		return context.mavenFile(dependencyNotation);
 	}
 }

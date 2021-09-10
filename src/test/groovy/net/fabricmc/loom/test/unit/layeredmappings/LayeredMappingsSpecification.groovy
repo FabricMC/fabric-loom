@@ -94,8 +94,8 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
     MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
         def reorderedMappings = new MemoryMappingTree()
-        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.stringValue()))
-        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.stringValue(), true)
+        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.toString()))
+        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true)
         mappingTree.accept(nsSwitch)
         return reorderedMappings
     }

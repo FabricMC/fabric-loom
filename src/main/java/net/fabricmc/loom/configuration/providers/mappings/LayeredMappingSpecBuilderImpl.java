@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.gradle.api.Action;
 
+import net.fabricmc.loom.api.mappings.layered.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
 import net.fabricmc.loom.api.mappings.layered.ParchmentMappingsSpecBuilder;
@@ -48,16 +49,14 @@ public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder 
 
 	@Override
 	public LayeredMappingSpecBuilder officialMojangMappings() {
-		addLayer(new MojangMappingsSpec());
-		return this;
+		return addLayer(new MojangMappingsSpec());
 	}
 
 	@Override
-	public LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
-		ParchmentMappingsSpecBuilderImpl builder = ParchmentMappingsSpecBuilderImpl.builder(mavenNotation);
+	public LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action) {
+		ParchmentMappingsSpecBuilderImpl builder = ParchmentMappingsSpecBuilderImpl.builder(FileSpec.create(object));
 		action.execute(builder);
-		addLayer(builder.build());
-		return this;
+		return addLayer(builder.build());
 	}
 
 	public LayeredMappingSpec build() {

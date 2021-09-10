@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.configuration.providers.mappings;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Objects;
 
 import net.fabricmc.loom.api.mappings.layered.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
+import net.fabricmc.loom.util.Checksum;
 
-public record ParchmentMappingsSpec(FileSpec fileSpec, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
+public class FileSpecImpl implements FileSpec {
+	private final File file;
+	private final int hash;
+
+	public FileSpecImpl(File file) {
+		this.file = file;
+		this.hash = calculateHashCode();
+	}
+
+	private int calculateHashCode() {
+		if (!file.exists()) {
+			throw new RuntimeException("Could not find %s, it must be present at spec creation time to calculate mappings hash".formatted(file.getAbsolutePath()));
+		}
+
+		// Use the file hash as part of the spec, this means if the input file changes the mappings will be re-generated.
+		return Objects.hash(Arrays.hashCode(Checksum.sha256(file)), file.getAbsolutePath());
+	}
+
 	@Override
-	public ParchmentMappingLayer createLayer(MappingContext context) {
-		return new ParchmentMappingLayer(fileSpec.get(context), removePrefix());
+	public File get(MappingContext context) {
+		return file;
+	}
+
+	@Override
+	public int hashCode() {
+		return hash;
 	}
 }

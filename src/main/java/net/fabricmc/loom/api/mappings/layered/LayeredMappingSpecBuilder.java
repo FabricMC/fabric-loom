@@ -42,9 +42,9 @@ public interface LayeredMappingSpecBuilder {
 	 */
 	LayeredMappingSpecBuilder officialMojangMappings();
 
-	default LayeredMappingSpecBuilder parchment(String mavenNotation) {
-		return parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
+	default LayeredMappingSpecBuilder parchment(Object object) {
+		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
 	}
 
-	LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action);
+	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
 }

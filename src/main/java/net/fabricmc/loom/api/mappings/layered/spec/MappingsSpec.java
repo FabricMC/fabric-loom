@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-import java.io.File;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.api.mappings.layered.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 
-public record DependencyFileSpecImpl(String dependencyNotation) implements FileSpec {
-	@Override
-	public File get(MappingContext context) {
-		return context.mavenFile(dependencyNotation);
-	}
+/**
+ * A MappingsSpec is an immutable set of data used to create the MappingLayer.
+ *
+ * <p>The hashCode is used to generate a hash of the full layered mapping spec, used to cache.
+ *
+ * <p>Commonly implemented as a record
+ */
+@ApiStatus.Experimental
+public interface MappingsSpec<L extends MappingLayer> {
+	L createLayer(MappingContext context);
 }

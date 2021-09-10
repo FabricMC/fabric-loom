@@ -25,7 +25,7 @@
 package net.fabricmc.loom.configuration.providers.mappings.intermediary;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 
 public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
 	@Override

@@ -22,29 +22,14 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-import org.gradle.api.Action;
 import org.jetbrains.annotations.ApiStatus;
 
-/**
- * Used to configure a layered mapping spec.
- */
 @ApiStatus.Experimental
-public interface LayeredMappingSpecBuilder {
+public interface ParchmentMappingsSpecBuilder {
 	/**
-	 * Add a MappingsSpec layer.
+	 * When enabled the "p" prefix will be stripped from parameter names.
 	 */
-	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
-
-	/**
-	 * Add a layer that uses the official mappings provided by Mojang.
-	 */
-	LayeredMappingSpecBuilder officialMojangMappings();
-
-	default LayeredMappingSpecBuilder parchment(Object object) {
-		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
-	}
-
-	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
+	ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix);
 }

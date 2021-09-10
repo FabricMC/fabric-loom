@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -46,30 +45,30 @@ import net.fabricmc.mappingio.format.ProGuardReader;
 
 public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 									MinecraftVersionMeta.Download serverDownload,
-									File workingDir,
+									Path workingDir,
 									Logger logger) implements MappingLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		var clientMappings = new File(workingDir(), "client.txt");
-		var serverMappings = new File(workingDir(), "server.txt");
+		Path clientMappings = workingDir().resolve("client.txt");
+		Path serverMappings = workingDir().resolve("server.txt");
 
 		download(clientMappings, serverMappings);
 
-		printMappingsLicense(clientMappings.toPath());
+		printMappingsLicense(clientMappings);
 
 		// Make official the source namespace
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingsNamespace.OFFICIAL.toString());
 
-		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings.toPath(), StandardCharsets.UTF_8);
-				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings.toPath(), StandardCharsets.UTF_8)) {
+		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8);
+				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings, StandardCharsets.UTF_8)) {
 			ProGuardReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 			ProGuardReader.read(serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 		}
 	}
 
-	private void download(File clientMappings, File serverMappings) throws IOException {
-		HashedDownloadUtil.downloadIfInvalid(new URL(clientDownload().url()), clientMappings, clientDownload().sha1(), logger(), false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(serverDownload().url()), serverMappings, serverDownload().sha1(), logger(), false);
+	private void download(Path clientMappings, Path serverMappings) throws IOException {
+		HashedDownloadUtil.downloadIfInvalid(new URL(clientDownload().url()), clientMappings.toFile(), clientDownload().sha1(), logger(), false);
+		HashedDownloadUtil.downloadIfInvalid(new URL(serverDownload().url()), serverMappings.toFile(), serverDownload().sha1(), logger(), false);
 	}
 
 	private void printMappingsLicense(Path clientMappings) {

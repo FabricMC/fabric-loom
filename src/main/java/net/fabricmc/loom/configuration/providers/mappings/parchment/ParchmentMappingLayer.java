@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -36,7 +36,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 
-public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) implements MappingLayer {
+public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) implements MappingLayer {
 	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
 
 	@Override
@@ -51,7 +51,7 @@ public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) im
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {
-		try (var zipFile = new ZipFile(parchmentFile())) {
+		try (var zipFile = new ZipFile(parchmentFile().toFile())) {
 			ZipEntry zipFileEntry = zipFile.getEntry(PARCHMENT_DATA_FILE_NAME);
 			Objects.requireNonNull(zipFileEntry, "Could not find %s in parchment data file".formatted(PARCHMENT_DATA_FILE_NAME));
 

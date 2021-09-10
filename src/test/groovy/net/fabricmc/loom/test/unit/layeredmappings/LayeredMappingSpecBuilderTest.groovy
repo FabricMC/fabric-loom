@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
-import net.fabricmc.loom.configuration.providers.mappings.DependencyFileSpecImpl
+import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
@@ -62,7 +62,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
             layers[2].class == ParchmentMappingsSpec
-            (parchment.fileSpec() as DependencyFileSpecImpl).dependencyNotation() == "I like cake"
+            (parchment.fileSpec() as MavenFileSpec).dependencyNotation() == "I like cake"
             parchment.removePrefix() == true
     }
 
@@ -82,7 +82,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
             layers[2].class == ParchmentMappingsSpec
-            (parchment.fileSpec() as DependencyFileSpecImpl).dependencyNotation() == "I like cake"
+            (parchment.fileSpec() as MavenFileSpec).dependencyNotation() == "I like cake"
             parchment.removePrefix() == false
     }
 
@@ -102,7 +102,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
             layers[2].class == ParchmentMappingsSpec
-            (parchment.fileSpec() as DependencyFileSpecImpl).dependencyNotation() == "I really like cake"
+            (parchment.fileSpec() as MavenFileSpec).dependencyNotation() == "I really like cake"
             parchment.removePrefix() == false
     }
 

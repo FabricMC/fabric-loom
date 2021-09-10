@@ -30,10 +30,10 @@ import java.util.List;
 
 import org.gradle.api.Action;
 
-import net.fabricmc.loom.api.mappings.layered.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.LayeredMappingSpecBuilder;
-import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
-import net.fabricmc.loom.api.mappings.layered.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;

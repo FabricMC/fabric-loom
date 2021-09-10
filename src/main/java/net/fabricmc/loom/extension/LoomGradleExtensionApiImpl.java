@@ -37,7 +37,7 @@ import org.gradle.api.publish.maven.MavenPublication;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.api.mappings.layered.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
 import net.fabricmc.loom.configuration.processors.JarProcessor;

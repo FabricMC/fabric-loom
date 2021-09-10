@@ -24,8 +24,9 @@
 
 package net.fabricmc.loom.api.mappings.layered;
 
-import java.io.File;
+import java.nio.file.Path;
 
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -34,7 +35,9 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 
 @ApiStatus.Experimental /* Very Experimental and not cleanly separated from the impl atm */
 public interface MappingContext {
-	File mavenFile(String mavenNotation);
+	Path resolveDependency(Dependency dependency);
+
+	Path resolveMavenDependency(String mavenNotation);
 
 	MappingsProvider mappingsProvider();
 
@@ -47,7 +50,7 @@ public interface MappingContext {
 	/**
 	 * Creates a temporary working dir to be used to store working files.
 	 */
-	File workingDirectory(String name);
+	Path workingDirectory(String name);
 
 	Logger getLogger();
 }

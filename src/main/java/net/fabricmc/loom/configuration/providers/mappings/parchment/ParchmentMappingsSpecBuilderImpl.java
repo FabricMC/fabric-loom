@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import net.fabricmc.loom.api.mappings.layered.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
 
 public class ParchmentMappingsSpecBuilderImpl implements ParchmentMappingsSpecBuilder {
 	private final FileSpec fileSpec;

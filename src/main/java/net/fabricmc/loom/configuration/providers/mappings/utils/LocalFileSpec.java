@@ -22,14 +22,42 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
 
-import org.jetbrains.annotations.ApiStatus;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
 
-@ApiStatus.Experimental
-public interface ParchmentMappingsSpecBuilder {
-	/**
-	 * When enabled the "p" prefix will be stripped from parameter names.
-	 */
-	ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix);
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.util.Checksum;
+
+public class LocalFileSpec implements FileSpec {
+	private final File file;
+	private final int hash;
+
+	public LocalFileSpec(File file) {
+		this.file = file;
+		this.hash = calculateHashCode();
+	}
+
+	private int calculateHashCode() {
+		if (!file.exists()) {
+			throw new RuntimeException("Could not find %s, it must be present at spec creation time to calculate mappings hash".formatted(file.getAbsolutePath()));
+		}
+
+		// Use the file hash as part of the spec, this means if the input file changes the mappings will be re-generated.
+		return Objects.hash(Arrays.hashCode(Checksum.sha256(file)), file.getAbsolutePath());
+	}
+
+	@Override
+	public Path get(MappingContext context) {
+		return file.toPath();
+	}
+
+	@Override
+	public int hashCode() {
+		return hash;
+	}
 }

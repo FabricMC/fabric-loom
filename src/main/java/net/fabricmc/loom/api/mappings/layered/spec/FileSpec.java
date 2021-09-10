@@ -22,16 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.RegularFileProperty;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.mappings.DependencyFileSpecImpl;
-import net.fabricmc.loom.configuration.providers.mappings.FileSpecImpl;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.configuration.providers.mappings.utils.DependencyFileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.utils.LocalFileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec;
 
 /**
  * FileSpec should be used in MappingsSpec's that take an input file. The input file can either be a local file or a gradle dep.
@@ -42,11 +46,9 @@ public interface FileSpec {
 		Objects.requireNonNull(o, "Object cannot be null");
 
 		if (o instanceof String s) {
-			if (s.startsWith("file://")) {
-				return createFromFile(new File(s.substring("file://".length())));
-			}
-
-			return createFromDependency(s);
+			return createFromMavenDependency(s);
+		} else if (o instanceof Dependency d) {
+			return createFromDependency(d);
 		} else if (o instanceof File f) {
 			return createFromFile(f);
 		} else if (o instanceof RegularFileProperty rfp) {
@@ -56,12 +58,16 @@ public interface FileSpec {
 		throw new UnsupportedOperationException("Cannot create FileSpec from object of type:" + o.getClass().getCanonicalName());
 	}
 
-	static FileSpec createFromDependency(String dependencyNotation) {
-		return new DependencyFileSpecImpl(dependencyNotation);
+	static FileSpec createFromMavenDependency(String dependencyNotation) {
+		return new MavenFileSpec(dependencyNotation);
+	}
+
+	static FileSpec createFromDependency(Dependency dependency) {
+		return new DependencyFileSpec(dependency);
 	}
 
 	static FileSpec createFromFile(File file) {
-		return new FileSpecImpl(file);
+		return new LocalFileSpec(file);
 	}
 
 	// Note resolved instantly, this is not lazy
@@ -69,5 +75,5 @@ public interface FileSpec {
 		return createFromFile(regularFileProperty.getAsFile().get());
 	}
 
-	File get(MappingContext context);
+	Path get(MappingContext context);
 }

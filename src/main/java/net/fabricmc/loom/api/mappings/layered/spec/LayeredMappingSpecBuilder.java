@@ -22,41 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Objects;
+import org.gradle.api.Action;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.api.mappings.layered.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.util.Checksum;
+/**
+ * Used to configure a layered mapping spec.
+ */
+@ApiStatus.Experimental
+public interface LayeredMappingSpecBuilder {
+	/**
+	 * Add a MappingsSpec layer.
+	 */
+	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
 
-public class FileSpecImpl implements FileSpec {
-	private final File file;
-	private final int hash;
+	/**
+	 * Add a layer that uses the official mappings provided by Mojang.
+	 */
+	LayeredMappingSpecBuilder officialMojangMappings();
 
-	public FileSpecImpl(File file) {
-		this.file = file;
-		this.hash = calculateHashCode();
+	default LayeredMappingSpecBuilder parchment(Object object) {
+		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
 	}
 
-	private int calculateHashCode() {
-		if (!file.exists()) {
-			throw new RuntimeException("Could not find %s, it must be present at spec creation time to calculate mappings hash".formatted(file.getAbsolutePath()));
-		}
-
-		// Use the file hash as part of the spec, this means if the input file changes the mappings will be re-generated.
-		return Objects.hash(Arrays.hashCode(Checksum.sha256(file)), file.getAbsolutePath());
-	}
-
-	@Override
-	public File get(MappingContext context) {
-		return file;
-	}
-
-	@Override
-	public int hashCode() {
-		return hash;
-	}
+	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
 }

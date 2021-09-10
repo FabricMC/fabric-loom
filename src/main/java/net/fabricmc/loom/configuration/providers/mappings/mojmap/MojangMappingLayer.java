@@ -35,8 +35,8 @@ import java.util.List;
 
 import org.gradle.api.logging.Logger;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
-import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
 import net.fabricmc.loom.util.HashedDownloadUtil;
@@ -58,12 +58,12 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 		printMappingsLicense(clientMappings.toPath());
 
 		// Make official the source namespace
-		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingNamespace.OFFICIAL.stringValue());
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingsNamespace.OFFICIAL.toString());
 
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings.toPath(), StandardCharsets.UTF_8);
 				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings.toPath(), StandardCharsets.UTF_8)) {
-			ProGuardReader.read(clientBufferedReader, MappingNamespace.NAMED.stringValue(), MappingNamespace.OFFICIAL.stringValue(), nsSwitch);
-			ProGuardReader.read(serverBufferedReader, MappingNamespace.NAMED.stringValue(), MappingNamespace.OFFICIAL.stringValue(), nsSwitch);
+			ProGuardReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
+			ProGuardReader.read(serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 		}
 	}
 
@@ -91,8 +91,8 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 	}
 
 	@Override
-	public MappingNamespace getSourceNamespace() {
-		return MappingNamespace.OFFICIAL;
+	public MappingsNamespace getSourceNamespace() {
+		return MappingsNamespace.OFFICIAL;
 	}
 
 	@Override

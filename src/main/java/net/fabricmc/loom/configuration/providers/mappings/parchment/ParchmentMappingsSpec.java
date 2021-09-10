@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
 
 public record ParchmentMappingsSpec(String mavenNotation, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
 	@Override

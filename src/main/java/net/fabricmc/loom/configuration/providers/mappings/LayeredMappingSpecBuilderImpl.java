@@ -30,27 +30,33 @@ import java.util.List;
 
 import org.gradle.api.Action;
 
+import net.fabricmc.loom.api.mappings.layered.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.ParchmentMappingsSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
-import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;
 
-public class LayeredMappingSpecBuilder {
+public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
 
+	@Override
+	public LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec) {
+		layers.add(mappingSpec);
+		return this;
+	}
+
+	@Override
 	public LayeredMappingSpecBuilder officialMojangMappings() {
-		layers.add(new MojangMappingsSpec());
+		addLayer(new MojangMappingsSpec());
 		return this;
 	}
 
-	public LayeredMappingSpecBuilder parchment(String mavenNotation) {
-		parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
-		return this;
-	}
-
+	@Override
 	public LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
-		ParchmentMappingsSpecBuilder builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
+		ParchmentMappingsSpecBuilderImpl builder = ParchmentMappingsSpecBuilderImpl.builder(mavenNotation);
 		action.execute(builder);
-		layers.add(builder.build());
+		addLayer(builder.build());
 		return this;
 	}
 

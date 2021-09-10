@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.api.mappings.layered;
 
-public class ParchmentMappingsSpecBuilder {
-	private final String mavenNotation;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
-	private boolean removePrefix;
+import org.jetbrains.annotations.ApiStatus;
 
-	private ParchmentMappingsSpecBuilder(String mavenNotation) {
-		this.mavenNotation = mavenNotation;
+import net.fabricmc.mappingio.MappingVisitor;
+
+@ApiStatus.Experimental
+public interface MappingLayer {
+	void visit(MappingVisitor mappingVisitor) throws IOException;
+
+	default MappingsNamespace getSourceNamespace() {
+		return MappingsNamespace.NAMED;
 	}
 
-	public static ParchmentMappingsSpecBuilder builder(String depNotation) {
-		return new ParchmentMappingsSpecBuilder(depNotation);
-	}
-
-	public ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix) {
-		this.removePrefix = removePrefix;
-		return this;
-	}
-
-	public ParchmentMappingsSpec build() {
-		return new ParchmentMappingsSpec(mavenNotation, removePrefix);
+	/**
+	 * Provides a list of layer classes that this mapping layer depends on. If such a layer is not present an Exception will be thrown when trying to resolve the layer.
+	 * @return A list of MappingLayer classes to depend on.
+	 */
+	default List<Class<? extends MappingLayer>> dependsOn() {
+		return Collections.emptyList();
 	}
 }

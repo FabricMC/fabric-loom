@@ -28,11 +28,11 @@ import groovy.transform.CompileStatic
 import net.fabricmc.loom.configuration.providers.MinecraftProvider
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext
-import net.fabricmc.loom.configuration.providers.mappings.MappingLayer
-import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace
+import net.fabricmc.loom.api.mappings.layered.MappingContext
+import net.fabricmc.loom.api.mappings.layered.MappingLayer
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec
+import net.fabricmc.loom.api.mappings.layered.MappingsSpec
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
@@ -94,8 +94,8 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
     MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
         def reorderedMappings = new MemoryMappingTree()
-        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingNamespace.NAMED.stringValue()))
-        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true)
+        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.stringValue()))
+        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.stringValue(), true)
         mappingTree.accept(nsSwitch)
         return reorderedMappings
     }

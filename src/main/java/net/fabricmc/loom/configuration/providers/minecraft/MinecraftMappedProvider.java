@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
@@ -99,7 +100,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	private void mapMinecraftJar() throws IOException {
-		String fromM = "official";
+		String fromM = MappingsNamespace.OFFICIAL.toString();
 
 		MappingsProviderImpl mappingsProvider = getExtension().getMappingsProvider();
 
@@ -107,8 +108,8 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		Path outputMapped = minecraftMappedJar.toPath();
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 
-		for (String toM : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+		for (String toM : Arrays.asList(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())) {
+			Path output = MappingsNamespace.NAMED.toString().equals(toM) ? outputMapped : outputIntermediary;
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 

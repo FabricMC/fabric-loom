@@ -31,6 +31,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
 public class GradleMappingContext implements MappingContext {

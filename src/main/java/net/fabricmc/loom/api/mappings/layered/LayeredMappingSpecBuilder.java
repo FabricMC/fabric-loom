@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered;
 
-public interface MappingsSpec<L extends MappingLayer> {
-	L createLayer(MappingContext context);
+import org.gradle.api.Action;
+import org.jetbrains.annotations.ApiStatus;
+
+/**
+ * Used to configure a layered mapping spec.
+ */
+@ApiStatus.Experimental
+public interface LayeredMappingSpecBuilder {
+	/**
+	 * Add a MappingsSpec layer.
+	 */
+	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
+
+	/**
+	 * Add a layer that uses the official mappings provided by Mojang.
+	 */
+	LayeredMappingSpecBuilder officialMojangMappings();
+
+	default LayeredMappingSpecBuilder parchment(String mavenNotation) {
+		return parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
+	}
+
+	LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action);
 }

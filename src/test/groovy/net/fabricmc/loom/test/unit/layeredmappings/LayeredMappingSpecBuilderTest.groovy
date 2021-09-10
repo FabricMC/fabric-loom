@@ -25,7 +25,7 @@
 package net.fabricmc.loom.test.unit.layeredmappings
 
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec
@@ -106,12 +106,12 @@ class LayeredMappingSpecBuilderTest extends Specification {
     }
 
     // Gradle does this big of magic behind the scenes
-    LayeredMappingSpec layered(@DelegatesTo(LayeredMappingSpecBuilder) Closure cl) {
+    LayeredMappingSpec layered(@DelegatesTo(LayeredMappingSpecBuilderImpl) Closure cl) {
         return layeredAction(ConfigureUtil.configureUsing(cl))
     }
 
-    LayeredMappingSpec layeredAction(Action<LayeredMappingSpecBuilder> action) {
-        LayeredMappingSpecBuilder builder = new LayeredMappingSpecBuilder()
+    LayeredMappingSpec layeredAction(Action<LayeredMappingSpecBuilderImpl> action) {
+        LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl()
         action.execute(builder)
         return builder.build()
     }

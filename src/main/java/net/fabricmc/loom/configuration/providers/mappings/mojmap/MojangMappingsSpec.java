@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingsSpec;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 
 public record MojangMappingsSpec() implements MappingsSpec<MojangMappingLayer> {

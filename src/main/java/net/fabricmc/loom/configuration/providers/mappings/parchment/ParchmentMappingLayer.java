@@ -32,8 +32,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
-import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 
 public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) implements MappingLayer {
@@ -47,7 +47,7 @@ public record ParchmentMappingLayer(File parchmentFile, boolean removePrefix) im
 			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingVisitor);
 		}
 
-		parchmentData.visit(mappingVisitor, MappingNamespace.NAMED.stringValue());
+		parchmentData.visit(mappingVisitor, MappingsNamespace.NAMED.toString());
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {

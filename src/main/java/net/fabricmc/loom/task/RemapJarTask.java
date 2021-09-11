@@ -43,6 +43,7 @@ import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPlugin;
@@ -89,15 +90,17 @@ public class RemapJarTask extends Jar {
 
 	public RemapJarTask() {
 		super();
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		input = getProject().getObjects().fileProperty();
-		addNestedDependencies = getProject().getObjects().property(Boolean.class);
-		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class);
-		remapAccessWidener = getProject().getObjects().property(Boolean.class);
-		// false by default, I have no idea why I have to do it for this property and not the other one
-		remapAccessWidener.set(false);
-		addDefaultNestedDependencies.set(true);
+		addNestedDependencies = getProject().getObjects().property(Boolean.class)
+				.convention(extension.getRemapArchives().get());
+		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class)
+				.convention(true);
+		remapAccessWidener = getProject().getObjects().property(Boolean.class)
+				.convention(extension.getRemapArchives().get());
+		classpath = getProject().getObjects().fileCollection();
 
-		if (!LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp().get()) {
+		if (!extension.getMixin().getUseLegacyMixinAp().get()) {
 			remapOptions.add(b -> b.extension(new MixinExtension()));
 		}
 	}

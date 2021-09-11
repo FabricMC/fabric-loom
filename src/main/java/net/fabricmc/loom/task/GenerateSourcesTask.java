@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -50,11 +52,13 @@ import net.fabricmc.stitch.util.StitchUtil;
 public class GenerateSourcesTask extends AbstractLoomTask {
 	public final LoomDecompiler decompiler;
 
-	private File inputJar;
+	private RegularFileProperty inputJar;
 
 	@Inject
-	public GenerateSourcesTask(LoomDecompiler decompiler) {
+	public GenerateSourcesTask(LoomDecompiler decompiler, Provider<File> inputJar) {
 		this.decompiler = decompiler;
+		this.inputJar = getProject().getObjects().fileProperty()
+				.fileProvider(inputJar);
 
 		getOutputs().upToDateWhen((o) -> false);
 	}
@@ -70,7 +74,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		Path runtimeJar = getExtension().getMappingsProvider().mappedProvider.getMappedJar().toPath();
 		Path sourcesDestination = getMappedJarFileWithSuffix("-sources.jar").toPath();
 		Path linemap = getMappedJarFileWithSuffix("-sources.lmap").toPath();
-		decompiler.decompile(inputJar.toPath(), sourcesDestination, linemap, metadata);
+		decompiler.decompile(inputJar.get().getAsFile().toPath(), sourcesDestination, linemap, metadata);
 
 		if (Files.exists(linemap)) {
 			Path linemappedJarDestination = getMappedJarFileWithSuffix("-linemapped.jar").toPath();
@@ -113,12 +117,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	@InputFile
-	public File getInputJar() {
+	public RegularFileProperty getInputJar() {
 		return inputJar;
-	}
-
-	public GenerateSourcesTask setInputJar(File inputJar) {
-		this.inputJar = inputJar;
-		return this;
 	}
 }

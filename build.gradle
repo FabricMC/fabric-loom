@@ -83,7 +83,7 @@ dependencies {
 
 	implementation 'net.fabricmc:access-widener:1.1.0'
 	// wait for player to publish a version
-	implementation 'net.fabricmc:mapping-io:0.2.9999'
+	implementation 'net.fabricmc:mapping-io:0.2.1'
 
 	implementation ('net.fabricmc:lorenz-tiny:3.0.0') {
 		transitive = false

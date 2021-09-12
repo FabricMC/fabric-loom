@@ -40,9 +40,6 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 import com.google.common.base.Preconditions;
-
-import net.fabricmc.loom.util.TinyRemapperHelper;
-
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -71,6 +68,7 @@ import net.fabricmc.loom.configuration.JarManifestConfiguration;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -286,7 +284,8 @@ public class RemapJarTask extends Jar {
 		return this;
 	}
 
-	@ApiStatus.Experimental // This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
+	@ApiStatus.Experimental
+	// This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
 	public RemapJarTask include(Object... paths) {
 		Collections.addAll(nestedPaths, paths);
 		this.addNestedDependencies.set(true);

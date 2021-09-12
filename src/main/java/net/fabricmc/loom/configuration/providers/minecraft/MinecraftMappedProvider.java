@@ -31,19 +31,17 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-import net.fabricmc.loom.util.TinyRemapperHelper;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MinecraftMappedProvider extends DependencyProvider {
-
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 

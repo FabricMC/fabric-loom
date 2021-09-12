@@ -24,7 +24,13 @@
 
 package net.fabricmc.loom.util;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Map;
+
 import com.google.common.collect.ImmutableMap;
+import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.mapping.tree.ClassDef;
@@ -36,18 +42,10 @@ import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-import org.gradle.api.Project;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
-
 /**
  * Contains shortcuts to create tiny remappers using the mappings accessibly to the project.
  */
 public final class TinyRemapperHelper {
-
 	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
 			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
 			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
@@ -98,8 +96,8 @@ public final class TinyRemapperHelper {
 
 						for (LocalVariableDef localVariable : method.getLocalVariables()) {
 							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLocalVariableIndex(),
-											localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
-											localVariable.getName(to));
+									localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
+									localVariable.getName(to));
 						}
 					}
 				}

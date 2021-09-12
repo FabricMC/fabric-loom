@@ -37,14 +37,6 @@ import java.util.zip.ZipEntry;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
-import net.fabricmc.accesswidener.ForwardingVisitor;
-import net.fabricmc.accesswidener.GlobalOnlyDecorator;
-
-import net.fabricmc.accesswidener.RemappingDecorator;
-
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
-
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.objectweb.asm.ClassReader;
@@ -57,17 +49,26 @@ import org.zeroturnaround.zip.transform.ZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
+import net.fabricmc.accesswidener.ForwardingVisitor;
+import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
+	// The mod's own access widener file
 	private byte[] modAccessWidener;
 	private final AccessWidener accessWidener = new AccessWidener();
 	private final Project project;
+	// This is a SHA256 hash across the mod's and all transitive AWs
 	private byte[] inputHash;
 
 	public AccessWidenerJarProcessor(Project project) {
@@ -86,8 +87,8 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 		// Read our own mod's access widener, used later for producing a version remapped to intermediary
 		try {
-			 modAccessWidener = Files.readAllBytes(awPath);
-	 	} catch (NoSuchFileException e) {
+			modAccessWidener = Files.readAllBytes(awPath);
+		} catch (NoSuchFileException e) {
 			throw new RuntimeException("Could not find access widener file @ " + awPath.toAbsolutePath());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read access widener: " + awPath);
@@ -97,16 +98,31 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		AccessWidenerWriter fullWriter = new AccessWidenerWriter();
 		ForwardingVisitor forwardingVisitor = new ForwardingVisitor(fullWriter, accessWidener);
 
-		try (RemappingProvider remappingProvider = new RemappingProvider(project)) {
-			RemappingDecorator remappingVisitor = new RemappingDecorator(forwardingVisitor, remappingProvider, "named");
+		// For our own mod, we include local AWs, and enable strict parsing
+		AccessWidenerReader ownModReader = new AccessWidenerReader(forwardingVisitor);
+		ownModReader.read(modAccessWidener);
 
-			// For our own mod, we include local AWs, and enable strict parsing
-			AccessWidenerReader ownModReader = new AccessWidenerReader(remappingVisitor);
-			ownModReader.setStrictMode(true);
-			ownModReader.read(modAccessWidener);
+		readTransitiveWidenersFromMods(extension, forwardingVisitor);
 
-			// For other mods, we do not use strict mode, and also filter for global AWs
-			AccessWidenerReader globalReader = new AccessWidenerReader(new GlobalOnlyDecorator(remappingVisitor));
+		inputHash = Hashing.sha256().hashBytes(fullWriter.write()).asBytes();
+	}
+
+	private void readTransitiveWidenersFromMods(LoomGradleExtension extension, AccessWidenerVisitor visitor) {
+		// For other mods, only consider transitive AWs and remap from intermediary->named
+		TinyRemapper tinyRemapper;
+
+		try {
+			tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to create tiny remapper for intermediary->named", e);
+		}
+
+		try {
+			tinyRemapper.readClassPath(TinyRemapperHelper.getRemapClasspath(project));
+
+			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(visitor, tinyRemapper.getRemapper(), "intermediary", "named");
+			AccessWidenerReader globalReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
+
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 				// Only apply global AWs from mods that are part of the compile classpath
 				if (!entry.compileClasspath()) {
@@ -116,6 +132,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 				extension.getLazyConfigurationProvider(entry.sourceConfiguration()).configure(remappedConfig -> {
 					for (ResolvedArtifact artifact : remappedConfig.getResolvedConfiguration().getResolvedArtifacts()) {
 						String modAwPath = getAccessWidenerPath(artifact.getFile().toPath());
+
 						if (modAwPath == null) {
 							continue;
 						}
@@ -124,9 +141,9 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 					}
 				});
 			}
+		} finally {
+			tinyRemapper.finish();
 		}
-
-		inputHash = Hashing.sha256().hashBytes(fullWriter.write()).asBytes();
 	}
 
 	@Override
@@ -148,7 +165,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 			protected byte[] transform(ZipEntry zipEntry, byte[] input) {
 				ClassReader reader = new ClassReader(input);
 				ClassWriter writer = new ClassWriter(0);
-				ClassVisitor classVisitor = AccessWidenerVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
+				ClassVisitor classVisitor = AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
 
 				project.getLogger().lifecycle("Applying access widener to " + className);
 
@@ -158,9 +175,14 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		};
 	}
 
+	/**
+	 * Get this mods access widener remapped to the intermediary namespace.
+	 */
 	public byte[] getRemappedAccessWidener(Remapper asmRemapper, String targetNamespace) throws IOException {
-		AccessWidenerWriter writer = new AccessWidenerWriter();
-		RemappingDecorator remapper = new RemappingDecorator(writer, (from, to) -> asmRemapper, targetNamespace);
+		int version = AccessWidenerReader.readVersion(modAccessWidener);
+
+		AccessWidenerWriter writer = new AccessWidenerWriter(version);
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(writer, asmRemapper, "named", targetNamespace);
 		AccessWidenerReader reader = new AccessWidenerReader(remapper);
 		reader.read(modAccessWidener);
 

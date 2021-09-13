@@ -34,6 +34,7 @@ import org.zeroturnaround.zip.ZipUtil;
 public record AccessWidenerFile(
 		Path containingFile,
 		String name,
+		String modId,
 		byte[] content
 ) {
 	/**
@@ -53,12 +54,14 @@ public record AccessWidenerFile(
 		}
 
 		String awPath = jsonObject.get("accessWidener").getAsString();
+		String modId = jsonObject.get("id").getAsString();
 
 		byte[] content = ZipUtil.unpackEntry(modJarPath.toFile(), awPath);
 
 		return new AccessWidenerFile(
 				modJarPath,
 				awPath,
+				modId,
 				content
 		);
 	}

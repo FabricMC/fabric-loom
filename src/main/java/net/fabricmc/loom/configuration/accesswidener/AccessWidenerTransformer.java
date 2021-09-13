@@ -41,11 +41,11 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 import net.fabricmc.loom.util.Constants;
 
-final class AccessWidenerApplier {
+final class AccessWidenerTransformer {
 	private final Logger logger;
 	private final AccessWidener accessWidener;
 
-	AccessWidenerApplier(Logger logger, AccessWidener accessWidener) {
+	AccessWidenerTransformer(Logger logger, AccessWidener accessWidener) {
 		this.logger = logger;
 		this.accessWidener = accessWidener;
 	}

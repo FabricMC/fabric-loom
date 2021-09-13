@@ -30,7 +30,6 @@ import java.util.Arrays;
 
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ResolvedArtifact;
 import org.jetbrains.annotations.Nullable;
 import org.zeroturnaround.zip.ZipUtil;
 
@@ -103,7 +102,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 			tinyRemapper.readClassPath(TinyRemapperHelper.getRemapClasspath(project));
 
 			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(visitor, tinyRemapper.getRemapper(), "intermediary", "named");
-			AccessWidenerReader globalReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
+			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
 
 			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 				// Only apply global AWs from mods that are part of the compile classpath
@@ -112,11 +111,12 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 				}
 
 				extension.getLazyConfigurationProvider(entry.sourceConfiguration()).configure(remappedConfig -> {
-					for (ResolvedArtifact artifact : remappedConfig.getResolvedConfiguration().getResolvedArtifacts()) {
-						AccessWidenerFile file = AccessWidenerFile.fromModJar(artifact.getFile().toPath());
+					for (File artifact : remappedConfig.resolve()) {
+						AccessWidenerFile file = AccessWidenerFile.fromModJar(artifact.toPath());
 
 						if (file != null) {
-							globalReader.read(file.content());
+							project.getLogger().info("Reading transitive access widener from {}", file.modId());
+							transitiveReader.read(file.content());
 						}
 					}
 				});
@@ -133,8 +133,8 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 			return;
 		}
 
-		AccessWidenerApplier applier = new AccessWidenerApplier(project.getLogger(), accessWidener);
-		applier.apply(file);
+		AccessWidenerTransformer transformer = new AccessWidenerTransformer(project.getLogger(), accessWidener);
+		transformer.apply(file);
 		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
 	}
 

@@ -84,7 +84,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void process(File file) {
-		AccessWidenerApplier applier = new AccessWidenerApplier(project.getLogger(), accessWidener);
+		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
 		applier.apply(file);
 		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
 	}

@@ -45,6 +45,7 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
@@ -59,6 +60,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	// This is a SHA256 hash across all transitive AWs, may be null in case there are no rules
 	@Nullable
 	private byte[] inputHash;
+	private boolean isSetup;
 
 	public TransitiveAccessWidenerJarProcessor(Project project) {
 		this.project = project;
@@ -71,6 +73,19 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void setup() {
+
+	}
+
+	private boolean isEmpty() {
+		return accessWidener.getTargets().isEmpty();
+	}
+
+	private void ensureSetup() {
+		if (isSetup) {
+			return;
+		}
+		isSetup = true;
+
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		// Write a collated full access widener for hashing it, and forward it to the access widener we'll apply
@@ -82,10 +97,6 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		if (!isEmpty()) {
 			inputHash = Hashing.sha256().hashBytes(fullWriter.write()).asBytes();
 		}
-	}
-
-	private boolean isEmpty() {
-		return accessWidener.getTargets().isEmpty();
 	}
 
 	private void readTransitiveWidenersFromMods(LoomGradleExtension extension, AccessWidenerVisitor visitor) {
@@ -100,6 +111,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 		try {
 			tinyRemapper.readClassPath(TinyRemapperHelper.getRemapClasspath(project));
+			tinyRemapper.readInputs(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
 
 			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(visitor, tinyRemapper.getRemapper(), "intermediary", "named");
 			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
@@ -128,6 +140,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void process(File file) {
+		ensureSetup();
 		if (isEmpty()) {
 			project.getLogger().debug("Not applying transitive access wideners, since no rules are loaded");
 			return;
@@ -140,6 +153,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
+		ensureSetup();
 		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILENAME);
 
 		if (hash == null) {

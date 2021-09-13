@@ -65,6 +65,7 @@ import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
 import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.NestedJarProvider;
 import net.fabricmc.loom.configuration.JarManifestConfiguration;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
@@ -163,10 +164,10 @@ public class RemapJarTask extends Jar {
 							throw new RuntimeException("Failed to remap access widener", e);
 						}
 
-						String awPath = accessWidenerJarProcessor.getAccessWidenerPath(remapData.input);
-						Preconditions.checkNotNull(awPath, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
+						AccessWidenerFile awFile = AccessWidenerFile.fromModJar(remapData.input);
+						Preconditions.checkNotNull(awFile, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
 
-						return Pair.of(awPath, data);
+						return Pair.of(awFile.name(), data);
 					}
 
 					return null;

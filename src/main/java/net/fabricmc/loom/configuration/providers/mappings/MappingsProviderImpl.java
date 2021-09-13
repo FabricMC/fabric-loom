@@ -50,6 +50,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
@@ -139,6 +140,8 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		if (extension.getAccessWidenerPath().isPresent()) {
 			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
 		}
+
+		extension.getGameJarProcessors().add(new TransitiveAccessWidenerJarProcessor(getProject()));
 
 		extension.getAccessWidenerPath().finalizeValue();
 		extension.getGameJarProcessors().finalizeValue();

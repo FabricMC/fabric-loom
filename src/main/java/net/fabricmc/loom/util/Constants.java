@@ -52,8 +52,6 @@ public class Constants {
 			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME)
 	);
 
-	public static final String SOFTWARE_COMPONENT_NAME = "loom";
-
 	private Constants() {
 	}
 

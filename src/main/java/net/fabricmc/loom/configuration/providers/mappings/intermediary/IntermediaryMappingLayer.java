@@ -31,22 +31,22 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingLayer;
-import net.fabricmc.loom.configuration.providers.mappings.MappingNamespace;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 
 public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 	@Override
-	public MappingNamespace getSourceNamespace() {
-		return MappingNamespace.OFFICIAL;
+	public MappingsNamespace getSourceNamespace() {
+		return MappingsNamespace.OFFICIAL;
 	}
 
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		// Populate named with intermediary and add Add a "named" namespace
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()), true);
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
 		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, nsCompleter);

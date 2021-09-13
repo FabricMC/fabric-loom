@@ -22,22 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import java.util.Locale;
 
-import net.fabricmc.mappingio.MappingVisitor;
+/**
+ * The standard namespaces used by loom.
+ */
+public enum MappingsNamespace {
+	/**
+	 * Official mappings are the names that are used in the vanilla Minecraft game jars, these are usually obfuscated.
+	 */
+	OFFICIAL,
 
-public interface MappingLayer {
-	void visit(MappingVisitor mappingVisitor) throws IOException;
+	/**
+	 * Intermediary mappings have been generated to provide a stable set of names across minecraft versions.
+	 *
+	 * <p>Intermediary is used in a production runtime (outside a dev env) allowing mods to run across multiple versions of the game. Mods are remapped from "named" at build time.
+	 *
+	 * @see <a href="https://github.com/FabricMC/intermediary/">github.com/FabricMC/intermediary/</a>
+	 */
+	INTERMEDIARY,
 
-	default MappingNamespace getSourceNamespace() {
-		return MappingNamespace.NAMED;
-	}
+	/**
+	 * Named mappings are the developer friendly names used to develop mods against.
+	 */
+	NAMED;
 
-	default List<Class<? extends MappingLayer>> dependsOn() {
-		return Collections.emptyList();
+	@Override
+	public String toString() {
+		return name().toLowerCase(Locale.ROOT);
 	}
 }

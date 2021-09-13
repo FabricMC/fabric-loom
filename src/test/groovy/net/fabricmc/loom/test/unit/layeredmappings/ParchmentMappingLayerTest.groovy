@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec
@@ -38,7 +39,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
                     new MojangMappingsSpec(),
-                    new ParchmentMappingsSpec(PARCHMENT_NOTATION, false)
+                    new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), false)
             )
             def tiny = getTiny(mappings)
             def reorderedMappings = reorder(mappings)
@@ -61,7 +62,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
                     new MojangMappingsSpec(),
-                    new ParchmentMappingsSpec(PARCHMENT_NOTATION, true)
+                    new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), true)
             )
             def tiny = getTiny(mappings)
             def reorderedMappings = reorder(mappings)

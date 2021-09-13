@@ -25,12 +25,15 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 
 public class GradleMappingContext implements MappingContext {
@@ -45,9 +48,14 @@ public class GradleMappingContext implements MappingContext {
 	}
 
 	@Override
-	public File mavenFile(String mavenNotation) {
-		Configuration configuration = project.getConfigurations().detachedConfiguration(project.getDependencies().create(mavenNotation));
-		return configuration.getSingleFile();
+	public Path resolveDependency(Dependency dependency) {
+		Configuration configuration = project.getConfigurations().detachedConfiguration(dependency);
+		return configuration.getSingleFile().toPath();
+	}
+
+	@Override
+	public Path resolveMavenDependency(String mavenNotation) {
+		return resolveDependency(project.getDependencies().create(mavenNotation));
 	}
 
 	@Override
@@ -61,8 +69,8 @@ public class GradleMappingContext implements MappingContext {
 	}
 
 	@Override
-	public File workingDirectory(String name) {
-		return new File(minecraftProvider().dir("layered/working_dir/" + workingDirName), name);
+	public Path workingDirectory(String name) {
+		return new File(minecraftProvider().dir("layered/working_dir/" + workingDirName), name).toPath();
 	}
 
 	@Override

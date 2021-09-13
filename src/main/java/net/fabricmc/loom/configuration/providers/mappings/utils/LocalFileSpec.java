@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,42 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
+
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.util.Checksum;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
+public class LocalFileSpec implements FileSpec {
+	private final File file;
+	private final int hash;
+
+	public LocalFileSpec(File file) {
+		this.file = file;
+		this.hash = calculateHashCode();
+	}
+
+	private int calculateHashCode() {
+		if (!file.exists()) {
+			throw new RuntimeException("Could not find %s, it must be present at spec creation time to calculate mappings hash".formatted(file.getAbsolutePath()));
+		}
+
+		// Use the file hash as part of the spec, this means if the input file changes the mappings will be re-generated.
+		return Objects.hash(Arrays.hashCode(Checksum.sha256(file)), file.getAbsolutePath());
+	}
+
 	@Override
-	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.mappingsProvider().intermediaryTinyFile());
+	public Path get(MappingContext context) {
+		return file.toPath();
+	}
+
+	@Override
+	public int hashCode() {
+		return hash;
 	}
 }

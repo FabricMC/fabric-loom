@@ -54,6 +54,7 @@ import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
@@ -92,7 +93,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		}
 
 		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
-		if (!accessWidener.getNamespace().equals("named")) {
+		if (!accessWidener.getNamespace().equals(MappingsNamespace.NAMED.toString())) {
 			try {
 				List<String> validNamespaces = loomGradleExtension.getMappingsProvider().getMappings().getMetadata().getNamespaces();
 
@@ -100,10 +101,10 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 					throw new UnsupportedOperationException(String.format("Access Widener namespace '%s' is not a valid namespace, it must be one of: '%s'", accessWidener.getNamespace(), String.join(", ", validNamespaces)));
 				}
 
-				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper("official", "named");
+				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.NAMED.toString());
 				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
 
-				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "named");
+				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), MappingsNamespace.NAMED.toString());
 				accessWidener = remapper.remap();
 
 				tinyRemapper.finish();
@@ -160,7 +161,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, "intermediary");
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, MappingsNamespace.INTERMEDIARY.toString());
 		AccessWidener remapped = remapper.remap();
 		AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
 

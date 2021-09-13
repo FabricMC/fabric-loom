@@ -31,7 +31,6 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -68,9 +67,13 @@ public class JarProcessorManager {
 		String jarProcessorHash = getJarProcessorHash();
 
 		try (JarFile jar = new JarFile(file)) {
-			Attributes attributes = jar.getManifest().getMainAttributes();
+			Manifest manifest = jar.getManifest();
 
-			if (!jarProcessorHash.equals(attributes.getValue(JAR_PROCESSOR_HASH_ATTRIBUTE))) {
+			if (manifest == null) {
+				return false;
+			}
+
+			if (!jarProcessorHash.equals(manifest.getMainAttributes().getValue(JAR_PROCESSOR_HASH_ATTRIBUTE))) {
 				return true;
 			}
 		} catch (IOException e) {

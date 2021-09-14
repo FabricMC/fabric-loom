@@ -32,12 +32,13 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.SourceRemapper;
 
 public class RemapSourcesJarTask extends AbstractLoomTask {
 	private final RegularFileProperty input = getProject().getObjects().fileProperty();
 	private final RegularFileProperty output = getProject().getObjects().fileProperty().convention(input);
-	private final Property<String> targetNamespace = getProject().getObjects().property(String.class).convention("intermediary");
+	private final Property<String> targetNamespace = getProject().getObjects().property(String.class).convention(MappingsNamespace.INTERMEDIARY.toString());
 	private SourceRemapper sourceRemapper = null;
 	private final Property<Boolean> preserveFileTimestamps = getProject().getObjects().property(Boolean.class).convention(true);
 	private final Property<Boolean> reproducibleFileOrder = getProject().getObjects().property(Boolean.class).convention(false);
@@ -49,7 +50,7 @@ public class RemapSourcesJarTask extends AbstractLoomTask {
 	public void remap() throws Exception {
 		if (sourceRemapper == null) {
 			String direction = targetNamespace.get();
-			SourceRemapper.remapSources(getProject(), input.get().getAsFile(), output.get().getAsFile(), direction.equals("named"), reproducibleFileOrder.get(), preserveFileTimestamps.get());
+			SourceRemapper.remapSources(getProject(), input.get().getAsFile(), output.get().getAsFile(), direction.equals(MappingsNamespace.NAMED.toString()), reproducibleFileOrder.get(), preserveFileTimestamps.get());
 		} else {
 			sourceRemapper.scheduleRemapSources(input.get().getAsFile(), output.get().getAsFile(), reproducibleFileOrder.get(), preserveFileTimestamps.get());
 		}

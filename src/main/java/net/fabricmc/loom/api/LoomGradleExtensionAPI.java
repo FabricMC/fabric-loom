@@ -38,9 +38,9 @@ import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -196,6 +196,14 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	void disableDeprecatedPomGeneration(MavenPublication publication);
+
+	/**
+	 * Reads the mod version from the fabric.mod.json file located in the main sourcesets resources.
+	 * This is useful if you want to set the gradle version based of the version in the fabric.mod.json file.
+	 *
+	 * @return the version defined in the fabric.mod.json
+	 */
+	String getModVersion();
 
 	/**
 	 * When true loom will apply transitive access wideners from compile dependencies.

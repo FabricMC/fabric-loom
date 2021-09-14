@@ -26,6 +26,8 @@ package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.util.List;
 
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+
 public record LayeredMappingSpec(List<MappingsSpec<?>> layers) {
 	public String getVersion() {
 		// TODO something better?

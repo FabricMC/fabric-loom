@@ -49,6 +49,7 @@ import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
@@ -109,7 +110,12 @@ public class ModProcessor {
 		int version = AccessWidenerReader.readVersion(input);
 
 		AccessWidenerWriter writer = new AccessWidenerWriter(version);
-		AccessWidenerRemapper awRemapper = new AccessWidenerRemapper(writer, remapper, "intermediary", "named");
+		AccessWidenerRemapper awRemapper = new AccessWidenerRemapper(
+				writer,
+				remapper,
+				MappingsNamespace.INTERMEDIARY.toString(),
+				MappingsNamespace.NAMED.toString()
+		);
 		AccessWidenerReader reader = new AccessWidenerReader(awRemapper);
 		reader.read(input);
 		return writer.write();
@@ -117,8 +123,8 @@ public class ModProcessor {
 
 	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		String fromM = "intermediary";
-		String toM = "named";
+		String fromM = MappingsNamespace.INTERMEDIARY.toString();
+		String toM = MappingsNamespace.NAMED.toString();
 
 		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();

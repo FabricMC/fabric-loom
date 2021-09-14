@@ -39,6 +39,7 @@ import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Constants;
@@ -123,7 +124,12 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		TinyRemapper tinyRemapper = createTinyRemapper();
 
 		try {
-			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "intermediary", "named");
+			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(
+					accessWidener,
+					tinyRemapper.getRemapper(),
+					MappingsNamespace.INTERMEDIARY.toString(),
+					MappingsNamespace.NAMED.toString()
+			);
 			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
 
 			for (AccessWidenerFile accessWidenerFile : transitiveAccessWideners) {

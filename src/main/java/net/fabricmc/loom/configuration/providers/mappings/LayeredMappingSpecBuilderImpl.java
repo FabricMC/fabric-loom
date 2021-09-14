@@ -30,28 +30,33 @@ import java.util.List;
 
 import org.gradle.api.Action;
 
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
-import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;
 
-public class LayeredMappingSpecBuilder {
+public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder {
 	private final List<MappingsSpec<?>> layers = new LinkedList<>();
 
+	@Override
+	public LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec) {
+		layers.add(mappingSpec);
+		return this;
+	}
+
+	@Override
 	public LayeredMappingSpecBuilder officialMojangMappings() {
-		layers.add(new MojangMappingsSpec());
-		return this;
+		return addLayer(new MojangMappingsSpec());
 	}
 
-	public LayeredMappingSpecBuilder parchment(String mavenNotation) {
-		parchment(mavenNotation, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
-		return this;
-	}
-
-	public LayeredMappingSpecBuilder parchment(String mavenNotation, Action<ParchmentMappingsSpecBuilder> action) {
-		ParchmentMappingsSpecBuilder builder = ParchmentMappingsSpecBuilder.builder(mavenNotation);
+	@Override
+	public LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action) {
+		ParchmentMappingsSpecBuilderImpl builder = ParchmentMappingsSpecBuilderImpl.builder(FileSpec.create(object));
 		action.execute(builder);
-		layers.add(builder.build());
-		return this;
+		return addLayer(builder.build());
 	}
 
 	public LayeredMappingSpec build() {

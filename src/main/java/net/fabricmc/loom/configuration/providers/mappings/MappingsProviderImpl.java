@@ -48,6 +48,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
@@ -285,7 +286,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		project.getLogger().info(":merging mappings");
 
 		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingNamespace.OFFICIAL.stringValue());
+		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingsNamespace.OFFICIAL.toString());
 		readIntermediaryTree().accept(sourceNsSwitch);
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
@@ -301,7 +302,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	private MemoryMappingTree readIntermediaryTree() throws IOException {
 		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(tree, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()), true);
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(tree, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
 		try (BufferedReader reader = Files.newBufferedReader(getIntermediaryTiny(), StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, nsCompleter);
@@ -325,7 +326,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
 							yarnMappings.toAbsolutePath().toString(),
 							newMergedMappings.toAbsolutePath().toString(),
-							"intermediary", "official");
+							MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.OFFICIAL.toString());
 		} catch (Exception e) {
 			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
 							+ " with mappings from " + yarnMappings, e);

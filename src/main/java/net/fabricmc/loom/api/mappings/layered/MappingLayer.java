@@ -22,29 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered;
 
-import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
-import org.gradle.api.logging.Logger;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
+import net.fabricmc.mappingio.MappingVisitor;
 
-public interface MappingContext {
-	File mavenFile(String mavenNotation);
+@ApiStatus.Experimental
+public interface MappingLayer {
+	void visit(MappingVisitor mappingVisitor) throws IOException;
 
-	MappingsProvider mappingsProvider();
-
-	MinecraftProvider minecraftProvider();
-
-	default String minecraftVersion() {
-		return minecraftProvider().minecraftVersion();
+	default MappingsNamespace getSourceNamespace() {
+		return MappingsNamespace.NAMED;
 	}
 
 	/**
-	 * Creates a temporary working dir to be used to store working files.
+	 * Provides a list of layer classes that this mapping layer depends on. If such a layer is not present an Exception will be thrown when trying to resolve the layer.
+	 * @return A list of MappingLayer classes to depend on.
 	 */
-	File workingDirectory(String name);
-
-	Logger getLogger();
+	default List<Class<? extends MappingLayer>> dependsOn() {
+		return Collections.emptyList();
+	}
 }

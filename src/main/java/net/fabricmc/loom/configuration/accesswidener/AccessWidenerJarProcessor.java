@@ -41,6 +41,7 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
@@ -96,7 +97,12 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		int version = AccessWidenerReader.readVersion(modAccessWidener);
 
 		AccessWidenerWriter writer = new AccessWidenerWriter(version);
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(writer, asmRemapper, "named", targetNamespace);
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(
+				writer,
+				asmRemapper,
+				MappingsNamespace.NAMED.toString(),
+				targetNamespace
+		);
 		AccessWidenerReader reader = new AccessWidenerReader(remapper);
 		reader.read(modAccessWidener);
 

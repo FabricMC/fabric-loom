@@ -57,6 +57,7 @@ import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
@@ -131,8 +132,8 @@ public class RemapJarTask extends Jar {
 
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = MappingsNamespace.NAMED.toString();
+		String toM = MappingsNamespace.INTERMEDIARY.toString();
 
 		if (isMainRemapTask) {
 			jarRemapper.addToClasspath(getRemapClasspath());

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-public class ParchmentMappingsSpecBuilder {
-	private final String mavenNotation;
+import org.gradle.api.Action;
+import org.jetbrains.annotations.ApiStatus;
 
-	private boolean removePrefix;
+/**
+ * Used to configure a layered mapping spec.
+ */
+@ApiStatus.Experimental
+public interface LayeredMappingSpecBuilder {
+	/**
+	 * Add a MappingsSpec layer.
+	 */
+	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
 
-	private ParchmentMappingsSpecBuilder(String mavenNotation) {
-		this.mavenNotation = mavenNotation;
+	/**
+	 * Add a layer that uses the official mappings provided by Mojang.
+	 */
+	LayeredMappingSpecBuilder officialMojangMappings();
+
+	default LayeredMappingSpecBuilder parchment(Object object) {
+		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
 	}
 
-	public static ParchmentMappingsSpecBuilder builder(String depNotation) {
-		return new ParchmentMappingsSpecBuilder(depNotation);
-	}
-
-	public ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix) {
-		this.removePrefix = removePrefix;
-		return this;
-	}
-
-	public ParchmentMappingsSpec build() {
-		return new ParchmentMappingsSpec(mavenNotation, removePrefix);
-	}
+	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
 }

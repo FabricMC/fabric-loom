@@ -60,6 +60,8 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		this.extension = LoomGradleExtension.get(project);
 
 		transitiveAccessWideners = getTransitiveAccessWideners();
+
+		extension.addTransitiveAccessWideners(transitiveAccessWideners);
 	}
 
 	@Override

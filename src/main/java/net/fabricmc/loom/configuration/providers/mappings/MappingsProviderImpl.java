@@ -141,7 +141,13 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
 		}
 
-		extension.getGameJarProcessors().add(new TransitiveAccessWidenerJarProcessor(getProject()));
+		if (extension.getEnableTransitiveAccessWideners().get()) {
+			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(getProject());
+
+			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
+		}
 
 		extension.getAccessWidenerPath().finalizeValue();
 		extension.getGameJarProcessors().finalizeValue();

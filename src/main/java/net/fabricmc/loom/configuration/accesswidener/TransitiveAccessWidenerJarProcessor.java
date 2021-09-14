@@ -26,141 +26,139 @@ package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
-import com.google.common.hash.Hashing;
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
-import org.jetbrains.annotations.Nullable;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
-import net.fabricmc.accesswidener.ForwardingVisitor;
 import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
-import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
  * Applies transitive access wideners that are inherited from mod and api dependencies.
  */
 public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
-	// Filename used to store hash of input access widener in processed jar file
-	public static final String HASH_FILENAME = "taw.sha256";
-	// The collated AWs from other mods
-	private final AccessWidener accessWidener = new AccessWidener();
 	private final Project project;
-	// This is a SHA256 hash across all transitive AWs, may be null in case there are no rules
-	@Nullable
-	private byte[] inputHash;
-	private boolean isSetup;
+	private final LoomGradleExtension extension;
+
+	private final List<AccessWidenerFile> transitiveAccessWideners;
 
 	public TransitiveAccessWidenerJarProcessor(Project project) {
 		this.project = project;
-	}
+		this.extension = LoomGradleExtension.get(project);
 
-	@Override
-	public String getId() {
-		return "loom:transitive_access_wideners";
+		transitiveAccessWideners = getTransitiveAccessWideners();
 	}
 
 	@Override
 	public void setup() {
-
 	}
 
-	private boolean isEmpty() {
-		return accessWidener.getTargets().isEmpty();
+	public boolean isEmpty() {
+		return transitiveAccessWideners.isEmpty();
 	}
 
-	private void ensureSetup() {
-		if (isSetup) {
-			return;
-		}
-		isSetup = true;
+	@Override
+	public String getId() {
+		Preconditions.checkArgument(!isEmpty());
 
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		// Write a collated full access widener for hashing it, and forward it to the access widener we'll apply
-		AccessWidenerWriter fullWriter = new AccessWidenerWriter();
-		ForwardingVisitor forwardingVisitor = new ForwardingVisitor(fullWriter, accessWidener);
-
-		readTransitiveWidenersFromMods(extension, forwardingVisitor);
-
-		if (!isEmpty()) {
-			inputHash = Hashing.sha256().hashBytes(fullWriter.write()).asBytes();
-		}
+		return "loom:transitive_access_wideners:" + transitiveAccessWideners.hashCode();
 	}
 
-	private void readTransitiveWidenersFromMods(LoomGradleExtension extension, AccessWidenerVisitor visitor) {
-		// For other mods, only consider transitive AWs and remap from intermediary->named
-		TinyRemapper tinyRemapper;
+	private List<AccessWidenerFile> getTransitiveAccessWideners() {
+		List<AccessWidenerFile> accessWideners = new ArrayList<>();
 
-		try {
-			tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to create tiny remapper for intermediary->named", e);
-		}
+		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
+			// Only apply global AWs from mods that are part of the compile classpath
+			if (!entry.compileClasspath()) {
+				continue;
+			}
 
-		try {
-			tinyRemapper.readClassPath(TinyRemapperHelper.getRemapClasspath(project));
-			tinyRemapper.readInputs(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+			Set<File> artifacts = extension.getLazyConfigurationProvider(entry.sourceConfiguration())
+					.get()
+					.resolve();
 
-			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(visitor, tinyRemapper.getRemapper(), "intermediary", "named");
-			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
+			for (File artifact : artifacts) {
+				AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(artifact.toPath());
 
-			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				// Only apply global AWs from mods that are part of the compile classpath
-				if (!entry.compileClasspath()) {
+				if (accessWidener == null) {
 					continue;
 				}
 
-				extension.getLazyConfigurationProvider(entry.sourceConfiguration()).configure(remappedConfig -> {
-					for (File artifact : remappedConfig.resolve()) {
-						AccessWidenerFile file = AccessWidenerFile.fromModJar(artifact.toPath());
+				if (AccessWidenerReader.readVersion(accessWidener.content()) < 2) {
+					// Transitive AWs are only in v2 or higher
+					continue;
+				}
 
-						if (file != null) {
-							project.getLogger().info("Reading transitive access widener from {}", file.modId());
-							transitiveReader.read(file.content());
-						}
-					}
-				});
+				String accessWidenerContent = new String(accessWidener.content(), AccessWidenerReader.ENCODING);
+
+				if (!accessWidenerContent.contains("transitive-")) {
+					// AW does not contain anything transitive, skip over it
+					continue;
+				}
+
+				accessWideners.add(accessWidener);
 			}
-		} finally {
-			tinyRemapper.finish();
 		}
+
+		return accessWideners;
 	}
 
 	@Override
 	public void process(File file) {
-		ensureSetup();
-		if (isEmpty()) {
-			project.getLogger().debug("Not applying transitive access wideners, since no rules are loaded");
-			return;
-		}
+		Preconditions.checkArgument(!isEmpty());
 
+		AccessWidener accessWidener = createAccessWidener();
 		AccessWidenerTransformer transformer = new AccessWidenerTransformer(project.getLogger(), accessWidener);
 		transformer.apply(file);
-		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
+	}
+
+	private AccessWidener createAccessWidener() {
+		AccessWidener accessWidener = new AccessWidener();
+		// For other mods, only consider transitive AWs and remap from intermediary->named
+		TinyRemapper tinyRemapper = createTinyRemapper();
+
+		try {
+			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), "intermediary", "named");
+			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
+
+			for (AccessWidenerFile accessWidenerFile : transitiveAccessWideners) {
+				project.getLogger().info("Reading transitive access widener from {}", accessWidenerFile.modId());
+				transitiveReader.read(accessWidenerFile.content());
+			}
+		} finally {
+			tinyRemapper.finish();
+		}
+
+		return accessWidener;
+	}
+
+	private TinyRemapper createTinyRemapper() {
+		try {
+			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
+
+			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
+			tinyRemapper.readClassPath(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+
+			return tinyRemapper;
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to create tiny remapper for intermediary->named", e);
+		}
 	}
 
 	@Override
 	public boolean isInvalid(File file) {
-		ensureSetup();
-		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILENAME);
-
-		if (hash == null) {
-			// If there's no hash file, that is in line with not having any access-widener rules
-			return !isEmpty();
-		}
-
-		return !Arrays.equals(inputHash, hash); // TODO how do we know if the current jar as the correct access applied? save the hash of the input?
+		// The hash is handled by getId()
+		return false;
 	}
 }

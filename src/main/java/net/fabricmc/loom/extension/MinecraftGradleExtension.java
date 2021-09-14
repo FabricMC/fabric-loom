@@ -144,4 +144,10 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 		reportDeprecation();
 		parent.disableDeprecatedPomGeneration(publication);
 	}
+
+	@Override
+	public Property<Boolean> getEnableTransitiveAccessWideners() {
+		reportDeprecation();
+		throw new UnsupportedOperationException();
+	}
 }

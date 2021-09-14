@@ -66,7 +66,7 @@ public final class TinyRemapperHelper {
 				.build();
 	}
 
-	public static Path[] getRemapClasspath(Project project) {
+	public static Path[] getMinecraftDependencies(Project project) {
 		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 	}

@@ -36,6 +36,7 @@ import org.gradle.api.Project;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
+import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
@@ -78,6 +79,9 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	private List<AccessWidenerFile> getTransitiveAccessWideners() {
 		List<AccessWidenerFile> accessWideners = new ArrayList<>();
 
+		TransitiveDetectorVisitor transitiveDetectorVisitor = new TransitiveDetectorVisitor();
+		AccessWidenerReader transitiveReader = new AccessWidenerReader(transitiveDetectorVisitor);
+
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			// Only apply global AWs from mods that are part of the compile classpath
 			if (!entry.compileClasspath()) {
@@ -100,9 +104,10 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 					continue;
 				}
 
-				String accessWidenerContent = new String(accessWidener.content(), AccessWidenerReader.ENCODING);
+				transitiveDetectorVisitor.reset();
+				transitiveReader.read(accessWidener.content());
 
-				if (!accessWidenerContent.contains("transitive-")) {
+				if (!transitiveDetectorVisitor.isTransitive()) {
 					// AW does not contain anything transitive, skip over it
 					continue;
 				}
@@ -160,5 +165,38 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	public boolean isInvalid(File file) {
 		// The hash is handled by getId()
 		return false;
+	}
+
+	private static class TransitiveDetectorVisitor implements AccessWidenerVisitor {
+		private boolean transitive = false;
+
+		@Override
+		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
+			if (transitive) {
+				this.transitive = true;
+			}
+		}
+
+		@Override
+		public void visitMethod(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
+			if (transitive) {
+				this.transitive = true;
+			}
+		}
+
+		@Override
+		public void visitField(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
+			if (transitive) {
+				this.transitive = true;
+			}
+		}
+
+		public boolean isTransitive() {
+			return this.transitive;
+		}
+
+		public void reset() {
+			this.transitive = false;
+		}
 	}
 }

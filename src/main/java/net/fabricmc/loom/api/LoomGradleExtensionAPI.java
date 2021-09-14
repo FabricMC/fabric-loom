@@ -204,4 +204,11 @@ public interface LoomGradleExtensionAPI {
 	 * @return the version defined in the fabric.mod.json
 	 */
 	String getModVersion();
+
+	/**
+	 * When true loom will apply transitive access wideners from compile dependencies.
+	 *
+	 * @return the property controlling the transitive access wideners
+	 */
+	Property<Boolean> getEnableTransitiveAccessWideners();
 }

@@ -24,46 +24,34 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.ZipEntry;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.Remapper;
 import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.ByteArrayZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
-	private AccessWidener accessWidener = new AccessWidener();
-	private AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
+	// Filename used to store hash of input access widener in processed jar file
+	private static final String HASH_FILENAME = "aw.sha256";
+	// The mod's own access widener file
+	private byte[] modAccessWidener;
+	private final AccessWidener accessWidener = new AccessWidener();
 	private final Project project;
+	// This is a SHA256 hash across the mod's and all transitive AWs
 	private byte[] inputHash;
 
 	public AccessWidenerJarProcessor(Project project) {
@@ -77,119 +65,53 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public void setup() {
-		LoomGradleExtension loomGradleExtension = LoomGradleExtension.get(project);
-		File awPath = loomGradleExtension.getAccessWidenerPath().get().getAsFile();
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		Path awPath = extension.getAccessWidenerPath().get().getAsFile().toPath();
 
-		if (!awPath.exists()) {
-			throw new RuntimeException("Could not find access widener file @ " + awPath.getAbsolutePath());
-		}
-
-		inputHash = Checksum.sha256(awPath);
-
-		try (BufferedReader reader = new BufferedReader(new FileReader(awPath))) {
-			accessWidenerReader.read(reader);
+		// Read our own mod's access widener, used later for producing a version remapped to intermediary
+		try {
+			modAccessWidener = Files.readAllBytes(awPath);
+		} catch (NoSuchFileException e) {
+			throw new RuntimeException("Could not find access widener file @ " + awPath.toAbsolutePath());
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to read project access widener file");
+			throw new RuntimeException("Failed to read access widener: " + awPath);
 		}
 
-		//Remap accessWidener if its not named, allows for AE's to be written in intermediary
-		if (!accessWidener.getNamespace().equals(MappingsNamespace.NAMED.toString())) {
-			try {
-				List<String> validNamespaces = loomGradleExtension.getMappingsProvider().getMappings().getMetadata().getNamespaces();
+		AccessWidenerReader reader = new AccessWidenerReader(accessWidener);
+		reader.read(modAccessWidener);
 
-				if (!validNamespaces.contains(accessWidener.getNamespace())) {
-					throw new UnsupportedOperationException(String.format("Access Widener namespace '%s' is not a valid namespace, it must be one of: '%s'", accessWidener.getNamespace(), String.join(", ", validNamespaces)));
-				}
-
-				TinyRemapper tinyRemapper = loomGradleExtension.getMinecraftMappedProvider().getTinyRemapper(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.NAMED.toString());
-				tinyRemapper.readClassPath(loomGradleExtension.getMinecraftMappedProvider().getRemapClasspath());
-
-				AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, tinyRemapper.getRemapper(), MappingsNamespace.NAMED.toString());
-				accessWidener = remapper.remap();
-
-				tinyRemapper.finish();
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap access widener", e);
-			}
-		}
+		inputHash = Hashing.sha256().hashBytes(modAccessWidener).asBytes();
 	}
 
 	@Override
 	public void process(File file) {
-		project.getLogger().lifecycle("Processing file: " + file.getName());
-		ZipUtil.transformEntries(file, getTransformers(accessWidener.getTargets()));
-		ZipUtil.addEntry(file, "aw.sha256", inputHash);
+		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
+		applier.apply(file);
+		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
 	}
 
-	private ZipEntryTransformerEntry[] getTransformers(Set<String> classes) {
-		return classes.stream()
-				.map(string -> new ZipEntryTransformerEntry(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
-				.toArray(ZipEntryTransformerEntry[]::new);
-	}
+	/**
+	 * Get this mods access widener remapped to the intermediary namespace.
+	 */
+	public byte[] getRemappedAccessWidener(Remapper asmRemapper, String targetNamespace) throws IOException {
+		int version = AccessWidenerReader.readVersion(modAccessWidener);
 
-	private ZipEntryTransformer getTransformer(String className) {
-		return new ByteArrayZipEntryTransformer() {
-			@Override
-			protected byte[] transform(ZipEntry zipEntry, byte[] input) {
-				ClassReader reader = new ClassReader(input);
-				ClassWriter writer = new ClassWriter(0);
-				ClassVisitor classVisitor = AccessWidenerVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
+		AccessWidenerWriter writer = new AccessWidenerWriter(version);
+		AccessWidenerRemapper remapper = new AccessWidenerRemapper(
+				writer,
+				asmRemapper,
+				MappingsNamespace.NAMED.toString(),
+				targetNamespace
+		);
+		AccessWidenerReader reader = new AccessWidenerReader(remapper);
+		reader.read(modAccessWidener);
 
-				project.getLogger().lifecycle("Applying access widener to " + className);
-
-				reader.accept(classVisitor, 0);
-				return writer.toByteArray();
-			}
-		};
-	}
-
-	//Called when remapping the mod
-	public void remapAccessWidener(Path modJarPath, Remapper asmRemapper) throws IOException {
-		byte[] bytes = getRemappedAccessWidener(asmRemapper);
-
-		String path = getAccessWidenerPath(modJarPath);
-
-		if (path == null) {
-			throw new RuntimeException("Failed to find accessWidener in fabric.mod.json");
-		}
-
-		boolean replaced = ZipUtil.replaceEntry(modJarPath.toFile(), path, bytes);
-
-		if (!replaced) {
-			project.getLogger().warn("Failed to replace access widener file at " + path);
-		}
-	}
-
-	public byte[] getRemappedAccessWidener(Remapper asmRemapper) throws IOException {
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(accessWidener, asmRemapper, MappingsNamespace.INTERMEDIARY.toString());
-		AccessWidener remapped = remapper.remap();
-		AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
-
-		try (StringWriter writer = new StringWriter()) {
-			accessWidenerWriter.write(writer);
-			return writer.toString().getBytes();
-		}
-	}
-
-	public String getAccessWidenerPath(Path modJarPath) {
-		byte[] modJsonBytes = ZipUtil.unpackEntry(modJarPath.toFile(), "fabric.mod.json");
-
-		if (modJsonBytes == null) {
-			return null;
-		}
-
-		JsonObject jsonObject = new Gson().fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
-
-		if (!jsonObject.has("accessWidener")) {
-			return null;
-		}
-
-		return jsonObject.get("accessWidener").getAsString();
+		return writer.write();
 	}
 
 	@Override
 	public boolean isInvalid(File file) {
-		byte[] hash = ZipUtil.unpackEntry(file, "aw.sha256");
+		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILENAME);
 
 		if (hash == null) {
 			return true;

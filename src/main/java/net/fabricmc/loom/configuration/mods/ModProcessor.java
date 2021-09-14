@@ -24,13 +24,9 @@
 
 package net.fabricmc.loom.configuration.mods;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -48,7 +44,6 @@ import org.zeroturnaround.zip.ZipUtil;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
@@ -60,7 +55,7 @@ import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -98,7 +93,7 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
+		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
 			@Override
 			protected String transform(ZipEntry zipEntry, String input) {
 				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
@@ -108,23 +103,22 @@ public class ModProcessor {
 		}))});
 	}
 
+	/**
+	 * Remap another mod's access widener from intermediary to named, so that loader can apply it in our dev-env.
+	 */
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(input), StandardCharsets.UTF_8))) {
-			AccessWidener accessWidener = new AccessWidener();
-			AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
-			accessWidenerReader.read(bufferedReader);
+		int version = AccessWidenerReader.readVersion(input);
 
-			AccessWidenerRemapper accessWidenerRemapper = new AccessWidenerRemapper(accessWidener, remapper, MappingsNamespace.NAMED.toString());
-			AccessWidener remapped = accessWidenerRemapper.remap();
-			AccessWidenerWriter accessWidenerWriter = new AccessWidenerWriter(remapped);
-
-			try (StringWriter writer = new StringWriter()) {
-				accessWidenerWriter.write(writer);
-				return writer.toString().getBytes(StandardCharsets.UTF_8);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		AccessWidenerWriter writer = new AccessWidenerWriter(version);
+		AccessWidenerRemapper awRemapper = new AccessWidenerRemapper(
+				writer,
+				remapper,
+				MappingsNamespace.INTERMEDIARY.toString(),
+				MappingsNamespace.NAMED.toString()
+		);
+		AccessWidenerReader reader = new AccessWidenerReader(awRemapper);
+		reader.read(input);
+		return writer.write();
 	}
 
 	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
@@ -137,16 +131,16 @@ public class ModProcessor {
 
 		Path mc = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
-							.stream().map(File::toPath).toArray(Path[]::new);
+				.stream().map(File::toPath).toArray(Path[]::new);
 
 		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());
 
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-						.withMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-						.renameInvalidLocals(false)
-						.build();
+				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+				.renameInvalidLocals(false)
+				.build();
 
 		remapper.readClassPathAsync(mc);
 		remapper.readClassPathAsync(mcDeps);

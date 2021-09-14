@@ -150,4 +150,10 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 		reportDeprecation();
 		throw new UnsupportedOperationException("Use loom extension");
 	}
+
+	@Override
+	public Property<Boolean> getEnableTransitiveAccessWideners() {
+		reportDeprecation();
+		throw new UnsupportedOperationException();
+	}
 }

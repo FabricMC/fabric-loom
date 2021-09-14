@@ -60,6 +60,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> remapArchives;
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> setupRemappedVariants;
+	protected final Property<Boolean> transitiveAccessWideners;
 
 	private final ModVersionParser versionParser;
 
@@ -81,6 +82,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.customManifest = project.getObjects().property(String.class);
 		this.setupRemappedVariants = project.getObjects().property(Boolean.class)
 				.convention(true);
+		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
+				.convention(true);
+		this.transitiveAccessWideners.finalizeValueOnRead();
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -158,6 +162,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public String getModVersion() {
 		return versionParser.getModVersion();
+	}
+
+	@Override
+	public Property<Boolean> getEnableTransitiveAccessWideners() {
+		return transitiveAccessWideners;
 	}
 
 	protected abstract Project getProject();

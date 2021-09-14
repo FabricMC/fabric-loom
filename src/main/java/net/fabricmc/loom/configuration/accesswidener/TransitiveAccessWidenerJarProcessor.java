@@ -79,9 +79,6 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	private List<AccessWidenerFile> getTransitiveAccessWideners() {
 		List<AccessWidenerFile> accessWideners = new ArrayList<>();
 
-		TransitiveDetectorVisitor transitiveDetectorVisitor = new TransitiveDetectorVisitor();
-		AccessWidenerReader transitiveReader = new AccessWidenerReader(transitiveDetectorVisitor);
-
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			// Only apply global AWs from mods that are part of the compile classpath
 			if (!entry.compileClasspath()) {
@@ -99,15 +96,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 					continue;
 				}
 
-				if (AccessWidenerReader.readVersion(accessWidener.content()) < 2) {
-					// Transitive AWs are only in v2 or higher
-					continue;
-				}
-
-				transitiveDetectorVisitor.reset();
-				transitiveReader.read(accessWidener.content());
-
-				if (!transitiveDetectorVisitor.isTransitive()) {
+				if (!TransitiveDetectorVisitor.isTransitive(accessWidener.content())) {
 					// AW does not contain anything transitive, skip over it
 					continue;
 				}
@@ -191,12 +180,15 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 			}
 		}
 
-		public boolean isTransitive() {
-			return this.transitive;
-		}
+		public static boolean isTransitive(byte[] content) {
+			if (AccessWidenerReader.readVersion(content) < 2) {
+				// Transitive AWs are only in v2 or higher, so we can save parsing the file to find out...
+				return false;
+			}
 
-		public void reset() {
-			this.transitive = false;
+			TransitiveDetectorVisitor transitiveDetector = new TransitiveDetectorVisitor();
+			new AccessWidenerReader(transitiveDetector).read(content);
+			return transitiveDetector.transitive;
 		}
 	}
 }

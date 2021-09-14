@@ -196,4 +196,11 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	void disableDeprecatedPomGeneration(MavenPublication publication);
+
+	/**
+	 * When true loom will apply transitive access wideners from compile dependencies.
+	 *
+	 * @return the property controlling the transitive access wideners
+	 */
+	Property<Boolean> getEnableTransitiveAccessWideners();
 }

@@ -32,7 +32,6 @@ import com.google.gson.JsonObject;
 import org.zeroturnaround.zip.ZipUtil;
 
 public record AccessWidenerFile(
-		Path containingFile,
 		String name,
 		String modId,
 		byte[] content
@@ -59,7 +58,6 @@ public record AccessWidenerFile(
 		byte[] content = ZipUtil.unpackEntry(modJarPath.toFile(), awPath);
 
 		return new AccessWidenerFile(
-				modJarPath,
 				awPath,
 				modId,
 				content

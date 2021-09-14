@@ -110,7 +110,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);
-				remapper.readClassPath(TinyRemapperHelper.getRemapClasspath(getProject()));
+				remapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(getProject()));
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);
 			} catch (Exception e) {

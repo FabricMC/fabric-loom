@@ -72,7 +72,7 @@ final class AccessWidenerTransformer {
 				ClassWriter writer = new ClassWriter(0);
 				ClassVisitor classVisitor = AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
 
-				logger.lifecycle("Applying access widener to " + className);
+				logger.info("Applying access widener to " + className);
 
 				reader.accept(classVisitor, 0);
 				return writer.toByteArray();

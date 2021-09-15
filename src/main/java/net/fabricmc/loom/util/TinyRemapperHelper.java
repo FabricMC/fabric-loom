@@ -33,12 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.mapping.tree.ClassDef;
-import net.fabricmc.mapping.tree.FieldDef;
-import net.fabricmc.mapping.tree.LocalVariableDef;
-import net.fabricmc.mapping.tree.MethodDef;
-import net.fabricmc.mapping.tree.ParameterDef;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -75,28 +70,34 @@ public final class TinyRemapperHelper {
 		return new IMappingProvider.Member(className, memberName, descriptor);
 	}
 
-	public static IMappingProvider create(TinyTree mappings, String from, String to, boolean remapLocalVariables) {
+	public static IMappingProvider create(MappingTree mappings, String from, String to, boolean remapLocalVariables) {
 		return (acceptor) -> {
-			for (ClassDef classDef : mappings.getClasses()) {
+			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
 				String className = classDef.getName(from);
 				acceptor.acceptClass(className, classDef.getName(to));
 
-				for (FieldDef field : classDef.getFields()) {
-					acceptor.acceptField(memberOf(className, field.getName(from), field.getDescriptor(from)), field.getName(to));
+				for (MappingTree.FieldMapping field : classDef.getFields()) {
+					acceptor.acceptField(memberOf(className, field.getName(from), field.getDesc(from)), field.getName(to));
 				}
 
-				for (MethodDef method : classDef.getMethods()) {
-					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getDescriptor(from));
+				for (MappingTree.MethodMapping method : classDef.getMethods()) {
+					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getDesc(from));
 					acceptor.acceptMethod(methodIdentifier, method.getName(to));
 
 					if (remapLocalVariables) {
-						for (ParameterDef parameter : method.getParameters()) {
-							acceptor.acceptMethodArg(methodIdentifier, parameter.getLocalVariableIndex(), parameter.getName(to));
+						for (MappingTree.MethodArgMapping parameter : method.getArgs()) {
+							String name = parameter.getName(to);
+
+							if (name == null) {
+								continue;
+							}
+
+							acceptor.acceptMethodArg(methodIdentifier, parameter.getLvIndex(), name);
 						}
 
-						for (LocalVariableDef localVariable : method.getLocalVariables()) {
-							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLocalVariableIndex(),
-									localVariable.getLocalVariableStartOffset(), localVariable.getLocalVariableTableIndex(),
+						for (MappingTree.MethodVarMapping localVariable : method.getVars()) {
+							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLvIndex(),
+									localVariable.getStartOpIdx(), localVariable.getLvtRowIndex(),
 									localVariable.getName(to));
 						}
 					}

@@ -45,7 +45,7 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
@@ -165,7 +165,7 @@ public class SourceRemapper {
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
-				TinyTree m = mappingsProvider.getMappings();
+				MemoryMappingTree m = mappingsProvider.getMappings();
 				project.getLogger().info(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyMappingsReader(m, toNamed ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.NAMED.toString(), toNamed ? MappingsNamespace.NAMED.toString() : MappingsNamespace.INTERMEDIARY.toString()).read();
 			} catch (Exception e) {

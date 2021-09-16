@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,8 @@ import org.gradle.api.tasks.TaskAction;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
@@ -62,11 +65,10 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 	@TaskAction
 	public void doTask() throws Throwable {
 		int threads = Runtime.getRuntime().availableProcessors();
-		Path javaDocs = getExtension().getMappingsProvider().tinyMappings;
 		Collection<Path> libraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
-						.stream().map(File::toPath).collect(Collectors.toSet());
+				.stream().map(File::toPath).collect(Collectors.toSet());
 
-		DecompilationMetadata metadata = new DecompilationMetadata(threads, javaDocs, libraries);
+		DecompilationMetadata metadata = new DecompilationMetadata(threads, getMappings(), libraries);
 		Path runtimeJar = getExtension().getMappingsProvider().mappedProvider.getMappedJar().toPath();
 		Path sourcesDestination = getMappedJarFileWithSuffix("-sources.jar").toPath();
 		Path linemap = getMappedJarFileWithSuffix("-sources.lmap").toPath();
@@ -92,7 +94,7 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		progressLogger.start("Adjusting line numbers", "linemap");
 
 		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
-			StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
+				StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
 			remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
 		}
 
@@ -110,6 +112,32 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		return new File(path.substring(0, path.length() - 4) + suffix);
+	}
+
+	private Path getMappings() {
+		Path baseMappings = getExtension().getMappingsProvider().tinyMappings;
+
+		if (getExtension().getEnableTransitiveAccessWideners().get()) {
+			List<AccessWidenerFile> accessWideners = getExtension().getTransitiveAccessWideners();
+
+			if (accessWideners.isEmpty()) {
+				return baseMappings;
+			}
+
+			Path outputMappings;
+
+			try {
+				outputMappings = Files.createTempFile("loom-transitive-mappings", ".tiny");
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to create temp file", e);
+			}
+
+			TransitiveAccessWidenerMappingsProcessor.process(baseMappings, outputMappings, accessWideners, getProject().getLogger());
+
+			return outputMappings;
+		}
+
+		return baseMappings;
 	}
 
 	@InputFile

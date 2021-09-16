@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.google.common.base.Stopwatch;
@@ -59,10 +60,10 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.mapping.reader.v2.TinyV2Factory;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
+import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
@@ -87,13 +88,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private Path unpickDefinitions;
 	private boolean hasUnpickDefinitions;
 	private UnpickMetadata unpickMetadata;
+	private MemoryMappingTree mappingTree;
 
 	public MappingsProviderImpl(Project project) {
 		super(project);
 	}
 
-	public TinyTree getMappings() throws IOException {
-		return MappingsCache.INSTANCE.get(tinyMappings);
+	public MemoryMappingTree getMappings() throws IOException {
+		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read");
 	}
 
 	@Override
@@ -118,6 +120,8 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 				extractUnpickDefinitions(fileSystem, unpickDefinitions);
 			}
 		}
+
+		mappingTree = readMappings();
 
 		if (Files.notExists(tinyMappingsJar) || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings.toFile())}, tinyMappingsJar.toFile());
@@ -216,23 +220,22 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
+	private MemoryMappingTree readMappings() throws IOException {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		MappingReader.read(tinyMappings, mappingTree);
+		return mappingTree;
+	}
+
 	private static boolean areMappingsV2(Path path) throws IOException {
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			TinyV2Factory.readMetadata(reader);
-			return true;
-		} catch (IllegalArgumentException e) {
-			// TODO: just check the mappings version when Parser supports V1 in readMetadata()
-			return false;
+			return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
 		}
 	}
 
 	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
 			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
-				TinyV2Factory.readMetadata(reader);
-				return true;
-			} catch (IllegalArgumentException e) {
-				return false;
+				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
 			}
 		}
 	}

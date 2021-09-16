@@ -29,9 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.struct.StructField;
@@ -40,48 +38,29 @@ import org.jetbrains.java.decompiler.struct.StructRecordComponent;
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
-import net.fabricmc.mapping.tree.ClassDef;
-import net.fabricmc.mapping.tree.FieldDef;
-import net.fabricmc.mapping.tree.MethodDef;
-import net.fabricmc.mapping.tree.ParameterDef;
-import net.fabricmc.mapping.tree.TinyMappingFactory;
-import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.mappings.EntryTriple;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
+import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class TinyJavadocProvider implements IFabricJavadocProvider {
-	private final Map<String, ClassDef> classes = new HashMap<>();
-	private final Map<EntryTriple, FieldDef> fields = new HashMap<>();
-	private final Map<EntryTriple, MethodDef> methods = new HashMap<>();
-
-	private final String namespace = "named";
+	private final MappingTree mappingTree;
 
 	public TinyJavadocProvider(File tinyFile) {
-		final TinyTree mappings = readMappings(tinyFile);
-
-		for (ClassDef classDef : mappings.getClasses()) {
-			final String className = classDef.getName(namespace);
-			classes.put(className, classDef);
-
-			for (FieldDef fieldDef : classDef.getFields()) {
-				fields.put(new EntryTriple(className, fieldDef.getName(namespace), fieldDef.getDescriptor(namespace)), fieldDef);
-			}
-
-			for (MethodDef methodDef : classDef.getMethods()) {
-				methods.put(new EntryTriple(className, methodDef.getName(namespace), methodDef.getDescriptor(namespace)), methodDef);
-			}
-		}
+		mappingTree = readMappings(tinyFile);
 	}
 
 	@Override
 	public String getClassDoc(StructClass structClass) {
-		ClassDef classDef = classes.get(structClass.qualifiedName);
+		MappingTree.ClassMapping classMapping = mappingTree.getClass(structClass.qualifiedName);
 
-		if (classDef == null) {
+		if (classMapping == null) {
 			return null;
 		}
 
 		if (!isRecord(structClass)) {
-			return classDef.getComment();
+			return classMapping.getComment();
 		}
 
 		/**
@@ -91,30 +70,30 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 		 */
 		List<String> parts = new ArrayList<>();
 
-		if (classDef.getComment() != null) {
-			parts.add(classDef.getComment());
+		if (classMapping.getComment() != null) {
+			parts.add(classMapping.getComment());
 		}
 
 		boolean addedParam = false;
 
 		for (StructRecordComponent component : structClass.getRecordComponents()) {
 			// The component will always match the field name and descriptor
-			FieldDef fieldDef = fields.get(new EntryTriple(structClass.qualifiedName, component.getName(), component.getDescriptor()));
+			MappingTree.FieldMapping fieldMapping = classMapping.getField(component.getName(), component.getDescriptor());
 
-			if (fieldDef == null) {
+			if (fieldMapping == null) {
 				continue;
 			}
 
-			String comment = fieldDef.getComment();
+			String comment = fieldMapping.getComment();
 
 			if (comment != null) {
-				if (!addedParam && classDef.getComment() != null) {
+				if (!addedParam && classMapping.getComment() != null) {
 					//Add a blank line before components when the class has a comment
 					parts.add("");
 					addedParam = true;
 				}
 
-				parts.add(String.format("@param %s %s", fieldDef.getName(namespace), comment));
+				parts.add(String.format("@param %s %s", fieldMapping.getName(MappingsNamespace.NAMED.toString()), comment));
 			}
 		}
 
@@ -132,34 +111,47 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 			return null;
 		}
 
-		FieldDef fieldDef = fields.get(new EntryTriple(structClass.qualifiedName, structField.getName(), structField.getDescriptor()));
-		return fieldDef != null ? fieldDef.getComment() : null;
+		MappingTree.ClassMapping classMapping = mappingTree.getClass(structClass.qualifiedName);
+
+		if (classMapping == null) {
+			return null;
+		}
+
+		MappingTree.FieldMapping fieldMapping = classMapping.getField(structField.getName(), structField.getDescriptor());
+
+		return fieldMapping != null ? fieldMapping.getComment() : null;
 	}
 
 	@Override
 	public String getMethodDoc(StructClass structClass, StructMethod structMethod) {
-		MethodDef methodDef = methods.get(new EntryTriple(structClass.qualifiedName, structMethod.getName(), structMethod.getDescriptor()));
+		MappingTree.ClassMapping classMapping = mappingTree.getClass(structClass.qualifiedName);
 
-		if (methodDef != null) {
+		if (classMapping == null) {
+			return null;
+		}
+
+		MappingTree.MethodMapping methodMapping = classMapping.getMethod(structMethod.getName(), structMethod.getDescriptor());
+
+		if (methodMapping != null) {
 			List<String> parts = new ArrayList<>();
 
-			if (methodDef.getComment() != null) {
-				parts.add(methodDef.getComment());
+			if (methodMapping.getComment() != null) {
+				parts.add(methodMapping.getComment());
 			}
 
 			boolean addedParam = false;
 
-			for (ParameterDef param : methodDef.getParameters()) {
-				String comment = param.getComment();
+			for (MappingTree.MethodArgMapping argMapping : methodMapping.getArgs()) {
+				String comment = argMapping.getComment();
 
 				if (comment != null) {
-					if (!addedParam && methodDef.getComment() != null) {
+					if (!addedParam && methodMapping.getComment() != null) {
 						//Add a blank line before params when the method has a comment
 						parts.add("");
 						addedParam = true;
 					}
 
-					parts.add(String.format("@param %s %s", param.getName(namespace), comment));
+					parts.add(String.format("@param %s %s", methodMapping.getName(MappingsNamespace.NAMED.toString()), comment));
 				}
 			}
 
@@ -173,9 +165,13 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 		return null;
 	}
 
-	private static TinyTree readMappings(File input) {
+	private static MappingTree readMappings(File input) {
 		try (BufferedReader reader = Files.newBufferedReader(input.toPath())) {
-			return TinyMappingFactory.loadWithDetection(reader);
+			MemoryMappingTree mappingTree = new MemoryMappingTree();
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString());
+			MappingReader.read(reader, nsSwitch);
+
+			return mappingTree;
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read mappings", e);
 		}

@@ -40,7 +40,6 @@ import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
 import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsCache;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
@@ -68,7 +67,6 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies();
 
 		if (refreshDeps) {
-			MappingsCache.INSTANCE.invalidate();
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
 

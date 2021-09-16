@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
@@ -47,6 +48,11 @@ public final class TinyRemapperHelper {
 			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
 			.build();
 
+	/**
+	 * Matches the new local variable naming format introduced in 21w37a.
+	 */
+	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
+
 	private TinyRemapperHelper() {
 	}
 
@@ -58,6 +64,7 @@ public final class TinyRemapperHelper {
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
+				.invalidLvNamePattern(MC_LV_PATTERN)
 				.build();
 	}
 

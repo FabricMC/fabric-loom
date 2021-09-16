@@ -56,6 +56,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
@@ -156,6 +157,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
 				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
+		}
+
+		if (extension.getEnableInterfaceInjection().get()) {
+			InterfaceInjectionProcessor jarProcessor = new InterfaceInjectionProcessor(getProject());
+
+			if (!jarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(jarProcessor);
 			}
 		}
 

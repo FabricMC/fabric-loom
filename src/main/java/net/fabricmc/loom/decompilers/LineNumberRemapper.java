@@ -126,12 +126,12 @@ public class LineNumberRemapper {
 
 							reader.accept(new LineNumberVisitor(Constants.ASM_VERSION, writer, lineMap.get(idx)), 0);
 							Files.write(dst, writer.toByteArray());
+							return FileVisitResult.CONTINUE;
 						}
 					}
-				} else {
-					Files.copy(file, dst, StandardCopyOption.REPLACE_EXISTING);
 				}
 
+				Files.copy(file, dst, StandardCopyOption.REPLACE_EXISTING);
 				return FileVisitResult.CONTINUE;
 			}
 		});

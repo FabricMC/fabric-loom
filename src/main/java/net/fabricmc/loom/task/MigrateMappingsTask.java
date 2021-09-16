@@ -30,7 +30,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -149,14 +148,11 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	}
 
 	private static MemoryMappingTree getMappings(File mappings) throws IOException {
-		Path temp = Files.createTempFile("mappings", ".tiny");
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), (ClassLoader) null)) {
-			Files.copy(fileSystem.getPath("mappings/mappings.tiny"), temp, StandardCopyOption.REPLACE_EXISTING);
+			MappingReader.read(fileSystem.getPath("mappings/mappings.tiny"), mappingTree);
 		}
-
-		MemoryMappingTree mappingTree = new MemoryMappingTree();
-		MappingReader.read(temp, mappingTree);
 
 		return mappingTree;
 	}

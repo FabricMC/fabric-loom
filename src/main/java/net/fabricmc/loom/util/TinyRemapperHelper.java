@@ -59,10 +59,14 @@ public final class TinyRemapperHelper {
 	}
 
 	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM) throws IOException {
+		return getTinyRemapper(project, fromM, toM, false);
+	}
+
+	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM, boolean fixRecords) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MemoryMappingTree mappingTree = extension.getMappingsProvider().getMappings();
 
-		if (!mappingTree.getSrcNamespace().equals(fromM)) {
+		if (fixRecords && !mappingTree.getSrcNamespace().equals(fromM)) {
 			throw new IllegalStateException("Mappings src namespace must match remap src namespace");
 		}
 
@@ -75,7 +79,7 @@ public final class TinyRemapperHelper {
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)
 				.extraPreApplyVisitor((cls, next) -> {
-					if (!cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
+					if (fixRecords && !cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
 						return new RecordComponentFixVisitor(next, mappingTree, intermediaryNsId);
 					}
 

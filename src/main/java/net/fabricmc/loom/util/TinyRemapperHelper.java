@@ -34,7 +34,9 @@ import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -58,13 +60,27 @@ public final class TinyRemapperHelper {
 
 	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		MemoryMappingTree mappingTree = extension.getMappingsProvider().getMappings();
+
+		if (!mappingTree.getSrcNamespace().equals(fromM)) {
+			throw new IllegalStateException("Mappings src namespace must match remap src namespace");
+		}
+
+		int intermediaryNsId = mappingTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 
 		return TinyRemapper.newRemapper()
-				.withMappings(create(extension.getMappingsProvider().getMappings(), fromM, toM, true))
+				.withMappings(create(mappingTree, fromM, toM, true))
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)
+				.extraPreApplyVisitor((cls, next) -> {
+					if (!cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
+						return new RecordComponentFixVisitor(next, mappingTree, intermediaryNsId);
+					}
+
+					return next;
+				})
 				.build();
 	}
 

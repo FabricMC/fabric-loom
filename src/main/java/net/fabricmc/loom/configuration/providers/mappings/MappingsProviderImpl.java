@@ -34,9 +34,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.net.UrlEscapers;
@@ -66,6 +68,7 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
@@ -296,11 +299,47 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			Tiny2Reader.read(reader, tree);
 		}
 
+		inheritMappedNamesOfEnclosingClasses(tree);
+
 		try (Tiny2Writer writer = new Tiny2Writer(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			tree.accept(writer);
 		}
 
 		project.getLogger().info(":merged mappings in " + stopwatch.stop());
+	}
+
+	/**
+	 * Searches the mapping tree for inner classes with no mapped name, whose enclosing classes have mapped names.
+	 * Currently, Yarn does not export mappings for these inner classes.
+	 */
+	private void inheritMappedNamesOfEnclosingClasses(MemoryMappingTree tree) {
+		int intermediaryIdx = tree.getNamespaceId("intermediary");
+		int namedIdx = tree.getNamespaceId("named");
+
+		// The tree does not have an index by intermediary names by default
+		tree.setIndexByDstNames(true);
+
+		for (MappingTree.ClassMapping classEntry : tree.getClasses()) {
+			String intermediaryName = classEntry.getDstName(intermediaryIdx);
+			String namedName = classEntry.getDstName(namedIdx);
+
+			if (intermediaryName.equals(namedName) && intermediaryName.contains("$")) {
+				String[] path = intermediaryName.split(Pattern.quote("$"));
+				int parts = path.length;
+
+				for (int i = parts - 2; i >= 0; i--) {
+					String currentPath = String.join("$", Arrays.copyOfRange(path, 0, i + 1));
+					String namedParentClass = tree.mapClassName(currentPath, intermediaryIdx, namedIdx);
+
+					if (!namedParentClass.equals(currentPath)) {
+						classEntry.setDstName(namedParentClass
+										+ "$" + String.join("$", Arrays.copyOfRange(path, i + 1, path.length)),
+								namedIdx);
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	private MemoryMappingTree readIntermediaryTree() throws IOException {

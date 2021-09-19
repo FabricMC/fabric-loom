@@ -107,7 +107,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 
 			Files.deleteIfExists(output);
 
-			TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), fromM, toM);
+			TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), fromM, toM, true);
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);

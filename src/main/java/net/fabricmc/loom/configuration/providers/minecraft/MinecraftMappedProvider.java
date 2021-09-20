@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
@@ -49,6 +50,11 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
 			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
 			.build();
+
+	/**
+	 * Matches the new local variable naming format introduced in 21w37a.
+	 */
+	private static final Pattern MC_LV_PATTERN = Pattern.compile("\\$\\$\\d+");
 
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
@@ -135,6 +141,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
+				.invalidLvNamePattern(MC_LV_PATTERN)
 				.build();
 	}
 

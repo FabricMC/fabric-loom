@@ -44,7 +44,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	public MixinExtensionApiImpl(Project project) {
 		this.project = Objects.requireNonNull(project);
 		this.useMixinAp = project.getObjects().property(Boolean.class)
-				.convention(false);
+				.convention(true);
 	}
 
 	protected final PatternSet add0(SourceSet sourceSet, String refmapName) {

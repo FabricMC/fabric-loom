@@ -73,9 +73,9 @@ public interface FileSpec {
 		} else if (o instanceof File f) {
 			return createFromFile(f);
 		} else if (o instanceof Path p) {
-			return createFromFile(p.toFile());
+			return createFromFile(p);
 		} else if (o instanceof FileSystemLocation l) {
-			return createFromFile(l.getAsFile());
+			return createFromFile(l);
 		}
 
 		throw new UnsupportedOperationException("Cannot create FileSpec from object of type:" + o.getClass().getCanonicalName());

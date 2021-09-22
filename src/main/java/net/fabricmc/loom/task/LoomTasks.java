@@ -122,7 +122,7 @@ public final class LoomTasks {
 				return;
 			}
 
-			File[] inputJar = {mappingsProvider.mappedProvider.getMappedJar()};
+			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
 
 			if (mappingsProvider.hasUnpickDefinitions()) {
 				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
@@ -133,7 +133,7 @@ public final class LoomTasks {
 					unpickJarTask.setOutputJar(outputJar);
 				});
 
-				inputJar[0] = outputJar;
+				inputJar = outputJar;
 			}
 
 			extension.getGameDecompilers().finalizeValue();
@@ -141,7 +141,8 @@ public final class LoomTasks {
 			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
 				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
-				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler, project.provider(() -> inputJar[0])).get();
+				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();
+				generateSourcesTask.setInputJar(inputJar);
 
 				if (mappingsProvider.hasUnpickDefinitions()) {
 					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));

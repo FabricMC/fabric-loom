@@ -28,7 +28,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
-import groovy.lang.GString;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.file.RegularFileProperty;
@@ -52,7 +51,7 @@ public interface FileSpec {
 	 * <ul>
 	 * <li>{@link File}, {@link Path} and {@link org.gradle.api.file.FileSystemLocation} will be resolved as local files</li>
 	 * <li>{@link Provider} (including {@link org.gradle.api.provider.Property} will recursively be resolved as its current value</li>
-	 * <li>{@link String} and {@link GString} will be resolved as Maven dependencies</li>
+	 * <li>{@link CharSequence} (including {@link String} and {@link groovy.lang.GString}) will be resolved as Maven dependencies</li>
 	 * <li>{@link Dependency} will be resolved as any dependency</li>
 	 * </ul>
 	 *
@@ -62,9 +61,7 @@ public interface FileSpec {
 	static FileSpec create(Object o) {
 		Objects.requireNonNull(o, "Object cannot be null");
 
-		if (o instanceof String s) {
-			return createFromMavenDependency(s);
-		} else if (o instanceof GString s) {
+		if (o instanceof CharSequence s) {
 			return createFromMavenDependency(s.toString());
 		} else if (o instanceof Dependency d) {
 			return createFromDependency(d);

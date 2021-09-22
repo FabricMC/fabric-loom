@@ -94,11 +94,11 @@ public class RemapJarTask extends Jar {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		input = getProject().getObjects().fileProperty();
 		addNestedDependencies = getProject().getObjects().property(Boolean.class)
-				.convention(extension.getRemapArchives().get());
+				.convention(false);
 		addDefaultNestedDependencies = getProject().getObjects().property(Boolean.class)
 				.convention(true);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class)
-				.convention(extension.getRemapArchives().get());
+				.convention(false);
 		classpath = getProject().getObjects().fileCollection();
 
 		if (!extension.getMixin().getUseLegacyMixinAp().get()) {

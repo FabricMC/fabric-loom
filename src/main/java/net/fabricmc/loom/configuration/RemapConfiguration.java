@@ -114,6 +114,8 @@ public class RemapConfiguration {
 
 		if (isDefaultRemap) {
 			extension.getUnmappedModCollection().from(jarTask);
+			remapJarTask.getAddNestedDependencies().convention(true);
+			remapJarTask.getRemapAccessWidener().convention(true);
 
 			project.getArtifacts().add("archives", remapJarTask);
 		}

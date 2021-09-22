@@ -34,5 +34,6 @@ public class RunServerTask extends AbstractRunTask {
 			LoomGradleExtension extension = LoomGradleExtension.get(project);
 			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("client"));
 		});
+		LoomGradleExtension.get(getProject()).getDeprecationHelper().replaceWithInLoom0_11("RunServerTask", "RunGameTask");
 	}
 }

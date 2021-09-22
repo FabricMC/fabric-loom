@@ -29,7 +29,9 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
@@ -42,17 +44,35 @@ import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec;
  */
 @ApiStatus.Experimental
 public interface FileSpec {
+	/**
+	 * Creates a file spec.
+	 *
+	 * <p>The parameter will be evaluated like this:
+	 * <ul>
+	 * <li>{@link File}, {@link Path} and {@link FileSystemLocation} will be resolved as local files</li>
+	 * <li>{@link Provider} (including {@link org.gradle.api.provider.Property} will recursively be resolved as its current value</li>
+	 * <li>{@link CharSequence} (including {@link String} and {@link groovy.lang.GString}) will be resolved as Maven dependencies</li>
+	 * <li>{@link Dependency} will be resolved as any dependency</li>
+	 * </ul>
+	 *
+	 * @param o the file notation
+	 * @return the created file spec
+	 */
 	static FileSpec create(Object o) {
 		Objects.requireNonNull(o, "Object cannot be null");
 
-		if (o instanceof String s) {
-			return createFromMavenDependency(s);
+		if (o instanceof CharSequence s) {
+			return createFromMavenDependency(s.toString());
 		} else if (o instanceof Dependency d) {
 			return createFromDependency(d);
+		} else if (o instanceof Provider<?> p) {
+			return create(p.get());
 		} else if (o instanceof File f) {
 			return createFromFile(f);
-		} else if (o instanceof RegularFileProperty rfp) {
-			return createFromFile(rfp);
+		} else if (o instanceof Path p) {
+			return createFromFile(p);
+		} else if (o instanceof FileSystemLocation l) {
+			return createFromFile(l);
 		}
 
 		throw new UnsupportedOperationException("Cannot create FileSpec from object of type:" + o.getClass().getCanonicalName());
@@ -70,9 +90,17 @@ public interface FileSpec {
 		return new LocalFileSpec(file);
 	}
 
+	static FileSpec createFromFile(FileSystemLocation location) {
+		return createFromFile(location.getAsFile());
+	}
+
+	static FileSpec createFromFile(Path path) {
+		return createFromFile(path.toFile());
+	}
+
 	// Note resolved instantly, this is not lazy
 	static FileSpec createFromFile(RegularFileProperty regularFileProperty) {
-		return createFromFile(regularFileProperty.getAsFile().get());
+		return createFromFile(regularFileProperty.get());
 	}
 
 	Path get(MappingContext context);

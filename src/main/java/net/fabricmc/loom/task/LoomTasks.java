@@ -49,10 +49,7 @@ public final class LoomTasks {
 			t.getOutputs().upToDateWhen(o -> false);
 		});
 
-		tasks.register("remapJar", RemapJarTask.class, t -> {
-			t.setDescription("Remaps the built project jar to intermediary mappings.");
-			t.setGroup(Constants.TaskGroup.FABRIC);
-		});
+		RemapTaskConfiguration.setupRemap(project);
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));

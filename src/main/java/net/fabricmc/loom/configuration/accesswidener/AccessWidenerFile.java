@@ -32,7 +32,7 @@ import com.google.gson.JsonObject;
 import org.zeroturnaround.zip.ZipUtil;
 
 public record AccessWidenerFile(
-		String name,
+		String path,
 		String modId,
 		byte[] content
 ) {

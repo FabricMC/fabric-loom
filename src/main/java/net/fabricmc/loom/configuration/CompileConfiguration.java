@@ -104,6 +104,7 @@ public final class CompileConfiguration {
 
 	public static void configureCompile(Project p) {
 		JavaPluginConvention javaModule = (JavaPluginConvention) p.getConvention().getPlugins().get("java");
+		LoomGradleExtension extension = LoomGradleExtension.get(p);
 
 		SourceSet main = javaModule.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -111,8 +112,6 @@ public final class CompileConfiguration {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		p.afterEvaluate(project -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
-
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 

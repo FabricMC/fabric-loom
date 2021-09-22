@@ -26,9 +26,9 @@ package net.fabricmc.loom.task.service;
 
 import java.io.File;
 
-import org.gradle.api.Action;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 import org.gradle.tooling.events.FinishEvent;
@@ -36,15 +36,16 @@ import org.gradle.tooling.events.OperationCompletionListener;
 
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public abstract class TinyRemapperBuildService implements BuildService<TinyRemapperBuildService.Params>, OperationCompletionListener, AutoCloseable {
 	public interface Params extends BuildServiceParameters {
 		ListProperty<IMappingProvider> getMappings();
 
 		// classpath passed into the TinyRemapper instance
-		FileCollection getClasspath();
+		ConfigurableFileCollection getClasspath();
 
-		ListProperty<Action<TinyRemapper.Builder>> getRemapOptions();
+		Property<Boolean> getUseMixinExtension();
 	}
 
 	private final TinyRemapper tinyRemapper;
@@ -63,9 +64,8 @@ public abstract class TinyRemapperBuildService implements BuildService<TinyRemap
 			builder.withMappings(mappingProvider);
 		}
 
-		// Apply remap options
-		for (Action<TinyRemapper.Builder> action : params.getRemapOptions().get()) {
-			action.execute(builder);
+		if (params.getUseMixinExtension().get()) {
+			builder.extension(new MixinExtension());
 		}
 
 		TinyRemapper remapper = builder.build();

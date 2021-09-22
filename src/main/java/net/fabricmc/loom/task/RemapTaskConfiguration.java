@@ -29,6 +29,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -37,7 +38,6 @@ import net.fabricmc.loom.task.service.TinyRemapperBuildService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.TinyUtils;
-import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public class RemapTaskConfiguration {
 	private static final String REMAP_JAR_TASK_NAME = "remapJar";
@@ -45,14 +45,8 @@ public class RemapTaskConfiguration {
 	public static void setupRemap(Project project) {
 		TaskContainer tasks = project.getTasks();
 
-		// Configure the default jar task
-		tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
-			task.getArchiveClassifier().set("dev");
-			task.finalizedBy(tasks.getByName(REMAP_JAR_TASK_NAME));
-		});
-
 		// Register the default remap jar task
-		tasks.register(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
+		TaskProvider<RemapJarTask> remapJarTaskProvider = tasks.register(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
 			final AbstractArchiveTask jarTask = tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
 
 			// Basic task setup
@@ -68,15 +62,21 @@ public class RemapTaskConfiguration {
 			// Setup the remapper service
 			final FileCollection classpath = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
 
-			task.getTinyRemapperBuildService().convention(getOrCreatetinyRemapperBuildServiceProvider(project,
+			task.getTinyRemapperBuildService().convention(getOrCreateTinyRemapperBuildServiceProvider(project,
 					task.getSourceNamespace(),
 					task.getTargetNamespace(),
 					classpath
 			));
 		});
+
+		// Configure the default jar task
+		tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
+			task.getArchiveClassifier().convention("dev");
+			task.finalizedBy(remapJarTaskProvider);
+		});
 	}
 
-	private static Provider<TinyRemapperBuildService> getOrCreatetinyRemapperBuildServiceProvider(final Project project, final Provider<String> from, final Provider<String> to, final FileCollection classpath) {
+	private static Provider<TinyRemapperBuildService> getOrCreateTinyRemapperBuildServiceProvider(final Project project, final Provider<String> from, final Provider<String> to, final FileCollection classpath) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
@@ -101,8 +101,7 @@ public class RemapTaskConfiguration {
 							)
 					);
 				} else {
-					// Use the new tiny remapper MixinExtension
-					params.getRemapOptions().add(b -> b.extension(new MixinExtension()));
+					params.getUseMixinExtension().set(true);
 				}
 			});
 		});

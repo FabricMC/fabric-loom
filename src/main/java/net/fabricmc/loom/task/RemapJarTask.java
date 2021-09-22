@@ -36,6 +36,7 @@ import java.util.zip.ZipEntry;
 import javax.inject.Inject;
 
 import com.google.gson.JsonObject;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
@@ -78,10 +79,10 @@ public abstract class RemapJarTask extends Jar {
 	public abstract RegularFileProperty getInputFile();
 
 	@InputFiles
-	public abstract FileCollection getNestedJars();
+	public abstract ConfigurableFileCollection getNestedJars();
 
 	@InputFiles
-	public abstract FileCollection getClasspath();
+	public abstract ConfigurableFileCollection getClasspath();
 
 	@Input
 	public abstract Property<String> getSourceNamespace();
@@ -139,8 +140,8 @@ public abstract class RemapJarTask extends Jar {
 	public interface RemapParams extends WorkParameters {
 		RegularFileProperty getInputFile();
 		RegularFileProperty getOutputFile();
-		FileCollection getNestedJars();
-		FileCollection getExtraClasspath();
+		ConfigurableFileCollection getNestedJars();
+		ConfigurableFileCollection getExtraClasspath();
 
 		Property<Boolean> getRemapAccessWidener();
 		Property<Boolean> getAddRefmap();

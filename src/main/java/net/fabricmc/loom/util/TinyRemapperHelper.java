@@ -35,6 +35,7 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -95,6 +96,12 @@ public final class TinyRemapperHelper {
 
 	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {
 		return new IMappingProvider.Member(className, memberName, descriptor);
+	}
+
+	public static IMappingProvider create(Path mappings, String from, String to, boolean remapLocalVariables) throws IOException {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		MappingReader.read(mappings, mappingTree);
+		return create(mappingTree, from, to, remapLocalVariables);
 	}
 
 	public static IMappingProvider create(MappingTree mappings, String from, String to, boolean remapLocalVariables) {

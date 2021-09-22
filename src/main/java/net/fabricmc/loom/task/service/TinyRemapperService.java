@@ -29,18 +29,16 @@ import java.io.File;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
-import org.gradle.tooling.events.FinishEvent;
-import org.gradle.tooling.events.OperationCompletionListener;
 
-import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
-public abstract class TinyRemapperBuildService implements BuildService<TinyRemapperBuildService.Params>, OperationCompletionListener, AutoCloseable {
+public abstract class TinyRemapperService implements BuildService<TinyRemapperService.Params>, AutoCloseable {
 	public interface Params extends BuildServiceParameters {
-		ListProperty<IMappingProvider> getMappings();
+		ListProperty<Provider<TinyRemapperMappingsService>> getMappings();
 
 		// classpath passed into the TinyRemapper instance
 		ConfigurableFileCollection getClasspath();
@@ -48,20 +46,17 @@ public abstract class TinyRemapperBuildService implements BuildService<TinyRemap
 		Property<Boolean> getUseMixinExtension();
 	}
 
-	private final TinyRemapper tinyRemapper;
-	private boolean closed = false;
-
-	public TinyRemapperBuildService() {
-		this.tinyRemapper = createTinyRemapper();
-	}
+	private TinyRemapper tinyRemapper;
+	private boolean finished = false;
 
 	private TinyRemapper createTinyRemapper() {
 		final Params params = getParameters();
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper();
 
 		// Apply mappings
-		for (IMappingProvider mappingProvider : params.getMappings().get()) {
-			builder.withMappings(mappingProvider);
+
+		for (Provider<TinyRemapperMappingsService> provider : params.getMappings().get()) {
+			builder.withMappings(provider.get().getMappingsProvider());
 		}
 
 		if (params.getUseMixinExtension().get()) {
@@ -79,23 +74,25 @@ public abstract class TinyRemapperBuildService implements BuildService<TinyRemap
 	}
 
 	@Override
-	public void onFinish(FinishEvent finishEvent) {
-		close();
-	}
-
-	@Override
 	public void close() {
-		if (closed) {
-			return;
+		if (finished) {
+			throw new RuntimeException("TinyRemapper already closed");
 		}
 
-		closed = true;
-		tinyRemapper.finish();
+		if (tinyRemapper != null) {
+			tinyRemapper.finish();
+		}
+
+		finished = true;
 	}
 
-	public TinyRemapper getTinyRemapper() {
-		if (closed) {
-			throw new RuntimeException("Cannot access closed tiny remapper");
+	public synchronized TinyRemapper getTinyRemapper() {
+		if (finished) {
+			throw new RuntimeException("TinyRemapper finished");
+		}
+
+		if (tinyRemapper == null) {
+			this.tinyRemapper = createTinyRemapper();
 		}
 
 		return tinyRemapper;

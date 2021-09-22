@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
+
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
@@ -34,10 +36,9 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.task.service.TinyRemapperBuildService;
+import net.fabricmc.loom.task.service.TinyRemapperMappingsService;
+import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperHelper;
-import net.fabricmc.tinyremapper.TinyUtils;
 
 public class RemapTaskConfiguration {
 	private static final String REMAP_JAR_TASK_NAME = "remapJar";
@@ -76,32 +77,26 @@ public class RemapTaskConfiguration {
 		});
 	}
 
-	private static Provider<TinyRemapperBuildService> getOrCreateTinyRemapperBuildServiceProvider(final Project project, final Provider<String> from, final Provider<String> to, final FileCollection classpath) {
+	private static Provider<TinyRemapperService> getOrCreateTinyRemapperBuildServiceProvider(final Project project, final Provider<String> from, final Provider<String> to, final FileCollection classpath) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
 		// This should give us what shared caches did before but for free, and safely. -- TODO take into account the classpath?
 		final String name = "remapJarService:%s:%s>%S".formatted(mappingsProvider.mappingsIdentifier(), from, to);
 
-		return project.getGradle().getSharedServices().registerIfAbsent(name, TinyRemapperBuildService.class, spec -> {
+		return project.getGradle().getSharedServices().registerIfAbsent(name, TinyRemapperService.class, spec -> {
 			spec.parameters(params -> {
 				params.getClasspath().plus(classpath);
-				params.getMappings().add(project.provider(() -> TinyRemapperHelper.create(mappingsProvider.getMappings(), from.get(), to.get(), false)));
+				params.getMappings().add(TinyRemapperMappingsService.create(project, mappingsProvider.tinyMappings.toFile(), from.get(), to.get(), false));
 
-				if (extension.getMixin().getUseLegacyMixinAp().get()) {
+				boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+				params.getUseMixinExtension().set(!legacyMixin);
+
+				if (legacyMixin) {
 					// Add the mapping from the mixin AP
-					params.getMappings().addAll(project.provider(() ->
-									extension.getAllMixinMappings()
-											.getFiles()
-											.stream()
-											.map(file ->
-													TinyUtils.createTinyMappingProvider(file.toPath(), from.get(), to.get())
-											)
-											.toList()
-							)
-					);
-				} else {
-					params.getUseMixinExtension().set(true);
+					for (File file : extension.getAllMixinMappings().getFiles()) {
+						params.getMappings().add(TinyRemapperMappingsService.create(project, file, from.get(), to.get(), false));
+					}
 				}
 			});
 		});

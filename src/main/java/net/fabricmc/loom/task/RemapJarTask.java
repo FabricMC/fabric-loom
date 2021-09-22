@@ -26,15 +26,19 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.jar.Manifest;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import javax.inject.Inject;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.JsonObject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -55,6 +59,7 @@ import org.gradle.workers.WorkerExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.ZipUtil;
+import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
 import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
@@ -68,7 +73,8 @@ import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.extension.MixinExtension;
-import net.fabricmc.loom.task.service.TinyRemapperBuildService;
+import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -91,7 +97,7 @@ public abstract class RemapJarTask extends Jar {
 	public abstract Property<String> getTargetNamespace();
 
 	@Internal
-	public abstract Property<TinyRemapperBuildService> getTinyRemapperBuildService();
+	public abstract Property<TinyRemapperService> getTinyRemapperBuildService();
 
 	@Inject
 	protected abstract WorkerExecutor getWorkerExecutor();
@@ -113,14 +119,15 @@ public abstract class RemapJarTask extends Jar {
 			params.getOutputFile().set(getArchiveFile());
 			params.getNestedJars().plus(getNestedJars());
 
-			if (extension.getAccessWidenerPath().isPresent()) {
-				params.getRemapAccessWidener().set(true);
-			}
+			params.getRemapAccessWidener().set(extension.getAccessWidenerPath().isPresent());
+			params.getSourceNamespace().set(getSourceNamespace());
+			params.getTargetNamespace().set(getTargetNamespace());
 
 			params.getArchivePreserveFileTimestamps().set(isPreserveFileTimestamps());
 			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
 
 			params.getTinyRemapperBuildService().set(getTinyRemapperBuildService());
+			params.getJarManifestService().set(JarManifestService.get(getProject()));
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			params.getAddRefmap().set(legacyMixin);
@@ -145,13 +152,16 @@ public abstract class RemapJarTask extends Jar {
 
 		Property<Boolean> getRemapAccessWidener();
 		Property<Boolean> getAddRefmap();
+		Property<String> getSourceNamespace();
+		Property<String> getTargetNamespace();
 
 		ListProperty<MixinExtension.MixinInformationContainer> getMixinInformationContainers();
 
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
 
-		Property<TinyRemapperBuildService> getTinyRemapperBuildService();
+		Property<TinyRemapperService> getTinyRemapperBuildService();
+		Property<JarManifestService> getJarManifestService();
 	}
 
 	public abstract static class RemapAction implements WorkAction<RemapParams> {
@@ -231,24 +241,21 @@ public abstract class RemapJarTask extends Jar {
 		}
 
 		private void modifyJarManifest() {
-			/* TODO
 			// Add data to the manifest
-			boolean transformed = ZipUtil.transformEntries(data.output.toFile(), new ZipEntryTransformerEntry[]{
-					new ZipEntryTransformerEntry(MANIFEST_PATH, new StreamZipEntryTransformer() {
+			boolean transformed = ZipUtil.transformEntries(outputFile.toFile(), new ZipEntryTransformerEntry[]{
+					new ZipEntryTransformerEntry("META-INF/MANIFEST.MF", new StreamZipEntryTransformer() {
 						@Override
 						protected void transform(ZipEntry zipEntry, InputStream in, OutputStream out) throws IOException {
 							var manifest = new Manifest(in);
-							var manifestConfiguration = new JarManifestConfiguration(project);
 
-							manifestConfiguration.configure(manifest);
-							manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", toM);
+							getParameters().getJarManifestService().get().apply(manifest);
 
+							manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", getParameters().getTargetNamespace().get());
 							manifest.write(out);
 						}
 					})
 			});
 			Preconditions.checkArgument(transformed, "Failed to transform jar manifest");
-			 */
 		}
 
 		private void addRefmaps() {

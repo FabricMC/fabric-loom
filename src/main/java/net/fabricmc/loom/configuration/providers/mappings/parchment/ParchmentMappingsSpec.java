@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingContext;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 
-public record ParchmentMappingsSpec(String mavenNotation, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
+public record ParchmentMappingsSpec(FileSpec fileSpec, boolean removePrefix) implements MappingsSpec<ParchmentMappingLayer> {
 	@Override
 	public ParchmentMappingLayer createLayer(MappingContext context) {
-		return new ParchmentMappingLayer(context.mavenFile(mavenNotation()), removePrefix());
+		return new ParchmentMappingLayer(fileSpec.get(context), removePrefix());
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2018-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
-public interface MappingsSpec<L extends MappingLayer> {
-	L createLayer(MappingContext context);
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
+
+public class ParchmentMappingsSpecBuilderImpl implements ParchmentMappingsSpecBuilder {
+	private final FileSpec fileSpec;
+
+	private boolean removePrefix;
+
+	private ParchmentMappingsSpecBuilderImpl(FileSpec fileSpec) {
+		this.fileSpec = fileSpec;
+	}
+
+	public static ParchmentMappingsSpecBuilderImpl builder(FileSpec fileSpec) {
+		return new ParchmentMappingsSpecBuilderImpl(fileSpec);
+	}
+
+	@Override
+	public ParchmentMappingsSpecBuilder setRemovePrefix(boolean removePrefix) {
+		this.removePrefix = removePrefix;
+		return this;
+	}
+
+	public ParchmentMappingsSpec build() {
+		return new ParchmentMappingsSpec(fileSpec, removePrefix);
+	}
 }

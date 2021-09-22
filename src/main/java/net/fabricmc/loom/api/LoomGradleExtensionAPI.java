@@ -38,9 +38,9 @@ import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -204,4 +204,11 @@ public interface LoomGradleExtensionAPI {
 	 * @return the version defined in the fabric.mod.json
 	 */
 	String getModVersion();
+
+	/**
+	 * When true loom will apply transitive access wideners from compile dependencies.
+	 *
+	 * @return the property controlling the transitive access wideners
+	 */
+	Property<Boolean> getEnableTransitiveAccessWideners();
 }

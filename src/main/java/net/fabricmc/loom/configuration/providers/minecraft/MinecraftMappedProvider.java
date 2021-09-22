@@ -29,27 +29,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.function.Consumer;
 
-import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class MinecraftMappedProvider extends DependencyProvider {
-	private static final Map<String, String> JSR_TO_JETBRAINS = new ImmutableMap.Builder<String, String>()
-			.put("javax/annotation/Nullable", "org/jetbrains/annotations/Nullable")
-			.put("javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull")
-			.put("javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable")
-			.build();
-
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
@@ -99,7 +92,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	private void mapMinecraftJar() throws IOException {
-		String fromM = "official";
+		String fromM = MappingsNamespace.OFFICIAL.toString();
 
 		MappingsProviderImpl mappingsProvider = getExtension().getMappingsProvider();
 
@@ -107,18 +100,18 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		Path outputMapped = minecraftMappedJar.toPath();
 		Path outputIntermediary = minecraftIntermediaryJar.toPath();
 
-		for (String toM : Arrays.asList("named", "intermediary")) {
-			Path output = "named".equals(toM) ? outputMapped : outputIntermediary;
+		for (String toM : Arrays.asList(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())) {
+			Path output = MappingsNamespace.NAMED.toString().equals(toM) ? outputMapped : outputIntermediary;
 
 			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			Files.deleteIfExists(output);
 
-			TinyRemapper remapper = getTinyRemapper(fromM, toM);
+			TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), fromM, toM, true);
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);
-				remapper.readClassPath(getRemapClasspath());
+				remapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(getProject()));
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);
 			} catch (Exception e) {
@@ -127,20 +120,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				remapper.finish();
 			}
 		}
-	}
-
-	public TinyRemapper getTinyRemapper(String fromM, String toM) throws IOException {
-		return TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperMappingsHelper.create(getExtension().getMappingsProvider().getMappings(), fromM, toM, true))
-				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
-				.renameInvalidLocals(true)
-				.rebuildSourceFilenames(true)
-				.build();
-	}
-
-	public Path[] getRemapClasspath() {
-		return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
-				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 
 	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {

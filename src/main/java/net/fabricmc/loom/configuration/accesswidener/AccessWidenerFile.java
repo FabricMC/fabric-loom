@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,45 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.configuration.accesswidener;
 
-import java.util.Locale;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-public enum MappingNamespace {
-	OFFICIAL,
-	INTERMEDIARY,
-	NAMED;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.zeroturnaround.zip.ZipUtil;
 
-	public String stringValue() {
-		return name().toLowerCase(Locale.ROOT);
+public record AccessWidenerFile(
+		String name,
+		String modId,
+		byte[] content
+) {
+	/**
+	 * Reads the access-widener contained in a mod jar, or returns null if there is none.
+	 */
+	public static AccessWidenerFile fromModJar(Path modJarPath) {
+		byte[] modJsonBytes = ZipUtil.unpackEntry(modJarPath.toFile(), "fabric.mod.json");
+
+		if (modJsonBytes == null) {
+			return null;
+		}
+
+		JsonObject jsonObject = new Gson().fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
+
+		if (!jsonObject.has("accessWidener")) {
+			return null;
+		}
+
+		String awPath = jsonObject.get("accessWidener").getAsString();
+		String modId = jsonObject.get("id").getAsString();
+
+		byte[] content = ZipUtil.unpackEntry(modJarPath.toFile(), awPath);
+
+		return new AccessWidenerFile(
+				awPath,
+				modId,
+				content
+		);
 	}
 }

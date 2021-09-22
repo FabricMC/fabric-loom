@@ -43,6 +43,8 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
@@ -75,8 +77,8 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 				try (Writer writer = new StringWriter()) {
 					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
 
-					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingNamespace.NAMED.stringValue()));
-					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingNamespace.INTERMEDIARY.stringValue(), true);
+					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
+					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
 					mappings.accept(nsSwitch);
 
 					Files.deleteIfExists(mappingsFile);

@@ -22,22 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 
-public interface MappingLayer {
-	void visit(MappingVisitor mappingVisitor) throws IOException;
-
-	default MappingNamespace getSourceNamespace() {
-		return MappingNamespace.NAMED;
-	}
-
-	default List<Class<? extends MappingLayer>> dependsOn() {
-		return Collections.emptyList();
-	}
+/**
+ * A MappingsSpec is an immutable set of data used to create the MappingLayer.
+ *
+ * <p>The hashCode is used to generate a hash of the full layered mapping spec, used to cache.
+ *
+ * <p>Commonly implemented as a record
+ */
+@ApiStatus.Experimental
+public interface MappingsSpec<L extends MappingLayer> {
+	L createLayer(MappingContext context);
 }

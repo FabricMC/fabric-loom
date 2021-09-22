@@ -36,9 +36,9 @@ import org.gradle.api.publish.maven.MavenPublication;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
@@ -149,5 +149,11 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 	public String getModVersion() {
 		reportDeprecation();
 		throw new UnsupportedOperationException("Use loom extension");
+	}
+
+	@Override
+	public Property<Boolean> getEnableTransitiveAccessWideners() {
+		reportDeprecation();
+		throw new UnsupportedOperationException();
 	}
 }

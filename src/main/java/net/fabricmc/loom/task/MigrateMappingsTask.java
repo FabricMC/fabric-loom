@@ -24,14 +24,12 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -49,14 +47,15 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilder;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
-import net.fabricmc.mapping.tree.TinyMappingFactory;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class MigrateMappingsTask extends AbstractLoomTask {
 	private Path inputDir;
@@ -100,8 +99,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
 		try {
-			TinyTree currentMappings = mappingsProvider.getMappings();
-			TinyTree targetMappings = getMappings(mappings);
+			MemoryMappingTree currentMappings = mappingsProvider.getMappings();
+			MemoryMappingTree targetMappings = getMappings(mappings);
 			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDir, outputDir, currentMappings, targetMappings);
 			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());
 		} catch (IOException e) {
@@ -148,27 +147,25 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		return Iterables.getOnlyElement(files);
 	}
 
-	private static TinyTree getMappings(File mappings) throws IOException {
-		Path temp = Files.createTempFile("mappings", ".tiny");
+	private static MemoryMappingTree getMappings(File mappings) throws IOException {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), (ClassLoader) null)) {
-			Files.copy(fileSystem.getPath("mappings/mappings.tiny"), temp, StandardCopyOption.REPLACE_EXISTING);
+			MappingReader.read(fileSystem.getPath("mappings/mappings.tiny"), mappingTree);
 		}
 
-		try (BufferedReader reader = Files.newBufferedReader(temp)) {
-			return TinyMappingFactory.loadWithDetection(reader);
-		}
+		return mappingTree;
 	}
 
 	private static void migrateMappings(Project project, MinecraftMappedProvider minecraftMappedProvider,
-										Path inputDir, Path outputDir, TinyTree currentMappings, TinyTree targetMappings
+										Path inputDir, Path outputDir, MemoryMappingTree currentMappings, MemoryMappingTree targetMappings
 	) throws IOException {
 		project.getLogger().info(":joining mappings");
 
 		MappingSet mappingSet = new TinyMappingsJoiner(
-				currentMappings, "named",
-				targetMappings, "named",
-				"intermediary"
+				currentMappings, MappingsNamespace.NAMED.toString(),
+				targetMappings, MappingsNamespace.NAMED.toString(),
+				MappingsNamespace.INTERMEDIARY.toString()
 		).read();
 
 		project.getLogger().lifecycle(":remapping");

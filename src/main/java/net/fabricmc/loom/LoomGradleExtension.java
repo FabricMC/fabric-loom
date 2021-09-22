@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -38,6 +39,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
@@ -103,4 +105,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	@Override
 	MixinExtension getMixin();
+
+	List<AccessWidenerFile> getTransitiveAccessWideners();
+
+	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
 }

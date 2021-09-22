@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -47,5 +48,21 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 
 	String expected() {
 		new File("src/test/resources/accesswidener/expected.accesswidener").text
+	}
+
+	@Unroll
+	def "transitive accesswidener (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "transitiveAccesswidener", version: version)
+			ZipUtil.pack(new File(gradle.projectDir, "dummyDependency"), new File(gradle.projectDir, "dummy.jar"))
+
+		when:
+			def result = gradle.run(task: "build")
+
+		then:
+			result.task(":build").outcome == SUCCESS
+
+		where:
+			version << STANDARD_TEST_VERSIONS
 	}
 }

@@ -28,6 +28,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -55,7 +59,7 @@ public class LayeredMappingsProcessor {
 			visitedLayers.add(layer.getClass());
 
 			// We have to rebuild a new tree to work on when a layer doesnt merge into layered
-			boolean rebuild = layer.getSourceNamespace() != MappingNamespace.NAMED;
+			boolean rebuild = layer.getSourceNamespace() != MappingsNamespace.NAMED;
 			MemoryMappingTree workingTree;
 
 			if (rebuild) {
@@ -63,7 +67,7 @@ public class LayeredMappingsProcessor {
 
 				// This can be null on the first layer
 				if (mappingTree.getSrcNamespace() != null) {
-					var sourceNsSwitch = new MappingSourceNsSwitch(tempTree, layer.getSourceNamespace().stringValue());
+					var sourceNsSwitch = new MappingSourceNsSwitch(tempTree, layer.getSourceNamespace().toString());
 					mappingTree.accept(sourceNsSwitch);
 				}
 
@@ -80,7 +84,7 @@ public class LayeredMappingsProcessor {
 
 			if (rebuild) {
 				mappingTree = new MemoryMappingTree();
-				workingTree.accept(new MappingSourceNsSwitch(mappingTree, MappingNamespace.NAMED.stringValue()));
+				workingTree.accept(new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString()));
 			}
 		}
 

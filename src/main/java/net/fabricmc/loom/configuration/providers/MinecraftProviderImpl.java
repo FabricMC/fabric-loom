@@ -80,9 +80,6 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 			versionInfo = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, MinecraftVersionMeta.class);
 		}
 
-		// Add Loom as an annotation processor
-		addDependency(getProject().files(this.getClass().getProtectionDomain().getCodeSource().getLocation()), "compileOnly");
-
 		if (offline) {
 			if (minecraftClientJar.exists() && minecraftServerJar.exists()) {
 				getProject().getLogger().debug("Found client and server jars, presuming up-to-date");

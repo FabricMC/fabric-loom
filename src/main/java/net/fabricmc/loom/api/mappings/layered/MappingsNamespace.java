@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.api.mappings.layered;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import java.util.Locale;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
+/**
+ * The standard namespaces used by loom.
+ */
+public enum MappingsNamespace {
+	/**
+	 * Official mappings are the names that are used in the vanilla Minecraft game jars, these are usually obfuscated.
+	 */
+	OFFICIAL,
+
+	/**
+	 * Intermediary mappings have been generated to provide a stable set of names across minecraft versions.
+	 *
+	 * <p>Intermediary is used in a production runtime (outside a dev env) allowing mods to run across multiple versions of the game. Mods are remapped from "named" at build time.
+	 *
+	 * @see <a href="https://github.com/FabricMC/intermediary/">github.com/FabricMC/intermediary/</a>
+	 */
+	INTERMEDIARY,
+
+	/**
+	 * Named mappings are the developer friendly names used to develop mods against.
+	 */
+	NAMED;
+
 	@Override
-	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.mappingsProvider().intermediaryTinyFile());
+	public String toString() {
+		return name().toLowerCase(Locale.ROOT);
 	}
 }

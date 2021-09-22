@@ -57,6 +57,7 @@ import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
 import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.JarRemapper;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
@@ -65,10 +66,11 @@ import net.fabricmc.loom.build.nesting.NestedDependencyProvider;
 import net.fabricmc.loom.build.nesting.NestedJarPathProvider;
 import net.fabricmc.loom.build.nesting.NestedJarProvider;
 import net.fabricmc.loom.configuration.JarManifestConfiguration;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -132,13 +134,13 @@ public class RemapJarTask extends Jar {
 
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = MappingsNamespace.NAMED.toString();
+		String toM = MappingsNamespace.INTERMEDIARY.toString();
 
 		if (isMainRemapTask) {
 			jarRemapper.addToClasspath(getRemapClasspath());
 
-			jarRemapper.addMappings(TinyRemapperMappingsHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
+			jarRemapper.addMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false));
 		}
 
 		for (File mixinMapFile : extension.getAllMixinMappings()) {
@@ -160,15 +162,15 @@ public class RemapJarTask extends Jar {
 						byte[] data;
 
 						try {
-							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper);
+							data = accessWidenerJarProcessor.getRemappedAccessWidener(remapper, toM);
 						} catch (IOException e) {
-							throw new RuntimeException("Failed to remap access widener");
+							throw new RuntimeException("Failed to remap access widener", e);
 						}
 
-						String awPath = accessWidenerJarProcessor.getAccessWidenerPath(remapData.input);
-						Preconditions.checkNotNull(awPath, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
+						AccessWidenerFile awFile = AccessWidenerFile.fromModJar(remapData.input);
+						Preconditions.checkNotNull(awFile, "Failed to find accessWidener in fabric.mod.json: " + remapData.input);
 
-						return Pair.of(awPath, data);
+						return Pair.of(awFile.name(), data);
 					}
 
 					return null;
@@ -286,7 +288,8 @@ public class RemapJarTask extends Jar {
 		return this;
 	}
 
-	@ApiStatus.Experimental // This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
+	@ApiStatus.Experimental
+	// This only allows mod jars, proceed with care when trying to pass in configurations with projects, or something that depends on a task.
 	public RemapJarTask include(Object... paths) {
 		Collections.addAll(nestedPaths, paths);
 		this.addNestedDependencies.set(true);

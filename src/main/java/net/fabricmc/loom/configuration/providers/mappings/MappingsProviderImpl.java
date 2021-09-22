@@ -34,8 +34,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.net.UrlEscapers;
@@ -48,8 +51,10 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
@@ -57,12 +62,13 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.mapping.reader.v2.TinyV2Factory;
-import net.fabricmc.mapping.tree.TinyTree;
+import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
+import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
@@ -85,13 +91,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private Path unpickDefinitions;
 	private boolean hasUnpickDefinitions;
 	private UnpickMetadata unpickMetadata;
+	private MemoryMappingTree mappingTree;
 
 	public MappingsProviderImpl(Project project) {
 		super(project);
 	}
 
-	public TinyTree getMappings() throws IOException {
-		return MappingsCache.INSTANCE.get(tinyMappings);
+	public MemoryMappingTree getMappings() throws IOException {
+		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read");
 	}
 
 	@Override
@@ -117,6 +124,8 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			}
 		}
 
+		mappingTree = readMappings();
+
 		if (Files.notExists(tinyMappingsJar) || isRefreshDeps()) {
 			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings.toFile())}, tinyMappingsJar.toFile());
 		}
@@ -138,6 +147,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		if (extension.getAccessWidenerPath().isPresent()) {
 			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
+		}
+
+		if (extension.getEnableTransitiveAccessWideners().get()) {
+			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(getProject());
+
+			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
 		}
 
 		extension.getAccessWidenerPath().finalizeValue();
@@ -206,23 +223,22 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
+	private MemoryMappingTree readMappings() throws IOException {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		MappingReader.read(tinyMappings, mappingTree);
+		return mappingTree;
+	}
+
 	private static boolean areMappingsV2(Path path) throws IOException {
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			TinyV2Factory.readMetadata(reader);
-			return true;
-		} catch (IllegalArgumentException e) {
-			// TODO: just check the mappings version when Parser supports V1 in readMetadata()
-			return false;
+			return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
 		}
 	}
 
 	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
 			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
-				TinyV2Factory.readMetadata(reader);
-				return true;
-			} catch (IllegalArgumentException e) {
-				return false;
+				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
 			}
 		}
 	}
@@ -276,12 +292,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		project.getLogger().info(":merging mappings");
 
 		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingNamespace.OFFICIAL.stringValue());
+		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingsNamespace.OFFICIAL.toString());
 		readIntermediaryTree().accept(sourceNsSwitch);
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, tree);
 		}
+
+		inheritMappedNamesOfEnclosingClasses(tree);
 
 		try (Tiny2Writer writer = new Tiny2Writer(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			tree.accept(writer);
@@ -290,9 +308,43 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		project.getLogger().info(":merged mappings in " + stopwatch.stop());
 	}
 
+	/**
+	 * Searches the mapping tree for inner classes with no mapped name, whose enclosing classes have mapped names.
+	 * Currently, Yarn does not export mappings for these inner classes.
+	 */
+	private void inheritMappedNamesOfEnclosingClasses(MemoryMappingTree tree) {
+		int intermediaryIdx = tree.getNamespaceId("intermediary");
+		int namedIdx = tree.getNamespaceId("named");
+
+		// The tree does not have an index by intermediary names by default
+		tree.setIndexByDstNames(true);
+
+		for (MappingTree.ClassMapping classEntry : tree.getClasses()) {
+			String intermediaryName = classEntry.getDstName(intermediaryIdx);
+			String namedName = classEntry.getDstName(namedIdx);
+
+			if (intermediaryName.equals(namedName) && intermediaryName.contains("$")) {
+				String[] path = intermediaryName.split(Pattern.quote("$"));
+				int parts = path.length;
+
+				for (int i = parts - 2; i >= 0; i--) {
+					String currentPath = String.join("$", Arrays.copyOfRange(path, 0, i + 1));
+					String namedParentClass = tree.mapClassName(currentPath, intermediaryIdx, namedIdx);
+
+					if (!namedParentClass.equals(currentPath)) {
+						classEntry.setDstName(namedParentClass
+										+ "$" + String.join("$", Arrays.copyOfRange(path, i + 1, path.length)),
+								namedIdx);
+						break;
+					}
+				}
+			}
+		}
+	}
+
 	private MemoryMappingTree readIntermediaryTree() throws IOException {
 		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(tree, Collections.singletonMap(MappingNamespace.NAMED.stringValue(), MappingNamespace.INTERMEDIARY.stringValue()), true);
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(tree, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
 		try (BufferedReader reader = Files.newBufferedReader(getIntermediaryTiny(), StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, nsCompleter);
@@ -316,7 +368,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
 							yarnMappings.toAbsolutePath().toString(),
 							newMergedMappings.toAbsolutePath().toString(),
-							"intermediary", "official");
+							MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.OFFICIAL.toString());
 		} catch (Exception e) {
 			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
 							+ " with mappings from " + yarnMappings, e);

@@ -99,7 +99,6 @@ public class RemapJarTask extends Jar {
 				.convention(true);
 		remapAccessWidener = getProject().getObjects().property(Boolean.class)
 				.convention(false);
-		classpath = getProject().getObjects().fileCollection();
 
 		if (!extension.getMixin().getUseLegacyMixinAp().get()) {
 			remapOptions.add(b -> b.extension(new MixinExtension()));

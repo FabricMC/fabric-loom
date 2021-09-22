@@ -49,7 +49,7 @@ public interface FileSpec {
 	 *
 	 * <p>The parameter will be evaluated like this:
 	 * <ul>
-	 * <li>{@link File}, {@link Path} and {@link org.gradle.api.file.FileSystemLocation} will be resolved as local files</li>
+	 * <li>{@link File}, {@link Path} and {@link FileSystemLocation} will be resolved as local files</li>
 	 * <li>{@link Provider} (including {@link org.gradle.api.provider.Property} will recursively be resolved as its current value</li>
 	 * <li>{@link CharSequence} (including {@link String} and {@link groovy.lang.GString}) will be resolved as Maven dependencies</li>
 	 * <li>{@link Dependency} will be resolved as any dependency</li>

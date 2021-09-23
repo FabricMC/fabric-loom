@@ -38,6 +38,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 
@@ -46,16 +47,20 @@ public final class MixinRefmapHelper {
 
 	private static final String FABRIC_MOD_JSON = "fabric.mod.json";
 
-	@NotNull
+	@Nullable
 	public static JsonObject readFabricModJson(File output) {
 		try (ZipFile zip = new ZipFile(output)) {
 			ZipEntry entry = zip.getEntry(FABRIC_MOD_JSON);
+
+			if (entry == null) {
+				return null;
+			}
 
 			try (InputStreamReader reader = new InputStreamReader(zip.getInputStream(entry))) {
 				return LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
 			}
 		} catch (IOException e) {
-			throw new RuntimeException("Cannot read file fabric.mod.json in the output jar.", e);
+			throw new RuntimeException("Cannot read file fabric.mod.json in the jar.", e);
 		}
 	}
 

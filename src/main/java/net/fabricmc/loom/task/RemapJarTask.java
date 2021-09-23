@@ -28,12 +28,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.jar.Manifest;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import javax.inject.Inject;
@@ -43,12 +43,13 @@ import com.google.gson.JsonObject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.jvm.tasks.Jar;
@@ -72,8 +73,10 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.task.service.TinyRemapperMappingsService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.tinyremapper.InputTag;
@@ -96,9 +99,6 @@ public abstract class RemapJarTask extends Jar {
 	@Input
 	public abstract Property<String> getTargetNamespace();
 
-	@Internal
-	public abstract Property<TinyRemapperService> getTinyRemapperBuildService();
-
 	@Inject
 	protected abstract WorkerExecutor getWorkerExecutor();
 
@@ -111,7 +111,6 @@ public abstract class RemapJarTask extends Jar {
 	@TaskAction
 	public void run() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final MixinExtension mixinExtension = extension.getMixin();
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(RemapAction.class, params -> {
@@ -126,21 +125,72 @@ public abstract class RemapJarTask extends Jar {
 			params.getArchivePreserveFileTimestamps().set(isPreserveFileTimestamps());
 			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
 
-			params.getTinyRemapperBuildService().set(getTinyRemapperBuildService());
+			params.getTinyRemapperBuildService().set(getTinyRemapperService());
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			params.getAddRefmap().set(legacyMixin);
 
 			if (legacyMixin) {
-				for (SourceSet sourceSet : mixinExtension.getMixinSourceSets()) {
-					MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
-							MixinExtension.getMixinInformationContainer(sourceSet)
-					);
-
-					params.getMixinInformationContainers().add(container);
-				}
+				setupLegacyMixinRefmapRemapping(params);
 			}
+		});
+	}
+
+	private void setupLegacyMixinRefmapRemapping(RemapParams params) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final MixinExtension mixinExtension = extension.getMixin();
+
+		final JsonObject fabricModJson = MixinRefmapHelper.readFabricModJson(getInputFile().getAsFile().get());
+
+		if (fabricModJson == null) {
+			getProject().getLogger().warn("Could not find fabric.mod.json file in: " + getInputFile().getAsFile().get().getName());
+			return;
+		}
+
+		final Collection<String> allMixinConfigs = MixinRefmapHelper.getMixinConfigurationFiles(fabricModJson);
+
+		for (SourceSet sourceSet : mixinExtension.getMixinSourceSets()) {
+			MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
+					MixinExtension.getMixinInformationContainer(sourceSet)
+			);
+
+			final String refmapName = container.refmapNameProvider().get();
+			final List<String> mixinConfigs = container.sourceSet().getResources()
+					.matching(container.mixinConfigPattern())
+					.getFiles()
+					.stream()
+					.map(File::getName)
+					.filter(allMixinConfigs::contains)
+					.toList();
+
+			params.getMixinData().add(new RemapParams.RefmapData(mixinConfigs, refmapName));
+		}
+	}
+
+	private synchronized Provider<TinyRemapperService> getTinyRemapperService() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		final String from = getSourceNamespace().get();
+		final String to = getTargetNamespace().get();
+		// This should give us what shared caches did before but for free, and safely.
+		final String name = "remapJarService:%s:%s>%S".formatted(mappingsProvider.mappingsIdentifier(), from, to);
+
+		return getProject().getGradle().getSharedServices().registerIfAbsent(name, TinyRemapperService.class, spec -> {
+			spec.parameters(params -> {
+				params.getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+				params.getMappings().add(TinyRemapperMappingsService.create(getProject(), mappingsProvider.tinyMappings.toFile(), from, to, false));
+
+				final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+				params.getUseMixinExtension().set(!legacyMixin);
+
+				if (legacyMixin) {
+					// Add the mapping from the mixin AP
+					for (File file : extension.getAllMixinMappings().getFiles()) {
+						params.getMappings().add(TinyRemapperMappingsService.create(getProject(), file, from, to, false));
+					}
+				}
+			});
 		});
 	}
 
@@ -155,7 +205,8 @@ public abstract class RemapJarTask extends Jar {
 		Property<String> getSourceNamespace();
 		Property<String> getTargetNamespace();
 
-		ListProperty<MixinExtension.MixinInformationContainer> getMixinInformationContainers();
+		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
+		ListProperty<RefmapData> getMixinData();
 
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
@@ -263,26 +314,14 @@ public abstract class RemapJarTask extends Jar {
 				return;
 			}
 
-			final Collection<String> allMixinConfigs = MixinRefmapHelper.getMixinConfigurationFiles(MixinRefmapHelper.readFabricModJson(inputFile.toFile()));
-			final List<MixinExtension.MixinInformationContainer> mixinInformationContainers = getParameters().getMixinInformationContainers().get();
-
-			for (MixinExtension.MixinInformationContainer container : mixinInformationContainers) {
-				Stream<String> mixinConfigs = container.sourceSet().getResources()
-						.matching(container.mixinConfigPattern())
-						.getFiles()
-						.stream()
-						.map(File::getName)
-						.filter(allMixinConfigs::contains);
-
-				String refmapName = container.refmapNameProvider().get();
-
-				boolean transformed = ZipUtil.transformEntries(outputFile.toFile(), mixinConfigs.map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
+			for (RemapParams.RefmapData refmapData : getParameters().getMixinData().get()) {
+				boolean transformed = ZipUtil.transformEntries(outputFile.toFile(), refmapData.mixinConfigs().stream().map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
 					@Override
 					protected String transform(ZipEntry zipEntry, String input) {
 						JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
 
 						if (!json.has("refmap")) {
-							json.addProperty("refmap", refmapName);
+							json.addProperty("refmap", refmapData.refmapName());
 						}
 
 						return LoomGradlePlugin.GSON.toJson(json);

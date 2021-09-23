@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -220,29 +221,39 @@ public abstract class RemapJarTask extends Jar {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
 		private final TinyRemapper tinyRemapper;
-		private final InputTag inputTag;
 		private final Path inputFile;
 		private final Path outputFile;
 
 		@Inject
 		public RemapAction() {
 			tinyRemapper = getParameters().getTinyRemapperBuildService().get().getTinyRemapper();
-			inputTag = tinyRemapper.createInputTag();
 			inputFile = getParameters().getInputFile().getAsFile().get().toPath();
 			outputFile = getParameters().getOutputFile().getAsFile().get().toPath();
 		}
 
 		@Override
 		public void execute() {
-			remap();
-			remapAccessWidener();
-			addRefmaps();
-			addNestedJars();
-			modifyJarManifest();
-			rewriteJar();
+			try {
+				remap();
+				remapAccessWidener();
+				addRefmaps();
+				addNestedJars();
+				modifyJarManifest();
+				rewriteJar();
+			} catch (Exception e) {
+				try {
+					Files.deleteIfExists(outputFile);
+				} catch (IOException ex) {
+					LOGGER.error("Failed to delete output file", ex);
+				}
+
+				throw e;
+			}
 		}
 
 		private void remap() {
+			final InputTag inputTag = tinyRemapper.createInputTag();
+
 			for (File file : getParameters().getExtraClasspath().getFiles()) {
 				tinyRemapper.readClassPathAsync(file.toPath());
 			}

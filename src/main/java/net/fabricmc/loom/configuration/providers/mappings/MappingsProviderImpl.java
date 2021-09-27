@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -37,6 +38,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,7 @@ import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.Nullable;
 import org.zeroturnaround.zip.FileSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -92,6 +95,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private boolean hasUnpickDefinitions;
 	private UnpickMetadata unpickMetadata;
 	private MemoryMappingTree mappingTree;
+	private Map<String, String> signatureFixes;
 
 	public MappingsProviderImpl(Project project) {
 		super(project);
@@ -120,7 +124,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), (ClassLoader) null)) {
-				extractUnpickDefinitions(fileSystem, unpickDefinitions);
+				extractExtras(fileSystem);
 			}
 		}
 
@@ -209,7 +213,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
-			extractUnpickDefinitions(fileSystem, unpickDefinitions);
+			extractExtras(fileSystem);
 		}
 
 		if (areMappingsV2(baseTinyMappings)) {
@@ -253,7 +257,12 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void extractUnpickDefinitions(FileSystem jar, Path extractTo) throws IOException {
+	private void extractExtras(FileSystem jar) throws IOException {
+		extractUnpickDefinitions(jar);
+		extractSignatureFixes(jar);
+	}
+
+	private void extractUnpickDefinitions(FileSystem jar) throws IOException {
 		Path unpickPath = jar.getPath("extras/definitions.unpick");
 		Path unpickMetadataPath = jar.getPath("extras/unpick.json");
 
@@ -261,10 +270,23 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			return;
 		}
 
-		Files.copy(unpickPath, extractTo, StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(unpickPath, unpickDefinitions, StandardCopyOption.REPLACE_EXISTING);
 
 		unpickMetadata = parseUnpickMetadata(unpickMetadataPath);
 		hasUnpickDefinitions = true;
+	}
+
+	private void extractSignatureFixes(FileSystem jar) throws IOException {
+		Path recordSignaturesJsonPath = jar.getPath("extras/record_signatures.json");
+
+		if (!Files.exists(recordSignaturesJsonPath)) {
+			return;
+		}
+
+		try (Reader reader = Files.newBufferedReader(recordSignaturesJsonPath, StandardCharsets.UTF_8)) {
+			//noinspection unchecked
+			signatureFixes = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, Map.class);
+		}
 	}
 
 	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
@@ -459,6 +481,11 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	public boolean hasUnpickDefinitions() {
 		return hasUnpickDefinitions;
+	}
+
+	@Nullable
+	public Map<String, String> getSignatureFixes() {
+		return signatureFixes;
 	}
 
 	@Override

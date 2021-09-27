@@ -22,32 +22,18 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered.spec;
+package net.fabricmc.loom.configuration.providers.mappings.extras.signatures;
 
-import org.gradle.api.Action;
 import org.jetbrains.annotations.ApiStatus;
 
-/**
- * Used to configure a layered mapping spec.
- */
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+
 @ApiStatus.Experimental
-public interface LayeredMappingSpecBuilder {
-	/**
-	 * Add a MappingsSpec layer.
-	 */
-	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
-
-	/**
-	 * Add a layer that uses the official mappings provided by Mojang.
-	 */
-	LayeredMappingSpecBuilder officialMojangMappings();
-
-	default LayeredMappingSpecBuilder parchment(Object object) {
-		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
+public record SignatureFixesSpec(FileSpec fileSpec) implements MappingsSpec<SignatureFixesLayerImpl> {
+	@Override
+	public SignatureFixesLayerImpl createLayer(MappingContext context) {
+		return new SignatureFixesLayerImpl(fileSpec.get(context));
 	}
-
-	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
-
-	@ApiStatus.Experimental
-	LayeredMappingSpecBuilder signatureFix(Object object);
 }

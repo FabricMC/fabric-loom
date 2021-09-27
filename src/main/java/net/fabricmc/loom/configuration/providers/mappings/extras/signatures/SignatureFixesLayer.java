@@ -22,32 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered.spec;
+package net.fabricmc.loom.configuration.providers.mappings.extras.signatures;
 
-import org.gradle.api.Action;
+import java.util.Map;
+
 import org.jetbrains.annotations.ApiStatus;
 
-/**
- * Used to configure a layered mapping spec.
- */
 @ApiStatus.Experimental
-public interface LayeredMappingSpecBuilder {
-	/**
-	 * Add a MappingsSpec layer.
-	 */
-	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
-
-	/**
-	 * Add a layer that uses the official mappings provided by Mojang.
-	 */
-	LayeredMappingSpecBuilder officialMojangMappings();
-
-	default LayeredMappingSpecBuilder parchment(Object object) {
-		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
-	}
-
-	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
-
-	@ApiStatus.Experimental
-	LayeredMappingSpecBuilder signatureFix(Object object);
+public interface SignatureFixesLayer {
+	Map<String, String> getSignatureFixes();
 }

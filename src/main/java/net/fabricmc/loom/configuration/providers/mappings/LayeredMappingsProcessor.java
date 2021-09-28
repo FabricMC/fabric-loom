@@ -26,12 +26,19 @@ package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesLayer;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -42,9 +49,8 @@ public class LayeredMappingsProcessor {
 		this.layeredMappingSpec = spec;
 	}
 
-	public MemoryMappingTree getMappings(MappingContext context) throws IOException {
-		MemoryMappingTree mappingTree = new MemoryMappingTree();
-
+	public List<MappingLayer> resolveLayers(MappingContext context) {
+		List<MappingLayer> layers = new LinkedList<>();
 		List<Class<? extends MappingLayer>> visitedLayers = new ArrayList<>();
 
 		for (MappingsSpec<?> spec : layeredMappingSpec.layers()) {
@@ -56,8 +62,17 @@ public class LayeredMappingsProcessor {
 				}
 			}
 
+			layers.add(layer);
 			visitedLayers.add(layer.getClass());
+		}
 
+		return Collections.unmodifiableList(layers);
+	}
+
+	public MemoryMappingTree getMappings(List<MappingLayer> layers) throws IOException {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+
+		for (MappingLayer layer : layers) {
 			// We have to rebuild a new tree to work on when a layer doesnt merge into layered
 			boolean rebuild = layer.getSourceNamespace() != MappingsNamespace.NAMED;
 			MemoryMappingTree workingTree;
@@ -89,5 +104,22 @@ public class LayeredMappingsProcessor {
 		}
 
 		return mappingTree;
+	}
+
+	@Nullable
+	public Map<String, String> getSignatureFixes(List<MappingLayer> layers) {
+		Map<String, String> signatureFixes = new HashMap<>();
+
+		for (MappingLayer layer : layers) {
+			if (layer instanceof SignatureFixesLayer signatureFixesLayer) {
+				signatureFixes.putAll(signatureFixesLayer.getSignatureFixes());
+			}
+		}
+
+		if (signatureFixes.isEmpty()) {
+			return null;
+		}
+
+		return Collections.unmodifiableMap(signatureFixes);
 	}
 }

@@ -34,6 +34,7 @@ import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
+import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesSpec;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;
@@ -57,6 +58,11 @@ public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder 
 		ParchmentMappingsSpecBuilderImpl builder = ParchmentMappingsSpecBuilderImpl.builder(FileSpec.create(object));
 		action.execute(builder);
 		return addLayer(builder.build());
+	}
+
+	@Override
+	public LayeredMappingSpecBuilder signatureFix(Object object) {
+		return addLayer(new SignatureFixesSpec(FileSpec.create(object)));
 	}
 
 	public LayeredMappingSpec build() {

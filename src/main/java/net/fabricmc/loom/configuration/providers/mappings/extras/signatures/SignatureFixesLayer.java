@@ -22,11 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.configuration.providers.mappings.extras.signatures;
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = "7.0.1"
-    public final static String PRE_RELEASE_GRADLE = "7.4-20210926222420+0000"
+import java.util.Map;
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+import org.jetbrains.annotations.ApiStatus;
+
+@ApiStatus.Experimental
+public interface SignatureFixesLayer {
+	Map<String, String> getSignatureFixes();
 }

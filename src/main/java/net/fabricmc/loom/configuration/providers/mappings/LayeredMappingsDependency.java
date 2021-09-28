@@ -32,6 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -44,6 +46,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -72,27 +75,49 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
 			try {
 				var processor = new LayeredMappingsProcessor(layeredMappingSpec);
-				MemoryMappingTree mappings = processor.getMappings(mappingContext);
+				List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
-				try (Writer writer = new StringWriter()) {
-					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+				Files.deleteIfExists(mappingsFile);
 
-					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
-					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
-					mappings.accept(nsSwitch);
-
-					Files.deleteIfExists(mappingsFile);
-
-					ZipUtil.pack(new ZipEntrySource[] {
-							new ByteSource("mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8))
-					}, mappingsFile.toFile());
-				}
+				writeMapping(processor, layers, mappingsFile);
+				writeSignatureFixes(processor, layers, mappingsFile);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to resolve Mojang mappings", e);
+				throw new RuntimeException("Failed to resolve layered mappings", e);
 			}
 		}
 
 		return Collections.singleton(mappingsFile.toFile());
+	}
+
+	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		MemoryMappingTree mappings = processor.getMappings(layers);
+
+		try (Writer writer = new StringWriter()) {
+			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+
+			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
+			mappings.accept(nsSwitch);
+
+			ZipUtil.pack(new ZipEntrySource[] {
+					new ByteSource("mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8))
+			}, mappingsFile.toFile());
+		}
+	}
+
+	private void writeSignatureFixes(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		Map<String, String> signatureFixes = processor.getSignatureFixes(layers);
+
+		if (signatureFixes == null) {
+			return;
+		}
+
+		byte[] data = LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(signatureFixes).getBytes(StandardCharsets.UTF_8);
+
+		ZipUtil.addEntry(
+				mappingsFile.toFile(),
+				new ByteSource("extras/record_signatures.json", data)
+		);
 	}
 
 	@Override

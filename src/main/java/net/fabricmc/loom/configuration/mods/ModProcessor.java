@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -170,23 +171,24 @@ public class ModProcessor {
 
 		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
 		for (ModDependencyInfo info : remapList) {
-			OutputConsumerPath outputConsumer;
-
 			try {
-				outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+
+				outputConsumer.addNonClassFiles(info.getInputFile().toPath());
+				outputConsumerMap.put(info, outputConsumer);
+				String accessWidener = info.getAccessWidener();
+
+				if (accessWidener != null) {
+					accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
+				}
+
+				remapper.apply(outputConsumer, tagMap.get(info));
 			} catch (Exception e) {
-				throw new IOException("Could not create output consumer for " + info.getRemappedOutput().getAbsolutePath());
+				remapper.finish();
+				Files.deleteIfExists(info.getRemappedOutput().toPath());
+
+				throw new RuntimeException("Failed to remap: " + info.getRemappedNotation(), e);
 			}
-
-			outputConsumer.addNonClassFiles(info.getInputFile().toPath());
-			outputConsumerMap.put(info, outputConsumer);
-			String accessWidener = info.getAccessWidener();
-
-			if (accessWidener != null) {
-				accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
-			}
-
-			remapper.apply(outputConsumer, tagMap.get(info));
 		}
 
 		remapper.finish();

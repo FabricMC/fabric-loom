@@ -39,9 +39,11 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 
 		when:
 			def result = gradle.run(task: "build")
+			def dependenciesResult = gradle.run(task: "dependencies")
 
 		then:
 			result.task(":build").outcome == SUCCESS
+			dependenciesResult.task(":dependencies").outcome == SUCCESS
 
 		where:
 			version << STANDARD_TEST_VERSIONS

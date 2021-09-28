@@ -121,7 +121,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl();
 		action.execute(builder);
 		LayeredMappingSpec builtSpec = builder.build();
-		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
+		return new LayeredMappingsDependency(getProject(), new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
 	}
 
 	@Override

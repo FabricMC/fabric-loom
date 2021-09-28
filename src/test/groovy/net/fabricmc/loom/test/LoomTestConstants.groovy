@@ -26,7 +26,7 @@ package net.fabricmc.loom.test
 
 class LoomTestConstants {
     public final static String DEFAULT_GRADLE = "7.0.1"
-    public final static String PRE_RELEASE_GRADLE = "7.4-20210926222420+0000"
+    public final static String PRE_RELEASE_GRADLE = "7.4-20210927222644+0000"
 
     public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
 }

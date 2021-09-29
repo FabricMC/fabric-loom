@@ -68,7 +68,13 @@ public class JarProcessorManager {
 		String jarProcessorHash = getJarProcessorHash();
 
 		try (JarFile jar = new JarFile(file)) {
-			Attributes attributes = jar.getManifest().getMainAttributes();
+			Manifest manifest = jar.getManifest();
+
+			if (manifest == null) {
+				return false;
+			}
+
+			Attributes attributes = manifest.getMainAttributes();
 
 			if (!jarProcessorHash.equals(attributes.getValue(JAR_PROCESSOR_HASH_ATTRIBUTE))) {
 				return true;

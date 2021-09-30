@@ -22,11 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.test.integration
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = "7.0.1"
-    public final static String PRE_RELEASE_GRADLE = "7.4-20210929223033+0000"
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+
+class MigrateMappingsTest extends Specification implements GradleProjectTestTrait {
+    @Unroll
+    def "Migrate mappings (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "java16", version: version)
+
+        when:
+            def result = gradle.run(tasks: ["migrateMappings", "--mappings", "21w38a+build.10"])
+
+        then:
+            result.task(":migrateMappings").outcome == SUCCESS
+            // TODO check it actually did something
+
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

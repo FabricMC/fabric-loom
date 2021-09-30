@@ -49,9 +49,9 @@ public class GenEclipseRunsTask extends AbstractLoomTask {
 
 			String name = settings.getName();
 
-			File configs = new File(getProject().getRootDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
+			File configs = new File(getProject().getProjectDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
 			RunConfig configInst = RunConfig.runConfig(getProject(), settings);
-			String config = configInst.fromDummy("eclipse_run_config_template.xml");
+			String config = configInst.fromDummy("eclipse_run_config_template.xml", false, getProject());
 
 			if (!configs.exists()) {
 				FileUtils.writeStringToFile(configs, config, StandardCharsets.UTF_8);

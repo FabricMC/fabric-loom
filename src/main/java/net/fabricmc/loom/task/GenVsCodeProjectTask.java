@@ -27,6 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +79,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		}
 	}
 
-	private static class VsCodeLaunch {
+	private class VsCodeLaunch {
 		public String version = "0.2.0";
 		public List<VsCodeConfiguration> configurations = new ArrayList<>();
 
@@ -88,7 +89,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 	}
 
 	@SuppressWarnings("unused")
-	private static class VsCodeConfiguration {
+	private class VsCodeConfiguration {
 		public String type = "java";
 		public String name;
 		public String request = "launch";
@@ -105,6 +106,14 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			this.vmArgs = runConfig.vmArgs;
 			this.args = runConfig.programArgs;
 			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
+
+			if (getProject().getRootProject() != getProject()) {
+				Path rootPath = getProject().getRootDir().toPath();
+				Path projectPath = getProject().getProjectDir().toPath();
+				String relativePath = rootPath.relativize(projectPath).toString();
+
+				this.cwd = "${workspaceFolder}/%s/%s".formatted(relativePath, runConfig.runDir);
+			}
 		}
 	}
 }

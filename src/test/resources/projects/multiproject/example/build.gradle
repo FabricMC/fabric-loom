@@ -3,3 +3,9 @@ archivesBaseName = "example"
 dependencies {
 	implementation project(path: ":core", configuration: "dev")
 }
+
+loom {
+	runConfigs.configureEach {
+		ideConfigGenerated = true
+	}
+}

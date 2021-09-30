@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.ide;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 
@@ -181,11 +182,21 @@ public class RunConfig {
 		return runConfig;
 	}
 
-	public String fromDummy(String dummy) throws IOException {
+	public String fromDummy(String dummy, boolean relativeDir, Project project) throws IOException {
 		String dummyConfig;
 
 		try (InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy)) {
 			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+		}
+
+		String runDir = this.runDir;
+
+		if (relativeDir && project.getRootProject() != project) {
+			Path rootPath = project.getRootDir().toPath();
+			Path projectPath = project.getProjectDir().toPath();
+			String relativePath = rootPath.relativize(projectPath).toString();
+
+			runDir = relativePath + "/" + runDir;
 		}
 
 		dummyConfig = dummyConfig.replace("%NAME%", configName);

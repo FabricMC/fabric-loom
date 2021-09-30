@@ -50,7 +50,6 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
 
 /**
- * TODO, Move to stitch.
  * Created by covers1624 on 18/02/19.
  */
 public class LineNumberRemapper {

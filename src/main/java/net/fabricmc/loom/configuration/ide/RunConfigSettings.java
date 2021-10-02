@@ -289,7 +289,7 @@ public final class RunConfigSettings implements Named {
 	}
 
 	public void makeRunDir() {
-		File file = new File(getProject().getRootDir(), runDir);
+		File file = new File(getProject().getProjectDir(), runDir);
 
 		if (!file.exists()) {
 			file.mkdir();

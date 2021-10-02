@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,28 +31,20 @@ import spock.lang.Unroll
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MultiProjectTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "build (gradle #version)"() {
-		setup:
-			def gradle = gradleProject(project: "multiproject", version: version)
+class MigrateMappingsTest extends Specification implements GradleProjectTestTrait {
+    @Unroll
+    def "Migrate mappings (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "java16", version: version)
 
-		when:
-			def result = gradle.run(tasks: ["build", "eclipse", "vscode", "idea"])
+        when:
+            def result = gradle.run(tasks: ["migrateMappings", "--mappings", "21w38a+build.10"])
 
-		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":core:build").outcome == SUCCESS
-			result.task(":example:build").outcome == SUCCESS
+        then:
+            result.task(":migrateMappings").outcome == SUCCESS
+            // TODO check it actually did something
 
-			result.task(":remapAllJars").outcome == SUCCESS
-			result.task(":remapAllSources").outcome == SUCCESS
-
-			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-			gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.2.1+9354966b7d.jar")
-
-		where:
-			version << STANDARD_TEST_VERSIONS
-	}
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

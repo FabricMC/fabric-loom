@@ -37,8 +37,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAsset
 
 public class SetupIntelijRunConfigs {
 	public static void setup(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-
 		File projectDir = project.getRootProject().file(".idea");
 
 		if (!projectDir.exists()) {
@@ -80,7 +78,7 @@ public class SetupIntelijRunConfigs {
 			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 
 			File runConfigs = new File(runConfigsDir, name + projectPath + ".xml");
-			String runConfigXml = config.fromDummy("idea_run_config_template.xml");
+			String runConfigXml = config.fromDummy("idea_run_config_template.xml", true, project);
 
 			if (!runConfigs.exists()) {
 				FileUtils.writeStringToFile(runConfigs, runConfigXml, StandardCharsets.UTF_8);

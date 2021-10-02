@@ -54,7 +54,7 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 	def "transitive accesswidener (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(project: "transitiveAccesswidener", version: version)
-            NIOZipUtils.add(new File(gradle.projectDir, "dummy.jar"), "dummyDependency", new File(gradle.projectDir, "dummyDependency").readBytes())
+			NIOZipUtils.add(new File(gradle.projectDir, "dummy.jar"), "dummyDependency", new File(gradle.projectDir, "dummyDependency").readBytes())
 
 		when:
 			def result = gradle.run(task: "build")

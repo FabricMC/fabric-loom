@@ -106,6 +106,8 @@ public class NIOZipUtils {
 		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true)) {
 			for (Pair<String, byte[]> pair : files) {
 				Path fsPath = fs.get().getPath(pair.getLeft());
+				Path fsPathParent = fsPath.getParent();
+				if (fsPathParent != null) Files.createDirectories(fsPathParent);
 				Files.write(fsPath, pair.getRight(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 			}
 		} catch (IOException e) {
@@ -136,7 +138,7 @@ public class NIOZipUtils {
 				throw new NoSuchFileException(fsPath.toString());
 			}
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to add file to zip", e);
+			throw new UncheckedIOException("Failed to replace file in zip", e);
 		}
 	}
 
@@ -209,7 +211,7 @@ public class NIOZipUtils {
 				}
 			}
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to add file to zip", e);
+			throw new UncheckedIOException("Failed to transform file in zip", e);
 		}
 
 		return replacedCount > 0 || transforms.isEmpty();

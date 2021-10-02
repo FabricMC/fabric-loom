@@ -37,7 +37,6 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -126,7 +125,7 @@ public class SourceRemapper {
 			// create tmp directory
 			isSrcTmp = true;
 			srcPath = Files.createTempDirectory("fabric-loom-src");
-			ZipUtil.unpack(source, srcPath.toFile());
+			NIOZipUtils.unpackAll(source.toPath(), srcPath);
 		}
 
 		if (!destination.isDirectory() && destination.exists()) {

@@ -41,9 +41,6 @@ import java.util.zip.ZipEntry;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
@@ -56,6 +53,7 @@ import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.NIOZipUtils;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -94,14 +92,10 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
-				json.remove("jars");
-				return LoomGradlePlugin.GSON.toJson(json);
-			}
-		}))});
+		NIOZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
+			json.remove("jars");
+			return json;
+		}));
 	}
 
 	/**
@@ -179,7 +173,7 @@ public class ModProcessor {
 				String accessWidener = info.getAccessWidener();
 
 				if (accessWidener != null) {
-					accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
+					accessWidenerMap.put(info, remapAccessWidener(NIOZipUtils.unpackStrict(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
 				}
 
 				remapper.apply(outputConsumer, tagMap.get(info));
@@ -198,7 +192,7 @@ public class ModProcessor {
 			byte[] accessWidener = accessWidenerMap.get(info);
 
 			if (accessWidener != null) {
-				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
+				NIOZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidener(), accessWidener);
 			}
 
 			info.finaliseRemapping();

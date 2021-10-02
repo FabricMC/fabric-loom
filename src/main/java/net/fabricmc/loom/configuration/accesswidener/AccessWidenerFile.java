@@ -29,7 +29,8 @@ import java.nio.file.Path;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import org.zeroturnaround.zip.ZipUtil;
+
+import net.fabricmc.loom.util.NIOZipUtils;
 
 public record AccessWidenerFile(
 		String name,
@@ -40,7 +41,7 @@ public record AccessWidenerFile(
 	 * Reads the access-widener contained in a mod jar, or returns null if there is none.
 	 */
 	public static AccessWidenerFile fromModJar(Path modJarPath) {
-		byte[] modJsonBytes = ZipUtil.unpackEntry(modJarPath.toFile(), "fabric.mod.json");
+		byte[] modJsonBytes = NIOZipUtils.unpack(modJarPath, "fabric.mod.json");
 
 		if (modJsonBytes == null) {
 			return null;
@@ -55,7 +56,7 @@ public record AccessWidenerFile(
 		String awPath = jsonObject.get("accessWidener").getAsString();
 		String modId = jsonObject.get("id").getAsString();
 
-		byte[] content = ZipUtil.unpackEntry(modJarPath.toFile(), awPath);
+		byte[] content = NIOZipUtils.unpackStrict(modJarPath, awPath);
 
 		return new AccessWidenerFile(
 				awPath,

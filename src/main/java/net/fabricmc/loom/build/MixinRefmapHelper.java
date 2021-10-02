@@ -42,13 +42,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.NotNull;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.stitch.util.Pair;
 
 public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
@@ -76,18 +75,13 @@ public final class MixinRefmapHelper {
 
 				String refmapName = container.refmapNameProvider().get();
 
-				return ZipUtil.transformEntries(output, mixinConfigs.map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
-					@Override
-					protected String transform(ZipEntry zipEntry, String input) {
-						JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
-
-						if (!json.has("refmap")) {
-							json.addProperty("refmap", refmapName);
-						}
-
-						return LoomGradlePlugin.GSON.toJson(json);
+				return NIOZipUtils.transformJson(JsonObject.class, outputPath, mixinConfigs.map(f -> Pair.of(f, json -> {
+					if (!json.has("refmap")) {
+						json.addProperty("refmap", refmapName);
 					}
-				})).toArray(ZipEntryTransformerEntry[]::new));
+
+					return json;
+				})));
 			}).reduce(false, Boolean::logicalOr);
 		} catch (Exception e) {
 			project.getLogger().error(e.getMessage());

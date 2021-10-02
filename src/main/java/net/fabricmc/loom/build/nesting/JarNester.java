@@ -25,22 +25,22 @@
 package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
-import java.util.zip.ZipEntry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.logging.Logger;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.util.NIOZipUtils;
 import net.fabricmc.loom.util.ModUtils;
+import net.fabricmc.stitch.util.Pair;
 
 public class JarNester {
 	public static void nestJars(Collection<File> jars, File modJar, Logger logger) {
@@ -51,45 +51,43 @@ public class JarNester {
 
 		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar " + modJar.getName());
 
-		ZipUtil.addEntries(modJar, jars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
-
-		boolean didNest = ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
-				JsonArray nestedJars = json.getAsJsonArray("jars");
-
-				if (nestedJars == null || !json.has("jars")) {
-					nestedJars = new JsonArray();
-				}
-
-				for (File file : jars) {
-					String nestedJarPath = "META-INF/jars/" + file.getName();
-
-					for (JsonElement nestedJar : nestedJars) {
-						JsonObject jsonObject = nestedJar.getAsJsonObject();
-
-						if (jsonObject.has("file") && jsonObject.get("file").getAsString().equals(nestedJarPath)) {
-							throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
-						}
-					}
-
-					JsonObject jsonObject = new JsonObject();
-					jsonObject.addProperty("file", nestedJarPath);
-					nestedJars.add(jsonObject);
-
-					logger.debug("Nested " + nestedJarPath + " into " + modJar.getName());
-				}
-
-				json.add("jars", nestedJars);
-
-				return LoomGradlePlugin.GSON.toJson(json);
+		NIOZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
+			try {
+				return Pair.of("META-INF/jars/" + file.getName(), Files.readAllBytes(file.toPath()));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
+		}).collect(Collectors.toList()));
+
+		boolean didNest = NIOZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(Pair.of("fabric.mod.json", json -> {
+			JsonArray nestedJars = json.getAsJsonArray("jars");
+
+			if (nestedJars == null || !json.has("jars")) {
+				nestedJars = new JsonArray();
+			}
+
+			for (File file : jars) {
+				String nestedJarPath = "META-INF/jars/" + file.getName();
+
+				for (JsonElement nestedJar : nestedJars) {
+					JsonObject jsonObject = nestedJar.getAsJsonObject();
+
+					if (jsonObject.has("file") && jsonObject.get("file").getAsString().equals(nestedJarPath)) {
+						throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
+					}
+				}
+
+				JsonObject jsonObject = new JsonObject();
+				jsonObject.addProperty("file", nestedJarPath);
+				nestedJars.add(jsonObject);
+
+				logger.debug("Nested " + nestedJarPath + " into " + modJar.getName());
+			}
+
+			json.add("jars", nestedJars);
+
+			return json;
 		})));
 		Preconditions.checkArgument(didNest, "Failed to nest jars into " + modJar.getName());
-	}
-
-	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {
-		return new ZipEntryTransformerEntry[]{element};
 	}
 }

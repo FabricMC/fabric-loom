@@ -34,7 +34,6 @@ import java.util.Arrays;
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -43,6 +42,7 @@ import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.util.NIOZipUtils;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	// Filename used to store hash of input access widener in processed jar file
@@ -87,7 +87,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	public void process(File file) {
 		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
 		applier.apply(file);
-		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
+		NIOZipUtils.add(file.toPath(), HASH_FILENAME, inputHash);
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
-		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILENAME);
+		byte[] hash = NIOZipUtils.unpack(file.toPath(), HASH_FILENAME);
 
 		if (hash == null) {
 			return true;

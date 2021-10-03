@@ -53,8 +53,8 @@ import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.NIOZipUtils;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -92,7 +92,7 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		NIOZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
+		ZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
 			json.remove("jars");
 			return json;
 		}));
@@ -173,7 +173,7 @@ public class ModProcessor {
 				String accessWidener = info.getAccessWidener();
 
 				if (accessWidener != null) {
-					accessWidenerMap.put(info, remapAccessWidener(NIOZipUtils.unpackStrict(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
+					accessWidenerMap.put(info, remapAccessWidener(ZipUtils.unpackStrict(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
 				}
 
 				remapper.apply(outputConsumer, tagMap.get(info));
@@ -192,7 +192,7 @@ public class ModProcessor {
 			byte[] accessWidener = accessWidenerMap.get(info);
 
 			if (accessWidener != null) {
-				NIOZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidener(), accessWidener);
+				ZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidener(), accessWidener);
 			}
 
 			info.finaliseRemapping();

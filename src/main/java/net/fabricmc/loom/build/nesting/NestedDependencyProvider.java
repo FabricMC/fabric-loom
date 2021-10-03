@@ -52,7 +52,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 
 public final class NestedDependencyProvider implements NestedJarProvider {
 	final Project project;
@@ -157,7 +157,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 			File file = metaFile.file;
 
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
-			if (!NIOZipUtils.contains(file.toPath(), "fabric.mod.json")) {
+			if (!ZipUtils.contains(file.toPath(), "fabric.mod.json")) {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);
 				File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 
@@ -177,7 +177,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 					throw new RuntimeException("Failed to copy file", e);
 				}
 
-				NIOZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metaFile).getBytes());
+				ZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metaFile).getBytes());
 				fileList.add(tempFile);
 			} else {
 				// Default copy the jar right in

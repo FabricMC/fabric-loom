@@ -48,7 +48,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
@@ -103,7 +103,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 			mappings.accept(nsSwitch);
 
 			Files.deleteIfExists(mappingsFile);
-			NIOZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));
+			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));
 		}
 	}
 
@@ -116,7 +116,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 
 		byte[] data = LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(signatureFixes).getBytes(StandardCharsets.UTF_8);
 
-		NIOZipUtils.add(mappingsFile, "extras/record_signatures.json", data);
+		ZipUtils.add(mappingsFile, "extras/record_signatures.json", data);
 	}
 
 	@Override

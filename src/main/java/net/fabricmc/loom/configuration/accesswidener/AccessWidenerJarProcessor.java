@@ -42,7 +42,7 @@ import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	// Filename used to store hash of input access widener in processed jar file
@@ -87,7 +87,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	public void process(File file) {
 		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
 		applier.apply(file);
-		NIOZipUtils.add(file.toPath(), HASH_FILENAME, inputHash);
+		ZipUtils.add(file.toPath(), HASH_FILENAME, inputHash);
 	}
 
 	/**
@@ -111,7 +111,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
-		byte[] hash = NIOZipUtils.unpack(file.toPath(), HASH_FILENAME);
+		byte[] hash = ZipUtils.unpack(file.toPath(), HASH_FILENAME);
 
 		if (hash == null) {
 			return true;

@@ -37,7 +37,7 @@ import org.objectweb.asm.ClassWriter;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.stitch.util.Pair;
 
 final class AccessWidenerTransformer {
@@ -54,16 +54,16 @@ final class AccessWidenerTransformer {
 	 */
 	void apply(File jarFile) {
 		logger.lifecycle("Processing file: " + jarFile.getName());
-		NIOZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
+		ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
 	}
 
-	private List<Pair<String, NIOZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(Set<String> classes) {
+	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(Set<String> classes) {
 		return classes.stream()
 				.map(string -> Pair.of(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
 				.collect(Collectors.toList());
 	}
 
-	private NIOZipUtils.UnsafeUnaryOperator<byte[]> getTransformer(String className) {
+	private ZipUtils.UnsafeUnaryOperator<byte[]> getTransformer(String className) {
 		return input -> {
 			ClassReader reader = new ClassReader(input);
 			ClassWriter writer = new ClassWriter(0);

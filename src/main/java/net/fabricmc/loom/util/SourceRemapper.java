@@ -125,7 +125,7 @@ public class SourceRemapper {
 			// create tmp directory
 			isSrcTmp = true;
 			srcPath = Files.createTempDirectory("fabric-loom-src");
-			NIOZipUtils.unpackAll(source.toPath(), srcPath);
+			ZipUtils.unpackAll(source.toPath(), srcPath);
 		}
 
 		if (!destination.isDirectory() && destination.exists()) {

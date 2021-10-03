@@ -38,8 +38,8 @@ import com.google.gson.JsonObject;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.logging.Logger;
 
-import net.fabricmc.loom.util.NIOZipUtils;
 import net.fabricmc.loom.util.ModUtils;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.stitch.util.Pair;
 
 public class JarNester {
@@ -51,7 +51,7 @@ public class JarNester {
 
 		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar " + modJar.getName());
 
-		NIOZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
+		ZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
 			try {
 				return Pair.of("META-INF/jars/" + file.getName(), Files.readAllBytes(file.toPath()));
 			} catch (IOException e) {
@@ -59,7 +59,7 @@ public class JarNester {
 			}
 		}).collect(Collectors.toList()));
 
-		boolean didNest = NIOZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(Pair.of("fabric.mod.json", json -> {
+		boolean didNest = ZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(Pair.of("fabric.mod.json", json -> {
 			JsonArray nestedJars = json.getAsJsonArray("jars");
 
 			if (nestedJars == null || !json.has("jars")) {

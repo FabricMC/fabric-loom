@@ -26,7 +26,7 @@ package net.fabricmc.loom.test.util
 
 import groovy.transform.Immutable
 import net.fabricmc.loom.test.LoomTestConstants
-import net.fabricmc.loom.util.NIOZipUtils
+import net.fabricmc.loom.util.ZipUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Shared
@@ -192,7 +192,7 @@ trait GradleProjectTestTrait {
 
         String getOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            def bytes = NIOZipUtils.unpack(file.toPath(), entryName)
+            def bytes = ZipUtils.unpack(file.toPath(), entryName)
 
             if (bytes == null) {
                 throw new FileNotFoundException("Could not find ${entryName} in ${entryName}")
@@ -203,7 +203,7 @@ trait GradleProjectTestTrait {
 
         boolean hasOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            return NIOZipUtils.unpack(file.toPath(), entryName) != null
+            return ZipUtils.unpack(file.toPath(), entryName) != null
         }
 
         File getGeneratedSources(String mappings) {

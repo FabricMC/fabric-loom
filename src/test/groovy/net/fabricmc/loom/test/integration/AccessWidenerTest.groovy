@@ -25,7 +25,7 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.util.NIOZipUtils
+import net.fabricmc.loom.util.ZipUtils
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -54,7 +54,7 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 	def "transitive accesswidener (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(project: "transitiveAccesswidener", version: version)
-			NIOZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+			ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
 
 		when:
 			def result = gradle.run(task: "build")

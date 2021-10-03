@@ -67,9 +67,9 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.NIOZipUtils;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.TinyUtils;
@@ -188,12 +188,12 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (accessWidener != null) {
-						boolean replaced = NIOZipUtils.replace(data.output, accessWidener.getLeft(), accessWidener.getRight());
+						boolean replaced = ZipUtils.replace(data.output, accessWidener.getLeft(), accessWidener.getRight());
 						Preconditions.checkArgument(replaced, "Failed to remap access widener");
 					}
 
 					// Add data to the manifest
-					boolean transformed = NIOZipUtils.transform(data.output, Map.of(MANIFEST_PATH, bytes -> {
+					boolean transformed = ZipUtils.transform(data.output, Map.of(MANIFEST_PATH, bytes -> {
 						var manifest = new Manifest(new ByteArrayInputStream(bytes));
 						var manifestConfiguration = new JarManifestConfiguration(project);
 

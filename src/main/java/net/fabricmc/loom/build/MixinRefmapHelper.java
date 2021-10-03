@@ -46,7 +46,7 @@ import org.jetbrains.annotations.NotNull;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.extension.MixinExtension;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.stitch.util.Pair;
 
 public final class MixinRefmapHelper {
@@ -75,7 +75,7 @@ public final class MixinRefmapHelper {
 
 				String refmapName = container.refmapNameProvider().get();
 
-				return NIOZipUtils.transformJson(JsonObject.class, outputPath, mixinConfigs.map(f -> Pair.of(f, json -> {
+				return ZipUtils.transformJson(JsonObject.class, outputPath, mixinConfigs.map(f -> Pair.of(f, json -> {
 					if (!json.has("refmap")) {
 						json.addProperty("refmap", refmapName);
 					}

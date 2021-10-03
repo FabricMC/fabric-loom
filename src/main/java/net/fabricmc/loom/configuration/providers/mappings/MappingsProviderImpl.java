@@ -62,7 +62,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -130,7 +130,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		if (Files.notExists(tinyMappingsJar) || isRefreshDeps()) {
 			Files.deleteIfExists(tinyMappingsJar);
-			NIOZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
+			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
 		}
 
 		if (hasUnpickDefinitions()) {

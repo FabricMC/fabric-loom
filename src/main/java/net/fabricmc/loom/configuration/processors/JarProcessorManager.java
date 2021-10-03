@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharSource;
 
-import net.fabricmc.loom.util.NIOZipUtils;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class JarProcessorManager {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
@@ -106,7 +106,7 @@ public class JarProcessorManager {
 			jarProcessor.process(file);
 		}
 
-		boolean manifestTransformed = NIOZipUtils.transform(file.toPath(), Map.of(MANIFEST_PATH, bytes -> {
+		boolean manifestTransformed = ZipUtils.transform(file.toPath(), Map.of(MANIFEST_PATH, bytes -> {
 			Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
 			manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
 			ByteArrayOutputStream out = new ByteArrayOutputStream();

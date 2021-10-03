@@ -50,7 +50,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.stitch.util.Pair;
 import net.fabricmc.stitch.util.StitchUtil;
 
-public class NIOZipUtils {
+public class ZipUtils {
 	public static boolean contains(Path zip, String path) {
 		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), false)) {
 			Path fsPath = fs.get().getPath(path);

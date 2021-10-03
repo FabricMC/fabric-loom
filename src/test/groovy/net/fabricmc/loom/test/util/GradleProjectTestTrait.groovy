@@ -192,7 +192,7 @@ trait GradleProjectTestTrait {
 
         String getOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            def bytes = NIOZipUtils.unpack(file, entryName)
+            def bytes = NIOZipUtils.unpack(file.toPath(), entryName)
 
             if (bytes == null) {
                 throw new FileNotFoundException("Could not find ${entryName} in ${entryName}")
@@ -203,7 +203,7 @@ trait GradleProjectTestTrait {
 
         boolean hasOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            return NIOZipUtils.unpack(file, entryName) != null
+            return NIOZipUtils.unpack(file.toPath(), entryName) != null
         }
 
         File getGeneratedSources(String mappings) {

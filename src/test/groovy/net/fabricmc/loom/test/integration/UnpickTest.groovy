@@ -65,6 +65,6 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
 		File sourcesJar = gradle.getGeneratedSources(mappings)
-		return new String(NIOZipUtils.unpackStrict(sourcesJar, classname), StandardCharsets.UTF_8)
+		return new String(NIOZipUtils.unpackStrict(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 }

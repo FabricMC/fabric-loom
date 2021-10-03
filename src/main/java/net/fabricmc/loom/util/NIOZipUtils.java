@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -60,7 +61,7 @@ public class NIOZipUtils {
 	}
 
 	public static void unpackAll(Path zip, Path output) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), false)) {
+		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false)) {
 			for (Path fsPath : (Iterable<Path>) Files.walk(fs.get().getPath("/"))::iterator) {
 				Path dstPath = output.resolve(fs.get().toString());
 				Path dstPathParent = dstPath.getParent();

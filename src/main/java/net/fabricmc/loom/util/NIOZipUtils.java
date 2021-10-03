@@ -63,6 +63,7 @@ public class NIOZipUtils {
 	public static void unpackAll(Path zip, Path output) {
 		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false)) {
 			for (Path fsPath : (Iterable<Path>) Files.walk(fs.get().getPath("/"))::iterator) {
+				if (!Files.isRegularFile(fsPath)) continue;
 				Path dstPath = output.resolve(fs.get().toString());
 				Path dstPathParent = dstPath.getParent();
 				if (dstPathParent != null) Files.createDirectories(dstPathParent);
@@ -96,6 +97,29 @@ public class NIOZipUtils {
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to unpack file from zip", e);
+		}
+	}
+
+	public static void pack(Path from, Path zip) {
+		try {
+			Files.deleteIfExists(zip);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to add file to zip", e);
+		}
+
+		if (!Files.isDirectory(from)) throw new IllegalArgumentException(from + " is not a directory!");
+
+		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true)) {
+			for (Path fromPath : (Iterable<Path>) Files.walk(from)::iterator) {
+				if (!Files.isRegularFile(fromPath)) continue;
+				Path fsPath = fs.get().getPath(from.relativize(fromPath).toString());
+				Path fsPathParent = fsPath.getParent();
+				if (fsPathParent != null) Files.createDirectories(fsPathParent);
+				System.out.println(fromPath + " " + fsPath);
+				Files.copy(fromPath, fsPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to pack file to zip", e);
 		}
 	}
 

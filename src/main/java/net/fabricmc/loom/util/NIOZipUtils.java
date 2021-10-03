@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.base.MoreObjects;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -64,7 +65,7 @@ public class NIOZipUtils {
 		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false)) {
 			for (Path fsPath : (Iterable<Path>) Files.walk(fs.get().getPath("/"))::iterator) {
 				if (!Files.isRegularFile(fsPath)) continue;
-				Path dstPath = output.resolve(fs.get().toString());
+				Path dstPath = output.resolve(fs.get().getPath("/").relativize(fsPath).toString());
 				Path dstPathParent = dstPath.getParent();
 				if (dstPathParent != null) Files.createDirectories(dstPathParent);
 				Files.copy(fsPath, dstPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
@@ -115,7 +116,6 @@ public class NIOZipUtils {
 				Path fsPath = fs.get().getPath(from.relativize(fromPath).toString());
 				Path fsPathParent = fsPath.getParent();
 				if (fsPathParent != null) Files.createDirectories(fsPathParent);
-				System.out.println(fromPath + " " + fsPath);
 				Files.copy(fromPath, fsPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
 			}
 		} catch (IOException e) {
@@ -175,7 +175,7 @@ public class NIOZipUtils {
 		return transformString(zip, transforms
 				.collect(Collectors.groupingBy(Pair::getLeft,
 						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, (o, o2) -> o)))));
+								Collectors.reducing(null, MoreObjects::firstNonNull)))));
 	}
 
 	public static boolean transformString(Path zip, Map<String, UnsafeUnaryOperator<String>> transforms) {
@@ -190,7 +190,7 @@ public class NIOZipUtils {
 		return transformJson(typeOfT, zip, transforms
 				.collect(Collectors.groupingBy(Pair::getLeft,
 						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, (o, o2) -> o)))));
+								Collectors.reducing(null, MoreObjects::firstNonNull)))));
 	}
 
 	public static <T> boolean transformJson(Class<T> typeOfT, Path zip, Map<String, UnsafeUnaryOperator<T>> transforms) {
@@ -206,7 +206,7 @@ public class NIOZipUtils {
 		return transform(zip, transforms
 				.collect(Collectors.groupingBy(Pair::getLeft,
 						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, (o, o2) -> o)))));
+								Collectors.reducing(null, MoreObjects::firstNonNull)))));
 	}
 
 	public static <T> boolean transformMapped(Path zip, Map<String, UnsafeUnaryOperator<T>> transforms, Function<byte[], T> deserializer, Function<T, byte[]> serializer) {

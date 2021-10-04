@@ -103,21 +103,21 @@ public class CFRObfuscationMapping extends NullMapping {
 						continue;
 					}
 
-					String javaDoc = fieldMapping.getComment();
+					String comment = fieldMapping.getComment();
 
-					if (javaDoc != null) {
-						recordComponentDocs.add(String.format("@param %s %s", fieldMapping.getSrcName(), javaDoc));
+					if (comment != null) {
+						recordComponentDocs.add(String.format("@param %s %s", fieldMapping.getSrcName(), comment));
 					}
 				}
 			}
 
-			String javadoc = mapping.getComment();
+			String comment = mapping.getComment();
 
-			if (javadoc != null || !recordComponentDocs.isEmpty()) {
+			if (comment != null || !recordComponentDocs.isEmpty()) {
 				print("/**").newln();
 
-				if (javadoc != null) {
-					for (String line : javadoc.split("\\R")) {
+				if (comment != null) {
+					for (String line : comment.split("\\R")) {
 						print(" * ").print(line).newln();
 					}
 
@@ -148,18 +148,18 @@ public class CFRObfuscationMapping extends NullMapping {
 			MappingTree.MethodMapping mapping = classMapping.getMethod(method.getName(), method.getOriginalDescriptor());
 
 			if (mapping != null) {
-				String javadoc = mapping.getComment();
+				String comment = mapping.getComment();
 
-				if (javadoc != null) {
-					lines.addAll(Arrays.asList(javadoc.split("\\R")));
+				if (comment != null) {
+					lines.addAll(Arrays.asList(comment.split("\\R")));
 				}
-			}
 
-			for (MappingTree.MethodArgMapping arg : mapping.getArgs()) {
-				String javadoc = arg.getComment();
+				for (MappingTree.MethodArgMapping arg : mapping.getArgs()) {
+					String argComment = arg.getComment();
 
-				if (javadoc != null) {
-					lines.addAll(Arrays.asList(("@param " + arg.getSrcName() + " " + javadoc).split("\\R")));
+					if (argComment != null) {
+						lines.addAll(Arrays.asList(("@param " + arg.getSrcName() + " " + argComment).split("\\R")));
+					}
 				}
 			}
 

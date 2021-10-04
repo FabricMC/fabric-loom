@@ -26,18 +26,31 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.workers.WorkAction;
+import org.gradle.workers.WorkParameters;
+import org.gradle.workers.WorkQueue;
+import org.gradle.workers.WorkerExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
@@ -47,58 +60,131 @@ import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMapp
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.stitch.util.StitchUtil;
 
-public class GenerateSourcesTask extends AbstractLoomTask {
+public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public final LoomDecompiler decompiler;
 
-	private File inputJar;
+	@InputFile
+	public abstract RegularFileProperty getInputJar();
+
+	@Inject
+	public abstract WorkerExecutor getWorkerExecutor();
 
 	@Inject
 	public GenerateSourcesTask(LoomDecompiler decompiler) {
 		this.decompiler = decompiler;
 
+		Objects.requireNonNull(getDecompilerConstructor(this.decompiler.getClass().getCanonicalName()),
+				"%s must have a no args constructor".formatted(this.decompiler.getClass().getCanonicalName()));
+
 		getOutputs().upToDateWhen((o) -> false);
 	}
 
 	@TaskAction
-	public void doTask() throws Throwable {
-		int threads = Runtime.getRuntime().availableProcessors();
-		Collection<Path> libraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
-				.stream().map(File::toPath).collect(Collectors.toSet());
+	public void run() {
+		// Fork the JVM with 4G of ram
+		final WorkQueue workQueue = createWorkQueue();
 
-		DecompilationMetadata metadata = new DecompilationMetadata(threads, getMappings(), libraries);
-		Path runtimeJar = getExtension().getMappingsProvider().mappedProvider.getMappedJar().toPath();
-		Path sourcesDestination = getMappedJarFileWithSuffix("-sources.jar").toPath();
-		Path linemap = getMappedJarFileWithSuffix("-sources.lmap").toPath();
-		decompiler.decompile(inputJar.toPath(), sourcesDestination, linemap, metadata);
+		workQueue.submit(DecompileAction.class, params -> {
+			params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
 
-		if (Files.exists(linemap)) {
-			Path linemappedJarDestination = getMappedJarFileWithSuffix("-linemapped.jar").toPath();
+			params.getInputJar().set(getInputJar());
+			params.getRuntimeJar().set(getExtension().getMappingsProvider().mappedProvider.getMappedJar());
+			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
+			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
+			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
+			params.getMappings().set(getMappings().toFile());
 
-			// Line map the actually jar used to run the game, not the one used to decompile
-			remapLineNumbers(runtimeJar, linemap, linemappedJarDestination);
-
-			Files.copy(linemappedJarDestination, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
-			Files.delete(linemappedJarDestination);
-		}
+			params.getClassPath().plus(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
+		});
 	}
 
-	private void remapLineNumbers(Path oldCompiledJar, Path linemap, Path linemappedJarDestination) throws IOException {
-		getProject().getLogger().info(":adjusting line numbers");
-		LineNumberRemapper remapper = new LineNumberRemapper();
-		remapper.readMappings(linemap.toFile());
-
-		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(getProject(), getClass().getName());
-		progressLogger.start("Adjusting line numbers", "linemap");
-
-		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
-				StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
-			remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
+	private WorkQueue createWorkQueue() {
+		if (Boolean.getBoolean("fabric.loom.genSources.debug")) {
+			// Useful if you want to debug the decompiler, make sure you run gradle with enough memory.
+			return getWorkerExecutor().noIsolation();
 		}
 
-		progressLogger.completed();
+		return getWorkerExecutor().processIsolation(spec -> {
+			spec.forkOptions(forkOptions -> {
+				forkOptions.setMaxHeapSize("4096m");
+			});
+		});
+	}
+
+	public interface DecompileParams extends WorkParameters {
+		Property<String> getDecompilerClass();
+
+		RegularFileProperty getInputJar();
+		RegularFileProperty getRuntimeJar();
+		RegularFileProperty getSourcesDestinationJar();
+		RegularFileProperty getLinemap();
+		RegularFileProperty getLinemapJar();
+		RegularFileProperty getMappings();
+
+		ConfigurableFileCollection getClassPath();
+	}
+
+	public abstract static class DecompileAction implements WorkAction<DecompileParams> {
+		private static final Logger LOGGER = LoggerFactory.getLogger(DecompileAction.class);
+
+		@Override
+		public void execute() {
+			DecompilationMetadata metadata = new DecompilationMetadata(
+					Runtime.getRuntime().availableProcessors(),
+					getParameters().getMappings().get().getAsFile().toPath(),
+					getLibraries()
+			);
+
+			final Path inputJar = getParameters().getInputJar().get().getAsFile().toPath();
+			final Path sourcesDestinationJar = getParameters().getSourcesDestinationJar().get().getAsFile().toPath();
+			final Path linemap = getParameters().getLinemap().get().getAsFile().toPath();
+			final Path linemapJar = getParameters().getLinemapJar().get().getAsFile().toPath();
+			final Path runtimeJar = getParameters().getRuntimeJar().get().getAsFile().toPath();
+
+			final LoomDecompiler decompiler;
+
+			try {
+				decompiler = getDecompilerConstructor(getParameters().getDecompilerClass().get()).newInstance();
+			} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+				throw new RuntimeException("Failed to create decompiler", e);
+			}
+
+			decompiler.decompile(
+					inputJar,
+					sourcesDestinationJar,
+					linemap,
+					metadata
+			);
+
+			if (Files.exists(linemap)) {
+				try {
+					// Line map the actually jar used to run the game, not the one used to decompile
+					remapLineNumbers(runtimeJar, linemap, linemapJar);
+
+					Files.copy(linemapJar, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
+					Files.delete(linemapJar);
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to remap line numbers", e);
+				}
+			}
+		}
+
+		private void remapLineNumbers(Path oldCompiledJar, Path linemap, Path linemappedJarDestination) throws IOException {
+			LOGGER.info(":adjusting line numbers");
+			LineNumberRemapper remapper = new LineNumberRemapper();
+			remapper.readMappings(linemap.toFile());
+
+			try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
+					StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
+				remapper.process(LOGGER, inFs.get().getPath("/"), outFs.get().getPath("/"));
+			}
+		}
+
+		private Collection<Path> getLibraries() {
+			return getParameters().getClassPath().getFiles().stream().map(File::toPath).collect(Collectors.toSet());
+		}
 	}
 
 	private File getMappedJarFileWithSuffix(String suffix) {
@@ -140,13 +226,12 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		return baseMappings;
 	}
 
-	@InputFile
-	public File getInputJar() {
-		return inputJar;
-	}
-
-	public GenerateSourcesTask setInputJar(File inputJar) {
-		this.inputJar = inputJar;
-		return this;
+	private static Constructor<LoomDecompiler> getDecompilerConstructor(String clazz) {
+		try {
+			//noinspection unchecked
+			return (Constructor<LoomDecompiler>) Class.forName(clazz).getConstructor();
+		} catch (NoSuchMethodException | ClassNotFoundException e) {
+			return null;
+		}
 	}
 }

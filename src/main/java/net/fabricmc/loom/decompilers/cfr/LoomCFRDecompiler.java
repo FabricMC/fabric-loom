@@ -57,7 +57,7 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 
 	@Override
 	public String name() {
-		return "NewCfr";
+		return "Cfr";
 	}
 
 	@Override

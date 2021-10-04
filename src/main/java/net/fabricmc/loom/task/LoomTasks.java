@@ -142,7 +142,7 @@ public final class LoomTasks {
 				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
 				// decompiler will be passed to the constructor of GenerateSourcesTask
 				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();
-				generateSourcesTask.setInputJar(inputJar);
+				generateSourcesTask.getInputJar().set(inputJar);
 
 				if (mappingsProvider.hasUnpickDefinitions()) {
 					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));

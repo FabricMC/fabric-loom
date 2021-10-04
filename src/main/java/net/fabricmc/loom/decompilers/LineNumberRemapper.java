@@ -45,9 +45,9 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
 
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
 
 /**
  * Created by covers1624 on 18/02/19.
@@ -87,7 +87,7 @@ public class LineNumberRemapper {
 		}
 	}
 
-	public void process(ProgressLogger logger, Path input, Path output) throws IOException {
+	public void process(Logger logger, Path input, Path output) throws IOException {
 		Files.walkFileTree(input, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -109,7 +109,7 @@ public class LineNumberRemapper {
 					String idx = rel.substring(0, rel.length() - 6);
 
 					if (logger != null) {
-						logger.progress("Remapping " + idx);
+						logger.info("Remapping " + idx);
 					}
 
 					int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.

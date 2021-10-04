@@ -36,7 +36,7 @@ public final class DecompilerConfiguration {
 
 	public static void setup(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler(project));
+		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler());
 		extension.getGameDecompilers().add(new LoomCFRDecompiler());
 	}
 }

@@ -80,7 +80,7 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		Map<String, Map<Integer, Integer>> lineMap;
 
 		try (JarOutputStream outputStream = new JarOutputStream(Files.newOutputStream(sourcesDestination), manifest)) {
-			CFRSinkFactory cfrSinkFactory = new CFRSinkFactory(outputStream);
+			CFRSinkFactory cfrSinkFactory = new CFRSinkFactory(outputStream, metaData.logger());
 			SinkDumperFactory dumperFactory = new SinkDumperFactory(cfrSinkFactory, options);
 
 			Driver.doJar(state, path, AnalysisType.JAR, dumperFactory);
@@ -132,7 +132,7 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		decompiler.decompile(Paths.get("input.jar"),
 				Paths.get("output-sources.jar"),
 				lineMap,
-				new DecompilationMetadata(4, null, Collections.emptyList())
+				new DecompilationMetadata(4, null, Collections.emptyList(), null)
 		);
 
 		LineNumberRemapper lineNumberRemapper = new LineNumberRemapper();

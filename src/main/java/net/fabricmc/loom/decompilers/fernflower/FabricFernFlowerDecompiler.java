@@ -28,14 +28,12 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.jetbrains.java.decompiler.main.Fernflower;
-import org.jetbrains.java.decompiler.main.decompiler.PrintStreamLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.util.OperatingSystem;
 
 public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 	@Override
@@ -45,10 +43,6 @@ public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		if (!OperatingSystem.is64Bit()) {
-			throw new UnsupportedOperationException("FernFlower decompiler requires a 64bit JVM to run due to the memory requirements");
-		}
-
 		Map<String, Object> options = Map.of(
 				IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1",
 				IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
@@ -60,7 +54,7 @@ public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 		);
 
 		IResultSaver saver = new ThreadSafeResultSaver(sourcesDestination::toFile, linemapDestination::toFile);
-		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, new PrintStreamLogger(System.out));
+		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, new FernflowerLogger(metaData.logger()));
 
 		for (Path library : metaData.libraries()) {
 			ff.addLibrary(library.toFile());

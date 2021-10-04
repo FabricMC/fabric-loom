@@ -32,11 +32,11 @@ import org.gradle.api.Project;
 /**
  * Wrapper to ProgressLogger internal API.
  */
-public class ProgressLogger {
+public class ProgressLoggerHelper {
 	private final Object logger;
 	private final Method getDescription, setDescription, getShortDescription, setShortDescription, getLoggingHeader, setLoggingHeader, start, started, startedArg, progress, completed, completedArg;
 
-	private ProgressLogger(Object logger) {
+	private ProgressLoggerHelper(Object logger) {
 		this.logger = logger;
 		this.getDescription = getMethod("getDescription");
 		this.setDescription = getMethod("setDescription", String.class);
@@ -102,17 +102,17 @@ public class ProgressLogger {
 	 * @param category The logger category
 	 * @return In any case a progress logger
 	 */
-	public static ProgressLogger getProgressFactory(Project project, String category) {
+	public static ProgressLoggerHelper getProgressFactory(Project project, String category) {
 		try {
 			Method getServices = project.getClass().getMethod("getServices");
 			Object serviceFactory = getServices.invoke(project);
 			Method get = serviceFactory.getClass().getMethod("get", Class.class);
 			Object progressLoggerFactory = get.invoke(serviceFactory, getFactoryClass());
 			Method newOperation = progressLoggerFactory.getClass().getMethod("newOperation", String.class);
-			return new ProgressLogger(newOperation.invoke(progressLoggerFactory, category));
+			return new ProgressLoggerHelper(newOperation.invoke(progressLoggerFactory, category));
 		} catch (Exception e) {
 			project.getLogger().error("Unable to get progress logger. Download progress will not be displayed.");
-			return new ProgressLogger(null);
+			return new ProgressLoggerHelper(null);
 		}
 	}
 
@@ -132,7 +132,7 @@ public class ProgressLogger {
 	 *
 	 * @param description The description.
 	 */
-	public ProgressLogger setDescription(String description) {
+	public ProgressLoggerHelper setDescription(String description) {
 		invoke(setDescription, description);
 		return this;
 	}
@@ -153,7 +153,7 @@ public class ProgressLogger {
 	 *
 	 * @param description The short description.
 	 */
-	public ProgressLogger setShortDescription(String description) {
+	public ProgressLoggerHelper setShortDescription(String description) {
 		invoke(setShortDescription, description);
 		return this;
 	}
@@ -176,7 +176,7 @@ public class ProgressLogger {
 	 *
 	 * @param header The header. May be empty or null.
 	 */
-	public ProgressLogger setLoggingHeader(String header) {
+	public ProgressLoggerHelper setLoggingHeader(String header) {
 		invoke(setLoggingHeader, header);
 		return this;
 	}
@@ -186,7 +186,7 @@ public class ProgressLogger {
 	 *
 	 * @return this logger instance
 	 */
-	public ProgressLogger start(String description, String shortDescription) {
+	public ProgressLoggerHelper start(String description, String shortDescription) {
 		invoke(start, description, shortDescription);
 		return this;
 	}

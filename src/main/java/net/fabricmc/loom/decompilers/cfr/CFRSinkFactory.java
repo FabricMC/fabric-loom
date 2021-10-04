@@ -25,6 +25,7 @@
 package net.fabricmc.loom.decompilers.cfr;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -43,15 +44,19 @@ import org.benf.cfr.reader.api.SinkReturns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.util.IOStringConsumer;
+
 public class CFRSinkFactory implements OutputSinkFactory {
-	private static final Logger LOGGER = LoggerFactory.getLogger(CFRSinkFactory.class);
+	private static final Logger ERROR_LOGGER = LoggerFactory.getLogger(CFRSinkFactory.class);
 
 	private final JarOutputStream outputStream;
+	private final IOStringConsumer logger;
 	private final Set<String> addedDirectories = new HashSet<>();
 	private final Map<String, Map<Integer, Integer>> lineMap = new TreeMap<>();
 
-	public CFRSinkFactory(JarOutputStream outputStream) {
+	public CFRSinkFactory(JarOutputStream outputStream, IOStringConsumer logger) {
 		this.outputStream = outputStream;
+		this.logger = logger;
 	}
 
 	@Override
@@ -67,10 +72,10 @@ public class CFRSinkFactory implements OutputSinkFactory {
 	@Override
 	public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
 		return switch (sinkType) {
-		case PROGRESS -> (p) -> LOGGER.debug((String) p);
+		case PROGRESS -> (p) -> loggerSink();
 		case JAVA -> (Sink<T>) decompiledSink();
 		case LINENUMBER -> (Sink<T>) lineNumberMappingSink();
-		case EXCEPTION -> (e) -> LOGGER.error((String) e);
+		case EXCEPTION -> (e) -> ERROR_LOGGER.error((String) e);
 		default -> null;
 		};
 	}
@@ -83,7 +88,7 @@ public class CFRSinkFactory implements OutputSinkFactory {
 
 			byte[] data = sinkable.getJava().getBytes(Charsets.UTF_8);
 
-			LOGGER.info(filename);
+			ERROR_LOGGER.info(filename);
 			writeToJar(filename, data);
 		};
 	}
@@ -106,6 +111,16 @@ public class CFRSinkFactory implements OutputSinkFactory {
 				if (srcLineNumber == null || dstLineNumber == null) continue;
 
 				lineMap.computeIfAbsent(className, (c) -> new TreeMap<>()).put(srcLineNumber, dstLineNumber);
+			}
+		};
+	}
+
+	private Sink<String> loggerSink() {
+		return sinkable -> {
+			try {
+				logger.accept(sinkable);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to write log message", e);
 			}
 		};
 	}

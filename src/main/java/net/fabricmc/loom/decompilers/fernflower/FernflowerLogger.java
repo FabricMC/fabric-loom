@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,62 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.decompilers;
+package net.fabricmc.loom.decompilers.fernflower;
 
-import java.nio.file.Path;
-import java.util.Collection;
+import java.io.IOException;
+
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 
 import net.fabricmc.loom.util.IOStringConsumer;
 
-public record DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, IOStringConsumer logger) {
+public class FernflowerLogger extends IFernflowerLogger {
+	private final IOStringConsumer logger;
+
+	public FernflowerLogger(IOStringConsumer logger) {
+		this.logger = logger;
+	}
+
+	@Override
+	public void writeMessage(String message, Severity severity) {
+		if (message.contains("Inconsistent inner class entries for")) return;
+		System.err.println(message);
+	}
+
+	@Override
+	public void writeMessage(String message, Severity severity, Throwable t) {
+		writeMessage(message, severity);
+	}
+
+	private void write(String data) {
+		try {
+			logger.accept(data);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to log", e);
+		}
+	}
+
+	@Override
+	public void startReadingClass(String className) {
+		write("Decompiling " + className);
+	}
+
+	@Override
+	public void startClass(String className) {
+		write("Decompiling " + className);
+	}
+
+	@Override
+	public void startWriteClass(String className) {
+		// Nope
+	}
+
+	@Override
+	public void startMethod(String methodName) {
+		// Nope
+	}
+
+	@Override
+	public void endMethod() {
+		// Nope
+	}
 }

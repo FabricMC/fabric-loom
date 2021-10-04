@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,47 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.decompilers;
+package net.fabricmc.loom.util.ipc;
 
+import java.io.IOException;
+import java.net.UnixDomainSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collection;
 
 import net.fabricmc.loom.util.IOStringConsumer;
 
-public record DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, IOStringConsumer logger) {
+public final class IPCClient implements IOStringConsumer, AutoCloseable {
+	private final Path path;
+	private final SocketChannel socketChannel;
+
+	public IPCClient(Path path) throws IOException {
+		this.path = path;
+		socketChannel = setupChannel();
+	}
+
+	private SocketChannel setupChannel() throws IOException {
+		final UnixDomainSocketAddress address = UnixDomainSocketAddress.of(path);
+		return SocketChannel.open(address);
+	}
+
+	@Override
+	public void accept(String s) throws IOException {
+		synchronized (socketChannel) {
+			if (!socketChannel.isOpen()) {
+				throw new IOException("Cannot write to closed socket");
+			}
+
+			ByteBuffer buf = ByteBuffer.wrap((s + "\n").getBytes(StandardCharsets.UTF_8));
+			socketChannel.write(buf);
+		}
+	}
+
+	@Override
+	public void close() throws Exception {
+		synchronized (socketChannel) {
+			socketChannel.close();
+		}
+	}
 }

@@ -27,9 +27,11 @@ package net.fabricmc.loom.decompilers.cfr;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
@@ -45,6 +47,7 @@ import org.benf.cfr.reader.util.output.SinkDumperFactory;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.decompilers.LineNumberRemapper;
 
 public class LoomCFRDecompiler implements LoomDecompiler {
 	private static final Map<String, String> DECOMPILE_OPTIONS = Map.of(
@@ -66,7 +69,10 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		classFileSource.informAnalysisRelativePathDetail(null, null);
 
 		DCCommonState state = new DCCommonState(options, classFileSource);
-		state = new DCCommonState(state, new CFRObfuscationMapping(metaData.javaDocs()));
+
+		if (metaData.javaDocs() != null) {
+			state = new DCCommonState(state, new CFRObfuscationMapping(metaData.javaDocs()));
+		}
 
 		final Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
@@ -88,9 +94,10 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 	}
 
 	private void writeLineMap(Path output, Map<String, Map<Integer, Integer>> lineMap) {
-		try (Writer writer = Files.newBufferedWriter(output, StandardOpenOption.CREATE)) {
+		try (Writer writer = Files.newBufferedWriter(output, StandardCharsets.UTF_8)) {
 			for (Map.Entry<String, Map<Integer, Integer>> classEntry : lineMap.entrySet()) {
-				final String name = classEntry.getKey();
+				final String name = classEntry.getKey().replace(".", "/");
+
 				final Map<Integer, Integer> mapping = classEntry.getValue();
 
 				int maxLine = 0;
@@ -101,7 +108,7 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 					final int src = mappingEntry.getKey();
 					final int dst = mappingEntry.getValue();
 
-					maxLine = Math.max(maxLine, dst);
+					maxLine = Math.max(maxLine, src);
 					maxLineDest = Math.max(maxLineDest, dst);
 
 					builder.append("\t").append(src).append("\t").append(dst).append("\n");
@@ -114,5 +121,22 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to write line map", e);
 		}
+	}
+
+	// A test main class to make it quicker/easier to debug with minimal jars
+	public static void main(String[] args) throws IOException {
+		LoomCFRDecompiler decompiler = new LoomCFRDecompiler();
+
+		Path lineMap = Paths.get("linemap.txt");
+
+		decompiler.decompile(Paths.get("input.jar"),
+				Paths.get("output-sources.jar"),
+				lineMap,
+				new DecompilationMetadata(4, null, Collections.emptyList())
+		);
+
+		LineNumberRemapper lineNumberRemapper = new LineNumberRemapper();
+		lineNumberRemapper.readMappings(lineMap.toFile());
+		lineNumberRemapper.process(null, Paths.get("input.jar"), Paths.get("output.jar"));
 	}
 }

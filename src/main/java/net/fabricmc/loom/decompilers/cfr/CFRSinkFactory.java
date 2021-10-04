@@ -28,12 +28,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
@@ -48,7 +48,7 @@ public class CFRSinkFactory implements OutputSinkFactory {
 
 	private final JarOutputStream outputStream;
 	private final Set<String> addedDirectories = new HashSet<>();
-	private final Map<String, Map<Integer, Integer>> lineMap = new HashMap<>();
+	private final Map<String, Map<Integer, Integer>> lineMap = new TreeMap<>();
 
 	public CFRSinkFactory(JarOutputStream outputStream) {
 		this.outputStream = outputStream;
@@ -97,14 +97,15 @@ public class CFRSinkFactory implements OutputSinkFactory {
 			if (classFileMappings == null || mappings == null) return;
 
 			for (Map.Entry<Integer, Integer> entry : mappings.entrySet()) {
-				// Line mapping in the original jar
-				Integer srcLineNumber = entry.getValue();
 				// New line number
-				Integer dstLineNumber = classFileMappings.get(entry.getKey());
+				Integer dstLineNumber = entry.getValue();
+
+				// Line mapping in the original jar
+				Integer srcLineNumber = classFileMappings.get(entry.getKey());
 
 				if (srcLineNumber == null || dstLineNumber == null) continue;
 
-				lineMap.computeIfAbsent(className, (c) -> new HashMap<>()).put(srcLineNumber, dstLineNumber);
+				lineMap.computeIfAbsent(className, (c) -> new TreeMap<>()).put(srcLineNumber, dstLineNumber);
 			}
 		};
 	}

@@ -128,9 +128,9 @@ public final class LoomTasks {
 				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
 
 				tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-					unpickJarTask.setUnpickDefinition(mappingsProvider.getUnpickDefinitionsFile());
-					unpickJarTask.setInputJar(mappingsProvider.mappedProvider.getMappedJar());
-					unpickJarTask.setOutputJar(outputJar);
+					unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
+					unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
+					unpickJarTask.getOutputJar().set(outputJar);
 				});
 
 				inputJar = outputJar;

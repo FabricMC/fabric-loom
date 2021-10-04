@@ -49,6 +49,7 @@ import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
@@ -91,8 +92,12 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
-		// Fork the JVM with 4G of ram
-		final WorkQueue workQueue = createWorkQueue();
+		if (!OperatingSystem.isUnixDomainSocketsSupported()) {
+			getProject().getLogger().warn("Decompile worker logging disabled as Unix Domain Sockets is not supported on your operating system.");
+
+			doWork(null);
+			return;
+		}
 
 		// Set up the IPC path to get the log output back from the forked JVM
 		final Path ipcPath = Files.createTempFile("loom", "ipc");
@@ -100,25 +105,36 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompiler.name(), "Decompiling minecraft sources");
 				IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
-			workQueue.submit(DecompileAction.class, params -> {
-				params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
-
-				params.getInputJar().set(getInputJar());
-				params.getRuntimeJar().set(getExtension().getMappingsProvider().mappedProvider.getMappedJar());
-				params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
-				params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
-				params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
-				params.getMappings().set(getMappings().toFile());
-
-				params.getIPCPath().set(ipcPath.toFile());
-
-				params.getClassPath().plus(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
-			});
-
-			workQueue.await();
+			doWork(ipcPath);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
+		} finally {
+			Files.deleteIfExists(ipcPath);
 		}
+	}
+
+	private void doWork(@Nullable Path ipcPath) {
+		// Fork the JVM with 4G of ram
+		final WorkQueue workQueue = createWorkQueue();
+
+		workQueue.submit(DecompileAction.class, params -> {
+			params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
+
+			params.getInputJar().set(getInputJar());
+			params.getRuntimeJar().set(getExtension().getMappingsProvider().mappedProvider.getMappedJar());
+			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
+			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
+			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
+			params.getMappings().set(getMappings().toFile());
+
+			if (ipcPath != null) {
+				params.getIPCPath().set(ipcPath.toFile());
+			}
+
+			params.getClassPath().plus(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
+		});
+
+		workQueue.await();
 	}
 
 	private WorkQueue createWorkQueue() {
@@ -152,6 +168,22 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public abstract static class DecompileAction implements WorkAction<DecompileParams> {
 		@Override
 		public void execute() {
+			if (!getParameters().getIPCPath().isPresent() || !OperatingSystem.isUnixDomainSocketsSupported()) {
+				// Does not support unix domain sockets, print to sout.
+				doDecompile(System.out::println);
+				return;
+			}
+
+			final Path ipcPath = getParameters().getIPCPath().get().getAsFile().toPath();
+
+			try (IPCClient ipcClient = new IPCClient(ipcPath)) {
+				doDecompile(new ThreadedSimpleProgressLogger(ipcClient));
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to setup IPC Client", e);
+			}
+		}
+
+		private void doDecompile(IOStringConsumer logger) {
 			final Path inputJar = getParameters().getInputJar().get().getAsFile().toPath();
 			final Path sourcesDestinationJar = getParameters().getSourcesDestinationJar().get().getAsFile().toPath();
 			final Path linemap = getParameters().getLinemap().get().getAsFile().toPath();
@@ -166,37 +198,37 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				throw new RuntimeException("Failed to create decompiler", e);
 			}
 
-			try (IPCClient ipcClient = new IPCClient(getParameters().getIPCPath().get().getAsFile().toPath())) {
-				DecompilationMetadata metadata = new DecompilationMetadata(
-						Runtime.getRuntime().availableProcessors(),
-						getParameters().getMappings().get().getAsFile().toPath(),
-						getLibraries(),
-						new ThreadedSimpleProgressLogger(ipcClient)
-				);
+			DecompilationMetadata metadata = new DecompilationMetadata(
+					Runtime.getRuntime().availableProcessors(),
+					getParameters().getMappings().get().getAsFile().toPath(),
+					getLibraries(),
+					logger
+			);
 
-				decompiler.decompile(
-						inputJar,
-						sourcesDestinationJar,
-						linemap,
-						metadata
-				);
+			decompiler.decompile(
+					inputJar,
+					sourcesDestinationJar,
+					linemap,
+					metadata
+			);
 
-				// Close the decompile loggers
+			// Close the decompile loggers
+			try {
 				metadata.logger().accept(ThreadedProgressLoggerConsumer.CLOSE_LOGGERS);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to close loggers", e);
+			}
 
-				if (Files.exists(linemap)) {
-					try {
-						// Line map the actually jar used to run the game, not the one used to decompile
-						remapLineNumbers(metadata.logger(), runtimeJar, linemap, linemapJar);
+			if (Files.exists(linemap)) {
+				try {
+					// Line map the actually jar used to run the game, not the one used to decompile
+					remapLineNumbers(metadata.logger(), runtimeJar, linemap, linemapJar);
 
-						Files.copy(linemapJar, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
-						Files.delete(linemapJar);
-					} catch (IOException e) {
-						throw new UncheckedIOException("Failed to remap line numbers", e);
-					}
+					Files.copy(linemapJar, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
+					Files.delete(linemapJar);
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to remap line numbers", e);
 				}
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to setup IPC Client", e);
 			}
 		}
 

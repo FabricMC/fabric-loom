@@ -25,7 +25,6 @@
 package net.fabricmc.loom.decompilers.cfr;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -62,7 +61,6 @@ public class CFRSinkFactory implements OutputSinkFactory {
 	@Override
 	public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> available) {
 		return switch (sinkType) {
-		case PROGRESS -> Collections.singletonList(SinkClass.STRING);
 		case JAVA -> Collections.singletonList(SinkClass.DECOMPILED);
 		case LINENUMBER -> Collections.singletonList(SinkClass.LINE_NUMBER_MAPPING);
 		default -> Collections.emptyList();
@@ -72,7 +70,6 @@ public class CFRSinkFactory implements OutputSinkFactory {
 	@Override
 	public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
 		return switch (sinkType) {
-		case PROGRESS -> (p) -> loggerSink();
 		case JAVA -> (Sink<T>) decompiledSink();
 		case LINENUMBER -> (Sink<T>) lineNumberMappingSink();
 		case EXCEPTION -> (e) -> ERROR_LOGGER.error((String) e);
@@ -88,7 +85,6 @@ public class CFRSinkFactory implements OutputSinkFactory {
 
 			byte[] data = sinkable.getJava().getBytes(Charsets.UTF_8);
 
-			ERROR_LOGGER.info(filename);
 			writeToJar(filename, data);
 		};
 	}
@@ -111,16 +107,6 @@ public class CFRSinkFactory implements OutputSinkFactory {
 				if (srcLineNumber == null || dstLineNumber == null) continue;
 
 				lineMap.computeIfAbsent(className, (c) -> new TreeMap<>()).put(srcLineNumber, dstLineNumber);
-			}
-		};
-	}
-
-	private Sink<String> loggerSink() {
-		return sinkable -> {
-			try {
-				logger.accept(sinkable);
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to write log message", e);
 			}
 		};
 	}
@@ -150,6 +136,7 @@ public class CFRSinkFactory implements OutputSinkFactory {
 		entry.setSize(data.length);
 
 		try {
+			logger.accept("Writing: " + filename);
 			outputStream.putNextEntry(entry);
 			outputStream.write(data);
 			outputStream.closeEntry();

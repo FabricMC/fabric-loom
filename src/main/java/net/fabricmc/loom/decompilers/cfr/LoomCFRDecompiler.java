@@ -52,7 +52,8 @@ import net.fabricmc.loom.decompilers.LineNumberRemapper;
 public class LoomCFRDecompiler implements LoomDecompiler {
 	private static final Map<String, String> DECOMPILE_OPTIONS = Map.of(
 			"renameillegalidents", "true",
-			"trackbytecodeloc", "true"
+			"trackbytecodeloc", "true",
+			"comments", "false"
 	);
 
 	@Override
@@ -66,6 +67,11 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		final Options options = OptionsImpl.getFactory().create(DECOMPILE_OPTIONS);
 
 		ClassFileSourceImpl classFileSource = new ClassFileSourceImpl(options);
+
+		for (Path library : metaData.libraries()) {
+			classFileSource.addJarContent(library.toAbsolutePath().toString(), AnalysisType.JAR);
+		}
+
 		classFileSource.informAnalysisRelativePathDetail(null, null);
 
 		DCCommonState state = new DCCommonState(options, classFileSource);

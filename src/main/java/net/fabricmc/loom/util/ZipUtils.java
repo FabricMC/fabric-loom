@@ -38,12 +38,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.base.MoreObjects;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -62,8 +61,12 @@ public class ZipUtils {
 	}
 
 	public static void unpackAll(Path zip, Path output) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false)) {
-			for (Path fsPath : (Iterable<Path>) Files.walk(fs.get().getPath("/"))::iterator) {
+		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false);
+				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
+			Iterator<Path> iterator = walk.iterator();
+
+			while (iterator.hasNext()) {
+				Path fsPath = iterator.next();
 				if (!Files.isRegularFile(fsPath)) continue;
 				Path dstPath = output.resolve(fs.get().getPath("/").relativize(fsPath).toString());
 				Path dstPathParent = dstPath.getParent();
@@ -110,8 +113,12 @@ public class ZipUtils {
 
 		if (!Files.isDirectory(from)) throw new IllegalArgumentException(from + " is not a directory!");
 
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true)) {
-			for (Path fromPath : (Iterable<Path>) Files.walk(from)::iterator) {
+		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true);
+				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
+			Iterator<Path> iterator = walk.iterator();
+
+			while (iterator.hasNext()) {
+				Path fromPath = iterator.next();
 				if (!Files.isRegularFile(fromPath)) continue;
 				Path fsPath = fs.get().getPath(from.relativize(fromPath).toString());
 				Path fsPathParent = fsPath.getParent();
@@ -172,10 +179,7 @@ public class ZipUtils {
 	}
 
 	public static boolean transformString(Path zip, Stream<Pair<String, UnsafeUnaryOperator<String>>> transforms) {
-		return transformString(zip, transforms
-				.collect(Collectors.groupingBy(Pair::getLeft,
-						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, MoreObjects::firstNonNull)))));
+		return transformString(zip, collectTransformersStream(transforms));
 	}
 
 	public static boolean transformString(Path zip, Map<String, UnsafeUnaryOperator<String>> transforms) {
@@ -187,10 +191,7 @@ public class ZipUtils {
 	}
 
 	public static <T> boolean transformJson(Class<T> typeOfT, Path zip, Stream<Pair<String, UnsafeUnaryOperator<T>>> transforms) {
-		return transformJson(typeOfT, zip, transforms
-				.collect(Collectors.groupingBy(Pair::getLeft,
-						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, MoreObjects::firstNonNull)))));
+		return transformJson(typeOfT, zip, collectTransformersStream(transforms));
 	}
 
 	public static <T> boolean transformJson(Class<T> typeOfT, Path zip, Map<String, UnsafeUnaryOperator<T>> transforms) {
@@ -203,10 +204,7 @@ public class ZipUtils {
 	}
 
 	public static boolean transform(Path zip, Stream<Pair<String, UnsafeUnaryOperator<byte[]>>> transforms) {
-		return transform(zip, transforms
-				.collect(Collectors.groupingBy(Pair::getLeft,
-						Collectors.mapping(Pair::getRight,
-								Collectors.reducing(null, MoreObjects::firstNonNull)))));
+		return transform(zip, collectTransformersStream(transforms));
 	}
 
 	public static <T> boolean transformMapped(Path zip, Map<String, UnsafeUnaryOperator<T>> transforms, Function<byte[], T> deserializer, Function<T, byte[]> serializer) {
@@ -250,5 +248,17 @@ public class ZipUtils {
 	@FunctionalInterface
 	public interface UnsafeFunction<T, R> {
 		R apply(T arg) throws IOException;
+	}
+
+	private static <T> Map<String, UnsafeUnaryOperator<T>> collectTransformersStream(Stream<Pair<String, UnsafeUnaryOperator<T>>> transforms) {
+		Map<String, UnsafeUnaryOperator<T>> map = new HashMap<>();
+		Iterator<Pair<String, UnsafeUnaryOperator<T>>> iterator = transforms.iterator();
+
+		while (iterator.hasNext()) {
+			Pair<String, UnsafeUnaryOperator<T>> next = iterator.next();
+			map.put(next.getLeft(), next.getRight());
+		}
+
+		return map;
 	}
 }

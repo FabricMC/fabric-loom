@@ -5,12 +5,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [7.0.1]
-        java: [jdk16]
-        jvm: [hotspot]
+        version: [7.0.0-jdk16, 7.2-jdk17]
     runs-on: ubuntu-20.04
     container:
-      image: gradle:${{ matrix.gradle }}-${{ matrix.java }}
+      image: gradle:${{ matrix.version }}
       options: --user root
     steps:
       - uses: actions/checkout@v2
@@ -43,12 +41,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [jdk16]
+        version: [7.0.0-jdk16, 7.2-jdk17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:7.0.0-${{ matrix.java }}
+      image: gradle:${{ matrix.version }}
       options: --user root
 
     steps:

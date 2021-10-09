@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -46,11 +47,11 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.process.internal.health.memory.MemoryManager;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
+import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -65,6 +66,7 @@ import net.fabricmc.loom.util.IOStringConsumer;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.gradle.ThreadedProgressLoggerConsumer;
 import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
+import net.fabricmc.loom.util.gradle.WorkerDaemonClientsManagerHelper;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
 import net.fabricmc.stitch.util.StitchUtil;
@@ -85,7 +87,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public abstract WorkerExecutor getWorkerExecutor();
 
 	@Inject
-	public abstract MemoryManager getMemoryManager();
+	public abstract WorkerDaemonClientsManager getWorkerDaemonClientsManager();
 
 	@Inject
 	public GenerateSourcesTask(LoomDecompiler decompiler) {
@@ -126,7 +128,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void doWork(@Nullable Path ipcPath) {
-		final WorkQueue workQueue = createWorkQueue();
+		final String jvmMarkerValue = UUID.randomUUID().toString();
+		final WorkQueue workQueue = createWorkQueue(jvmMarkerValue);
 
 		workQueue.submit(DecompileAction.class, params -> {
 			params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
@@ -148,12 +151,15 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		workQueue.await();
 
 		if (useProcessIsolation()) {
-			// Try to free as much memory as possible, should help shutdown the JVM we just created.
-			getMemoryManager().requestFreeMemory(0);
+			boolean stopped = WorkerDaemonClientsManagerHelper.stopIdleJVM(getWorkerDaemonClientsManager(), jvmMarkerValue);
+
+			if (!stopped) {
+				throw new RuntimeException("Failed to stop decompile worker JVM");
+			}
 		}
 	}
 
-	private WorkQueue createWorkQueue() {
+	private WorkQueue createWorkQueue(String jvmMarkerValue) {
 		if (!useProcessIsolation()) {
 			return getWorkerExecutor().noIsolation();
 		}
@@ -161,6 +167,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
 				forkOptions.setMaxHeapSize("%dm".formatted(getMaxMemory().get()));
+				forkOptions.systemProperty(WorkerDaemonClientsManagerHelper.MARKER_PROP, jvmMarkerValue);
 			});
 		});
 	}

@@ -25,7 +25,6 @@
 package net.fabricmc.loom.util;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -47,11 +46,10 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.stitch.util.Pair;
-import net.fabricmc.stitch.util.StitchUtil;
 
 public class ZipUtils {
 	public static boolean contains(Path zip, String path) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), false)) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
 			Path fsPath = fs.get().getPath(path);
 
 			return Files.exists(fsPath);
@@ -61,7 +59,7 @@ public class ZipUtils {
 	}
 
 	public static void unpackAll(Path zip, Path output) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(new File(zip.toFile().getAbsolutePath()), false);
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false);
 				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
 			Iterator<Path> iterator = walk.iterator();
 
@@ -91,7 +89,7 @@ public class ZipUtils {
 	}
 
 	public static byte[] unpackStrict(Path zip, String path) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), false)) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
 			Path fsPath = fs.get().getPath(path);
 
 			if (Files.exists(fsPath)) {
@@ -113,7 +111,7 @@ public class ZipUtils {
 
 		if (!Files.isDirectory(from)) throw new IllegalArgumentException(from + " is not a directory!");
 
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true);
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, true);
 				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
 			Iterator<Path> iterator = walk.iterator();
 
@@ -135,7 +133,7 @@ public class ZipUtils {
 	}
 
 	public static void add(Path zip, Iterable<Pair<String, byte[]>> files) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true)) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, true)) {
 			for (Pair<String, byte[]> pair : files) {
 				Path fsPath = fs.get().getPath(pair.getLeft());
 				Path fsPathParent = fsPath.getParent();
@@ -161,7 +159,7 @@ public class ZipUtils {
 	}
 
 	public static void replaceStrict(Path zip, String path, byte[] bytes) {
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), true)) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, true)) {
 			Path fsPath = fs.get().getPath(path);
 
 			if (Files.exists(fsPath)) {
@@ -224,7 +222,7 @@ public class ZipUtils {
 	public static boolean transform(Path zip, Map<String, UnsafeUnaryOperator<byte[]>> transforms) {
 		int replacedCount = 0;
 
-		try (StitchUtil.FileSystemDelegate fs = StitchUtil.getJarFileSystem(zip.toFile(), false)) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
 			for (Map.Entry<String, UnsafeUnaryOperator<byte[]>> entry : transforms.entrySet()) {
 				Path fsPath = fs.get().getPath(entry.getKey());
 

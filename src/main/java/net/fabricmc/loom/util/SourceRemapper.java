@@ -45,7 +45,6 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
 	private final Project project;
@@ -134,7 +133,7 @@ public class SourceRemapper {
 			}
 		}
 
-		StitchUtil.FileSystemDelegate dstFs = destination.isDirectory() ? null : StitchUtil.getJarFileSystem(destination, true);
+		FileSystemUtil.Delegate dstFs = destination.isDirectory() ? null : FileSystemUtil.getJarFileSystem(destination, true);
 		Path dstPath = dstFs != null ? dstFs.get().getPath("/") : destination.toPath();
 
 		try {

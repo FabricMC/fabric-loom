@@ -47,8 +47,8 @@ import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMapp
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.gradle.ProgressLogger;
-import net.fabricmc.stitch.util.StitchUtil;
 
 public class GenerateSourcesTask extends AbstractLoomTask {
 	public final LoomDecompiler decompiler;
@@ -93,8 +93,8 @@ public class GenerateSourcesTask extends AbstractLoomTask {
 		ProgressLogger progressLogger = ProgressLogger.getProgressFactory(getProject(), getClass().getName());
 		progressLogger.start("Adjusting line numbers", "linemap");
 
-		try (StitchUtil.FileSystemDelegate inFs = StitchUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
-				StitchUtil.FileSystemDelegate outFs = StitchUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
+		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(oldCompiledJar, true);
+				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(linemappedJarDestination, true)) {
 			remapper.process(progressLogger, inFs.get().getPath("/"), outFs.get().getPath("/"));
 		}
 

@@ -43,8 +43,10 @@ import javax.inject.Inject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.internal.health.memory.MemoryManager;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
@@ -73,8 +75,17 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@InputFile
 	public abstract RegularFileProperty getInputJar();
 
+	/**
+	 * Max memory for forked JVM in megabytes.
+	 */
+	@Input
+	public abstract Property<Long> getMaxMemory();
+
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
+
+	@Inject
+	public abstract MemoryManager getMemoryManager();
 
 	@Inject
 	public GenerateSourcesTask(LoomDecompiler decompiler) {
@@ -84,6 +95,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				"%s must have a no args constructor".formatted(this.decompiler.getClass().getCanonicalName()));
 
 		getOutputs().upToDateWhen((o) -> false);
+		getMaxMemory().convention(4096L).finalizeValueOnRead();
 	}
 
 	@TaskAction
@@ -134,20 +146,28 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		});
 
 		workQueue.await();
+
+		if (useProcessIsolation()) {
+			// Try to free as much memory as possible, should help shutdown the JVM we just created.
+			getMemoryManager().requestFreeMemory(0);
+		}
 	}
 
 	private WorkQueue createWorkQueue() {
-		if (Boolean.getBoolean("fabric.loom.genSources.debug")) {
-			// Useful if you want to debug the decompiler, make sure you run gradle with enough memory.
+		if (!useProcessIsolation()) {
 			return getWorkerExecutor().noIsolation();
 		}
 
-		// Fork the JVM with 4G of ram
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
-				forkOptions.setMaxHeapSize("4096m");
+				forkOptions.setMaxHeapSize("%dm".formatted(getMaxMemory().get()));
 			});
 		});
+	}
+
+	private boolean useProcessIsolation() {
+		// Useful if you want to debug the decompiler, make sure you run gradle with enough memory.
+		return !Boolean.getBoolean("fabric.loom.genSources.debug");
 	}
 
 	public interface DecompileParams extends WorkParameters {

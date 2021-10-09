@@ -33,6 +33,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,11 +44,19 @@ public class IPCServer implements AutoCloseable {
 	private final Path path;
 	private final Consumer<String> consumer;
 
+	private final CountDownLatch startupLock = new CountDownLatch(1);
+
 	public IPCServer(Path path, Consumer<String> consumer) {
 		this.path = path;
 		this.consumer = consumer;
 
 		loggerReceiverService.submit(this::run);
+
+		try {
+			startupLock.await(10, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException("Timed out waiting for IPC server thread to start", e);
+		}
 	}
 
 	public void run() {
@@ -56,9 +65,10 @@ public class IPCServer implements AutoCloseable {
 		try (ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX)) {
 			serverChannel.bind(address);
 
-			try (SocketChannel clientChannel = serverChannel.accept()) {
-				Scanner scanner = new Scanner(clientChannel, StandardCharsets.UTF_8);
+			startupLock.countDown();
 
+			try (SocketChannel clientChannel = serverChannel.accept();
+					Scanner scanner = new Scanner(clientChannel, StandardCharsets.UTF_8)) {
 				while (!Thread.currentThread().isInterrupted()) {
 					if (scanner.hasNextLine()) {
 						this.consumer.accept(scanner.nextLine());
@@ -72,7 +82,7 @@ public class IPCServer implements AutoCloseable {
 
 	@Override
 	public void close() throws InterruptedException {
-		loggerReceiverService.shutdown();
+		loggerReceiverService.shutdownNow();
 		loggerReceiverService.awaitTermination(10, TimeUnit.SECONDS);
 	}
 }

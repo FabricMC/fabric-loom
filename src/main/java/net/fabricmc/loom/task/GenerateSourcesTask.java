@@ -114,7 +114,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void doWork(@Nullable Path ipcPath) {
-		// Fork the JVM with 4G of ram
 		final WorkQueue workQueue = createWorkQueue();
 
 		workQueue.submit(DecompileAction.class, params -> {
@@ -131,7 +130,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				params.getIPCPath().set(ipcPath.toFile());
 			}
 
-			params.getClassPath().plus(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
+			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
 		});
 
 		workQueue.await();
@@ -143,6 +142,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			return getWorkerExecutor().noIsolation();
 		}
 
+		// Fork the JVM with 4G of ram
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
 				forkOptions.setMaxHeapSize("4096m");

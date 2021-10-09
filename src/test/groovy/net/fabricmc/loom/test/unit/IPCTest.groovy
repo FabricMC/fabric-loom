@@ -22,46 +22,44 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.ipc;
+package net.fabricmc.loom.test.unit
 
-import java.io.IOException;
-import java.net.UnixDomainSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
+import net.fabricmc.loom.util.ipc.IPCClient
+import net.fabricmc.loom.util.ipc.IPCServer
+import spock.lang.Specification
+import spock.lang.Timeout
 
-import net.fabricmc.loom.util.IOStringConsumer;
+import java.nio.file.Files
+import java.util.function.Consumer
 
-public final class IPCClient implements IOStringConsumer, AutoCloseable {
-	private final Path path;
-	private final SocketChannel socketChannel;
+@Timeout(20)
+class IPCTest extends Specification {
+    def "ipc test"() {
+        given:
+            def path = Files.createTempFile("loom", "ipc")
+            Files.deleteIfExists(path)
 
-	public IPCClient(Path path) throws IOException {
-		this.path = path;
-		socketChannel = setupChannel();
-	}
+            def received = []
+            Consumer<String> consumer = { str ->
+                println str
+                received << str
+            }
 
-	private SocketChannel setupChannel() throws IOException {
-		final UnixDomainSocketAddress address = UnixDomainSocketAddress.of(path);
-		return SocketChannel.open(address);
-	}
+        when:
+            def ipcServer = new IPCServer(path, consumer)
 
-	@Override
-	public void accept(String s) throws IOException {
-		synchronized (socketChannel) {
-			ByteBuffer buf = ByteBuffer.wrap((s + "\n").getBytes(StandardCharsets.UTF_8));
+            new IPCClient(path).withCloseable { client ->
+               client.accept("Test")
+               client.accept("Hello")
+            }
 
-			while (buf.hasRemaining()) {
-				socketChannel.write(buf);
-			}
-		}
-	}
+            // Allow ipcServer to finish reading, before closing.
+            while (received.size() != 2) { }
+            ipcServer.close()
 
-	@Override
-	public void close() throws Exception {
-		synchronized (socketChannel) {
-			socketChannel.close();
-		}
-	}
+        then:
+            received.size() == 2
+            received[0] == "Test"
+            received[1] == "Hello"
+    }
 }

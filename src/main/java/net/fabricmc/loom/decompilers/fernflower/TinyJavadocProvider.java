@@ -151,7 +151,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 						addedParam = true;
 					}
 
-					parts.add(String.format("@param %s %s", methodMapping.getName(MappingsNamespace.NAMED.toString()), comment));
+					parts.add(String.format("@param %s %s", argMapping.getName(MappingsNamespace.NAMED.toString()), comment));
 				}
 			}
 

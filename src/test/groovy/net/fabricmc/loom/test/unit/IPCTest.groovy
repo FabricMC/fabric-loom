@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,44 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.test.unit
 
-import org.gradle.api.Project;
+import net.fabricmc.loom.util.ipc.IPCClient
+import net.fabricmc.loom.util.ipc.IPCServer
+import spock.lang.Specification
+import spock.lang.Timeout
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import java.nio.file.Files
+import java.util.function.Consumer
 
-public final class DecompilerConfiguration {
-	private DecompilerConfiguration() {
-	}
+@Timeout(20)
+class IPCTest extends Specification {
+    def "ipc test"() {
+        given:
+            def path = Files.createTempFile("loom", "ipc")
+            Files.deleteIfExists(path)
 
-	public static void setup(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler());
-		extension.getGameDecompilers().add(new LoomCFRDecompiler());
-	}
+            def received = []
+            Consumer<String> consumer = { str ->
+                println str
+                received << str
+            }
+
+        when:
+            def ipcServer = new IPCServer(path, consumer)
+
+            new IPCClient(path).withCloseable { client ->
+               client.accept("Test")
+               client.accept("Hello")
+            }
+
+            // Allow ipcServer to finish reading, before closing.
+            while (received.size() != 2) { }
+            ipcServer.close()
+
+        then:
+            received.size() == 2
+            received[0] == "Test"
+            received[1] == "Hello"
+    }
 }

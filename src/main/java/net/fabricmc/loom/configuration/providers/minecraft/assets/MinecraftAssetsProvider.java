@@ -45,7 +45,7 @@ import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
-import net.fabricmc.loom.util.gradle.ProgressLogger;
+import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 
 public class MinecraftAssetsProvider {
 	public static void provide(MinecraftProviderImpl minecraftProvider, Project project) throws IOException {
@@ -78,7 +78,7 @@ public class MinecraftAssetsProvider {
 			HashedDownloadUtil.downloadIfInvalid(new URL(assetIndex.url()), assetsInfo, assetIndex.sha1(), project.getLogger(), false);
 		}
 
-		Deque<ProgressLogger> loggers = new ConcurrentLinkedDeque<>();
+		Deque<ProgressLoggerHelper> loggers = new ConcurrentLinkedDeque<>();
 		ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
 
 		AssetIndex index;
@@ -114,15 +114,15 @@ public class MinecraftAssetsProvider {
 
 					project.getLogger().debug("validating asset " + assetName[0]);
 
-					final ProgressLogger[] progressLogger = new ProgressLogger[1];
+					final ProgressLoggerHelper[] progressLogger = new ProgressLoggerHelper[1];
 
 					try {
 						HashedDownloadUtil.downloadIfInvalid(new URL(MirrorUtil.getResourcesBase(project) + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, () -> {
-							ProgressLogger logger = loggers.pollFirst();
+							ProgressLoggerHelper logger = loggers.pollFirst();
 
 							if (logger == null) {
 								//Create a new logger if we need one
-								progressLogger[0] = ProgressLogger.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
+								progressLogger[0] = ProgressLoggerHelper.getProgressFactory(project, MinecraftAssetsProvider.class.getName());
 								progressLogger[0].start("Downloading assets...", "assets");
 							} else {
 								// use a free logger if we can
@@ -157,6 +157,6 @@ public class MinecraftAssetsProvider {
 			throw new RuntimeException(e);
 		}
 
-		loggers.forEach(ProgressLogger::completed);
+		loggers.forEach(ProgressLoggerHelper::completed);
 	}
 }

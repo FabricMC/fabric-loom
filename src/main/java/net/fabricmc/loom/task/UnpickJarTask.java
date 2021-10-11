@@ -29,7 +29,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 
+import javax.inject.Inject;
+
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.OutputFile;
@@ -39,26 +44,43 @@ import net.fabricmc.loom.configuration.providers.LaunchProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.util.Constants;
 
-public class UnpickJarTask extends JavaExec {
-	File inputJar;
-	File unpickDefinition;
+public abstract class UnpickJarTask extends JavaExec {
+	@InputFile
+	public abstract RegularFileProperty getInputJar();
 
-	File outputJar;
+	@InputFile
+	public abstract RegularFileProperty getUnpickDefinitions();
 
+	@InputFiles
+	// Only 1 file, but it comes from a configuration
+	public abstract ConfigurableFileCollection getConstantJar();
+
+	@InputFiles
+	public abstract ConfigurableFileCollection getUnpickClasspath();
+
+	@OutputFile
+	public abstract RegularFileProperty getOutputJar();
+
+	@Inject
 	public UnpickJarTask() {
-		getOutputs().upToDateWhen(e -> false);
 		classpath(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
 		getMainClass().set("daomephsta.unpick.cli.Main");
+
+		getConstantJar().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS));
+		getUnpickClasspath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
 	}
 
 	@Override
 	public void exec() {
-		fileArg(getInputJar(), getOutputJar(), getUnpickDefinition());
-		fileArg(getConstantJar());
+		fileArg(getInputJar().get().getAsFile(), getOutputJar().get().getAsFile(), getUnpickDefinitions().get().getAsFile());
+		fileArg(getConstantJar().getSingleFile());
 
 		// Classpath
 		fileArg(getExtension().getMinecraftMappedProvider().getMappedJar());
-		fileArg(getMinecraftDependencies());
+
+		for (File file : getUnpickClasspath()) {
+			fileArg(file);
+		}
 
 		writeUnpickLogConfig();
 		systemProperty("java.util.logging.config.file", getDirectories().getUnpickLoggingConfigFile().getAbsolutePath());
@@ -73,45 +95,6 @@ public class UnpickJarTask extends JavaExec {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to copy unpick logging config", e);
 		}
-	}
-
-	private File[] getMinecraftDependencies() {
-		return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES)
-				.resolve().toArray(new File[0]);
-	}
-
-	private File getConstantJar() {
-		return getProject().getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS).getSingleFile();
-	}
-
-	@InputFile
-	public File getInputJar() {
-		return inputJar;
-	}
-
-	public UnpickJarTask setInputJar(File inputJar) {
-		this.inputJar = inputJar;
-		return this;
-	}
-
-	@InputFile
-	public File getUnpickDefinition() {
-		return unpickDefinition;
-	}
-
-	public UnpickJarTask setUnpickDefinition(File unpickDefinition) {
-		this.unpickDefinition = unpickDefinition;
-		return this;
-	}
-
-	@OutputFile
-	public File getOutputJar() {
-		return outputJar;
-	}
-
-	public UnpickJarTask setOutputJar(File outputJar) {
-		this.outputJar = outputJar;
-		return this;
 	}
 
 	private void fileArg(File... files) {

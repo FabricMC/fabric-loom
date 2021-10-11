@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,46 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.util.ipc;
 
-import org.gradle.api.Project;
+import java.io.IOException;
+import java.net.UnixDomainSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.util.IOStringConsumer;
 
-public final class DecompilerConfiguration {
-	private DecompilerConfiguration() {
+public final class IPCClient implements IOStringConsumer, AutoCloseable {
+	private final Path path;
+	private final SocketChannel socketChannel;
+
+	public IPCClient(Path path) throws IOException {
+		this.path = path;
+		socketChannel = setupChannel();
 	}
 
-	public static void setup(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler());
-		extension.getGameDecompilers().add(new LoomCFRDecompiler());
+	private SocketChannel setupChannel() throws IOException {
+		final UnixDomainSocketAddress address = UnixDomainSocketAddress.of(path);
+		return SocketChannel.open(address);
+	}
+
+	@Override
+	public void accept(String s) throws IOException {
+		synchronized (socketChannel) {
+			ByteBuffer buf = ByteBuffer.wrap((s + "\n").getBytes(StandardCharsets.UTF_8));
+
+			while (buf.hasRemaining()) {
+				socketChannel.write(buf);
+			}
+		}
+	}
+
+	@Override
+	public void close() throws Exception {
+		synchronized (socketChannel) {
+			socketChannel.close();
+		}
 	}
 }

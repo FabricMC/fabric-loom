@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -50,6 +51,8 @@ public class GradleMappingContext implements MappingContext {
 	@Override
 	public Path resolveDependency(Dependency dependency) {
 		Configuration configuration = project.getConfigurations().detachedConfiguration(dependency);
+		// Don't allow changing versions as this breaks down with how we cache layered mappings.
+		configuration.resolutionStrategy(ResolutionStrategy::failOnNonReproducibleResolution);
 		return configuration.getSingleFile().toPath();
 	}
 

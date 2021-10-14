@@ -180,17 +180,20 @@ public class CFRObfuscationMapping extends NullMapping {
 		public Dumper dumpFieldDoc(Field field, JavaTypeInstance owner) {
 			// None static fields in records are handled in the class javadoc.
 			if (isRecord(owner) && !isStatic(field)) {
-				return null;
+				return this;
 			}
 
 			MappingTree.ClassMapping classMapping = getClassMapping(owner);
 
 			if (classMapping == null) {
-				return null;
+				return this;
 			}
 
 			MappingTree.FieldMapping fieldMapping = classMapping.getField(field.getFieldName(), field.getDescriptor());
-			dumpComment(fieldMapping.getComment());
+
+			if (fieldMapping != null) {
+				dumpComment(fieldMapping.getComment());
+			}
 
 			return this;
 		}

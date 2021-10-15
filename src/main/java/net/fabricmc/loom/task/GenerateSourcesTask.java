@@ -148,13 +148,15 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
 		});
 
-		workQueue.await();
+		try {
+			workQueue.await();
+		} finally {
+			if (useProcessIsolation()) {
+				boolean stopped = WorkerDaemonClientsManagerHelper.stopIdleJVM(getWorkerDaemonClientsManager(), jvmMarkerValue);
 
-		if (useProcessIsolation()) {
-			boolean stopped = WorkerDaemonClientsManagerHelper.stopIdleJVM(getWorkerDaemonClientsManager(), jvmMarkerValue);
-
-			if (!stopped) {
-				throw new RuntimeException("Failed to stop decompile worker JVM");
+				if (!stopped) {
+					throw new RuntimeException("Failed to stop decompile worker JVM");
+				}
 			}
 		}
 	}

@@ -30,7 +30,6 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
-import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class AccessWidenerTest extends Specification implements GradleProjectTestTrait {
@@ -75,7 +74,7 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 			def errorPrefix = "Failed to validate access-widener file modid.accesswidener on line 10: java.lang.RuntimeException: "
 
 		when:
-			def result = gradle.run(task: "build", expectFailuire: true)
+			def result = gradle.run(task: "check", expectFailuire: true)
 
 		then:
 			result.output.contains(errorPrefix + error)

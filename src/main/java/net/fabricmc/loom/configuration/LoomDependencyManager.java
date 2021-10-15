@@ -42,7 +42,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerValidator;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
@@ -174,15 +173,6 @@ public class LoomDependencyManager {
 
 		for (Runnable runnable : afterTasks) {
 			runnable.run();
-		}
-
-		// TODO a way to disable this?
-		if (extension.getAccessWidenerPath().isPresent()) {
-			AccessWidenerValidator.validate(
-					extension.getAccessWidenerPath().get().getAsFile().toPath(),
-					extension.getMinecraftMappedProvider().getMappedJar().toPath(),
-					project.getLogger()
-			);
 		}
 	}
 

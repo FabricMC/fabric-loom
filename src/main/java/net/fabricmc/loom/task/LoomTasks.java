@@ -59,7 +59,7 @@ public final class LoomTasks {
 
 		tasks.getByName("check").dependsOn(
 				tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
-					t.setDescription("Validate that all the rules in the access widener against the minecraft jar");
+					t.setDescription("Validate all the rules in the access widener against the Minecraft jar");
 					t.setGroup("verification");
 				})
 		);

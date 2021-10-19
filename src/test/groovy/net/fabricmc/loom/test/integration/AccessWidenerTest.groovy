@@ -74,7 +74,7 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 			def errorPrefix = "Failed to validate access-widener file modid.accesswidener on line 10: java.lang.RuntimeException: "
 
 		when:
-			def result = gradle.run(task: "check", expectFailuire: true)
+			def result = gradle.run(task: "check", expectFailure: true)
 
 		then:
 			result.output.contains(errorPrefix + error)

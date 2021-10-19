@@ -156,7 +156,7 @@ trait GradleProjectTestTrait {
 
             runner.withArguments(args as String[])
 
-            return options.expectFailuire ? runner.buildAndFail() : runner.build()
+            return options.expectFailure ? runner.buildAndFail() : runner.build()
         }
 
         private GradleRunner getRunner() {

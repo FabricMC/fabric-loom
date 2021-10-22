@@ -64,7 +64,10 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", new File(getDirectories().getUserCache(), "assets").getAbsolutePath());
+				.argument("client", new File(getDirectories().getUserCache(), "assets").getAbsolutePath())
+				// Fix for old versions which requires it.
+				.argument("client", "--userProperties")
+				.argument("client", "{}");
 
 		//Enable ansi by default for idea and vscode
 		if (new File(getProject().getRootDir(), ".vscode").exists()

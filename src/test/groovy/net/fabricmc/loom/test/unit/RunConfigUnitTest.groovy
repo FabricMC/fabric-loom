@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.configuration.ide.RunConfig
 import spock.lang.Specification
-import spock.lang.Unroll
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+class RunConfigUnitTest extends Specification {
+    def "escape arguments"() {
+        when:
+            def args = RunConfig.joinArguments(["-Dfabric.test=123", "-Dfabric.test=abc 123"])
 
-// This test runs a mod that exits on mod init
-class RunConfigTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "Run config #task"() {
-		setup:
-			def gradle = gradleProject(project: "runconfigs", sharedFiles: true)
-
-		when:
-			def result = gradle.run(task: task)
-
-		then:
-			result.task(":${task}").outcome == SUCCESS
-			result.output.contains("This contains a space")
-
-		where:
-			task                | _
-			'runClient'         | _
-			'runServer'         | _
-			'runTestmodClient'  | _
-			'runTestmodServer'  | _
-			'runAutoTestServer' | _
-	}
+        then:
+            args == '"-Dfabric.test=123" "-Dfabric.test=abc 123"'
+    }
 }

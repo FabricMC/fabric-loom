@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -46,39 +45,11 @@ public abstract class AbstractRunTask extends JavaExec {
 		this.config = configProvider.apply(getProject());
 
 		setClasspath(config.sourceSet.getRuntimeClasspath());
+		args(config.programArgs);
 	}
 
 	@Override
 	public void exec() {
-		List<String> argsSplit = new ArrayList<>();
-		String[] args = config.programArgs.split(" ");
-		int partPos = -1;
-
-		for (int i = 0; i < args.length; i++) {
-			if (partPos < 0) {
-				if (args[i].startsWith("\"")) {
-					if (args[i].endsWith("\"")) {
-						argsSplit.add(args[i].substring(1, args[i].length() - 1));
-					} else {
-						partPos = i;
-					}
-				} else {
-					argsSplit.add(args[i]);
-				}
-			} else if (args[i].endsWith("\"")) {
-				StringBuilder builder = new StringBuilder(args[partPos].substring(1));
-
-				for (int j = partPos + 1; j < i; j++) {
-					builder.append(" ").append(args[j]);
-				}
-
-				builder.append(" ").append(args[i], 0, args[i].length() - 1);
-				argsSplit.add(builder.toString());
-				partPos = -1;
-			}
-		}
-
-		args(argsSplit);
 		setWorkingDir(new File(getProject().getRootDir(), config.runDir));
 
 		super.exec();
@@ -102,7 +73,7 @@ public abstract class AbstractRunTask extends JavaExec {
 	public List<String> getJvmArgs() {
 		List<String> superArgs = super.getJvmArgs();
 		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
-		args.addAll(Arrays.asList(config.vmArgs.split(" ")));
+		args.addAll(config.vmArgs);
 		return args;
 	}
 }

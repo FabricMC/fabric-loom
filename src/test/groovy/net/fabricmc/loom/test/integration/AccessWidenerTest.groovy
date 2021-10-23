@@ -65,4 +65,24 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 		where:
 			version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "invalid (#awLine)"() {
+		setup:
+			def gradle = gradleProject(project: "accesswidener", version: version)
+			new File(gradle.projectDir, "src/main/resources/modid.accesswidener").append(awLine)
+			def errorPrefix = "Failed to validate access-widener file modid.accesswidener on line 10: java.lang.RuntimeException: "
+
+		when:
+			def result = gradle.run(task: "check", expectFailure: true)
+
+		then:
+			result.output.contains(errorPrefix + error)
+
+		where:
+			awLine 																					| error																									| version
+			'accessible\tclass\tnet/minecraft/DoesntExists'											| "Could not find class (net/minecraft/DoesntExists)"													| DEFAULT_GRADLE
+			'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI'								| "Could not find field (abcI) in class (net/minecraft/screen/slot/Slot)"								| DEFAULT_GRADLE
+			'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V'	| "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main)"	| DEFAULT_GRADLE
+	}
 }

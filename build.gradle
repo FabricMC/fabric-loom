@@ -79,7 +79,7 @@ dependencies {
 
 	// tinyfile management
 	implementation ('net.fabricmc:tiny-remapper:0.7.0')
-	implementation 'net.fabricmc:access-widener:2.0.0'
+	implementation 'net.fabricmc:access-widener:2.0.1'
 	implementation 'net.fabricmc:mapping-io:0.2.1'
 
 	implementation ('net.fabricmc:lorenz-tiny:4.0.2') {

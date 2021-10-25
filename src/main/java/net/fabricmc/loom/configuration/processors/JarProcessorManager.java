@@ -37,6 +37,7 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharSource;
 
@@ -106,16 +107,18 @@ public class JarProcessorManager {
 			jarProcessor.process(file);
 		}
 
-		boolean manifestTransformed = ZipUtils.transform(file.toPath(), Map.of(MANIFEST_PATH, bytes -> {
-			Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
-			manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			manifest.write(out);
-			return out.toByteArray();
-		}));
+		try {
+			int count = ZipUtils.transform(file.toPath(), Map.of(MANIFEST_PATH, bytes -> {
+				Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
+				manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				manifest.write(out);
+				return out.toByteArray();
+			}));
 
-		if (!manifestTransformed) {
-			throw new RuntimeException("Could not add data to jar manifest in " + file);
+			Preconditions.checkState(count > 0, "Did not add data to jar manifest in " + file);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not add data to jar manifest in " + file, e);
 		}
 	}
 

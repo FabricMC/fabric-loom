@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
@@ -41,7 +43,13 @@ public record AccessWidenerFile(
 	 * Reads the access-widener contained in a mod jar, or returns null if there is none.
 	 */
 	public static AccessWidenerFile fromModJar(Path modJarPath) {
-		byte[] modJsonBytes = ZipUtils.unpack(modJarPath, "fabric.mod.json");
+		byte[] modJsonBytes;
+
+		try {
+			modJsonBytes = ZipUtils.unpackNullable(modJarPath, "fabric.mod.json");
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read access-widener file from: " + modJarPath.toAbsolutePath(), e);
+		}
 
 		if (modJsonBytes == null) {
 			return null;
@@ -56,7 +64,13 @@ public record AccessWidenerFile(
 		String awPath = jsonObject.get("accessWidener").getAsString();
 		String modId = jsonObject.get("id").getAsString();
 
-		byte[] content = ZipUtils.unpackStrict(modJarPath, awPath);
+		byte[] content;
+
+		try {
+			content = ZipUtils.unpack(modJarPath, awPath);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not find access widener file (%s) defined in the fabric.mod.json file of %s".formatted(awPath, modJarPath.toAbsolutePath()), e);
+		}
 
 		return new AccessWidenerFile(
 				awPath,

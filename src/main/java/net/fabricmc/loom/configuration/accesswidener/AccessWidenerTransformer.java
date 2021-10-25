@@ -25,6 +25,8 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,8 +39,8 @@ import org.objectweb.asm.ClassWriter;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.stitch.util.Pair;
 
 final class AccessWidenerTransformer {
 	private final Logger logger;
@@ -54,12 +56,17 @@ final class AccessWidenerTransformer {
 	 */
 	void apply(File jarFile) {
 		logger.lifecycle("Processing file: " + jarFile.getName());
-		ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
+
+		try {
+			ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to apply access wideners to %s".formatted(jarFile), e);
+		}
 	}
 
 	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(Set<String> classes) {
 		return classes.stream()
-				.map(string -> Pair.of(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
+				.map(string -> new Pair<>(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
 				.collect(Collectors.toList());
 	}
 

@@ -39,8 +39,8 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.util.ModUtils;
+import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.stitch.util.Pair;
 
 public class JarNester {
 	public static void nestJars(Collection<File> jars, File modJar, Logger logger) {
@@ -51,43 +51,48 @@ public class JarNester {
 
 		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar " + modJar.getName());
 
-		ZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
-			try {
-				return Pair.of("META-INF/jars/" + file.getName(), Files.readAllBytes(file.toPath()));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}).collect(Collectors.toList()));
+		try {
+			ZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
+				try {
+					return new Pair<>("META-INF/jars/" + file.getName(), Files.readAllBytes(file.toPath()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}).collect(Collectors.toList()));
 
-		boolean didNest = ZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(Pair.of("fabric.mod.json", json -> {
-			JsonArray nestedJars = json.getAsJsonArray("jars");
+			int count = ZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(new Pair<>("fabric.mod.json", json -> {
+				JsonArray nestedJars = json.getAsJsonArray("jars");
 
-			if (nestedJars == null || !json.has("jars")) {
-				nestedJars = new JsonArray();
-			}
-
-			for (File file : jars) {
-				String nestedJarPath = "META-INF/jars/" + file.getName();
-
-				for (JsonElement nestedJar : nestedJars) {
-					JsonObject jsonObject = nestedJar.getAsJsonObject();
-
-					if (jsonObject.has("file") && jsonObject.get("file").getAsString().equals(nestedJarPath)) {
-						throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
-					}
+				if (nestedJars == null || !json.has("jars")) {
+					nestedJars = new JsonArray();
 				}
 
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.addProperty("file", nestedJarPath);
-				nestedJars.add(jsonObject);
+				for (File file : jars) {
+					String nestedJarPath = "META-INF/jars/" + file.getName();
 
-				logger.debug("Nested " + nestedJarPath + " into " + modJar.getName());
-			}
+					for (JsonElement nestedJar : nestedJars) {
+						JsonObject jsonObject = nestedJar.getAsJsonObject();
 
-			json.add("jars", nestedJars);
+						if (jsonObject.has("file") && jsonObject.get("file").getAsString().equals(nestedJarPath)) {
+							throw new IllegalStateException("Cannot nest 2 jars at the same path: " + nestedJarPath);
+						}
+					}
 
-			return json;
-		})));
-		Preconditions.checkArgument(didNest, "Failed to nest jars into " + modJar.getName());
+					JsonObject jsonObject = new JsonObject();
+					jsonObject.addProperty("file", nestedJarPath);
+					nestedJars.add(jsonObject);
+
+					logger.debug("Nested " + nestedJarPath + " into " + modJar.getName());
+				}
+
+				json.add("jars", nestedJars);
+
+				return json;
+			})));
+
+			Preconditions.checkState(count > 0, "Failed to transform fabric.mod.json");
+		} catch (IOException e) {
+			throw new java.io.UncheckedIOException("Failed to nest jars into " + modJar.getName(), e);
+		}
 	}
 }

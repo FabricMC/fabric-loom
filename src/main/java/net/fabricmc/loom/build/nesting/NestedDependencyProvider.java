@@ -26,6 +26,7 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -177,7 +178,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 					throw new RuntimeException("Failed to copy file", e);
 				}
 
-				ZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metaFile).getBytes());
+				try {
+					ZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metaFile).getBytes());
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to add dummy mod while including %s".formatted(file), e);
+				}
+
 				fileList.add(tempFile);
 			} else {
 				// Default copy the jar right in

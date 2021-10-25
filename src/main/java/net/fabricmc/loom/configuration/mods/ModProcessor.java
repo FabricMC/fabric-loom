@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.mods;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,10 +94,14 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
-			json.remove("jars");
-			return json;
-		}));
+		try {
+			ZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
+				json.remove("jars");
+				return json;
+			}));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to strip nested jars from %s".formatted(file), e);
+		}
 	}
 
 	/**
@@ -174,7 +179,7 @@ public class ModProcessor {
 				String accessWidener = info.getAccessWidener();
 
 				if (accessWidener != null) {
-					accessWidenerMap.put(info, remapAccessWidener(ZipUtils.unpackStrict(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
+					accessWidenerMap.put(info, remapAccessWidener(ZipUtils.unpack(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
 				}
 
 				remapper.apply(outputConsumer, tagMap.get(info));

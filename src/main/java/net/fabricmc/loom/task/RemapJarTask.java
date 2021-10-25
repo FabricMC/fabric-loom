@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -188,24 +189,31 @@ public class RemapJarTask extends Jar {
 					}
 
 					if (accessWidener != null) {
-						boolean replaced = ZipUtils.replace(data.output, accessWidener.getLeft(), accessWidener.getRight());
-						Preconditions.checkArgument(replaced, "Failed to remap access widener");
+						try {
+							ZipUtils.replace(data.output, accessWidener.getLeft(), accessWidener.getRight());
+						} catch (IOException e) {
+							throw new UncheckedIOException("Failed to replace access widener in output jar", e);
+						}
 					}
 
 					// Add data to the manifest
-					boolean transformed = ZipUtils.transform(data.output, Map.of(MANIFEST_PATH, bytes -> {
-						var manifest = new Manifest(new ByteArrayInputStream(bytes));
-						var manifestConfiguration = new JarManifestConfiguration(project);
+					try {
+						int count = ZipUtils.transform(data.output, Map.of(MANIFEST_PATH, bytes -> {
+							var manifest = new Manifest(new ByteArrayInputStream(bytes));
+							var manifestConfiguration = new JarManifestConfiguration(project);
 
-						manifestConfiguration.configure(manifest);
-						manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", toM);
+							manifestConfiguration.configure(manifest);
+							manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", toM);
 
-						ByteArrayOutputStream out = new ByteArrayOutputStream();
-						manifest.write(out);
-						return out.toByteArray();
-					}));
+							ByteArrayOutputStream out = new ByteArrayOutputStream();
+							manifest.write(out);
+							return out.toByteArray();
+						}));
 
-					Preconditions.checkArgument(transformed, "Failed to transform jar manifest");
+						Preconditions.checkState(count > 0, "Did not transform any jar manifest");
+					} catch (IOException e) {
+						throw new UncheckedIOException("Failed to transform jar manifest", e);
+					}
 
 					if (isReproducibleFileOrder() || !isPreserveFileTimestamps()) {
 						try {

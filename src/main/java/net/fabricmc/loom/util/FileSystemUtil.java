@@ -32,7 +32,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -54,12 +54,8 @@ public final class FileSystemUtil {
 	private FileSystemUtil() {
 	}
 
-	private static final Map<String, String> jfsArgsCreate = new HashMap<>();
-	private static final Map<String, String> jfsArgsEmpty = new HashMap<>();
-
-	static {
-		jfsArgsCreate.put("create", "true");
-	}
+	private static final Map<String, String> jfsArgsCreate = Map.of("create", "true");
+	private static final Map<String, String> jfsArgsEmpty = Collections.emptyMap();
 
 	public static Delegate getJarFileSystem(File file, boolean create) throws IOException {
 		return getJarFileSystem(file.toURI(), create);

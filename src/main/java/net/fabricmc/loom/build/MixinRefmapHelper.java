@@ -27,6 +27,7 @@ package net.fabricmc.loom.build;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,8 +47,8 @@ import org.jetbrains.annotations.NotNull;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.stitch.util.Pair;
 
 public final class MixinRefmapHelper {
 	private MixinRefmapHelper() { }
@@ -75,13 +76,17 @@ public final class MixinRefmapHelper {
 
 				String refmapName = container.refmapNameProvider().get();
 
-				return ZipUtils.transformJson(JsonObject.class, outputPath, mixinConfigs.map(f -> Pair.of(f, json -> {
-					if (!json.has("refmap")) {
-						json.addProperty("refmap", refmapName);
-					}
+				try {
+					return ZipUtils.transformJson(JsonObject.class, outputPath, mixinConfigs.map(f -> new Pair<>(f, json -> {
+						if (!json.has("refmap")) {
+							json.addProperty("refmap", refmapName);
+						}
 
-					return json;
-				})));
+						return json;
+					}))) > 0;
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to transform mixin configs in jar", e);
+				}
 			}).reduce(false, Boolean::logicalOr);
 		} catch (Exception e) {
 			project.getLogger().error(e.getMessage());

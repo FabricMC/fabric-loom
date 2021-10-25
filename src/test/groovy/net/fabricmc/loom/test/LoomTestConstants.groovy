@@ -28,7 +28,7 @@ import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
     public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.4-20211011231946+0000"
+    public final static String PRE_RELEASE_GRADLE = "7.4-20211023222429+0000"
 
     public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
 }

@@ -72,6 +72,7 @@ public class Constants {
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
 		public static final String UNPICK_CLASSPATH = "unpick";
+		public static final String DEV = "dev";
 
 		private Configurations() {
 		}

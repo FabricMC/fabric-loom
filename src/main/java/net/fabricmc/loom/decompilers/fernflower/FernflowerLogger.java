@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,58 +22,62 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.decompilers.fernflower;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
+import java.io.IOException;
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.JavaExec;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 
-import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.IOStringConsumer;
 
-public abstract class AbstractRunTask extends JavaExec {
-	private final RunConfig config;
+public class FernflowerLogger extends IFernflowerLogger {
+	private final IOStringConsumer logger;
 
-	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
-		super();
-		setGroup(Constants.TaskGroup.FABRIC);
-		this.config = configProvider.apply(getProject());
-
-		setClasspath(config.sourceSet.getRuntimeClasspath());
-		args(config.programArgs);
+	public FernflowerLogger(IOStringConsumer logger) {
+		this.logger = logger;
 	}
 
 	@Override
-	public void exec() {
-		setWorkingDir(new File(getProject().getRootDir(), config.runDir));
-
-		super.exec();
+	public void writeMessage(String message, Severity severity) {
+		if (message.contains("Inconsistent inner class entries for")) return;
+		System.err.println(message);
 	}
 
 	@Override
-	public void setWorkingDir(File dir) {
-		if (!dir.exists()) {
-			dir.mkdirs();
+	public void writeMessage(String message, Severity severity, Throwable t) {
+		writeMessage(message, severity);
+	}
+
+	private void write(String data) {
+		try {
+			logger.accept(data);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to log", e);
 		}
-
-		super.setWorkingDir(dir);
 	}
 
 	@Override
-	public String getMain() {
-		return config.mainClass;
+	public void startReadingClass(String className) {
+		write("Decompiling " + className);
 	}
 
 	@Override
-	public List<String> getJvmArgs() {
-		List<String> superArgs = super.getJvmArgs();
-		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
-		args.addAll(config.vmArgs);
-		return args;
+	public void startClass(String className) {
+		write("Decompiling " + className);
+	}
+
+	@Override
+	public void startWriteClass(String className) {
+		// Nope
+	}
+
+	@Override
+	public void startMethod(String methodName) {
+		// Nope
+	}
+
+	@Override
+	public void endMethod() {
+		// Nope
 	}
 }

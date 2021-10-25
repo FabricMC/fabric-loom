@@ -103,8 +103,8 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		VsCodeConfiguration(RunConfig runConfig) {
 			this.name = runConfig.configName;
 			this.mainClass = runConfig.mainClass;
-			this.vmArgs = runConfig.vmArgs;
-			this.args = runConfig.programArgs;
+			this.vmArgs = RunConfig.joinArguments(runConfig.vmArgs);
+			this.args = RunConfig.joinArguments(runConfig.programArgs);
 			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
 
 			if (getProject().getRootProject() != getProject()) {

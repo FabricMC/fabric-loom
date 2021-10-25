@@ -56,6 +56,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -168,7 +169,7 @@ public class ModProcessor {
 			try {
 				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
 
-				outputConsumer.addNonClassFiles(info.getInputFile().toPath());
+				outputConsumer.addNonClassFiles(info.getInputFile().toPath(), NonClassCopyMode.FIX_META_INF, remapper);
 				outputConsumerMap.put(info, outputConsumer);
 				String accessWidener = info.getAccessWidener();
 

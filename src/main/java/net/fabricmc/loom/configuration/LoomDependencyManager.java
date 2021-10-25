@@ -39,13 +39,13 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.LoomRepositoryPlugin;
 
 public class LoomDependencyManager {
 	private static class ProviderList {

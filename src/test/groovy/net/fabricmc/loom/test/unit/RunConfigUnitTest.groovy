@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.test.unit
 
-import org.gradle.api.Project;
+import net.fabricmc.loom.configuration.ide.RunConfig
+import spock.lang.Specification
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+class RunConfigUnitTest extends Specification {
+    def "escape arguments"() {
+        when:
+            def args = RunConfig.joinArguments(["-Dfabric.test=123", "-Dfabric.test=abc 123"])
 
-public final class DecompilerConfiguration {
-	private DecompilerConfiguration() {
-	}
-
-	public static void setup(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler());
-		extension.getGameDecompilers().add(new LoomCFRDecompiler());
-	}
+        then:
+            args == '"-Dfabric.test=123" "-Dfabric.test=abc 123"'
+    }
 }

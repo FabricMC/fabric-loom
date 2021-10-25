@@ -77,8 +77,8 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.6.0')
-	implementation 'net.fabricmc:access-widener:2.0.0'
+	implementation ('net.fabricmc:tiny-remapper:0.7.0')
+	implementation 'net.fabricmc:access-widener:2.0.1'
 	implementation 'net.fabricmc:mapping-io:0.2.1'
 
 	implementation ('net.fabricmc:lorenz-tiny:4.0.2') {
@@ -87,7 +87,7 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:1.4.1')
-	implementation ('org.benf:cfr:0.151')
+	implementation ('net.fabricmc:cfr:0.0.8')
 
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.2.4')

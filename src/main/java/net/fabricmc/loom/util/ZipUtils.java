@@ -98,8 +98,10 @@ public class ZipUtils {
 
 		if (!Files.isDirectory(from)) throw new IllegalArgumentException(from + " is not a directory!");
 
+		int count = 0;
+
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, true);
-				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
+				Stream<Path> walk = Files.walk(from)) {
 			Iterator<Path> iterator = walk.iterator();
 
 			while (iterator.hasNext()) {
@@ -109,7 +111,12 @@ public class ZipUtils {
 				Path fsPathParent = fsPath.getParent();
 				if (fsPathParent != null) Files.createDirectories(fsPathParent);
 				Files.copy(fromPath, fsPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+				count++;
 			}
+		}
+
+		if (count == 0) {
+			throw new IOException("Noting packed into %s from %s".formatted(zip, from));
 		}
 	}
 

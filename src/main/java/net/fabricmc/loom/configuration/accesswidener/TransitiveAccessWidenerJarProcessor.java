@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -112,6 +113,11 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		}
 
 		for (Path path : possibleModJars) {
+			if (!Files.exists(path)) {
+				project.getLogger().debug("Could not find transitive access widener in {} as it does not exist", path.toAbsolutePath());
+				continue;
+			}
+
 			AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(path);
 
 			if (accessWidener == null) {

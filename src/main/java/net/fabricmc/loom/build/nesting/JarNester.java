@@ -25,22 +25,22 @@
 package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collection;
-import java.util.zip.ZipEntry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.logging.Logger;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.ModUtils;
+import net.fabricmc.loom.util.Pair;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class JarNester {
 	public static void nestJars(Collection<File> jars, File modJar, Logger logger) {
@@ -51,12 +51,16 @@ public class JarNester {
 
 		Preconditions.checkArgument(ModUtils.isMod(modJar), "Cannot nest jars into none mod jar " + modJar.getName());
 
-		ZipUtil.addEntries(modJar, jars.stream().map(file -> new FileSource("META-INF/jars/" + file.getName(), file)).toArray(ZipEntrySource[]::new));
+		try {
+			ZipUtils.add(modJar.toPath(), jars.stream().map(file -> {
+				try {
+					return new Pair<>("META-INF/jars/" + file.getName(), Files.readAllBytes(file.toPath()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}).collect(Collectors.toList()));
 
-		boolean didNest = ZipUtil.transformEntries(modJar, single(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
+			int count = ZipUtils.transformJson(JsonObject.class, modJar.toPath(), Stream.of(new Pair<>("fabric.mod.json", json -> {
 				JsonArray nestedJars = json.getAsJsonArray("jars");
 
 				if (nestedJars == null || !json.has("jars")) {
@@ -83,13 +87,12 @@ public class JarNester {
 
 				json.add("jars", nestedJars);
 
-				return LoomGradlePlugin.GSON.toJson(json);
-			}
-		})));
-		Preconditions.checkArgument(didNest, "Failed to nest jars into " + modJar.getName());
-	}
+				return json;
+			})));
 
-	private static ZipEntryTransformerEntry[] single(ZipEntryTransformerEntry element) {
-		return new ZipEntryTransformerEntry[]{element};
+			Preconditions.checkState(count > 0, "Failed to transform fabric.mod.json");
+		} catch (IOException e) {
+			throw new java.io.UncheckedIOException("Failed to nest jars into " + modJar.getName(), e);
+		}
 	}
 }

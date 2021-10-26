@@ -26,6 +26,7 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -47,12 +48,12 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ZipUtils;
 
 public final class NestedDependencyProvider implements NestedJarProvider {
 	final Project project;
@@ -157,7 +158,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 			File file = metaFile.file;
 
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
-			if (!ZipUtil.containsEntry(file, "fabric.mod.json")) {
+			if (!ZipUtils.contains(file.toPath(), "fabric.mod.json")) {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);
 				File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 
@@ -177,7 +178,12 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 					throw new RuntimeException("Failed to copy file", e);
 				}
 
-				ZipUtil.addEntry(tempFile, "fabric.mod.json", generateModForDependency(metaFile).getBytes());
+				try {
+					ZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metaFile).getBytes());
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to add dummy mod while including %s".formatted(file), e);
+				}
+
 				fileList.add(tempFile);
 			} else {
 				// Default copy the jar right in

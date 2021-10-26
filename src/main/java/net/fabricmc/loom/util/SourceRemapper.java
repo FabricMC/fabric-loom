@@ -37,7 +37,6 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -46,7 +45,6 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.stitch.util.StitchUtil;
 
 public class SourceRemapper {
 	private final Project project;
@@ -126,7 +124,7 @@ public class SourceRemapper {
 			// create tmp directory
 			isSrcTmp = true;
 			srcPath = Files.createTempDirectory("fabric-loom-src");
-			ZipUtil.unpack(source, srcPath.toFile());
+			ZipUtils.unpackAll(source.toPath(), srcPath);
 		}
 
 		if (!destination.isDirectory() && destination.exists()) {
@@ -135,7 +133,7 @@ public class SourceRemapper {
 			}
 		}
 
-		StitchUtil.FileSystemDelegate dstFs = destination.isDirectory() ? null : StitchUtil.getJarFileSystem(destination, true);
+		FileSystemUtil.Delegate dstFs = destination.isDirectory() ? null : FileSystemUtil.getJarFileSystem(destination, true);
 		Path dstPath = dstFs != null ? dstFs.get().getPath("/") : destination.toPath();
 
 		try {

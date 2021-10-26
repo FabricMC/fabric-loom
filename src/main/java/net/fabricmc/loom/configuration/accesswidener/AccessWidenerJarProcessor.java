@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -34,7 +35,6 @@ import java.util.Arrays;
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -43,6 +43,7 @@ import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
 	// Filename used to store hash of input access widener in processed jar file
@@ -87,7 +88,12 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	public void process(File file) {
 		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
 		applier.apply(file);
-		ZipUtil.addEntry(file, HASH_FILENAME, inputHash);
+
+		try {
+			ZipUtils.add(file.toPath(), HASH_FILENAME, inputHash);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to write aw jar hash", e);
+		}
 	}
 
 	/**
@@ -111,7 +117,13 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public boolean isInvalid(File file) {
-		byte[] hash = ZipUtil.unpackEntry(file, HASH_FILENAME);
+		byte[] hash;
+
+		try {
+			hash = ZipUtils.unpackNullable(file.toPath(), HASH_FILENAME);
+		} catch (IOException e) {
+			return true;
+		}
 
 		if (hash == null) {
 			return true;

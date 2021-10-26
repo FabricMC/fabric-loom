@@ -24,24 +24,24 @@
 
 package net.fabricmc.loom.configuration.processors;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 
+import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharSource;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
+
+import net.fabricmc.loom.util.ZipUtils;
 
 public class JarProcessorManager {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
@@ -107,19 +107,18 @@ public class JarProcessorManager {
 			jarProcessor.process(file);
 		}
 
-		boolean manifestTransformed = ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[] {
-				new ZipEntryTransformerEntry(MANIFEST_PATH, new StreamZipEntryTransformer() {
-					@Override
-					protected void transform(ZipEntry zipEntry, InputStream in, OutputStream out) throws IOException {
-						Manifest manifest = new Manifest(in);
-						manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
-						manifest.write(out);
-					}
-				})
-		});
+		try {
+			int count = ZipUtils.transform(file.toPath(), Map.of(MANIFEST_PATH, bytes -> {
+				Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
+				manifest.getMainAttributes().putValue(JAR_PROCESSOR_HASH_ATTRIBUTE, getJarProcessorHash());
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				manifest.write(out);
+				return out.toByteArray();
+			}));
 
-		if (!manifestTransformed) {
-			throw new RuntimeException("Could not add data to jar manifest in " + file);
+			Preconditions.checkState(count > 0, "Did not add data to jar manifest in " + file);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not add data to jar manifest in " + file, e);
 		}
 	}
 

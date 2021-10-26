@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.JarOutputStream;
@@ -64,7 +65,10 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
 		final String path = compiledJar.toAbsolutePath().toString();
-		final Options options = OptionsImpl.getFactory().create(DECOMPILE_OPTIONS);
+		final Map<String, String> allOptions = new HashMap<>(DECOMPILE_OPTIONS);
+		allOptions.putAll(metaData.options());
+
+		final Options options = OptionsImpl.getFactory().create(allOptions);
 
 		ClassFileSourceImpl classFileSource = new ClassFileSourceImpl(options);
 
@@ -138,7 +142,7 @@ public class LoomCFRDecompiler implements LoomDecompiler {
 		decompiler.decompile(Paths.get("input.jar"),
 				Paths.get("output-sources.jar"),
 				lineMap,
-				new DecompilationMetadata(4, null, Collections.emptyList(), null)
+				new DecompilationMetadata(4, null, Collections.emptyList(), null, Collections.emptyMap())
 		);
 
 		LineNumberRemapper lineNumberRemapper = new LineNumberRemapper();

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.decompilers.fernflower;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.jetbrains.java.decompiler.main.Fernflower;
@@ -38,20 +39,24 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 	@Override
 	public String name() {
-		return "FabricFlower"; // Or something else?
+		return "FernFlower";
 	}
 
 	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		Map<String, Object> options = Map.of(
-				IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1",
-				IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
-				IFernflowerPreferences.REMOVE_SYNTHETIC, "1",
-				IFernflowerPreferences.LOG_LEVEL, "trace",
-				IFernflowerPreferences.THREADS, String.valueOf(metaData.numberOfThreads()),
-				IFernflowerPreferences.INDENT_STRING, "\t",
-				IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(metaData.javaDocs().toFile())
+		final Map<String, Object> options = new HashMap<>(
+				Map.of(
+					IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1",
+					IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
+					IFernflowerPreferences.REMOVE_SYNTHETIC, "1",
+					IFernflowerPreferences.LOG_LEVEL, "trace",
+					IFernflowerPreferences.THREADS, String.valueOf(metaData.numberOfThreads()),
+					IFernflowerPreferences.INDENT_STRING, "\t",
+					IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(metaData.javaDocs().toFile())
+				)
 		);
+
+		options.putAll(metaData.options());
 
 		IResultSaver saver = new ThreadSafeResultSaver(sourcesDestination::toFile, linemapDestination::toFile);
 		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, new FernflowerLogger(metaData.logger()));

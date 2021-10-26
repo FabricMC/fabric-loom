@@ -64,6 +64,8 @@ public final class CompileConfiguration {
 		extension.createLazyConfiguration(Constants.Configurations.MAPPINGS_FINAL);
 		extension.createLazyConfiguration(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
 		extension.createLazyConfiguration(Constants.Configurations.UNPICK_CLASSPATH);
+		extension.createLazyConfiguration(Constants.Configurations.LOCAL_RUNTIME);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME, project);
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			extension.createLazyConfiguration(entry.sourceConfiguration())

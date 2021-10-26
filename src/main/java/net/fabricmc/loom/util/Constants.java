@@ -49,7 +49,8 @@ public class Constants {
 			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, "", "modRuntimeOnly"),
 			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, ""),
 			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME)
+			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
+			new RemappedConfigurationEntry("modLocalRuntime", Configurations.LOCAL_RUNTIME, false, true, "")
 	);
 
 	private Constants() {
@@ -72,6 +73,12 @@ public class Constants {
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
 		public static final String UNPICK_CLASSPATH = "unpick";
+		/**
+		 * A configuration that behaves like {@code runtimeOnly} but is not
+		 * exposed in {@code runtimeElements} to dependents. A bit like
+		 * {@code testRuntimeOnly}, but for mods.
+		 */
+		public static final String LOCAL_RUNTIME = "localRuntime";
 
 		private Configurations() {
 		}

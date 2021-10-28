@@ -151,7 +151,7 @@ public final class CompileConfiguration {
 			}
 		});
 
-		// Add the "dev" jar to the "dev" configuration
+		// Add the "dev" jar to the "namedElements" configuration
 		p.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.NAMED_ELEMENTS, p.getTasks().getByName("jar")));
 
 		if (p.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {

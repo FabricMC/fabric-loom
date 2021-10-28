@@ -208,7 +208,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			try (IPCClient ipcClient = new IPCClient(ipcPath)) {
 				doDecompile(new ThreadedSimpleProgressLogger(ipcClient));
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to setup IPC Client", e);
+				throw new RuntimeException("Failed to decompile", e);
 			}
 		}
 

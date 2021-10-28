@@ -57,7 +57,10 @@ public final class CompileConfiguration {
 		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT).configure(configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.INCLUDE).configure(configuration -> configuration.setTransitive(false)); // Dont get transitive deps
 		extension.createLazyConfiguration(Constants.Configurations.MAPPING_CONSTANTS);
-		extension.createLazyConfiguration(Constants.Configurations.DEV);
+		extension.createLazyConfiguration(Constants.Configurations.NAMED_ELEMENTS).configure(configuration -> {
+			configuration.setCanBeConsumed(true);
+			configuration.setCanBeResolved(false);
+		});
 
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
 
@@ -149,7 +152,7 @@ public final class CompileConfiguration {
 		});
 
 		// Add the "dev" jar to the "dev" configuration
-		p.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.DEV, p.getTasks().getByName("jar")));
+		p.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.NAMED_ELEMENTS, p.getTasks().getByName("jar")));
 
 		if (p.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
 			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.

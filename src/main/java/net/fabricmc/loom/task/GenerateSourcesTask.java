@@ -103,7 +103,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getOutputs().upToDateWhen((o) -> false);
 		getMaxMemory().convention(4096L).finalizeValueOnRead();
-		getOptions().convention(Collections.emptyMap()).finalizeValueOnRead();
+		getOptions().finalizeValueOnRead();
 	}
 
 	@TaskAction

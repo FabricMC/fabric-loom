@@ -25,6 +25,8 @@
 package net.fabricmc.loom.configuration;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -45,12 +47,12 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.SelfResolvingDependency;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.util.ZipUtils;
 
 public abstract class DependencyProvider {
 	private LoomDependencyManager dependencyManager;
@@ -239,26 +241,31 @@ public abstract class DependencyProvider {
 			} else {
 				group = "net.fabricmc.synthetic";
 				File root = classifierToFile.get(""); //We've built the classifierToFile map, now to try find a name and version for our dependency
+				byte[] modJson;
 
-				if ("jar".equals(FilenameUtils.getExtension(root.getName())) && ZipUtil.containsEntry(root, "fabric.mod.json")) {
-					//It's a Fabric mod, see how much we can extract out
-					JsonObject json = new Gson().fromJson(new String(ZipUtil.unpackEntry(root, "fabric.mod.json"), StandardCharsets.UTF_8), JsonObject.class);
+				try {
+					if ("jar".equals(FilenameUtils.getExtension(root.getName())) && (modJson = ZipUtils.unpackNullable(root.toPath(), "fabric.mod.json")) != null) {
+						//It's a Fabric mod, see how much we can extract out
+						JsonObject json = new Gson().fromJson(new String(modJson, StandardCharsets.UTF_8), JsonObject.class);
 
-					if (json == null || !json.has("id") || !json.has("version")) {
-						throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
-					}
+						if (json == null || !json.has("id") || !json.has("version")) {
+							throw new IllegalArgumentException("Invalid Fabric mod jar: " + root + " (malformed json: " + json + ')');
+						}
 
-					if (json.has("name")) { //Go for the name field if it's got one
-						name = json.get("name").getAsString();
+						if (json.has("name")) { //Go for the name field if it's got one
+							name = json.get("name").getAsString();
+						} else {
+							name = json.get("id").getAsString();
+						}
+
+						version = json.get("version").getAsString();
 					} else {
-						name = json.get("id").getAsString();
+						//Not a Fabric mod, just have to make something up
+						name = FilenameUtils.removeExtension(root.getName());
+						version = "1.0";
 					}
-
-					version = json.get("version").getAsString();
-				} else {
-					//Not a Fabric mod, just have to make something up
-					name = FilenameUtils.removeExtension(root.getName());
-					version = "1.0";
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to read input file: " + root, e);
 				}
 			}
 		}

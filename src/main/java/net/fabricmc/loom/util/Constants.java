@@ -79,6 +79,7 @@ public class Constants {
 		 * {@code testRuntimeOnly}, but for mods.
 		 */
 		public static final String LOCAL_RUNTIME = "localRuntime";
+		public static final String NAMED_ELEMENTS = "namedElements";
 
 		private Configurations() {
 		}

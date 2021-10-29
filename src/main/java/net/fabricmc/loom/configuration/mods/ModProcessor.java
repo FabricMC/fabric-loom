@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.mods;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,9 +42,6 @@ import java.util.zip.ZipEntry;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.objectweb.asm.commons.Remapper;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
@@ -57,6 +55,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -95,14 +94,14 @@ public class ModProcessor {
 
 	private static void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
-		ZipUtil.transformEntries(file, new ZipEntryTransformerEntry[]{(new ZipEntryTransformerEntry("fabric.mod.json", new StringZipEntryTransformer() {
-			@Override
-			protected String transform(ZipEntry zipEntry, String input) {
-				JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
+		try {
+			ZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
 				json.remove("jars");
-				return LoomGradlePlugin.GSON.toJson(json);
-			}
-		}))});
+				return json;
+			}));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to strip nested jars from %s".formatted(file), e);
+		}
 	}
 
 	/**
@@ -180,7 +179,7 @@ public class ModProcessor {
 				String accessWidener = info.getAccessWidener();
 
 				if (accessWidener != null) {
-					accessWidenerMap.put(info, remapAccessWidener(ZipUtil.unpackEntry(info.inputFile, accessWidener), remapper.getRemapper()));
+					accessWidenerMap.put(info, remapAccessWidener(ZipUtils.unpack(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
 				}
 
 				remapper.apply(outputConsumer, tagMap.get(info));
@@ -199,7 +198,7 @@ public class ModProcessor {
 			byte[] accessWidener = accessWidenerMap.get(info);
 
 			if (accessWidener != null) {
-				ZipUtil.replaceEntry(info.getRemappedOutput(), info.getAccessWidener(), accessWidener);
+				ZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidener(), accessWidener);
 			}
 
 			info.finaliseRemapping();

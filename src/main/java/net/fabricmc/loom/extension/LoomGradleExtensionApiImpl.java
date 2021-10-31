@@ -61,6 +61,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
+	protected final Property<String> intermediary;
 
 	private final ModVersionParser versionParser;
 
@@ -85,6 +86,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
+		this.intermediary = project.getObjects().property(String.class);
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -172,6 +174,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	public Property<String> getIntermediaryUrl() {
+		return intermediary;
+	}
 
 	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {

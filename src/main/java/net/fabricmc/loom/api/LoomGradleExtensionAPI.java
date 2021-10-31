@@ -213,8 +213,4 @@ public interface LoomGradleExtensionAPI {
 	Property<Boolean> getEnableTransitiveAccessWideners();
 
 	Property<String> getIntermediaryUrl();
-
-	default void setIntermediaryUrl(String url) {
-		getIntermediaryUrl().set(url);
-	}
 }

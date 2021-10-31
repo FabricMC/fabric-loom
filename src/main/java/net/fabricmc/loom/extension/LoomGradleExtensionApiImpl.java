@@ -86,7 +86,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
-		this.intermediary = project.getObjects().property(String.class);
+		this.intermediary = project.getObjects().property(String.class)
+				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -175,6 +176,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	protected abstract LoomFiles getFiles();
 
+	@Override
 	public Property<String> getIntermediaryUrl() {
 		return intermediary;
 	}

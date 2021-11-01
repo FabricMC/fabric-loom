@@ -211,4 +211,11 @@ public interface LoomGradleExtensionAPI {
 	 * @return the property controlling the transitive access wideners
 	 */
 	Property<Boolean> getEnableTransitiveAccessWideners();
+
+	/**
+	 * Use "%1$s" as a placeholder for the minecraft version.
+	 *
+	 * @return the intermediary url template
+	 */
+	Property<String> getIntermediaryUrl();
 }

@@ -99,8 +99,7 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	default String getIntermediaryUrl(String minecraftVersion) {
-		// TODO reimplement a way to change this, was never really supported api anyway
-		return String.format("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar", minecraftVersion);
+		return String.format(this.getIntermediaryUrl().get(), minecraftVersion);
 	}
 
 	@Override

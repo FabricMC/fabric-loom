@@ -156,4 +156,10 @@ public class MinecraftGradleExtension implements LoomGradleExtensionAPI {
 		reportDeprecation();
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public Property<String> getIntermediaryUrl() {
+		reportDeprecation();
+		return parent.getIntermediaryUrl();
+	}
 }

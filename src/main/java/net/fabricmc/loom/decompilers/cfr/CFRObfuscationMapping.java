@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -126,6 +127,10 @@ public class CFRObfuscationMapping extends NullMapping {
 					}
 				}
 
+				if (comment != null && !recordComponentDocs.isEmpty()) {
+					print(" * ");
+				}
+
 				for (String componentDoc : recordComponentDocs) {
 					print(" * ").print(componentDoc).newln();
 				}
@@ -154,13 +159,23 @@ public class CFRObfuscationMapping extends NullMapping {
 					lines.addAll(Arrays.asList(comment.split("\\R")));
 				}
 
-				for (MappingTree.MethodArgMapping arg : mapping.getArgs()) {
+				final Collection<? extends MappingTree.MethodArgMapping> methodArgs = mapping.getArgs();
+				final List<String> params = new ArrayList<>();
+
+				for (MappingTree.MethodArgMapping arg : methodArgs) {
 					String argComment = arg.getComment();
 
 					if (argComment != null) {
-						lines.addAll(Arrays.asList(("@param " + arg.getSrcName() + " " + argComment).split("\\R")));
+						params.addAll(Arrays.asList(("@param " + arg.getSrcName() + " " + argComment).split("\\R")));
 					}
 				}
+
+				// Add a blank line between params and the comment.
+				if (!lines.isEmpty() && !params.isEmpty()) {
+					lines.add("");
+				}
+
+				lines.addAll(params);
 			}
 
 			if (!lines.isEmpty()) {

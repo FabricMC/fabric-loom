@@ -34,7 +34,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
@@ -129,7 +128,7 @@ public final class LoomTasks {
 				return;
 			}
 
-			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
+			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 
 			if (mappingsProvider.hasUnpickDefinitions()) {
 				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
@@ -140,21 +139,33 @@ public final class LoomTasks {
 					unpickJarTask.getOutputJar().set(outputJar);
 				});
 
-				inputJar = outputJar;
+				mappedJar = outputJar;
 			}
+
+			final File inputJar = mappedJar;
 
 			extension.getGameDecompilers().finalizeValue();
 
 			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
-				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
-				// decompiler will be passed to the constructor of GenerateSourcesTask
-				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();
-				generateSourcesTask.getInputJar().set(inputJar);
+				String taskName = "genSourcesWith" + decompiler.name();
+				// Decompiler will be passed to the constructor of GenerateSourcesTask
+				tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
+					task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
+					task.setGroup(Constants.TaskGroup.FABRIC);
+					task.getInputJar().set(inputJar);
 
-				if (mappingsProvider.hasUnpickDefinitions()) {
-					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));
-				}
+					if (mappingsProvider.hasUnpickDefinitions()) {
+						task.dependsOn(tasks.getByName("unpickJar"));
+					}
+				});
 			}
+
+			tasks.register("genSources", task -> {
+				task.setDescription("Decompile minecraft using the default decompiler.");
+				task.setGroup(Constants.TaskGroup.FABRIC);
+
+				task.dependsOn(project.getTasks().getByName("genSourcesWithCfr"));
+			});
 		});
 	}
 }

@@ -43,6 +43,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -83,6 +84,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<Long> getMaxMemory();
 
+	@Input
+	public abstract MapProperty<String, String> getOptions();
+
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
 
@@ -98,6 +102,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getOutputs().upToDateWhen((o) -> false);
 		getMaxMemory().convention(4096L).finalizeValueOnRead();
+		getOptions().finalizeValueOnRead();
 	}
 
 	@TaskAction
@@ -133,6 +138,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		workQueue.submit(DecompileAction.class, params -> {
 			params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
+
+			params.getOptions().set(getOptions());
 
 			params.getInputJar().set(getInputJar());
 			params.getRuntimeJar().set(getExtension().getMappingsProvider().mappedProvider.getMappedJar());
@@ -181,6 +188,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	public interface DecompileParams extends WorkParameters {
 		Property<String> getDecompilerClass();
+
+		MapProperty<String, String> getOptions();
 
 		RegularFileProperty getInputJar();
 		RegularFileProperty getRuntimeJar();
@@ -231,7 +240,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 					Runtime.getRuntime().availableProcessors(),
 					getParameters().getMappings().get().getAsFile().toPath(),
 					getLibraries(),
-					logger
+					logger,
+					getParameters().getOptions().get()
 			);
 
 			decompiler.decompile(

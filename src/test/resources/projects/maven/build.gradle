@@ -23,3 +23,16 @@ dependencies {
 
 	modImplementation System.getProperty("loom.test.resolve")
 }
+
+// Test that implementation deps don't leak into the compile classpath from maven deps
+task verifyCompileClasspath {
+	doLast {
+		configurations.compileClasspath.resolve().each {
+			if (it.name.contains("fabric-api")) {
+				throw new IllegalStateException("Compile classpath contains implementation dependency $it.name")
+			}
+		}
+	}
+}
+
+check.dependsOn verifyCompileClasspath

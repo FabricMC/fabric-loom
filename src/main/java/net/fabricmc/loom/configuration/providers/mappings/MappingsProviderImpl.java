@@ -73,8 +73,6 @@ import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
-import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
-import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
 
 public class MappingsProviderImpl extends DependencyProvider implements MappingsProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -312,18 +310,22 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		project.getLogger().info(":merging mappings");
 
-		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingsNamespace.OFFICIAL.toString());
-		readIntermediaryTree().accept(sourceNsSwitch);
+		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
+		readIntermediaryTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
-			Tiny2Reader.read(reader, tree);
+			Tiny2Reader.read(reader, intermediaryTree);
 		}
 
-		inheritMappedNamesOfEnclosingClasses(tree);
+		MemoryMappingTree officialTree = new MemoryMappingTree();
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsCompleter, MappingsNamespace.OFFICIAL.toString());
+		intermediaryTree.accept(nsSwitch);
+
+		inheritMappedNamesOfEnclosingClasses(officialTree);
 
 		try (Tiny2Writer writer = new Tiny2Writer(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
-			tree.accept(writer);
+			officialTree.accept(writer);
 		}
 
 		project.getLogger().info(":merged mappings in " + stopwatch.stop());
@@ -372,28 +374,6 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 
 		return tree;
-	}
-
-	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
-		Command command = new CommandReorderTinyV2();
-		String[] args = new String[2 + newOrder.length];
-		args[0] = oldMappings.toAbsolutePath().toString();
-		args[1] = newMappings.toAbsolutePath().toString();
-		System.arraycopy(newOrder, 0, args, 2, newOrder.length);
-		runCommand(command, args);
-	}
-
-	private void mergeMappings(Path intermediaryMappings, Path yarnMappings, Path newMergedMappings) {
-		try {
-			Command command = new CommandMergeTinyV2();
-			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
-							yarnMappings.toAbsolutePath().toString(),
-							newMergedMappings.toAbsolutePath().toString(),
-							MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.OFFICIAL.toString());
-		} catch (Exception e) {
-			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
-							+ " with mappings from " + yarnMappings, e);
-		}
 	}
 
 	private void suggestFieldNames(MinecraftProviderImpl minecraftProvider, Path oldMappings, Path newMappings) {

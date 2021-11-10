@@ -166,7 +166,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-			getProject().getLogger().lifecycle("Using project based jar storage");
+			getProject().getLogger().info("Using project based jar storage");
 		} else {
 			mappedProvider = new MinecraftMappedProvider(getProject());
 		}

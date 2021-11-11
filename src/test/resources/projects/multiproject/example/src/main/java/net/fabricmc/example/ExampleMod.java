@@ -15,9 +15,9 @@ public class ExampleMod implements ModInitializer {
 		System.out.println("Hello Fabric world!");
 
 		if (false) {
-			// Just here to make sure it compiles, not to test it runs;
+			// Just here to make sure it compiles as named, not to test it runs
 			BlockState state = null;
-			VoxelShape shape = CableShapeUtil.getShape(state);
+			VoxelShape shape = new CableShapeUtil(null).getShape(state);
 		}
 	}
 }

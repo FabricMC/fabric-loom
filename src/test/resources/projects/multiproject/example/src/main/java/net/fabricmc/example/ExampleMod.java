@@ -1,7 +1,9 @@
 package net.fabricmc.example;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.mappingio.MappingVisitor;
+import net.minecraft.block.BlockState;
+import techreborn.blocks.cable.CableShapeUtil;
+import net.minecraft.util.shape.VoxelShape;
 
 public class ExampleMod implements ModInitializer {
 	@Override
@@ -12,7 +14,10 @@ public class ExampleMod implements ModInitializer {
 
 		System.out.println("Hello Fabric world!");
 
-		// Check we can depend on mappingio via the subproject.
-		MappingVisitor mappingVisitor = null;
+		if (false) {
+			// Just here to make sure it compiles, not to test it runs;
+			BlockState state = null;
+			VoxelShape shape = CableShapeUtil.getShape(state);
+		}
 	}
 }

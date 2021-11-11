@@ -43,14 +43,14 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	def "build and run (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(
-					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "46582230fb580d4c1f71e4b0737df27417ec9cb1",
+					repo: "https://github.com/modmuss50/fabric.git",
+					commit: "e954edb6069e36139fd70428cfe4cddb5826c498",
 					version: version,
-					patch: "fabric_api"
+//					patch: "fabric_api"
 			)
 
 			// Set the version to something constant
-			gradle.buildGradle.text = gradle.buildGradle.text.replace('Globals.baseVersion + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
 			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))

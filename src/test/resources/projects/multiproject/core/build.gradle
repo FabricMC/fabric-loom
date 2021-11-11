@@ -1,1 +1,6 @@
 archivesBaseName = "core"
+
+dependencies {
+	// An example api dep to be used by the other sub project.
+	api "net.fabricmc:mapping-io:0.2.1"
+}

@@ -45,6 +45,7 @@ import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.jetbrains.annotations.Nullable;
@@ -155,6 +156,11 @@ public class ModCompileRemapper {
 				// Report deprecation warnings
 				if (entry.replacedWith() != null && !modDependencies.isEmpty()) {
 					extension.getDeprecationHelper().replaceWithInLoom0_11(entry.sourceConfiguration(), entry.replacedWith());
+				}
+
+				// Export to other projects
+				if (entry.targetConfiguration().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
+					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
 				}
 			});
 		}

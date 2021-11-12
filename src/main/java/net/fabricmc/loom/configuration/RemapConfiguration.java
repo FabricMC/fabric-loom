@@ -73,7 +73,15 @@ public class RemapConfiguration {
 					return;
 				}
 
-				PublishArtifact artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput());
+				PublishArtifact artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput(), configurablePublishArtifact -> {
+					Task remapJarTask = task;
+
+					if (extension.getShareRemapCaches().get()) {
+						remapJarTask = project.getRootProject().getTasks().getByName(DEFAULT_REMAP_ALL_JARS_TASK_NAME);
+					}
+
+					configurablePublishArtifact.builtBy(remapJarTask);
+				});
 
 				// Remove the existing artifact that does not run remapSourcesJar.
 				// It doesn't seem to hurt, but I'm not sure if the file-level duplicates cause issues.

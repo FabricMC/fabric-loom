@@ -64,6 +64,7 @@ public final class CompileConfiguration {
 		extension.createLazyConfiguration(Constants.Configurations.NAMED_ELEMENTS).configure(configuration -> {
 			configuration.setCanBeConsumed(true);
 			configuration.setCanBeResolved(false);
+			configuration.extendsFrom(project.getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));
 		});
 
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);

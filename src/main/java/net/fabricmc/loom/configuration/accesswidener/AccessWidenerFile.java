@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -77,5 +79,12 @@ public record AccessWidenerFile(
 				modId,
 				content
 		);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(name, modId);
+		result = 31 * result + Arrays.hashCode(content);
+		return result;
 	}
 }

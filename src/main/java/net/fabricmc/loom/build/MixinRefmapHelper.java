@@ -38,10 +38,12 @@ import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -67,11 +69,19 @@ public final class MixinRefmapHelper {
 						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
+				final String rootPath = getRootPath(sourceSet);
+				
 				Stream<String> mixinConfigs = sourceSet.getResources()
 						.matching(container.mixinConfigPattern())
 						.getFiles()
 						.stream()
-						.map(File::getName)
+						.map((file) -> {
+							String s = file.getAbsolutePath();
+							if(s.startsWith(rootPath)) {
+								s = s.substring(rootPath.length());
+							}
+							return s;
+						})
 						.filter(allMixinConfigs::contains);
 
 				String refmapName = container.refmapNameProvider().get();
@@ -94,6 +104,15 @@ public final class MixinRefmapHelper {
 		}
 	}
 
+	private static String getRootPath(SourceSet sourceSet) {
+		File root = Iterables.getFirst(sourceSet.getResources().getSrcDirs(), null);
+		String rootPath = root == null ? "" : root.getAbsolutePath();
+		if(rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
+			rootPath += File.separatorChar;
+		}
+		return rootPath;
+	}
+	
 	@NotNull
 	private static JsonObject readFabricModJson(File output) {
 		try (ZipFile zip = new ZipFile(output)) {

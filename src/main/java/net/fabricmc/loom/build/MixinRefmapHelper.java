@@ -31,6 +31,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,17 +70,31 @@ public final class MixinRefmapHelper {
 						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
-				final String rootPath = getRootPath(sourceSet);
-				
+				String[] rootPaths = sourceSet.getResources().getSrcDirs().iterator()
+						.map(root -> {
+							String rootPath = root.getAbsolutePath();
+							
+							if (rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
+								rootPath += File.separatorChar;
+							}
+							
+							return rootPath;
+						})
+						.toArray();
+
 				Stream<String> mixinConfigs = sourceSet.getResources()
 						.matching(container.mixinConfigPattern())
 						.getFiles()
 						.stream()
-						.map((file) -> {
+						.map(file -> {
 							String s = file.getAbsolutePath();
-							if(s.startsWith(rootPath)) {
-								s = s.substring(rootPath.length());
+
+							for (String rootPath : rootPaths) {
+								if (s.startsWith(rootPath)) {
+									s = s.substring(rootPath.length());
+								}
 							}
+							
 							return s;
 						})
 						.filter(allMixinConfigs::contains);
@@ -104,15 +119,26 @@ public final class MixinRefmapHelper {
 		}
 	}
 
-	private static String getRootPath(SourceSet sourceSet) {
-		File root = Iterables.getFirst(sourceSet.getResources().getSrcDirs(), null);
-		String rootPath = root == null ? "" : root.getAbsolutePath();
-		if(rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
-			rootPath += File.separatorChar;
+	private static String[] getRootPaths(SourceSet sourceSet) {
+		Set<Fire> dirs = ;
+		Iterator<File> iterator = dirs.iterator();
+		String[] rootPaths = new String[dirs.size()];
+		int i = 0;
+		
+		while (iterator.hasNext()) {
+			File root = iterator.next();
+			String rootPath = root == null ? "" : root.getAbsolutePath();
+			
+			if (rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
+				rootPath += File.separatorChar;
+			}
+			
+			rootPaths[i++] = rootPath;
 		}
-		return rootPath;
+
+		return rootPaths;
 	}
-	
+
 	@NotNull
 	private static JsonObject readFabricModJson(File output) {
 		try (ZipFile zip = new ZipFile(output)) {

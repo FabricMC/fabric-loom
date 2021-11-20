@@ -24,7 +24,10 @@
 
 package net.fabricmc.loom.api.mappings.layered.spec;
 
+import groovy.lang.Closure;
+import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
+import org.gradle.util.ConfigureUtil;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -47,10 +50,23 @@ public interface LayeredMappingSpecBuilder {
 	/**
 	 * Configure and add a layer that uses the official mappings provided by Mojang.
 	 */
+	@SuppressWarnings("rawtypes")
+	default LayeredMappingSpecBuilder officialMojangMappings(@DelegatesTo(value = MojangMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure closure) {
+		return officialMojangMappings(mojangMappingsSpecBuilder -> ConfigureUtil.configure(closure, mojangMappingsSpecBuilder));
+	}
+
+	/**
+	 * Configure and add a layer that uses the official mappings provided by Mojang.
+	 */
 	LayeredMappingSpecBuilder officialMojangMappings(Action<MojangMappingsSpecBuilder> action);
 
 	default LayeredMappingSpecBuilder parchment(Object object) {
 		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
+	}
+
+	@SuppressWarnings("rawtypes")
+	default LayeredMappingSpecBuilder parchment(Object object, @DelegatesTo(value = ParchmentMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure closure) {
+		return parchment(object, parchmentMappingsSpecBuilder -> ConfigureUtil.configure(closure, parchmentMappingsSpecBuilder));
 	}
 
 	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);

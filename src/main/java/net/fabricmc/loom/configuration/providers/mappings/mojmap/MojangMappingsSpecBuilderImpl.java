@@ -43,6 +43,11 @@ public class MojangMappingsSpecBuilderImpl implements MojangMappingsSpecBuilder 
 		return this;
 	}
 
+	@Override
+	public boolean getNameSyntheticMembers() {
+		return nameSyntheticMembers;
+	}
+
 	public MojangMappingsSpec build() {
 		return new MojangMappingsSpec(nameSyntheticMembers);
 	}

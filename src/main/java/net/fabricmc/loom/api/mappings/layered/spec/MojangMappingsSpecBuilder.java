@@ -31,4 +31,6 @@ public interface MojangMappingsSpecBuilder {
 	 * <p>When disabled synthetic fields and methods will not be mapped leaving them with their intermediary name.
 	 */
 	MojangMappingsSpecBuilder setNameSyntheticMembers(boolean value);
+
+	boolean getNameSyntheticMembers();
 }

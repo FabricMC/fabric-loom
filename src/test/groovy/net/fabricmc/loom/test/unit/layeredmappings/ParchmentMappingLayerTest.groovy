@@ -38,7 +38,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec(),
+                    new MojangMappingsSpec(true),
                     new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), false)
             )
             def tiny = getTiny(mappings)
@@ -61,7 +61,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec(),
+                    new MojangMappingsSpec(true),
                     new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), true)
             )
             def tiny = getTiny(mappings)

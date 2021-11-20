@@ -24,40 +24,11 @@
 
 package net.fabricmc.loom.api.mappings.layered.spec;
 
-import org.gradle.api.Action;
-import org.jetbrains.annotations.ApiStatus;
-
-/**
- * Used to configure a layered mapping spec.
- */
-@ApiStatus.Experimental
-public interface LayeredMappingSpecBuilder {
+public interface MojangMappingsSpecBuilder {
 	/**
-	 * Add a MappingsSpec layer.
+	 * When enabled synthetic fields and methods will be mapped to name specified in the official mojang mappings.
+	 *
+	 * <p>When disabled synthetic fields and methods will not be mapped leaving them with their intermediary name.
 	 */
-	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
-
-	/**
-	 * Add a layer that uses the official mappings provided by Mojang with the default options.
-	 */
-	default LayeredMappingSpecBuilder officialMojangMappings() {
-		return officialMojangMappings(builder -> { });
-	}
-
-	/**
-	 * Configure and add a layer that uses the official mappings provided by Mojang.
-	 */
-	LayeredMappingSpecBuilder officialMojangMappings(Action<MojangMappingsSpecBuilder> action);
-
-	default LayeredMappingSpecBuilder parchment(Object object) {
-		return parchment(object, parchmentMappingsSpecBuilder -> parchmentMappingsSpecBuilder.setRemovePrefix(true));
-	}
-
-	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);
-
-	/**
-	 * Add a signatureFix layer. Reads the @extras/record_signatures.json" file in a jar file such as yarn.
-	 */
-	@ApiStatus.Experimental
-	LayeredMappingSpecBuilder signatureFix(Object object);
+	MojangMappingsSpecBuilder setNameSyntheticMembers(boolean value);
 }

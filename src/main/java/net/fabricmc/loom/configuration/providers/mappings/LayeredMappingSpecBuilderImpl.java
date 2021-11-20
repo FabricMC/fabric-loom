@@ -33,10 +33,11 @@ import org.gradle.api.Action;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.MojangMappingsSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.ParchmentMappingsSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesSpec;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec;
-import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;
 
 public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder {
@@ -49,8 +50,10 @@ public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder 
 	}
 
 	@Override
-	public LayeredMappingSpecBuilder officialMojangMappings() {
-		return addLayer(new MojangMappingsSpec());
+	public LayeredMappingSpecBuilder officialMojangMappings(Action<MojangMappingsSpecBuilder> action) {
+		MojangMappingsSpecBuilderImpl builder = MojangMappingsSpecBuilderImpl.builder();
+		action.execute(builder);
+		return addLayer(builder.build());
 	}
 
 	@Override

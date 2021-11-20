@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,31 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.mojmap;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import java.io.IOException;
+import java.util.regex.Pattern;
 
-public record MojangMappingsSpec(boolean nameSyntheticMembers) implements MappingsSpec<MojangMappingLayer> {
-	// Keys in dependency manifest
-	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
-	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+import net.fabricmc.mappingio.MappedElementKind;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
+
+/**
+ * Filters out method and field names based on the provided regex pattern.
+ */
+public class DstNameFilterMappingVisitor extends ForwardingMappingVisitor {
+	private final Pattern pattern;
+
+	public DstNameFilterMappingVisitor(MappingVisitor next, Pattern pattern) {
+		super(next);
+
+		this.pattern = pattern;
+	}
 
 	@Override
-	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
-
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
-			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
+	public void visitDstName(MappedElementKind targetKind, int namespace, String name) throws IOException {
+		if ((targetKind == MappedElementKind.FIELD || targetKind == MappedElementKind.METHOD) && pattern.matcher(name).matches()) {
+			return;
 		}
 
-		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
-				nameSyntheticMembers(),
-				context.getLogger()
-		);
+		super.visitDstName(targetKind, namespace, name);
 	}
 }

@@ -31,13 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
+import net.fabricmc.loom.configuration.providers.mappings.utils.DstNameFilterMappingVisitor;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -45,8 +47,10 @@ import net.fabricmc.mappingio.format.ProGuardReader;
 
 public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 									MinecraftVersionMeta.Download serverDownload,
-									Path workingDir,
+									Path workingDir, boolean nameSyntheticMembers,
 									Logger logger) implements MappingLayer {
+	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile("^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
+
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		Path clientMappings = workingDir().resolve("client.txt");
@@ -56,8 +60,11 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 
 		printMappingsLicense(clientMappings);
 
+		// Filter out field names matching the pattern
+		DstNameFilterMappingVisitor nameFilter = new DstNameFilterMappingVisitor(mappingVisitor, SYNTHETIC_NAME_PATTERN);
+
 		// Make official the source namespace
-		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, MappingsNamespace.OFFICIAL.toString());
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nameSyntheticMembers() ? mappingVisitor : nameFilter, MappingsNamespace.OFFICIAL.toString());
 
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8);
 				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings, StandardCharsets.UTF_8)) {

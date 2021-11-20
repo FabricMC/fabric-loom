@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,29 +24,31 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.api.mappings.layered.spec.MojangMappingsSpecBuilder;
 
-public record MojangMappingsSpec(boolean nameSyntheticMembers) implements MappingsSpec<MojangMappingLayer> {
-	// Keys in dependency manifest
-	private static final String MANIFEST_CLIENT_MAPPINGS = "client_mappings";
-	private static final String MANIFEST_SERVER_MAPPINGS = "server_mappings";
+public class MojangMappingsSpecBuilderImpl implements MojangMappingsSpecBuilder {
+	// TODO 0.11 loom change default to false
+	private boolean nameSyntheticMembers = true;
+
+	private MojangMappingsSpecBuilderImpl() {
+	}
+
+	public static MojangMappingsSpecBuilderImpl builder() {
+		return new MojangMappingsSpecBuilderImpl();
+	}
 
 	@Override
-	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
+	public MojangMappingsSpecBuilder setNameSyntheticMembers(boolean value) {
+		nameSyntheticMembers = value;
+		return this;
+	}
 
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
-			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
-		}
+	@Override
+	public boolean getNameSyntheticMembers() {
+		return nameSyntheticMembers;
+	}
 
-		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
-				nameSyntheticMembers(),
-				context.getLogger()
-		);
+	public MojangMappingsSpec build() {
+		return new MojangMappingsSpec(nameSyntheticMembers);
 	}
 }

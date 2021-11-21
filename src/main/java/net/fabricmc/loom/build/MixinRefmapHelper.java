@@ -70,7 +70,7 @@ public final class MixinRefmapHelper {
 						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
-				String[] rootPaths = sourceSet.getResources().getSrcDirs().iterator()
+				String[] rootPaths = (String[]) sourceSet.getResources().getSrcDirs().stream()
 						.map(root -> {
 							String rootPath = root.getAbsolutePath();
 							

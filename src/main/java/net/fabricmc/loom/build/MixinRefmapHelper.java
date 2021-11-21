@@ -119,26 +119,6 @@ public final class MixinRefmapHelper {
 		}
 	}
 
-	private static String[] getRootPaths(SourceSet sourceSet) {
-		Set<Fire> dirs = ;
-		Iterator<File> iterator = dirs.iterator();
-		String[] rootPaths = new String[dirs.size()];
-		int i = 0;
-		
-		while (iterator.hasNext()) {
-			File root = iterator.next();
-			String rootPath = root == null ? "" : root.getAbsolutePath();
-			
-			if (rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
-				rootPath += File.separatorChar;
-			}
-			
-			rootPaths[i++] = rootPath;
-		}
-
-		return rootPaths;
-	}
-
 	@NotNull
 	private static JsonObject readFabricModJson(File output) {
 		try (ZipFile zip = new ZipFile(output)) {

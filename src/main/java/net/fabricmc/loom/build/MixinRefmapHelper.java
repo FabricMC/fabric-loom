@@ -31,7 +31,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,12 +38,10 @@ import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -73,11 +70,11 @@ public final class MixinRefmapHelper {
 				String[] rootPaths = (String[]) sourceSet.getResources().getSrcDirs().stream()
 						.map(root -> {
 							String rootPath = root.getAbsolutePath();
-							
+
 							if (rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
 								rootPath += File.separatorChar;
 							}
-							
+
 							return rootPath;
 						})
 						.toArray();
@@ -94,7 +91,7 @@ public final class MixinRefmapHelper {
 									s = s.substring(rootPath.length());
 								}
 							}
-							
+
 							return s;
 						})
 						.filter(allMixinConfigs::contains);

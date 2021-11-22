@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.ImmutableMap;
 import groovy.util.Node;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -48,7 +49,9 @@ import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.GroovyXmlUtil;
 
 public final class MavenPublication {
-	private static final Map<String, String> CONFIGURATION_TO_SCOPE = Map.of(
+	// ImmutableMap is needed since it guarantees ordering
+	// (compile must go before runtime, or otherwise dependencies might get the "weaker" runtime scope).
+	private static final Map<String, String> CONFIGURATION_TO_SCOPE = ImmutableMap.of(
 			JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, "compile",
 			JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, "runtime"
 	);

@@ -24,17 +24,15 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.util.Set;
+
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
-public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration, @Nullable String replacedWith) {
-	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, String consumerConfiguration) {
-		this(sourceConfiguration, targetConfiguration, compileClasspath, runtimeClasspath, consumerConfiguration, null);
-	}
-
-	public boolean hasConsumerConfiguration() {
-		return consumerConfiguration != null && !consumerConfiguration.isEmpty();
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, PublishingMode publishingMode, @Nullable String replacedWith) {
+	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, PublishingMode publishingMode) {
+		this(sourceConfiguration, targetConfiguration, compileClasspath, runtimeClasspath, publishingMode, null);
 	}
 
 	public String getRemappedConfiguration() {
@@ -47,5 +45,22 @@ public record RemappedConfigurationEntry(String sourceConfiguration, String targ
 		}
 
 		return targetConfiguration;
+	}
+
+	public enum PublishingMode {
+		NONE,
+		COMPILE_ONLY(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
+		RUNTIME_ONLY(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
+		COMPILE_AND_RUNTIME(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME);
+
+		private final Set<String> outgoingConfigurations;
+
+		PublishingMode(String... outgoingConfigurations) {
+			this.outgoingConfigurations = Set.of(outgoingConfigurations);
+		}
+
+		public Set<String> outgoingConfigurations() {
+			return outgoingConfigurations;
+		}
 	}
 }

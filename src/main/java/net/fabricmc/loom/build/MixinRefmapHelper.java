@@ -67,7 +67,7 @@ public final class MixinRefmapHelper {
 						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
-				String[] rootPaths = (String[]) sourceSet.getResources().getSrcDirs().stream()
+				String[] rootPaths = sourceSet.getResources().getSrcDirs().stream()
 						.map(root -> {
 							String rootPath = root.getAbsolutePath();
 
@@ -77,7 +77,7 @@ public final class MixinRefmapHelper {
 
 							return rootPath;
 						})
-						.toArray();
+						.toArray(String[]::new);
 
 				Stream<String> mixinConfigs = sourceSet.getResources()
 						.matching(container.mixinConfigPattern())

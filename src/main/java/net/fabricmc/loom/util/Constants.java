@@ -31,6 +31,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry.PublishingMode;
 
 public class Constants {
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
@@ -44,13 +45,13 @@ public class Constants {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, "", "modRuntimeOnly"),
-			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, ""),
-			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modLocalRuntime", Configurations.LOCAL_RUNTIME, false, true, "")
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, PublishingMode.COMPILE_AND_RUNTIME),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, PublishingMode.RUNTIME_ONLY),
+			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, PublishingMode.NONE, "modRuntimeOnly"),
+			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, PublishingMode.NONE),
+			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, PublishingMode.COMPILE_ONLY),
+			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, PublishingMode.RUNTIME_ONLY),
+			new RemappedConfigurationEntry("modLocalRuntime", Configurations.LOCAL_RUNTIME, false, true, PublishingMode.NONE)
 	);
 
 	private Constants() {

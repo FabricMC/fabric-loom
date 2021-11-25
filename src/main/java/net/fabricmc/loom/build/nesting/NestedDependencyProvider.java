@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
-
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;

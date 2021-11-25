@@ -31,6 +31,7 @@ import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
+import org.gradle.api.artifacts.ConfigurablePublishArtifact;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.dsl.ArtifactHandler;
@@ -64,24 +65,17 @@ public class RemapConfiguration {
 		if (extension.getSetupRemappedVariants().get()) {
 			ArtifactHandler artifacts = project.getArtifacts();
 			project.getTasks().named(DEFAULT_REMAP_JAR_TASK_NAME, task -> {
-				artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
-				artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+				artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task, artifactConfigurationAction(task, DEFAULT_REMAP_JAR_TASK_NAME, project));
+				artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task, artifactConfigurationAction(task, DEFAULT_REMAP_JAR_TASK_NAME, project));
 			});
 			project.getTasks().named(DEFAULT_REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 				if (!project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
 					// Sources jar may not have been created with withSourcesJar
+					project.getLogger().info("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
 					return;
 				}
 
-				PublishArtifact artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput(), configurablePublishArtifact -> {
-					Task remapJarTask = task;
-
-					if (extension.getShareRemapCaches().get()) {
-						remapJarTask = project.getRootProject().getTasks().getByName(DEFAULT_REMAP_ALL_JARS_TASK_NAME);
-					}
-
-					configurablePublishArtifact.builtBy(remapJarTask);
-				});
+				PublishArtifact artifact = artifacts.add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task.getOutput(), artifactConfigurationAction(task, DEFAULT_REMAP_ALL_SOURCES_TASK_NAME, project));
 
 				// Remove the existing artifact that does not run remapSourcesJar.
 				// It doesn't seem to hurt, but I'm not sure if the file-level duplicates cause issues.
@@ -208,5 +202,19 @@ public class RemapConfiguration {
 		} catch (UnknownTaskException ignored) {
 			// pass
 		}
+	}
+
+	private static Action<ConfigurablePublishArtifact> artifactConfigurationAction(Task standardTask, String sharedTaskName, Project project) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		return artifact -> {
+			Task remapTask = standardTask;
+
+			if (extension.getShareRemapCaches().get()) {
+				remapTask = project.getRootProject().getTasks().getByName(sharedTaskName);
+			}
+
+			artifact.builtBy(remapTask);
+		};
 	}
 }

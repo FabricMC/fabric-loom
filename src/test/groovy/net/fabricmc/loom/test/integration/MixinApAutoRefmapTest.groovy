@@ -66,7 +66,7 @@ class MixinApAutoRefmapTest extends Specification implements GradleProjectTestTr
 
             def j5 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("irrelevant.mixins.json"))))
             !j5.asJsonObject.has("refmap")
-            
+
             def j6 = JsonParser.parseReader(new InputStreamReader(jar.getInputStream(jar.getEntry("subfolder/subfolder.mixins.json"))))
             j6.asJsonObject.getAsJsonPrimitive("refmap").getAsString() == "refmap0001.json"
 

@@ -27,6 +27,7 @@ package net.fabricmc.loom.build.nesting;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,7 +37,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
+
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -202,11 +205,19 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);
 
-		jsonObject.addProperty("id",
-				(metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency) + info.getClassifierSuffix())
-						.replaceAll("\\.", "_")
-						.toLowerCase(Locale.ENGLISH)
-		);
+		String modId = (metaExtractor.group(dependency) + "_" + metaExtractor.name(dependency) + info.getClassifierSuffix())
+				.replaceAll("\\.", "_")
+				.toLowerCase(Locale.ENGLISH);
+
+		// Fabric Loader can't handle modIds longer than 64 characters
+		if (modId.length() > 64) {
+			String hash = Hashing.sha256()
+					.hashString(modId, StandardCharsets.UTF_8)
+					.toString();
+			modId = modId.substring(0, 50) + hash.substring(0, 14);
+		}
+
+		jsonObject.addProperty("id", modId);
 		jsonObject.addProperty("version", metaExtractor.version(dependency));
 		jsonObject.addProperty("name", metaExtractor.name(dependency));
 

@@ -139,7 +139,12 @@ public final class TransitiveAccessWidenerMappingsProcessor {
 				comment += "\n";
 			}
 
-			comment += "Access widened by %s to %s".formatted(modId(), access);
+			String awComment = "Access widened by %s to %s".formatted(modId(), access);
+
+			if (!comment.contains(awComment)) {
+				// Ensure we don't comment the same thing twice. A bit of a cheap way to do this, but should work ok.
+				comment += awComment;
+			}
 
 			return comment;
 		}

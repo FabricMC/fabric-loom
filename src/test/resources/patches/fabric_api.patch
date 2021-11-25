@@ -1,0 +1,62 @@
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	(revision ce6198f63bbe0e17ba631420e9186fb72cc8b2af)
++++ b/build.gradle	(date 1637848132986)
+@@ -31,17 +31,7 @@
+ 		throw new NullPointerException("Could not find version for " + project.name)
+ 	}
+
+-	if (grgit == null) {
+-		return version + "+nogit"
+-	}
+-
+-	def latestCommits = grgit.log(paths: [project.name], maxCommits: 1)
+-
+-	if (latestCommits.isEmpty()) {
+-		return version + "+uncommited"
+-	}
+-
+-	return version + "+" + latestCommits.get(0).id.substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
++	return version
+ }
+
+ def getBranch() {
+@@ -132,9 +122,8 @@
+ 		include "**/*.java"
+ 	}
+
+-	task sourcesJar(type: Jar, dependsOn: classes) {
+-		archiveClassifier = "sources"
+-		from sourceSets.main.allSource
++	java {
++		withSourcesJar()
+ 	}
+
+ 	checkstyle {
+@@ -229,12 +218,16 @@
+ 		publications {
+ 			mavenJava(MavenPublication) {
+ 				from components.java
++
++				artifact javadocJar
+ 			}
+ 		}
+
+ 		setupRepositories(repositories)
+ 	}
+
++	loom.disableDeprecatedPomGeneration(publishing.publications.mavenJava)
++
+ 	javadoc.enabled = false
+
+ 	afterEvaluate {
+@@ -242,10 +235,6 @@
+ 		genSourcesWithFernFlower.enabled = false
+ 		genSourcesWithCfr.enabled = false
+ 		unpickJar.enabled = false
+-
+-		// Work around a loom bug causing empty jars to be pushed to maven local.
+-		publishMavenJavaPublicationToMavenLocal.dependsOn rootProject.tasks.getByName("remapAllJars")
+-		publishMavenJavaPublicationToMavenLocal.dependsOn rootProject.tasks.getByName("remapAllSources")
+ 	}
+ }
+

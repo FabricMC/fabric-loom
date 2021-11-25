@@ -43,10 +43,10 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	def "build and run (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(
-					repo: "https://github.com/modmuss50/fabric.git",
-					commit: "e954edb6069e36139fd70428cfe4cddb5826c498",
+					repo: "https://github.com/FabricMC/fabric.git",
+					commit: "ce6198f63bbe0e17ba631420e9186fb72cc8b2af",
 					version: version,
-//					patch: "fabric_api"
+					patch: "fabric_api"
 			)
 
 			// Set the version to something constant
@@ -62,8 +62,11 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		then:
 			result.task(":build").outcome == SUCCESS
 
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/3.2.2/fabric-biome-api-v1-3.2.2.jar").exists()
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/3.2.2/fabric-biome-api-v1-3.2.2-sources.jar").exists()
+
 			serverResult.successful()
-			serverResult.output.contains("fabric@$API_VERSION")
+			serverResult.output.contains("- fabric $API_VERSION")
 		where:
 			version << STANDARD_TEST_VERSIONS
 	}

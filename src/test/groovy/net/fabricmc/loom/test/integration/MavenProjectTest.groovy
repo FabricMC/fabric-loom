@@ -53,6 +53,7 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Gr
 		then:
 			result.task(":publish").outcome == SUCCESS
 			gradle.hasOutputZipEntry("fabric-example-lib-${version}.jar", "net/fabricmc/example/ExampleLib.class")
+			gradle.hasOutputZipEntry("fabric-example-lib-${version}-sources.jar", "net/fabricmc/example/ExampleLib.java")
 
 		where:
 			version           | gradleVersion

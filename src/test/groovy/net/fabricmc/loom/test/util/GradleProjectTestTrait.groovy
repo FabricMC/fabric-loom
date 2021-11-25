@@ -138,7 +138,7 @@ trait GradleProjectTestTrait {
             // And override the CI check to ensure that everything is ran
             System.setProperty("fabric.loom.test", "true")
             System.setProperty("fabric.loom.ci", "false")
-            System.setProperty("maven.repo.local", new File(getGradleHomeDir(), "m2").absolutePath)
+            System.setProperty("maven.repo.local", mavenLocalDir.absolutePath)
 
             def runner = this.runner
             def args = []
@@ -178,6 +178,10 @@ trait GradleProjectTestTrait {
 
         File getOutputFile(String filename) {
             return new File(getProjectDir(), "build/libs/$filename")
+        }
+
+        File getMavenLocalDir() {
+            return new File(gradleHomeDir, "m2")
         }
 
         void printOutputFiles() {

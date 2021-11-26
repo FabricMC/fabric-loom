@@ -48,6 +48,7 @@ import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -304,6 +305,20 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
 				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
 		);
+
+		// Unpick ships with a slightly older version of asm, ensure it runs with at least the same version as loom.
+		String[] asmDeps = new String[] {
+				"org.ow2.asm:asm:%s",
+				"org.ow2.asm:asm-tree:%s",
+				"org.ow2.asm:asm-commons:%s",
+				"org.ow2.asm:asm-util:%s"
+		};
+
+		for (String asm : asmDeps) {
+			getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+					asm.formatted(Opcodes.class.getPackage().getImplementationVersion())
+			);
+		}
 	}
 
 	private void mergeAndSaveMappings(Project project, Path from, Path out) throws IOException {

@@ -117,7 +117,7 @@ public class ModDependencyInfo {
 	}
 
 	private boolean outputHasInvalidAccessWidener() {
-		if (accessWidenerData == null ) {
+		if (accessWidenerData == null) {
 			// This mod doesn't use an AW
 			return false;
 		}

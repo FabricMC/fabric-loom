@@ -27,8 +27,7 @@ package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 import net.fabricmc.loom.api.mappings.layered.spec.MojangMappingsSpecBuilder;
 
 public class MojangMappingsSpecBuilderImpl implements MojangMappingsSpecBuilder {
-	// TODO 0.11 loom change default to false
-	private boolean nameSyntheticMembers = true;
+	private boolean nameSyntheticMembers = false;
 
 	private MojangMappingsSpecBuilderImpl() {
 	}

@@ -24,9 +24,6 @@
 
 package net.fabricmc.loom.api;
 
-import java.io.File;
-import java.util.List;
-
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
@@ -52,35 +49,7 @@ public interface LoomGradleExtensionAPI {
 
 	RegularFileProperty getAccessWidenerPath();
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default File getAccessWidener() {
-		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
-		return getAccessWidenerPath().getAsFile().getOrNull();
-	}
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default void setAccessWidener(File file) {
-		getDeprecationHelper().replaceWithInLoom0_11("accessWidener", "accessWidenerPath");
-		getAccessWidenerPath().set(file);
-	}
-
 	Property<Boolean> getShareRemapCaches();
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default void setShareCaches(boolean shareCaches) {
-		getDeprecationHelper().replaceWithInLoom0_11("shareCaches", "shareRemapCaches");
-		getShareRemapCaches().set(shareCaches);
-	}
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default boolean isShareCaches() {
-		getDeprecationHelper().replaceWithInLoom0_11("shareCaches", "shareRemapCaches");
-		return getShareRemapCaches().get();
-	}
 
 	default void shareCaches() {
 		getShareRemapCaches().set(true);
@@ -88,25 +57,11 @@ public interface LoomGradleExtensionAPI {
 
 	ListProperty<LoomDecompiler> getGameDecompilers();
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default List<LoomDecompiler> getDecompilers() {
-		getDeprecationHelper().replaceWithInLoom0_11("decompilers", "gameDecompilers");
-		return getGameDecompilers().get();
-	}
-
 	default void addDecompiler(LoomDecompiler decompiler) {
 		getGameDecompilers().add(decompiler);
 	}
 
 	ListProperty<JarProcessor> getGameJarProcessors();
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default List<JarProcessor> getJarProcessors() {
-		getDeprecationHelper().replaceWithInLoom0_11("jarProcessors", "gameJarProcessors");
-		return getGameJarProcessors().get();
-	}
 
 	default void addJarProcessor(JarProcessor processor) {
 		getGameJarProcessors().add(processor);
@@ -120,35 +75,7 @@ public interface LoomGradleExtensionAPI {
 
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default String getRefmapName() {
-		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixin.defaultRefmapName");
-		return getMixin().getDefaultRefmapName().get();
-	}
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default void setRefmapName(String refmapName) {
-		getDeprecationHelper().replaceWithInLoom0_11("refmapName", "mixin.defaultRefmapName");
-		getMixin().getDefaultRefmapName().set(refmapName);
-	}
-
 	Property<Boolean> getRemapArchives();
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default boolean isRemapMod() {
-		getDeprecationHelper().replaceWithInLoom0_11("remapMod", "remapArchives");
-		return getRemapArchives().get();
-	}
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default void setRemapMod(boolean remapMod) {
-		getDeprecationHelper().replaceWithInLoom0_11("remapMod", "remapArchives");
-		getRemapArchives().set(remapMod);
-	}
 
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
 
@@ -161,20 +88,6 @@ public interface LoomGradleExtensionAPI {
 	MixinExtensionAPI getMixin();
 
 	Property<String> getCustomMinecraftManifest();
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default void setCustomManifest(String customManifest) {
-		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
-		getCustomMinecraftManifest().set(customManifest);
-	}
-
-	@Deprecated(forRemoval = true)
-	@ApiStatus.ScheduledForRemoval(inVersion = "0.11")
-	default String getCustomManifest() {
-		getDeprecationHelper().replaceWithInLoom0_11("customManifest", "customMinecraftManifest");
-		return getCustomMinecraftManifest().getOrNull();
-	}
 
 	/**
 	 * If true, Loom will replace the {@code -dev} jars in the {@code *Elements} configurations

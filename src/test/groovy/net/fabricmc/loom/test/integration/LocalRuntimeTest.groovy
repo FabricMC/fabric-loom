@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2018-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-@Deprecated // Replaced by RunGameTask
-public class RunClientTask extends AbstractRunTask {
-	public RunClientTask() {
-		super(project -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
-			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("client"));
-		});
-		LoomGradleExtension.get(getProject()).getDeprecationHelper().replaceWithInLoom0_11("RunClientTask", "RunGameTask");
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+
+class LocalRuntimeTest extends Specification implements GradleProjectTestTrait {
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "localRuntime", version: version)
+
+		when:
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"])
+
+		then:
+			result.task(":build").outcome == SUCCESS
+			def pomFile = new File(gradle.getProjectDir(), "build/publications/mavenJava/pom-default.xml")
+			def pom = pomFile.text
+			!pom.contains("fabric-api")
+			!pom.contains("enigma")
+
+		where:
+			version << STANDARD_TEST_VERSIONS
 	}
 }

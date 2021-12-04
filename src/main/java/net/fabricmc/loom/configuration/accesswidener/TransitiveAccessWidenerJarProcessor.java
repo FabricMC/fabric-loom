@@ -26,12 +26,19 @@ package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -80,7 +87,8 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	}
 
 	private List<AccessWidenerFile> getTransitiveAccessWideners() {
-		List<AccessWidenerFile> accessWideners = new ArrayList<>();
+		final List<AccessWidenerFile> accessWideners = new ArrayList<>();
+		final Set<Path> possibleModJars = new HashSet<>();
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
 			// Only apply global AWs from mods that are part of the compile classpath
@@ -88,24 +96,40 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 				continue;
 			}
 
-			Set<File> artifacts = extension.getLazyConfigurationProvider(entry.sourceConfiguration())
-					.get()
-					.resolve();
+			final Configuration configuration = extension.getLazyConfigurationProvider(entry.sourceConfiguration()).get();
 
-			for (File artifact : artifacts) {
-				AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(artifact.toPath());
-
-				if (accessWidener == null) {
-					continue;
-				}
-
-				if (!TransitiveDetectorVisitor.isTransitive(accessWidener.content())) {
-					// AW does not contain anything transitive, skip over it
-					continue;
-				}
-
-				accessWideners.add(accessWidener);
+			// Based off the logic in ModCompileRemapper.
+			for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
+				possibleModJars.add(artifact.getFile().toPath());
 			}
+
+			for (FileCollectionDependency dependency : configuration.getAllDependencies().withType(FileCollectionDependency.class)) {
+				FileCollection files = dependency.getFiles();
+
+				for (File artifact : files) {
+					possibleModJars.add(artifact.toPath());
+				}
+			}
+		}
+
+		for (Path path : possibleModJars) {
+			if (!Files.exists(path)) {
+				project.getLogger().debug("Could not find transitive access widener in {} as it does not exist", path.toAbsolutePath());
+				continue;
+			}
+
+			AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(path);
+
+			if (accessWidener == null) {
+				continue;
+			}
+
+			if (!TransitiveDetectorVisitor.isTransitive(accessWidener.content())) {
+				// AW does not contain anything transitive, skip over it
+				continue;
+			}
+
+			accessWideners.add(accessWidener);
 		}
 
 		return accessWideners;

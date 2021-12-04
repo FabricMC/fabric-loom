@@ -25,17 +25,17 @@
 package net.fabricmc.loom.test.unit.layeredmappings
 
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
-import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec
+import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpecBuilderImpl
 
 class MojangMappingLayerTest extends LayeredMappingsSpecification {
-    def "Read mojang mappings" () {
+    def "Read mojang mappings with synthetic field names" () {
         setup:
             mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
         when:
             def mappings = getLayeredMappings(
                     new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec()
+                    buildMojangMappingsSpec(true)
             )
             def tiny = getTiny(mappings)
         then:
@@ -45,5 +45,32 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
             mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
             mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
             mappings.classes[0].methods[0].args.size() == 0 // No Args
+            tiny.contains('this$0')
+    }
+
+    def "Read mojang mappings without synthetic field names" () {
+        setup:
+            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+        when:
+            def mappings = getLayeredMappings(
+                    new IntermediaryMappingsSpec(),
+                    buildMojangMappingsSpec(false)
+            )
+            def tiny = getTiny(mappings)
+        then:
+            mappings.srcNamespace == "named"
+            mappings.dstNamespaces == ["intermediary", "official"]
+            mappings.classes.size() == 6113
+            mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+            mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+            mappings.classes[0].methods[0].args.size() == 0 // No Args
+            !tiny.contains('this$0')
+    }
+
+    static def buildMojangMappingsSpec(boolean nameSyntheticFields) {
+        def builder = MojangMappingsSpecBuilderImpl.builder()
+        builder.setNameSyntheticMembers(nameSyntheticFields)
+        return builder.build()
     }
 }

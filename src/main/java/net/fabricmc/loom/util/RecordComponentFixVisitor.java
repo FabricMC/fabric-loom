@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util;
 
+import java.util.Objects;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.RecordComponentVisitor;
@@ -60,7 +62,7 @@ public class RecordComponentFixVisitor extends ClassVisitor {
 
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		String intermediaryName = mappings.getField(owner, name, descriptor).getName(intermediaryNsId);
+		String intermediaryName = Objects.requireNonNull(mappings.getField(owner, name, descriptor), "Could not get field for %s:%s%s".formatted(owner, name, descriptor)).getName(intermediaryNsId);
 
 		if (!hasExistingComponents && intermediaryName != null && intermediaryName.startsWith("comp_")) {
 			super.visitRecordComponent(name, descriptor, signature);

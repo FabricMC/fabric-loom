@@ -27,10 +27,15 @@ package net.fabricmc.loom.configuration.providers;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import com.google.common.io.Files;
 import org.gradle.api.GradleException;
@@ -57,7 +62,10 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	private File workingDir;
 	private File minecraftJson;
 	private File minecraftClientJar;
+	// Note this will be the boostrap jar starting with 21w39a
 	private File minecraftServerJar;
+	// The extracted server jar from the boostrap, only exists in >=21w39a
+	private File minecraftExtractedServerJar;
 	private File minecraftMergedJar;
 	private File versionManifestJson;
 	private File experimentalVersionsJson;
@@ -116,6 +124,7 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 		minecraftJson = file("minecraft-info.json");
 		minecraftClientJar = file("minecraft-client.jar");
 		minecraftServerJar = file("minecraft-server.jar");
+		minecraftExtractedServerJar = file("minecraft-extracted_server.jar");
 		minecraftMergedJar = file("minecraft-merged.jar");
 		versionManifestJson = new File(getDirectories().getUserCache(), "version_manifest.json");
 		experimentalVersionsJson = new File(getDirectories().getUserCache(), "experimental_version_manifest.json");
@@ -248,9 +257,61 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	private void mergeJars(Logger logger) throws IOException {
 		logger.info(":merging jars");
 
-		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, minecraftServerJar, minecraftMergedJar)) {
+		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, getServerJarToMerge(logger), minecraftMergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
+		}
+	}
+
+	private File getServerJarToMerge(Logger logger) throws IOException {
+		try (ZipFile zipFile = new ZipFile(minecraftServerJar)) {
+			ZipEntry versionsListEntry = zipFile.getEntry("META-INF/versions.list");
+
+			if (versionsListEntry == null) {
+				// Legacy pre 21w38a jar
+				return minecraftServerJar;
+			}
+
+			logger.info(":Extracting server jar from bootstrap");
+
+			String versionsList;
+
+			try (InputStream is = zipFile.getInputStream(versionsListEntry)) {
+				versionsList = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			}
+
+			String jarPath = null;
+			String[] versions = versionsList.split("\n");
+
+			if (versions.length != 1) {
+				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(versions.length));
+			}
+
+			for (String version : versions) {
+				if (version.isBlank()) continue;
+
+				String[] split = version.split("\t");
+
+				if (split.length != 3) continue;
+
+				final String hash = split[0];
+				final String id = split[1];
+				final String path = split[2];
+
+				// Take the first (only) version we find.
+				jarPath = path;
+				break;
+			}
+
+			Objects.requireNonNull(jarPath, "Could not find minecraft server jar for " + minecraftVersion());
+			ZipEntry serverJarEntry = zipFile.getEntry("META-INF/versions/" + jarPath);
+			Objects.requireNonNull(serverJarEntry, "Could not find server jar in boostrap@ " + jarPath);
+
+			try (InputStream is = zipFile.getInputStream(serverJarEntry)) {
+				java.nio.file.Files.copy(is, minecraftExtractedServerJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
+
+			return minecraftExtractedServerJar;
 		}
 	}
 

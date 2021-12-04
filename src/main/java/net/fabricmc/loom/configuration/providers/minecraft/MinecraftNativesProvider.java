@@ -35,12 +35,12 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.MirrorUtil;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class MinecraftNativesProvider {
 	private final Project project;
@@ -101,7 +101,7 @@ public class MinecraftNativesProvider {
 				throw new GradleException("Native jar not found at " + libJarFile.getAbsolutePath());
 			}
 
-			ZipUtil.unpack(libJarFile, nativesDir);
+			ZipUtils.unpackAll(libJarFile.toPath(), nativesDir.toPath());
 
 			// Store a file containing the hash of the extracted natives, used on subsequent runs to skip extracting all the natives if they haven't changed
 			File libSha1File = new File(nativesDir, libJarFile.getName() + ".sha1");

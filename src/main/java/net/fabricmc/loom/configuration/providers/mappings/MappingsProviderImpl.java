@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -45,9 +47,8 @@ import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
-import org.zeroturnaround.zip.ZipUtil;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -62,6 +63,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvid
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -72,8 +74,6 @@ import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
-import net.fabricmc.stitch.commands.tinyv2.CommandMergeTinyV2;
-import net.fabricmc.stitch.commands.tinyv2.CommandReorderTinyV2;
 
 public class MappingsProviderImpl extends DependencyProvider implements MappingsProvider {
 	public MinecraftMappedProvider mappedProvider;
@@ -92,6 +92,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private boolean hasUnpickDefinitions;
 	private UnpickMetadata unpickMetadata;
 	private MemoryMappingTree mappingTree;
+	private Map<String, String> signatureFixes;
 
 	public MappingsProviderImpl(Project project) {
 		super(project);
@@ -120,14 +121,15 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), (ClassLoader) null)) {
-				extractUnpickDefinitions(fileSystem, unpickDefinitions);
+				extractExtras(fileSystem);
 			}
 		}
 
 		mappingTree = readMappings();
 
 		if (Files.notExists(tinyMappingsJar) || isRefreshDeps()) {
-			ZipUtil.pack(new ZipEntrySource[] {new FileSource("mappings/mappings.tiny", tinyMappings.toFile())}, tinyMappingsJar.toFile());
+			Files.deleteIfExists(tinyMappingsJar);
+			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
 		}
 
 		if (hasUnpickDefinitions()) {
@@ -165,7 +167,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		if (processorManager.active()) {
 			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-			getProject().getLogger().lifecycle("Using project based jar storage");
+			getProject().getLogger().info("Using project based jar storage");
 		} else {
 			mappedProvider = new MinecraftMappedProvider(getProject());
 		}
@@ -209,7 +211,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
-			extractUnpickDefinitions(fileSystem, unpickDefinitions);
+			extractExtras(fileSystem);
 		}
 
 		if (areMappingsV2(baseTinyMappings)) {
@@ -253,7 +255,12 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		Files.copy(jar.getPath("mappings/mappings.tiny"), extractTo, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void extractUnpickDefinitions(FileSystem jar, Path extractTo) throws IOException {
+	private void extractExtras(FileSystem jar) throws IOException {
+		extractUnpickDefinitions(jar);
+		extractSignatureFixes(jar);
+	}
+
+	private void extractUnpickDefinitions(FileSystem jar) throws IOException {
 		Path unpickPath = jar.getPath("extras/definitions.unpick");
 		Path unpickMetadataPath = jar.getPath("extras/unpick.json");
 
@@ -261,10 +268,23 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			return;
 		}
 
-		Files.copy(unpickPath, extractTo, StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(unpickPath, unpickDefinitions, StandardCopyOption.REPLACE_EXISTING);
 
 		unpickMetadata = parseUnpickMetadata(unpickMetadataPath);
 		hasUnpickDefinitions = true;
+	}
+
+	private void extractSignatureFixes(FileSystem jar) throws IOException {
+		Path recordSignaturesJsonPath = jar.getPath("extras/record_signatures.json");
+
+		if (!Files.exists(recordSignaturesJsonPath)) {
+			return;
+		}
+
+		try (Reader reader = Files.newBufferedReader(recordSignaturesJsonPath, StandardCharsets.UTF_8)) {
+			//noinspection unchecked
+			signatureFixes = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, Map.class);
+		}
 	}
 
 	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
@@ -285,24 +305,42 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
 				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
 		);
+
+		// Unpick ships with a slightly older version of asm, ensure it runs with at least the same version as loom.
+		String[] asmDeps = new String[] {
+				"org.ow2.asm:asm:%s",
+				"org.ow2.asm:asm-tree:%s",
+				"org.ow2.asm:asm-commons:%s",
+				"org.ow2.asm:asm-util:%s"
+		};
+
+		for (String asm : asmDeps) {
+			getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+					asm.formatted(Opcodes.class.getPackage().getImplementationVersion())
+			);
+		}
 	}
 
 	private void mergeAndSaveMappings(Project project, Path from, Path out) throws IOException {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		project.getLogger().info(":merging mappings");
 
-		MemoryMappingTree tree = new MemoryMappingTree();
-		MappingSourceNsSwitch sourceNsSwitch = new MappingSourceNsSwitch(tree, MappingsNamespace.OFFICIAL.toString());
-		readIntermediaryTree().accept(sourceNsSwitch);
+		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
+		readIntermediaryTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
-			Tiny2Reader.read(reader, tree);
+			Tiny2Reader.read(reader, intermediaryTree);
 		}
 
-		inheritMappedNamesOfEnclosingClasses(tree);
+		MemoryMappingTree officialTree = new MemoryMappingTree();
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsCompleter, MappingsNamespace.OFFICIAL.toString());
+		intermediaryTree.accept(nsSwitch);
+
+		inheritMappedNamesOfEnclosingClasses(officialTree);
 
 		try (Tiny2Writer writer = new Tiny2Writer(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
-			tree.accept(writer);
+			officialTree.accept(writer);
 		}
 
 		project.getLogger().info(":merged mappings in " + stopwatch.stop());
@@ -351,28 +389,6 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 
 		return tree;
-	}
-
-	private void reorderMappings(Path oldMappings, Path newMappings, String... newOrder) {
-		Command command = new CommandReorderTinyV2();
-		String[] args = new String[2 + newOrder.length];
-		args[0] = oldMappings.toAbsolutePath().toString();
-		args[1] = newMappings.toAbsolutePath().toString();
-		System.arraycopy(newOrder, 0, args, 2, newOrder.length);
-		runCommand(command, args);
-	}
-
-	private void mergeMappings(Path intermediaryMappings, Path yarnMappings, Path newMergedMappings) {
-		try {
-			Command command = new CommandMergeTinyV2();
-			runCommand(command, intermediaryMappings.toAbsolutePath().toString(),
-							yarnMappings.toAbsolutePath().toString(),
-							newMergedMappings.toAbsolutePath().toString(),
-							MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.OFFICIAL.toString());
-		} catch (Exception e) {
-			throw new RuntimeException("Could not merge mappings from " + intermediaryMappings.toString()
-							+ " with mappings from " + yarnMappings, e);
-		}
 	}
 
 	private void suggestFieldNames(MinecraftProviderImpl minecraftProvider, Path oldMappings, Path newMappings) {
@@ -459,6 +475,11 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	public boolean hasUnpickDefinitions() {
 		return hasUnpickDefinitions;
+	}
+
+	@Nullable
+	public Map<String, String> getSignatureFixes() {
+		return signatureFixes;
 	}
 
 	@Override

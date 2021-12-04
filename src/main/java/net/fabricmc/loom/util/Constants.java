@@ -31,6 +31,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.RemappedConfigurationEntry.PublishingMode;
 
 public class Constants {
 	public static final String LIBRARIES_BASE = "https://libraries.minecraft.net/";
@@ -44,12 +45,12 @@ public class Constants {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
-			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntime", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, "", "modRuntimeOnly"),
-			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, ""),
-			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
-			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME)
+			new RemappedConfigurationEntry("modApi", JavaPlugin.API_CONFIGURATION_NAME, true, true, PublishingMode.COMPILE_AND_RUNTIME),
+			new RemappedConfigurationEntry("modImplementation", JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, PublishingMode.RUNTIME_ONLY),
+			new RemappedConfigurationEntry("modCompileOnly", JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, PublishingMode.NONE),
+			new RemappedConfigurationEntry("modCompileOnlyApi", JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, PublishingMode.COMPILE_ONLY),
+			new RemappedConfigurationEntry("modRuntimeOnly", JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, PublishingMode.RUNTIME_ONLY),
+			new RemappedConfigurationEntry("modLocalRuntime", Configurations.LOCAL_RUNTIME, false, true, PublishingMode.NONE)
 	);
 
 	private Constants() {
@@ -72,6 +73,13 @@ public class Constants {
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
 		public static final String UNPICK_CLASSPATH = "unpick";
+		/**
+		 * A configuration that behaves like {@code runtimeOnly} but is not
+		 * exposed in {@code runtimeElements} to dependents. A bit like
+		 * {@code testRuntimeOnly}, but for mods.
+		 */
+		public static final String LOCAL_RUNTIME = "localRuntime";
+		public static final String NAMED_ELEMENTS = "namedElements";
 
 		private Configurations() {
 		}
@@ -96,7 +104,7 @@ public class Constants {
 			public static final String MIXIN_COMPILE_EXTENSIONS = "0.4.6";
 			public static final String DEV_LAUNCH_INJECTOR = "0.2.1+build.8";
 			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
-			public static final String JETBRAINS_ANNOTATIONS = "22.0.0";
+			public static final String JETBRAINS_ANNOTATIONS = "23.0.0";
 
 			private Versions() {
 			}

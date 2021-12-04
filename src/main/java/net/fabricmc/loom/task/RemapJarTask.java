@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -288,7 +289,11 @@ public abstract class RemapJarTask extends Jar {
 			reader.read(accessWidenerFile.content());
 
 			// Finally, replace the output with the remaped aw
-			ZipUtil.replaceEntry(outputFile.toFile(), accessWidenerFile.path(), writer.write());
+			try {
+				ZipUtils.replace(outputFile.toFile(), accessWidenerFile.path(), writer.write());
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to replace access widener in output jar", e);
+			}
 		}
 
 		private void addNestedJars() {

@@ -42,6 +42,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 
 		then:
 			result.task(":${task}").outcome == SUCCESS
+			result.output.contains("This contains a space")
 
 		where:
 			task                | _

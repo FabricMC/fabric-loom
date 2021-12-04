@@ -21,6 +21,10 @@ loom {
 			vmArg "-Dfabric.autoTest"
 		}
 	}
+
+	runConfigs.configureEach {
+		vmArg "-Dfabric.loom.test.space=This contains a space"
+	}
 }
 
 archivesBaseName = "fabric-example-mod"

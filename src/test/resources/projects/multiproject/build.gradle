@@ -31,10 +31,6 @@ allprojects {
 
 	}
 
-	configurations {
-		dev
-	}
-
 	jar {
 		archiveClassifier.set "dev"
 	}

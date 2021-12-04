@@ -44,13 +44,13 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 			def gradle = gradleProject(
 					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "46582230fb580d4c1f71e4b0737df27417ec9cb1",
+					commit: "ce6198f63bbe0e17ba631420e9186fb72cc8b2af",
 					version: version,
 					patch: "fabric_api"
 			)
 
 			// Set the version to something constant
-			gradle.buildGradle.text = gradle.buildGradle.text.replace('Globals.baseVersion + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
 			def server = ServerRunner.create(gradle.projectDir, "1.17.1")
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
@@ -62,8 +62,11 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		then:
 			result.task(":build").outcome == SUCCESS
 
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/3.2.2/fabric-biome-api-v1-3.2.2.jar").exists()
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/3.2.2/fabric-biome-api-v1-3.2.2-sources.jar").exists()
+
 			serverResult.successful()
-			serverResult.output.contains("fabric@$API_VERSION")
+			serverResult.output.contains("- fabric $API_VERSION")
 		where:
 			version << STANDARD_TEST_VERSIONS
 	}

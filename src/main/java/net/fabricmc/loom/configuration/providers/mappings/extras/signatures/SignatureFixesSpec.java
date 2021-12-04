@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,18 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers.fernflower;
+package net.fabricmc.loom.configuration.providers.mappings.extras.signatures;
 
-import java.io.File;
-import java.util.List;
-import java.util.Map;
+import org.jetbrains.annotations.ApiStatus;
 
-import org.jetbrains.java.decompiler.main.Fernflower;
-import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
-import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 
-import net.fabricmc.fernflower.api.IFabricJavadocProvider;
-
-public class FabricForkedFFExecutor extends AbstractForkedFFExecutor {
-	public static void main(String[] args) {
-		AbstractForkedFFExecutor.decompile(args, new FabricForkedFFExecutor());
-	}
-
+@ApiStatus.Experimental
+public record SignatureFixesSpec(FileSpec fileSpec) implements MappingsSpec<SignatureFixesLayerImpl> {
 	@Override
-	public void runFF(Map<String, Object> options, List<File> libraries, File input, File output, File lineMap, File mappings) {
-		options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(mappings));
-
-		IResultSaver saver = new ThreadSafeResultSaver(() -> output, () -> lineMap);
-		IFernflowerLogger logger = new ThreadIDFFLogger();
-		Fernflower ff = new Fernflower(FernFlowerUtils::getBytecode, saver, options, logger);
-
-		for (File library : libraries) {
-			ff.addLibrary(library);
-		}
-
-		ff.addSource(input);
-		ff.decompileContext();
+	public SignatureFixesLayerImpl createLayer(MappingContext context) {
+		return new SignatureFixesLayerImpl(fileSpec.get(context));
 	}
 }

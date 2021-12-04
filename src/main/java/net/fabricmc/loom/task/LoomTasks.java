@@ -29,12 +29,12 @@ import java.io.File;
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
@@ -53,6 +53,13 @@ public final class LoomTasks {
 
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
+
+		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
+			t.setDescription("Validate all the rules in the access widener against the Minecraft jar");
+			t.setGroup("verification");
+		});
+
+		tasks.named("check").configure(task -> task.dependsOn(validateAccessWidener));
 
 		registerIDETasks(tasks);
 		registerRunTasks(tasks, project);
@@ -119,32 +126,46 @@ public final class LoomTasks {
 				return;
 			}
 
-			File inputJar = mappingsProvider.mappedProvider.getMappedJar();
+			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 
 			if (mappingsProvider.hasUnpickDefinitions()) {
 				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
 
 				tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-					unpickJarTask.setUnpickDefinition(mappingsProvider.getUnpickDefinitionsFile());
-					unpickJarTask.setInputJar(mappingsProvider.mappedProvider.getMappedJar());
-					unpickJarTask.setOutputJar(outputJar);
+					unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
+					unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
+					unpickJarTask.getOutputJar().set(outputJar);
 				});
 
-				inputJar = outputJar;
+				mappedJar = outputJar;
 			}
+
+			final File inputJar = mappedJar;
 
 			extension.getGameDecompilers().finalizeValue();
 
 			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
-				String taskName = decompiler instanceof FabricFernFlowerDecompiler ? "genSources" : "genSourcesWith" + decompiler.name();
-				// decompiler will be passed to the constructor of GenerateSourcesTask
-				GenerateSourcesTask generateSourcesTask = tasks.register(taskName, GenerateSourcesTask.class, decompiler).get();
-				generateSourcesTask.setInputJar(inputJar);
+				String taskName = "genSourcesWith" + decompiler.name();
+				// Decompiler will be passed to the constructor of GenerateSourcesTask
+				tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
+					task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
+					task.setGroup(Constants.TaskGroup.FABRIC);
+					task.getInputJar().set(inputJar);
 
-				if (mappingsProvider.hasUnpickDefinitions()) {
-					generateSourcesTask.dependsOn(tasks.getByName("unpickJar"));
-				}
+					if (mappingsProvider.hasUnpickDefinitions()) {
+						task.dependsOn(tasks.named("unpickJar"));
+					}
+
+					task.dependsOn(tasks.named("validateAccessWidener"));
+				});
 			}
+
+			tasks.register("genSources", task -> {
+				task.setDescription("Decompile minecraft using the default decompiler.");
+				task.setGroup(Constants.TaskGroup.FABRIC);
+
+				task.dependsOn(project.getTasks().named("genSourcesWithCfr"));
+			});
 		});
 	}
 }

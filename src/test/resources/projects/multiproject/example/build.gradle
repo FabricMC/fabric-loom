@@ -1,5 +1,11 @@
 archivesBaseName = "example"
 
 dependencies {
-	implementation project(path: ":core", configuration: "dev")
+	implementation project(path: ":core", configuration: "namedElements")
+}
+
+loom {
+	runConfigs.configureEach {
+		ideConfigGenerated = true
+	}
 }

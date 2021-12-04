@@ -27,7 +27,7 @@ package net.fabricmc.loom.decompilers;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.decompilers.cfr.FabricCFRDecompiler;
+import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class DecompilerConfiguration {
@@ -36,7 +36,7 @@ public final class DecompilerConfiguration {
 
 	public static void setup(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler(project));
-		extension.getGameDecompilers().add(new FabricCFRDecompiler(project));
+		extension.getGameDecompilers().add(new FabricFernFlowerDecompiler());
+		extension.getGameDecompilers().add(new LoomCFRDecompiler());
 	}
 }

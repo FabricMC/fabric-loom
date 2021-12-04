@@ -85,7 +85,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
     MemoryMappingTree getLayeredMappings(MappingsSpec<? extends MappingLayer>... specs) {
         LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
         LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
-        return processor.getMappings(mappingContext)
+        return processor.getMappings(processor.resolveLayers(mappingContext))
     }
 
     String getTiny(MemoryMappingTree mappingTree) {

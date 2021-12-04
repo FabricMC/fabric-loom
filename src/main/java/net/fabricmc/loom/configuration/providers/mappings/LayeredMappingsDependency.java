@@ -32,33 +32,39 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.SelfResolvingDependency;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.TaskDependency;
-import org.zeroturnaround.zip.ByteSource;
-import org.zeroturnaround.zip.ZipEntrySource;
-import org.zeroturnaround.zip.ZipUtil;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class LayeredMappingsDependency implements SelfResolvingDependency {
+public class LayeredMappingsDependency implements SelfResolvingDependency, FileCollectionDependency {
 	private static final String GROUP = "loom";
 	private static final String MODULE = "mappings";
 
+	private final Project project;
 	private final MappingContext mappingContext;
 	private final LayeredMappingSpec layeredMappingSpec;
 	private final String version;
 
-	public LayeredMappingsDependency(MappingContext mappingContext, LayeredMappingSpec layeredMappingSpec, String version) {
+	public LayeredMappingsDependency(Project project, MappingContext mappingContext, LayeredMappingSpec layeredMappingSpec, String version) {
+		this.project = project;
 		this.mappingContext = mappingContext;
 		this.layeredMappingSpec = layeredMappingSpec;
 		this.version = version;
@@ -72,27 +78,45 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 		if (!Files.exists(mappingsFile) || LoomGradlePlugin.refreshDeps) {
 			try {
 				var processor = new LayeredMappingsProcessor(layeredMappingSpec);
-				MemoryMappingTree mappings = processor.getMappings(mappingContext);
+				List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
-				try (Writer writer = new StringWriter()) {
-					Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+				Files.deleteIfExists(mappingsFile);
 
-					MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
-					MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
-					mappings.accept(nsSwitch);
-
-					Files.deleteIfExists(mappingsFile);
-
-					ZipUtil.pack(new ZipEntrySource[] {
-							new ByteSource("mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8))
-					}, mappingsFile.toFile());
-				}
+				writeMapping(processor, layers, mappingsFile);
+				writeSignatureFixes(processor, layers, mappingsFile);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to resolve Mojang mappings", e);
+				throw new RuntimeException("Failed to resolve layered mappings", e);
 			}
 		}
 
 		return Collections.singleton(mappingsFile.toFile());
+	}
+
+	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		MemoryMappingTree mappings = processor.getMappings(layers);
+
+		try (Writer writer = new StringWriter()) {
+			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+
+			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
+			mappings.accept(nsSwitch);
+
+			Files.deleteIfExists(mappingsFile);
+			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));
+		}
+	}
+
+	private void writeSignatureFixes(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		Map<String, String> signatureFixes = processor.getSignatureFixes(layers);
+
+		if (signatureFixes == null) {
+			return;
+		}
+
+		byte[] data = LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(signatureFixes).getBytes(StandardCharsets.UTF_8);
+
+		ZipUtils.add(mappingsFile, "extras/record_signatures.json", data);
 	}
 
 	@Override
@@ -131,7 +155,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public Dependency copy() {
-		return new LayeredMappingsDependency(mappingContext, layeredMappingSpec, version);
+		return new LayeredMappingsDependency(project, mappingContext, layeredMappingSpec, version);
 	}
 
 	@Override
@@ -141,5 +165,10 @@ public class LayeredMappingsDependency implements SelfResolvingDependency {
 
 	@Override
 	public void because(String s) {
+	}
+
+	@Override
+	public FileCollection getFiles() {
+		return project.files(resolve());
 	}
 }

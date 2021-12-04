@@ -33,5 +33,8 @@ public class RunGameTask extends AbstractRunTask {
 	@Inject
 	public RunGameTask(RunConfigSettings settings) {
 		super(proj -> RunConfig.runConfig(proj, settings));
+
+		// Defaults to empty, forwards stdin to mc.
+		setStandardInput(System.in);
 	}
 }

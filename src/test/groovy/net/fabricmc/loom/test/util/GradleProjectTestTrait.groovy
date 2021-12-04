@@ -26,9 +26,9 @@ package net.fabricmc.loom.test.util
 
 import groovy.transform.Immutable
 import net.fabricmc.loom.test.LoomTestConstants
+import net.fabricmc.loom.util.ZipUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
-import org.zeroturnaround.zip.ZipUtil
 import spock.lang.Shared
 
 trait GradleProjectTestTrait {
@@ -138,7 +138,7 @@ trait GradleProjectTestTrait {
             // And override the CI check to ensure that everything is ran
             System.setProperty("fabric.loom.test", "true")
             System.setProperty("fabric.loom.ci", "false")
-            System.setProperty("maven.repo.local", new File(getGradleHomeDir(), "m2").absolutePath)
+            System.setProperty("maven.repo.local", mavenLocalDir.absolutePath)
 
             def runner = this.runner
             def args = []
@@ -156,7 +156,7 @@ trait GradleProjectTestTrait {
 
             runner.withArguments(args as String[])
 
-            return runner.build()
+            return options.expectFailure ? runner.buildAndFail() : runner.build()
         }
 
         private GradleRunner getRunner() {
@@ -180,6 +180,10 @@ trait GradleProjectTestTrait {
             return new File(getProjectDir(), "build/libs/$filename")
         }
 
+        File getMavenLocalDir() {
+            return new File(gradleHomeDir, "m2")
+        }
+
         void printOutputFiles() {
             new File(getProjectDir(), "build/libs/").listFiles().each {
                 println(it.name)
@@ -192,7 +196,7 @@ trait GradleProjectTestTrait {
 
         String getOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            def bytes = ZipUtil.unpackEntry(file, entryName)
+            def bytes = ZipUtils.unpackNullable(file.toPath(), entryName)
 
             if (bytes == null) {
                 throw new FileNotFoundException("Could not find ${entryName} in ${entryName}")
@@ -203,7 +207,7 @@ trait GradleProjectTestTrait {
 
         boolean hasOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
-            return ZipUtil.unpackEntry(file, entryName) != null
+            return ZipUtils.unpackNullable(file.toPath(), entryName) != null
         }
 
         File getGeneratedSources(String mappings) {

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
@@ -60,10 +61,10 @@ public final class TinyRemapperHelper {
 	}
 
 	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM) throws IOException {
-		return getTinyRemapper(project, fromM, toM, false);
+		return getTinyRemapper(project, fromM, toM, false, (builder) -> { });
 	}
 
-	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM, boolean fixRecords) throws IOException {
+	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM, boolean fixRecords, Consumer<TinyRemapper.Builder> builderConsumer) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MemoryMappingTree mappingTree = extension.getMappingsProvider().getMappings();
 
@@ -73,20 +74,23 @@ public final class TinyRemapperHelper {
 
 		int intermediaryNsId = mappingTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 
-		return TinyRemapper.newRemapper()
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(create(mappingTree, fromM, toM, true))
 				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)
+				.inferNameFromSameLvIndex(true)
 				.extraPreApplyVisitor((cls, next) -> {
 					if (fixRecords && !cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
 						return new RecordComponentFixVisitor(next, mappingTree, intermediaryNsId);
 					}
 
 					return next;
-				})
-				.build();
+				});
+
+		builderConsumer.accept(builder);
+		return builder.build();
 	}
 
 	public static Path[] getMinecraftDependencies(Project project) {

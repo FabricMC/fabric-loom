@@ -61,6 +61,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
+	protected final Property<String> intermediary;
 
 	private final ModVersionParser versionParser;
 
@@ -85,6 +86,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
+		this.intermediary = project.getObjects().property(String.class)
+				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -121,7 +124,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl();
 		action.execute(builder);
 		LayeredMappingSpec builtSpec = builder.build();
-		return new LayeredMappingsDependency(new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
+		return new LayeredMappingsDependency(getProject(), new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
 	}
 
 	@Override
@@ -172,6 +175,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract Project getProject();
 
 	protected abstract LoomFiles getFiles();
+
+	@Override
+	public Property<String> getIntermediaryUrl() {
+		return intermediary;
+	}
 
 	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {

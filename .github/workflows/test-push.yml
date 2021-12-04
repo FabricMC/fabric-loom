@@ -5,7 +5,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [7.0.0-jdk16, 7.2-jdk17]
+        version: [7.3.1-jdk17]
     runs-on: ubuntu-20.04
     container:
       image: gradle:${{ matrix.version }}
@@ -22,7 +22,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: gradle:7.0.1-jdk16
+      image: gradle:7.3.1-jdk17
       options: --user root
 
     steps:
@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [7.0.0-jdk16, 7.2-jdk17]
+        version: [7.3.1-jdk17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-20.04
@@ -67,10 +67,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [16]
+        java: [17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v2
@@ -95,8 +95,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 16 ]
-        os: [ windows-2019, ubuntu-20.04, macos-10.15 ]
+        java: [ 17 ]
+        os: [ windows-2022, ubuntu-20.04, macos-11 ]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -112,52 +112,3 @@ jobs:
         with:
           name: Reproducible Build ${{ matrix.os }} (${{ matrix.java }}) Results
           path: build/reports/
-
-  bootstrap_tests:
-    needs: build
-
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ 8, 11, 15, 16 ]
-        gradle: [ 4.9, 5.2, 6.0.1, 6.9, 7.0.2 ]
-        exclude:
-          - java: 16
-            gradle: 6.9
-          - java: 16
-            gradle: 6.0.1
-          - java: 16
-            gradle: 5.2
-          - java: 16
-            gradle: 4.9
-          - java: 15
-            gradle: 6.0.1
-          - java: 15
-            gradle: 5.2
-          - java: 15
-            gradle: 4.9
-    runs-on: ubuntu-20.04
-    container:
-      image: gradle:7.0.2-jdk16
-      options: --user root
-
-    steps:
-      # Build loom and publish to maven local
-      - uses: actions/checkout@v2
-      - run: gradle build publishToMavenLocal -x test -x check
-
-      - run: gradle wrapper --gradle-version=${{ matrix.gradle }}
-        working-directory: bootstrap/test-project
-      - run: gradle --stop
-
-      - uses: actions/setup-java@v2
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'adopt'
-
-      - run: ./gradlew --version
-        working-directory: bootstrap/test-project
-      - run: ./gradlew build || true
-        working-directory: bootstrap/test-project
-
-      # TODO check the output of the previous step here

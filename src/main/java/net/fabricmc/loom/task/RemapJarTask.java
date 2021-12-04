@@ -24,19 +24,19 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -59,18 +59,14 @@ import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
+import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zeroturnaround.zip.ZipUtil;
-import org.zeroturnaround.zip.transform.StreamZipEntryTransformer;
-import org.zeroturnaround.zip.transform.StringZipEntryTransformer;
-import org.zeroturnaround.zip.transform.ZipEntryTransformerEntry;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
@@ -81,11 +77,14 @@ import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.TinyRemapperMappingsService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class RemapJarTask extends Jar {
+	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
 
@@ -248,11 +247,11 @@ public abstract class RemapJarTask extends Jar {
 					LOGGER.error("Failed to delete output file", ex);
 				}
 
-				throw e;
+				throw new RuntimeException("Failed to remap", e);
 			}
 		}
 
-		private void remap() {
+		private void remap() throws IOException {
 			final InputTag inputTag = tinyRemapper.createInputTag();
 
 			for (File file : getParameters().getExtraClasspath().getFiles()) {
@@ -264,38 +263,39 @@ public abstract class RemapJarTask extends Jar {
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
 				tinyRemapper.apply(outputConsumer, inputTag);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to remap " + inputFile.getFileName().toString(), e);
 			}
 		}
 
-		private void remapAccessWidener() {
+		private void remapAccessWidener() throws IOException {
 			if (!getParameters().getRemapAccessWidener().get()) {
 				return;
 			}
 
-			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
-			int version = AccessWidenerReader.readVersion(accessWidenerFile.content());
+			AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
+
+			byte[] remapped = remapAccessWidener(accessWidenerFile.content(), tinyRemapper.getEnvironment().getRemapper(), MappingsNamespace.INTERMEDIARY.toString());
+
+			// Finally, replace the output with the remaped aw
+			ZipUtils.replace(outputFile, accessWidenerFile.path(), remapped);
+		}
+
+		private static byte[] remapAccessWidener(byte[] input, Remapper asmRemapper, String targetNamespace) {
+			int version = AccessWidenerReader.readVersion(input);
 
 			AccessWidenerWriter writer = new AccessWidenerWriter(version);
 			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
 					writer,
-					tinyRemapper.getEnvironment().getRemapper(),
+					asmRemapper,
 					MappingsNamespace.NAMED.toString(),
-					MappingsNamespace.INTERMEDIARY.toString()
+					targetNamespace
 			);
-
 			AccessWidenerReader reader = new AccessWidenerReader(remapper);
-			reader.read(accessWidenerFile.content());
+			reader.read(input);
 
-			// Finally, replace the output with the remaped aw
-			try {
-				ZipUtils.replace(outputFile.toFile(), accessWidenerFile.path(), writer.write());
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to replace access widener in output jar", e);
-			}
+			return writer.write();
 		}
 
+		// TODO NestedDependencyProvider fix nested none mod jars?
 		private void addNestedJars() {
 			FileCollection nestedJars = getParameters().getNestedJars();
 
@@ -307,55 +307,45 @@ public abstract class RemapJarTask extends Jar {
 			JarNester.nestJars(nestedJars.getFiles(), inputFile.toFile(), LOGGER);
 		}
 
-		private void modifyJarManifest() {
-			// Add data to the manifest
-			boolean transformed = ZipUtil.transformEntries(outputFile.toFile(), new ZipEntryTransformerEntry[]{
-					new ZipEntryTransformerEntry("META-INF/MANIFEST.MF", new StreamZipEntryTransformer() {
-						@Override
-						protected void transform(ZipEntry zipEntry, InputStream in, OutputStream out) throws IOException {
-							var manifest = new Manifest(in);
+		private void modifyJarManifest() throws IOException {
+			int count = ZipUtils.transform(outputFile, Map.of(MANIFEST_PATH, bytes -> {
+				var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
-							getParameters().getJarManifestService().get().apply(manifest);
+				getParameters().getJarManifestService().get().apply(manifest);
+				manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", getParameters().getTargetNamespace().get());
 
-							manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", getParameters().getTargetNamespace().get());
-							manifest.write(out);
-						}
-					})
-			});
-			Preconditions.checkArgument(transformed, "Failed to transform jar manifest");
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				manifest.write(out);
+				return out.toByteArray();
+			}));
+
+			Preconditions.checkState(count > 0, "Did not transform any jar manifest");
 		}
 
-		private void addRefmaps() {
+		private void addRefmaps() throws IOException {
 			if (!getParameters().getAddRefmap().get()) {
 				return;
 			}
 
 			for (RemapParams.RefmapData refmapData : getParameters().getMixinData().get()) {
-				boolean transformed = ZipUtil.transformEntries(outputFile.toFile(), refmapData.mixinConfigs().stream().map(f -> new ZipEntryTransformerEntry(f, new StringZipEntryTransformer("UTF-8") {
-					@Override
-					protected String transform(ZipEntry zipEntry, String input) {
-						JsonObject json = LoomGradlePlugin.GSON.fromJson(input, JsonObject.class);
-
-						if (!json.has("refmap")) {
-							json.addProperty("refmap", refmapData.refmapName());
-						}
-
-						return LoomGradlePlugin.GSON.toJson(json);
+				int transformed = ZipUtils.transformJson(JsonObject.class, outputFile, refmapData.mixinConfigs().stream().collect(Collectors.toMap(s -> s, s -> json -> {
+					if (!json.has("refmap")) {
+						json.addProperty("refmap", refmapData.refmapName());
 					}
-				})).toArray(ZipEntryTransformerEntry[]::new));
+
+					return json;
+				})));
+
+				assert transformed == refmapData.mixinConfigs().size();
 			}
 		}
 
-		private void rewriteJar() {
+		private void rewriteJar() throws IOException {
 			final boolean isReproducibleFileOrder = getParameters().getArchiveReproducibleFileOrder().get();
 			final boolean isPreserveFileTimestamps = getParameters().getArchivePreserveFileTimestamps().get();
 
 			if (isReproducibleFileOrder || !isPreserveFileTimestamps) {
-				try {
-					ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
-				} catch (IOException e) {
-					throw new RuntimeException("Failed to re-process jar", e);
-				}
+				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
 			}
 		}
 	}

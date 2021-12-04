@@ -36,7 +36,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.UncheckedIOException;
-import org.gradle.api.logging.Logger;
+import org.slf4j.Logger;
 
 import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;

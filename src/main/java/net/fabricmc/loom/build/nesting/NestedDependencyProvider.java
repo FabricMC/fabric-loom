@@ -50,8 +50,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipUtils;
 
 public final class NestedDependencyProvider implements NestedJarProvider {

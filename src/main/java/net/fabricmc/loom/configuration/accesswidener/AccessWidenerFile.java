@@ -83,7 +83,7 @@ public record AccessWidenerFile(
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(name, modId);
+		int result = Objects.hash(path, modId);
 		result = 31 * result + Arrays.hashCode(content);
 		return result;
 	}

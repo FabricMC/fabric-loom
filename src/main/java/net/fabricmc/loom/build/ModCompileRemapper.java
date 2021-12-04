@@ -153,11 +153,6 @@ public class ModCompileRemapper {
 					project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
 				}
 
-				// Report deprecation warnings
-				if (entry.replacedWith() != null && !modDependencies.isEmpty()) {
-					extension.getDeprecationHelper().replaceWithInLoom0_11(entry.sourceConfiguration(), entry.replacedWith());
-				}
-
 				// Export to other projects
 				if (entry.targetConfiguration().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
 					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);

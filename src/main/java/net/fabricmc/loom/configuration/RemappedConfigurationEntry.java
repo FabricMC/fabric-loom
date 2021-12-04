@@ -28,13 +28,8 @@ import java.util.Set;
 
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
 
-public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, PublishingMode publishingMode, @Nullable String replacedWith) {
-	public RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, PublishingMode publishingMode) {
-		this(sourceConfiguration, targetConfiguration, compileClasspath, runtimeClasspath, publishingMode, null);
-	}
-
+public record RemappedConfigurationEntry(String sourceConfiguration, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, PublishingMode publishingMode) {
 	public String getRemappedConfiguration() {
 		return sourceConfiguration + "Mapped";
 	}

@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
+
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -73,6 +75,7 @@ public class RemapTaskConfiguration {
 		tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
 			task.getArchiveClassifier().convention("dev");
 			task.finalizedBy(remapJarTaskProvider);
+			task.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 		});
 
 		trySetupSourceRemapping(project);
@@ -91,28 +94,29 @@ public class RemapTaskConfiguration {
 	private static void trySetupSourceRemapping(Project project) {
 		final TaskContainer tasks = project.getTasks();
 
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		final String sourcesJarTaskName = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getSourcesJarTaskName();
-		final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
-
-		if (sourcesTask == null) {
-			project.getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
-			return;
-		}
-
-		if (!(sourcesTask instanceof Jar sourcesJarTask)) {
-			project.getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
-			return;
-		}
-
-		sourcesJarTask.getArchiveClassifier().convention("dev-sources");
-
 		tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
-			task.dependsOn(sourcesJarTask);
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
-			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
+
+			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+			final String sourcesJarTaskName = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getSourcesJarTaskName();
+			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
+
+			if (sourcesTask == null) {
+				project.getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
+				return;
+			}
+
+			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
+				project.getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
+				return;
+			}
+
+			sourcesJarTask.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 			task.getArchiveClassifier().convention("sources");
+
+			task.dependsOn(sourcesJarTask);
+			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 
 			PublishArtifact artifact = project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
 

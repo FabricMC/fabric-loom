@@ -44,7 +44,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 			def gradle = gradleProject(
 					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "ce6198f63bbe0e17ba631420e9186fb72cc8b2af",
+					commit: "71b634e5b7845296b11be3fa6545f4fbfacc017f",
 					version: version,
 					patch: "fabric_api"
 			)

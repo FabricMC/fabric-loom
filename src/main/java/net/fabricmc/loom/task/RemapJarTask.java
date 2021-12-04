@@ -46,6 +46,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
@@ -75,11 +76,15 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@InputFiles
 	public abstract ConfigurableFileCollection getNestedJars();
 
+	@Input
+	public abstract Property<Boolean> getAddNestedDependencies();
+
 	@Inject
 	public RemapJarTask() {
 		super();
 
 		getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 	}
 
 	@TaskAction
@@ -87,7 +92,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		submitWork(RemapAction.class, params -> {
-			params.getNestedJars().plus(getNestedJars());
+			if (getAddNestedDependencies().get()) {
+				params.getNestedJars().plus(getNestedJars());
+			}
 
 			params.getRemapAccessWidener().set(extension.getAccessWidenerPath().isPresent());
 

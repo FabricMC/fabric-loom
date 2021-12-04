@@ -116,6 +116,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	}
 
 	@Deprecated
+	@InputFile
 	public RegularFileProperty getInput() {
 		return getInputFile();
 	}

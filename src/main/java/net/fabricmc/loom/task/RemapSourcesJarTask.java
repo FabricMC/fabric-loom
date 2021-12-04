@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.task.service.MappingsService;
 import net.fabricmc.loom.task.service.SourceRemapperService;
 
-public abstract class RemapSourcesTask extends AbstractRemapJarTask {
+public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Inject
-	public RemapSourcesTask() {
+	public RemapSourcesJarTask() {
 		super();
 
 		getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));

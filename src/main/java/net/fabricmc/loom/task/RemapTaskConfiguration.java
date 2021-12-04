@@ -107,7 +107,7 @@ public class RemapTaskConfiguration {
 
 		sourcesJarTask.getArchiveClassifier().convention("dev-sources");
 
-		tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesTask.class, task -> {
+		tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.dependsOn(sourcesJarTask);
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);

@@ -209,7 +209,12 @@ public class RunConfig {
 			}
 
 			first = false;
-			sb.append("\"").append(arg).append("\"");
+
+			if (arg.contains(" ")) {
+				sb.append("\"").append(arg).append("\"");
+			} else {
+				sb.append(arg);
+			}
 		}
 
 		return sb.toString();

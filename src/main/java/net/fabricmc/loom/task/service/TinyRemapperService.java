@@ -26,24 +26,50 @@ package net.fabricmc.loom.task.service;
 
 import java.io.File;
 
+import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public abstract class TinyRemapperService implements BuildService<TinyRemapperService.Params>, AutoCloseable {
 	public interface Params extends BuildServiceParameters {
-		ListProperty<Provider<TinyRemapperMappingsService>> getMappings();
+		ListProperty<Provider<MappingsService>> getMappings();
 
 		// classpath passed into the TinyRemapper instance
 		ConfigurableFileCollection getClasspath();
 
 		Property<Boolean> getUseMixinExtension();
+	}
+
+	public static synchronized Provider<TinyRemapperService> create(Project project, String from, String to) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		return project.getGradle().getSharedServices().registerIfAbsent(extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to), TinyRemapperService.class, spec -> {
+			spec.parameters(params -> {
+				params.getClasspath().plus(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+				params.getMappings().add(MappingsService.createDefault(project, from, to));
+
+				final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+				params.getUseMixinExtension().set(!legacyMixin);
+
+				if (legacyMixin) {
+					// Add the mapping from the mixin AP
+					for (File file : extension.getAllMixinMappings().getFiles()) {
+						// TODO fix me, use the hash?
+						String name = file.getAbsolutePath();
+						params.getMappings().add(MappingsService.create(project, name, file, from, to, false));
+					}
+				}
+			});
+		});
 	}
 
 	private TinyRemapper tinyRemapper;
@@ -55,7 +81,7 @@ public abstract class TinyRemapperService implements BuildService<TinyRemapperSe
 
 		// Apply mappings
 
-		for (Provider<TinyRemapperMappingsService> provider : params.getMappings().get()) {
+		for (Provider<MappingsService> provider : params.getMappings().get()) {
 			builder.withMappings(provider.get().getMappingsProvider());
 		}
 

@@ -491,6 +491,10 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
+	public String getBuildServiceName(String name, String from, String to) {
+		return "%s:%s:%s>%S".formatted(name, mappingsIdentifier(), from, to);
+	}
+
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
 	}
 }

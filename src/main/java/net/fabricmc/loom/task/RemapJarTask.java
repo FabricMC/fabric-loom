@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,21 +43,12 @@ import com.google.common.base.Preconditions;
 import com.google.gson.JsonObject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.jvm.tasks.Jar;
-import org.gradle.workers.WorkAction;
-import org.gradle.workers.WorkParameters;
-import org.gradle.workers.WorkQueue;
-import org.gradle.workers.WorkerExecutor;
 import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,62 +61,37 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
-import net.fabricmc.loom.task.service.TinyRemapperMappingsService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
-import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract class RemapJarTask extends Jar {
+public abstract class RemapJarTask extends AbstractRemapJarTask {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
-
-	@InputFile
-	public abstract RegularFileProperty getInputFile();
 
 	@InputFiles
 	public abstract ConfigurableFileCollection getNestedJars();
 
-	@InputFiles
-	public abstract ConfigurableFileCollection getClasspath();
-
-	@Input
-	public abstract Property<String> getSourceNamespace();
-
-	@Input
-	public abstract Property<String> getTargetNamespace();
-
-	@Inject
-	protected abstract WorkerExecutor getWorkerExecutor();
-
 	@Inject
 	public RemapJarTask() {
-		getSourceNamespace().convention(MappingsNamespace.NAMED.toString()).finalizeValueOnRead();
-		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
+		super();
+
+		getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 	}
 
 	@TaskAction
 	public void run() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
-		workQueue.submit(RemapAction.class, params -> {
-			params.getInputFile().set(getInputFile());
-			params.getOutputFile().set(getArchiveFile());
+		submitWork(RemapAction.class, params -> {
 			params.getNestedJars().plus(getNestedJars());
 
 			params.getRemapAccessWidener().set(extension.getAccessWidenerPath().isPresent());
-			params.getSourceNamespace().set(getSourceNamespace());
-			params.getTargetNamespace().set(getTargetNamespace());
 
-			params.getArchivePreserveFileTimestamps().set(isPreserveFileTimestamps());
-			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
-
-			params.getTinyRemapperBuildService().set(getTinyRemapperService());
+			params.getTinyRemapperBuildService().set(TinyRemapperService.create(getProject(), getSourceNamespace().get(), getTargetNamespace().get()));
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
@@ -169,66 +134,29 @@ public abstract class RemapJarTask extends Jar {
 		}
 	}
 
-	private synchronized Provider<TinyRemapperService> getTinyRemapperService() {
-		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-		final String from = getSourceNamespace().get();
-		final String to = getTargetNamespace().get();
-		// This should give us what shared caches did before but for free, and safely.
-		final String name = "remapJarService:%s:%s>%S".formatted(mappingsProvider.mappingsIdentifier(), from, to);
-
-		return getProject().getGradle().getSharedServices().registerIfAbsent(name, TinyRemapperService.class, spec -> {
-			spec.parameters(params -> {
-				params.getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
-				params.getMappings().add(TinyRemapperMappingsService.create(getProject(), mappingsProvider.tinyMappings.toFile(), from, to, false));
-
-				final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
-				params.getUseMixinExtension().set(!legacyMixin);
-
-				if (legacyMixin) {
-					// Add the mapping from the mixin AP
-					for (File file : extension.getAllMixinMappings().getFiles()) {
-						params.getMappings().add(TinyRemapperMappingsService.create(getProject(), file, from, to, false));
-					}
-				}
-			});
-		});
-	}
-
-	public interface RemapParams extends WorkParameters {
-		RegularFileProperty getInputFile();
-		RegularFileProperty getOutputFile();
+	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getExtraClasspath();
 
 		Property<Boolean> getRemapAccessWidener();
 		Property<Boolean> getAddRefmap();
-		Property<String> getSourceNamespace();
-		Property<String> getTargetNamespace();
 
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
-
-		Property<Boolean> getArchivePreserveFileTimestamps();
-		Property<Boolean> getArchiveReproducibleFileOrder();
 
 		Property<TinyRemapperService> getTinyRemapperBuildService();
 		Property<JarManifestService> getJarManifestService();
 	}
 
-	public abstract static class RemapAction implements WorkAction<RemapParams> {
-		// TODO is this the correct way to get a logger here?
+	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
 		private final TinyRemapper tinyRemapper;
-		private final Path inputFile;
-		private final Path outputFile;
 
 		@Inject
 		public RemapAction() {
+			super();
 			tinyRemapper = getParameters().getTinyRemapperBuildService().get().getTinyRemapper();
-			inputFile = getParameters().getInputFile().getAsFile().get().toPath();
-			outputFile = getParameters().getOutputFile().getAsFile().get().toPath();
 		}
 
 		@Override
@@ -337,15 +265,6 @@ public abstract class RemapJarTask extends Jar {
 				})));
 
 				assert transformed == refmapData.mixinConfigs().size();
-			}
-		}
-
-		private void rewriteJar() throws IOException {
-			final boolean isReproducibleFileOrder = getParameters().getArchiveReproducibleFileOrder().get();
-			final boolean isPreserveFileTimestamps = getParameters().getArchivePreserveFileTimestamps().get();
-
-			if (isReproducibleFileOrder || !isPreserveFileTimestamps) {
-				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
 			}
 		}
 	}

@@ -26,6 +26,7 @@ package net.fabricmc.loom.task.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
@@ -34,10 +35,14 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
-public abstract class TinyRemapperMappingsService implements BuildService<TinyRemapperMappingsService.Params>, AutoCloseable {
+public abstract class MappingsService implements BuildService<MappingsService.Params>, AutoCloseable {
 	interface Params extends BuildServiceParameters {
 		RegularFileProperty getMappingsFile();
 
@@ -47,8 +52,8 @@ public abstract class TinyRemapperMappingsService implements BuildService<TinyRe
 		Property<Boolean> getRemapLocals();
 	}
 
-	public static Provider<TinyRemapperMappingsService> create(Project project, File mappingsFile, String from, String to, boolean remapLocals) {
-		return project.getGradle().getSharedServices().registerIfAbsent("mappings:" + mappingsFile.getAbsolutePath(), TinyRemapperMappingsService.class, spec -> {
+	public static synchronized Provider<MappingsService> create(Project project, String name, File mappingsFile, String from, String to, boolean remapLocals) {
+		return project.getGradle().getSharedServices().registerIfAbsent(name, MappingsService.class, spec -> {
 			spec.parameters(params -> {
 				params.getMappingsFile().set(mappingsFile);
 				params.getFromNamespace().set(from);
@@ -58,7 +63,14 @@ public abstract class TinyRemapperMappingsService implements BuildService<TinyRe
 		});
 	}
 
+	public static Provider<MappingsService> createDefault(Project project, String from, String to) {
+		final MappingsProviderImpl mappingsProvider = LoomGradleExtension.get(project).getMappingsProvider();
+		final String name = mappingsProvider.getBuildServiceName("mappingsProvider", from, to);
+		return MappingsService.create(project, name, mappingsProvider.tinyMappings.toFile(), from, to, false);
+	}
+
 	private IMappingProvider mappingProvider = null;
+	private MemoryMappingTree memoryMappingTree = null;
 
 	public synchronized IMappingProvider getMappingsProvider() {
 		if (mappingProvider == null) {
@@ -70,11 +82,33 @@ public abstract class TinyRemapperMappingsService implements BuildService<TinyRe
 						getParameters().getRemapLocals().get()
 				);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to read mappings from: " + getParameters().getMappingsFile().get().getAsFile().getAbsolutePath(), e);
+				throw new UncheckedIOException("Failed to read mappings from: " + getParameters().getMappingsFile().get().getAsFile().getAbsolutePath(), e);
 			}
 		}
 
 		return mappingProvider;
+	}
+
+	public synchronized MemoryMappingTree getMemoryMappingTree() {
+		if (memoryMappingTree == null) {
+			memoryMappingTree = new MemoryMappingTree();
+
+			try {
+				MappingReader.read(getParameters().getMappingsFile().get().getAsFile().toPath(), memoryMappingTree);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read mappings from: " + getParameters().getMappingsFile().get().getAsFile().getAbsolutePath(), e);
+			}
+		}
+
+		return memoryMappingTree;
+	}
+
+	public String getFromNamespace() {
+		return getParameters().getFromNamespace().get();
+	}
+
+	public String getToNamespace() {
+		return getParameters().getToNamespace().get();
 	}
 
 	@Override

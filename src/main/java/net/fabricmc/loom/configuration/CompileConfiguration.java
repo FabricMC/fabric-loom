@@ -33,7 +33,6 @@ import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
@@ -141,14 +140,6 @@ public final class CompileConfiguration {
 
 			SetupIntelijRunConfigs.setup(project);
 			extension.getRemapArchives().finalizeValue();
-
-			// Enables the default mod remapper
-			if (extension.getRemapArchives().get()) {
-				RemapConfiguration.setupDefaultRemap(project);
-			} else {
-				Jar jarTask = (Jar) project.getTasks().getByName("jar");
-				extension.getUnmappedModCollection().from(jarTask);
-			}
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 

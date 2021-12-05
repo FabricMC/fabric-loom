@@ -69,10 +69,10 @@ public final class MixinRefmapHelper {
 
 				String[] rootPaths = sourceSet.getResources().getSrcDirs().stream()
 						.map(root -> {
-							String rootPath = root.getAbsolutePath();
+							String rootPath = root.getAbsolutePath().replace("\\", "/");
 
-							if (rootPath.charAt(rootPath.length() - 1) != File.separatorChar) {
-								rootPath += File.separatorChar;
+							if (rootPath.charAt(rootPath.length() - 1) != '/') {
+								rootPath += '/';
 							}
 
 							return rootPath;
@@ -84,14 +84,14 @@ public final class MixinRefmapHelper {
 						.getFiles()
 						.stream()
 						.map(file -> {
-							String s = file.getAbsolutePath();
+							String s = file.getAbsolutePath().replace("\\", "/");
 
 							for (String rootPath : rootPaths) {
 								if (s.startsWith(rootPath)) {
 									s = s.substring(rootPath.length());
 								}
 							}
-
+							project.getLogger().error(s);
 							return s;
 						})
 						.filter(allMixinConfigs::contains);

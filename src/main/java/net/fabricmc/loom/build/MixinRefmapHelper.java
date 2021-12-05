@@ -91,7 +91,7 @@ public final class MixinRefmapHelper {
 									s = s.substring(rootPath.length());
 								}
 							}
-							project.getLogger().error(s);
+
 							return s;
 						})
 						.filter(allMixinConfigs::contains);

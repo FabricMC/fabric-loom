@@ -99,7 +99,7 @@ public class JarRemapper {
 
 				outputConsumer.addNonClassFiles(data.input);
 
-				data.processAccessWidener(remapper.getRemapper());
+				data.processAccessWidener(remapper.getEnvironment().getRemapper());
 				remapper.apply(outputConsumer, data.tag);
 			}
 

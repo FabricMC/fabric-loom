@@ -124,7 +124,7 @@ public class RemapJarTask extends Jar {
 		Project project = getProject();
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		Path input = this.getInput().getAsFile().get().toPath();
-		Path output = this.getArchivePath().toPath();
+		Path output = this.getArchiveFile().get().getAsFile().toPath();
 
 		if (!Files.exists(input)) {
 			throw new FileNotFoundException(input.toString());

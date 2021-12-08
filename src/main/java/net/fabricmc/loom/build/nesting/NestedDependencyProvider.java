@@ -53,6 +53,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.ZipUtils;
 
 public final class NestedDependencyProvider implements NestedJarProvider {
@@ -158,7 +159,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 			File file = metaFile.file;
 
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
-			if (!ZipUtils.contains(file.toPath(), "fabric.mod.json")) {
+			if (!ModUtils.isMod(file)) {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);
 				File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 

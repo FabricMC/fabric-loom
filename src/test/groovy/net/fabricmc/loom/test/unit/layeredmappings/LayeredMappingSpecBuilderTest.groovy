@@ -30,29 +30,29 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuil
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec
-import org.gradle.api.Action
-import org.gradle.util.ConfigureUtil
+import net.fabricmc.loom.util.ClosureAction
 import spock.lang.Specification
 
 class LayeredMappingSpecBuilderTest extends Specification {
     def "simple mojmap" () {
         when:
-            def spec = layered() {
+            def spec = layered {
                 officialMojangMappings()
             }
             def layers = spec.layers()
         then:
-            spec.version == "layered+hash.2198"
             layers.size() == 2
+            spec.version == "layered+hash.2198"
             layers[0].class == IntermediaryMappingsSpec
             layers[1].class == MojangMappingsSpec
     }
 
     def "simple mojmap with parchment" () {
         when:
+            def dep = "I like cake"
             def spec = layered() {
                 officialMojangMappings()
-                parchment("I like cake")
+                parchment(dep)
             }
             def layers = spec.layers()
             def parchment = layers[2] as ParchmentMappingsSpec
@@ -88,7 +88,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
 
     def "simple mojmap with parchment keep prefix alternate hash" () {
         when:
-            def spec = layered() {
+            def spec = layered {
                 officialMojangMappings()
                 parchment("I really like cake") {
                     it.removePrefix = false
@@ -106,14 +106,9 @@ class LayeredMappingSpecBuilderTest extends Specification {
             parchment.removePrefix() == false
     }
 
-    // Gradle does this big of magic behind the scenes
     LayeredMappingSpec layered(@DelegatesTo(LayeredMappingSpecBuilderImpl) Closure cl) {
-        return layeredAction(ConfigureUtil.configureUsing(cl))
-    }
-
-    LayeredMappingSpec layeredAction(Action<LayeredMappingSpecBuilderImpl> action) {
         LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl()
-        action.execute(builder)
+        new ClosureAction(cl).execute(builder)
         return builder.build()
     }
 }

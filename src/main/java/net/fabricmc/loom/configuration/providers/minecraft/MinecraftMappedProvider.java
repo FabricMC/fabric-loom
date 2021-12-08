@@ -155,7 +155,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 					// Remap the sig fixes from intermediary to the target namespace
 					final Map<String, String> remapped = new HashMap<>();
 					final TinyRemapper sigTinyRemapper = TinyRemapperHelper.getTinyRemapper(getProject(), MappingsNamespace.INTERMEDIARY.toString(), toM);
-					final Remapper sigAsmRemapper = sigTinyRemapper.getRemapper();
+					final Remapper sigAsmRemapper = sigTinyRemapper.getEnvironment().getRemapper();
 
 					// Remap the class names and the signatures using a new tiny remapper instance.
 					for (Map.Entry<String, String> entry : mappingsProvider.getSignatureFixes().entrySet()) {

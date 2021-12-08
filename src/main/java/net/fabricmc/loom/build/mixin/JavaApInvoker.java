@@ -58,7 +58,7 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 
 	@Override
 	protected File getRefmapDestinationDir(JavaCompile task) {
-		return task.getDestinationDir();
+		return task.getDestinationDirectory().getAsFile().get();
 	}
 
 	private static String getAptConfigurationName(String sourceSet) {

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.intelij;
+package net.fabricmc.loom.configuration.ide.idea;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,9 +39,9 @@ import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
 
-public abstract class IntelijSyncTask extends AbstractLoomTask {
+public abstract class IdeaSyncTask extends AbstractLoomTask {
 	@Inject
-	public IntelijSyncTask() {
+	public IdeaSyncTask() {
 		// Always re-run this task.
 		getOutputs().upToDateWhen(element -> false);
 	}

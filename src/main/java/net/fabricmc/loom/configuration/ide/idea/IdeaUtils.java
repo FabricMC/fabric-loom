@@ -22,11 +22,11 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.intelij;
+package net.fabricmc.loom.configuration.ide.idea;
 
 import java.util.Objects;
 
-public class IntelijUtils {
+public class IdeaUtils {
 	public static boolean isIdeaSync() {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
 	}

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.intelij;
+package net.fabricmc.loom.configuration.ide.idea;
 
 import java.util.Objects;
 
@@ -38,13 +38,13 @@ import org.jetbrains.gradle.ext.ProjectSettings;
 import org.jetbrains.gradle.ext.RunConfiguration;
 import org.jetbrains.gradle.ext.TaskTriggersConfig;
 
-public class IntelijConfiguration {
+public class IdeaConfiguration {
 	public static void setup(Project project) {
-		TaskProvider<IntelijSyncTask> intelijSyncTask = project.getTasks().register("intelijSyncTask", IntelijSyncTask.class, intelijSyncTask1 -> {
-			intelijSyncTask1.dependsOn(project.getTasks().named("downloadAssets"));
+		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, ideaSyncTask1 -> {
+			ideaSyncTask1.dependsOn(project.getTasks().named("downloadAssets"));
 		});
 
-		if (!IntelijUtils.isIdeaSync()) {
+		if (!IdeaUtils.isIdeaSync()) {
 			return;
 		}
 
@@ -73,7 +73,7 @@ public class IntelijConfiguration {
 			final NamedDomainObjectContainer<RunConfiguration> runConfigurations = (NamedDomainObjectContainer<RunConfiguration>) ((ExtensionAware) settings).getExtensions().getByName("runConfigurations");
 
 			// Run the sync task on import
-			taskTriggers.afterSync(intelijSyncTask);
+			taskTriggers.afterSync(ideaSyncTask);
 		});
 	}
 

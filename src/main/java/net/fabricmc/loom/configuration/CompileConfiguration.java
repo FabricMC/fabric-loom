@@ -26,7 +26,9 @@ package net.fabricmc.loom.configuration;
 
 import java.nio.charset.StandardCharsets;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.AbstractCopyTask;
@@ -52,16 +54,20 @@ public final class CompileConfiguration {
 	public static void setupConfigurations(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH).configure(configuration -> configuration.setTransitive(true));
-		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED).configure(configuration -> configuration.setTransitive(false));
-		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED).configure(configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
-		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
-		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES).configure(configuration -> configuration.setTransitive(false));
-		extension.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES).configure(configuration -> configuration.setTransitive(false));
-		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT).configure(configuration -> configuration.setTransitive(false));
-		extension.createLazyConfiguration(Constants.Configurations.INCLUDE).configure(configuration -> configuration.setTransitive(false)); // Dont get transitive deps
+		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration -> configuration.setTransitive(true));
+		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED, configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
+		NamedDomainObjectProvider<Configuration> serverDeps = extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES, configuration -> {
+			configuration.extendsFrom(serverDeps.get());
+			configuration.setTransitive(false);
+		});
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.INCLUDE, configuration -> configuration.setTransitive(false)); // Dont get transitive deps
 		extension.createLazyConfiguration(Constants.Configurations.MAPPING_CONSTANTS);
-		extension.createLazyConfiguration(Constants.Configurations.NAMED_ELEMENTS).configure(configuration -> {
+		extension.createLazyConfiguration(Constants.Configurations.NAMED_ELEMENTS, configuration -> {
 			configuration.setCanBeConsumed(true);
 			configuration.setCanBeResolved(false);
 			configuration.extendsFrom(project.getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));

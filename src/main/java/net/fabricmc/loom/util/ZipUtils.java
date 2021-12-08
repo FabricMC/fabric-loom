@@ -83,13 +83,7 @@ public class ZipUtils {
 
 	public static byte[] unpack(Path zip, String path) throws IOException {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
-			Path fsPath = fs.get().getPath(path);
-
-			if (Files.exists(fsPath)) {
-				return Files.readAllBytes(fsPath);
-			} else {
-				throw new NoSuchFileException(fsPath.toString());
-			}
+			return fs.readAllBytes(path);
 		}
 	}
 

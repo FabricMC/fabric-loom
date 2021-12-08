@@ -27,20 +27,16 @@ package net.fabricmc.loom.configuration.providers;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardCopyOption;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import com.google.common.io.Files;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyProvider;
@@ -48,9 +44,9 @@ import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftLibraryProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
+import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public class MinecraftProviderImpl extends DependencyProvider implements MinecraftProvider {
@@ -66,6 +62,8 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	private File minecraftServerJar;
 	// The extracted server jar from the boostrap, only exists in >=21w39a
 	private File minecraftExtractedServerJar;
+	@Nullable
+	private BundleMetadata serverBundleMetadata;
 	private File minecraftMergedJar;
 	private File versionManifestJson;
 	private File experimentalVersionsJson;
@@ -100,6 +98,8 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 		} else {
 			downloadJars(getProject().getLogger());
 		}
+
+		serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
@@ -257,61 +257,22 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	private void mergeJars(Logger logger) throws IOException {
 		logger.info(":merging jars");
 
-		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, getServerJarToMerge(logger), minecraftMergedJar)) {
-			jarMerger.enableSyntheticParamsOffset();
-			jarMerger.merge();
-		}
-	}
+		File jarToMerge = minecraftServerJar;
 
-	private File getServerJarToMerge(Logger logger) throws IOException {
-		try (ZipFile zipFile = new ZipFile(minecraftServerJar)) {
-			ZipEntry versionsListEntry = zipFile.getEntry("META-INF/versions.list");
-
-			if (versionsListEntry == null) {
-				// Legacy pre 21w38a jar
-				return minecraftServerJar;
-			}
-
+		if (serverBundleMetadata != null) {
 			logger.info(":Extracting server jar from bootstrap");
 
-			String versionsList;
-
-			try (InputStream is = zipFile.getInputStream(versionsListEntry)) {
-				versionsList = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			if (serverBundleMetadata.versions().size() != 1) {
+				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(serverBundleMetadata.versions().size()));
 			}
 
-			String jarPath = null;
-			String[] versions = versionsList.split("\n");
+			serverBundleMetadata.versions().get(0).unpackEntry(minecraftServerJar.toPath(), minecraftExtractedServerJar.toPath());
+			jarToMerge = minecraftExtractedServerJar;
+		}
 
-			if (versions.length != 1) {
-				throw new UnsupportedOperationException("Expected only 1 version in META-INF/versions.list, but got %d".formatted(versions.length));
-			}
-
-			for (String version : versions) {
-				if (version.isBlank()) continue;
-
-				String[] split = version.split("\t");
-
-				if (split.length != 3) continue;
-
-				final String hash = split[0];
-				final String id = split[1];
-				final String path = split[2];
-
-				// Take the first (only) version we find.
-				jarPath = path;
-				break;
-			}
-
-			Objects.requireNonNull(jarPath, "Could not find minecraft server jar for " + minecraftVersion());
-			ZipEntry serverJarEntry = zipFile.getEntry("META-INF/versions/" + jarPath);
-			Objects.requireNonNull(serverJarEntry, "Could not find server jar in boostrap@ " + jarPath);
-
-			try (InputStream is = zipFile.getInputStream(serverJarEntry)) {
-				java.nio.file.Files.copy(is, minecraftExtractedServerJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			}
-
-			return minecraftExtractedServerJar;
+		try (JarMerger jarMerger = new JarMerger(minecraftClientJar, jarToMerge, minecraftMergedJar)) {
+			jarMerger.enableSyntheticParamsOffset();
+			jarMerger.merge();
 		}
 	}
 
@@ -353,5 +314,10 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	@Override
 	public String getTargetConfig() {
 		return Constants.Configurations.MINECRAFT;
+	}
+
+	@Nullable
+	public BundleMetadata getServerBundleMetadata() {
+		return serverBundleMetadata;
 	}
 }

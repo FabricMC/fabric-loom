@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
@@ -37,6 +38,7 @@ public class MinecraftLibraryProvider {
 
 	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
 		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
+		BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 
 		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 
@@ -50,7 +52,12 @@ public class MinecraftLibraryProvider {
 			}
 
 			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
+				if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
+					project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
+				} else {
+					// Client only library, or legacy version
+					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
+				}
 			}
 
 			if (library.hasNativesForOS()) {
@@ -79,5 +86,9 @@ public class MinecraftLibraryProvider {
 			LWJGLVersionOverride.DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
 			LWJGLVersionOverride.NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
 		}
+	}
+
+	private static boolean isLibraryInBundle(BundleMetadata bundleMetadata, MinecraftVersionMeta.Library library) {
+		return bundleMetadata.libraries().stream().anyMatch(entry -> entry.name().equals(library.name()));
 	}
 }

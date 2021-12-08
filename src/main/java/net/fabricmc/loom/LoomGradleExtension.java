@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -54,7 +55,12 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	LoomFiles getFiles();
 
-	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name);
+	default NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name) {
+		return createLazyConfiguration(name, config -> {
+		});
+	}
+
+	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name, Action<? super Configuration> configurationAction);
 
 	NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name);
 

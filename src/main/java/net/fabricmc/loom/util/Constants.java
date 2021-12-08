@@ -64,6 +64,11 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
 		public static final String MINECRAFT = "minecraft";
+		/**
+		 * The server specific configuration will be empty when using a legacy (pre 21w38a server jar)
+		 * find the client only dependencies on the "minecraftLibraries" config.
+		 */
+		public static final String MINECRAFT_SERVER_DEPENDENCIES = "minecraftServerLibraries";
 		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
 		public static final String MINECRAFT_NATIVES = "minecraftNatives";
 		public static final String MINECRAFT_NAMED = "minecraftNamed";

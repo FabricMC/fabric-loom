@@ -39,8 +39,9 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.ide.intelij.IntelijUtils;
+import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
 /**
@@ -97,9 +98,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	public void configureMixin() {
 		ConfigurationContainer configs = project.getConfigurations();
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		if (!extension.ideSync()) {
+		if (!IntelijUtils.isIdeaSync()) {
 			for (Configuration processorConfig : apConfigurations) {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath

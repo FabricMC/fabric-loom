@@ -22,29 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.util;
 
-import java.io.File;
+public class Architecture {
+	public static final Architecture CURRENT = new Architecture(System.getProperty("os.arch"));
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
+	private final String name;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+	public Architecture(String name) {
+		this.name = name;
 	}
 
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
+	public boolean is64Bit() {
+		return name.contains("64") || name.startsWith("armv8");
 	}
 
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project, boolean withUserOverrides);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
+	public boolean isArm() {
+		return name.startsWith("arm") || name.startsWith("aarch64");
+	}
+
+	public String getName() {
+		return name;
+	}
 }

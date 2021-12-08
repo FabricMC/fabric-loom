@@ -325,20 +325,6 @@ public class MinecraftProviderImpl extends DependencyProvider implements Minecra
 	}
 
 	@Override
-	public boolean hasCustomNatives() {
-		return getProject().getProperties().get("fabric.loom.natives.dir") != null;
-	}
-
-	@Override
-	public File nativesDir() {
-		if (hasCustomNatives()) {
-			return new File((String) getProject().property("fabric.loom.natives.dir"));
-		}
-
-		return dir("natives");
-	}
-
-	@Override
 	public File dir(String path) {
 		File dir = file(path);
 		dir.mkdirs();

@@ -22,29 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.task;
 
 import java.io.File;
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
+import javax.inject.Inject;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+import org.gradle.api.tasks.Sync;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
+
+public abstract class ExtractNativesTask extends Sync {
+	@Inject
+	public ExtractNativesTask() {
+		// Is there a lazy way to do this for many files? - Doesnt seem there is...
+		for (File nativeFile : getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES).getFiles()) {
+			from(getProject().zipTree(nativeFile), copySpec -> {
+				copySpec.exclude("META-INF/**");
+			});
+		}
+
+		into(LoomGradleExtension.get(getProject()).getFiles().getNativesDirectory(getProject(), false));
+
+		setDescription("Downloads and extracts the minecraft natives");
 	}
-
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
-	}
-
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project, boolean withUserOverrides);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
 }

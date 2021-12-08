@@ -94,10 +94,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	boolean isRootProject();
 
-	default boolean ideSync() {
-		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
-	}
-
 	default String getIntermediaryUrl(String minecraftVersion) {
 		return String.format(this.getIntermediaryUrl().get(), minecraftVersion);
 	}

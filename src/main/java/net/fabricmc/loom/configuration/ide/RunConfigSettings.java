@@ -243,7 +243,7 @@ public final class RunConfigSettings implements Named {
 	 * Add the {@code -XstartOnFirstThread} JVM argument when on OSX.
 	 */
 	public void startFirstThread() {
-		if (OperatingSystem.getOS().equalsIgnoreCase("osx")) {
+		if (OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS)) {
 			vmArg("-XstartOnFirstThread");
 		}
 	}

@@ -46,6 +46,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
+import net.fabricmc.loom.configuration.ide.intelij.IntelijUtils;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
@@ -209,7 +210,7 @@ public class LoomDependencyManager {
 			loaderDepsConfig.getDependencies().add(modDep);
 
 			// TODO: work around until https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14 is fixed.
-			if (!extension.ideSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
+			if (!IntelijUtils.isIdeaSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
 				apDepsConfig.getDependencies().add(modDep);
 			}
 

@@ -81,7 +81,7 @@ public record MinecraftVersionMeta(
 				return false;
 			}
 
-			if (natives.get(OperatingSystem.getOS()) == null) {
+			if (natives.get(OperatingSystem.CURRENT_OS) == null) {
 				return false;
 			}
 
@@ -89,7 +89,7 @@ public record MinecraftVersionMeta(
 		}
 
 		public Download classifierForOS() {
-			return downloads().classifier(natives.get(OperatingSystem.getOS()));
+			return downloads().classifier(natives.get(OperatingSystem.CURRENT_OS));
 		}
 
 		public Download artifact() {
@@ -119,7 +119,7 @@ public record MinecraftVersionMeta(
 
 	public record OS(String name) {
 		public boolean isValidForOS() {
-			return name() == null || name().equalsIgnoreCase(OperatingSystem.getOS());
+			return name() == null || name().equalsIgnoreCase(OperatingSystem.CURRENT_OS);
 		}
 	}
 

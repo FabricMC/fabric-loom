@@ -43,7 +43,7 @@ public abstract class ExtractNativesTask extends Sync {
 			});
 		}
 
-		into(LoomGradleExtension.get(getProject()).getFiles().getNativesDirectory(getProject(), false));
+		into(LoomGradleExtension.get(getProject()).getFiles().getNativesDirectory(getProject()));
 
 		setDescription("Downloads and extracts the minecraft natives");
 	}

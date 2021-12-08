@@ -54,7 +54,7 @@ public class LaunchProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
-		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject(), true).getAbsolutePath();
+		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")

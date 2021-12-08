@@ -27,6 +27,10 @@ package net.fabricmc.loom.configuration.ide.idea;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -37,7 +41,9 @@ import org.gradle.api.tasks.TaskAction;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.Constants;
 
 public abstract class IdeaSyncTask extends AbstractLoomTask {
 	@Inject
@@ -68,6 +74,8 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			runConfigsDir.mkdirs();
 		}
 
+		final List<String> excludedServerLibraries = getExcludedServerLibraries();
+
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
 				continue;
@@ -84,6 +92,39 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			}
 
 			settings.makeRunDir();
+
+			if (settings.getEnvironment().equals("server") && !excludedServerLibraries.isEmpty()) {
+				try {
+					setClasspathModifications(runConfigs, excludedServerLibraries);
+				} catch (Exception e) {
+					getProject().getLogger().error("Failed to modify run configuration xml", e);
+				}
+			}
 		}
+	}
+
+	private List<String> getExcludedServerLibraries() {
+		final BundleMetadata bundleMetadata = getExtension().getMinecraftProvider().getServerBundleMetadata();
+
+		if (bundleMetadata == null) {
+			// Legacy version
+			return Collections.emptyList();
+		}
+
+		final Set<File> allLibraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles();
+		final Set<File> serverLibraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES).getFiles();
+		final List<String> clientOnlyLibraries = new LinkedList<>();
+
+		for (File commonLibrary : allLibraries) {
+			if (!serverLibraries.contains(commonLibrary)) {
+				clientOnlyLibraries.add(commonLibrary.getAbsolutePath());
+			}
+		}
+
+		return clientOnlyLibraries;
+	}
+
+	private void setClasspathModifications(File runConfig, List<String> exclusions) throws Exception {
+		// TODO modify the xml
 	}
 }

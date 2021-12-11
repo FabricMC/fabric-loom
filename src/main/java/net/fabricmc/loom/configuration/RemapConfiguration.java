@@ -35,6 +35,7 @@ import org.gradle.api.artifacts.ConfigurablePublishArtifact;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.dsl.ArtifactHandler;
+import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.jetbrains.annotations.ApiStatus;
@@ -123,7 +124,7 @@ public class RemapConfiguration {
 		}
 
 		remapJarTask.dependsOn(jarTask);
-		project.getTasks().getByName("build").dependsOn(remapJarTask);
+		project.getTasks().getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn(remapJarTask);
 
 		// TODO this might be wrong?
 		project.getTasks().withType(RemapJarTask.class).forEach(task -> {
@@ -133,8 +134,8 @@ public class RemapConfiguration {
 		});
 
 		SourceRemapper remapper = null;
-		// TODO what is this for?
-		Task parentTask = project.getTasks().getByName("build");
+		// The "collector" task that will depend on the individual remap tasks (assemble by default, but can also be remapAllSources)
+		Task sourcesParentTask = project.getTasks().getByName(BasePlugin.ASSEMBLE_TASK_NAME);
 
 		if (extension.getShareRemapCaches().get()) {
 			Project rootProject = project.getRootProject();
@@ -150,7 +151,7 @@ public class RemapConfiguration {
 					task.doLast(t -> sourceRemapper.remapAll());
 				});
 
-				parentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
+				sourcesParentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
 
 				rootProject.getTasks().register(remapAllJarsTaskName, AbstractLoomTask.class, task -> {
 					task.doLast(t -> {
@@ -162,14 +163,14 @@ public class RemapConfiguration {
 					});
 				});
 			} else {
-				parentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
-				remapper = ((RemapAllSourcesTask) parentTask).sourceRemapper;
+				sourcesParentTask = rootProject.getTasks().getByName(remapAllSourcesTaskName);
+				remapper = ((RemapAllSourcesTask) sourcesParentTask).sourceRemapper;
 				Preconditions.checkNotNull(remapper);
 
 				remapJarTask.jarRemapper = ((RemapJarTask) rootProject.getTasks().getByName(remapJarTaskName)).jarRemapper;
 
-				project.getTasks().getByName("build").dependsOn(parentTask);
-				project.getTasks().getByName("build").dependsOn(rootProject.getTasks().getByName(remapAllJarsTaskName));
+				project.getTasks().getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn(sourcesParentTask);
+				project.getTasks().getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn(rootProject.getTasks().getByName(remapAllJarsTaskName));
 				rootProject.getTasks().getByName(remapAllJarsTaskName).dependsOn(project.getTasks().getByName(remapJarTaskName));
 			}
 		}
@@ -198,7 +199,7 @@ public class RemapConfiguration {
 				remapSourcesJarTask.setSourceRemapper(remapper);
 			}
 
-			parentTask.dependsOn(remapSourcesJarTask);
+			sourcesParentTask.dependsOn(remapSourcesJarTask);
 		} catch (UnknownTaskException ignored) {
 			// pass
 		}

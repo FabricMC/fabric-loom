@@ -42,6 +42,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
@@ -50,6 +51,9 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.ZipUtils;
 
 public final class NestedDependencyProvider implements NestedJarProvider {
@@ -69,6 +73,28 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 		fileList.addAll(populateResolvedDependencies(configuration, visited));
 
 		return new NestedDependencyProvider(project, fileList);
+	}
+
+	// Looks for any deps that require a sub project to be built first
+	public static List<RemapJarTask> getRequiredTasks(Project project) {
+		List<RemapJarTask> remapTasks = new ArrayList<>();
+
+		Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		DependencySet dependencies = configuration.getDependencies();
+
+		for (Dependency dependency : dependencies) {
+			if (dependency instanceof ProjectDependency projectDependency) {
+				Project dependencyProject = projectDependency.getDependencyProject();
+
+				for (Task task : dependencyProject.getTasksByName("remapJar", false)) {
+					if (task instanceof RemapJarTask remapJarTask) {
+						remapTasks.add(remapJarTask);
+					}
+				}
+			}
+		}
+
+		return remapTasks;
 	}
 
 	private static List<DependencyInfo<ProjectDependency>> populateProjectDependencies(Configuration configuration, Set<String> visited) {
@@ -133,7 +159,7 @@ public final class NestedDependencyProvider implements NestedJarProvider {
 			File file = metaFile.file;
 
 			//A lib that doesnt have a mod.json, we turn it into a fake mod
-			if (!ZipUtils.contains(file.toPath(), "fabric.mod.json")) {
+			if (!ModUtils.isMod(file)) {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);
 				File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 

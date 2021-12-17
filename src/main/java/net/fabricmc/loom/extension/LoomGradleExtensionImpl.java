@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -144,8 +145,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name) {
-		NamedDomainObjectProvider<Configuration> provider = project.getConfigurations().register(name);
+	public NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name, Action<? super Configuration> configurationAction) {
+		NamedDomainObjectProvider<Configuration> provider = project.getConfigurations().register(name, configurationAction);
 
 		if (lazyConfigurations.containsKey(name)) {
 			throw new IllegalStateException("Duplicate configuration name" + name);

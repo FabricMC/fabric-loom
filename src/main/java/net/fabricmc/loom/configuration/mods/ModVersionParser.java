@@ -30,7 +30,7 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 
@@ -67,7 +67,7 @@ public class ModVersionParser {
 	}
 
 	private File locateModJsonFile() {
-		return project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
+		return project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets()
 				.getByName("main")
 				.getResources()
 				.matching(patternFilterable -> patternFilterable.include("fabric.mod.json"))

@@ -29,7 +29,7 @@ import java.util.Objects;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -110,8 +110,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 
 	private SourceSet resolveSourceSet(String sourceSetName) {
 		// try to find sourceSet with name sourceSetName in this project
-		SourceSet sourceSet = project.getConvention().getPlugin(JavaPluginConvention.class)
-				.getSourceSets().findByName(sourceSetName);
+		SourceSet sourceSet = project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().findByName(sourceSetName);
 
 		if (sourceSet == null) {
 			throw new InvalidUserDataException("No sourceSet " + sourceSetName + " was found");

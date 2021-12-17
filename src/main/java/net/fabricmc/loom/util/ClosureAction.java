@@ -22,29 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.util;
 
-import java.io.File;
+import groovy.lang.Closure;
+import org.gradle.api.Action;
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
-
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+public record ClosureAction<T>(Closure closure) implements Action<T> {
+	@Override
+	public void execute(T t) {
+		closure.setDelegate(t);
+		closure.call(t);
 	}
-
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
-	}
-
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
 }

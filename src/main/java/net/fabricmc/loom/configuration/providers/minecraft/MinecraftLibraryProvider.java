@@ -28,6 +28,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
@@ -87,7 +88,9 @@ public class MinecraftLibraryProvider {
 			LWJGLVersionOverride.NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
 
 			// Add the native support mod that fixes a handful of issues related to the LWJGL update at runtime.
-			project.getDependencies().add("modLocalRuntime", Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION);
+			ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION);
+			dependency.setTransitive(false);
+			project.getDependencies().add("modLocalRuntime", dependency);
 		}
 	}
 

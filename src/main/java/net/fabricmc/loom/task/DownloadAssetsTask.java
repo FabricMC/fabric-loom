@@ -30,7 +30,6 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftNativesProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.assets.MinecraftAssetsProvider;
 
 public class DownloadAssetsTask extends AbstractLoomTask {
@@ -40,6 +39,5 @@ public class DownloadAssetsTask extends AbstractLoomTask {
 		LoomGradleExtension extension = getExtension();
 
 		MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-		MinecraftNativesProvider.provide(project);
 	}
 }

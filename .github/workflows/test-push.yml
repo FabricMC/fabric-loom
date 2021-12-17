@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - run: gradle build check -x test --stacktrace
+      - run: gradle build check -x test --stacktrace --warning-mode fail
 
   # This job is used to feed the test matrix of next job to allow the tests to run in parallel
   prepare_test_matrix:
@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - run: gradle writeActionsTestMatrix --stacktrace
+      - run: gradle writeActionsTestMatrix --stacktrace --warning-mode fail
       -
         id: set-matrix
         run: echo "::set-output name=matrix::$(cat build/test_matrix.json)"
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - run: gradle test --tests ${{ matrix.test }} --stacktrace
+      - run: gradle test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
 
@@ -78,7 +78,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: ./gradlew test --tests ${{ matrix.test }} --stacktrace
+      - run: ./gradlew test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
 
@@ -105,7 +105,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
 
-      - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace
+      - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace --warning-mode fail
 
       - uses: actions/upload-artifact@v2
         if: ${{ failure() }}

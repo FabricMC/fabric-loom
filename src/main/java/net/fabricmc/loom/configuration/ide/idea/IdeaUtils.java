@@ -22,29 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.configuration.ide.idea;
 
-import java.io.File;
+import java.util.Objects;
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
-
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+public class IdeaUtils {
+	public static boolean isIdeaSync() {
+		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
 	}
 
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
+	public static String getIdeaVersion() {
+		return Objects.requireNonNull(System.getProperty("idea.version"), "Could not get idea version");
 	}
 
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
+	// 2021.3 or newer
+	public static boolean supportsCustomizableClasspath() {
+		final String[] split = getIdeaVersion().split("\\.");
+		final int major = Integer.parseInt(split[0]);
+		final int minor = Integer.parseInt(split[1]);
+		return major > 2021 || (major == 2021 && minor >= 3);
+	}
 }

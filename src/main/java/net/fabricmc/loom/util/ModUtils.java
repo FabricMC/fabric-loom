@@ -25,18 +25,12 @@
 package net.fabricmc.loom.util;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.zip.ZipFile;
 
 public final class ModUtils {
 	private ModUtils() {
 	}
 
 	public static boolean isMod(File input) {
-		try (ZipFile zipFile = new ZipFile(input)) {
-			return zipFile.getEntry("fabric.mod.json") != null;
-		} catch (IOException e) {
-			return false;
-		}
+		return ZipUtils.contains(input.toPath(), "fabric.mod.json");
 	}
 }

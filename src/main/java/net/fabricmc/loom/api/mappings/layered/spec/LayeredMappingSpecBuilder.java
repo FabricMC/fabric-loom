@@ -27,8 +27,9 @@ package net.fabricmc.loom.api.mappings.layered.spec;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
-import org.gradle.util.ConfigureUtil;
 import org.jetbrains.annotations.ApiStatus;
+
+import net.fabricmc.loom.util.ClosureAction;
 
 /**
  * Used to configure a layered mapping spec.
@@ -52,7 +53,7 @@ public interface LayeredMappingSpecBuilder {
 	 */
 	@SuppressWarnings("rawtypes")
 	default LayeredMappingSpecBuilder officialMojangMappings(@DelegatesTo(value = MojangMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure closure) {
-		return officialMojangMappings(mojangMappingsSpecBuilder -> ConfigureUtil.configure(closure, mojangMappingsSpecBuilder));
+		return officialMojangMappings(new ClosureAction<>(closure));
 	}
 
 	/**
@@ -66,7 +67,7 @@ public interface LayeredMappingSpecBuilder {
 
 	@SuppressWarnings("rawtypes")
 	default LayeredMappingSpecBuilder parchment(Object object, @DelegatesTo(value = ParchmentMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure closure) {
-		return parchment(object, parchmentMappingsSpecBuilder -> ConfigureUtil.configure(closure, parchmentMappingsSpecBuilder));
+		return parchment(object, new ClosureAction<>(closure));
 	}
 
 	LayeredMappingSpecBuilder parchment(Object object, Action<ParchmentMappingsSpecBuilder> action);

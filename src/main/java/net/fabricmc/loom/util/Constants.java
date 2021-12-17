@@ -40,8 +40,6 @@ public class Constants {
 	public static final String EXPERIMENTAL_VERSIONS = "https://maven.fabricmc.net/net/minecraft/experimental_versions.json";
 	public static final String FABRIC_REPOSITORY = "https://maven.fabricmc.net/";
 
-	public static final String SYSTEM_ARCH = System.getProperty("os.arch").equals("64") ? "64" : "32";
-
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	public static final List<RemappedConfigurationEntry> MOD_COMPILE_ENTRIES = ImmutableList.of(
@@ -64,8 +62,13 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
 		public static final String MINECRAFT = "minecraft";
+		/**
+		 * The server specific configuration will be empty when using a legacy (pre 21w38a server jar)
+		 * find the client only dependencies on the "minecraftLibraries" config.
+		 */
+		public static final String MINECRAFT_SERVER_DEPENDENCIES = "minecraftServerLibraries";
 		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
-		public static final String MINECRAFT_REMAP_CLASSPATH = "minecraftRemapClasspath";
+		public static final String MINECRAFT_NATIVES = "minecraftNatives";
 		public static final String MINECRAFT_NAMED = "minecraftNamed";
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
@@ -93,6 +96,7 @@ public class Constants {
 		public static final String DEV_LAUNCH_INJECTOR = "net.fabricmc:dev-launch-injector:";
 		public static final String TERMINAL_CONSOLE_APPENDER = "net.minecrell:terminalconsoleappender:";
 		public static final String JETBRAINS_ANNOTATIONS = "org.jetbrains:annotations:";
+		public static final String NATIVE_SUPPORT = "net.fabricmc:fabric-loom-native-support:";
 
 		private Dependencies() {
 		}
@@ -105,6 +109,7 @@ public class Constants {
 			public static final String DEV_LAUNCH_INJECTOR = "0.2.1+build.8";
 			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
 			public static final String JETBRAINS_ANNOTATIONS = "23.0.0";
+			public static final String NATIVE_SUPPORT_VERSION = "1.0.1";
 
 			private Versions() {
 			}

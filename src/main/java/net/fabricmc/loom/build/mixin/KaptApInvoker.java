@@ -84,7 +84,7 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 				try {
 					String refmapName = Objects.requireNonNull(MixinExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
 					Path src = Paths.get(getRefmapDestination(task, refmapName));
-					Path dest = Paths.get(task.getDestinationDir().toString(), refmapName);
+					Path dest = Paths.get(task.getDestinationDirectory().get().getAsFile().toString(), refmapName);
 
 					// Possible that no mixin annotations exist
 					if (Files.exists(src)) {

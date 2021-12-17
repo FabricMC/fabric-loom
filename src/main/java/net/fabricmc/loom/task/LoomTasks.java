@@ -43,6 +43,7 @@ public final class LoomTasks {
 
 	public static void registerTasks(Project project) {
 		TaskContainer tasks = project.getTasks();
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
@@ -54,7 +55,11 @@ public final class LoomTasks {
 			t.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
-		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> t.setDescription("Downloads required assets for Fabric."));
+		TaskProvider<ExtractNativesTask> extractNatives = tasks.register("extractNatives", ExtractNativesTask.class);
+		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
+			t.dependsOn(extractNatives);
+			t.setDescription("Downloads required assets for Fabric.");
+		});
 		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
 		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {

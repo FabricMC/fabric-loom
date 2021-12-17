@@ -152,7 +152,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		try {
 			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(
 					accessWidener,
-					tinyRemapper.getRemapper(),
+					tinyRemapper.getEnvironment().getRemapper(),
 					MappingsNamespace.INTERMEDIARY.toString(),
 					MappingsNamespace.NAMED.toString()
 			);

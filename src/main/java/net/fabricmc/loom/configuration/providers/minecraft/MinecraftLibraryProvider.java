@@ -24,31 +24,77 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.io.File;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftLibraryProvider {
-	public File MINECRAFT_LIBS;
+	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-([0-9].*?)-)(?<classifier>.*).jar$");
 
 	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
 		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
+		BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 
-		initFiles(project, minecraftProvider);
+		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
+
+		if (overrideLWJGL) {
+			project.getLogger().warn("Loom is upgrading Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
+		}
 
 		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, project.getDependencies().module(library.name()));
+			if (overrideLWJGL && library.name().startsWith("org.lwjgl")) {
+				continue;
 			}
+
+			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
+				if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
+					project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
+				} else {
+					// Client only library, or legacy version
+					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
+				}
+			}
+
+			if (library.hasNativesForOS()) {
+				MinecraftVersionMeta.Download nativeDownload = library.classifierForOS();
+
+				Matcher matcher = NATIVES_PATTERN.matcher(nativeDownload.path());
+
+				if (!matcher.find()) {
+					project.getLogger().warn("Failed to match regex for natives path : " + nativeDownload.path());
+					continue;
+				}
+
+				final String group = matcher.group("group").replace("/", ".");
+				final String name = matcher.group("name");
+				final String version = matcher.group("version");
+				final String classifier = matcher.group("classifier");
+
+				final String dependencyNotation = "%s:%s:%s:%s".formatted(group, name, version, classifier);
+
+				project.getLogger().debug("Add native dependency '{}'", dependencyNotation);
+				project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, dependencyNotation);
+			}
+		}
+
+		if (overrideLWJGL) {
+			LWJGLVersionOverride.DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
+			LWJGLVersionOverride.NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
+
+			// Add the native support mod that fixes a handful of issues related to the LWJGL update at runtime.
+			ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION);
+			dependency.setTransitive(false);
+			project.getDependencies().add("modLocalRuntime", dependency);
 		}
 	}
 
-	private void initFiles(Project project, MinecraftProviderImpl minecraftProvider) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		MINECRAFT_LIBS = new File(extension.getFiles().getUserCache(), "libraries");
+	private static boolean isLibraryInBundle(BundleMetadata bundleMetadata, MinecraftVersionMeta.Library library) {
+		return bundleMetadata.libraries().stream().anyMatch(entry -> entry.name().equals(library.name()));
 	}
 }

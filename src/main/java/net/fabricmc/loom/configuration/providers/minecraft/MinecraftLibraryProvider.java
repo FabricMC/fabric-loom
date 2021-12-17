@@ -43,7 +43,7 @@ public class MinecraftLibraryProvider {
 		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 
 		if (overrideLWJGL) {
-			project.getLogger().warn("Loom is overriding Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
+			project.getLogger().warn("Loom is upgrading Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
 		}
 
 		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
@@ -85,6 +85,9 @@ public class MinecraftLibraryProvider {
 		if (overrideLWJGL) {
 			LWJGLVersionOverride.DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
 			LWJGLVersionOverride.NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
+
+			// Add the native support mod that fixes a handful of issues related to the LWJGL update at runtime.
+			project.getDependencies().add("modLocalRuntime", Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION);
 		}
 	}
 

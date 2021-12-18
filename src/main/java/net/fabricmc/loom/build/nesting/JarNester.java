@@ -69,6 +69,7 @@ public class JarNester {
 
 				for (File file : jars) {
 					String nestedJarPath = "META-INF/jars/" + file.getName();
+					Preconditions.checkArgument(ModUtils.isMod(file), "Cannot nest none mod jar: " + file.getName());
 
 					for (JsonElement nestedJar : nestedJars) {
 						JsonObject jsonObject = nestedJar.getAsJsonObject();

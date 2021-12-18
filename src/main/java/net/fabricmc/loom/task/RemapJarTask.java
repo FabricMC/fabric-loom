@@ -234,7 +234,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			return writer.write();
 		}
 
-		// TODO NestedDependencyProvider fix nested none mod jars?
 		private void addNestedJars() {
 			FileCollection nestedJars = getParameters().getNestedJars();
 

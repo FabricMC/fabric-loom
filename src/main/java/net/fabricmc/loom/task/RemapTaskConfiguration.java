@@ -39,11 +39,12 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.bundling.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.util.Constants;
 
 public class RemapTaskConfiguration {
-	private static final String REMAP_JAR_TASK_NAME = "remapJar";
-	private static final String REMAP_SOURCES_JAR_TASK_NAME = "remapSourcesJar";
+	public static final String REMAP_JAR_TASK_NAME = "remapJar";
+	public static final String REMAP_SOURCES_JAR_TASK_NAME = "remapSourcesJar";
 
 	// TODO respect extension.getSetupRemappedVariants in here
 	public static void setupRemap(Project project) {
@@ -68,7 +69,8 @@ public class RemapTaskConfiguration {
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.getArchiveFile());
-			task.getNestedJars().from(project.getConfigurations().getByName(Constants.Configurations.INCLUDE));
+			Configuration includeConfiguration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
+			task.getNestedJars().from(new IncludedJarFactory(project).getNestedJars(includeConfiguration));
 		});
 
 		// Configure the default jar task

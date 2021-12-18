@@ -138,7 +138,7 @@ public final class IncludedJarFactory {
 			}
 		}
 
-		return null;
+		return files;
 	}
 
 	private File getNestableJar(final File input, final Metadata metadata) {

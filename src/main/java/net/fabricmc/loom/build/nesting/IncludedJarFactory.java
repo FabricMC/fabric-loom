@@ -67,8 +67,8 @@ public final class IncludedJarFactory {
 			final ConfigurableFileCollection files = project.files();
 			final Set<String> visited = Sets.newHashSet();
 
-			files.from(getFileDeps(configuration, visited));
 			files.from(getProjectDeps(configuration, visited));
+			files.from(getFileDeps(configuration, visited));
 			files.builtBy(configuration.getBuildDependencies());
 			return files;
 		});
@@ -131,9 +131,9 @@ public final class IncludedJarFactory {
 						Provider<File> provider = archiveTask.getArchiveFile().map(regularFile -> getNestableJar(regularFile.getAsFile(), metadata));
 						files.from(provider);
 						files.builtBy(task);
+					} else {
+						throw new UnsupportedOperationException("Cannot nest none AbstractArchiveTask task: " + task.getName());
 					}
-
-					throw new UnsupportedOperationException("Cannot nest none AbstractArchiveTask task");
 				}
 			}
 		}

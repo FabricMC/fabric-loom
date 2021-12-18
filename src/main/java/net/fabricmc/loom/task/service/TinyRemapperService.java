@@ -79,6 +79,8 @@ public abstract class TinyRemapperService implements BuildService<TinyRemapperSe
 		final Params params = getParameters();
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper();
 
+		builder.keepInputData(true);
+
 		// Apply mappings
 
 		for (Provider<MappingsService> provider : params.getMappings().get()) {

@@ -169,12 +169,16 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		@Override
 		public void execute() {
 			try {
+				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
+
 				remap();
 				remapAccessWidener();
 				addRefmaps();
 				addNestedJars();
 				modifyJarManifest();
 				rewriteJar();
+
+				LOGGER.debug("Finished remapping {}", inputFile);
 			} catch (Exception e) {
 				try {
 					Files.deleteIfExists(outputFile);

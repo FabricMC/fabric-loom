@@ -68,7 +68,7 @@ public class RemapTaskConfiguration {
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.getArchiveFile());
-			task.getNestedJars().plus(project.getConfigurations().getByName(Constants.Configurations.INCLUDE));
+			task.getNestedJars().from(project.getConfigurations().getByName(Constants.Configurations.INCLUDE));
 		});
 
 		// Configure the default jar task

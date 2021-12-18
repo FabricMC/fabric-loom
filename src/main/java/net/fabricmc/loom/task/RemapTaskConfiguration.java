@@ -114,18 +114,18 @@ public class RemapTaskConfiguration {
 				return;
 			}
 
+			sourcesJarTask.getArchiveClassifier().set("dev-sources");
 			sourcesJarTask.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 			task.getArchiveClassifier().convention("sources");
 
 			task.dependsOn(sourcesJarTask);
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 
-			PublishArtifact artifact = project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
+			project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
 
-			// Remove the existing artifact that does not run remapSourcesJar.
-			// It doesn't seem to hurt, but I'm not sure if the file-level duplicates cause issues.
+			// Remove the dev sources artifact
 			Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-			configuration.getArtifacts().removeIf(a -> a != artifact && artifact.getFile().equals(a.getFile()));
+			configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
 		});
 	}
 }

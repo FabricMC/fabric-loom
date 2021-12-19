@@ -46,6 +46,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SourceSet;
@@ -64,7 +65,7 @@ import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
-import net.fabricmc.loom.task.service.TinyRemapperService;
+import net.fabricmc.loom.task.service.MappingsService;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -96,13 +97,21 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getNestedJars().plus(getNestedJars());
 			}
 
-			params.getRemapAccessWidener().set(extension.getAccessWidenerPath().isPresent());
-
-			params.getTinyRemapperBuildService().set(TinyRemapperService.create(getProject(), getSourceNamespace().get(), getTargetNamespace().get()));
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
+			params.getRemapClasspath().from(getClasspath());
+			params.getMappings().add(MappingsService.createDefault(getProject(), getSourceNamespace().get(), getTargetNamespace().get()));
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
-			params.getAddRefmap().set(legacyMixin);
+			params.getUseMixinExtension().set(!legacyMixin);
+
+			if (legacyMixin) {
+				// Add the mapping from the mixin AP
+				for (File file : extension.getAllMixinMappings().getFiles()) {
+					// TODO fix me, use the hash?
+					String name = file.getAbsolutePath();
+					params.getMappings().add(MappingsService.create(getProject(), name, file, getSourceNamespace().get(), getTargetNamespace().get(), false));
+				}
+			}
 
 			if (legacyMixin) {
 				setupLegacyMixinRefmapRemapping(params);
@@ -143,33 +152,28 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
-		ConfigurableFileCollection getExtraClasspath();
+		ConfigurableFileCollection getRemapClasspath();
+		ListProperty<Provider<MappingsService>> getMappings();
 
-		Property<Boolean> getRemapAccessWidener();
-		Property<Boolean> getAddRefmap();
+		Property<Boolean> getUseMixinExtension();
 
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
 
-		Property<TinyRemapperService> getTinyRemapperBuildService();
 		Property<JarManifestService> getJarManifestService();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
-		private final TinyRemapper tinyRemapper;
-
-		@Inject
-		public RemapAction() {
-			super();
-			tinyRemapper = getParameters().getTinyRemapperBuildService().get().getTinyRemapper();
-		}
+		private TinyRemapper tinyRemapper;
 
 		@Override
 		public void execute() {
 			try {
 				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
+
+				tinyRemapper = createTinyRemapper();
 
 				remap();
 				remapAccessWidener();
@@ -177,6 +181,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				addNestedJars();
 				modifyJarManifest();
 				rewriteJar();
+
+				tinyRemapper.finish();
+				tinyRemapper = null;
 
 				LOGGER.debug("Finished remapping {}", inputFile);
 			} catch (Exception e) {
@@ -193,10 +200,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		private void remap() throws IOException {
 			final InputTag inputTag = tinyRemapper.createInputTag();
 
-			for (File file : getParameters().getExtraClasspath().getFiles()) {
-				tinyRemapper.readClassPathAsync(file.toPath());
-			}
-
 			tinyRemapper.readInputsAsync(inputTag, inputFile);
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
@@ -206,11 +209,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void remapAccessWidener() throws IOException {
-			if (!getParameters().getRemapAccessWidener().get()) {
+			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
+
+			if (accessWidenerFile == null) {
 				return;
 			}
-
-			AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
 
 			byte[] remapped = remapAccessWidener(accessWidenerFile.content(), tinyRemapper.getEnvironment().getRemapper(), MappingsNamespace.INTERMEDIARY.toString());
 
@@ -261,7 +264,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void addRefmaps() throws IOException {
-			if (!getParameters().getAddRefmap().get()) {
+			if (getParameters().getUseMixinExtension().get()) {
 				return;
 			}
 
@@ -276,6 +279,27 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 				assert transformed == refmapData.mixinConfigs().size();
 			}
+		}
+
+		private TinyRemapper createTinyRemapper() {
+			TinyRemapper.Builder builder = TinyRemapper.newRemapper();
+
+			for (Provider<MappingsService> provider : getParameters().getMappings().get()) {
+				builder.withMappings(provider.get().getMappingsProvider());
+			}
+
+			if (getParameters().getUseMixinExtension().get()) {
+				builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
+			}
+
+			TinyRemapper remapper = builder.build();
+
+			// Apply classpath
+			for (File file : getParameters().getRemapClasspath()) {
+				remapper.readClassPathAsync(file.toPath());
+			}
+
+			return remapper;
 		}
 	}
 }

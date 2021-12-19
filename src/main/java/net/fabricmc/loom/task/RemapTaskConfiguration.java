@@ -29,7 +29,6 @@ import java.io.File;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -46,7 +45,6 @@ public class RemapTaskConfiguration {
 	public static final String REMAP_JAR_TASK_NAME = "remapJar";
 	public static final String REMAP_SOURCES_JAR_TASK_NAME = "remapSourcesJar";
 
-	// TODO respect extension.getSetupRemappedVariants in here
 	public static void setupRemap(Project project) {
 		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -69,6 +67,7 @@ public class RemapTaskConfiguration {
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.getArchiveFile());
+			task.dependsOn(tasks.named(JavaPlugin.JAR_TASK_NAME));
 			Configuration includeConfiguration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
 			task.getNestedJars().from(new IncludedJarFactory(project).getNestedJars(includeConfiguration));
 		});
@@ -76,25 +75,29 @@ public class RemapTaskConfiguration {
 		// Configure the default jar task
 		tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
 			task.getArchiveClassifier().convention("dev");
-			task.finalizedBy(remapJarTaskProvider);
 			task.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 		});
 
+		tasks.named("assemble").configure(task -> task.dependsOn(remapJarTaskProvider));
+
 		trySetupSourceRemapping(project);
 
-		// Remove -dev jars from the default jar task
-		for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
-			Configuration configuration = project.getConfigurations().getByName(configurationName);
-			configuration.getArtifacts().removeIf(artifact -> {
-				Task jarTask = project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-				// if the artifact is a -dev jar and "builtBy jar"
-				return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
-			});
+		if (extension.getSetupRemappedVariants().get()) {
+			// Remove -dev jars from the default jar task
+			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
+				Configuration configuration = project.getConfigurations().getByName(configurationName);
+				configuration.getArtifacts().removeIf(artifact -> {
+					Task jarTask = project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+					// if the artifact is a -dev jar and "builtBy jar"
+					return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
+				});
+			}
 		}
 	}
 
 	private static void trySetupSourceRemapping(Project project) {
 		final TaskContainer tasks = project.getTasks();
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
@@ -114,7 +117,7 @@ public class RemapTaskConfiguration {
 				return;
 			}
 
-			sourcesJarTask.getArchiveClassifier().set("dev-sources");
+			sourcesJarTask.getArchiveClassifier().convention("dev-sources");
 			sourcesJarTask.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 			task.getArchiveClassifier().convention("sources");
 
@@ -123,9 +126,11 @@ public class RemapTaskConfiguration {
 
 			project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
 
-			// Remove the dev sources artifact
-			Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-			configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+			if (extension.getSetupRemappedVariants().get()) {
+				// Remove the dev sources artifact
+				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
+				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+			}
 		});
 	}
 }

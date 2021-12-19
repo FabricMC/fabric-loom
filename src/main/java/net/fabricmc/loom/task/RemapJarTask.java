@@ -41,6 +41,7 @@ import javax.inject.Inject;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.JsonObject;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
@@ -61,11 +62,13 @@ import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
+import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.MappingsService;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -86,6 +89,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
+
+		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
 	}
 
 	@TaskAction
@@ -94,7 +100,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		submitWork(RemapAction.class, params -> {
 			if (getAddNestedDependencies().get()) {
-				params.getNestedJars().plus(getNestedJars());
+				params.getNestedJars().from(getNestedJars());
 			}
 
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
@@ -111,9 +117,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					String name = file.getAbsolutePath();
 					params.getMappings().add(MappingsService.create(getProject(), name, file, getSourceNamespace().get(), getTargetNamespace().get(), false));
 				}
-			}
 
-			if (legacyMixin) {
 				setupLegacyMixinRefmapRemapping(params);
 			}
 		});
@@ -245,7 +249,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			JarNester.nestJars(nestedJars.getFiles(), inputFile.toFile(), LOGGER);
+			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile(), LOGGER);
 		}
 
 		private void modifyJarManifest() throws IOException {

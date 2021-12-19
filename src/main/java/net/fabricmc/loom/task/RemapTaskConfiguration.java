@@ -29,6 +29,7 @@ import java.io.File;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
@@ -38,7 +39,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.bundling.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.util.Constants;
 
 public class RemapTaskConfiguration {
@@ -68,8 +68,6 @@ public class RemapTaskConfiguration {
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.getArchiveFile());
 			task.dependsOn(tasks.named(JavaPlugin.JAR_TASK_NAME));
-			Configuration includeConfiguration = project.getConfigurations().getByName(Constants.Configurations.INCLUDE);
-			task.getNestedJars().from(new IncludedJarFactory(project).getNestedJars(includeConfiguration));
 		});
 
 		// Configure the default jar task
@@ -78,7 +76,7 @@ public class RemapTaskConfiguration {
 			task.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 		});
 
-		tasks.named("assemble").configure(task -> task.dependsOn(remapJarTaskProvider));
+		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTaskProvider));
 
 		trySetupSourceRemapping(project);
 
@@ -99,7 +97,7 @@ public class RemapTaskConfiguration {
 		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
+		TaskProvider<RemapSourcesJarTask> remapSourcesTask = tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
@@ -124,13 +122,15 @@ public class RemapTaskConfiguration {
 			task.dependsOn(sourcesJarTask);
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 
-			project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
-
 			if (extension.getSetupRemappedVariants().get()) {
+				project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
+
 				// Remove the dev sources artifact
 				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
 				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
 			}
 		});
+
+		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
 	}
 }

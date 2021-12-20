@@ -276,8 +276,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 					return json;
 				})));
-
-				assert transformed == refmapData.mixinConfigs().size();
 			}
 		}
 

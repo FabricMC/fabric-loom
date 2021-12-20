@@ -36,6 +36,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -94,7 +95,7 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return getMappingsProvider().mappedProvider;
 	}
 
-	File getNextMixinMappings();
+	File getMixinMappings(SourceSet sourceSet);
 
 	FileCollection getAllMixinMappings();
 

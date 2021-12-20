@@ -40,6 +40,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -84,8 +85,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public synchronized File getNextMixinMappings() {
-		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMappingsProvider().mappingsIdentifier() + "." + mixinMappings.getFiles().size() + ".tiny");
+	public synchronized File getMixinMappings(SourceSet sourceSet) {
+		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMappingsProvider().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
 		mixinMappings.from(getProject().files(mixinMapping));
 		return mixinMapping;
 	}

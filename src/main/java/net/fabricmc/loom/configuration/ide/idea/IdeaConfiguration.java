@@ -24,19 +24,11 @@
 
 package net.fabricmc.loom.configuration.ide.idea;
 
-import java.util.Objects;
+import java.util.List;
 
-import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.plugins.ide.idea.model.IdeaModel;
-import org.gradle.plugins.ide.idea.model.IdeaProject;
-import org.jetbrains.gradle.ext.ActionDelegationConfig;
-import org.jetbrains.gradle.ext.IdeaExtPlugin;
-import org.jetbrains.gradle.ext.ProjectSettings;
-import org.jetbrains.gradle.ext.RunConfiguration;
-import org.jetbrains.gradle.ext.TaskTriggersConfig;
+import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
 
 public class IdeaConfiguration {
 	public static void setup(Project project) {
@@ -48,36 +40,8 @@ public class IdeaConfiguration {
 			return;
 		}
 
-		project.getPlugins().apply(IdeaExtPlugin.class);
-		project.getPlugins().withType(IdeaExtPlugin.class, ideaExtPlugin -> {
-			if (project != project.getRootProject()) {
-				// Also ensure it's applied to the root project.
-				project.getRootProject().getPlugins().apply(IdeaExtPlugin.class);
-			}
-
-			final IdeaModel ideaModel = project.getRootProject().getExtensions().findByType(IdeaModel.class);
-
-			if (ideaModel == null) {
-				return;
-			}
-
-			final IdeaProject ideaProject = ideaModel.getProject();
-
-			if (ideaProject == null) {
-				return;
-			}
-
-			final ProjectSettings settings = getExtension(ideaProject, ProjectSettings.class);
-			final ActionDelegationConfig delegateActions = getExtension(settings, ActionDelegationConfig.class);
-			final TaskTriggersConfig taskTriggers = getExtension(settings, TaskTriggersConfig.class);
-			final NamedDomainObjectContainer<RunConfiguration> runConfigurations = (NamedDomainObjectContainer<RunConfiguration>) ((ExtensionAware) settings).getExtensions().getByName("runConfigurations");
-
-			// Run the sync task on import
-			taskTriggers.afterSync(ideaSyncTask);
-		});
-	}
-
-	private static <T> T getExtension(Object extensionAware, Class<T> type) {
-		return Objects.requireNonNull(((ExtensionAware) extensionAware).getExtensions().getByType(type));
+		// Run the idea sync task, is this exposed via the api?
+		final TaskExecutionGraphInternal taskGraph = (TaskExecutionGraphInternal) project.getGradle().getTaskGraph();
+		taskGraph.whenReady(taskExecutionGraph -> taskGraph.addEntryTasks(List.of(ideaSyncTask.get())));
 	}
 }

@@ -37,9 +37,6 @@ repositories {
 		url = 'https://maven.fabricmc.net/'
 	}
 	mavenCentral()
-	maven {
-		url = 'https://plugins.gradle.org/m2/'
-	}
 	mavenLocal()
 }
 
@@ -94,9 +91,6 @@ dependencies {
 
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.2.4')
-
-	// IDEA support
-	implementation ('gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.1.1')
 
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0')

@@ -73,6 +73,7 @@ import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.TinyUtils;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
@@ -111,13 +112,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			params.getUseMixinExtension().set(!legacyMixin);
 
 			if (legacyMixin) {
-				// Add the mapping from the mixin AP
-				for (File file : extension.getAllMixinMappings().getFiles()) {
-					// TODO fix me, use the hash?
-					String name = file.getAbsolutePath();
-					params.getMappings().add(MappingsService.create(getProject(), name, file, getSourceNamespace().get(), getTargetNamespace().get(), false));
-				}
-
+				params.getMixinMappings().from(extension.getAllMixinMappings());
 				setupLegacyMixinRefmapRemapping(params);
 			}
 		});
@@ -157,6 +152,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getRemapClasspath();
+		ConfigurableFileCollection getMixinMappings();
 		ListProperty<Provider<MappingsService>> getMappings();
 
 		Property<Boolean> getUseMixinExtension();
@@ -290,6 +286,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			for (Provider<MappingsService> provider : getParameters().getMappings().get()) {
 				builder.withMappings(provider.get().getMappingsProvider());
+			}
+
+			for (File mixinMapping : getParameters().getMixinMappings()) {
+				builder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapping.toPath(), getParameters().getSourceNamespace().get(), getParameters().getTargetNamespace().get()));
 			}
 
 			if (getParameters().getUseMixinExtension().get()) {

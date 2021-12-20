@@ -31,13 +31,12 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftLibraryProvider {
 	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-([0-9].*?)-)(?<classifier>.*).jar$");
 
-	public void provide(MinecraftProviderImpl minecraftProvider, Project project) {
+	public void provide(MinecraftProvider minecraftProvider, Project project) {
 		MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 

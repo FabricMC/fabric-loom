@@ -58,8 +58,9 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -104,7 +105,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		MinecraftProviderImpl minecraftProvider = getDependencyManager().getProvider(MinecraftProviderImpl.class);
+		MinecraftProvider minecraftProvider = getDependencyManager().getProvider(MinecraftProvider.class);
 
 		getProject().getLogger().info(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
@@ -165,15 +166,19 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
 
-		if (processorManager.active()) {
-			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-			getProject().getLogger().info("Using project based jar storage");
-		} else {
-			mappedProvider = new MinecraftMappedProvider(getProject());
-		}
+		if (minecraftProvider instanceof MergedMinecraftProvider mergedMinecraftProvider) {
+			if (processorManager.active()) {
+				mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
+				getProject().getLogger().info("Using project based jar storage");
+			} else {
+				mappedProvider = new MinecraftMappedProvider(getProject());
+			}
 
-		mappedProvider.initFiles(minecraftProvider, this);
-		mappedProvider.provide(dependency, postPopulationScheduler);
+			mappedProvider.initFiles(mergedMinecraftProvider, this);
+			mappedProvider.provide(dependency, postPopulationScheduler);
+		} else {
+			throw new UnsupportedOperationException("TODO fix me");
+		}
 	}
 
 	private String getMappingsClassifier(DependencyInfo dependency, boolean isV2) {
@@ -206,7 +211,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
-	private void storeMappings(Project project, MinecraftProviderImpl minecraftProvider, Path yarnJar) throws IOException {
+	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
 		project.getLogger().info(":extracting " + yarnJar.getFileName());
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
@@ -218,10 +223,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			// These are unmerged v2 mappings
 			mergeAndSaveMappings(project, baseTinyMappings, tinyMappings);
 		} else {
-			// These are merged v1 mappings
-			Files.deleteIfExists(tinyMappings);
-			project.getLogger().lifecycle(":populating field names");
-			suggestFieldNames(minecraftProvider, baseTinyMappings, tinyMappings);
+			if (minecraftProvider instanceof MergedMinecraftProvider mergedMinecraftProvider) {
+				// These are merged v1 mappings
+				Files.deleteIfExists(tinyMappings);
+				project.getLogger().lifecycle(":populating field names");
+				suggestFieldNames(mergedMinecraftProvider, baseTinyMappings, tinyMappings);
+			} else {
+				throw new UnsupportedOperationException("V1 mappings only support merged minecraft");
+			}
 		}
 	}
 
@@ -391,7 +400,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		return tree;
 	}
 
-	private void suggestFieldNames(MinecraftProviderImpl minecraftProvider, Path oldMappings, Path newMappings) {
+	private void suggestFieldNames(MergedMinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
 		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
 						oldMappings.toAbsolutePath().toString(),

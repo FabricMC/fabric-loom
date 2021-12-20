@@ -41,7 +41,6 @@ import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -53,7 +52,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	private File minecraftMappedJar;
 	private File minecraftIntermediaryJar;
 
-	private MinecraftProviderImpl minecraftProvider;
+	private MergedMinecraftProvider minecraftProvider;
 
 	public MinecraftMappedProvider(Project project) {
 		super(project);
@@ -65,7 +64,7 @@ public class MinecraftMappedProvider extends DependencyProvider {
 			throw new RuntimeException("mappings file not found");
 		}
 
-		if (!getExtension().getMinecraftProvider().getMergedJar().exists()) {
+		if (!minecraftProvider.getMergedJar().exists()) {
 			throw new RuntimeException("input merged jar not found");
 		}
 
@@ -188,14 +187,10 @@ public class MinecraftMappedProvider extends DependencyProvider {
 				getProject().getDependencies().module("net.minecraft:minecraft-mapped:" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
 	}
 
-	public void initFiles(MinecraftProviderImpl minecraftProvider, MappingsProviderImpl mappingsProvider) {
+	public void initFiles(MergedMinecraftProvider minecraftProvider, MappingsProviderImpl mappingsProvider) {
 		this.minecraftProvider = minecraftProvider;
 		minecraftIntermediaryJar = new File(getExtension().getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-intermediary.jar");
 		minecraftMappedJar = new File(getExtension().getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-mapped.jar");
-	}
-
-	protected File getJarDirectory(File parentDirectory, String type) {
-		return new File(parentDirectory, getJarVersionString(type));
 	}
 
 	protected String getJarVersionString(String type) {
@@ -207,10 +202,6 @@ public class MinecraftMappedProvider extends DependencyProvider {
 	}
 
 	public File getMappedJar() {
-		return minecraftMappedJar;
-	}
-
-	public final File getBaseMappedJar() {
 		return minecraftMappedJar;
 	}
 

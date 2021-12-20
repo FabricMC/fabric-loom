@@ -25,7 +25,7 @@
 package net.fabricmc.loom.test.unit.layeredmappings
 
 import groovy.transform.CompileStatic
-import net.fabricmc.loom.configuration.providers.MinecraftProvider
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.api.mappings.layered.MappingContext

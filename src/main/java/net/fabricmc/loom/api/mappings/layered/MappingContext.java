@@ -30,8 +30,8 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 
 @ApiStatus.Experimental /* Very Experimental and not cleanly separated from the impl atm */
 public interface MappingContext {

@@ -43,7 +43,7 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.extension.LoomFiles;
@@ -83,8 +83,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	JarProcessorManager getJarProcessorManager();
 
-	default MinecraftProviderImpl getMinecraftProvider() {
-		return getDependencyManager().getProvider(MinecraftProviderImpl.class);
+	default MinecraftProvider getMinecraftProvider() {
+		return getDependencyManager().getProvider(MinecraftProvider.class);
 	}
 
 	default MappingsProviderImpl getMappingsProvider() {

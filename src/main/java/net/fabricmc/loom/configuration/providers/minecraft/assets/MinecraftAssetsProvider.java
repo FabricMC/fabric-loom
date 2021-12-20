@@ -41,14 +41,14 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 
 public class MinecraftAssetsProvider {
-	public static void provide(MinecraftProviderImpl minecraftProvider, Project project) throws IOException {
+	public static void provide(MinecraftProvider minecraftProvider, Project project) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 

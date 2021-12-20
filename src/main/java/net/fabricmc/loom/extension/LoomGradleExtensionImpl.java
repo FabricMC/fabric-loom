@@ -53,7 +53,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
-	private final FileCollection mixinMappings;
+	private final ConfigurableFileCollection mixinMappings;
 	private final MappingSet[] srcMappingCache = new MappingSet[2];
 	private final Mercury[] srcMercuryCache = new Mercury[2];
 	private final Map<String, NamedDomainObjectProvider<Configuration>> lazyConfigurations = new HashMap<>();
@@ -86,13 +86,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public synchronized File getNextMixinMappings() {
 		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMappingsProvider().mappingsIdentifier() + "." + mixinMappings.getFiles().size() + ".tiny");
-		mixinMappings.plus(getProject().files(mixinMapping));
+		mixinMappings.from(getProject().files(mixinMapping));
 		return mixinMapping;
 	}
 
 	@Override
 	public FileCollection getAllMixinMappings() {
-		return mixinMappings;
+		return mixinMappings.filter(File::exists);
 	}
 
 	@Override

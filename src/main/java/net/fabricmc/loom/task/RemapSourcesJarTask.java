@@ -43,7 +43,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	public RemapSourcesJarTask() {
 		super();
 
-		getClasspath().plus(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 	}
 
 	@TaskAction

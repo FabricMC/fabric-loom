@@ -59,7 +59,7 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 		return project.getGradle().getSharedServices().registerIfAbsent("sourceremapper", SourceRemapperService.class, spec ->
 			spec.parameters(params -> {
 				params.getMappings().set(mappings);
-				params.getClasspath().plus(classpath);
+				params.getClasspath().from(classpath);
 			}
 		));
 	}
@@ -68,13 +68,9 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 
 	private Mercury mercury;
 
-	public synchronized void remapSourcesJar(Path source, Path destination) throws IOException {
+	public void remapSourcesJar(Path source, Path destination) throws IOException {
 		if (source.equals(destination)) {
 			throw new UnsupportedOperationException("Cannot remap in place");
-		}
-
-		if (mercury == null) {
-			createMercury();
 		}
 
 		Path srcPath = source;
@@ -94,12 +90,7 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 		try (FileSystemUtil.Delegate dstFs = Files.isDirectory(destination) ? null : FileSystemUtil.getJarFileSystem(destination, true)) {
 			Path dstPath = dstFs != null ? dstFs.get().getPath("/") : destination;
 
-			try {
-				mercury.rewrite(srcPath, dstPath);
-			} catch (Exception e) {
-				LOGGER.warn("Could not remap " + source + " fully!", e);
-			}
-
+			doRemap(srcPath, dstPath, source);
 			SourceRemapper.copyNonJavaFiles(srcPath, dstPath, LOGGER, source);
 		} finally {
 			if (isSrcTmp) {
@@ -108,12 +99,21 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 		}
 	}
 
-	private void createMercury() throws IOException {
-		mercury = new Mercury();
-		mercury.setGracefulClasspathChecks(true);
-		mercury.getProcessors().add(MercuryRemapper.create(getMappings()));
+	private synchronized void doRemap(Path srcPath, Path dstPath, Path source) throws IOException {
+		if (mercury == null) {
+			mercury = new Mercury();
+			mercury.setGracefulClasspathChecks(true);
+			mercury.getProcessors().add(MercuryRemapper.create(getMappings()));
 
-		getParameters().getClasspath().forEach(file -> mercury.getClassPath().add(file.toPath()));
+			getParameters().getClasspath().forEach(file -> mercury.getClassPath().add(file.toPath()));
+		}
+
+		try {
+			// Not thread safe!!
+			mercury.rewrite(srcPath, dstPath);
+		} catch (Exception e) {
+			LOGGER.warn("Could not remap " + source + " fully!", e);
+		}
 	}
 
 	private MappingSet getMappings() throws IOException {
@@ -127,5 +127,7 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 	@Override
 	public void close() throws Exception {
 		mercury = null;
+		// This is required (:
+		System.gc();
 	}
 }

@@ -50,17 +50,13 @@ public final class LoomTasks {
 			t.getOutputs().upToDateWhen(o -> false);
 		});
 
-		tasks.register("remapJar", RemapJarTask.class, t -> {
-			t.setDescription("Remaps the built project jar to intermediary mappings.");
-			t.setGroup(Constants.TaskGroup.FABRIC);
-		});
+		RemapTaskConfiguration.setupRemap(project);
 
 		TaskProvider<ExtractNativesTask> extractNatives = tasks.register("extractNatives", ExtractNativesTask.class);
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
 			t.dependsOn(extractNatives);
 			t.setDescription("Downloads required assets for Fabric.");
 		});
-		tasks.register("remapSourcesJar", RemapSourcesJarTask.class, t -> t.setDescription("Remaps the project sources jar to intermediary names."));
 
 		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
 			t.setDescription("Validate all the rules in the access widener against the Minecraft jar");

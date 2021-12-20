@@ -35,7 +35,6 @@ import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
-import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
@@ -124,6 +123,7 @@ public final class CompileConfiguration {
 
 	public static void configureCompile(Project p) {
 		final JavaPluginExtension javaPluginExtension = p.getExtensions().getByType(JavaPluginExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(p);
 
 		SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
@@ -131,8 +131,6 @@ public final class CompileConfiguration {
 		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 
 		p.afterEvaluate(project -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
-
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 
@@ -147,14 +145,6 @@ public final class CompileConfiguration {
 			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
 
 			extension.getRemapArchives().finalizeValue();
-
-			// Enables the default mod remapper
-			if (extension.getRemapArchives().get()) {
-				RemapConfiguration.setupDefaultRemap(project);
-			} else {
-				Jar jarTask = (Jar) project.getTasks().getByName("jar");
-				extension.getUnmappedModCollection().from(jarTask);
-			}
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 

@@ -107,11 +107,13 @@ public class RemapTaskConfiguration {
 
 			if (sourcesTask == null) {
 				project.getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
+				task.setEnabled(false);
 				return;
 			}
 
 			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
 				project.getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
+				task.setEnabled(false);
 				return;
 			}
 

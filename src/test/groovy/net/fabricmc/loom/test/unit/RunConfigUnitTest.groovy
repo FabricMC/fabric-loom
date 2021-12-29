@@ -33,6 +33,6 @@ class RunConfigUnitTest extends Specification {
             def args = RunConfig.joinArguments(["-Dfabric.test=123", "-Dfabric.test=abc 123"])
 
         then:
-            args == '"-Dfabric.test=123" "-Dfabric.test=abc 123"'
+            args == '-Dfabric.test=123 "-Dfabric.test=abc 123"'
     }
 }

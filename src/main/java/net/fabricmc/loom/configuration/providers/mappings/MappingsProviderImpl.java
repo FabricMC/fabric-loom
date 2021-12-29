@@ -192,7 +192,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
 		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
 			String yarnVersion = dependency.getDependency().getVersion();
-			int index = yarnVersion.contains("+build.") ? yarnVersion.indexOf(separator) : yarnVersion.lastIndexOf(yarnVersion.contains("-") ? '-' : '.');
+			int index = yarnVersion.contains("+build.") ? yarnVersion.indexOf('+') : yarnVersion.lastIndexOf(yarnVersion.contains("-") ? '-' : '.');
 			String yarnMinecraftVersion = yarnVersion.substring(0, index);
 
 			if (!yarnMinecraftVersion.equalsIgnoreCase(minecraftVersion)) {

@@ -173,6 +173,7 @@ test {
 	useJUnitPlatform()
 }
 
+import org.gradle.util.GradleVersion
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -299,4 +300,25 @@ task writeActionsTestMatrix() {
 
 tasks.named('wrapper') {
 	distributionType = Wrapper.DistributionType.ALL
+}
+
+/**
+ * Run this task to download the gradle sources next to the api jar, you may need to manually attach the sources jar
+ */
+task downloadGradleSources() {
+	doLast {
+		// Awful hack to find the gradle api location
+		def gradleApiFile = project.configurations.detachedConfiguration(dependencies.gradleApi()).files.stream()
+			.filter {
+				it.name.startsWith("gradle-api")
+			}.findFirst().orElseThrow()
+
+		def gradleApiSources = new File(gradleApiFile.absolutePath.replace(".jar", "-sources.jar"))
+		def url = "https://services.gradle.org/distributions/gradle-${GradleVersion.current().getVersion()}-src.zip"
+
+		gradleApiSources.delete()
+
+		println("Downloading (${url}) to (${gradleApiSources})")
+		gradleApiSources << new URL(url).newInputStream()
+	}
 }

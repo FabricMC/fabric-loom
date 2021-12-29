@@ -26,18 +26,13 @@ package net.fabricmc.loom.configuration.mods;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarFile;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
@@ -47,7 +42,6 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
@@ -62,37 +56,53 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
-	public static void processMods(Project project, List<ModDependencyInfo> processList) throws IOException {
-		if (processList.stream().noneMatch(ModDependencyInfo::requiresRemapping)) {
-			return;
-		}
+	private static final String fromM = MappingsNamespace.INTERMEDIARY.toString();
+	private static final String toM = MappingsNamespace.NAMED.toString();
 
+	private final Project project;
+
+	public ModProcessor(Project project) {
+		this.project = project;
+	}
+
+	public void processMods(List<ModDependencyInfo> processList) throws IOException {
 		ArrayList<ModDependencyInfo> remapList = new ArrayList<>();
 
 		for (ModDependencyInfo info : processList) {
 			if (info.requiresRemapping()) {
-				if (info.getRemappedOutput().exists()) {
-					info.getRemappedOutput().delete();
-				}
+				project.getLogger().debug("{} requires remapping", info.getInputFile());
+				Files.deleteIfExists(info.getRemappedOutput().toPath());
 
 				remapList.add(info);
 			}
 		}
 
-		remapJars(project, processList);
+		if (remapList.isEmpty()) {
+			project.getLogger().debug("No mods to remap, skipping");
+			return;
+		}
 
+		try {
+			remapJars(remapList);
+		} catch (Exception e) {
+			project.getLogger().error("Failed to remap %d mods".formatted(remapList.size()), e);
+
+			for (ModDependencyInfo info : remapList) {
+				Files.deleteIfExists(info.getRemappedOutput().toPath());
+			}
+
+			throw e;
+		}
+
+		// Check all the mods we expect exist
 		for (ModDependencyInfo info : processList) {
 			if (!info.getRemappedOutput().exists()) {
 				throw new RuntimeException("Failed to find remapped mod" + info);
 			}
 		}
-
-		for (ModDependencyInfo info : remapList) {
-			stripNestedJars(info.getRemappedOutput());
-		}
 	}
 
-	private static void stripNestedJars(File file) {
+	private void stripNestedJars(File file) {
 		// Strip out all contained jar info as we dont want loader to try and load the jars contained in dev.
 		try {
 			ZipUtils.transformJson(JsonObject.class, file.toPath(), Map.of("fabric.mod.json", json -> {
@@ -107,7 +117,7 @@ public class ModProcessor {
 	/**
 	 * Remap another mod's access widener from intermediary to named, so that loader can apply it in our dev-env.
 	 */
-	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
+	private byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		int version = AccessWidenerReader.readVersion(input);
 
 		AccessWidenerWriter writer = new AccessWidenerWriter(version);
@@ -122,28 +132,23 @@ public class ModProcessor {
 		return writer.write();
 	}
 
-	private static void remapJars(Project project, List<ModDependencyInfo> processList) throws IOException {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		String fromM = MappingsNamespace.INTERMEDIARY.toString();
-		String toM = MappingsNamespace.NAMED.toString();
+	private void remapJars(List<ModDependencyInfo> remapList) throws IOException {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
+		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
-		MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-
-		Path mc = mappedProvider.getIntermediaryJar().toPath();
+		Path intermediaryJar = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
-		List<ModDependencyInfo> remapList = processList.stream().filter(ModDependencyInfo::requiresRemapping).collect(Collectors.toList());
-
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-		TinyRemapper remapper = TinyRemapper.newRemapper()
+		final TinyRemapper remapper = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
 				.renameInvalidLocals(false)
 				.build();
 
-		remapper.readClassPathAsync(mc);
+		remapper.readClassPathAsync(intermediaryJar);
 		remapper.readClassPathAsync(mcDeps);
 
 		final Map<ModDependencyInfo, InputTag> tagMap = new HashMap<>();
@@ -169,65 +174,44 @@ public class ModProcessor {
 			tagMap.put(info, tag);
 		}
 
-		// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
-		for (ModDependencyInfo info : remapList) {
-			try {
-				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
+		try {
+			// Apply this in a second loop as we need to ensure all the inputs are on the classpath before remapping.
+			for (ModDependencyInfo info : remapList) {
+				try {
+					OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.getRemappedOutput().toPath()).build();
 
-				outputConsumer.addNonClassFiles(info.getInputFile().toPath(), NonClassCopyMode.FIX_META_INF, remapper);
-				outputConsumerMap.put(info, outputConsumer);
-				String accessWidener = info.getAccessWidener();
+					outputConsumer.addNonClassFiles(info.getInputFile().toPath(), NonClassCopyMode.FIX_META_INF, remapper);
+					outputConsumerMap.put(info, outputConsumer);
 
-				if (accessWidener != null) {
-					accessWidenerMap.put(info, remapAccessWidener(ZipUtils.unpack(info.inputFile.toPath(), accessWidener), remapper.getRemapper()));
+					final ModDependencyInfo.AccessWidenerData accessWidenerData = info.getAccessWidenerData();
+
+					if (accessWidenerData != null) {
+						project.getLogger().debug("Remapping access widener in {}", info.getInputFile());
+						byte[] remappedAw = remapAccessWidener(accessWidenerData.content(), remapper.getEnvironment().getRemapper());
+						accessWidenerMap.put(info, remappedAw);
+					}
+
+					remapper.apply(outputConsumer, tagMap.get(info));
+				} catch (Exception e) {
+					throw new RuntimeException("Failed to remap: " + info.getRemappedNotation(), e);
 				}
-
-				remapper.apply(outputConsumer, tagMap.get(info));
-			} catch (Exception e) {
-				remapper.finish();
-				Files.deleteIfExists(info.getRemappedOutput().toPath());
-
-				throw new RuntimeException("Failed to remap: " + info.getRemappedNotation(), e);
 			}
+		} finally {
+			remapper.finish();
 		}
-
-		remapper.finish();
 
 		for (ModDependencyInfo info : remapList) {
 			outputConsumerMap.get(info).close();
 			byte[] accessWidener = accessWidenerMap.get(info);
 
 			if (accessWidener != null) {
-				ZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidener(), accessWidener);
+				assert info.getAccessWidenerData() != null;
+				ZipUtils.replace(info.getRemappedOutput().toPath(), info.getAccessWidenerData().path(), accessWidener);
 			}
+
+			stripNestedJars(info.getRemappedOutput());
 
 			info.finaliseRemapping();
 		}
-	}
-
-	public static JsonObject readInstallerJson(File file, Project project) {
-		try {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-			String jsonStr;
-
-			try (JarFile jarFile = new JarFile(file)) {
-				ZipEntry entry = jarFile.getEntry("fabric-installer.json");
-
-				if (entry == null) {
-					return null;
-				}
-
-				try (InputStream inputstream = jarFile.getInputStream(entry)) {
-					jsonStr = new String(inputstream.readAllBytes(), StandardCharsets.UTF_8);
-				}
-			}
-
-			return LoomGradlePlugin.GSON.fromJson(jsonStr, JsonObject.class);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return null;
 	}
 }

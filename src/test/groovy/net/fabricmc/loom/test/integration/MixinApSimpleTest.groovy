@@ -47,7 +47,7 @@ class MixinApSimpleTest extends Specification implements GradleProjectTestTrait 
             result.task(":build").outcome == SUCCESS
 
             // verify the ref-map name is correctly generated
-            def main = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-dev.jar").absoluteFile)
+            def main = new JarFile(new File(gradle.projectDir, "build/devlibs/fabric-example-mod-1.0.0-dev.jar").absoluteFile)
             main.getEntry("main-refmap0000.json") != null
             def mixin = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin.jar").absoluteFile)
             mixin.getEntry("default-refmap0000.json") != null

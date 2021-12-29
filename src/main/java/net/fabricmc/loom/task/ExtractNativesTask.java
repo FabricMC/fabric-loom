@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit
+package net.fabricmc.loom.task;
 
-import net.fabricmc.loom.build.nesting.MergedNestedJarProvider
-import net.fabricmc.loom.build.nesting.NestedJarProvider
-import org.gradle.api.Project
-import spock.lang.Specification
+import java.io.File;
 
-class MergedNestedJarProviderTest extends Specification {
-    def "empty test"() {
-        given:
-            def nestedJarProvider = new MergedNestedJarProvider(new TestNestedJarProvider())
-        when:
-            nestedJarProvider.prepare(null)
-        then:
-            nestedJarProvider.provide() != null
-    }
+import javax.inject.Inject;
 
-    private class TestNestedJarProvider implements NestedJarProvider {
-        private Collection<File> files = null
+import org.gradle.api.tasks.Sync;
 
-        @Override
-        Collection<File> provide() {
-            return files
-        }
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.Constants;
 
-        @Override
-        void prepare(Project project) {
-            files = []
-        }
-    }
+public abstract class ExtractNativesTask extends Sync {
+	@Inject
+	public ExtractNativesTask() {
+		// Is there a lazy way to do this for many files? - Doesnt seem there is...
+		for (File nativeFile : getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES).getFiles()) {
+			from(getProject().zipTree(nativeFile), copySpec -> {
+				copySpec.exclude("META-INF/**");
+			});
+		}
+
+		into(LoomGradleExtension.get(getProject()).getFiles().getNativesDirectory(getProject()));
+
+		setDescription("Downloads and extracts the minecraft natives");
+	}
 }

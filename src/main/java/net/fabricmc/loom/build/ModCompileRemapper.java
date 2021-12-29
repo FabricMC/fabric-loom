@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.zip.ZipFile;
 
 import com.google.common.io.Files;
 import org.gradle.api.Project;
@@ -58,6 +57,7 @@ import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 
@@ -91,7 +91,7 @@ public class ModCompileRemapper {
 					String name = artifact.getModuleVersion().getId().getName();
 					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
 
-					if (!isFabricMod(logger, artifact.getFile(), artifact.getId())) {
+					if (!ModUtils.isMod(artifact.getFile())) {
 						addToRegularCompile(project, regularConfig, artifact);
 						continue;
 					}
@@ -118,7 +118,7 @@ public class ModCompileRemapper {
 
 					// Create a mod dependency for each file in the file collection
 					for (File artifact : files) {
-						if (!isFabricMod(logger, artifact, artifact.getName())) {
+						if (!ModUtils.isMod(artifact)) {
 							dependencies.add(regularConfig.getName(), project.files(artifact));
 							continue;
 						}
@@ -141,7 +141,7 @@ public class ModCompileRemapper {
 				}
 
 				try {
-					ModProcessor.processMods(project, modDependencies);
+					new ModProcessor(project).processMods(modDependencies);
 				} catch (IOException e) {
 					// Failed to remap, lets clean up to ensure we try again next time
 					modDependencies.forEach(info -> info.getRemappedOutput().delete());
@@ -153,32 +153,11 @@ public class ModCompileRemapper {
 					project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
 				}
 
-				// Report deprecation warnings
-				if (entry.replacedWith() != null && !modDependencies.isEmpty()) {
-					extension.getDeprecationHelper().replaceWithInLoom0_11(entry.sourceConfiguration(), entry.replacedWith());
-				}
-
 				// Export to other projects
 				if (entry.targetConfiguration().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
 					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
 				}
 			});
-		}
-	}
-
-	/**
-	 * Checks if an artifact is a fabric mod, according to the presence of a fabric.mod.json.
-	 */
-	private static boolean isFabricMod(Logger logger, File artifact, Object id) {
-		try (ZipFile zipFile = new ZipFile(artifact)) {
-			if (zipFile.getEntry("fabric.mod.json") != null) {
-				logger.info("Found Fabric mod in modCompile: {}", id);
-				return true;
-			}
-
-			return false;
-		} catch (IOException e) {
-			return false;
 		}
 	}
 

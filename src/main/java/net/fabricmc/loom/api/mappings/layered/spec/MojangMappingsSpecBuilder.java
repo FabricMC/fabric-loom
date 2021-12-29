@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.api.mappings.layered.spec;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+public interface MojangMappingsSpecBuilder {
+	/**
+	 * When enabled synthetic fields and methods will be mapped to name specified in the official mojang mappings.
+	 *
+	 * <p>When disabled synthetic fields and methods will not be mapped leaving them with their intermediary name.
+	 */
+	MojangMappingsSpecBuilder setNameSyntheticMembers(boolean value);
 
-@Deprecated // Replaced by RunGameTask
-public class RunClientTask extends AbstractRunTask {
-	public RunClientTask() {
-		super(project -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
-			return RunConfig.runConfig(project, extension.getRunConfigs().getByName("client"));
-		});
-		LoomGradleExtension.get(getProject()).getDeprecationHelper().replaceWithInLoom0_11("RunClientTask", "RunGameTask");
-	}
+	boolean getNameSyntheticMembers();
 }

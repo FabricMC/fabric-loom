@@ -46,6 +46,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		setClasspath(config.sourceSet.getRuntimeClasspath());
 		args(config.programArgs);
+		getMainClass().set(config.mainClass);
 	}
 
 	@Override
@@ -62,11 +63,6 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		super.setWorkingDir(dir);
-	}
-
-	@Override
-	public String getMain() {
-		return config.mainClass;
 	}
 
 	@Override

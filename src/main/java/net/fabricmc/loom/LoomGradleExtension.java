@@ -26,15 +26,17 @@ package net.fabricmc.loom;
 
 import java.io.File;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -54,7 +56,12 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	LoomFiles getFiles();
 
-	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name);
+	default NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name) {
+		return createLazyConfiguration(name, config -> {
+		});
+	}
+
+	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name, Action<? super Configuration> configurationAction);
 
 	NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name);
 
@@ -88,15 +95,11 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return getMappingsProvider().mappedProvider;
 	}
 
-	File getNextMixinMappings();
+	File getMixinMappings(SourceSet sourceSet);
 
-	Set<File> getAllMixinMappings();
+	FileCollection getAllMixinMappings();
 
 	boolean isRootProject();
-
-	default boolean ideSync() {
-		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
-	}
 
 	default String getIntermediaryUrl(String minecraftVersion) {
 		return String.format(this.getIntermediaryUrl().get(), minecraftVersion);

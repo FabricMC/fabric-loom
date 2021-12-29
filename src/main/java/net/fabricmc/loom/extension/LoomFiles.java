@@ -43,7 +43,7 @@ public interface LoomFiles {
 	File getProjectPersistentCache();
 	File getProjectBuildCache();
 	File getRemappedModCache();
-	File getNativesJarStore();
+	File getNativesDirectory(Project project);
 	File getDefaultLog4jConfigFile();
 	File getDevLauncherConfig();
 	File getUnpickLoggingConfigFile();

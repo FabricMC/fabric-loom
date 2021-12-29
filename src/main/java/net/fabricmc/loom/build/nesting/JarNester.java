@@ -36,7 +36,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.UncheckedIOException;
-import org.gradle.api.logging.Logger;
+import org.slf4j.Logger;
 
 import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
@@ -69,6 +69,7 @@ public class JarNester {
 
 				for (File file : jars) {
 					String nestedJarPath = "META-INF/jars/" + file.getName();
+					Preconditions.checkArgument(ModUtils.isMod(file), "Cannot nest none mod jar: " + file.getName());
 
 					for (JsonElement nestedJar : nestedJars) {
 						JsonObject jsonObject = nestedJar.getAsJsonObject();

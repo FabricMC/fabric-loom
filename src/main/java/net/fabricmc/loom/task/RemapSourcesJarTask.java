@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,70 +24,65 @@
 
 package net.fabricmc.loom.task;
 
-import org.gradle.api.file.RegularFileProperty;
+import java.io.IOException;
+import java.nio.file.Files;
+
+import javax.inject.Inject;
+
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.task.service.MappingsService;
+import net.fabricmc.loom.task.service.SourceRemapperService;
 
-public class RemapSourcesJarTask extends AbstractLoomTask {
-	private final RegularFileProperty input = getProject().getObjects().fileProperty();
-	private final RegularFileProperty output = getProject().getObjects().fileProperty().convention(input);
-	private final Property<String> targetNamespace = getProject().getObjects().property(String.class).convention(MappingsNamespace.INTERMEDIARY.toString());
-	private SourceRemapper sourceRemapper = null;
-	private final Property<Boolean> preserveFileTimestamps = getProject().getObjects().property(Boolean.class).convention(true);
-	private final Property<Boolean> reproducibleFileOrder = getProject().getObjects().property(Boolean.class).convention(false);
-
+public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
+	@Inject
 	public RemapSourcesJarTask() {
+		super();
+
+		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 	}
 
 	@TaskAction
-	public void remap() throws Exception {
-		if (sourceRemapper == null) {
-			String direction = targetNamespace.get();
-			SourceRemapper.remapSources(getProject(), input.get().getAsFile(), output.get().getAsFile(), direction.equals(MappingsNamespace.NAMED.toString()), reproducibleFileOrder.get(), preserveFileTimestamps.get());
-		} else {
-			sourceRemapper.scheduleRemapSources(input.get().getAsFile(), output.get().getAsFile(), reproducibleFileOrder.get(), preserveFileTimestamps.get());
+	public void run() {
+		submitWork(RemapSourcesAction.class, params -> {
+			params.getSourcesRemapperService().set(SourceRemapperService.create(getProject(), MappingsService.createDefault(getProject(), getSourceNamespace().get(), getTargetNamespace().get()), getClasspath()));
+		});
+	}
+
+	public interface RemapSourcesParams extends AbstractRemapParams {
+		Property<SourceRemapperService> getSourcesRemapperService();
+	}
+
+	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
+		private static final Logger LOGGER = LoggerFactory.getLogger(RemapSourcesAction.class);
+
+		private final SourceRemapperService sourceRemapperService;
+
+		public RemapSourcesAction() {
+			super();
+
+			sourceRemapperService = getParameters().getSourcesRemapperService().get();
 		}
-	}
 
-	@Internal
-	public SourceRemapper getSourceRemapper() {
-		return sourceRemapper;
-	}
+		@Override
+		public void execute() {
+			try {
+				sourceRemapperService.remapSourcesJar(inputFile, outputFile);
 
-	public RemapSourcesJarTask setSourceRemapper(SourceRemapper sourceRemapper) {
-		this.sourceRemapper = sourceRemapper;
-		return this;
-	}
+				rewriteJar();
+			} catch (Exception e) {
+				try {
+					Files.deleteIfExists(outputFile);
+				} catch (IOException ex) {
+					LOGGER.error("Failed to delete output file", ex);
+				}
 
-	@InputFile
-	public RegularFileProperty getInput() {
-		return input;
-	}
-
-	@OutputFile
-	public RegularFileProperty getOutput() {
-		return output;
-	}
-
-	@Input
-	public Property<String> getTargetNamespace() {
-		return targetNamespace;
-	}
-
-	@Input
-	public Property<Boolean> getPreserveFileTimestamps() {
-		return preserveFileTimestamps;
-	}
-
-	@Input
-	public Property<Boolean> getReproducibleFileOrder() {
-		return reproducibleFileOrder;
+				throw new RuntimeException("Failed to remap sources", e);
+			}
+		}
 	}
 }

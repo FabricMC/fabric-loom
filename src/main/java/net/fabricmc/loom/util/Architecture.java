@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build.nesting;
+package net.fabricmc.loom.util;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
+public class Architecture {
+	public static final Architecture CURRENT = new Architecture(System.getProperty("os.arch"));
 
-import org.gradle.api.Project;
+	private final String name;
 
-public record MergedNestedJarProvider(NestedJarProvider... children) implements NestedJarProvider {
-	@Override
-	public Collection<File> provide() {
-		return Arrays.stream(children)
-				.map(NestedJarProvider::provide)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toList());
+	public Architecture(String name) {
+		this.name = name;
 	}
 
-	@Override
-	public void prepare(Project project) {
-		Arrays.stream(children).forEach(nestedJarProvider -> nestedJarProvider.prepare(project));
+	public boolean is64Bit() {
+		return name.contains("64") || name.startsWith("armv8");
+	}
+
+	public boolean isArm() {
+		return name.startsWith("arm") || name.startsWith("aarch64");
+	}
+
+	public String getName() {
+		return name;
 	}
 }

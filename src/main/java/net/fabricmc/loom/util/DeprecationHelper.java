@@ -31,14 +31,6 @@ import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.configuration.WarningMode;
 
 public interface DeprecationHelper {
-	default void replaceWithInLoom0_10(String currentName, String newName) {
-		toBeRemovedIn(currentName, newName, "Loom 0.10");
-	}
-
-	default void replaceWithInLoom0_11(String currentName, String newName) {
-		toBeRemovedIn(currentName, newName, "Loom 0.11");
-	}
-
 	default void replaceWithInLoom0_12(String currentName, String newName) {
 		toBeRemovedIn(currentName, newName, "Loom 0.12");
 	}

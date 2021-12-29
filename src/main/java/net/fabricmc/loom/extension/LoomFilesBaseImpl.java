@@ -26,6 +26,10 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.LoomGradleExtension;
+
 public abstract class LoomFilesBaseImpl implements LoomFiles {
 	protected abstract File getGradleUserHomeDir();
 	protected abstract File getRootDir();
@@ -70,8 +74,8 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 	}
 
 	@Override
-	public File getNativesJarStore() {
-		return createFile(getUserCache(), "natives/jars");
+	public File getNativesDirectory(Project project) {
+		return createFile(getRootProjectPersistentCache(), "natives/" + LoomGradleExtension.get(project).getMinecraftProvider().minecraftVersion());
 	}
 
 	@Override

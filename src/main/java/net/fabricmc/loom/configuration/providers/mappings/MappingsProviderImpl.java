@@ -48,6 +48,7 @@ import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -195,7 +196,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			String yarnMinecraftVersion = yarnVersion.substring(0, yarnVersion.lastIndexOf(separator));
 
 			if (!yarnMinecraftVersion.equalsIgnoreCase(minecraftVersion)) {
-				throw new RuntimeException(String.format("Minecraft Version (%s) does not match yarn's minecraft version (%s)", minecraftVersion, yarnMinecraftVersion));
+				getProject().getLogger().warn("Minecraft Version ({}) does not match yarn's minecraft version ({})", minecraftVersion, yarnMinecraftVersion);
 			}
 
 			// We can save reading the zip file + header by checking the file name
@@ -304,6 +305,20 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
 				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
 		);
+
+		// Unpick ships with a slightly older version of asm, ensure it runs with at least the same version as loom.
+		String[] asmDeps = new String[] {
+				"org.ow2.asm:asm:%s",
+				"org.ow2.asm:asm-tree:%s",
+				"org.ow2.asm:asm-commons:%s",
+				"org.ow2.asm:asm-util:%s"
+		};
+
+		for (String asm : asmDeps) {
+			getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+					asm.formatted(Opcodes.class.getPackage().getImplementationVersion())
+			);
+		}
 	}
 
 	private void mergeAndSaveMappings(Project project, Path from, Path out) throws IOException {
@@ -474,6 +489,10 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to get intermediary", e);
 		}
+	}
+
+	public String getBuildServiceName(String name, String from, String to) {
+		return "%s:%s:%s>%S".formatted(name, mappingsIdentifier(), from, to);
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {

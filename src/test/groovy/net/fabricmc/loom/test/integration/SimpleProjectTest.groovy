@@ -51,6 +51,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		then:
 			result.task(":build").outcome == SUCCESS
 			gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+			gradle.getOutputZipEntry("fabric-example-mod-1.0.0-sources.jar", "net/fabricmc/example/mixin/ExampleMixin.java").contains("class_442") // Very basic test to ensure sources got remapped
 
 			serverResult.successful()
 			serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called

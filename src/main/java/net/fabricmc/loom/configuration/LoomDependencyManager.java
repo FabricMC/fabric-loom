@@ -25,6 +25,9 @@
 package net.fabricmc.loom.configuration;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,13 +42,15 @@ import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
 import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
-import net.fabricmc.loom.configuration.mods.ModProcessor;
+import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.ZipUtils;
 
 public class LoomDependencyManager {
 	private static class ProviderList {
@@ -147,7 +152,7 @@ public class LoomDependencyManager {
 
 			for (Dependency dependency : configuration.getAllDependencies()) {
 				for (File input : configuration.files(dependency)) {
-					JsonObject jsonObject = ModProcessor.readInstallerJson(input, project);
+					JsonObject jsonObject = readInstallerJson(input);
 
 					if (jsonObject != null) {
 						if (extension.getInstallerData() != null) {
@@ -176,6 +181,20 @@ public class LoomDependencyManager {
 		}
 	}
 
+	public static JsonObject readInstallerJson(File file) {
+		try {
+			byte[] bytes = ZipUtils.unpackNullable(file.toPath(), "fabric-installer.json");
+
+			if (bytes == null) {
+				return null;
+			}
+
+			return LoomGradlePlugin.GSON.fromJson(new String(bytes, StandardCharsets.UTF_8), JsonObject.class);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to try and read installer json from", e);
+		}
+	}
+
 	private static void handleInstallerJson(JsonObject jsonObject, Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
@@ -191,7 +210,7 @@ public class LoomDependencyManager {
 			loaderDepsConfig.getDependencies().add(modDep);
 
 			// TODO: work around until https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14 is fixed.
-			if (!extension.ideSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
+			if (!IdeaUtils.isIdeaSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
 				apDepsConfig.getDependencies().add(modDep);
 			}
 

@@ -45,6 +45,7 @@ import org.w3c.dom.Node;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
+import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 
 public class RunConfig {
 	public String configName;
@@ -174,7 +175,7 @@ public class RunConfig {
 	public String fromDummy(String dummy, boolean relativeDir, Project project) throws IOException {
 		String dummyConfig;
 
-		try (InputStream input = SetupIntelijRunConfigs.class.getClassLoader().getResourceAsStream(dummy)) {
+		try (InputStream input = IdeaSyncTask.class.getClassLoader().getResourceAsStream(dummy)) {
 			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		}
 
@@ -209,7 +210,12 @@ public class RunConfig {
 			}
 
 			first = false;
-			sb.append("\"").append(arg).append("\"");
+
+			if (arg.contains(" ")) {
+				sb.append("\"").append(arg).append("\"");
+			} else {
+				sb.append(arg);
+			}
 		}
 
 		return sb.toString();

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build.nesting;
+package net.fabricmc.loom.util;
 
-import java.io.File;
-import java.util.Collection;
+import groovy.lang.Closure;
+import org.gradle.api.Action;
 
-import org.gradle.api.Project;
-import org.jetbrains.annotations.ApiStatus;
-
-@ApiStatus.Internal
-public interface NestedJarProvider {
-	// provide all the files to be included, they should already be resolved but can be transformed here
-	Collection<File> provide();
-
-	// Setup the files ready to be provided
-	default void prepare(Project project) { }
+public record ClosureAction<T>(Closure closure) implements Action<T> {
+	@Override
+	public void execute(T t) {
+		closure.setDelegate(t);
+		closure.call(t);
+	}
 }

@@ -28,9 +28,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
@@ -38,6 +41,20 @@ import java.util.function.Supplier;
 
 public final class FileSystemUtil {
 	public record Delegate(FileSystem fs, boolean owner) implements AutoCloseable, Supplier<FileSystem> {
+		public byte[] readAllBytes(String path) throws IOException {
+			Path fsPath = get().getPath(path);
+
+			if (Files.exists(fsPath)) {
+				return Files.readAllBytes(fsPath);
+			} else {
+				throw new NoSuchFileException(fsPath.toString());
+			}
+		}
+
+		public String readString(String path) throws IOException {
+			return new String(readAllBytes(path), StandardCharsets.UTF_8);
+		}
+
 		@Override
 		public void close() throws IOException {
 			if (owner) {
@@ -63,6 +80,10 @@ public final class FileSystemUtil {
 
 	public static Delegate getJarFileSystem(Path path, boolean create) throws IOException {
 		return getJarFileSystem(path.toUri(), create);
+	}
+
+	public static Delegate getJarFileSystem(Path path) throws IOException {
+		return getJarFileSystem(path, false);
 	}
 
 	public static Delegate getJarFileSystem(URI uri, boolean create) throws IOException {

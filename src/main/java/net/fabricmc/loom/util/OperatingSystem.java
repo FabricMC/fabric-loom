@@ -30,32 +30,26 @@ import java.net.StandardProtocolFamily;
 import java.nio.channels.ServerSocketChannel;
 
 public class OperatingSystem {
-	public static String getOS() {
+	public static final String WINDOWS = "windows";
+	public static final String MAC_OS = "osx";
+	public static final String LINUX = "linux";
+
+	public static final String CURRENT_OS = getOS();
+
+	private static String getOS() {
 		String osName = System.getProperty("os.name").toLowerCase();
 
 		if (osName.contains("win")) {
-			return "windows";
+			return WINDOWS;
 		} else if (osName.contains("mac")) {
-			return "osx";
+			return MAC_OS;
 		} else {
-			return "linux";
-		}
-	}
-
-	public static String getArch() {
-		if (is64Bit()) {
-			return "64";
-		} else {
-			return "32";
+			return LINUX;
 		}
 	}
 
 	public static boolean is64Bit() {
 		return System.getProperty("sun.arch.data.model").contains("64");
-	}
-
-	public static boolean isWindows() {
-		return getOS().equals("windows");
 	}
 
 	public static boolean isCIBuild() {

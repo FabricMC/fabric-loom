@@ -11,18 +11,18 @@ plugins {
 	id "com.diffplug.spotless" version "5.14.1"
 }
 
-sourceCompatibility = 16
-targetCompatibility = 16
+sourceCompatibility = 17
+targetCompatibility = 17
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 16
+	it.options.release = 17
 }
 
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '0.10'
+def baseVersion = '0.11'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -61,10 +61,10 @@ dependencies {
 	bootstrap project(":bootstrap")
 
 	// libraries
-	implementation ('commons-io:commons-io:2.8.0')
-	implementation ('com.google.code.gson:gson:2.8.8')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.5')
-	implementation ('com.google.guava:guava:30.1.1-jre')
+	implementation ('commons-io:commons-io:2.11.0')
+	implementation ('com.google.code.gson:gson:2.8.9')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.0')
+	implementation ('com.google.guava:guava:31.0.1-jre')
 	implementation ('org.ow2.asm:asm:9.2')
 	implementation ('org.ow2.asm:asm-analysis:9.2')
 	implementation ('org.ow2.asm:asm-commons:9.2')
@@ -78,7 +78,7 @@ dependencies {
 
 	// tinyfile management
 	implementation ('net.fabricmc:tiny-remapper:0.7.0')
-	implementation 'net.fabricmc:access-widener:2.0.1'
+	implementation 'net.fabricmc:access-widener:2.1.0'
 	implementation 'net.fabricmc:mapping-io:0.2.1'
 
 	implementation ('net.fabricmc:lorenz-tiny:4.0.2') {
@@ -93,7 +93,7 @@ dependencies {
 	implementation ('net.fabricmc:mercury:0.2.4')
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.21')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0')
 
 	// Testing
 	testImplementation(gradleTestKit())
@@ -101,9 +101,9 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'io.javalin:javalin:3.13.11'
-	testImplementation 'net.fabricmc:fabric-installer:0.7.4'
+	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
 
-	compileOnly 'org.jetbrains:annotations:22.0.0'
+	compileOnly 'org.jetbrains:annotations:23.0.0'
 }
 
 jar {
@@ -137,11 +137,11 @@ spotless {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '8.44'
+	toolVersion = '9.2'
 }
 
 codenarc {
-	toolVersion = "2.1.0"
+	toolVersion = "2.2.0"
 	configFile = file("codenarc.groovy")
 }
 
@@ -155,15 +155,15 @@ gradlePlugin {
 }
 
 jacoco {
-	toolVersion = "0.8.6"
+	toolVersion = "0.8.7"
 }
 
 // Run to get test coverage.
 jacocoTestReport {
 	dependsOn test
 	reports {
-		xml.enabled false
-		csv.enabled false
+		xml.required = false
+		csv.required = false
 		html.destination file("${buildDir}/jacocoHtml")
 	}
 }
@@ -173,6 +173,7 @@ test {
 	useJUnitPlatform()
 }
 
+import org.gradle.util.GradleVersion
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -299,4 +300,25 @@ task writeActionsTestMatrix() {
 
 tasks.named('wrapper') {
 	distributionType = Wrapper.DistributionType.ALL
+}
+
+/**
+ * Run this task to download the gradle sources next to the api jar, you may need to manually attach the sources jar
+ */
+task downloadGradleSources() {
+	doLast {
+		// Awful hack to find the gradle api location
+		def gradleApiFile = project.configurations.detachedConfiguration(dependencies.gradleApi()).files.stream()
+			.filter {
+				it.name.startsWith("gradle-api")
+			}.findFirst().orElseThrow()
+
+		def gradleApiSources = new File(gradleApiFile.absolutePath.replace(".jar", "-sources.jar"))
+		def url = "https://services.gradle.org/distributions/gradle-${GradleVersion.current().getVersion()}-src.zip"
+
+		gradleApiSources.delete()
+
+		println("Downloading (${url}) to (${gradleApiSources})")
+		gradleApiSources << new URL(url).newInputStream()
+	}
 }

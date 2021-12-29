@@ -54,13 +54,16 @@ public class LaunchProvider extends DependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
+		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
+
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getAllLog4JConfigFiles())
+				.property("log4j2.formatMsgNoLookups", "true")
 
-				.property("client", "java.library.path", getExtension().getMinecraftProvider().nativesDir().getAbsolutePath())
-				.property("client", "org.lwjgl.librarypath", getExtension().getMinecraftProvider().nativesDir().getAbsolutePath())
+				.property("client", "java.library.path", nativesPath)
+				.property("client", "org.lwjgl.librarypath", nativesPath)
 
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))

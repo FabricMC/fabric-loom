@@ -34,14 +34,10 @@ import java.util.Arrays;
 
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
-import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.ZipUtils;
 
@@ -94,25 +90,6 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to write aw jar hash", e);
 		}
-	}
-
-	/**
-	 * Get this mods access widener remapped to the intermediary namespace.
-	 */
-	public byte[] getRemappedAccessWidener(Remapper asmRemapper, String targetNamespace) throws IOException {
-		int version = AccessWidenerReader.readVersion(modAccessWidener);
-
-		AccessWidenerWriter writer = new AccessWidenerWriter(version);
-		AccessWidenerRemapper remapper = new AccessWidenerRemapper(
-				writer,
-				asmRemapper,
-				MappingsNamespace.NAMED.toString(),
-				targetNamespace
-		);
-		AccessWidenerReader reader = new AccessWidenerReader(remapper);
-		reader.read(modAccessWidener);
-
-		return writer.write();
 	}
 
 	@Override

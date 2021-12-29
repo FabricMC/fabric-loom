@@ -59,6 +59,9 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 
 		getAccessWidener().convention(extension.getAccessWidenerPath()).finalizeValueOnRead();
 		getTargetJar().convention(getProject().getObjects().fileProperty().fileValue(extension.getMinecraftMappedProvider().getMappedJar())).finalizeValueOnRead();
+
+		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
+		getOutputs().upToDateWhen(task -> true);
 	}
 
 	@TaskAction

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
@@ -44,7 +45,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		setGroup(Constants.TaskGroup.FABRIC);
 		this.config = configProvider.apply(getProject());
 
-		setClasspath(config.sourceSet.getRuntimeClasspath());
+		setClasspath(config.sourceSet.getRuntimeClasspath().filter(new LibraryFilter()));
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
 	}
@@ -71,5 +72,23 @@ public abstract class AbstractRunTask extends JavaExec {
 		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
 		args.addAll(config.vmArgs);
 		return args;
+	}
+
+	private class LibraryFilter implements Spec<File> {
+		private List<String> excludedLibraryPaths = null;
+
+		@Override
+		public boolean isSatisfiedBy(File element) {
+			if (excludedLibraryPaths == null) {
+				excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
+			}
+
+			if (excludedLibraryPaths.contains(element.getAbsolutePath())) {
+				getProject().getLogger().debug("Excluding library {} from {} run config", element.getName(), config.configName);
+				return false;
+			}
+
+			return true;
+		}
 	}
 }

@@ -24,14 +24,18 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
@@ -46,6 +50,8 @@ import org.w3c.dom.Node;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.util.Constants;
 
 public class RunConfig {
 	public String configName;
@@ -54,6 +60,7 @@ public class RunConfig {
 	public String mainClass;
 	public String runDirIdeaUrl;
 	public String runDir;
+	public String environment;
 	public List<String> vmArgs = new ArrayList<>();
 	public List<String> programArgs = new ArrayList<>();
 	public SourceSet sourceSet;
@@ -163,6 +170,7 @@ public class RunConfig {
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
 		runConfig.sourceSet = sourceSet;
+		runConfig.environment = environment;
 
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArgs());
@@ -210,7 +218,12 @@ public class RunConfig {
 			}
 
 			first = false;
-			sb.append("\"").append(arg).append("\"");
+
+			if (arg.contains(" ")) {
+				sb.append("\"").append(arg).append("\"");
+			} else {
+				sb.append(arg);
+			}
 		}
 
 		return sb.toString();
@@ -244,6 +257,31 @@ public class RunConfig {
 		}
 
 		return defaultMainClass;
+	}
+
+	public List<String> getExcludedLibraryPaths(Project project) {
+		if (!environment.equals("server")) {
+			return Collections.emptyList();
+		}
+
+		final BundleMetadata bundleMetadata = LoomGradleExtension.get(project).getMinecraftProvider().getServerBundleMetadata();
+
+		if (bundleMetadata == null) {
+			// Legacy version
+			return Collections.emptyList();
+		}
+
+		final Set<File> allLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles();
+		final Set<File> serverLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES).getFiles();
+		final List<String> clientOnlyLibraries = new LinkedList<>();
+
+		for (File commonLibrary : allLibraries) {
+			if (!serverLibraries.contains(commonLibrary)) {
+				clientOnlyLibraries.add(commonLibrary.getAbsolutePath());
+			}
+		}
+
+		return clientOnlyLibraries;
 	}
 
 	private static String encodeEscaped(String s) {

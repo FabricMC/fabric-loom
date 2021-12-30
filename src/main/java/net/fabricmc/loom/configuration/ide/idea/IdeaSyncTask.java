@@ -26,24 +26,35 @@ package net.fabricmc.loom.configuration.ide.idea;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
-import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.util.Constants;
 
 public abstract class IdeaSyncTask extends AbstractLoomTask {
 	@Inject
@@ -74,8 +85,6 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			runConfigsDir.mkdirs();
 		}
 
-		final List<String> excludedServerLibraries = getExcludedServerLibraries();
-
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
 				continue;
@@ -93,9 +102,11 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 			settings.makeRunDir();
 
-			if (settings.getEnvironment().equals("server") && !excludedServerLibraries.isEmpty()) {
+			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
+
+			if (!excludedLibraryPaths.isEmpty()) {
 				try {
-					setClasspathModifications(runConfigs, excludedServerLibraries);
+					setClasspathModifications(runConfigs.toPath(), excludedLibraryPaths);
 				} catch (Exception e) {
 					getProject().getLogger().error("Failed to modify run configuration xml", e);
 				}
@@ -103,28 +114,67 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		}
 	}
 
-	private List<String> getExcludedServerLibraries() {
-		final BundleMetadata bundleMetadata = getExtension().getMinecraftProvider().getServerBundleMetadata();
-
-		if (bundleMetadata == null) {
-			// Legacy version
-			return Collections.emptyList();
+	private void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
+		if (!IdeaUtils.supportsCustomizableClasspath()) {
+			return;
 		}
 
-		final Set<File> allLibraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles();
-		final Set<File> serverLibraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES).getFiles();
-		final List<String> clientOnlyLibraries = new LinkedList<>();
+		final String inputXml = Files.readString(runConfig, StandardCharsets.UTF_8);
+		final String outputXml;
 
-		for (File commonLibrary : allLibraries) {
-			if (!serverLibraries.contains(commonLibrary)) {
-				clientOnlyLibraries.add(commonLibrary.getAbsolutePath());
-			}
+		try {
+			outputXml = setClasspathModificationsInXml(inputXml, exclusions);
+		} catch (Exception e) {
+			getLogger().error("Failed to modify idea xml", e);
+
+			return;
 		}
 
-		return clientOnlyLibraries;
+		if (!inputXml.equals(outputXml)) {
+			Files.writeString(runConfig, outputXml, StandardCharsets.UTF_8);
+		}
 	}
 
-	private void setClasspathModifications(File runConfig, List<String> exclusions) throws Exception {
-		// TODO modify the xml
+	@VisibleForTesting
+	public static String setClasspathModificationsInXml(String input, List<String> exclusions) throws Exception {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		final Document document = documentBuilder.parse(new InputSource(new StringReader(input)));
+		final Element root = document.getDocumentElement();
+
+		final NodeList nodeList = root.getElementsByTagName("configuration");
+		assert nodeList.getLength() == 1;
+
+		final Element configuration = (Element) nodeList.item(0);
+		final NodeList classpathModificationsList = configuration.getElementsByTagName("classpathModifications");
+
+		// Remove all the existing exclusions
+		for (int i = 0; i < classpathModificationsList.getLength(); i++) {
+			configuration.removeChild(classpathModificationsList.item(i));
+		}
+
+		final Element classpathModifications = document.createElement("classpathModifications");
+
+		for (String exclusionPath : exclusions) {
+			final Element exclusion = document.createElement("entry");
+
+			exclusion.setAttribute("exclude", "true");
+			exclusion.setAttribute("path", exclusionPath);
+
+			classpathModifications.appendChild(exclusion);
+		}
+
+		configuration.appendChild(classpathModifications);
+
+		final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		final Transformer transformer = transformerFactory.newTransformer();
+		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+
+		final DOMSource source = new DOMSource(document);
+
+		final StringWriter writer = new StringWriter();
+		transformer.transform(source, new StreamResult(writer));
+
+		return writer.toString().replace("\r", "");
 	}
 }

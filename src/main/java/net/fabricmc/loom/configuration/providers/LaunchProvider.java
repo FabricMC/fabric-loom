@@ -60,6 +60,7 @@ public class LaunchProvider extends DependencyProvider {
 				.property("fabric.development", "true")
 				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getAllLog4JConfigFiles())
+				.property("log4j2.formatMsgNoLookups", "true")
 
 				.property("client", "java.library.path", nativesPath)
 				.property("client", "org.lwjgl.librarypath", nativesPath)

@@ -24,6 +24,7 @@
   },
   "mixins": [
     "main.mixins.json",
+    "subfolder/subfolder.mixins.json",
     {
       "config": "blabla.json",
       "environment": "client"

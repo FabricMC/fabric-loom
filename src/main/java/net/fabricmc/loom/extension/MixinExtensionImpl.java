@@ -76,7 +76,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
 
-		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("*.json"));
+		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("**/*.json"));
 		MixinExtension.setMixinInformationContainer(sourceSet, new MixinExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
 
 		isDefault = false;

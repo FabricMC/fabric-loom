@@ -24,17 +24,13 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
@@ -43,7 +39,6 @@ public final class LoomTasks {
 
 	public static void registerTasks(Project project) {
 		TaskContainer tasks = project.getTasks();
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
@@ -118,58 +113,21 @@ public final class LoomTasks {
 	}
 
 	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		project.afterEvaluate(p -> {
-			MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-
-			if (mappingsProvider.mappedProvider == null) {
-				// If this is ever null something has gone badly wrong,
-				// for some reason for another this afterEvaluate still gets called when something has gone badly
-				// wrong, returning here seems to produce nicer errors.
-				return;
-			}
-
-			File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-
-			if (mappingsProvider.hasUnpickDefinitions()) {
-				File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
-
-				tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-					unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-					unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
-					unpickJarTask.getOutputJar().set(outputJar);
-				});
-
-				mappedJar = outputJar;
-			}
-
-			final File inputJar = mappedJar;
-
-			extension.getGameDecompilers().finalizeValue();
-
-			for (LoomDecompiler decompiler : extension.getGameDecompilers().get()) {
-				String taskName = "genSourcesWith" + decompiler.name();
-				// Decompiler will be passed to the constructor of GenerateSourcesTask
-				tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
-					task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
-					task.setGroup(Constants.TaskGroup.FABRIC);
-					task.getInputJar().set(inputJar);
-
-					if (mappingsProvider.hasUnpickDefinitions()) {
-						task.dependsOn(tasks.named("unpickJar"));
-					}
-
-					task.dependsOn(tasks.named("validateAccessWidener"));
-				});
-			}
-
-			tasks.register("genSources", task -> {
-				task.setDescription("Decompile minecraft using the default decompiler.");
+		LoomGradleExtension.get(project).getGameDecompilers().configureEach(decompiler -> {
+			String taskName = "genSourcesWith" + decompiler.name();
+			// Decompiler will be passed to the constructor of GenerateSourcesTask
+			tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
+				task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
 				task.setGroup(Constants.TaskGroup.FABRIC);
-
-				task.dependsOn(project.getTasks().named("genSourcesWithCfr"));
+				task.dependsOn(tasks.named("validateAccessWidener"));
 			});
+		});
+
+		tasks.register("genSources", task -> {
+			task.setDescription("Decompile minecraft using the default decompiler.");
+			task.setGroup(Constants.TaskGroup.FABRIC);
+
+			task.dependsOn(project.getTasks().named("genSourcesWithCfr"));
 		});
 	}
 }

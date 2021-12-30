@@ -25,6 +25,7 @@
 package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
+import org.gradle.api.DomainObjectCollection;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -55,7 +56,7 @@ public interface LoomGradleExtensionAPI {
 		getShareRemapCaches().set(true);
 	}
 
-	ListProperty<LoomDecompiler> getGameDecompilers();
+	DomainObjectCollection<LoomDecompiler> getGameDecompilers();
 
 	default void addDecompiler(LoomDecompiler decompiler) {
 		getGameDecompilers().add(decompiler);

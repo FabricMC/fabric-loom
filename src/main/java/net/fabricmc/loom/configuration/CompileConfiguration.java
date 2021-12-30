@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import org.gradle.api.NamedDomainObjectProvider;
@@ -33,6 +34,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -46,6 +48,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvid
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -127,10 +131,10 @@ public final class CompileConfiguration {
 		final JavaPluginExtension javaPluginExtension = p.getExtensions().getByType(JavaPluginExtension.class);
 		LoomGradleExtension extension = LoomGradleExtension.get(p);
 
-		SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-
-		Javadoc javadoc = (Javadoc) p.getTasks().getByName(JavaPlugin.JAVADOC_TASK_NAME);
-		javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+		p.getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
+			final SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+		});
 
 		p.afterEvaluate(project -> {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
@@ -144,10 +148,6 @@ public final class CompileConfiguration {
 
 			dependencyManager.handleDependencies(project);
 
-			project.getTasks().getByName("idea").finalizedBy(project.getTasks().getByName("genIdeaWorkspace"));
-			project.getTasks().getByName("eclipse").finalizedBy(project.getTasks().getByName("genEclipseRuns"));
-			project.getTasks().getByName("cleanEclipse").finalizedBy(project.getTasks().getByName("cleanEclipseRuns"));
-
 			extension.getRemapArchives().finalizeValue();
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
@@ -155,10 +155,16 @@ public final class CompileConfiguration {
 			if (mixin.getUseLegacyMixinAp().get()) {
 				setupMixinAp(project, mixin);
 			}
+
+			configureDecompileTasks(project);
 		});
 
+		finalizedBy(p, "idea", "genIdeaWorkspace");
+		finalizedBy(p, "eclipse", "genEclipseRuns");
+		finalizedBy(p, "cleanEclipse", "cleanEclipseRuns");
+
 		// Add the "dev" jar to the "namedElements" configuration
-		p.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.NAMED_ELEMENTS, p.getTasks().getByName("jar")));
+		p.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.NAMED_ELEMENTS, p.getTasks().named("jar")));
 
 		// Ensure that the encoding is set to UTF-8, no matter what the system default is
 		// this fixes some edge cases with special characters not displaying correctly
@@ -195,7 +201,47 @@ public final class CompileConfiguration {
 		}
 	}
 
+	private static void configureDecompileTasks(Project project) {
+		final TaskContainer tasks = project.getTasks();
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+
+		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+
+		if (mappingsProvider.hasUnpickDefinitions()) {
+			File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
+
+			tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
+				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
+				unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
+				unpickJarTask.getOutputJar().set(outputJar);
+			});
+
+			mappedJar = outputJar;
+		}
+
+		final File inputJar = mappedJar;
+
+		extension.getGameDecompilers().configureEach(decompiler -> {
+			String taskName = "genSourcesWith" + decompiler.name();
+
+			// Set the input jar for the task after evaluation has occurred.
+			tasks.named(taskName, GenerateSourcesTask.class).configure(task -> {
+				task.getInputJar().set(inputJar);
+
+				if (mappingsProvider.hasUnpickDefinitions()) {
+					task.dependsOn(tasks.named("unpickJar"));
+				}
+			});
+		});
+	}
+
 	private static void extendsFrom(String a, String b, Project project) {
 		project.getConfigurations().getByName(a, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(b)));
+	}
+
+	private static void finalizedBy(Project project, String a, String b) {
+		project.getTasks().named(a).configure(task -> task.finalizedBy(project.getTasks().named(b)));
 	}
 }

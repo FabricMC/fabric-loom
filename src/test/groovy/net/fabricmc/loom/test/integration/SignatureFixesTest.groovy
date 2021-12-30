@@ -22,13 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.test.integration
 
-import org.gradle.util.GradleVersion
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.5-20211228231407+0000"
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+// Basic test to just ensure it builds.
+class SignatureFixesTest extends Specification implements GradleProjectTestTrait {
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "minimalBase", version: version)
+
+			gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18-pre1"
+                    mappings "net.fabricmc:yarn:1.18-pre1+build.14:v2"
+                }
+            '''
+
+		when:
+			def result = gradle.run(task: "build")
+
+		then:
+			result.task(":build").outcome == SUCCESS
+
+		where:
+			version << STANDARD_TEST_VERSIONS
+	}
 }

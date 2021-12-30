@@ -29,15 +29,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.gradle.api.Project;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
@@ -46,7 +41,6 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.api.TrClass;
 
 public class MinecraftMappedProvider extends DependencyProvider {
 	private File minecraftMappedJar;
@@ -109,65 +103,16 @@ public class MinecraftMappedProvider extends DependencyProvider {
 		for (String toM : Arrays.asList(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString())) {
 			final boolean toNamed = MappingsNamespace.NAMED.toString().equals(toM);
 			final boolean toIntermediary = MappingsNamespace.INTERMEDIARY.toString().equals(toM);
-			final boolean fixSignatures = mappingsProvider.getSignatureFixes() != null;
 			final Path output = toNamed ? outputMapped : outputIntermediary;
 
-			getProject().getLogger().lifecycle(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
+			getProject().getLogger().info(":remapping minecraft (TinyRemapper, " + fromM + " -> " + toM + ")");
 
 			Files.deleteIfExists(output);
 
-			// Bit ugly but whatever, the whole issue is a bit ugly :)
-			AtomicReference<Map<String, String>> remappedSignatures = new AtomicReference<>();
+			final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(toIntermediary, mappingsProvider, getProject(), toM);
 			TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), fromM, toM, true, (builder) -> {
-				if (!fixSignatures) {
-					return;
-				}
-
-				builder.extraPostApplyVisitor(new TinyRemapper.ApplyVisitorProvider() {
-					@Override
-					public ClassVisitor insertApplyVisitor(TrClass cls, ClassVisitor next) {
-						return new ClassVisitor(Constants.ASM_VERSION, next) {
-							@Override
-							public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-								Map<String, String> signatureFixes = Objects.requireNonNull(remappedSignatures.get(), "Could not get remapped signatures");
-
-								if (signature == null) {
-									signature = signatureFixes.getOrDefault(name, null);
-
-									if (signature != null) {
-										getProject().getLogger().info("Replaced signature for {} with {}", name, signature);
-									}
-								}
-
-								super.visit(version, access, name, signature, superName, interfaces);
-							}
-						};
-					}
-				});
+				builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));
 			});
-
-			if (fixSignatures) {
-				if (toIntermediary) {
-					// No need to remap, as these are already intermediary
-					remappedSignatures.set(mappingsProvider.getSignatureFixes());
-				} else {
-					// Remap the sig fixes from intermediary to the target namespace
-					final Map<String, String> remapped = new HashMap<>();
-					final TinyRemapper sigTinyRemapper = TinyRemapperHelper.getTinyRemapper(getProject(), MappingsNamespace.INTERMEDIARY.toString(), toM);
-					final Remapper sigAsmRemapper = sigTinyRemapper.getEnvironment().getRemapper();
-
-					// Remap the class names and the signatures using a new tiny remapper instance.
-					for (Map.Entry<String, String> entry : mappingsProvider.getSignatureFixes().entrySet()) {
-						remapped.put(
-								sigAsmRemapper.map(entry.getKey()),
-								sigAsmRemapper.mapSignature(entry.getValue(), false)
-						);
-					}
-
-					sigTinyRemapper.finish();
-					remappedSignatures.set(remapped);
-				}
-			}
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(output).build()) {
 				outputConsumer.addNonClassFiles(input);

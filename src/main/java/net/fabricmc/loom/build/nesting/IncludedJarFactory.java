@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -172,9 +173,17 @@ public final class IncludedJarFactory {
 
 	// Generates a barebones mod for a dependency
 	private static String generateModForDependency(Metadata metadata) {
-		final String modId = (metadata.group() + "_" + metadata.name() + metadata.classifier())
+		String modId = (metadata.group() + "_" + metadata.name() + metadata.classifier())
 				.replaceAll("\\.", "_")
 				.toLowerCase(Locale.ENGLISH);
+
+		// Fabric Loader can't handle modIds longer than 64 characters
+		if (modId.length() > 64) {
+			String hash = Hashing.sha256()
+					.hashString(modId, StandardCharsets.UTF_8)
+					.toString();
+			modId = modId.substring(0, 50) + hash.substring(0, 14);
+		}
 
 		final JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);

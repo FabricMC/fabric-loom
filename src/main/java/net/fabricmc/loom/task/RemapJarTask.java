@@ -136,12 +136,34 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					MixinExtension.getMixinInformationContainer(sourceSet)
 			);
 
+			String[] rootPaths = sourceSet.getResources().getSrcDirs().stream()
+					.map(root -> {
+						String rootPath = root.getAbsolutePath().replace("\\", "/");
+
+						if (rootPath.charAt(rootPath.length() - 1) != '/') {
+							rootPath += '/';
+						}
+
+						return rootPath;
+					})
+					.toArray(String[]::new);
+
 			final String refmapName = container.refmapNameProvider().get();
 			final List<String> mixinConfigs = container.sourceSet().getResources()
 					.matching(container.mixinConfigPattern())
 					.getFiles()
 					.stream()
-					.map(File::getName)
+					.map(file -> {
+						String s = file.getAbsolutePath().replace("\\", "/");
+
+						for (String rootPath : rootPaths) {
+							if (s.startsWith(rootPath)) {
+								s = s.substring(rootPath.length());
+							}
+						}
+
+						return s;
+					})
 					.filter(allMixinConfigs::contains)
 					.toList();
 

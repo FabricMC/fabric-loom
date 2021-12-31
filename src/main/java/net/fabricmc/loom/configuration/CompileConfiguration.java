@@ -33,7 +33,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -41,10 +40,22 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.decompile.MergedDecompileConfiguration;
+import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.MergedIntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.SplitIntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.MergedNamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.SplitNamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -139,14 +150,7 @@ public final class CompileConfiguration {
 
 		p.afterEvaluate(project -> {
 			try {
-				boolean split = true;
-				MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
-				extension.setMinecraftProvider(minecraftProvider);
-				minecraftProvider.provide();
-
-				MappingsProviderImpl mappingsProvider = new MappingsProviderImpl(project, minecraftProvider);
-				extension.setMappingsProvider(mappingsProvider);
-				mappingsProvider.provide();
+				setupMinecraft(project);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to setup minecraft", e);
 			}
@@ -185,6 +189,62 @@ public final class CompileConfiguration {
 		}
 	}
 
+	// TODO split, cleanup exception handling here
+	private static void setupMinecraft(Project project) throws Exception {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		// TODO add an option for this!
+		boolean split = true;
+
+		// Provide the vanilla mc jars
+		final MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
+		extension.setMinecraftProvider(minecraftProvider);
+		minecraftProvider.provide();
+
+		// Provide the mappings
+		final MappingsProviderImpl mappingsProvider = new MappingsProviderImpl(project, minecraftProvider);
+		extension.setMappingsProvider(mappingsProvider);
+		mappingsProvider.provide();
+
+		// Provide the remapped mc jars
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
+		final NamedMinecraftProvider<?> namedMinecraftProvider;
+
+		if (split) {
+			intermediaryMinecraftProvider = new SplitIntermediaryMinecraftProvider(project, (SplitMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new SplitNamedMinecraftProvider(project, (SplitMinecraftProvider) minecraftProvider);
+		} else {
+			intermediaryMinecraftProvider = new MergedIntermediaryMinecraftProvider(project, (MergedMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new MergedNamedMinecraftProvider(project, (MergedMinecraftProvider) minecraftProvider);
+		}
+
+		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
+		extension.setNamedMinecraftProvider(namedMinecraftProvider);
+
+		intermediaryMinecraftProvider.provide();
+		namedMinecraftProvider.provide();
+
+		if (extension.getAccessWidenerPath().isPresent()) {
+			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(project));
+		}
+
+		if (extension.getEnableTransitiveAccessWideners().get()) {
+			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(project);
+
+			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
+		}
+
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
+		extension.setJarProcessorManager(processorManager);
+		processorManager.setupProcessors();
+
+		if (processorManager.active()) {
+			throw new UnsupportedOperationException("TODO fix me!");
+		}
+	}
+
 	private static void setupMixinAp(Project project, MixinExtension mixin) {
 		mixin.init();
 
@@ -209,41 +269,15 @@ public final class CompileConfiguration {
 	}
 
 	private static void configureDecompileTasks(Project project) {
-		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-
-		// TODO: split
-
-		//		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-		//
-		//		if (mappingsProvider.hasUnpickDefinitions()) {
-		//			File outputJar = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
-		//
-		//			tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-		//				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-		//				unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
-		//				unpickJarTask.getOutputJar().set(outputJar);
-		//			});
-		//
-		//			mappedJar = outputJar;
-		//		}
-		//
-		//		final File inputJar = mappedJar;
-		//
-		//		extension.getGameDecompilers().configureEach(decompiler -> {
-		//			String taskName = "genSourcesWith" + decompiler.name();
-		//
-		//			// Set the input jar for the task after evaluation has occurred.
-		//			tasks.named(taskName, GenerateSourcesTask.class).configure(task -> {
-		//				task.getInputJar().set(inputJar);
-		//
-		//				if (mappingsProvider.hasUnpickDefinitions()) {
-		//					task.dependsOn(tasks.named("unpickJar"));
-		//				}
-		//			});
-		//		});
+		if (extension.getNamedMinecraftProvider() instanceof MergedMappedMinecraftProvider mergedMappedMinecraftProvider) {
+			new MergedDecompileConfiguration(project, mergedMappedMinecraftProvider).afterEvaluation();
+		} else if (extension.getNamedMinecraftProvider() instanceof SplitNamedMinecraftProvider splitMinecraftProvider) {
+			new SplitDecompileConfiguration(project, splitMinecraftProvider).afterEvaluation();
+		} else {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	private static void extendsFrom(String a, String b, Project project) {

@@ -153,8 +153,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getOptions().set(getOptions());
 
 			params.getInputJar().set(getInputJar());
-			// TODO: split fix me
-			File mappedJar = null;
+			File mappedJar = getInputJar().getAsFile().get();
 			params.getRuntimeJar().set(mappedJar);
 			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix(mappedJar, "-sources.jar"));
 			params.getLinemap().set(getMappedJarFileWithSuffix(mappedJar, "-sources.lmap"));

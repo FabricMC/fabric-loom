@@ -53,18 +53,8 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyInfo;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
-import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.MergedIntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.SplitIntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.MergedNamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.SplitNamedMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -81,9 +71,6 @@ import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 
 public class MappingsProviderImpl implements MappingsProvider {
-	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
-	private NamedMinecraftProvider<?> namedMinecraftProvider;
-
 	public String mappingsIdentifier;
 
 	private Path mappingsWorkingDir;
@@ -154,39 +141,6 @@ public class MappingsProviderImpl implements MappingsProvider {
 		}
 
 		project.getDependencies().add(Constants.Configurations.MAPPINGS_FINAL, project.files(tinyMappingsJar.toFile()));
-
-		if (extension.getAccessWidenerPath().isPresent()) {
-			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(project));
-		}
-
-		if (extension.getEnableTransitiveAccessWideners().get()) {
-			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(project);
-
-			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
-				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
-			}
-		}
-
-		extension.getAccessWidenerPath().finalizeValue();
-		extension.getGameJarProcessors().finalizeValue();
-		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
-		extension.setJarProcessorManager(processorManager);
-		processorManager.setupProcessors();
-
-		if (minecraftProvider instanceof MergedMinecraftProvider mergedMinecraftProvider) {
-			intermediaryMinecraftProvider = new MergedIntermediaryMinecraftProvider(project, mergedMinecraftProvider);
-			namedMinecraftProvider = new MergedNamedMinecraftProvider(project, mergedMinecraftProvider);
-		} else if (minecraftProvider instanceof SplitMinecraftProvider splitMinecraftProvider) {
-			intermediaryMinecraftProvider = new SplitIntermediaryMinecraftProvider(project, splitMinecraftProvider);
-			namedMinecraftProvider = new SplitNamedMinecraftProvider(project, splitMinecraftProvider);
-		}
-
-		intermediaryMinecraftProvider.provide();
-		namedMinecraftProvider.provide();
-
-		if (processorManager.active()) {
-			throw new UnsupportedOperationException("TODO fix me!");
-		}
 	}
 
 	private String getMappingsClassifier(DependencyInfo dependency, boolean isV2) {
@@ -492,14 +446,6 @@ public class MappingsProviderImpl implements MappingsProvider {
 	@Nullable
 	public Map<String, String> getSignatureFixes() {
 		return signatureFixes;
-	}
-
-	public IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider() {
-		return intermediaryMinecraftProvider;
-	}
-
-	public NamedMinecraftProvider<?> getNamedMinecraftProvider() {
-		return namedMinecraftProvider;
 	}
 
 	@Override

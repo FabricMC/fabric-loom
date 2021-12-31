@@ -86,7 +86,6 @@ public final class LoomTasks {
 
 		registerIDETasks(tasks);
 		registerRunTasks(tasks, project);
-		registerDecompileTasks(tasks, project);
 	}
 
 	private static void registerIDETasks(TaskContainer tasks) {
@@ -132,24 +131,5 @@ public final class LoomTasks {
 
 		extension.getRunConfigs().create("client", RunConfigSettings::client);
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
-	}
-
-	private static void registerDecompileTasks(TaskContainer tasks, Project project) {
-		LoomGradleExtension.get(project).getGameDecompilers().configureEach(decompiler -> {
-			String taskName = "genSourcesWith" + decompiler.name();
-			// Decompiler will be passed to the constructor of GenerateSourcesTask
-			tasks.register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
-				task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
-				task.setGroup(Constants.TaskGroup.FABRIC);
-				task.dependsOn(tasks.named("validateAccessWidener"));
-			});
-		});
-
-		tasks.register("genSources", task -> {
-			task.setDescription("Decompile minecraft using the default decompiler.");
-			task.setGroup(Constants.TaskGroup.FABRIC);
-
-			task.dependsOn(project.getTasks().named("genSourcesWithCfr"));
-		});
 	}
 }

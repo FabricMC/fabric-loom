@@ -94,13 +94,13 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	void setMappingsProvider(MappingsProviderImpl mappingsProvider);
 
-	default NamedMinecraftProvider<?> getNamedMinecraftProvider() {
-		return getMappingsProvider().getNamedMinecraftProvider();
-	}
+	NamedMinecraftProvider<?> getNamedMinecraftProvider();
 
-	default IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider() {
-		return getMappingsProvider().getIntermediaryMinecraftProvider();
-	}
+	IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider();
+
+	void setNamedMinecraftProvider(NamedMinecraftProvider<?> namedMinecraftProvider);
+
+	void setIntermediaryMinecraftProvider(IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider);
 
 	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
 		return switch (mappingsNamespace) {

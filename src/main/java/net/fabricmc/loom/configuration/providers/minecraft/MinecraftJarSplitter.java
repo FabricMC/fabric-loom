@@ -28,9 +28,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -47,7 +46,8 @@ public class MinecraftJarSplitter implements AutoCloseable {
 	private final Path serverInputJar;
 
 	private EntryData entryData;
-	private List<String> sharedEntries = new ArrayList<>();
+	private Set<String> sharedEntries = new HashSet<>();
+	private Set<String> forcedClientEntries = new HashSet<>();
 
 	public MinecraftJarSplitter(Path clientInputJar, Path serverInputJar) {
 		this.clientInputJar = Objects.requireNonNull(clientInputJar);
@@ -71,6 +71,10 @@ public class MinecraftJarSplitter implements AutoCloseable {
 
 	public void sharedEntry(String path) {
 		this.sharedEntries.add(path);
+	}
+
+	public void forcedClientEntry(String path) {
+		this.forcedClientEntries.add(path);
 	}
 
 	private Set<String> getJarEntries(Path input) throws IOException {
@@ -140,10 +144,12 @@ public class MinecraftJarSplitter implements AutoCloseable {
 			this.commonEntries = Sets.newHashSet(clientEntries);
 			this.commonEntries.retainAll(serverEntries);
 			this.commonEntries.addAll(sharedEntries);
+			this.commonEntries.removeAll(forcedClientEntries);
 
 			this.clientOnlyEntries = Sets.newHashSet(clientEntries);
 			this.clientOnlyEntries.removeAll(serverEntries);
 			this.clientOnlyEntries.addAll(sharedEntries);
+			this.clientOnlyEntries.addAll(forcedClientEntries);
 
 			this.serverOnlyEntries = Sets.newHashSet(serverEntries);
 			this.serverOnlyEntries.removeAll(clientEntries);

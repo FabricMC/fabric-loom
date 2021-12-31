@@ -79,11 +79,12 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 		try (MinecraftJarSplitter jarSplitter = new MinecraftJarSplitter(clientJar, serverJar)) {
 			// Required for loader to compute the version info also useful to have in both jars.
 			jarSplitter.sharedEntry("version.json");
+			jarSplitter.forcedClientEntry("assets/.mcassetsroot");
 
 			jarSplitter.split(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
 		}
 
-		// TODO cleanup on failiure
+		// TODO split: cleanup on failiure
 	}
 
 	public File getMinecraftClientOnlyJar() {

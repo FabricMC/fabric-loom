@@ -24,73 +24,72 @@
 
 package net.fabricmc.loom.configuration.processors;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.function.Consumer;
-
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
-import net.fabricmc.loom.util.Constants;
-
-public class MinecraftProcessedProvider extends MinecraftMappedProvider {
-	public final String projectMappedClassifier;
-
-	private File projectMappedJar;
-
-	private final JarProcessorManager jarProcessorManager;
-
-	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
-		super(project);
-		this.jarProcessorManager = jarProcessorManager;
-		this.projectMappedClassifier = "project-" + project.getPath().replace(':', '@')
-				+ "-mapped";
-	}
-
-	@Override
-	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
-		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
-			getProject().getLogger().info(":processing mapped jar");
-			invalidateJar();
-
-			try {
-				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to copy source jar", e);
-			}
-
-			jarProcessorManager.process(projectMappedJar);
-		}
-
-		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
-				getProject().getDependencies().module("net.minecraft:minecraft-" + projectMappedClassifier + ":" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
-	}
-
-	private void invalidateJar() {
-		if (projectMappedJar.exists()) {
-			getProject().getLogger().warn("Invalidating project jar");
-
-			try {
-				FileUtils.forceDelete(projectMappedJar);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to invalidate jar, try stopping gradle daemon or closing the game", e);
-			}
-		}
-	}
-
-	@Override
-	public void initFiles(MergedMinecraftProvider minecraftProvider, MappingsProviderImpl mappingsProvider) {
-		super.initFiles(minecraftProvider, mappingsProvider);
-
-		projectMappedJar = new File(getDirectories().getRootProjectPersistentCache(), getMinecraftProvider().minecraftVersion() + "/"
-				+ getExtension().getMappingsProvider().mappingsIdentifier() + "/minecraft-" + projectMappedClassifier + ".jar");
-	}
-
-	@Override
-	public File getMappedJar() {
-		return projectMappedJar;
-	}
-}
+//import java.io.File;
+//import java.io.IOException;
+//import java.util.function.Consumer;
+//
+//import org.apache.commons.io.FileUtils;
+//import org.gradle.api.Project;
+//
+//import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+//import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+//import net.fabricmc.loom.util.Constants;
+//
+//public class MinecraftProcessedProvider extends MinecraftMappedProvider {
+//	public final String projectMappedClassifier;
+//
+//	private File projectMappedJar;
+//
+//	private final JarProcessorManager jarProcessorManager;
+//
+//	public MinecraftProcessedProvider(Project project, JarProcessorManager jarProcessorManager) {
+//		super(project);
+//		this.jarProcessorManager = jarProcessorManager;
+//		this.projectMappedClassifier = "project-" + project.getPath().replace(':', '@')
+//				+ "-mapped";
+//	}
+//
+//	@Override
+//	protected void addDependencies(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) {
+//		if (jarProcessorManager.isInvalid(projectMappedJar) || isRefreshDeps()) {
+//			getProject().getLogger().info(":processing mapped jar");
+//			invalidateJar();
+//
+//			try {
+//				FileUtils.copyFile(super.getMappedJar(), projectMappedJar);
+//			} catch (IOException e) {
+//				throw new RuntimeException("Failed to copy source jar", e);
+//			}
+//
+//			jarProcessorManager.process(projectMappedJar);
+//		}
+//
+//		getProject().getDependencies().add(Constants.Configurations.MINECRAFT_NAMED,
+//				getProject().getDependencies().module("net.minecraft:minecraft-" + projectMappedClassifier + ":" + getMinecraftProvider().minecraftVersion() + "/" + getExtension().getMappingsProvider().mappingsIdentifier()));
+//	}
+//
+//	private void invalidateJar() {
+//		if (projectMappedJar.exists()) {
+//			getProject().getLogger().warn("Invalidating project jar");
+//
+//			try {
+//				FileUtils.forceDelete(projectMappedJar);
+//			} catch (IOException e) {
+//				throw new RuntimeException("Failed to invalidate jar, try stopping gradle daemon or closing the game", e);
+//			}
+//		}
+//	}
+//
+//	@Override
+//	public void initFiles(MergedMinecraftProvider minecraftProvider, MappingsProviderImpl mappingsProvider) {
+//		super.initFiles(minecraftProvider, mappingsProvider);
+//
+//		projectMappedJar = new File(getDirectories().getRootProjectPersistentCache(), getMinecraftProvider().minecraftVersion() + "/"
+//				+ getExtension().getMappingsProvider().mappingsIdentifier() + "/minecraft-" + projectMappedClassifier + ".jar");
+//	}
+//
+//	@Override
+//	public File getMappedJar() {
+//		return projectMappedJar;
+//	}
+//}

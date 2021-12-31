@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import org.gradle.api.NamedDomainObjectProvider;
@@ -48,8 +47,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvid
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
-import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -207,34 +204,36 @@ public final class CompileConfiguration {
 
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
-		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+		// TODO: split
 
-		if (mappingsProvider.hasUnpickDefinitions()) {
-			File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
-
-			tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-				unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
-				unpickJarTask.getOutputJar().set(outputJar);
-			});
-
-			mappedJar = outputJar;
-		}
-
-		final File inputJar = mappedJar;
-
-		extension.getGameDecompilers().configureEach(decompiler -> {
-			String taskName = "genSourcesWith" + decompiler.name();
-
-			// Set the input jar for the task after evaluation has occurred.
-			tasks.named(taskName, GenerateSourcesTask.class).configure(task -> {
-				task.getInputJar().set(inputJar);
-
-				if (mappingsProvider.hasUnpickDefinitions()) {
-					task.dependsOn(tasks.named("unpickJar"));
-				}
-			});
-		});
+		//		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+		//
+		//		if (mappingsProvider.hasUnpickDefinitions()) {
+		//			File outputJar = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
+		//
+		//			tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
+		//				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
+		//				unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
+		//				unpickJarTask.getOutputJar().set(outputJar);
+		//			});
+		//
+		//			mappedJar = outputJar;
+		//		}
+		//
+		//		final File inputJar = mappedJar;
+		//
+		//		extension.getGameDecompilers().configureEach(decompiler -> {
+		//			String taskName = "genSourcesWith" + decompiler.name();
+		//
+		//			// Set the input jar for the task after evaluation has occurred.
+		//			tasks.named(taskName, GenerateSourcesTask.class).configure(task -> {
+		//				task.getInputJar().set(inputJar);
+		//
+		//				if (mappingsProvider.hasUnpickDefinitions()) {
+		//					task.dependsOn(tasks.named("unpickJar"));
+		//				}
+		//			});
+		//		});
 	}
 
 	private static void extendsFrom(String a, String b, Project project) {

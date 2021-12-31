@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.plugins.JavaPlugin;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.util.Constants;
@@ -124,7 +126,9 @@ public class LaunchProvider extends DependencyProvider {
 			remapClasspath.addAll(getProject().getConfigurations().getByName(inputConfiguration).getFiles());
 		}
 
-		remapClasspath.add(getExtension().getMinecraftMappedProvider().getIntermediaryJar());
+		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+			remapClasspath.add(minecraftJar.toFile());
+		}
 
 		String str = remapClasspath.stream()
 				.map(File::getAbsolutePath)

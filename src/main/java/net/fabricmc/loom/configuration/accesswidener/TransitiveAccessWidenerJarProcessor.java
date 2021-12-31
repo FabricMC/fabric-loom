@@ -174,7 +174,10 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
 
 			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
-			tinyRemapper.readClassPath(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+
+			for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+				tinyRemapper.readClassPath(minecraftJar);
+			}
 
 			return tinyRemapper;
 		} catch (IOException e) {

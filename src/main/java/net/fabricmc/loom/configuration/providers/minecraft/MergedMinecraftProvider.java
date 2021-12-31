@@ -26,6 +26,8 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -45,6 +47,11 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	protected void initFiles() {
 		super.initFiles();
 		minecraftMergedJar = file("minecraft-merged.jar");
+	}
+
+	@Override
+	public List<Path> getMinecraftJars() {
+		return List.of(minecraftMergedJar.toPath());
 	}
 
 	@Override

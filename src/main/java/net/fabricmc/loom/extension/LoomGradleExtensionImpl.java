@@ -25,6 +25,7 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
@@ -114,6 +116,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public JarProcessorManager getJarProcessorManager() {
 		return Objects.requireNonNull(jarProcessorManager, "Cannot get JarProcessorManager before it has been setup");
+	}
+
+	@Override
+	public FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace) {
+		return getProject().files(
+			getProject().provider(() ->
+				getProject().files(getMinecraftJars(mappingsNamespace).stream().map(Path::toFile).toList())
+			)
+		);
 	}
 
 	@Override

@@ -51,7 +51,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 import net.fabricmc.mappingio.MappingReader;
@@ -101,7 +100,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		try {
 			MemoryMappingTree currentMappings = mappingsProvider.getMappings();
 			MemoryMappingTree targetMappings = getMappings(mappings);
-			migrateMappings(project, extension.getMinecraftMappedProvider(), inputDir, outputDir, currentMappings, targetMappings);
+			migrateMappings(project, extension, inputDir, outputDir, currentMappings, targetMappings);
 			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Error while loading mappings", e);
@@ -157,7 +156,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		return mappingTree;
 	}
 
-	private static void migrateMappings(Project project, MinecraftMappedProvider minecraftMappedProvider,
+	private static void migrateMappings(Project project, LoomGradleExtension extension,
 										Path inputDir, Path outputDir, MemoryMappingTree currentMappings, MemoryMappingTree targetMappings
 	) throws IOException {
 		project.getLogger().info(":joining mappings");
@@ -174,8 +173,13 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		final JavaVersion javaVersion = project.getExtensions().getByType(JavaPluginExtension.class).getSourceCompatibility();
 		mercury.setSourceCompatibility(javaVersion.toString());
 
-		mercury.getClassPath().add(minecraftMappedProvider.getMappedJar().toPath());
-		mercury.getClassPath().add(minecraftMappedProvider.getIntermediaryJar().toPath());
+		for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+			mercury.getClassPath().add(intermediaryJar);
+		}
+
+		for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.NAMED)) {
+			mercury.getClassPath().add(intermediaryJar);
+		}
 
 		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 

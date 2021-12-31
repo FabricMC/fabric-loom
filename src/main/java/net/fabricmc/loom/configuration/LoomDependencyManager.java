@@ -80,7 +80,7 @@ public class LoomDependencyManager {
 
 	public <T> T getProvider(Class<T> clazz) {
 		for (DependencyProvider provider : dependencyProviderList) {
-			if (provider.getClass() == clazz) {
+			if (clazz.isAssignableFrom(provider.getClass())) {
 				return (T) provider;
 			}
 		}
@@ -123,10 +123,18 @@ public class LoomDependencyManager {
 			}
 
 			if (dependencies.size() > 1) {
-				throw new IllegalArgumentException(String.format("Only one '%s' dependency should be specified, but %d were!",
-												list.key,
-												dependencies.size())
-				);
+				// TODO split - Massive hack, this whole class needs rewriting, idk how it works.
+				for (DependencyProvider provider : list.providers) {
+					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, null, configuration);
+
+					try {
+						provider.provide(info, afterTasks::add);
+					} catch (Exception e) {
+						throw new RuntimeException("Failed to provide", e);
+					}
+				}
+
+				continue;
 			}
 
 			for (Dependency dependency : dependencies) {

@@ -57,10 +57,15 @@ import net.fabricmc.loom.configuration.DependencyProvider;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
-import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.MergedIntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.SplitIntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.MergedNamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.SplitNamedMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -77,7 +82,8 @@ import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 
 public class MappingsProviderImpl extends DependencyProvider implements MappingsProvider {
-	public MinecraftMappedProvider mappedProvider;
+	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
+	private NamedMinecraftProvider<?> namedMinecraftProvider;
 
 	public String mappingsIdentifier;
 
@@ -167,17 +173,18 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		processorManager.setupProcessors();
 
 		if (minecraftProvider instanceof MergedMinecraftProvider mergedMinecraftProvider) {
-			if (processorManager.active()) {
-				mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-				getProject().getLogger().info("Using project based jar storage");
-			} else {
-				mappedProvider = new MinecraftMappedProvider(getProject());
-			}
+			intermediaryMinecraftProvider = new MergedIntermediaryMinecraftProvider(getProject(), mergedMinecraftProvider);
+			namedMinecraftProvider = new MergedNamedMinecraftProvider(getProject(), mergedMinecraftProvider);
+		} else if (minecraftProvider instanceof SplitMinecraftProvider splitMinecraftProvider) {
+			intermediaryMinecraftProvider = new SplitIntermediaryMinecraftProvider(getProject(), splitMinecraftProvider);
+			namedMinecraftProvider = new SplitNamedMinecraftProvider(getProject(), splitMinecraftProvider);
+		}
 
-			mappedProvider.initFiles(mergedMinecraftProvider, this);
-			mappedProvider.provide(dependency, postPopulationScheduler);
-		} else {
-			throw new UnsupportedOperationException("TODO fix me");
+		intermediaryMinecraftProvider.provide();
+		namedMinecraftProvider.provide();
+
+		if (processorManager.active()) {
+			throw new UnsupportedOperationException("TODO fix me!");
 		}
 	}
 
@@ -489,6 +496,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	@Nullable
 	public Map<String, String> getSignatureFixes() {
 		return signatureFixes;
+	}
+
+	public IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider() {
+		return intermediaryMinecraftProvider;
+	}
+
+	public NamedMinecraftProvider<?> getNamedMinecraftProvider() {
+		return namedMinecraftProvider;
 	}
 
 	@Override

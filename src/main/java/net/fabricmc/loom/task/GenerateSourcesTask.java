@@ -153,10 +153,12 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getOptions().set(getOptions());
 
 			params.getInputJar().set(getInputJar());
-			params.getRuntimeJar().set(getExtension().getMappingsProvider().mappedProvider.getMappedJar());
-			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
-			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
-			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
+			// TODO: split fix me
+			File mappedJar = null;
+			params.getRuntimeJar().set(mappedJar);
+			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix(mappedJar, "-sources.jar"));
+			params.getLinemap().set(getMappedJarFileWithSuffix(mappedJar, "-sources.lmap"));
+			params.getLinemapJar().set(getMappedJarFileWithSuffix(mappedJar, "-linemapped.jar"));
 			params.getMappings().set(getMappings().toFile());
 
 			if (ipcPath != null) {
@@ -298,10 +300,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private File getMappedJarFileWithSuffix(String suffix) {
+	private File getMappedJarFileWithSuffix(File mappedJar, String suffix) {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
 		String path = mappedJar.getAbsolutePath();
 
 		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {

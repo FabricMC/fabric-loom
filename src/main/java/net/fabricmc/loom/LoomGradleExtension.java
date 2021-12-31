@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -39,13 +40,15 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.MixinExtension;
 
@@ -91,9 +94,23 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return getDependencyManager().getProvider(MappingsProviderImpl.class);
 	}
 
-	default MinecraftMappedProvider getMinecraftMappedProvider() {
-		return getMappingsProvider().mappedProvider;
+	default NamedMinecraftProvider<?> getNamedMinecraftProvider() {
+		return getMappingsProvider().getNamedMinecraftProvider();
 	}
+
+	default IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider() {
+		return getMappingsProvider().getIntermediaryMinecraftProvider();
+	}
+
+	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
+		return switch (mappingsNamespace) {
+		case NAMED -> getNamedMinecraftProvider().getMinecraftJars();
+		case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJars();
+		case OFFICIAL -> getMinecraftProvider().getMinecraftJars();
+		};
+	}
+
+	FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace);
 
 	File getMixinMappings(SourceSet sourceSet);
 

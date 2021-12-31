@@ -46,7 +46,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
@@ -134,10 +133,8 @@ public class ModProcessor {
 
 	private void remapJars(List<ModDependencyInfo> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MinecraftMappedProvider mappedProvider = extension.getMinecraftMappedProvider();
 		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
 
-		Path intermediaryJar = mappedProvider.getIntermediaryJar().toPath();
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
@@ -148,7 +145,10 @@ public class ModProcessor {
 				.renameInvalidLocals(false)
 				.build();
 
-		remapper.readClassPathAsync(intermediaryJar);
+		for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+			remapper.readClassPathAsync(minecraftJar);
+		}
+
 		remapper.readClassPathAsync(mcDeps);
 
 		final Map<ModDependencyInfo, InputTag> tagMap = new HashMap<>();

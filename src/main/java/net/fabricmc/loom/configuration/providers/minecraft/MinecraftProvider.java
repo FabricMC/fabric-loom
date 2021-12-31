@@ -29,6 +29,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -300,4 +302,6 @@ public abstract sealed class MinecraftProvider extends DependencyProvider permit
 	protected Logger getLogger() {
 		return getProject().getLogger();
 	}
+
+	public abstract List<Path> getMinecraftJars();
 }

@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.gradle.api.Project;
@@ -46,6 +47,11 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 
 		minecraftClientOnlyJar = file("minecraft-client-only.jar");
 		minecraftCommonJar = file("minecraft-common.jar");
+	}
+
+	@Override
+	public List<Path> getMinecraftJars() {
+		return List.of(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
 	}
 
 	@Override
@@ -71,7 +77,10 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 		final Path serverJar = getMinecraftExtractedServerJar().toPath();
 
 		try (MinecraftJarSplitter jarSplitter = new MinecraftJarSplitter(clientJar, serverJar)) {
-			jarSplitter.split(minecraftClientOnlyJar.toPath(), minecraftClientOnlyJar.toPath());
+			// Required for loader to compute the version info also useful to have in both jars.
+			jarSplitter.sharedEntry("version.json");
+
+			jarSplitter.split(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
 		}
 
 		// TODO cleanup on failiure

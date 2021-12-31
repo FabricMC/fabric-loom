@@ -119,6 +119,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingsProvider, project, toM);
 		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(project, fromM, toM, true, (builder) -> {
 			builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));
+			configureRemapper(remappedJars, builder);
 		});
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(remappedJars.outputJar()).build()) {
@@ -136,6 +137,9 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		} finally {
 			remapper.finish();
 		}
+	}
+
+	protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
 	}
 
 	private void cleanOutputs(List<RemappedJars> remappedJars) throws IOException {

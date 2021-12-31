@@ -33,10 +33,12 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
+import net.fabricmc.loom.util.SidedClassVisitor;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class SplitIntermediaryMinecraftProvider extends IntermediaryMinecraftProvider<SplitMinecraftProvider> implements SplitMappedMinecraftProvider {
 	private Path commonJar;
-	private Path clientJar;
+	private Path clientOnlyJar;
 
 	public SplitIntermediaryMinecraftProvider(Project project, SplitMinecraftProvider minecraftProvider) {
 		super(project, minecraftProvider);
@@ -45,15 +47,22 @@ public final class SplitIntermediaryMinecraftProvider extends IntermediaryMinecr
 	@Override
 	public void setupFiles(Function<String, Path> pathFunction) {
 		commonJar = pathFunction.apply("common");
-		clientJar = pathFunction.apply("client");
+		clientOnlyJar = pathFunction.apply("client");
 	}
 
 	@Override
 	protected List<RemappedJars> getRemappedJars() {
 		return List.of(
 			new RemappedJars(minecraftProvider.getMinecraftCommonJar().toPath(), commonJar, MappingsNamespace.OFFICIAL),
-			new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar().toPath(), clientJar, MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar().toPath())
+			new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar().toPath(), clientOnlyJar, MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar().toPath())
 		);
+	}
+
+	@Override
+	protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+		if (remappedJars.outputJar().equals(clientOnlyJar)) {
+			tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
+		}
 	}
 
 	@Override
@@ -63,6 +72,6 @@ public final class SplitIntermediaryMinecraftProvider extends IntermediaryMinecr
 
 	@Override
 	public Path getClientOnlyJar() {
-		return clientJar;
+		return clientOnlyJar;
 	}
 }

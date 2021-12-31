@@ -33,7 +33,9 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
+import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class SplitNamedMinecraftProvider extends NamedMinecraftProvider<SplitMinecraftProvider> implements SplitMappedMinecraftProvider {
 	private Path commonJar;
@@ -55,6 +57,13 @@ public final class SplitNamedMinecraftProvider extends NamedMinecraftProvider<Sp
 				new RemappedJars(minecraftProvider.getMinecraftCommonJar().toPath(), commonJar, MappingsNamespace.OFFICIAL),
 				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar().toPath(), clientOnlyJar, MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar().toPath())
 		);
+	}
+
+	@Override
+	protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+		if (remappedJars.outputJar().equals(clientOnlyJar)) {
+			tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
+		}
 	}
 
 	@Override

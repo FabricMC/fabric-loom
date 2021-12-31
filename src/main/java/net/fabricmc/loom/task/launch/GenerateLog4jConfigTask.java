@@ -22,30 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.task.launch;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
+import org.gradle.api.tasks.TaskAction;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+import net.fabricmc.loom.task.AbstractLoomTask;
+
+public abstract class GenerateLog4jConfigTask extends AbstractLoomTask {
+	@TaskAction
+	public void run() {
+		Path outputFile = getExtension().getFiles().getDefaultLog4jConfigFile().toPath();
+
+		try (InputStream is = GenerateLog4jConfigTask.class.getClassLoader().getResourceAsStream("log4j2.fabric.xml")) {
+			Files.deleteIfExists(outputFile);
+			Files.copy(is, outputFile);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to generate log4j config", e);
+		}
 	}
-
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
-	}
-
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getUnpickLoggingConfigFile();
-	File getRemapClasspathFile();
 }

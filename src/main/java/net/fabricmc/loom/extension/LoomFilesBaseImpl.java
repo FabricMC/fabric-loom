@@ -92,4 +92,9 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 	public File getUnpickLoggingConfigFile() {
 		return new File(getProjectPersistentCache(), "unpick-logging.properties");
 	}
+
+	@Override
+	public File getRemapClasspathFile() {
+		return new File(getProjectPersistentCache(), "remapClasspath.txt");
+	}
 }

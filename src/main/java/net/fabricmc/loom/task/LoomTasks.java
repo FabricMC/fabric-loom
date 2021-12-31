@@ -31,6 +31,9 @@ import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
+import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
+import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class LoomTasks {
@@ -47,10 +50,31 @@ public final class LoomTasks {
 
 		RemapTaskConfiguration.setupRemap(project);
 
-		TaskProvider<ExtractNativesTask> extractNatives = tasks.register("extractNatives", ExtractNativesTask.class);
+		tasks.register("extractNatives", ExtractNativesTask.class, t -> {
+			t.setDescription("Extracts the minecraft platform specific natives.");
+		});
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
-			t.dependsOn(extractNatives);
 			t.setDescription("Downloads required assets for Fabric.");
+		});
+		tasks.register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
+			t.setDescription("Generate the DevLaunchInjector config file");
+		});
+		tasks.register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
+			t.setDescription("Generate the log4j config file");
+		});
+		tasks.register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
+			t.setDescription("Generate the remap classpath file");
+		});
+
+		tasks.register("configureLaunch", task -> {
+			task.dependsOn(tasks.named("extractNatives"));
+			task.dependsOn(tasks.named("downloadAssets"));
+			task.dependsOn(tasks.named("generateDLIConfig"));
+			task.dependsOn(tasks.named("generateLog4jConfig"));
+			task.dependsOn(tasks.named("generateRemapClasspath"));
+
+			task.setDescription("Setup the required files to launch Minecraft");
+			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
 		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
@@ -68,13 +92,13 @@ public final class LoomTasks {
 	private static void registerIDETasks(TaskContainer tasks) {
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
-			t.dependsOn("idea", "downloadAssets");
+			t.dependsOn("idea", "configureLaunch");
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
-			t.dependsOn("downloadAssets");
+			t.dependsOn("configureLaunch");
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
@@ -85,7 +109,7 @@ public final class LoomTasks {
 
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.setDescription("Generates VSCode launch configurations.");
-			t.dependsOn("downloadAssets");
+			t.dependsOn("configureLaunch");
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 	}
@@ -102,9 +126,7 @@ public final class LoomTasks {
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
-				if (config.getEnvironment().equals("client")) {
-					t.dependsOn("downloadAssets");
-				}
+				t.dependsOn("configureLaunch");
 			});
 		});
 

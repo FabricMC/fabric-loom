@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,45 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers;
+package net.fabricmc.loom.task.launch;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
 import org.gradle.api.logging.configuration.ConsoleOutput;
-import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.TaskAction;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.DependencyProvider;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.task.AbstractLoomTask;
 
-public class LaunchProvider extends DependencyProvider {
-	public LaunchProvider(Project project) {
-		super(project);
-	}
-
-	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws IOException {
+public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
+	@TaskAction
+	public void run() throws IOException {
 		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
-				.property("fabric.remapClasspathFile", getRemapClasspathFile().getAbsolutePath())
+				.property("fabric.remapClasspathFile", getExtension().getFiles().getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getAllLog4JConfigFiles())
 				.property("log4j2.formatMsgNoLookups", "true")
 
@@ -70,7 +58,7 @@ public class LaunchProvider extends DependencyProvider {
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", new File(getDirectories().getUserCache(), "assets").getAbsolutePath());
+				.argument("client", new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
 
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
@@ -82,68 +70,13 @@ public class LaunchProvider extends DependencyProvider {
 			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 
-		writeLog4jConfig();
-		FileUtils.writeStringToFile(getDirectories().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
-
-		addDependency(Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		addDependency(Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		addDependency(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS, JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME);
-
-		postPopulationScheduler.accept(this::writeRemapClassPath);
-	}
-
-	private File getLog4jConfigFile() {
-		return getDirectories().getDefaultLog4jConfigFile();
+		FileUtils.writeStringToFile(getExtension().getFiles().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 	}
 
 	private String getAllLog4JConfigFiles() {
 		return getExtension().getLog4jConfigs().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.collect(Collectors.joining(","));
-	}
-
-	private File getRemapClasspathFile() {
-		return new File(getDirectories().getDevLauncherConfig().getParentFile(), "remapClasspath.txt");
-	}
-
-	private void writeLog4jConfig() {
-		try (InputStream is = LaunchProvider.class.getClassLoader().getResourceAsStream("log4j2.fabric.xml")) {
-			Files.deleteIfExists(getLog4jConfigFile().toPath());
-			Files.copy(is, getLog4jConfigFile().toPath());
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to generate log4j config", e);
-		}
-	}
-
-	private void writeRemapClassPath() {
-		List<String> inputConfigurations = new ArrayList<>();
-		inputConfigurations.add(Constants.Configurations.LOADER_DEPENDENCIES);
-		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::sourceConfiguration).collect(Collectors.toList()));
-
-		List<File> remapClasspath = new ArrayList<>();
-
-		for (String inputConfiguration : inputConfigurations) {
-			remapClasspath.addAll(getProject().getConfigurations().getByName(inputConfiguration).getFiles());
-		}
-
-		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
-			remapClasspath.add(minecraftJar.toFile());
-		}
-
-		String str = remapClasspath.stream()
-				.map(File::getAbsolutePath)
-				.collect(Collectors.joining(File.pathSeparator));
-
-		try {
-			Files.writeString(getRemapClasspathFile().toPath(), str);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to generate remap classpath", e);
-		}
-	}
-
-	@Override
-	public String getTargetConfig() {
-		return Constants.Configurations.MINECRAFT_NAMED;
 	}
 
 	public static class LaunchConfig {

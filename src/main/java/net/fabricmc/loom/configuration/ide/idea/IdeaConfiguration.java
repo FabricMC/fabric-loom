@@ -33,7 +33,7 @@ import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
 public class IdeaConfiguration {
 	public static void setup(Project project) {
 		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, ideaSyncTask1 -> {
-			ideaSyncTask1.dependsOn(project.getTasks().named("downloadAssets"));
+			ideaSyncTask1.dependsOn(project.getTasks().named("configureLaunch"));
 		});
 
 		if (!IdeaUtils.isIdeaSync()) {

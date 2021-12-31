@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import com.google.common.io.Files;
 import org.gradle.api.GradleException;
@@ -41,15 +40,16 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.DependencyProvider;
+import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.MirrorUtil;
 
-public abstract sealed class MinecraftProvider extends DependencyProvider permits MergedMinecraftProvider, SplitMinecraftProvider {
+public abstract sealed class MinecraftProvider permits MergedMinecraftProvider, SplitMinecraftProvider {
 	private String minecraftVersion;
 
 	private MinecraftVersionMeta versionInfo;
@@ -67,12 +67,14 @@ public abstract sealed class MinecraftProvider extends DependencyProvider permit
 	private File versionManifestJson;
 	private File experimentalVersionsJson;
 
+	private final Project project;
+
 	public MinecraftProvider(Project project) {
-		super(project);
+		this.project = project;
 	}
 
-	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
+	public void provide() throws Exception {
+		final DependencyInfo dependency = DependencyInfo.create(getProject(), Constants.Configurations.MINECRAFT);
 		minecraftVersion = dependency.getDependency().getVersion();
 
 		boolean offline = getProject().getGradle().getStartParameter().isOffline();
@@ -102,14 +104,14 @@ public abstract sealed class MinecraftProvider extends DependencyProvider permit
 	}
 
 	protected void initFiles() {
-		workingDir = new File(getDirectories().getUserCache(), minecraftVersion);
+		workingDir = new File(getExtension().getFiles().getUserCache(), minecraftVersion);
 		workingDir.mkdirs();
 		minecraftJson = file("minecraft-info.json");
 		minecraftClientJar = file("minecraft-client.jar");
 		minecraftServerJar = file("minecraft-server.jar");
 		minecraftExtractedServerJar = file("minecraft-extracted_server.jar");
-		versionManifestJson = new File(getDirectories().getUserCache(), "version_manifest.json");
-		experimentalVersionsJson = new File(getDirectories().getUserCache(), "experimental_version_manifest.json");
+		versionManifestJson = new File(getExtension().getFiles().getUserCache(), "version_manifest.json");
+		experimentalVersionsJson = new File(getExtension().getFiles().getUserCache(), "experimental_version_manifest.json");
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -304,4 +306,16 @@ public abstract sealed class MinecraftProvider extends DependencyProvider permit
 	}
 
 	public abstract List<Path> getMinecraftJars();
+
+	protected Project getProject() {
+		return project;
+	}
+
+	protected LoomGradleExtension getExtension() {
+		return LoomGradleExtension.get(getProject());
+	}
+
+	protected boolean isRefreshDeps() {
+		return LoomGradlePlugin.refreshDeps;
+	}
 }

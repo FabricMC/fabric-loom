@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 
@@ -55,8 +54,8 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		super.provide(dependency, postPopulationScheduler);
+	public void provide() throws Exception {
+		super.provide();
 
 		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
 			try {

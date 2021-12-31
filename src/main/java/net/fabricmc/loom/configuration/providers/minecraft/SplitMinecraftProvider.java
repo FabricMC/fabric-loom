@@ -27,7 +27,6 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 
@@ -55,8 +54,8 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	}
 
 	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		super.provide(dependency, postPopulationScheduler);
+	public void provide() throws Exception {
+		super.provide();
 
 		boolean requiresRefresh = isRefreshDeps() || !minecraftClientOnlyJar.exists() || !minecraftCommonJar.exists();
 

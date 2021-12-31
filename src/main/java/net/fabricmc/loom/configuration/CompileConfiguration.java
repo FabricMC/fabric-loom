@@ -138,14 +138,21 @@ public final class CompileConfiguration {
 		});
 
 		p.afterEvaluate(project -> {
+			try {
+				boolean split = true;
+				MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
+				extension.setMinecraftProvider(minecraftProvider);
+				minecraftProvider.provide();
+
+				MappingsProviderImpl mappingsProvider = new MappingsProviderImpl(project, minecraftProvider);
+				extension.setMappingsProvider(mappingsProvider);
+				mappingsProvider.provide();
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to setup minecraft", e);
+			}
+
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
-
-			boolean split = true;
-			MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
-			dependencyManager.addProvider(minecraftProvider);
-			dependencyManager.addProvider(new MappingsProviderImpl(project));
-
 			dependencyManager.handleDependencies(project);
 
 			extension.getRemapArchives().finalizeValue();

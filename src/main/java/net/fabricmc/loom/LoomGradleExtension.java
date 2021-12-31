@@ -86,13 +86,13 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	JarProcessorManager getJarProcessorManager();
 
-	default MinecraftProvider getMinecraftProvider() {
-		return getDependencyManager().getProvider(MinecraftProvider.class);
-	}
+	MinecraftProvider getMinecraftProvider();
 
-	default MappingsProviderImpl getMappingsProvider() {
-		return getDependencyManager().getProvider(MappingsProviderImpl.class);
-	}
+	void setMinecraftProvider(MinecraftProvider minecraftProvider);
+
+	MappingsProviderImpl getMappingsProvider();
+
+	void setMappingsProvider(MappingsProviderImpl mappingsProvider);
 
 	default NamedMinecraftProvider<?> getNamedMinecraftProvider() {
 		return getMappingsProvider().getNamedMinecraftProvider();

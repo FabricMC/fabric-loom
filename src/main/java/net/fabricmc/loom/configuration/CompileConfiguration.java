@@ -50,11 +50,14 @@ import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvid
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.MergedIntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.SplitIntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.MergedNamedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.ProcessedMergedNamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.ProcessedSplitNamedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.SplitNamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
@@ -191,7 +194,7 @@ public final class CompileConfiguration {
 
 	// TODO split, cleanup exception handling here
 	private static void setupMinecraft(Project project) throws Exception {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		// TODO add an option for this!
 		boolean split = true;
@@ -208,7 +211,7 @@ public final class CompileConfiguration {
 
 		// Provide the remapped mc jars
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
-		final NamedMinecraftProvider<?> namedMinecraftProvider;
+		NamedMinecraftProvider<?> namedMinecraftProvider;
 
 		if (split) {
 			intermediaryMinecraftProvider = new SplitIntermediaryMinecraftProvider(project, (SplitMinecraftProvider) minecraftProvider);
@@ -218,11 +221,26 @@ public final class CompileConfiguration {
 			namedMinecraftProvider = new MergedNamedMinecraftProvider(project, (MergedMinecraftProvider) minecraftProvider);
 		}
 
+		final JarProcessorManager jarProcessorManager = createJarProcessorManager(project);
+
+		if (jarProcessorManager.active()) {
+			// Wrap the named MC provider for one that will provide the processed jars
+			if (split) {
+				namedMinecraftProvider = new ProcessedSplitNamedMinecraftProvider((SplitNamedMinecraftProvider) namedMinecraftProvider, jarProcessorManager);
+			} else {
+				namedMinecraftProvider = new ProcessedMergedNamedMinecraftProvider((MergedNamedMinecraftProvider) namedMinecraftProvider, jarProcessorManager);
+			}
+		}
+
 		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
 		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 
-		intermediaryMinecraftProvider.provide();
-		namedMinecraftProvider.provide();
+		intermediaryMinecraftProvider.provide(true);
+		namedMinecraftProvider.provide(true);
+	}
+
+	private static JarProcessorManager createJarProcessorManager(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.getAccessWidenerPath().isPresent()) {
 			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(project));
@@ -240,9 +258,7 @@ public final class CompileConfiguration {
 		extension.setJarProcessorManager(processorManager);
 		processorManager.setupProcessors();
 
-		if (processorManager.active()) {
-			throw new UnsupportedOperationException("TODO fix me!");
-		}
+		return processorManager;
 	}
 
 	private static void setupMixinAp(Project project, MixinExtension mixin) {
@@ -273,7 +289,7 @@ public final class CompileConfiguration {
 
 		if (extension.getNamedMinecraftProvider() instanceof MergedMappedMinecraftProvider mergedMappedMinecraftProvider) {
 			new MergedDecompileConfiguration(project, mergedMappedMinecraftProvider).afterEvaluation();
-		} else if (extension.getNamedMinecraftProvider() instanceof SplitNamedMinecraftProvider splitMinecraftProvider) {
+		} else if (extension.getNamedMinecraftProvider() instanceof SplitMappedMinecraftProvider splitMinecraftProvider) {
 			new SplitDecompileConfiguration(project, splitMinecraftProvider).afterEvaluation();
 		} else {
 			throw new UnsupportedOperationException();

@@ -48,7 +48,7 @@ public final class MergedNamedMinecraftProvider extends NamedMinecraftProvider<M
 	}
 
 	@Override
-	protected List<RemappedJars> getRemappedJars() {
+	public List<RemappedJars> getRemappedJars() {
 		return List.of(
 				new RemappedJars(minecraftProvider.getMergedJar().toPath(), mergedJar, MappingsNamespace.OFFICIAL)
 		);

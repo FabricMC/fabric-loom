@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -38,9 +39,6 @@ import com.google.common.collect.Sets;
 
 import net.fabricmc.loom.util.FileSystemUtil;
 
-/**
- * Very not optimised or clean, POC!!
- */
 public class MinecraftJarSplitter implements AutoCloseable {
 	private final Path clientInputJar;
 	private final Path serverInputJar;
@@ -105,7 +103,7 @@ public class MinecraftJarSplitter implements AutoCloseable {
 	}
 
 	private void copyEntriesToJar(Set<String> entries, Path inputJar, Path outputJar) throws IOException {
-		assert !Files.exists(outputJar);
+		Files.deleteIfExists(outputJar);
 
 		try (FileSystemUtil.Delegate inputFs = FileSystemUtil.getJarFileSystem(inputJar);
 				FileSystemUtil.Delegate outputFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
@@ -123,6 +121,10 @@ public class MinecraftJarSplitter implements AutoCloseable {
 
 				Files.copy(inputPath, outputPath, StandardCopyOption.COPY_ATTRIBUTES);
 			}
+
+			// TODO split, possibly copy & fix the manifests from the input jars?
+			Files.createDirectories(outputFs.get().getPath("META-INF"));
+			Files.writeString(outputFs.get().getPath("META-INF/MANIFEST.MF"), "Manifest-Version: 1.0", StandardCharsets.UTF_8);
 		}
 	}
 

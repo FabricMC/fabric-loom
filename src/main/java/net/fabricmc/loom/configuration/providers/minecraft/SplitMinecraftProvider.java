@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -81,6 +82,11 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 			jarSplitter.forcedClientEntry("assets/.mcassetsroot");
 
 			jarSplitter.split(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
+		} catch (Exception e) {
+			Files.deleteIfExists(minecraftClientOnlyJar.toPath());
+			Files.deleteIfExists(minecraftCommonJar.toPath());
+
+			throw new RuntimeException("Failed to split minecraft", e);
 		}
 
 		// TODO split: cleanup on failiure

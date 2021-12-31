@@ -22,39 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary;
+package net.fabricmc.loom.configuration.providers.minecraft.mapped.named;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.function.Function;
 
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
 
-public final class MergedIntermediaryMinecraftProvider extends IntermediaryMinecraftProvider<MergedMinecraftProvider> implements MergedMappedMinecraftProvider {
-	private Path mergedJar;
-
-	public MergedIntermediaryMinecraftProvider(Project project, MergedMinecraftProvider minecraftProvider) {
-		super(project, minecraftProvider);
-	}
-
-	@Override
-	public void setupFiles(Function<String, Path> pathFunction) {
-		mergedJar = pathFunction.apply("merged");
-	}
-
-	@Override
-	public List<RemappedJars> getRemappedJars() {
-		return List.of(
-			new RemappedJars(minecraftProvider.getMergedJar().toPath(), mergedJar, MappingsNamespace.OFFICIAL)
-		);
+public final class ProcessedMergedNamedMinecraftProvider extends ProcessedNamedMinecraftProvider<MergedMinecraftProvider, MergedNamedMinecraftProvider> implements MergedMappedMinecraftProvider {
+	public ProcessedMergedNamedMinecraftProvider(MergedNamedMinecraftProvider parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+		super(parentMinecraftProvide, jarProcessorManager);
 	}
 
 	@Override
 	public Path getMergedJar() {
-		return mergedJar;
+		return getParentPath(MergedNamedMinecraftProvider::getMergedJar);
 	}
 }

@@ -54,13 +54,6 @@ public class LoomDependencyManager {
 		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsIdentifier = extension.getMappingsProvider().mappingsIdentifier();
-
-		ModCompileRemapper.remapDependencies(project, mappingsIdentifier, extension, sourceRemapper);
-
-		sourceRemapper.remapAll();
-
 		if (extension.getInstallerData() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
 			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
@@ -83,6 +76,13 @@ public class LoomDependencyManager {
 				}
 			}
 		}
+
+		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
+		String mappingsIdentifier = extension.getMappingsProvider().mappingsIdentifier();
+
+		ModCompileRemapper.remapDependencies(project, mappingsIdentifier, extension, sourceRemapper);
+
+		sourceRemapper.remapAll();
 
 		if (extension.getInstallerData() == null) {
 			project.getLogger().warn("fabric-installer.json not found in classpath!");

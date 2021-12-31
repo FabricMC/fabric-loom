@@ -52,7 +52,7 @@ public final class SplitNamedMinecraftProvider extends NamedMinecraftProvider<Sp
 	}
 
 	@Override
-	protected List<RemappedJars> getRemappedJars() {
+	public List<RemappedJars> getRemappedJars() {
 		return List.of(
 				new RemappedJars(minecraftProvider.getMinecraftCommonJar().toPath(), commonJar, MappingsNamespace.OFFICIAL),
 				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar().toPath(), clientOnlyJar, MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar().toPath())

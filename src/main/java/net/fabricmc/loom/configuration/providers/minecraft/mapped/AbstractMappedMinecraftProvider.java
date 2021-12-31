@@ -58,13 +58,13 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	public abstract MappingsNamespace getTargetNamespace();
 
-	protected abstract List<RemappedJars> getRemappedJars();
+	public abstract List<RemappedJars> getRemappedJars();
 
 	protected void applyDependencies() {
 		// Override if needed
 	}
 
-	public void provide() throws Exception {
+	public void provide(boolean applyDependencies) throws Exception {
 		setupFiles(s -> extension.getMappingsProvider().mappingsWorkingDir().resolve(getName(s) + ".jar"));
 
 		final List<RemappedJars> remappedJars = getRemappedJars();
@@ -80,7 +80,9 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 			}
 		}
 
-		applyDependencies();
+		if (applyDependencies) {
+			applyDependencies();
+		}
 	}
 
 	protected String getName(String name) {
@@ -148,8 +150,12 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
-	protected Project getProject() {
+	public Project getProject() {
 		return project;
+	}
+
+	public M getMinecraftProvider() {
+		return minecraftProvider;
 	}
 
 	public record RemappedJars(Path inputJar, Path outputJar, MappingsNamespace sourceNamespace, Path... remapClasspath) {

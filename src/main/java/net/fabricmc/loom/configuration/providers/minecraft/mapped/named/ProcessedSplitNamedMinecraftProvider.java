@@ -22,39 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary;
+package net.fabricmc.loom.configuration.providers.minecraft.mapped.named;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.function.Function;
 
-import org.gradle.api.Project;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
-
-public final class MergedIntermediaryMinecraftProvider extends IntermediaryMinecraftProvider<MergedMinecraftProvider> implements MergedMappedMinecraftProvider {
-	private Path mergedJar;
-
-	public MergedIntermediaryMinecraftProvider(Project project, MergedMinecraftProvider minecraftProvider) {
-		super(project, minecraftProvider);
+public final class ProcessedSplitNamedMinecraftProvider extends ProcessedNamedMinecraftProvider<SplitMinecraftProvider, SplitNamedMinecraftProvider> implements SplitMappedMinecraftProvider {
+	public ProcessedSplitNamedMinecraftProvider(SplitNamedMinecraftProvider parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+		super(parentMinecraftProvide, jarProcessorManager);
 	}
 
 	@Override
-	public void setupFiles(Function<String, Path> pathFunction) {
-		mergedJar = pathFunction.apply("merged");
+	public Path getCommonJar() {
+		return getParentPath(SplitNamedMinecraftProvider::getCommonJar);
 	}
 
 	@Override
-	public List<RemappedJars> getRemappedJars() {
-		return List.of(
-			new RemappedJars(minecraftProvider.getMergedJar().toPath(), mergedJar, MappingsNamespace.OFFICIAL)
-		);
-	}
-
-	@Override
-	public Path getMergedJar() {
-		return mergedJar;
+	public Path getClientOnlyJar() {
+		return getParentPath(SplitNamedMinecraftProvider::getClientOnlyJar);
 	}
 }

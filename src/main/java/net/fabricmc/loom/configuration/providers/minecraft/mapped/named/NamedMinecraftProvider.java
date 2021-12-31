@@ -30,7 +30,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 
-public abstract sealed class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits MergedNamedMinecraftProvider, SplitNamedMinecraftProvider {
+public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> {
 	public NamedMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
 	}

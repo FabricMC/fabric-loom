@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.commons.io.FileUtils;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
@@ -68,12 +70,6 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 				.resolve(getMinecraftProvider().minecraftVersion())
 				.resolve(extension.getMappingsProvider().mappingsIdentifier());
 
-		try {
-			Files.createDirectories(this.projectMappedDir);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to create project mapped dir", e);
-		}
-
 		projectMappedJars = new ArrayList<>();
 		projectMappedJarMap = new HashMap<>();
 
@@ -90,13 +86,27 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 		setupFiles(null);
 
+		boolean invalid = false;
+
 		for (Map.Entry<Path, Path> entry : projectMappedJarMap.entrySet()) {
-			final Path inputJar = entry.getKey();
-			final Path outputJar = entry.getValue();
+			if (jarProcessorManager.isInvalid(entry.getValue().toFile()) || LoomGradlePlugin.refreshDeps) {
+				invalid = true;
+				break;
+			}
+		}
 
-			if (jarProcessorManager.isInvalid(outputJar.toFile()) || LoomGradlePlugin.refreshDeps) {
-				Files.deleteIfExists(outputJar);
+		if (invalid) {
+			FileUtils.deleteDirectory(projectMappedDir.toFile());
 
+			try {
+				Files.createDirectories(this.projectMappedDir);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to create project mapped dir", e);
+			}
+
+			for (Map.Entry<Path, Path> entry : projectMappedJarMap.entrySet()) {
+				final Path inputJar = entry.getKey();
+				final Path outputJar = entry.getValue();
 				Files.copy(inputJar, outputJar);
 				jarProcessorManager.process(outputJar.toFile());
 			}

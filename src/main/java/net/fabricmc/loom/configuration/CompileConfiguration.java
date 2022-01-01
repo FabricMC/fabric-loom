@@ -233,9 +233,9 @@ public final class CompileConfiguration {
 		}
 
 		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
-		extension.setNamedMinecraftProvider(namedMinecraftProvider);
-
 		intermediaryMinecraftProvider.provide(true);
+
+		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 		namedMinecraftProvider.provide(true);
 	}
 

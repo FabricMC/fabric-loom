@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -33,6 +33,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
@@ -122,10 +124,17 @@ public class MinecraftJarSplitter implements AutoCloseable {
 				Files.copy(inputPath, outputPath, StandardCopyOption.COPY_ATTRIBUTES);
 			}
 
-			// TODO split, possibly copy & fix the manifests from the input jars?
-			Files.createDirectories(outputFs.get().getPath("META-INF"));
-			Files.writeString(outputFs.get().getPath("META-INF/MANIFEST.MF"), "Manifest-Version: 1.0", StandardCharsets.UTF_8);
+			writeManifest(outputFs);
 		}
+	}
+
+	private void writeManifest(FileSystemUtil.Delegate outputFs) throws IOException {
+		final Manifest manifest = new Manifest();
+		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		manifest.write(out);
+		Files.createDirectories(outputFs.get().getPath("META-INF"));
+		Files.write(outputFs.get().getPath("META-INF/MANIFEST.MF"), out.toByteArray());
 	}
 
 	@Override

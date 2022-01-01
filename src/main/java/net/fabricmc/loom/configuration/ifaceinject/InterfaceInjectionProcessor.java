@@ -249,6 +249,21 @@ public class InterfaceInjectionProcessor implements JarProcessor {
 				modifiedInterfaces.add(injectedInterface.ifaceName());
 			}
 
+			// See JVMS: https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-ClassSignature
+			if (signature != null) {
+				var resultingSignature = new StringBuilder(signature);
+
+				for (InjectedInterface injectedInterface : injectedInterfaces) {
+					String superinterfaceSignature = "L" + injectedInterface.ifaceName() + ";";
+
+					if (resultingSignature.indexOf(superinterfaceSignature) == -1) {
+						resultingSignature.append(superinterfaceSignature);
+					}
+				}
+
+				signature = resultingSignature.toString();
+			}
+
 			super.visit(version, access, name, signature, superName, modifiedInterfaces.toArray(new String[0]));
 		}
 	}

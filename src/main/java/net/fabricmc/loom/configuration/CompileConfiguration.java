@@ -192,12 +192,10 @@ public final class CompileConfiguration {
 		}
 	}
 
-	// TODO split, cleanup exception handling here
 	private static void setupMinecraft(Project project) throws Exception {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		// TODO add an option for this!
-		boolean split = true;
+		boolean split = project.getProperties().get("fabric.loom.experimental.splitMcJars") != null;
 
 		// Provide the vanilla mc jars
 		final MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);

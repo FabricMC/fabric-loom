@@ -67,8 +67,7 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 		BundleMetadata serverBundleMetadata = getServerBundleMetadata();
 
 		if (serverBundleMetadata == null) {
-			// TODO possibly look into supporting 1.17, the bundled server gives us a much cleaner server jar to work with however.
-			throw new UnsupportedOperationException("Only bundled server jars can be split, please use a merged jar setup for this version of minecraft");
+			throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar can be split, please use a merged jar setup for this version of minecraft");
 		}
 
 		extractBundledServerJar();
@@ -88,8 +87,6 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 
 			throw new RuntimeException("Failed to split minecraft", e);
 		}
-
-		// TODO split: cleanup on failiure
 	}
 
 	public File getMinecraftClientOnlyJar() {

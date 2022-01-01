@@ -1,0 +1,31 @@
+<component name="ProjectCodeStyleConfiguration">
+  <code_scheme name="Project" version="173">
+    <JavaCodeStyleSettings>
+      <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
+      <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
+      <option name="PACKAGES_TO_USE_IMPORT_ON_DEMAND">
+        <value />
+      </option>
+      <option name="IMPORT_LAYOUT_TABLE">
+        <value>
+          <package name="java" withSubpackages="true" static="false" />
+          <emptyLine />
+          <package name="javax" withSubpackages="true" static="false" />
+          <emptyLine />
+          <package name="" withSubpackages="true" static="false" />
+          <emptyLine />
+          <package name="net.minecraft" withSubpackages="true" static="false" />
+          <emptyLine />
+          <package name="net.fabricmc" withSubpackages="true" static="false" />
+          <emptyLine />
+          <package name="" withSubpackages="true" static="true" />
+        </value>
+      </option>
+    </JavaCodeStyleSettings>
+    <codeStyleSettings language="JAVA">
+      <indentOptions>
+        <option name="USE_TAB_CHARACTER" value="true" />
+      </indentOptions>
+    </codeStyleSettings>
+  </code_scheme>
+</component>

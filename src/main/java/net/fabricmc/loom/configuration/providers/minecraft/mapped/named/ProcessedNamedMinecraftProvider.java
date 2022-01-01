@@ -28,13 +28,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import org.apache.commons.io.FileUtils;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -96,8 +95,6 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (invalid) {
-			FileUtils.deleteDirectory(projectMappedDir.toFile());
-
 			try {
 				Files.createDirectories(this.projectMappedDir);
 			} catch (IOException e) {
@@ -107,7 +104,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 			for (Map.Entry<Path, Path> entry : projectMappedJarMap.entrySet()) {
 				final Path inputJar = entry.getKey();
 				final Path outputJar = entry.getValue();
-				Files.copy(inputJar, outputJar);
+
+				Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
 				jarProcessorManager.process(outputJar.toFile());
 			}
 		}

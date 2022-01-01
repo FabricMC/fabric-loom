@@ -192,7 +192,8 @@ public final class CompileConfiguration {
 		}
 	}
 
-	private static void setupMinecraft(Project project) throws Exception {
+	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
+	private static synchronized void setupMinecraft(Project project) throws Exception {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		boolean split = project.getProperties().get("fabric.loom.experimental.splitMcJars") != null;

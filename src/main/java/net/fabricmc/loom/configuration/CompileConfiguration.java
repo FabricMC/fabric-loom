@@ -49,16 +49,10 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.IntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.MergedIntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.intermediary.SplitIntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.MergedNamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.NamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.ProcessedMergedNamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.ProcessedSplitNamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.named.SplitNamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.ProcessedNamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -213,11 +207,11 @@ public final class CompileConfiguration {
 		NamedMinecraftProvider<?> namedMinecraftProvider;
 
 		if (split) {
-			intermediaryMinecraftProvider = new SplitIntermediaryMinecraftProvider(project, (SplitMinecraftProvider) minecraftProvider);
-			namedMinecraftProvider = new SplitNamedMinecraftProvider(project, (SplitMinecraftProvider) minecraftProvider);
+			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new NamedMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
 		} else {
-			intermediaryMinecraftProvider = new MergedIntermediaryMinecraftProvider(project, (MergedMinecraftProvider) minecraftProvider);
-			namedMinecraftProvider = new MergedNamedMinecraftProvider(project, (MergedMinecraftProvider) minecraftProvider);
+			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new NamedMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
 		}
 
 		final JarProcessorManager jarProcessorManager = createJarProcessorManager(project);
@@ -225,9 +219,9 @@ public final class CompileConfiguration {
 		if (jarProcessorManager.active()) {
 			// Wrap the named MC provider for one that will provide the processed jars
 			if (split) {
-				namedMinecraftProvider = new ProcessedSplitNamedMinecraftProvider((SplitNamedMinecraftProvider) namedMinecraftProvider, jarProcessorManager);
+				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.SplitImpl((NamedMinecraftProvider.SplitImpl) namedMinecraftProvider, jarProcessorManager);
 			} else {
-				namedMinecraftProvider = new ProcessedMergedNamedMinecraftProvider((MergedNamedMinecraftProvider) namedMinecraftProvider, jarProcessorManager);
+				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.MergedImpl((NamedMinecraftProvider.MergedImpl) namedMinecraftProvider, jarProcessorManager);
 			}
 		}
 
@@ -286,9 +280,9 @@ public final class CompileConfiguration {
 	private static void configureDecompileTasks(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		if (extension.getNamedMinecraftProvider() instanceof MergedMappedMinecraftProvider mergedMappedMinecraftProvider) {
+		if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Merged mergedMappedMinecraftProvider) {
 			new MergedDecompileConfiguration(project, mergedMappedMinecraftProvider).afterEvaluation();
-		} else if (extension.getNamedMinecraftProvider() instanceof SplitMappedMinecraftProvider splitMinecraftProvider) {
+		} else if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Split splitMinecraftProvider) {
 			new SplitDecompileConfiguration(project, splitMinecraftProvider).afterEvaluation();
 		} else {
 			throw new UnsupportedOperationException();

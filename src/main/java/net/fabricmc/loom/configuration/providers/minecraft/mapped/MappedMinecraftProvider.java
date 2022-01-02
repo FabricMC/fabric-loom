@@ -29,4 +29,39 @@ import java.util.List;
 
 public interface MappedMinecraftProvider {
 	List<Path> getMinecraftJars();
+
+	interface ProviderImpl extends MappedMinecraftProvider {
+		Path getJar(String name);
+	}
+
+	interface Merged extends ProviderImpl {
+		String MERGED = "merged";
+
+		default Path getMergedJar() {
+			return getJar(MERGED);
+		}
+
+		@Override
+		default List<Path> getMinecraftJars() {
+			return List.of(getMergedJar());
+		}
+	}
+
+	interface Split extends ProviderImpl {
+		String COMMON = "common";
+		String CLIENT_ONLY = "clientOnly";
+
+		default Path getCommonJar() {
+			return getJar(COMMON);
+		}
+
+		default Path getClientOnlyJar() {
+			return getJar(CLIENT_ONLY);
+		}
+
+		@Override
+		default List<Path> getMinecraftJars() {
+			return List.of(getCommonJar(), getClientOnlyJar());
+		}
+	}
 }

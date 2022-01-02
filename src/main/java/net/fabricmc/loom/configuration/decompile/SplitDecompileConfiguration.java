@@ -33,18 +33,18 @@ import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.SplitMappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class SplitDecompileConfiguration {
 	private final Project project;
-	private final SplitMappedMinecraftProvider minecraftProvider;
+	private final MappedMinecraftProvider.Split minecraftProvider;
 	private final LoomGradleExtension extension;
 	private final MappingsProviderImpl mappingsProvider;
 
-	public SplitDecompileConfiguration(Project project, SplitMappedMinecraftProvider minecraftProvider) {
+	public SplitDecompileConfiguration(Project project, MappedMinecraftProvider.Split minecraftProvider) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
 		this.extension = LoomGradleExtension.get(project);

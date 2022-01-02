@@ -29,7 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
 import org.gradle.api.Project;
 
@@ -43,7 +43,7 @@ import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvider> implements MappedMinecraftProvider {
+public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvider> implements MappedMinecraftProvider.ProviderImpl {
 	protected final M minecraftProvider;
 	private final Project project;
 	private final LoomGradleExtension extension;
@@ -54,19 +54,15 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		this.extension = LoomGradleExtension.get(project);
 	}
 
-	public abstract void setupFiles(Function<String, Path> pathFunction);
-
 	public abstract MappingsNamespace getTargetNamespace();
 
 	public abstract List<RemappedJars> getRemappedJars();
 
-	protected void applyDependencies() {
+	protected void applyDependencies(BiConsumer<String, String> consumer) {
 		// Override if needed
 	}
 
 	public void provide(boolean applyDependencies) throws Exception {
-		setupFiles(s -> extension.getMappingsProvider().mappingsWorkingDir().resolve(getName(s) + ".jar"));
-
 		final List<RemappedJars> remappedJars = getRemappedJars();
 		assert !remappedJars.isEmpty();
 
@@ -81,8 +77,13 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (applyDependencies) {
-			applyDependencies();
+			applyDependencies((configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)));
 		}
+	}
+
+	@Override
+	public Path getJar(String name) {
+		return extension.getMappingsProvider().mappingsWorkingDir().resolve(getName(name) + ".jar");
 	}
 
 	protected String getName(String name) {

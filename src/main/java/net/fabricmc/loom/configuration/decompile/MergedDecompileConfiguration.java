@@ -30,18 +30,18 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.MergedMappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class MergedDecompileConfiguration {
 	private final Project project;
-	private final MergedMappedMinecraftProvider minecraftProvider;
+	private final MappedMinecraftProvider.Merged minecraftProvider;
 	private final LoomGradleExtension extension;
 	private final MappingsProviderImpl mappingsProvider;
 
-	public MergedDecompileConfiguration(Project project, MergedMappedMinecraftProvider minecraftProvider) {
+	public MergedDecompileConfiguration(Project project, MappedMinecraftProvider.Merged minecraftProvider) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
 		this.extension = LoomGradleExtension.get(project);

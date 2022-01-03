@@ -70,6 +70,8 @@ public final class MergedDecompileConfiguration {
 			// Decompiler will be passed to the constructor of GenerateSourcesTask
 			project.getTasks().register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
 				task.getInputJar().set(inputJar);
+				task.getRuntimeJar().set(minecraftProvider.getMergedJar().toFile());
+
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
 				task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
 				task.setGroup(Constants.TaskGroup.FABRIC);

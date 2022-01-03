@@ -57,12 +57,10 @@ import org.gradle.workers.WorkerExecutor;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -77,8 +75,17 @@ import net.fabricmc.loom.util.ipc.IPCServer;
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public final LoomDecompiler decompiler;
 
+	/**
+	 * The jar to decompile, can be the unpick jar.
+	 */
 	@InputFile
 	public abstract RegularFileProperty getInputJar();
+
+	/**
+	 * The jar used at runtime.
+	 */
+	@InputFile
+	public abstract RegularFileProperty getRuntimeJar();
 
 	/**
 	 * Max memory for forked JVM in megabytes.
@@ -153,11 +160,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getOptions().set(getOptions());
 
 			params.getInputJar().set(getInputJar());
-			File mappedJar = getInputJar().getAsFile().get();
-			params.getRuntimeJar().set(mappedJar);
-			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix(mappedJar, "-sources.jar"));
-			params.getLinemap().set(getMappedJarFileWithSuffix(mappedJar, "-sources.lmap"));
-			params.getLinemapJar().set(getMappedJarFileWithSuffix(mappedJar, "-linemapped.jar"));
+			params.getRuntimeJar().set(getRuntimeJar());
+			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
+			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
+			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
 			params.getMappings().set(getMappings().toFile());
 
 			if (ipcPath != null) {
@@ -299,10 +305,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private File getMappedJarFileWithSuffix(File mappedJar, String suffix) {
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-		String path = mappedJar.getAbsolutePath();
+	private File getMappedJarFileWithSuffix(String suffix) {
+		String path = getRuntimeJar().get().getAsFile().getAbsolutePath();
 
 		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
 			throw new RuntimeException("Invalid mapped JAR path: " + path);

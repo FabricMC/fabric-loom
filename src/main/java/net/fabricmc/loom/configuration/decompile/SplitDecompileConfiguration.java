@@ -74,6 +74,7 @@ public final class SplitDecompileConfiguration {
 
 		final TaskProvider<Task> commonDecompileTask = createDecompileTasks("Common", task -> {
 			task.getInputJar().set(commonJar);
+			task.getRuntimeJar().set(minecraftProvider.getCommonJar().toFile());
 
 			if (unpickCommonJarTask != null) {
 				task.dependsOn(unpickCommonJarTask);
@@ -82,6 +83,7 @@ public final class SplitDecompileConfiguration {
 
 		final TaskProvider<Task> clientOnlyDecompileTask = createDecompileTasks("ClientOnly", task -> {
 			task.getInputJar().set(clientOnlyJar);
+			task.getRuntimeJar().set(minecraftProvider.getClientOnlyJar().toFile());
 
 			if (unpickCommonJarTask != null) {
 				task.dependsOn(unpickClientOnlyJarTask);

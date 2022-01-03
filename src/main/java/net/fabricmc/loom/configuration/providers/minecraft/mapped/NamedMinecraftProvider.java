@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -40,6 +41,11 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> {
 	public NamedMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
+	}
+
+	@Override
+	protected Path getDirectory() {
+		return extension.getMappingsProvider().mappingsWorkingDir();
 	}
 
 	@Override

@@ -46,7 +46,7 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvider> implements MappedMinecraftProvider.ProviderImpl {
 	protected final M minecraftProvider;
 	private final Project project;
-	private final LoomGradleExtension extension;
+	protected final LoomGradleExtension extension;
 
 	public AbstractMappedMinecraftProvider(Project project, M minecraftProvider) {
 		this.project = project;
@@ -81,9 +81,11 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
+	protected abstract Path getDirectory();
+
 	@Override
 	public Path getJar(String name) {
-		return extension.getMappingsProvider().mappingsWorkingDir().resolve(getName(name) + ".jar");
+		return getDirectory().resolve(getName(name) + ".jar");
 	}
 
 	protected String getName(String name) {

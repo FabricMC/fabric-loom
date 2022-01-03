@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import org.gradle.api.Project;
@@ -38,6 +39,11 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.MergedImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
+	}
+
+	@Override
+	protected Path getDirectory() {
+		return extension.getMinecraftProvider().workingDir().toPath();
 	}
 
 	@Override

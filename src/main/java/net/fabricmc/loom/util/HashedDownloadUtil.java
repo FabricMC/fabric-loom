@@ -48,7 +48,7 @@ public class HashedDownloadUtil {
 	}
 
 	public static void downloadIfInvalid(URL from, File to, String expectedHash, Logger logger, boolean quiet, Runnable startDownload) throws IOException {
-		if (LoomGradlePlugin.refreshDeps) {
+		if (LoomGradlePlugin.refreshDeps && !Boolean.getBoolean("loom.refresh")) {
 			delete(to);
 		}
 

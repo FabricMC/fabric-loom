@@ -84,8 +84,8 @@ public class RemapTaskConfiguration {
 			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
 				Configuration configuration = project.getConfigurations().getByName(configurationName);
+				final Task jarTask = project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
 				configuration.getArtifacts().removeIf(artifact -> {
-					Task jarTask = project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
 					// if the artifact is a -dev jar and "builtBy jar"
 					return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
 				});

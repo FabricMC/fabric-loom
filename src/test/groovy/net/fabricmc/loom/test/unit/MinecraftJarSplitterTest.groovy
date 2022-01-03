@@ -32,7 +32,7 @@ class MinecraftJarSplitterTest extends Specification {
     public static final String CLIENT_JAR_URL = "https://launcher.mojang.com/v1/objects/7e46fb47609401970e2818989fa584fd467cd036/client.jar"
     public static final String SERVER_BUNDLE_JAR_URL = "https://launcher.mojang.com/v1/objects/125e5adf40c659fd3bce3e66e67a16bb49ecc1b9/server.jar"
 
-    public static final File mcJarDir = new File("build/testjars/")
+    public static final File mcJarDir = File.createTempDir()
 
     def "split jars"() {
         given:

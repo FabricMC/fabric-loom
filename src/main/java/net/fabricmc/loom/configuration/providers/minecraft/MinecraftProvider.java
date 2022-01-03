@@ -49,7 +49,7 @@ import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.MirrorUtil;
 
-public abstract sealed class MinecraftProvider permits MergedMinecraftProvider, SplitMinecraftProvider {
+public abstract class MinecraftProvider {
 	private String minecraftVersion;
 
 	private MinecraftVersionMeta versionInfo;

@@ -185,12 +185,6 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 		}
 	}
 
-	@Override
-	public boolean isInvalid(File file) {
-		// The hash is handled by getId()
-		return false;
-	}
-
 	private static class TransitiveDetectorVisitor implements AccessWidenerVisitor {
 		private boolean transitive = false;
 

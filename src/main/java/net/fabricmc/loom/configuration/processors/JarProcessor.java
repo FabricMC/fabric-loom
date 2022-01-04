@@ -33,11 +33,9 @@ public interface JarProcessor {
 	 * <p>If the jar processor implementation class supports creating multiple jar processors with different effects,
 	 * the needed configuration should also be included in this ID. Example: {@code path.to.MyJarProcessor#someOption}.
 	 *
-	 * @return the ID of this jar processor
+	 * @return the unique ID of this jar processor
 	 */
-	default String getId() {
-		return getClass().getName();
-	}
+	String getId();
 
 	void setup();
 
@@ -45,9 +43,4 @@ public interface JarProcessor {
 	 * Currently this is a destructive process that replaces the existing jar.
 	 */
 	void process(File file);
-
-	/**
-	 * Return true to make all jar processors run again, return false to use the existing results of jar processing.
-	 */
-	boolean isInvalid(File file);
 }

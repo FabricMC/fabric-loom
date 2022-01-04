@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
@@ -69,5 +70,9 @@ public class Checksum {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to get file hash of " + file, e);
 		}
+	}
+
+	public static String toHex(byte[] bytes) {
+		return BaseEncoding.base16().lowerCase().encode(bytes);
 	}
 }

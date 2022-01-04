@@ -83,7 +83,7 @@ public class JarProcessorManager {
 			throw new UncheckedIOException("Could not check jar manifest of " + file, e);
 		}
 
-		return jarProcessors.stream().anyMatch(jarProcessor -> jarProcessor.isInvalid(file));
+		return false;
 	}
 
 	private String getJarProcessorHash() {

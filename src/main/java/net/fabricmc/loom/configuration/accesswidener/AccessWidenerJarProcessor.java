@@ -30,7 +30,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
@@ -39,6 +38,7 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ZipUtils;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
@@ -57,7 +57,7 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 
 	@Override
 	public String getId() {
-		return "loom:access_widener";
+		return "loom:access_widener:" + Checksum.toHex(inputHash);
 	}
 
 	@Override
@@ -90,22 +90,5 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to write aw jar hash", e);
 		}
-	}
-
-	@Override
-	public boolean isInvalid(File file) {
-		byte[] hash;
-
-		try {
-			hash = ZipUtils.unpackNullable(file.toPath(), HASH_FILENAME);
-		} catch (IOException e) {
-			return true;
-		}
-
-		if (hash == null) {
-			return true;
-		}
-
-		return !Arrays.equals(inputHash, hash); // TODO how do we know if the current jar as the correct access applied? save the hash of the input?
 	}
 }

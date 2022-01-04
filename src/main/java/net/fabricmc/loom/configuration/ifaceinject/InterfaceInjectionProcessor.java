@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -38,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
@@ -54,6 +54,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -81,6 +82,12 @@ public class InterfaceInjectionProcessor implements JarProcessor {
 
 	public boolean isEmpty() {
 		return injectedInterfaces.isEmpty();
+	}
+
+	@Override
+	public String getId() {
+		Preconditions.checkArgument(!isEmpty());
+		return "loom:interface_injection:" + Checksum.toHex(inputHash);
 	}
 
 	@Override
@@ -146,23 +153,6 @@ public class InterfaceInjectionProcessor implements JarProcessor {
 			reader.accept(classVisitor, 0);
 			return writer.toByteArray();
 		};
-	}
-
-	@Override
-	public boolean isInvalid(File file) {
-		byte[] hash;
-
-		try {
-			hash = ZipUtils.unpackNullable(file.toPath(), HASH_FILENAME);
-		} catch (IOException e) {
-			return true;
-		}
-
-		if (hash == null) {
-			return true;
-		}
-
-		return !Arrays.equals(inputHash, hash);
 	}
 
 	private List<InjectedInterface> getInjectedInterfaces() {

@@ -96,6 +96,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.versionParser = new ModVersionParser(project);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
+
+		this.accessWidener.finalizeValueOnRead();
+		this.getGameJarProcessors().finalizeValueOnRead();
 	}
 
 	@Override

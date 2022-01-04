@@ -29,15 +29,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 
@@ -45,105 +42,17 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.build.ModCompileRemapper;
-import net.fabricmc.loom.configuration.DependencyProvider.DependencyInfo;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
 
 public class LoomDependencyManager {
-	private static class ProviderList {
-		private final String key;
-		private final List<DependencyProvider> providers = new ArrayList<>();
-
-		ProviderList(String key) {
-			this.key = key;
-		}
-	}
-
-	private final List<DependencyProvider> dependencyProviderList = new ArrayList<>();
-
-	public <T extends DependencyProvider> T addProvider(T provider) {
-		if (dependencyProviderList.contains(provider)) {
-			throw new RuntimeException("Provider is already registered");
-		}
-
-		if (getProvider(provider.getClass()) != null) {
-			throw new RuntimeException("Provider of this type is already registered");
-		}
-
-		provider.register(this);
-		dependencyProviderList.add(provider);
-		return provider;
-	}
-
-	public <T> T getProvider(Class<T> clazz) {
-		for (DependencyProvider provider : dependencyProviderList) {
-			if (provider.getClass() == clazz) {
-				return (T) provider;
-			}
-		}
-
-		return null;
-	}
-
 	public void handleDependencies(Project project) {
 		List<Runnable> afterTasks = new ArrayList<>();
 
-		MappingsProviderImpl mappingsProvider = null;
-
 		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		Map<String, ProviderList> providerListMap = new HashMap<>();
-		List<ProviderList> targetProviders = new ArrayList<>();
-
-		for (DependencyProvider provider : dependencyProviderList) {
-			providerListMap.computeIfAbsent(provider.getTargetConfig(), (k) -> {
-				ProviderList list = new ProviderList(k);
-				targetProviders.add(list);
-				return list;
-			}).providers.add(provider);
-
-			if (provider instanceof MappingsProviderImpl) {
-				mappingsProvider = (MappingsProviderImpl) provider;
-			}
-		}
-
-		if (mappingsProvider == null) {
-			throw new RuntimeException("Could not find MappingsProvider instance!");
-		}
-
-		for (ProviderList list : targetProviders) {
-			Configuration configuration = project.getConfigurations().getByName(list.key);
-			DependencySet dependencies = configuration.getDependencies();
-
-			if (dependencies.isEmpty()) {
-				throw new IllegalArgumentException(String.format("No '%s' dependency was specified!", list.key));
-			}
-
-			if (dependencies.size() > 1) {
-				throw new IllegalArgumentException(String.format("Only one '%s' dependency should be specified, but %d were!",
-												list.key,
-												dependencies.size())
-				);
-			}
-
-			for (Dependency dependency : dependencies) {
-				for (DependencyProvider provider : list.providers) {
-					DependencyProvider.DependencyInfo info = DependencyInfo.create(project, dependency, configuration);
-
-					try {
-						provider.provide(info, afterTasks::add);
-					} catch (Exception e) {
-						throw new RuntimeException("Failed to provide " + dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion() + " : " + e.toString(), e);
-					}
-				}
-			}
-		}
-
-		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsIdentifier = mappingsProvider.mappingsIdentifier();
 
 		if (extension.getInstallerData() == null) {
 			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
@@ -168,13 +77,16 @@ public class LoomDependencyManager {
 			}
 		}
 
-		if (extension.getInstallerData() == null) {
-			project.getLogger().warn("fabric-installer.json not found in classpath!");
-		}
+		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
+		String mappingsIdentifier = extension.getMappingsProvider().mappingsIdentifier();
 
 		ModCompileRemapper.remapDependencies(project, mappingsIdentifier, extension, sourceRemapper);
 
 		sourceRemapper.remapAll();
+
+		if (extension.getInstallerData() == null) {
+			project.getLogger().warn("fabric-installer.json not found in classpath!");
+		}
 
 		for (Runnable runnable : afterTasks) {
 			runnable.run();

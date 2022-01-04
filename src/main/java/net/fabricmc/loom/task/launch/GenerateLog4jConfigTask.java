@@ -22,13 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.task.launch;
 
-import org.gradle.util.GradleVersion
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.5-20220101231120+0000"
+import org.gradle.api.tasks.TaskAction;
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+import net.fabricmc.loom.task.AbstractLoomTask;
+
+public abstract class GenerateLog4jConfigTask extends AbstractLoomTask {
+	@TaskAction
+	public void run() {
+		Path outputFile = getExtension().getFiles().getDefaultLog4jConfigFile().toPath();
+
+		try (InputStream is = GenerateLog4jConfigTask.class.getClassLoader().getResourceAsStream("log4j2.fabric.xml")) {
+			Files.deleteIfExists(outputFile);
+			Files.copy(is, outputFile);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to generate log4j config", e);
+		}
+	}
 }

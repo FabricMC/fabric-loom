@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,46 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers;
+package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+public interface MappedMinecraftProvider {
+	List<Path> getMinecraftJars();
 
-public interface MinecraftProvider {
-	File workingDir();
+	interface ProviderImpl extends MappedMinecraftProvider {
+		Path getJar(String name);
+	}
 
-	File dir(String path);
+	interface Merged extends ProviderImpl {
+		String MERGED = "merged";
 
-	File file(String path);
+		default Path getMergedJar() {
+			return getJar(MERGED);
+		}
 
-	String minecraftVersion();
+		@Override
+		default List<Path> getMinecraftJars() {
+			return List.of(getMergedJar());
+		}
+	}
 
-	MinecraftVersionMeta getVersionInfo();
+	interface Split extends ProviderImpl {
+		String COMMON = "common";
+		String CLIENT_ONLY = "clientOnly";
+
+		default Path getCommonJar() {
+			return getJar(COMMON);
+		}
+
+		default Path getClientOnlyJar() {
+			return getJar(CLIENT_ONLY);
+		}
+
+		@Override
+		default List<Path> getMinecraftJars() {
+			return List.of(getCommonJar(), getClientOnlyJar());
+		}
+	}
 }

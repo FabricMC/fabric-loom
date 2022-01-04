@@ -25,6 +25,7 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,10 +44,15 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -62,6 +68,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
+	private MinecraftProvider minecraftProvider;
+	private MappingsProviderImpl mappingsProvider;
+	private NamedMinecraftProvider<?> namedMinecraftProvider;
+	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
 	private InstallerData installerData;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
@@ -114,6 +124,55 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public JarProcessorManager getJarProcessorManager() {
 		return Objects.requireNonNull(jarProcessorManager, "Cannot get JarProcessorManager before it has been setup");
+	}
+
+	@Override
+	public MinecraftProvider getMinecraftProvider() {
+		return Objects.requireNonNull(minecraftProvider, "Cannot get MinecraftProvider before it has been setup");
+	}
+
+	@Override
+	public void setMinecraftProvider(MinecraftProvider minecraftProvider) {
+		this.minecraftProvider = minecraftProvider;
+	}
+
+	@Override
+	public MappingsProviderImpl getMappingsProvider() {
+		return Objects.requireNonNull(mappingsProvider, "Cannot get MappingsProvider before it has been setup");
+	}
+
+	@Override
+	public void setMappingsProvider(MappingsProviderImpl mappingsProvider) {
+		this.mappingsProvider = mappingsProvider;
+	}
+
+	@Override
+	public NamedMinecraftProvider<?> getNamedMinecraftProvider() {
+		return Objects.requireNonNull(namedMinecraftProvider, "Cannot get NamedMinecraftProvider before it has been setup");
+	}
+
+	@Override
+	public IntermediaryMinecraftProvider<?> getIntermediaryMinecraftProvider() {
+		return Objects.requireNonNull(intermediaryMinecraftProvider, "Cannot get IntermediaryMinecraftProvider before it has been setup");
+	}
+
+	@Override
+	public void setNamedMinecraftProvider(NamedMinecraftProvider<?> namedMinecraftProvider) {
+		this.namedMinecraftProvider = namedMinecraftProvider;
+	}
+
+	@Override
+	public void setIntermediaryMinecraftProvider(IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider) {
+		this.intermediaryMinecraftProvider = intermediaryMinecraftProvider;
+	}
+
+	@Override
+	public FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace) {
+		return getProject().files(
+			getProject().provider(() ->
+				getProject().files(getMinecraftJars(mappingsNamespace).stream().map(Path::toFile).toList())
+			)
+		);
 	}
 
 	@Override

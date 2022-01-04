@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -33,8 +34,10 @@ import java.nio.file.Files;
 import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
@@ -42,6 +45,7 @@ import net.fabricmc.accesswidener.AccessWidenerFormatException;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrEnvironment;
 
@@ -50,15 +54,15 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	@InputFile
 	public abstract RegularFileProperty getAccessWidener();
 
-	@InputFile
-	public abstract RegularFileProperty getTargetJar();
+	@InputFiles
+	public abstract ConfigurableFileCollection getTargetJars();
 
 	@Inject
 	public ValidateAccessWidenerTask() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		getAccessWidener().convention(extension.getAccessWidenerPath()).finalizeValueOnRead();
-		getTargetJar().convention(getProject().getObjects().fileProperty().fileValue(extension.getMinecraftMappedProvider().getMappedJar())).finalizeValueOnRead();
+		getTargetJars().from(extension.getMinecraftJarsCollection(MappingsNamespace.NAMED));
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
@@ -67,7 +71,10 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	@TaskAction
 	public void run() {
 		final TinyRemapper tinyRemapper = TinyRemapper.newRemapper().build();
-		tinyRemapper.readClassPath(getTargetJar().get().getAsFile().toPath());
+
+		for (File file : getTargetJars().getFiles()) {
+			tinyRemapper.readClassPath(file.toPath());
+		}
 
 		final AccessWidenerValidator validator = new AccessWidenerValidator(tinyRemapper.getEnvironment());
 		final AccessWidenerReader accessWidenerReader = new AccessWidenerReader(validator);

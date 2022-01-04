@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
@@ -53,14 +52,9 @@ import org.objectweb.asm.Opcodes;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.DependencyProvider;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
-import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
-import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
-import net.fabricmc.loom.configuration.processors.MinecraftProcessedProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMappedProvider;
+import net.fabricmc.loom.configuration.DependencyInfo;
+import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.DownloadUtil;
@@ -76,9 +70,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 
-public class MappingsProviderImpl extends DependencyProvider implements MappingsProvider {
-	public MinecraftMappedProvider mappedProvider;
-
+public class MappingsProviderImpl implements MappingsProvider {
 	public String mappingsIdentifier;
 
 	private Path mappingsWorkingDir;
@@ -95,19 +87,23 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private MemoryMappingTree mappingTree;
 	private Map<String, String> signatureFixes;
 
-	public MappingsProviderImpl(Project project) {
-		super(project);
+	private final Project project;
+	private final MinecraftProvider minecraftProvider;
+	private final LoomGradleExtension extension;
+	public MappingsProviderImpl(Project project, MinecraftProvider minecraftProvider) {
+		this.project = project;
+		this.minecraftProvider = minecraftProvider;
+		this.extension = LoomGradleExtension.get(project);
 	}
 
 	public MemoryMappingTree getMappings() throws IOException {
 		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read");
 	}
 
-	@Override
-	public void provide(DependencyInfo dependency, Consumer<Runnable> postPopulationScheduler) throws Exception {
-		MinecraftProviderImpl minecraftProvider = getDependencyManager().getProvider(MinecraftProviderImpl.class);
+	public void provide() throws Exception {
+		final DependencyInfo dependency = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
 
-		getProject().getLogger().info(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
+		project.getLogger().info(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
 		String version = dependency.getResolvedVersion();
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find yarn mappings: " + dependency));
@@ -119,7 +115,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		initFiles();
 
 		if (Files.notExists(tinyMappings) || isRefreshDeps()) {
-			storeMappings(getProject(), minecraftProvider, mappingsJar.toPath());
+			storeMappings(project, minecraftProvider, mappingsJar.toPath());
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(mappingsJar.toPath(), (ClassLoader) null)) {
 				extractExtras(fileSystem);
@@ -140,49 +136,11 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 					dependency.getDependency().getVersion()
 			);
 
-			getProject().getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+			project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
 			populateUnpickClasspath();
 		}
 
-		addDependency(tinyMappingsJar.toFile(), Constants.Configurations.MAPPINGS_FINAL);
-
-		LoomGradleExtension extension = getExtension();
-
-		if (extension.getAccessWidenerPath().isPresent()) {
-			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(getProject()));
-		}
-
-		if (extension.getEnableTransitiveAccessWideners().get()) {
-			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(getProject());
-
-			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
-				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
-			}
-		}
-
-		if (extension.getEnableInterfaceInjection().get()) {
-			InterfaceInjectionProcessor jarProcessor = new InterfaceInjectionProcessor(getProject());
-
-			if (!jarProcessor.isEmpty()) {
-				extension.getGameJarProcessors().add(jarProcessor);
-			}
-		}
-
-		extension.getAccessWidenerPath().finalizeValue();
-		extension.getGameJarProcessors().finalizeValue();
-		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
-		extension.setJarProcessorManager(processorManager);
-		processorManager.setupProcessors();
-
-		if (processorManager.active()) {
-			mappedProvider = new MinecraftProcessedProvider(getProject(), processorManager);
-			getProject().getLogger().info("Using project based jar storage");
-		} else {
-			mappedProvider = new MinecraftMappedProvider(getProject());
-		}
-
-		mappedProvider.initFiles(minecraftProvider, this);
-		mappedProvider.provide(dependency, postPopulationScheduler);
+		project.getDependencies().add(Constants.Configurations.MAPPINGS_FINAL, project.files(tinyMappingsJar.toFile()));
 	}
 
 	private String getMappingsClassifier(DependencyInfo dependency, boolean isV2) {
@@ -196,7 +154,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	}
 
 	private boolean isV2(DependencyInfo dependency, File mappingsJar) throws IOException {
-		String minecraftVersion = getMinecraftProvider().minecraftVersion();
+		String minecraftVersion = minecraftProvider.minecraftVersion();
 
 		// Only do this for official yarn, there isn't really a way we can get the mc version for all mappings
 		if (dependency.getDependency().getGroup() != null && dependency.getDependency().getGroup().equals("net.fabricmc") && dependency.getDependency().getName().equals("yarn") && dependency.getDependency().getVersion() != null) {
@@ -205,7 +163,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			String yarnMinecraftVersion = yarnVersion.substring(0, yarnVersion.lastIndexOf(separator));
 
 			if (!yarnMinecraftVersion.equalsIgnoreCase(minecraftVersion)) {
-				getProject().getLogger().warn("Minecraft Version ({}) does not match yarn's minecraft version ({})", minecraftVersion, yarnMinecraftVersion);
+				project.getLogger().warn("Minecraft Version ({}) does not match yarn's minecraft version ({})", minecraftVersion, yarnMinecraftVersion);
 			}
 
 			// We can save reading the zip file + header by checking the file name
@@ -215,7 +173,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
-	private void storeMappings(Project project, MinecraftProviderImpl minecraftProvider, Path yarnJar) throws IOException {
+	private void storeMappings(Project project, MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
 		project.getLogger().info(":extracting " + yarnJar.getFileName());
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
@@ -227,10 +185,14 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 			// These are unmerged v2 mappings
 			mergeAndSaveMappings(project, baseTinyMappings, tinyMappings);
 		} else {
-			// These are merged v1 mappings
-			Files.deleteIfExists(tinyMappings);
-			project.getLogger().lifecycle(":populating field names");
-			suggestFieldNames(minecraftProvider, baseTinyMappings, tinyMappings);
+			if (minecraftProvider instanceof MergedMinecraftProvider mergedMinecraftProvider) {
+				// These are merged v1 mappings
+				Files.deleteIfExists(tinyMappings);
+				project.getLogger().lifecycle(":populating field names");
+				suggestFieldNames(mergedMinecraftProvider, baseTinyMappings, tinyMappings);
+			} else {
+				throw new UnsupportedOperationException("V1 mappings only support merged minecraft");
+			}
 		}
 	}
 
@@ -311,7 +273,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 
 	private void populateUnpickClasspath() {
 		String unpickCliName = "unpick-cli";
-		getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+		project.getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
 				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
 		);
 
@@ -324,7 +286,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		};
 
 		for (String asm : asmDeps) {
-			getProject().getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
+			project.getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
 					asm.formatted(Opcodes.class.getPackage().getImplementationVersion())
 			);
 		}
@@ -400,7 +362,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		return tree;
 	}
 
-	private void suggestFieldNames(MinecraftProviderImpl minecraftProvider, Path oldMappings, Path newMappings) {
+	private void suggestFieldNames(MergedMinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
 		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
 						oldMappings.toAbsolutePath().toString(),
@@ -416,7 +378,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	}
 
 	private void initFiles() {
-		mappingsWorkingDir = getMinecraftProvider().dir(mappingsIdentifier).toPath();
+		mappingsWorkingDir = minecraftProvider.dir(mappingsIdentifier).toPath();
 		baseTinyMappings = mappingsWorkingDir.resolve("mappings-base.tiny");
 		tinyMappings = mappingsWorkingDir.resolve("mappings.tiny");
 		tinyMappingsJar = mappingsWorkingDir.resolve("mappings.jar");
@@ -439,23 +401,18 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 		}
 	}
 
-	@Override
-	public String getTargetConfig() {
-		return Constants.Configurations.MAPPINGS;
-	}
-
 	public Path getIntermediaryTiny() throws IOException {
 		if (intermediaryTiny == null) {
-			intermediaryTiny = getMinecraftProvider().file("intermediary-v2.tiny").toPath();
+			intermediaryTiny = minecraftProvider.file("intermediary-v2.tiny").toPath();
 
 			if (!Files.exists(intermediaryTiny) || (isRefreshDeps() && !hasRefreshed)) {
 				hasRefreshed = true;
 
 				// Download and extract intermediary
-				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftProvider().minecraftVersion());
-				String intermediaryArtifactUrl = getExtension().getIntermediaryUrl(encodedMinecraftVersion);
-				File intermediaryJar = getMinecraftProvider().file("intermediary-v2.jar");
-				DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar, getProject().getLogger());
+				String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftProvider.minecraftVersion());
+				String intermediaryArtifactUrl = extension.getIntermediaryUrl(encodedMinecraftVersion);
+				File intermediaryJar = minecraftProvider.file("intermediary-v2.jar");
+				DownloadUtil.downloadIfChanged(new URL(intermediaryArtifactUrl), intermediaryJar, project.getLogger());
 				extractMappings(intermediaryJar.toPath(), intermediaryTiny);
 			}
 		}
@@ -471,7 +428,7 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	private String createMappingsIdentifier(String mappingsName, String version, String classifier) {
 		//          mappingsName      . mcVersion . version        classifier
 		// Example: net.fabricmc.yarn . 1_16_5    . 1.16.5+build.5 -v2
-		return mappingsName + "." + getMinecraftProvider().minecraftVersion().replace(' ', '_').replace('.', '_').replace('-', '_') + "." + version + classifier;
+		return mappingsName + "." + minecraftProvider.minecraftVersion().replace(' ', '_').replace('.', '_').replace('-', '_') + "." + version + classifier;
 	}
 
 	public String mappingsIdentifier() {
@@ -505,5 +462,9 @@ public class MappingsProviderImpl extends DependencyProvider implements Mappings
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
+	}
+
+	protected boolean isRefreshDeps() {
+		return LoomGradlePlugin.refreshDeps;
 	}
 }

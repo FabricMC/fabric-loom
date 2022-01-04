@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.inject.Inject;
 
@@ -40,7 +41,7 @@ import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.OutputFile;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.LaunchProvider;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.util.Constants;
 
@@ -76,7 +77,9 @@ public abstract class UnpickJarTask extends JavaExec {
 		fileArg(getConstantJar().getSingleFile());
 
 		// Classpath
-		fileArg(getExtension().getMinecraftMappedProvider().getMappedJar());
+		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.NAMED)) {
+			fileArg(minecraftJar.toFile());
+		}
 
 		for (File file : getUnpickClasspath()) {
 			fileArg(file);
@@ -89,7 +92,7 @@ public abstract class UnpickJarTask extends JavaExec {
 	}
 
 	private void writeUnpickLogConfig() {
-		try (InputStream is = LaunchProvider.class.getClassLoader().getResourceAsStream("unpick-logging.properties")) {
+		try (InputStream is = UnpickJarTask.class.getClassLoader().getResourceAsStream("unpick-logging.properties")) {
 			Files.deleteIfExists(getDirectories().getUnpickLoggingConfigFile().toPath());
 			Files.copy(is, getDirectories().getUnpickLoggingConfigFile().toPath());
 		} catch (IOException e) {

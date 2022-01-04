@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import org.gradle.api.NamedDomainObjectProvider;
@@ -34,7 +33,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -42,12 +40,21 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
-import net.fabricmc.loom.configuration.providers.LaunchProvider;
-import net.fabricmc.loom.configuration.providers.MinecraftProviderImpl;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.decompile.MergedDecompileConfiguration;
+import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
+import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
+import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.ProcessedNamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
-import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class CompileConfiguration {
@@ -123,6 +130,11 @@ public final class CompileConfiguration {
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
 		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
+
+		// Add the dev time dependencies
+		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);
+		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);
+		project.getDependencies().add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 	}
 
 	public static void configureCompile(Project p) {
@@ -135,13 +147,14 @@ public final class CompileConfiguration {
 		});
 
 		p.afterEvaluate(project -> {
+			try {
+				setupMinecraft(project);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to setup minecraft", e);
+			}
+
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
-
-			dependencyManager.addProvider(new MinecraftProviderImpl(project));
-			dependencyManager.addProvider(new MappingsProviderImpl(project));
-			dependencyManager.addProvider(new LaunchProvider(project));
-
 			dependencyManager.handleDependencies(project);
 
 			extension.getRemapArchives().finalizeValue();
@@ -174,6 +187,82 @@ public final class CompileConfiguration {
 		}
 	}
 
+	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
+	private static synchronized void setupMinecraft(Project project) throws Exception {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		boolean split = project.getProperties().get("fabric.loom.experimental.splitMcJars") != null;
+
+		// Provide the vanilla mc jars
+		final MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
+		extension.setMinecraftProvider(minecraftProvider);
+		minecraftProvider.provide();
+
+		// Provide the mappings
+		final MappingsProviderImpl mappingsProvider = new MappingsProviderImpl(project, minecraftProvider);
+		extension.setMappingsProvider(mappingsProvider);
+		mappingsProvider.provide();
+
+		// Provide the remapped mc jars
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
+		NamedMinecraftProvider<?> namedMinecraftProvider;
+
+		if (split) {
+			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new NamedMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
+		} else {
+			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
+			namedMinecraftProvider = new NamedMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
+		}
+
+		final JarProcessorManager jarProcessorManager = createJarProcessorManager(project);
+
+		if (jarProcessorManager.active()) {
+			// Wrap the named MC provider for one that will provide the processed jars
+			if (split) {
+				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.SplitImpl((NamedMinecraftProvider.SplitImpl) namedMinecraftProvider, jarProcessorManager);
+			} else {
+				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.MergedImpl((NamedMinecraftProvider.MergedImpl) namedMinecraftProvider, jarProcessorManager);
+			}
+		}
+
+		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
+		intermediaryMinecraftProvider.provide(true);
+
+		extension.setNamedMinecraftProvider(namedMinecraftProvider);
+		namedMinecraftProvider.provide(true);
+	}
+
+	private static JarProcessorManager createJarProcessorManager(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.getAccessWidenerPath().isPresent()) {
+			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(project));
+		}
+
+		if (extension.getEnableTransitiveAccessWideners().get()) {
+			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(project);
+
+			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
+		}
+
+		if (extension.getEnableInterfaceInjection().get()) {
+			InterfaceInjectionProcessor jarProcessor = new InterfaceInjectionProcessor(project);
+
+			if (!jarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(jarProcessor);
+			}
+		}
+
+		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
+		extension.setJarProcessorManager(processorManager);
+		processorManager.setupProcessors();
+
+		return processorManager;
+	}
+
 	private static void setupMixinAp(Project project, MixinExtension mixin) {
 		mixin.init();
 
@@ -198,39 +287,15 @@ public final class CompileConfiguration {
 	}
 
 	private static void configureDecompileTasks(Project project) {
-		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-
-		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
-
-		if (mappingsProvider.hasUnpickDefinitions()) {
-			File outputJar = mappingsProvider.mappedProvider.getUnpickedJar();
-
-			tasks.register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-				unpickJarTask.getInputJar().set(mappingsProvider.mappedProvider.getMappedJar());
-				unpickJarTask.getOutputJar().set(outputJar);
-			});
-
-			mappedJar = outputJar;
+		if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Merged mergedMappedMinecraftProvider) {
+			new MergedDecompileConfiguration(project, mergedMappedMinecraftProvider).afterEvaluation();
+		} else if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Split splitMinecraftProvider) {
+			new SplitDecompileConfiguration(project, splitMinecraftProvider).afterEvaluation();
+		} else {
+			throw new UnsupportedOperationException();
 		}
-
-		final File inputJar = mappedJar;
-
-		extension.getGameDecompilers().configureEach(decompiler -> {
-			String taskName = "genSourcesWith" + decompiler.name();
-
-			// Set the input jar for the task after evaluation has occurred.
-			tasks.named(taskName, GenerateSourcesTask.class).configure(task -> {
-				task.getInputJar().set(inputJar);
-
-				if (mappingsProvider.hasUnpickDefinitions()) {
-					task.dependsOn(tasks.named("unpickJar"));
-				}
-			});
-		});
 	}
 
 	private static void extendsFrom(String a, String b, Project project) {

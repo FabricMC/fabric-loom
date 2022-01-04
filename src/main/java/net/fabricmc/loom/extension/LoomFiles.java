@@ -47,4 +47,5 @@ public interface LoomFiles {
 	File getDefaultLog4jConfigFile();
 	File getDevLauncherConfig();
 	File getUnpickLoggingConfigFile();
+	File getRemapClasspathFile();
 }

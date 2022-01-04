@@ -183,8 +183,13 @@ public class SourceRemapper {
 				}
 			}
 
-			m.getClassPath().add(extension.getMinecraftMappedProvider().getMappedJar().toPath());
-			m.getClassPath().add(extension.getMinecraftMappedProvider().getIntermediaryJar().toPath());
+			for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+				m.getClassPath().add(intermediaryJar);
+			}
+
+			for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.NAMED)) {
+				m.getClassPath().add(intermediaryJar);
+			}
 
 			Set<File> files = project.getConfigurations()
 					.detachedConfiguration(project.getDependencies().create(Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS))

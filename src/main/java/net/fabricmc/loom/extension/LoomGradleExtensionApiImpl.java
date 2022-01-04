@@ -63,6 +63,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<String> intermediary;
+	protected final Property<Boolean> enableInterfaceInjection;
 
 	private final ModVersionParser versionParser;
 
@@ -88,6 +89,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
+		this.enableInterfaceInjection = project.getObjects().property(Boolean.class)
+				.convention(true);
+		this.enableInterfaceInjection.finalizeValueOnRead();
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -182,6 +186,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<String> getIntermediaryUrl() {
 		return intermediary;
+	}
+
+	@Override
+	public Property<Boolean> getEnableInterfaceInjection() {
+		return enableInterfaceInjection;
 	}
 
 	@Override

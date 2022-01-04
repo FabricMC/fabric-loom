@@ -44,6 +44,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.decompile.MergedDecompileConfiguration;
 import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
+import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
@@ -244,6 +245,14 @@ public final class CompileConfiguration {
 
 			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
 				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
+			}
+		}
+
+		if (extension.getEnableInterfaceInjection().get()) {
+			InterfaceInjectionProcessor jarProcessor = new InterfaceInjectionProcessor(project);
+
+			if (!jarProcessor.isEmpty()) {
+				extension.getGameJarProcessors().add(jarProcessor);
 			}
 		}
 

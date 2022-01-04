@@ -132,4 +132,13 @@ public interface LoomGradleExtensionAPI {
 	 * @return the intermediary url template
 	 */
 	Property<String> getIntermediaryUrl();
+
+	/**
+	 * When true loom will inject interfaces declared in mod manifests into the minecraft jar file.
+	 * This is used to expose interfaces that are implemented on Minecraft classes by mixins at runtime
+	 * in the dev environment.
+	 *
+	 * @return the property controlling interface injection.
+	 */
+	Property<Boolean> getEnableInterfaceInjection();
 }

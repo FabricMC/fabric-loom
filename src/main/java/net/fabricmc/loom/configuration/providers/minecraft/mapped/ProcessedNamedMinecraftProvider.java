@@ -76,6 +76,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 			for (Path inputJar : inputJars) {
 				final Path outputJar = getProcessedPath(inputJar);
+				deleteSimilarJars(outputJar);
 
 				Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
 				jarProcessorManager.process(outputJar.toFile());
@@ -84,6 +85,15 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 		if (applyDependencies) {
 			parentMinecraftProvider.applyDependencies((configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)));
+		}
+	}
+
+	private void deleteSimilarJars(Path jar) throws IOException {
+		Files.deleteIfExists(jar);
+
+		for (Path path : Files.list(jar.getParent()).filter(Files::isRegularFile)
+				.filter(path -> path.getFileName().startsWith(jar.getFileName().toString().replace(".jar", ""))).toList()) {
+			Files.deleteIfExists(path);
 		}
 	}
 

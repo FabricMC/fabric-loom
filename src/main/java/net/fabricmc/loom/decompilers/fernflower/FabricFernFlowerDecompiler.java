@@ -38,11 +38,6 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 
 public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 	@Override
-	public String name() {
-		return "FernFlower";
-	}
-
-	@Override
 	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
 		final Map<String, Object> options = new HashMap<>(
 				Map.of(

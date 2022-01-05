@@ -65,15 +65,16 @@ public final class MergedDecompileConfiguration {
 
 		final File inputJar = mappedJar;
 
-		LoomGradleExtension.get(project).getGameDecompilers().forEach(decompiler -> {
-			String taskName = "genSourcesWith" + decompiler.name();
+		LoomGradleExtension.get(project).getDecompilerOptions().forEach(options -> {
+			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+			String taskName = "genSourcesWith" + decompilerName;
 			// Decompiler will be passed to the constructor of GenerateSourcesTask
-			project.getTasks().register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
+			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				task.getInputJar().set(inputJar);
 				task.getRuntimeJar().set(minecraftProvider.getMergedJar().toFile());
 
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
-				task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
+				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 
 				if (mappingsProvider.hasUnpickDefinitions()) {

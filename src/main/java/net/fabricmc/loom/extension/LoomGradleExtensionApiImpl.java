@@ -25,7 +25,6 @@
 package net.fabricmc.loom.extension;
 
 import org.gradle.api.Action;
-import org.gradle.api.DomainObjectCollection;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
@@ -37,7 +36,7 @@ import org.gradle.api.publish.maven.MavenPublication;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
@@ -53,7 +52,6 @@ import net.fabricmc.loom.util.DeprecationHelper;
  */
 public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionAPI {
 	protected final DeprecationHelper deprecationHelper;
-	protected final DomainObjectCollection<LoomDecompiler> decompilers;
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
@@ -67,12 +65,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	private final ModVersionParser versionParser;
 
-	private NamedDomainObjectContainer<RunConfigSettings> runConfigs;
+	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
+	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
-		this.runConfigs = project.container(RunConfigSettings.class,
-				baseName -> new RunConfigSettings(project, baseName));
-		this.decompilers = project.getObjects().domainObjectSet(LoomDecompiler.class);
 		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
 				.empty();
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
@@ -97,6 +93,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 
+		this.runConfigs = project.container(RunConfigSettings.class,
+				baseName -> new RunConfigSettings(project, baseName));
+		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
+
 		this.accessWidener.finalizeValueOnRead();
 		this.getGameJarProcessors().finalizeValueOnRead();
 	}
@@ -117,8 +117,13 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public DomainObjectCollection<LoomDecompiler> getGameDecompilers() {
+	public NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions() {
 		return decompilers;
+	}
+
+	@Override
+	public void decompilers(Action<NamedDomainObjectContainer<DecompilerOptions>> action) {
+		action.execute(decompilers);
 	}
 
 	@Override

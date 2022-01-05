@@ -42,13 +42,9 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
@@ -58,6 +54,7 @@ import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
@@ -73,7 +70,7 @@ import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
 
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
-	public final LoomDecompiler decompiler;
+	private final DecompilerOptions decompilerOptions;
 
 	/**
 	 * The jar to decompile, can be the unpick jar.
@@ -87,18 +84,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@InputFile
 	public abstract RegularFileProperty getRuntimeJar();
 
-	/**
-	 * Max memory for forked JVM in megabytes.
-	 */
-	@Input
-	public abstract Property<Long> getMaxMemory();
-
-	@Input
-	public abstract MapProperty<String, String> getOptions();
-
-	@InputFiles
-	public abstract ConfigurableFileCollection getClasspath();
-
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
 
@@ -106,21 +91,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public abstract WorkerDaemonClientsManager getWorkerDaemonClientsManager();
 
 	@Inject
-	public GenerateSourcesTask(LoomDecompiler decompiler) {
-		this.decompiler = decompiler;
-
-		Objects.requireNonNull(getDecompilerConstructor(this.decompiler.getClass().getCanonicalName()),
-				"%s must have a no args constructor".formatted(this.decompiler.getClass().getCanonicalName()));
-
-		FileCollection decompilerClasspath = decompiler.getBootstrapClasspath(getProject());
-
-		if (decompilerClasspath != null) {
-			getClasspath().from(decompilerClasspath);
-		}
+	public GenerateSourcesTask(DecompilerOptions decompilerOptions) {
+		this.decompilerOptions = decompilerOptions;
 
 		getOutputs().upToDateWhen((o) -> false);
-		getMaxMemory().convention(4096L).finalizeValueOnRead();
-		getOptions().finalizeValueOnRead();
 	}
 
 	@TaskAction
@@ -140,9 +114,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final Path ipcPath = Files.createTempFile("loom", "ipc");
 		Files.deleteIfExists(ipcPath);
 
-		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompiler.name(), "Decompiling minecraft sources");
+		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompilerOptions.getName(), "Decompiling minecraft sources");
 				IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
-			doWork(ipcPath);
+			doWork(logReceiver);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
 		} finally {
@@ -150,14 +124,12 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private void doWork(@Nullable Path ipcPath) {
+	private void doWork(@Nullable IPCServer ipcServer) {
 		final String jvmMarkerValue = UUID.randomUUID().toString();
 		final WorkQueue workQueue = createWorkQueue(jvmMarkerValue);
 
 		workQueue.submit(DecompileAction.class, params -> {
-			params.getDecompilerClass().set(decompiler.getClass().getCanonicalName());
-
-			params.getOptions().set(getOptions());
+			params.getDecompilerOptions().set(decompilerOptions.toDto());
 
 			params.getInputJar().set(getInputJar());
 			params.getRuntimeJar().set(getRuntimeJar());
@@ -166,8 +138,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
 			params.getMappings().set(getMappings().toFile());
 
-			if (ipcPath != null) {
-				params.getIPCPath().set(ipcPath.toFile());
+			if (ipcServer != null) {
+				params.getIPCPath().set(ipcServer.getPath().toFile());
 			}
 
 			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
@@ -176,10 +148,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		try {
 			workQueue.await();
 		} finally {
-			if (useProcessIsolation()) {
+			if (ipcServer != null) {
 				boolean stopped = WorkerDaemonClientsManagerHelper.stopIdleJVM(getWorkerDaemonClientsManager(), jvmMarkerValue);
 
-				if (!stopped) {
+				if (!stopped && ipcServer.hasReceivedMessage()) {
 					throw new RuntimeException("Failed to stop decompile worker JVM");
 				}
 			}
@@ -193,9 +165,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
-				forkOptions.setMaxHeapSize("%dm".formatted(getMaxMemory().get()));
+				forkOptions.setMaxHeapSize("%dm".formatted(decompilerOptions.getMemory().get()));
 				forkOptions.systemProperty(WorkerDaemonClientsManagerHelper.MARKER_PROP, jvmMarkerValue);
-				forkOptions.bootstrapClasspath(getClasspath());
+				forkOptions.bootstrapClasspath(decompilerOptions.getClasspath());
 			});
 		});
 	}
@@ -206,9 +178,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	public interface DecompileParams extends WorkParameters {
-		Property<String> getDecompilerClass();
-
-		MapProperty<String, String> getOptions();
+		Property<DecompilerOptions.Dto> getDecompilerOptions();
 
 		RegularFileProperty getInputJar();
 		RegularFileProperty getRuntimeJar();
@@ -247,20 +217,26 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			final Path linemapJar = getParameters().getLinemapJar().get().getAsFile().toPath();
 			final Path runtimeJar = getParameters().getRuntimeJar().get().getAsFile().toPath();
 
+			final DecompilerOptions.Dto decompilerOptions = getParameters().getDecompilerOptions().get();
+
 			final LoomDecompiler decompiler;
 
 			try {
-				decompiler = getDecompilerConstructor(getParameters().getDecompilerClass().get()).newInstance();
+				final String className = decompilerOptions.className();
+				final Constructor<LoomDecompiler> decompilerConstructor = getDecompilerConstructor(className);
+				Objects.requireNonNull(decompilerConstructor, "%s must have a no args constructor".formatted(className));
+
+				decompiler = decompilerConstructor.newInstance();
 			} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
 				throw new RuntimeException("Failed to create decompiler", e);
 			}
 
 			DecompilationMetadata metadata = new DecompilationMetadata(
-					Runtime.getRuntime().availableProcessors(),
+					decompilerOptions.maxThreads(),
 					getParameters().getMappings().get().getAsFile().toPath(),
 					getLibraries(),
 					logger,
-					getParameters().getOptions().get()
+					decompilerOptions.options()
 			);
 
 			decompiler.decompile(

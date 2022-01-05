@@ -8,6 +8,13 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:0.11.7"
 }
 
-tasks.named("genSourcesWithCfr") {
-	options.put("test", "value")
+loom {
+	decompilers {
+		cfr {
+			options.put("test", "value")
+		}
+		fernflower {
+			options.put("test", "value")
+		}
+	}
 }

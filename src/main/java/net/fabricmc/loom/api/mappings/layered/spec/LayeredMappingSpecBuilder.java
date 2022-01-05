@@ -42,7 +42,7 @@ public interface LayeredMappingSpecBuilder {
 	LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec);
 
 	/**
-	 * Add a layer that uses the official mappings provided by Mojang with the default options.
+	 * Add a layer that uses the official mappings provided by Mojang with the default decompilerOptions.
 	 */
 	default LayeredMappingSpecBuilder officialMojangMappings() {
 		return officialMojangMappings(builder -> { });

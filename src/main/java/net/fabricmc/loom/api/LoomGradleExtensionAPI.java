@@ -25,7 +25,6 @@
 package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
-import org.gradle.api.DomainObjectCollection;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -35,7 +34,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -56,11 +55,9 @@ public interface LoomGradleExtensionAPI {
 		getShareRemapCaches().set(true);
 	}
 
-	DomainObjectCollection<LoomDecompiler> getGameDecompilers();
+	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();
 
-	default void addDecompiler(LoomDecompiler decompiler) {
-		getGameDecompilers().add(decompiler);
-	}
+	void decompilers(Action<NamedDomainObjectContainer<DecompilerOptions>> action);
 
 	ListProperty<JarProcessor> getGameJarProcessors();
 

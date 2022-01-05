@@ -111,13 +111,14 @@ public final class SplitDecompileConfiguration {
 	}
 
 	private TaskProvider<Task> createDecompileTasks(String name, Action<GenerateSourcesTask> configureAction) {
-		extension.getGameDecompilers().forEach(decompiler -> {
-			final String taskName = "gen%sSourcesWith%s".formatted(name, decompiler.name());
+		extension.getDecompilerOptions().forEach(options -> {
+			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+			final String taskName = "gen%sSourcesWith%s".formatted(decompilerName, options.getName());
 
-			project.getTasks().register(taskName, GenerateSourcesTask.class, decompiler).configure(task -> {
+			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				configureAction.execute(task);
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
-				task.setDescription("Decompile minecraft using %s.".formatted(decompiler.name()));
+				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 			});
 		});

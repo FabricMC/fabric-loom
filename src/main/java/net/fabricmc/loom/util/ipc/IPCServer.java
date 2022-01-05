@@ -46,6 +46,8 @@ public class IPCServer implements AutoCloseable {
 
 	private final CountDownLatch startupLock = new CountDownLatch(1);
 
+	private boolean receivedMessage = false;
+
 	public IPCServer(Path path, Consumer<String> consumer) {
 		this.path = path;
 		this.consumer = consumer;
@@ -71,6 +73,7 @@ public class IPCServer implements AutoCloseable {
 					Scanner scanner = new Scanner(clientChannel, StandardCharsets.UTF_8)) {
 				while (!Thread.currentThread().isInterrupted()) {
 					if (scanner.hasNextLine()) {
+						receivedMessage = true;
 						this.consumer.accept(scanner.nextLine());
 					}
 				}
@@ -84,5 +87,13 @@ public class IPCServer implements AutoCloseable {
 	public void close() throws InterruptedException {
 		loggerReceiverService.shutdownNow();
 		loggerReceiverService.awaitTermination(10, TimeUnit.SECONDS);
+	}
+
+	public boolean hasReceivedMessage() {
+		return receivedMessage;
+	}
+
+	public Path getPath() {
+		return path;
 	}
 }

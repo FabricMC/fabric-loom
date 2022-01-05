@@ -26,13 +26,7 @@ package net.fabricmc.loom.api.decompilers;
 
 import java.nio.file.Path;
 
-import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection;
-import org.jetbrains.annotations.Nullable;
-
 public interface LoomDecompiler {
-	String name();
-
 	/**
 	 * @param sourcesDestination Decompiled sources jar
 	 * @param linemapDestination A byproduct of decompilation that lines up the compiled jar's line numbers with the decompiled
@@ -41,12 +35,4 @@ public interface LoomDecompiler {
 	 * @param metaData Additional information that may or may not be needed while decompiling
 	 */
 	void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData);
-
-	/**
-	 * Add additional classpath entries to the decompiler classpath, can return a configuration.
-	 */
-	@Nullable
-	default FileCollection getBootstrapClasspath(Project project) {
-		return null;
-	}
 }

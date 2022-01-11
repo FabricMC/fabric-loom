@@ -61,16 +61,28 @@ public final class SharedServiceManager {
 	}
 
 	public <S extends SharedService> S getOrCreateService(String id, Supplier<S> function) {
-		if (shutdown) {
-			throw new UnsupportedOperationException("Cannot get or create service has the manager has been shutdown.");
-		}
+		synchronized (sharedServiceMap) {
+			if (shutdown) {
+				throw new UnsupportedOperationException("Cannot get or create service has the manager has been shutdown.");
+			}
 
-		//noinspection unchecked
-		return (S) sharedServiceMap.computeIfAbsent(id, (i) -> function.get());
+			//noinspection unchecked
+			S sharedService = (S) sharedServiceMap.get(id);
+
+			if (sharedService == null) {
+				sharedService = function.get();
+				sharedServiceMap.put(id, sharedService);
+			}
+
+			return sharedService;
+		}
 	}
 
 	private void onFinish(BuildResult buildResult) {
-		shutdown = true;
+		synchronized (sharedServiceMap) {
+			shutdown = true;
+		}
+
 		SERVICE_FACTORY_MAP.remove(gradle);
 
 		final List<IOException> exceptionList = new ArrayList<>();

@@ -58,7 +58,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		getAccessWidener().convention(extension.getAccessWidenerPath()).finalizeValueOnRead();
-		getTargetJar().convention(getProject().getObjects().fileProperty().fileValue(extension.getMinecraftMappedProvider().getMappedJar())).finalizeValueOnRead();
+		getTargetJar().convention(getProject().getLayout().file(getProject().provider(() -> extension.getMinecraftMappedProvider().getMappedJar()))).finalizeValueOnRead();
 	}
 
 	@TaskAction

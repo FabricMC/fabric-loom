@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,39 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.util.service;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+// Massive hack to work around WorkerExecutor.noIsolation() doing isolation checks.
+public final class UnsafeWorkQueueHelper {
+	private static final Map<String, SharedService> SERVICE_MAP = new ConcurrentHashMap<>();
 
-public final class DecompilerConfiguration {
-	private DecompilerConfiguration() {
+	private UnsafeWorkQueueHelper() {
 	}
 
-	public static void setup(Project project) {
-		registerDecompiler(project, "fernFlower", FabricFernFlowerDecompiler.class);
-		registerDecompiler(project, "cfr", LoomCFRDecompiler.class);
+	public static String create(Project project, SharedService service) {
+		final String uuid = UUID.randomUUID().toString();
+		SERVICE_MAP.put(uuid, service);
+
+		// Ensure we don't make a mess if things go wrong.
+		project.getGradle().buildFinished(buildResult -> SERVICE_MAP.remove(uuid));
+		return uuid;
 	}
 
-	private static void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass) {
-		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> options.getDecompilerClassName().set(decompilerClass.getName()));
+	public static <S> S get(Property<String> property, Class<S> clazz) {
+		SharedService service = SERVICE_MAP.remove(property.get());
+
+		if (service == null) {
+			throw new NullPointerException("Failed to get service for " + clazz);
+		}
+
+		//noinspection unchecked
+		return (S) service;
 	}
 }

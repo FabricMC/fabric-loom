@@ -35,7 +35,7 @@ import java.util.zip.GZIPInputStream;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
+import org.slf4j.Logger;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 

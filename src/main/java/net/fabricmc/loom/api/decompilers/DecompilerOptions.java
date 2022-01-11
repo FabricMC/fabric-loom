@@ -37,7 +37,7 @@ public abstract class DecompilerOptions implements Named {
 	/**
 	 * Class name for to the {@link LoomDecompiler}.
 	 */
-	public abstract Property<String> getDecompilerClassname();
+	public abstract Property<String> getDecompilerClassName();
 
 	/**
 	 * Additional classpath entries for the decompiler jvm.
@@ -60,7 +60,7 @@ public abstract class DecompilerOptions implements Named {
 	public abstract Property<Integer> getMaxThreads();
 
 	public DecompilerOptions() {
-		getDecompilerClassname().finalizeValueOnRead();
+		getDecompilerClassName().finalizeValueOnRead();
 		getClasspath().finalizeValueOnRead();
 		getOptions().finalizeValueOnRead();
 		getMemory().convention(4096L).finalizeValueOnRead();
@@ -71,9 +71,9 @@ public abstract class DecompilerOptions implements Named {
 	public record Dto(String className, Map<String, String> options, int maxThreads) implements Serializable { }
 
 	public Dto toDto() {
-		Preconditions.checkArgument(getDecompilerClassname().isPresent(), "No decompiler classname specified for decompiler: " + getName());
+		Preconditions.checkArgument(getDecompilerClassName().isPresent(), "No decompiler classname specified for decompiler: " + getName());
 		return new Dto(
-				getDecompilerClassname().get(),
+				getDecompilerClassName().get(),
 				getOptions().get(),
 				getMaxThreads().get()
 		);

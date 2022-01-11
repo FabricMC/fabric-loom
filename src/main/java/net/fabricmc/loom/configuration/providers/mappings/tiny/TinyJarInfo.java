@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers;
+package net.fabricmc.loom.configuration.providers.mappings.tiny;
 
-import org.gradle.api.Project;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.format.MappingFormat;
 
-public final class DecompilerConfiguration {
-	private DecompilerConfiguration() {
+public record TinyJarInfo(boolean v2, Optional<String> minecraftVersionId) {
+	public static TinyJarInfo get(Path jar) {
+		try {
+			return new TinyJarInfo(doesJarContainV2Mappings(jar), Optional.empty());
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read tiny jar info", e);
+		}
 	}
 
-	public static void setup(Project project) {
-		registerDecompiler(project, "fernFlower", FabricFernFlowerDecompiler.class);
-		registerDecompiler(project, "cfr", LoomCFRDecompiler.class);
-	}
-
-	private static void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass) {
-		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> options.getDecompilerClassName().set(decompilerClass.getName()));
+	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
+			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
+			}
+		}
 	}
 }

@@ -24,49 +24,57 @@
 
 package net.fabricmc.loom.task.service;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.services.BuildService;
-import org.gradle.api.services.BuildServiceParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.service.SharedService;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 
-public abstract class SourceRemapperService implements BuildService<SourceRemapperService.Params>, AutoCloseable {
-	public interface Params extends BuildServiceParameters {
-		Property<Provider<MappingsService>> getMappings();
+public final class SourceRemapperService implements SharedService {
+	public static synchronized SourceRemapperService create(RemapSourcesJarTask task) {
+		final Project project = task.getProject();
+		final String to = task.getTargetNamespace().get();
+		final String from = task.getSourceNamespace().get();
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final SharedServiceManager sharedServiceManager = SharedServiceManager.get(project);
+		final String id = extension.getMappingsProvider().getBuildServiceName("sourceremapper", from, to);
 
-		ConfigurableFileCollection getClasspath();
-	}
-
-	public static synchronized Provider<SourceRemapperService> create(Project project, Provider<MappingsService> mappings, FileCollection classpath) {
-		// TODO may need a better name, im not too sure
-		return project.getGradle().getSharedServices().registerIfAbsent("sourceremapper", SourceRemapperService.class, spec ->
-			spec.parameters(params -> {
-				params.getMappings().set(mappings);
-				params.getClasspath().from(classpath);
-			}
-		));
+		return sharedServiceManager.getOrCreateService(id, () ->
+				new SourceRemapperService(MappingsService.createDefault(project, from, to), task.getClasspath()
+			));
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceRemapperService.class);
 
-	private Mercury mercury;
+	private final MappingsService mappingsService;
+	private final ConfigurableFileCollection classpath;
+
+	private final Supplier<Mercury> mercury = Suppliers.memoize(this::createMercury);
+
+	private SourceRemapperService(MappingsService mappingsService, ConfigurableFileCollection classpath) {
+		this.mappingsService = mappingsService;
+		this.classpath = classpath;
+	}
 
 	public void remapSourcesJar(Path source, Path destination) throws IOException {
 		if (source.equals(destination)) {
@@ -99,35 +107,34 @@ public abstract class SourceRemapperService implements BuildService<SourceRemapp
 		}
 	}
 
-	private synchronized void doRemap(Path srcPath, Path dstPath, Path source) throws IOException {
-		if (mercury == null) {
-			mercury = new Mercury();
-			mercury.setGracefulClasspathChecks(true);
-			mercury.getProcessors().add(MercuryRemapper.create(getMappings()));
-
-			getParameters().getClasspath().forEach(file -> mercury.getClassPath().add(file.toPath()));
-		}
-
+	private synchronized void doRemap(Path srcPath, Path dstPath, Path source) {
 		try {
-			// Not thread safe!!
-			mercury.rewrite(srcPath, dstPath);
+			synchronized (mercury) {
+				mercury.get().rewrite(srcPath, dstPath);
+			}
 		} catch (Exception e) {
 			LOGGER.warn("Could not remap " + source + " fully!", e);
 		}
 	}
 
 	private MappingSet getMappings() throws IOException {
-		return new TinyMappingsReader(mappingsService().getMemoryMappingTree(), mappingsService().getFromNamespace(), mappingsService().getToNamespace()).read();
+		return new TinyMappingsReader(mappingsService.getMemoryMappingTree(), mappingsService.getFromNamespace(), mappingsService.getToNamespace()).read();
 	}
 
-	private MappingsService mappingsService() {
-		return getParameters().getMappings().get().get();
-	}
+	private Mercury createMercury() {
+		var mercury = new Mercury();
+		mercury.setGracefulClasspathChecks(true);
 
-	@Override
-	public void close() throws Exception {
-		mercury = null;
-		// This is required (:
-		System.gc();
+		try {
+			mercury.getProcessors().add(MercuryRemapper.create(getMappings()));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read mercury mappings", e);
+		}
+
+		for (File file : classpath.getFiles()) {
+			mercury.getClassPath().add(file.toPath());
+		}
+
+		return mercury;
 	}
 }

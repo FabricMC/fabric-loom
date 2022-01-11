@@ -35,8 +35,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.task.service.MappingsService;
 import net.fabricmc.loom.task.service.SourceRemapperService;
+import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 
 public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Inject
@@ -49,12 +49,12 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@TaskAction
 	public void run() {
 		submitWork(RemapSourcesAction.class, params -> {
-			params.getSourcesRemapperService().set(SourceRemapperService.create(getProject(), MappingsService.createDefault(getProject(), getSourceNamespace().get(), getTargetNamespace().get()), getClasspath()));
+			params.getSourcesRemapperServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), SourceRemapperService.create(this)));
 		});
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {
-		Property<SourceRemapperService> getSourcesRemapperService();
+		Property<String> getSourcesRemapperServiceUuid();
 	}
 
 	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
@@ -65,7 +65,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 		public RemapSourcesAction() {
 			super();
 
-			sourceRemapperService = getParameters().getSourcesRemapperService().get();
+			sourceRemapperService = UnsafeWorkQueueHelper.get(getParameters().getSourcesRemapperServiceUuid(), SourceRemapperService.class);
 		}
 
 		@Override

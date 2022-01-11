@@ -114,14 +114,8 @@ jar {
 	from configurations.bootstrap.collect { it.isDirectory() ? it : zipTree(it) }
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-	archiveClassifier = 'sources'
-	from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-	archiveClassifier = 'javadoc'
-	from javadoc.destinationDir
+java {
+	withSourcesJar()
 }
 
 spotless {
@@ -200,7 +194,6 @@ publishing {
 			from components['java']
 
 			artifact sourcesJar
-			artifact javadocJar
 
 			pom.withXml {
 				patchPom(asNode())
@@ -216,7 +209,6 @@ publishing {
 			from components['java']
 
 			artifact sourcesJar
-			artifact javadocJar
 
 			pom.withXml {
 				patchPom(asNode())

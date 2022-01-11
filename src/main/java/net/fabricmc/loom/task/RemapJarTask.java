@@ -323,6 +323,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	}
 
 	@Internal
+	public TinyRemapperService getTinyRemapperService() {
+		return tinyRemapperService.get();
+	}
+
+	@Internal
 	String getInputTagName() {
 		return getProject().getPath() + getName();
 	}

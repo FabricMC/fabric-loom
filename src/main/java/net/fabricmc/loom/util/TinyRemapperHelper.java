@@ -112,7 +112,11 @@ public final class TinyRemapperHelper {
 		return (acceptor) -> {
 			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
 				String className = classDef.getName(from);
-				acceptor.acceptClass(className, classDef.getName(to));
+				String dstName = classDef.getName(to);
+
+				if (dstName != null) {
+					acceptor.acceptClass(className, dstName);
+				}
 
 				for (MappingTree.FieldMapping field : classDef.getFields()) {
 					acceptor.acceptField(memberOf(className, field.getName(from), field.getDesc(from)), field.getName(to));

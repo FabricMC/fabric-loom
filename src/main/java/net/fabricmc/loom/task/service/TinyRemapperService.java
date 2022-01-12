@@ -135,8 +135,8 @@ public class TinyRemapperService implements SharedService {
 		List<Path> toRead;
 
 		synchronized (classpath) {
-			classpath.addAll(paths);
 			toRead = paths.stream().filter(path -> !classpath.contains(path)).toList();
+			classpath.addAll(paths);
 		}
 
 		tinyRemapper.readClassPathAsync(toRead.toArray(Path[]::new));

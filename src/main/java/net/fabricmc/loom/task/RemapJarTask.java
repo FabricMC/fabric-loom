@@ -54,7 +54,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
-import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,6 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
@@ -257,21 +255,21 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			byte[] remapped = remapAccessWidener(accessWidenerFile.content(), tinyRemapper.getEnvironment().getRemapper(), MappingsNamespace.INTERMEDIARY.toString());
+			byte[] remapped = remapAccessWidener(accessWidenerFile.content());
 
 			// Finally, replace the output with the remaped aw
 			ZipUtils.replace(outputFile, accessWidenerFile.path(), remapped);
 		}
 
-		private static byte[] remapAccessWidener(byte[] input, Remapper asmRemapper, String targetNamespace) {
+		private byte[] remapAccessWidener(byte[] input) {
 			int version = AccessWidenerReader.readVersion(input);
 
 			AccessWidenerWriter writer = new AccessWidenerWriter(version);
 			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
 					writer,
-					asmRemapper,
-					MappingsNamespace.NAMED.toString(),
-					targetNamespace
+					tinyRemapper.getEnvironment().getRemapper(),
+					getParameters().getSourceNamespace().get(),
+					getParameters().getTargetNamespace().get()
 			);
 			AccessWidenerReader reader = new AccessWidenerReader(remapper);
 			reader.read(input);

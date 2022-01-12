@@ -25,13 +25,14 @@
 package net.fabricmc.loom.api.mappings.layered;
 
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 @ApiStatus.Experimental /* Very Experimental and not cleanly separated from the impl atm */
 public interface MappingContext {
@@ -39,7 +40,7 @@ public interface MappingContext {
 
 	Path resolveMavenDependency(String mavenNotation);
 
-	MappingsProvider mappingsProvider();
+	Supplier<MemoryMappingTree> intermediaryTree();
 
 	MinecraftProvider minecraftProvider();
 

@@ -30,6 +30,6 @@ import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
 	@Override
 	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.mappingsProvider().intermediaryTinyFile());
+		return new IntermediaryMappingLayer(context.intermediaryTree());
 	}
 }

@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.net.UrlEscapers;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +54,13 @@ import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class IntermediaryService implements SharedService {
+public final class IntermediaryService implements SharedService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediaryService.class);
 
 	private final Path intermediaryTiny;
 	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
 
-	public IntermediaryService(Path intermediaryTiny) {
+	private IntermediaryService(Path intermediaryTiny) {
 		this.intermediaryTiny = intermediaryTiny;
 	}
 
@@ -72,7 +73,8 @@ public class IntermediaryService implements SharedService {
 				() -> create(intermediaryArtifactUrl, minecraftProvider));
 	}
 
-	private static IntermediaryService create(String intermediaryUrl, MinecraftProvider minecraftProvider) {
+	@VisibleForTesting
+	public static IntermediaryService create(String intermediaryUrl, MinecraftProvider minecraftProvider) {
 		final Path intermediaryTiny = minecraftProvider.file("intermediary-v2.tiny").toPath();
 
 		if (!Files.exists(intermediaryTiny) || LoomGradlePlugin.refreshDeps) {

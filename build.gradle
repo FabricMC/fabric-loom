@@ -191,9 +191,7 @@ publishing {
 			artifactId project.archivesBaseName
 			version project.version
 
-			from components['java']
-
-			artifact sourcesJar
+			from components.java
 
 			pom.withXml {
 				patchPom(asNode())
@@ -206,9 +204,7 @@ publishing {
 			artifactId project.archivesBaseName
 			version baseVersion + '-SNAPSHOT'
 
-			from components['java']
-
-			artifact sourcesJar
+			from components.java
 
 			pom.withXml {
 				patchPom(asNode())

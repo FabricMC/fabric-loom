@@ -68,7 +68,7 @@ import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingsProviderImpl.class);
 
-	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(this::readMappings);
+	private Supplier<MemoryMappingTree> mappingTree;
 	public final String mappingsIdentifier;
 
 	private final Path mappingsWorkingDir;
@@ -105,7 +105,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	}
 
 	public MemoryMappingTree getMappings() throws IOException {
-		return Objects.requireNonNull(mappingTree.get(), "Cannot get mappings before they have been read");
+		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read").get();
 	}
 
 	private static MappingsProviderImpl create(DependencyInfo dependency, MinecraftProvider minecraftProvider, Supplier<IntermediaryService> intermediaryService) {
@@ -152,6 +152,8 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 			Files.deleteIfExists(tinyMappingsJar);
 			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
 		}
+
+		mappingTree = Suppliers.memoize(this::readMappings);
 	}
 
 	public void applyToProject(Project project, DependencyInfo dependency) {
@@ -179,10 +181,10 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		return isV2 ? "-v2" : "";
 	}
 
-	private void storeMappings(MinecraftProvider minecraftProvider, Path yarnJar) throws IOException {
-		LOGGER.info(":extracting " + yarnJar.getFileName());
+	private void storeMappings(MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
+		LOGGER.info(":extracting " + inputJar.getFileName());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(yarnJar, (ClassLoader) null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(inputJar, (ClassLoader) null)) {
 			extractMappings(fileSystem, baseTinyMappings);
 			extractExtras(fileSystem);
 		}
@@ -208,7 +210,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 			MappingReader.read(tinyMappings, mappingTree);
 			return mappingTree;
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read mappigns", e);
+			throw new UncheckedIOException("Failed to read mappings", e);
 		}
 	}
 
@@ -363,5 +365,10 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 	protected static boolean isRefreshDeps() {
 		return LoomGradlePlugin.refreshDeps;
+	}
+
+	@Override
+	public void close() throws IOException {
+		mappingTree = null;
 	}
 }

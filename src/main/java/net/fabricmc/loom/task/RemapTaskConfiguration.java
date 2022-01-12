@@ -54,8 +54,8 @@ public class RemapTaskConfiguration {
 			return;
 		}
 
-		// Register the default remap jar task
-		TaskProvider<RemapJarTask> remapJarTaskProvider = tasks.register(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
+		// Register the default remap jar task - must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
+		RemapJarTask remapJarTask = tasks.create(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
 			final AbstractArchiveTask jarTask = tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
 
 			// Basic task setup
@@ -76,7 +76,7 @@ public class RemapTaskConfiguration {
 			task.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
 		});
 
-		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTaskProvider));
+		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTask));
 
 		trySetupSourceRemapping(project);
 

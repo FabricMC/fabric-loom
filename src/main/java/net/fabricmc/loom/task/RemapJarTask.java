@@ -53,7 +53,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.TaskProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,17 +98,17 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	}
 
 	private void setupPreparationTask() {
-		TaskProvider<PrepareJarRemapTask> prepareJarTask = getProject().getTasks().register("prepare" + getName().substring(0, 1).toUpperCase() + getName().substring(1), PrepareJarRemapTask.class, this);
+		PrepareJarRemapTask prepareJarTask = getProject().getTasks().create("prepare" + getName().substring(0, 1).toUpperCase() + getName().substring(1), PrepareJarRemapTask.class, this);
 
 		dependsOn(prepareJarTask);
 		mustRunAfter(prepareJarTask);
 
 		getProject().getGradle().allprojects(project -> {
 			project.getTasks().configureEach(task -> {
-				if (task instanceof PrepareJarRemapTask prepareJarRemapTask) {
+				if (task instanceof PrepareJarRemapTask otherTask) {
 					// Ensure that all remap jars run after all prepare tasks
-					dependsOn(prepareJarRemapTask);
-					mustRunAfter(prepareJarRemapTask);
+					dependsOn(otherTask);
+					mustRunAfter(otherTask);
 				}
 			});
 		});

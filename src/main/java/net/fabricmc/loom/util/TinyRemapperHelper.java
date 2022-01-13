@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -117,7 +116,13 @@ public final class TinyRemapperHelper {
 			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
 				String className = classDef.getName(fromId);
 				String dstName = classDef.getName(toId);
-				acceptor.acceptClass(className, Objects.requireNonNull(dstName, "Dst name null for " + className));
+
+				if (dstName == null) {
+					// Unsure if this is correct, should be better than crashing tho.
+					dstName = className;
+				}
+
+				acceptor.acceptClass(className, dstName);
 
 				for (MappingTree.FieldMapping field : classDef.getFields()) {
 					acceptor.acceptField(memberOf(className, field.getName(fromId), field.getDesc(fromId)), field.getName(toId));

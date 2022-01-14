@@ -29,7 +29,7 @@ import net.fabricmc.loom.configuration.providers.mappings.intermediary.Intermedi
 class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
     def "Read intermediary mappings" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            intermediaryUrl = INTERMEDIARY_1_17_URL
         when:
             def mappings = getSingleMapping(new IntermediaryMappingsSpec())
             def tiny = getTiny(mappings)

@@ -24,20 +24,17 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.intermediary;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
-import net.fabricmc.mappingio.format.Tiny2Reader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
+public record IntermediaryMappingLayer(Supplier<MemoryMappingTree> memoryMappingTree) implements MappingLayer {
 	@Override
 	public MappingsNamespace getSourceNamespace() {
 		return MappingsNamespace.OFFICIAL;
@@ -48,8 +45,6 @@ public record IntermediaryMappingLayer(File tinyFile) implements MappingLayer {
 		// Populate named with intermediary and add Add a "named" namespace
 		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
-		try (BufferedReader reader = Files.newBufferedReader(tinyFile().toPath(), StandardCharsets.UTF_8)) {
-			Tiny2Reader.read(reader, nsCompleter);
-		}
+		memoryMappingTree.get().accept(nsCompleter);
 	}
 }

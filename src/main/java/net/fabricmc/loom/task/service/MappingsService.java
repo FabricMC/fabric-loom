@@ -24,49 +24,45 @@
 
 package net.fabricmc.loom.task.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 import org.gradle.api.Project;
-import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
-import org.gradle.api.services.BuildService;
-import org.gradle.api.services.BuildServiceParameters;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.service.SharedService;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
-public abstract class MappingsService implements BuildService<MappingsService.Params>, AutoCloseable {
-	interface Params extends BuildServiceParameters {
-		RegularFileProperty getMappingsFile();
+public final class MappingsService implements SharedService {
+	private record Options(Path mappingsFile, String from, String to, boolean remapLocals) { }
 
-		Property<String> getFromNamespace();
-		Property<String> getToNamespace();
-
-		Property<Boolean> getRemapLocals();
+	public static MappingsService create(Project project, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
+		return create(SharedServiceManager.get(project), name, mappingsFile, from, to, remapLocals);
 	}
 
-	public static synchronized Provider<MappingsService> create(Project project, String name, File mappingsFile, String from, String to, boolean remapLocals) {
-		return project.getGradle().getSharedServices().registerIfAbsent(name, MappingsService.class, spec -> {
-			spec.parameters(params -> {
-				params.getMappingsFile().set(mappingsFile);
-				params.getFromNamespace().set(from);
-				params.getToNamespace().set(to);
-				params.getRemapLocals().set(remapLocals);
-			});
-		});
+	public static synchronized MappingsService create(SharedServiceManager sharedServiceManager, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
+		final Options options = new Options(mappingsFile, from, to, remapLocals);
+		final String id = name + options.hashCode();
+		return sharedServiceManager.getOrCreateService(id, () -> new MappingsService(options));
 	}
 
-	public static Provider<MappingsService> createDefault(Project project, String from, String to) {
+	public static MappingsService createDefault(Project project, String from, String to) {
 		final MappingsProviderImpl mappingsProvider = LoomGradleExtension.get(project).getMappingsProvider();
+
 		final String name = mappingsProvider.getBuildServiceName("mappingsProvider", from, to);
-		return MappingsService.create(project, name, mappingsProvider.tinyMappings.toFile(), from, to, false);
+		return MappingsService.create(project, name, mappingsProvider.tinyMappings, from, to, false);
+	}
+
+	private final Options options;
+
+	public MappingsService(Options options) {
+		this.options = options;
 	}
 
 	private IMappingProvider mappingProvider = null;
@@ -76,13 +72,13 @@ public abstract class MappingsService implements BuildService<MappingsService.Pa
 		if (mappingProvider == null) {
 			try {
 				mappingProvider = TinyRemapperHelper.create(
-						getParameters().getMappingsFile().get().getAsFile().toPath(),
-						getParameters().getFromNamespace().get(),
-						getParameters().getToNamespace().get(),
-						getParameters().getRemapLocals().get()
+						options.mappingsFile(),
+						options.from(),
+						options.to(),
+						options.remapLocals()
 				);
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + getParameters().getMappingsFile().get().getAsFile().getAbsolutePath(), e);
+				throw new UncheckedIOException("Failed to read mappings from: " + options.mappingsFile(), e);
 			}
 		}
 
@@ -94,9 +90,9 @@ public abstract class MappingsService implements BuildService<MappingsService.Pa
 			memoryMappingTree = new MemoryMappingTree();
 
 			try {
-				MappingReader.read(getParameters().getMappingsFile().get().getAsFile().toPath(), memoryMappingTree);
+				MappingReader.read(options.mappingsFile(), memoryMappingTree);
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + getParameters().getMappingsFile().get().getAsFile().getAbsolutePath(), e);
+				throw new UncheckedIOException("Failed to read mappings from: " + options.mappingsFile(), e);
 			}
 		}
 
@@ -104,11 +100,11 @@ public abstract class MappingsService implements BuildService<MappingsService.Pa
 	}
 
 	public String getFromNamespace() {
-		return getParameters().getFromNamespace().get();
+		return options.from();
 	}
 
 	public String getToNamespace() {
-		return getParameters().getToNamespace().get();
+		return options.to();
 	}
 
 	@Override

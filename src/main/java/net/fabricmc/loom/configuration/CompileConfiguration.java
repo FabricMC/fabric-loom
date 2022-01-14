@@ -193,15 +193,15 @@ public final class CompileConfiguration {
 
 		boolean split = project.getProperties().get("fabric.loom.experimental.splitMcJars") != null;
 
-		// Provide the vanilla mc jars
+		// Provide the vanilla mc jars -- TODO share across projects.
 		final MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
-		// Provide the mappings
-		final MappingsProviderImpl mappingsProvider = new MappingsProviderImpl(project, minecraftProvider);
+		final DependencyInfo mappingsDep = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
+		final MappingsProviderImpl mappingsProvider = MappingsProviderImpl.getInstance(project, mappingsDep, minecraftProvider);
 		extension.setMappingsProvider(mappingsProvider);
-		mappingsProvider.provide();
+		mappingsProvider.applyToProject(project, mappingsDep);
 
 		// Provide the remapped mc jars
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;

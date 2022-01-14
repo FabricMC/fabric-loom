@@ -110,21 +110,31 @@ public final class TinyRemapperHelper {
 
 	public static IMappingProvider create(MappingTree mappings, String from, String to, boolean remapLocalVariables) {
 		return (acceptor) -> {
+			final int fromId = mappings.getNamespaceId(from);
+			final int toId = mappings.getNamespaceId(to);
+
 			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
-				String className = classDef.getName(from);
-				acceptor.acceptClass(className, classDef.getName(to));
+				String className = classDef.getName(fromId);
+				String dstName = classDef.getName(toId);
+
+				if (dstName == null) {
+					// Unsure if this is correct, should be better than crashing tho.
+					dstName = className;
+				}
+
+				acceptor.acceptClass(className, dstName);
 
 				for (MappingTree.FieldMapping field : classDef.getFields()) {
-					acceptor.acceptField(memberOf(className, field.getName(from), field.getDesc(from)), field.getName(to));
+					acceptor.acceptField(memberOf(className, field.getName(fromId), field.getDesc(fromId)), field.getName(toId));
 				}
 
 				for (MappingTree.MethodMapping method : classDef.getMethods()) {
-					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(from), method.getDesc(from));
-					acceptor.acceptMethod(methodIdentifier, method.getName(to));
+					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(fromId), method.getDesc(fromId));
+					acceptor.acceptMethod(methodIdentifier, method.getName(toId));
 
 					if (remapLocalVariables) {
 						for (MappingTree.MethodArgMapping parameter : method.getArgs()) {
-							String name = parameter.getName(to);
+							String name = parameter.getName(toId);
 
 							if (name == null) {
 								continue;
@@ -136,7 +146,7 @@ public final class TinyRemapperHelper {
 						for (MappingTree.MethodVarMapping localVariable : method.getVars()) {
 							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLvIndex(),
 									localVariable.getStartOpIdx(), localVariable.getLvtRowIndex(),
-									localVariable.getName(to));
+									localVariable.getName(toId));
 						}
 					}
 				}

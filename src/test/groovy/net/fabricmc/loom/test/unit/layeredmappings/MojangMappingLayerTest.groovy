@@ -30,7 +30,7 @@ import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsS
 class MojangMappingLayerTest extends LayeredMappingsSpecification {
     def "Read mojang mappings with synthetic field names" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            intermediaryUrl = INTERMEDIARY_1_17_URL
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
         when:
             def mappings = getLayeredMappings(
@@ -50,7 +50,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 
     def "Read mojang mappings without synthetic field names" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_17_URL, "intermediary.jar"), "mappings/mappings.tiny")
+        intermediaryUrl = INTERMEDIARY_1_17_URL
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
         when:
             def mappings = getLayeredMappings(

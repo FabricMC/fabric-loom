@@ -24,15 +24,14 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
-import groovy.transform.CompileStatic
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.api.mappings.layered.MappingContext
 import net.fabricmc.loom.api.mappings.layered.MappingLayer
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProvider
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec
+import net.fabricmc.loom.configuration.providers.mappings.IntermediaryService
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
@@ -42,13 +41,13 @@ import org.gradle.api.logging.Logger
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.util.function.Supplier
 import java.util.zip.ZipFile
 
 abstract class LayeredMappingsSpecification extends Specification implements LayeredMappingsTestConstants {
     Logger mockLogger = Mock(Logger)
-    MappingsProvider mockMappingsProvider = Mock(MappingsProvider)
     MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)
-
+    String intermediaryUrl
     MappingContext mappingContext = new TestMappingContext()
 
     File tempDir = File.createTempDir()
@@ -102,7 +101,12 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         return reorderedMappings
     }
 
-    @CompileStatic
+    def setup() {
+        mockMinecraftProvider.file(_) >> { args ->
+            return new File(tempDir, args[0])
+        }
+    }
+
     class TestMappingContext implements MappingContext {
         @Override
         Path resolveDependency(Dependency dependency) {
@@ -116,8 +120,10 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         }
 
         @Override
-        MappingsProvider mappingsProvider() {
-            return mockMappingsProvider
+        Supplier<MemoryMappingTree> intermediaryTree() {
+            return {
+                IntermediaryService.create(intermediaryUrl, minecraftProvider()).memoryMappingTree
+            }
         }
 
         @Override

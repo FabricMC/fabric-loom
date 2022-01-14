@@ -90,9 +90,8 @@ shadowJar {
 }
 
 remapJar {
-	dependsOn(shadowJar)
 	archiveClassifier.set("universal")
-	input.fileValue(tasks["shadowJar"].outputs.files.singleFile)
+	inputFile = shadowJar.archiveFile
 }
 
 jar {

@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -36,6 +37,7 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class GradleMappingContext implements MappingContext {
 	private final Project project;
@@ -62,8 +64,8 @@ public class GradleMappingContext implements MappingContext {
 	}
 
 	@Override
-	public MappingsProvider mappingsProvider() {
-		return extension.getMappingsProvider();
+	public Supplier<MemoryMappingTree> intermediaryTree() {
+		return () -> IntermediaryService.getInstance(project, minecraftProvider()).getMemoryMappingTree();
 	}
 
 	@Override

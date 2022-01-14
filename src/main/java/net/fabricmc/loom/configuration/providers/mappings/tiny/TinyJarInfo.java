@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.configuration.providers.mappings.tiny;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
-	@Override
-	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.intermediaryTree());
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.format.MappingFormat;
+
+public record TinyJarInfo(boolean v2, Optional<String> minecraftVersionId) {
+	public static TinyJarInfo get(Path jar) {
+		try {
+			return new TinyJarInfo(doesJarContainV2Mappings(jar), Optional.empty());
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read tiny jar info", e);
+		}
+	}
+
+	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
+			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
+			}
+		}
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,39 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.util.service;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
-	@Override
-	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.intermediaryTree());
+import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
+
+// Massive hack to work around WorkerExecutor.noIsolation() doing isolation checks.
+public final class UnsafeWorkQueueHelper {
+	private static final Map<String, SharedService> SERVICE_MAP = new ConcurrentHashMap<>();
+
+	private UnsafeWorkQueueHelper() {
+	}
+
+	public static String create(Project project, SharedService service) {
+		final String uuid = UUID.randomUUID().toString();
+		SERVICE_MAP.put(uuid, service);
+
+		// Ensure we don't make a mess if things go wrong.
+		project.getGradle().buildFinished(buildResult -> SERVICE_MAP.remove(uuid));
+		return uuid;
+	}
+
+	public static <S> S get(Property<String> property, Class<S> clazz) {
+		SharedService service = SERVICE_MAP.remove(property.get());
+
+		if (service == null) {
+			throw new NullPointerException("Failed to get service for " + clazz);
+		}
+
+		//noinspection unchecked
+		return (S) service;
 	}
 }

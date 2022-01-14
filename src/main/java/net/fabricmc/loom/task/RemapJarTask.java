@@ -26,7 +26,6 @@ package net.fabricmc.loom.task;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -34,12 +33,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Suppliers;
 import com.google.gson.JsonObject;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -47,12 +48,11 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
-import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,20 +60,18 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
-import net.fabricmc.loom.task.service.MappingsService;
+import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.tinyremapper.InputTag;
+import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.TinyUtils;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
@@ -84,6 +82,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	public abstract Property<Boolean> getAddNestedDependencies();
 
+	private Supplier<TinyRemapperService> tinyRemapperService = Suppliers.memoize(() -> TinyRemapperService.getOrCreate(this));
+
 	@Inject
 	public RemapJarTask() {
 		super();
@@ -93,6 +93,25 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
+
+		setupPreparationTask();
+	}
+
+	private void setupPreparationTask() {
+		PrepareJarRemapTask prepareJarTask = getProject().getTasks().create("prepare" + getName().substring(0, 1).toUpperCase() + getName().substring(1), PrepareJarRemapTask.class, this);
+
+		dependsOn(prepareJarTask);
+		mustRunAfter(prepareJarTask);
+
+		getProject().getGradle().allprojects(project -> {
+			project.getTasks().configureEach(task -> {
+				if (task instanceof PrepareJarRemapTask otherTask) {
+					// Ensure that all remap jars run after all prepare tasks
+					dependsOn(otherTask);
+					mustRunAfter(otherTask);
+				}
+			});
+		});
 	}
 
 	@TaskAction
@@ -105,14 +124,14 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			}
 
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
+			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), tinyRemapperService.get()));
 			params.getRemapClasspath().from(getClasspath());
-			params.getMappings().add(MappingsService.createDefault(getProject(), getSourceNamespace().get(), getTargetNamespace().get()));
+			params.getInputTagName().set(getInputTagName());
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			params.getUseMixinExtension().set(!legacyMixin);
 
 			if (legacyMixin) {
-				params.getMixinMappings().from(extension.getAllMixinMappings());
 				setupLegacyMixinRefmapRemapping(params);
 			}
 		});
@@ -174,8 +193,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getRemapClasspath();
-		ConfigurableFileCollection getMixinMappings();
-		ListProperty<Provider<MappingsService>> getMappings();
+		Property<String> getInputTagName();
 
 		Property<Boolean> getUseMixinExtension();
 
@@ -183,19 +201,25 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		ListProperty<RefmapData> getMixinData();
 
 		Property<JarManifestService> getJarManifestService();
+		Property<String> getTinyRemapperBuildServiceUuid();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
+		private final TinyRemapperService tinyRemapperService;
 		private TinyRemapper tinyRemapper;
+
+		public RemapAction() {
+			this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
+		}
 
 		@Override
 		public void execute() {
 			try {
 				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
 
-				tinyRemapper = createTinyRemapper();
+				tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
 
 				remap();
 				remapAccessWidener();
@@ -203,9 +227,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				addNestedJars();
 				modifyJarManifest();
 				rewriteJar();
-
-				tinyRemapper.finish();
-				tinyRemapper = null;
 
 				LOGGER.debug("Finished remapping {}", inputFile);
 			} catch (Exception e) {
@@ -220,13 +241,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void remap() throws IOException {
-			final InputTag inputTag = tinyRemapper.createInputTag();
-
-			tinyRemapper.readInputsAsync(inputTag, inputFile);
-
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
-				tinyRemapper.apply(outputConsumer, inputTag);
+				tinyRemapper.apply(outputConsumer, tinyRemapperService.getTag(getParameters().getInputTagName().get()));
 			}
 		}
 
@@ -237,21 +254,21 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			byte[] remapped = remapAccessWidener(accessWidenerFile.content(), tinyRemapper.getEnvironment().getRemapper(), MappingsNamespace.INTERMEDIARY.toString());
+			byte[] remapped = remapAccessWidener(accessWidenerFile.content());
 
 			// Finally, replace the output with the remaped aw
 			ZipUtils.replace(outputFile, accessWidenerFile.path(), remapped);
 		}
 
-		private static byte[] remapAccessWidener(byte[] input, Remapper asmRemapper, String targetNamespace) {
+		private byte[] remapAccessWidener(byte[] input) {
 			int version = AccessWidenerReader.readVersion(input);
 
 			AccessWidenerWriter writer = new AccessWidenerWriter(version);
 			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
 					writer,
-					asmRemapper,
-					MappingsNamespace.NAMED.toString(),
-					targetNamespace
+					tinyRemapper.getEnvironment().getRemapper(),
+					getParameters().getSourceNamespace().get(),
+					getParameters().getTargetNamespace().get()
 			);
 			AccessWidenerReader reader = new AccessWidenerReader(remapper);
 			reader.read(input);
@@ -300,30 +317,15 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				})));
 			}
 		}
+	}
 
-		private TinyRemapper createTinyRemapper() {
-			TinyRemapper.Builder builder = TinyRemapper.newRemapper();
+	@Internal
+	public TinyRemapperService getTinyRemapperService() {
+		return tinyRemapperService.get();
+	}
 
-			for (Provider<MappingsService> provider : getParameters().getMappings().get()) {
-				builder.withMappings(provider.get().getMappingsProvider());
-			}
-
-			for (File mixinMapping : getParameters().getMixinMappings()) {
-				builder.withMappings(TinyUtils.createTinyMappingProvider(mixinMapping.toPath(), getParameters().getSourceNamespace().get(), getParameters().getTargetNamespace().get()));
-			}
-
-			if (getParameters().getUseMixinExtension().get()) {
-				builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
-			}
-
-			TinyRemapper remapper = builder.build();
-
-			// Apply classpath
-			for (File file : getParameters().getRemapClasspath()) {
-				remapper.readClassPathAsync(file.toPath());
-			}
-
-			return remapper;
-		}
+	@Internal
+	String getInputTagName() {
+		return getProject().getPath() + getName();
 	}
 }

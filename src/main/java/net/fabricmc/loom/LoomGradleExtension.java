@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
@@ -37,7 +36,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -111,10 +109,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace);
-
-	File getMixinMappings(SourceSet sourceSet);
-
-	FileCollection getAllMixinMappings();
 
 	boolean isRootProject();
 

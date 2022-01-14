@@ -65,6 +65,10 @@ trait GradleProjectTestTrait {
             String repo  = options.repo
             String commit = options.commit
 
+            if (options.allowExistingRepo && projectDir.listFiles()?.length > 0) {
+                return
+            }
+
             exec(projectDir, "git", "clone", repo, ".")
             exec(projectDir, "git", "checkout", commit)
 
@@ -85,6 +89,7 @@ trait GradleProjectTestTrait {
     }
 
     private void exec(File projectDir, String... args) {
+        projectDir.mkdirs()
         def process = args.execute([], projectDir)
         process.consumeProcessOutput(System.out, System.err)
 

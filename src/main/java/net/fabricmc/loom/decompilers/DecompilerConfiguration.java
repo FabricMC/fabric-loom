@@ -41,6 +41,6 @@ public final class DecompilerConfiguration {
 	}
 
 	private static void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass) {
-		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> options.getDecompilerClassname().set(decompilerClass.getName()));
+		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> options.getDecompilerClassName().set(decompilerClass.getName()));
 	}
 }

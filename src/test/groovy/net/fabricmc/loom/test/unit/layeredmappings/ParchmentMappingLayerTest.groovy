@@ -32,7 +32,7 @@ import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMap
 class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
     def "Read parchment mappings" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_16_5_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            intermediaryUrl = INTERMEDIARY_1_16_5_URL
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
         when:
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
@@ -55,7 +55,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 
     def "Read parchment mappings remove prefix" () {
         setup:
-            mockMappingsProvider.intermediaryTinyFile() >> extractFileFromZip(downloadFile(INTERMEDIARY_1_16_5_URL, "intermediary.jar"), "mappings/mappings.tiny")
+            intermediaryUrl = INTERMEDIARY_1_16_5_URL
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
         when:
             withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))

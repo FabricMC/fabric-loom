@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,13 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.util.service;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import java.io.Closeable;
+import java.io.IOException;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<IntermediaryMappingLayer> {
+public interface SharedService extends Closeable {
 	@Override
-	public IntermediaryMappingLayer createLayer(MappingContext context) {
-		return new IntermediaryMappingLayer(context.intermediaryTree());
+	default void close() throws IOException {
 	}
 }

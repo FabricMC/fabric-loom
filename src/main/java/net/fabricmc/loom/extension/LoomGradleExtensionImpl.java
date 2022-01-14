@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.extension;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +40,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -60,7 +58,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
-	private final ConfigurableFileCollection mixinMappings;
 	private final MappingSet[] srcMappingCache = new MappingSet[2];
 	private final Mercury[] srcMercuryCache = new Mercury[2];
 	private final Map<String, NamedDomainObjectProvider<Configuration>> lazyConfigurations = new HashMap<>();
@@ -79,7 +76,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		this.project = project;
 		// Initiate with newInstance to allow gradle to decorate our extension
 		this.mixinApExtension = project.getObjects().newInstance(MixinExtensionImpl.class, project);
-		this.mixinMappings = project.getObjects().fileCollection();
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 	}
@@ -92,18 +88,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public LoomFiles getFiles() {
 		return loomFiles;
-	}
-
-	@Override
-	public synchronized File getMixinMappings(SourceSet sourceSet) {
-		File mixinMapping = new File(getFiles().getProjectBuildCache(), "mixin-map-" + getMappingsProvider().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
-		mixinMappings.from(getProject().files(mixinMapping));
-		return mixinMapping;
-	}
-
-	@Override
-	public FileCollection getAllMixinMappings() {
-		return mixinMappings.filter(File::exists);
 	}
 
 	@Override

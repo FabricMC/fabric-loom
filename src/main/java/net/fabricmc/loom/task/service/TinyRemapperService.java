@@ -40,6 +40,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -56,19 +57,14 @@ public class TinyRemapperService implements SharedService {
 		final String id = extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to) + ":" + remapJarTask.getName();
 
 		TinyRemapperService service = sharedServiceManager.getOrCreateService(id, () -> {
-			List<MappingsService> mappingsServices = new ArrayList<>();
-			mappingsServices.add(MappingsService.createDefault(project, from, to));
+			List<IMappingProvider> mappings = new ArrayList<>();
+			mappings.add(MappingsService.createDefault(project, from, to).getMappingsProvider());
 
 			if (legacyMixin) {
-				// Add the mapping from the mixin AP
-				for (File file : extension.getAllMixinMappings().getFiles()) {
-					// TODO fix me, use the hash?
-					String name = file.getAbsolutePath();
-					mappingsServices.add(MappingsService.create(project, name, file.toPath(), from, to, false));
-				}
+				mappings.add(MixinMappingsService.getService(SharedServiceManager.get(project)).getMappingProvider(from, to));
 			}
 
-			return new TinyRemapperService(List.copyOf(mappingsServices), !legacyMixin);
+			return new TinyRemapperService(mappings, !legacyMixin);
 		});
 
 		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).toList());
@@ -76,23 +72,17 @@ public class TinyRemapperService implements SharedService {
 		return service;
 	}
 
-	private final List<MappingsService> mappings;
-	private final boolean useMixinExtension;
-
 	private TinyRemapper tinyRemapper;
 	private final Map<String, InputTag> inputTagMap = new ConcurrentHashMap<>();
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
 
-	public TinyRemapperService(List<MappingsService> mappings, boolean useMixinExtension) {
-		this.mappings = mappings;
-		this.useMixinExtension = useMixinExtension;
-
+	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension) {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper();
 
-		for (MappingsService mappingsService : mappings) {
-			builder.withMappings(mappingsService.getMappingsProvider());
+		for (IMappingProvider provider : mappings) {
+			builder.withMappings(provider);
 		}
 
 		if (useMixinExtension) {

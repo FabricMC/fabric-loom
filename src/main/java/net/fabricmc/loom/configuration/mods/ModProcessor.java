@@ -46,7 +46,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.kotlin.remapping.KotlinMetadataApplyVisitorProvider;
+import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
@@ -147,7 +147,7 @@ public class ModProcessor {
 				.renameInvalidLocals(false);
 
 		if (useKotlinExtension) {
-			builder.extension(KotlinMetadataApplyVisitorProvider.INSTANCE);
+			builder.extension(KotlinMetadataTinyRemapperExtension.INSTANCE);
 		}
 
 		final TinyRemapper remapper = builder.build();

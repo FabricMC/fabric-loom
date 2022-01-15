@@ -28,7 +28,7 @@ import net.fabricmc.tinyremapper.TinyRemapper
 import net.fabricmc.tinyremapper.api.TrClass
 import org.objectweb.asm.ClassVisitor
 
-object KotlinMetadataApplyVisitorProvider : TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
+object KotlinMetadataTinyRemapperExtension : TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
     override fun insertApplyVisitor(cls: TrClass, next: ClassVisitor): ClassVisitor {
         return KotlinMetadataRemappingClassVisitor(cls, next)
     }

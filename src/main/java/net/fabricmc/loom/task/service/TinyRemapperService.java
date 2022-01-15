@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.kotlin.remapping.KotlinMetadataApplyVisitorProvider;
+import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtension;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -92,7 +92,7 @@ public class TinyRemapperService implements SharedService {
 		}
 
 		if (useKotlinExtension) {
-			builder.extension(KotlinMetadataApplyVisitorProvider.INSTANCE);
+			builder.extension(KotlinMetadataTinyRemapperExtension.INSTANCE);
 		}
 
 		tinyRemapper = builder.build();

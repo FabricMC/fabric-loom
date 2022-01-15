@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.kotlin.remapping
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
-import spock.lang.Specification
-import spock.lang.Unroll
+import net.fabricmc.tinyremapper.api.TrClass
+import org.objectweb.asm.AnnotationVisitor
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+class KotlinMetadataRemappingClassVisitor(private val cls: TrClass, next: ClassVisitor?) : ClassVisitor(Opcodes.ASM9, next) {
+    companion object {
+        val ANNOTATION_DESCRIPTOR: String = Type.getDescriptor(Metadata::class.java)
+    }
 
-class KotlinTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "kotlin build (gradle #version)"() {
-		setup:
-			def gradle = gradleProject(project: "kotlin", version: version)
-			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
-				.withMod(gradle.getOutputFile("fabric-example-mod-0.0.1.jar"))
-				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.7.1+kotlin.1.6.10.jar")
+    override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
+        var result: AnnotationVisitor? = super.visitAnnotation(descriptor, visible)
 
-		when:
-			def result = gradle.run(task: "build")
-			def serverResult = server.run()
+        if (descriptor == ANNOTATION_DESCRIPTOR && result != null) {
+            result = KotlinClassMetadataRemappingAnnotationVisitor(cls, result)
+        }
 
-		then:
-			result.task(":build").outcome == SUCCESS
-			serverResult.successful()
-
-		where:
-			version << STANDARD_TEST_VERSIONS
-	}
+        return result
+    }
 }

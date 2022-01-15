@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,18 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.kotlin.remapping
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
-import spock.lang.Specification
-import spock.lang.Unroll
+import net.fabricmc.tinyremapper.TinyRemapper
+import net.fabricmc.tinyremapper.api.TrClass
+import org.objectweb.asm.ClassVisitor
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+object KotlinMetadataApplyVisitorProvider : TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
+    override fun insertApplyVisitor(cls: TrClass, next: ClassVisitor): ClassVisitor {
+        return KotlinMetadataRemappingClassVisitor(cls, next)
+    }
 
-class KotlinTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "kotlin build (gradle #version)"() {
-		setup:
-			def gradle = gradleProject(project: "kotlin", version: version)
-			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
-				.withMod(gradle.getOutputFile("fabric-example-mod-0.0.1.jar"))
-				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.7.1+kotlin.1.6.10.jar")
-
-		when:
-			def result = gradle.run(task: "build")
-			def serverResult = server.run()
-
-		then:
-			result.task(":build").outcome == SUCCESS
-			serverResult.successful()
-
-		where:
-			version << STANDARD_TEST_VERSIONS
-	}
+    override fun attach(builder: TinyRemapper.Builder) {
+        builder.extraPreApplyVisitor(this)
+    }
 }

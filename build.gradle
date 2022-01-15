@@ -8,6 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
+	id "org.jetbrains.kotlin.jvm" version "1.5.31"
 	id "com.diffplug.spotless" version "5.14.1"
 }
 
@@ -19,6 +20,11 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 17
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+	kotlinOptions {
+		jvmTarget = "16" // Kotlin doesnt support 17!?
+	}
+}
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
@@ -92,6 +98,11 @@ dependencies {
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.2.4')
 
+	// Kotlin
+	implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.1") {
+		transitive = false
+	}
+
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0')
 
@@ -100,10 +111,20 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
+	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 	testImplementation 'io.javalin:javalin:3.13.11'
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
 
 	compileOnly 'org.jetbrains:annotations:23.0.0'
+}
+
+configurations.all {
+	if (name == "compileOnly") return
+
+	dependencies.removeIf {
+		// Rely on the kotlin version gradle uses everywhere else
+		group == "org.jetbrains.kotlin"
+	}
 }
 
 jar {

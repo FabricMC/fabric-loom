@@ -112,7 +112,9 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-	testImplementation 'io.javalin:javalin:3.13.11'
+	testImplementation ('io.javalin:javalin:3.13.11') {
+		exclude group: 'org.jetbrains.kotlin'
+	}
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
 
 	compileOnly 'org.jetbrains:annotations:23.0.0'

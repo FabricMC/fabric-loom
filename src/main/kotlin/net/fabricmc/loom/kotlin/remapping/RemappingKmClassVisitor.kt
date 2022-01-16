@@ -36,7 +36,7 @@ import kotlinx.metadata.KmValueParameterVisitor
 import kotlinx.metadata.KmVariance
 import org.objectweb.asm.commons.Remapper
 
-class RemappingKmClassVisitor(private val remapper: Remapper, delegate: KmClassVisitor?): KmClassVisitor(delegate) {
+class RemappingKmClassVisitor(private val remapper: Remapper, delegate: KmClassVisitor?) : KmClassVisitor(delegate) {
     override fun visit(flags: Flags, name: ClassName) {
         super.visit(flags, remapper.map(name))
     }

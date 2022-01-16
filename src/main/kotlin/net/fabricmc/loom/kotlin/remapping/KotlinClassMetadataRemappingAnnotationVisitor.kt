@@ -43,25 +43,30 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
 
     override fun visitEnd() {
         super.visitEnd()
-        val metadata = readMetadata()
-
-        when (metadata) {
+        when (val metadata = readMetadata()) {
             is KotlinClassMetadata.Class -> {
                 val klass = metadata.toKmClass()
                 val writer = KotlinClassMetadata.Class.Writer()
-                klass.accept(RemappingKmClassVisitor(remapper, writer))
+                klass.accept(RemappingKmVisitors(remapper).RemappingKmClassVisitor(writer))
                 writeClassHeader(writer.write().header)
             }
             is KotlinClassMetadata.SyntheticClass -> {
-                val data = metadata.toKmLambda()
-                println(data) // TODO remap?
-                accept(next)
+                val klambda = metadata.toKmLambda()
+
+                if (klambda != null) {
+                    val writer = KotlinClassMetadata.SyntheticClass.Writer()
+                    klambda.accept(RemappingKmVisitors(remapper).RemappingKmLambdaVisitor(writer))
+                    writeClassHeader(writer.write().header)
+                } else {
+                    accept(next)
+                }
             }
             // Can only be turned into KmPackage which is useless data
             is KotlinClassMetadata.FileFacade, is KotlinClassMetadata.MultiFileClassPart,
                 // Can't be turned into data
             is KotlinClassMetadata.MultiFileClassFacade, is KotlinClassMetadata.Unknown, null -> {
                 // do nothing
+                accept(next)
             }
         }
     }

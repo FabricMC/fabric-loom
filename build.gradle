@@ -8,6 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
+	id "org.jetbrains.kotlin.jvm" version "1.5.31" // Must match the version included with gradle.
 	id "com.diffplug.spotless" version "5.14.1"
 }
 
@@ -19,6 +20,11 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 17
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+	kotlinOptions {
+		jvmTarget = "16" // Change to 17 when updating gradle/kotlin to 1.6.10
+	}
+}
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
@@ -92,6 +98,11 @@ dependencies {
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.2.4')
 
+	// Kotlin
+	implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.1") {
+		transitive = false
+	}
+
 	// Kapt integration
 	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0')
 
@@ -100,7 +111,10 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'io.javalin:javalin:3.13.11'
+	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+	testImplementation ('io.javalin:javalin:3.13.11') {
+		exclude group: 'org.jetbrains.kotlin'
+	}
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
 
 	compileOnly 'org.jetbrains:annotations:23.0.0'
@@ -126,6 +140,13 @@ spotless {
 
 	groovy {
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+	}
+
+	kotlin {
+		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+		targetExclude("**/build.gradle.kts")
+		targetExclude("src/test/resources/projects/*/**")
+		ktlint()
 	}
 }
 
@@ -172,18 +193,6 @@ import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
-def patchPom(groovy.util.Node node) {
-	node.dependencies.first().each {
-		def groupId = it.get("groupId").first().value().first()
-
-		// Patch all eclipse deps to use a strict version
-		if (groupId.startsWith("org.eclipse.")) {
-			def version = it.get("version").first().value().first()
-			it.get("version").first().value = new groovy.util.NodeList(["[$version]"])
-		}
-	}
-}
-
 publishing {
 	publications {
 		plugin(MavenPublication) { publication ->
@@ -192,10 +201,6 @@ publishing {
 			version project.version
 
 			from components.java
-
-			pom.withXml {
-				patchPom(asNode())
-			}
 		}
 
 		// Also publish a snapshot so people can use the latest version if they wish
@@ -205,10 +210,6 @@ publishing {
 			version baseVersion + '-SNAPSHOT'
 
 			from components.java
-
-			pom.withXml {
-				patchPom(asNode())
-			}
 		}
 
 		// Manually crate the plugin marker for snapshot versions

@@ -46,6 +46,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
@@ -134,16 +135,22 @@ public class ModProcessor {
 	private void remapJars(List<ModDependencyInfo> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		final boolean useKotlinExtension = project.getPluginManager().hasPlugin("org.jetbrains.kotlin.jvm");
 
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
 		project.getLogger().lifecycle(":remapping " + remapList.size() + " mods (TinyRemapper, " + fromM + " -> " + toM + ")");
 
-		final TinyRemapper remapper = TinyRemapper.newRemapper()
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
-				.renameInvalidLocals(false)
-				.build();
+				.renameInvalidLocals(false);
+
+		if (useKotlinExtension) {
+			builder.extension(KotlinMetadataTinyRemapperExtension.INSTANCE);
+		}
+
+		final TinyRemapper remapper = builder.build();
 
 		for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
 			remapper.readClassPathAsync(minecraftJar);

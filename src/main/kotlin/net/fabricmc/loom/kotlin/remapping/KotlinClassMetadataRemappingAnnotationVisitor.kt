@@ -85,11 +85,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
             return null
         }
 
-        val it = values.iterator()
-        while (it.hasNext()) {
-            val name = it.next() as String
-            val value = it.next()
-
+        values.chunked(2).forEach {(name, value) ->
             when (name) {
                 "k" -> kind = value as Int
                 "mv" -> metadataVersion = (value as List<Int>).toIntArray()

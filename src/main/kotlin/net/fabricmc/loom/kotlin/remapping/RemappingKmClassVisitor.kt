@@ -24,7 +24,16 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import kotlinx.metadata.*
+import kotlinx.metadata.ClassName
+import kotlinx.metadata.Flags
+import kotlinx.metadata.KmClassVisitor
+import kotlinx.metadata.KmFunctionVisitor
+import kotlinx.metadata.KmPropertyVisitor
+import kotlinx.metadata.KmTypeAliasVisitor
+import kotlinx.metadata.KmTypeParameterVisitor
+import kotlinx.metadata.KmTypeVisitor
+import kotlinx.metadata.KmValueParameterVisitor
+import kotlinx.metadata.KmVariance
 import org.objectweb.asm.commons.Remapper
 
 class RemappingKmClassVisitor(private val remapper: Remapper, delegate: KmClassVisitor?): KmClassVisitor(delegate) {

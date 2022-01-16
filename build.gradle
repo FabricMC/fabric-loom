@@ -8,7 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	id "org.jetbrains.kotlin.jvm" version "1.5.31"
+	id "org.jetbrains.kotlin.jvm" version "1.5.31" // Must match the version included with gradle.
 	id "com.diffplug.spotless" version "5.14.1"
 }
 
@@ -22,7 +22,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 	kotlinOptions {
-		jvmTarget = "16" // Kotlin doesnt support 17!?
+		jvmTarget = "16" // Change to 17 when updating gradle/kotlin to 1.6.10
 	}
 }
 
@@ -118,15 +118,6 @@ dependencies {
 	compileOnly 'org.jetbrains:annotations:23.0.0'
 }
 
-configurations.all {
-	if (name == "compileOnly") return
-
-	dependencies.removeIf {
-		// Rely on the kotlin version gradle uses everywhere else
-		group == "org.jetbrains.kotlin"
-	}
-}
-
 jar {
 	manifest {
 		attributes 'Implementation-Version': project.version
@@ -147,6 +138,13 @@ spotless {
 
 	groovy {
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+	}
+
+	kotlin {
+		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+		targetExclude("**/build.gradle.kts")
+		targetExclude("src/test/resources/projects/*/**")
+		ktlint()
 	}
 }
 
@@ -193,18 +191,6 @@ import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
-def patchPom(groovy.util.Node node) {
-	node.dependencies.first().each {
-		def groupId = it.get("groupId").first().value().first()
-
-		// Patch all eclipse deps to use a strict version
-		if (groupId.startsWith("org.eclipse.")) {
-			def version = it.get("version").first().value().first()
-			it.get("version").first().value = new groovy.util.NodeList(["[$version]"])
-		}
-	}
-}
-
 publishing {
 	publications {
 		plugin(MavenPublication) { publication ->
@@ -213,10 +199,6 @@ publishing {
 			version project.version
 
 			from components.java
-
-			pom.withXml {
-				patchPom(asNode())
-			}
 		}
 
 		// Also publish a snapshot so people can use the latest version if they wish
@@ -226,10 +208,6 @@ publishing {
 			version baseVersion + '-SNAPSHOT'
 
 			from components.java
-
-			pom.withXml {
-				patchPom(asNode())
-			}
 		}
 
 		// Manually crate the plugin marker for snapshot versions

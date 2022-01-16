@@ -50,7 +50,7 @@ public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> 
 	public abstract void afterEvaluation();
 
 	protected final TaskProvider<UnpickJarTask> createUnpickJarTask(String name, File inputJar, File outputJar) {
-		return project.getTasks().register("unpick%sJar".formatted(name), UnpickJarTask.class, unpickJarTask -> {
+		return project.getTasks().register(name, UnpickJarTask.class, unpickJarTask -> {
 			unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
 			unpickJarTask.getInputJar().set(inputJar);
 			unpickJarTask.getOutputJar().set(outputJar);

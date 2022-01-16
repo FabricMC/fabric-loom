@@ -53,8 +53,8 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			commonJarToDecompile = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
 			clientOnlyJarToDecompile = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
 
-			unpickCommonJar = createUnpickJarTask("Common", minecraftProvider.getCommonJar().toFile(), commonJarToDecompile);
-			unpickClientOnlyJar = createUnpickJarTask("ClientOnly", minecraftProvider.getClientOnlyJar().toFile(), clientOnlyJarToDecompile);
+			unpickCommonJar = createUnpickJarTask("unpickCommonJar", minecraftProvider.getCommonJar().toFile(), commonJarToDecompile);
+			unpickClientOnlyJar = createUnpickJarTask("unpickClientOnlyJar", minecraftProvider.getClientOnlyJar().toFile(), clientOnlyJarToDecompile);
 		}
 
 		// Need to re-declare them as final to access them from the lambada

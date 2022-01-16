@@ -101,10 +101,10 @@ public enum MinecraftJarConfiguration {
 		}
 
 		if (value instanceof String str) {
-			return Objects.requireNonNull(valueOf(str.toUpperCase(Locale.ROOT)));
+			return Objects.requireNonNull(valueOf(str.toUpperCase(Locale.ROOT)), "Unknown value (%s) for %s".formatted(str, PROPERTY_KEY));
 		}
 
-		throw new IllegalStateException("");
+		throw new IllegalStateException("Could not find valid value for " + PROPERTY_KEY);
 	}
 
 	public Function<Project, MinecraftProvider> getMinecraftProviderFunction() {

@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -34,8 +33,8 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 
 public final class SplitMinecraftProvider extends MinecraftProvider {
-	private File minecraftClientOnlyJar;
-	private File minecraftCommonJar;
+	private Path minecraftClientOnlyJar;
+	private Path minecraftCommonJar;
 
 	public SplitMinecraftProvider(Project project) {
 		super(project);
@@ -45,20 +44,20 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	protected void initFiles() {
 		super.initFiles();
 
-		minecraftClientOnlyJar = file("minecraft-client-only.jar");
-		minecraftCommonJar = file("minecraft-common.jar");
+		minecraftClientOnlyJar = path("minecraft-client-only.jar");
+		minecraftCommonJar = path("minecraft-common.jar");
 	}
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
+		return List.of(minecraftClientOnlyJar, minecraftCommonJar);
 	}
 
 	@Override
 	public void provide() throws Exception {
 		super.provide();
 
-		boolean requiresRefresh = isRefreshDeps() || !minecraftClientOnlyJar.exists() || !minecraftCommonJar.exists();
+		boolean requiresRefresh = isRefreshDeps() || !Files.exists(minecraftClientOnlyJar) || !Files.exists(minecraftCommonJar);
 
 		if (!requiresRefresh) {
 			return;
@@ -80,20 +79,20 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 			jarSplitter.sharedEntry("version.json");
 			jarSplitter.forcedClientEntry("assets/.mcassetsroot");
 
-			jarSplitter.split(minecraftClientOnlyJar.toPath(), minecraftCommonJar.toPath());
+			jarSplitter.split(minecraftClientOnlyJar, minecraftCommonJar);
 		} catch (Exception e) {
-			Files.deleteIfExists(minecraftClientOnlyJar.toPath());
-			Files.deleteIfExists(minecraftCommonJar.toPath());
+			Files.deleteIfExists(minecraftClientOnlyJar);
+			Files.deleteIfExists(minecraftCommonJar);
 
 			throw new RuntimeException("Failed to split minecraft", e);
 		}
 	}
 
-	public File getMinecraftClientOnlyJar() {
+	public Path getMinecraftClientOnlyJar() {
 		return minecraftClientOnlyJar;
 	}
 
-	public File getMinecraftCommonJar() {
+	public Path getMinecraftCommonJar() {
 		return minecraftCommonJar;
 	}
 }

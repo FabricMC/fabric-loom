@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import java.util.List;
+
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskContainer;
@@ -67,13 +69,20 @@ public final class LoomTasks {
 		});
 
 		tasks.register("configureLaunch", task -> {
-			task.dependsOn(tasks.named("extractNatives"));
-			task.dependsOn(tasks.named("downloadAssets"));
 			task.dependsOn(tasks.named("generateDLIConfig"));
 			task.dependsOn(tasks.named("generateLog4jConfig"));
 			task.dependsOn(tasks.named("generateRemapClasspath"));
 
 			task.setDescription("Setup the required files to launch Minecraft");
+			task.setGroup(Constants.TaskGroup.FABRIC);
+		});
+
+		tasks.register("configureClientLaunch", task -> {
+			task.dependsOn(tasks.named("extractNatives"));
+			task.dependsOn(tasks.named("downloadAssets"));
+			task.dependsOn(tasks.named("configureLaunch"));
+
+			task.setDescription("Setup the required files to launch the Minecraft client");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
@@ -125,11 +134,18 @@ public final class LoomTasks {
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
-				t.dependsOn("configureLaunch");
+				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
 		});
 
-		extension.getRunConfigs().create("client", RunConfigSettings::client);
-		extension.getRunConfigs().create("server", RunConfigSettings::server);
+		final List<String> supportedRunEnvironments = extension.getMinecraftJarConfiguration().getSupportedRunEnvironments();
+
+		if (supportedRunEnvironments.contains("client")) {
+			extension.getRunConfigs().create("client", RunConfigSettings::client);
+		}
+
+		if (supportedRunEnvironments.contains("server")) {
+			extension.getRunConfigs().create("server", RunConfigSettings::server);
+		}
 	}
 }

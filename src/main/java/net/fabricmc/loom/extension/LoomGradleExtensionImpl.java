@@ -48,6 +48,7 @@ import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
@@ -62,6 +63,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final Mercury[] srcMercuryCache = new Mercury[2];
 	private final Map<String, NamedDomainObjectProvider<Configuration>> lazyConfigurations = new HashMap<>();
 	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
+	private final MinecraftJarConfiguration minecraftJarConfiguration;
 
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
@@ -78,6 +80,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		this.mixinApExtension = project.getObjects().newInstance(MixinExtensionImpl.class, project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
+		this.minecraftJarConfiguration = MinecraftJarConfiguration.fromProjectConfiguration(project);
 	}
 
 	@Override
@@ -225,5 +228,10 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles) {
 		transitiveAccessWideners.addAll(accessWidenerFiles);
+	}
+
+	@Override
+	public MinecraftJarConfiguration getMinecraftJarConfiguration() {
+		return minecraftJarConfiguration;
 	}
 }

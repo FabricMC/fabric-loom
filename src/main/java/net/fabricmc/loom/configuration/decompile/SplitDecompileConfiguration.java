@@ -31,26 +31,17 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskProvider;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
-public final class SplitDecompileConfiguration {
-	private final Project project;
-	private final MappedMinecraftProvider.Split minecraftProvider;
-	private final LoomGradleExtension extension;
-	private final MappingsProviderImpl mappingsProvider;
-
+public final class SplitDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider.Split> {
 	public SplitDecompileConfiguration(Project project, MappedMinecraftProvider.Split minecraftProvider) {
-		this.project = project;
-		this.minecraftProvider = minecraftProvider;
-		this.extension = LoomGradleExtension.get(project);
-		this.mappingsProvider = extension.getMappingsProvider();
+		super(project, minecraftProvider);
 	}
 
+	@Override
 	public void afterEvaluation() {
 		File commonJarToDecompile = minecraftProvider.getCommonJar().toFile();
 		File clientOnlyJarToDecompile = minecraftProvider.getClientOnlyJar().toFile();
@@ -99,14 +90,6 @@ public final class SplitDecompileConfiguration {
 
 			task.dependsOn(commonDecompileTask);
 			task.dependsOn(clientOnlyDecompileTask);
-		});
-	}
-
-	private TaskProvider<UnpickJarTask> createUnpickJarTask(String name, File inputJar, File outputJar) {
-		return project.getTasks().register("unpick%sJar".formatted(name), UnpickJarTask.class, unpickJarTask -> {
-			unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-			unpickJarTask.getInputJar().set(inputJar);
-			unpickJarTask.getOutputJar().set(outputJar);
 		});
 	}
 

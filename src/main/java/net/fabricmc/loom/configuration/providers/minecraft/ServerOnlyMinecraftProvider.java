@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,73 +24,56 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Objects;
 
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.util.HashedDownloadUtil;
-import net.fabricmc.stitch.merge.JarMerger;
+import net.fabricmc.loom.configuration.providers.BundleMetadata;
 
-public final class MergedMinecraftProvider extends MinecraftProvider {
-	private Path minecraftMergedJar;
+public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
+	private Path minecraftServerOnlyJar;
 
-	public MergedMinecraftProvider(Project project) {
+	public ServerOnlyMinecraftProvider(Project project) {
 		super(project);
 	}
 
 	@Override
 	protected void initFiles() {
 		super.initFiles();
-		minecraftMergedJar = path("minecraft-merged.jar");
+
+		minecraftServerOnlyJar = path("minecraft-server-only.jar");
 	}
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(minecraftMergedJar);
+		return List.of(minecraftServerOnlyJar);
 	}
 
 	@Override
 	public void provide() throws Exception {
 		super.provide();
 
-		if (!Files.exists(minecraftMergedJar) || isRefreshDeps()) {
-			try {
-				mergeJars();
-			} catch (Throwable e) {
-				HashedDownloadUtil.delete(getMinecraftClientJar());
-				HashedDownloadUtil.delete(getMinecraftServerJar());
-				Files.deleteIfExists(minecraftMergedJar);
+		boolean requiresRefresh = isRefreshDeps() || !Files.exists(minecraftServerOnlyJar);
 
-				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw e;
-			}
+		if (!requiresRefresh) {
+			return;
 		}
+
+		BundleMetadata serverBundleMetadata = getServerBundleMetadata();
+
+		if (serverBundleMetadata == null) {
+			throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar support server only configuration, please use a merged jar setup for this version of minecraft");
+		}
+
+		extractBundledServerJar();
+		final Path serverJar = getMinecraftExtractedServerJar().toPath();
+		Files.copy(serverJar, minecraftServerOnlyJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private void mergeJars() throws IOException {
-		getLogger().info(":merging jars");
-
-		File jarToMerge = getMinecraftServerJar();
-
-		if (getServerBundleMetadata() != null) {
-			extractBundledServerJar();
-			jarToMerge = getMinecraftExtractedServerJar();
-		}
-
-		Objects.requireNonNull(jarToMerge, "Cannot merge null input jar?");
-
-		try (JarMerger jarMerger = new JarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
-			jarMerger.enableSyntheticParamsOffset();
-			jarMerger.merge();
-		}
-	}
-
-	public Path getMergedJar() {
-		return minecraftMergedJar;
+	public Path getMinecraftServerOnlyJar() {
+		return minecraftServerOnlyJar;
 	}
 }

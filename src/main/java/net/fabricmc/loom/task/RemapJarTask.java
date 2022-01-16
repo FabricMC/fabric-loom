@@ -126,7 +126,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
 			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), tinyRemapperService.get()));
 			params.getRemapClasspath().from(getClasspath());
-			params.getInputTagName().set(getInputTagName());
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			params.getUseMixinExtension().set(!legacyMixin);
@@ -193,7 +192,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getRemapClasspath();
-		Property<String> getInputTagName();
 
 		Property<Boolean> getUseMixinExtension();
 
@@ -243,7 +241,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		private void remap() throws IOException {
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
-				tinyRemapper.apply(outputConsumer, tinyRemapperService.getTag(getParameters().getInputTagName().get()));
+				tinyRemapper.apply(outputConsumer, tinyRemapperService.getOrCreateTag(inputFile));
 			}
 		}
 
@@ -322,10 +320,5 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Internal
 	public TinyRemapperService getTinyRemapperService() {
 		return tinyRemapperService.get();
-	}
-
-	@Internal
-	String getInputTagName() {
-		return getProject().getPath() + getName();
 	}
 }

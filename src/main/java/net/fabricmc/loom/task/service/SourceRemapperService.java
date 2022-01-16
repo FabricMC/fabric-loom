@@ -109,9 +109,7 @@ public final class SourceRemapperService implements SharedService {
 
 	private synchronized void doRemap(Path srcPath, Path dstPath, Path source) {
 		try {
-			synchronized (mercury) {
-				mercury.get().rewrite(srcPath, dstPath);
-			}
+			mercury.get().rewrite(srcPath, dstPath);
 		} catch (Exception e) {
 			LOGGER.warn("Could not remap " + source + " fully!", e);
 		}

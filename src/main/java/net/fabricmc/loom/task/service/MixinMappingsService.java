@@ -52,7 +52,7 @@ public final class MixinMappingsService implements SharedService {
 		return mixinMapping;
 	}
 
-	static MixinMappingsService getService(SharedServiceManager sharedServiceManager) {
+	static synchronized MixinMappingsService getService(SharedServiceManager sharedServiceManager) {
 		return sharedServiceManager.getOrCreateService("MixinMappings", () -> new MixinMappingsService(sharedServiceManager));
 	}
 

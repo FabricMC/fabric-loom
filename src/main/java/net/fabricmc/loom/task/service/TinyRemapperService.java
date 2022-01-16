@@ -28,11 +28,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.gradle.api.Project;
 
@@ -75,7 +75,7 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	private TinyRemapper tinyRemapper;
-	private final Map<String, InputTag> inputTagMap = new ConcurrentHashMap<>();
+	private final Map<String, InputTag> inputTagMap = new HashMap<>();
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
@@ -98,16 +98,15 @@ public class TinyRemapperService implements SharedService {
 		tinyRemapper = builder.build();
 	}
 
-	public InputTag createTag(String key) {
-		if (inputTagMap.containsKey(key)) {
-			throw new IllegalStateException("Input tag already exists for key: " + key);
+	public synchronized InputTag getOrCreateTag(Path file) {
+		InputTag tag = inputTagMap.get(file.toAbsolutePath().toString());
+
+		if (tag == null) {
+			tag = tinyRemapper.createInputTag();
+			inputTagMap.put(file.toAbsolutePath().toString(), tag);
 		}
 
-		return inputTagMap.put(key, tinyRemapper.createInputTag());
-	}
-
-	public InputTag getTag(String key) {
-		return Objects.requireNonNull(inputTagMap.get(key), "Input tag not found for: " + key);
+		return tag;
 	}
 
 	public TinyRemapper getTinyRemapperForRemapping() {

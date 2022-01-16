@@ -26,12 +26,12 @@ package net.fabricmc.loom.kotlin.remapping
 
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
-import net.fabricmc.tinyremapper.api.TrClass
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.commons.Remapper
 import org.objectweb.asm.tree.AnnotationNode
 
-class KotlinClassMetadataRemappingAnnotationVisitor(private val cls: TrClass, val next: AnnotationVisitor) :
+class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapper, val next: AnnotationVisitor) :
     AnnotationNode(Opcodes.ASM9, KotlinMetadataRemappingClassVisitor.ANNOTATION_DESCRIPTOR) {
 
     private var _name: String? = null
@@ -49,7 +49,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val cls: TrClass, va
             is KotlinClassMetadata.Class -> {
                 val klass = metadata.toKmClass()
                 val writer = KotlinClassMetadata.Class.Writer()
-                klass.accept(RemappingKmClassVisitor(cls.environment.remapper, writer))
+                klass.accept(RemappingKmClassVisitor(remapper, writer))
                 writeClassHeader(writer.write().header)
             }
             is KotlinClassMetadata.SyntheticClass -> {

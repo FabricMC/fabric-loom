@@ -24,13 +24,13 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import net.fabricmc.tinyremapper.api.TrClass
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+import org.objectweb.asm.commons.Remapper
 
-class KotlinMetadataRemappingClassVisitor(private val cls: TrClass, next: ClassVisitor?) : ClassVisitor(Opcodes.ASM9, next) {
+class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: ClassVisitor?) : ClassVisitor(Opcodes.ASM9, next) {
     companion object {
         val ANNOTATION_DESCRIPTOR: String = Type.getDescriptor(Metadata::class.java)
     }
@@ -39,7 +39,7 @@ class KotlinMetadataRemappingClassVisitor(private val cls: TrClass, next: ClassV
         var result: AnnotationVisitor? = super.visitAnnotation(descriptor, visible)
 
         if (descriptor == ANNOTATION_DESCRIPTOR && result != null) {
-            result = KotlinClassMetadataRemappingAnnotationVisitor(cls, result)
+            result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result)
         }
 
         return result

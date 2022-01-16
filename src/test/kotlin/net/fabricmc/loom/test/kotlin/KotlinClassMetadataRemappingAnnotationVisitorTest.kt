@@ -24,12 +24,59 @@
 
 package net.fabricmc.loom.test.kotlin
 
+import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.nio.file.Paths
+import net.fabricmc.loom.kotlin.remapping.KotlinMetadataRemappingClassVisitor
+import net.fabricmc.loom.util.TinyRemapperHelper
+import net.fabricmc.mappingio.MappingReader
+import net.fabricmc.mappingio.tree.MemoryMappingTree
+import net.fabricmc.tinyremapper.IMappingProvider
+import net.fabricmc.tinyremapper.TinyRemapper
 import org.junit.jupiter.api.Test
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.util.Textifier
+import org.objectweb.asm.util.TraceClassVisitor
 
 // See: https://github.com/JetBrains/kotlin/blob/master/libraries/kotlinx-metadata/jvm/test/kotlinx/metadata/test/MetadataSmokeTest.kt#L67
 class KotlinClassMetadataRemappingAnnotationVisitorTest {
+    /*
+    val test = KmClass()
+    klass.accept(RemappingKmClassVisitor(remapper, test))
+    println(GsonBuilder().setPrettyPrinting().create().toJson(test))
+     */
 
     @Test
     fun simpleTest() {
+        val inputPosInChunk = getClassBytes("PosInChunk")
+
+        val classReader = ClassReader(inputPosInChunk)
+
+        val tinyRemapper = TinyRemapper.newRemapper()
+            .withMappings(readMappings("PosInChunk"))
+            .build()
+
+        val stringWriter = StringWriter()
+        val traceClassVisitor = TraceClassVisitor(null, TextifierImpl(), PrintWriter(stringWriter))
+
+        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, traceClassVisitor), 0)
+
+        val d2Regex = Regex("(d2=)(.*)")
+        val asm = stringWriter.toString()
+        println(d2Regex.find(asm)?.value)
     }
+
+    private fun getClassBytes(name: String): ByteArray {
+        return File("src/test/resources/classes/$name.class").readBytes()
+    }
+
+    private fun readMappings(name: String): IMappingProvider {
+        val mappingTree = MemoryMappingTree()
+        MappingReader.read(Paths.get("src/test/resources/mappings/$name.mappings"), mappingTree)
+        return TinyRemapperHelper.create(mappingTree, "named", "intermediary", false)
+    }
+
+    private class TextifierImpl : Textifier(Opcodes.ASM9)
 }

@@ -187,9 +187,9 @@ class RemappingKmClassVisitor(private val remapper: Remapper, delegate: KmClassV
             return super.visitTypeParameter(flags, name, id, variance)
         }
 
-        override fun visitValueParameter(flags: Flags, name: String): KmValueParameterVisitor? {
+        override fun visitValueParameter(flags: Flags, name: String): KmValueParameterVisitor {
             // TODO need the desc somehow to remap the name?
-            return super.visitValueParameter(flags, name)
+            return RemappingKmValueParameterVisitor(super.visitValueParameter(flags, name))
         }
 
         override fun visitExtensions(type: KmExtensionType): KmFunctionExtensionVisitor {

@@ -81,6 +81,10 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
         var packageName: String? = null
         var extraInt: Int? = null
 
+        if (values == null) {
+            return null
+        }
+
         val it = values.iterator()
         while (it.hasNext()) {
             val name = it.next() as String

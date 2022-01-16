@@ -101,7 +101,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val cls: TrClass, va
         newNode.values = this.values.toMutableList()
 
         newNode.run {
-            for (i in 0 until values.size step 2) {
+            for (i in values.indices step 2) {
                 when (values[i]) {
                     "k" -> values[i + 1] = header.kind
                     "mv" -> values[i + 1] = header.metadataVersion.toList()

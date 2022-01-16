@@ -85,7 +85,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
             return null
         }
 
-        values.chunked(2).forEach {(name, value) ->
+        values.chunked(2).forEach { (name, value) ->
             when (name) {
                 "k" -> kind = value as Int
                 "mv" -> metadataVersion = (value as List<Int>).toIntArray()

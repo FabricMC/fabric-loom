@@ -35,7 +35,7 @@ import net.fabricmc.loom.task.LoomTasks;
 public class IdeaConfiguration {
 	public static void setup(Project project) {
 		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			task.dependsOn(project.getTasks().named(LoomTasks.getIDELaunchConfigureTaskName(project)));
+			task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(project));
 		});
 
 		if (!IdeaUtils.isIdeaSync()) {

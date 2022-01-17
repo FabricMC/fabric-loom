@@ -25,8 +25,6 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -67,8 +65,6 @@ public enum MinecraftJarConfiguration {
 		List.of("client", "server")
 	);
 
-	public static final String PROPERTY_KEY = "fabric.loom.minecraft.jar.configuration";
-
 	private final Function<Project, MinecraftProvider> minecraftProviderFunction;
 	private final BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>> intermediaryMinecraftProviderBiFunction;
 	private final BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>> namedMinecraftProviderBiFunction;
@@ -91,20 +87,6 @@ public enum MinecraftJarConfiguration {
 		this.processedNamedMinecraftProviderBiFunction = (BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>>) (Object) processedNamedMinecraftProviderBiFunction;
 		this.decompileConfigurationBiFunction = (BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>>) decompileConfigurationBiFunction;
 		this.supportedEnvironments = supportedEnvironments;
-	}
-
-	public static MinecraftJarConfiguration fromProjectConfiguration(Project project) {
-		Object value = project.getProperties().get(PROPERTY_KEY);
-
-		if (value == null) {
-			return MERGED;
-		}
-
-		if (value instanceof String str) {
-			return Objects.requireNonNull(valueOf(str.toUpperCase(Locale.ROOT)), "Unknown value (%s) for %s".formatted(str, PROPERTY_KEY));
-		}
-
-		throw new IllegalStateException("Could not find valid value for " + PROPERTY_KEY);
 	}
 
 	public Function<Project, MinecraftProvider> getMinecraftProviderFunction() {

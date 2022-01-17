@@ -96,7 +96,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 	private TaskProvider<Task> createDecompileTasks(String name, Action<GenerateSourcesTask> configureAction) {
 		extension.getDecompilerOptions().forEach(options -> {
 			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
-			final String taskName = "gen%sSourcesWith%s".formatted(decompilerName, options.getName());
+			final String taskName = "gen%sSourcesWith%s".formatted(name, decompilerName);
 
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				configureAction.execute(task);

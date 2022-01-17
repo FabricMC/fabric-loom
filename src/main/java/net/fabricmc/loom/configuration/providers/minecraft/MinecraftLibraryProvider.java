@@ -38,7 +38,7 @@ public class MinecraftLibraryProvider {
 	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-([0-9].*?)-)(?<classifier>.*).jar$");
 
 	public void provide(MinecraftProvider minecraftProvider, Project project) {
-		final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration();
+		final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration().get();
 		final MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 

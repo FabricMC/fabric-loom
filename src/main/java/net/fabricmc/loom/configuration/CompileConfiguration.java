@@ -185,7 +185,7 @@ public final class CompileConfiguration {
 	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
 	private static synchronized void setupMinecraft(Project project) throws Exception {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration();
+		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars -- TODO share across projects.
 		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(project);
@@ -271,7 +271,7 @@ public final class CompileConfiguration {
 	private static void configureDecompileTasks(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		extension.getMinecraftJarConfiguration().getDecompileConfigurationBiFunction()
+		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
 				.apply(project, extension.getNamedMinecraftProvider()).afterEvaluation();
 	}
 

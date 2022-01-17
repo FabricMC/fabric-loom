@@ -31,13 +31,17 @@ import spock.lang.Unroll
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class ServerOnlyTest extends Specification implements GradleProjectTestTrait {
+class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
     @Unroll
     def "server only (gradle #version)"() {
         setup:
             def gradle = gradleProject(project: "minimalBase", version: version)
 
             gradle.buildGradle << '''
+                loom {
+                    serverOnlyMinecraftJar()
+                }
+
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
@@ -45,17 +49,40 @@ class ServerOnlyTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 
-            gradle.gradleProperties << '''
-                fabric.loom.minecraft.jar.configuration=server_only
-            '''
-
         when:
-            def result = gradle.run(tasks: ["build", "unpick"])
+            def result = gradle.run(task: "build")
 
         then:
             result.task(":build").outcome == SUCCESS
 
         where:
             version << STANDARD_TEST_VERSIONS
+    }
+
+    @Unroll
+    def "split (gradle #version)"() {
+        setup:
+        def gradle = gradleProject(project: "minimalBase", version: version)
+
+        gradle.buildGradle << '''
+                loom {
+                    splitMinecraftJar()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
+
+        when:
+        def result = gradle.run(task: "build")
+
+        then:
+        result.task(":build").outcome == SUCCESS
+
+        where:
+        version << STANDARD_TEST_VERSIONS
     }
 }

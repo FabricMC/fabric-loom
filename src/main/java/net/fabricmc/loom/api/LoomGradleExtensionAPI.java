@@ -38,6 +38,7 @@ import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -138,4 +139,17 @@ public interface LoomGradleExtensionAPI {
 	 * @return the property controlling interface injection.
 	 */
 	Property<Boolean> getEnableInterfaceInjection();
+
+	@ApiStatus.Experimental
+	Property<MinecraftJarConfiguration> getMinecraftJarConfiguration();
+
+	@ApiStatus.Experimental
+	default void serverOnlyMinecraftJar() {
+		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SERVER_ONLY);
+	}
+
+	@ApiStatus.Experimental
+	default void splitMinecraftJar() {
+		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
+	}
 }

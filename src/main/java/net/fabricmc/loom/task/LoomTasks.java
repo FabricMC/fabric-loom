@@ -24,10 +24,10 @@
 
 package net.fabricmc.loom.task;
 
-import java.util.List;
-
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
@@ -138,20 +138,22 @@ public final class LoomTasks {
 				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
 		});
+		extension.getRunConfigs().create("client", RunConfigSettings::client);
+		extension.getRunConfigs().create("server", RunConfigSettings::server);
 
-		final List<String> supportedRunEnvironments = extension.getMinecraftJarConfiguration().getSupportedEnvironments();
-
-		if (supportedRunEnvironments.contains("client")) {
-			extension.getRunConfigs().create("client", RunConfigSettings::client);
-		}
-
-		if (supportedRunEnvironments.contains("server")) {
-			extension.getRunConfigs().create("server", RunConfigSettings::server);
-		}
+		// Remove the client run config when server only. Done by name to not remove any possible custom run configs
+		project.afterEvaluate(p -> {
+			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
+				extension.getRunConfigs().removeIf(settings -> settings.getName().equals("client"));
+			}
+		});
 	}
 
-	public static String getIDELaunchConfigureTaskName(Project project) {
-		final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration();
-		return jarConfiguration == MinecraftJarConfiguration.SERVER_ONLY ? "configureLaunch" : "configureClientLaunch";
+	public static Provider<Task> getIDELaunchConfigureTaskName(Project project) {
+		return project.provider(() -> {
+			final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration().get();
+			final String name = jarConfiguration == MinecraftJarConfiguration.SERVER_ONLY ? "configureLaunch" : "configureClientLaunch";
+			return project.getTasks().getByName(name);
+		});
 	}
 }

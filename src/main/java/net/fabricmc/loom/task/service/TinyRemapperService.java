@@ -28,15 +28,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtension;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -52,9 +53,10 @@ public class TinyRemapperService implements SharedService {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final SharedServiceManager sharedServiceManager = SharedServiceManager.get(project);
 		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+		final boolean useKotlinExtension = project.getPluginManager().hasPlugin("org.jetbrains.kotlin.jvm");
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
-		final String id = extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to) + ":" + remapJarTask.getName();
+		final String id = extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to) + ":" + remapJarTask.getName() + (useKotlinExtension ? ":kotlin" : "");
 
 		TinyRemapperService service = sharedServiceManager.getOrCreateService(id, () -> {
 			List<IMappingProvider> mappings = new ArrayList<>();
@@ -64,7 +66,7 @@ public class TinyRemapperService implements SharedService {
 				mappings.add(MixinMappingsService.getService(SharedServiceManager.get(project)).getMappingProvider(from, to));
 			}
 
-			return new TinyRemapperService(mappings, !legacyMixin);
+			return new TinyRemapperService(mappings, !legacyMixin, useKotlinExtension);
 		});
 
 		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).toList());
@@ -73,12 +75,12 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	private TinyRemapper tinyRemapper;
-	private final Map<String, InputTag> inputTagMap = new ConcurrentHashMap<>();
+	private final Map<String, InputTag> inputTagMap = new HashMap<>();
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
 
-	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension) {
+	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, boolean useKotlinExtension) {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper();
 
 		for (IMappingProvider provider : mappings) {
@@ -89,19 +91,22 @@ public class TinyRemapperService implements SharedService {
 			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
 		}
 
+		if (useKotlinExtension) {
+			builder.extension(KotlinMetadataTinyRemapperExtension.INSTANCE);
+		}
+
 		tinyRemapper = builder.build();
 	}
 
-	public InputTag createTag(String key) {
-		if (inputTagMap.containsKey(key)) {
-			throw new IllegalStateException("Input tag already exists for key: " + key);
+	public synchronized InputTag getOrCreateTag(Path file) {
+		InputTag tag = inputTagMap.get(file.toAbsolutePath().toString());
+
+		if (tag == null) {
+			tag = tinyRemapper.createInputTag();
+			inputTagMap.put(file.toAbsolutePath().toString(), tag);
 		}
 
-		return inputTagMap.put(key, tinyRemapper.createInputTag());
-	}
-
-	public InputTag getTag(String key) {
-		return Objects.requireNonNull(inputTagMap.get(key), "Input tag not found for: " + key);
+		return tag;
 	}
 
 	public TinyRemapper getTinyRemapperForRemapping() {

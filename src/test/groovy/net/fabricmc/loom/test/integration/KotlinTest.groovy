@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -36,12 +37,17 @@ class KotlinTest extends Specification implements GradleProjectTestTrait {
 	def "kotlin build (gradle #version)"() {
 		setup:
 			def gradle = gradleProject(project: "kotlin", version: version)
+			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
+				.withMod(gradle.getOutputFile("fabric-example-mod-0.0.1.jar"))
+				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.7.1+kotlin.1.6.10.jar")
 
 		when:
 			def result = gradle.run(task: "build")
+			def serverResult = server.run()
 
 		then:
 			result.task(":build").outcome == SUCCESS
+			serverResult.successful()
 
 		where:
 			version << STANDARD_TEST_VERSIONS

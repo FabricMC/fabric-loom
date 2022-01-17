@@ -1,0 +1,220 @@
+tiny	2	0	intermediary	named
+c	net/minecraft/class_2338	net/minecraft/util/math/BlockPos
+	c	Represents the position of a block in a three-dimensional volume.\n\n<p>The position is integer-valued.\n\n<p>A block position may be mutable; hence, when using block positions\nobtained from other places as map keys, etc., you should call {@link\n#toImmutable()} to obtain an immutable block position.
+	f	J	field_10976	BITS_X
+	f	Lcom/mojang/serialization/Codec;	field_25064	CODEC
+	f	Lorg/apache/logging/log4j/Logger;	field_18789	LOGGER
+	f	Lnet/minecraft/class_2338;	field_10980	ORIGIN
+		c	The block position which x, y, and z values are all zero.
+	f	I	field_10983	BIT_SHIFT_Z
+	f	I	field_10975	SIZE_BITS_Y
+	f	J	field_10974	BITS_Y
+	f	I	field_10978	SIZE_BITS_X
+	f	I	field_10981	BIT_SHIFT_X
+	f	J	field_10973	BITS_Z
+	f	I	field_10977	SIZE_BITS_Z
+	m	([I)Lnet/minecraft/class_2338;	method_29095	method_29095
+		p	0		values
+	m	(Ljava/util/Random;IIIIIII)Ljava/lang/Iterable;	method_27156	iterateRandomly
+		c	Iterates through {@code count} random block positions in the given area.\n\n<p>The iterator yields positions in no specific order. The same position\nmay be returned multiple times by the iterator.
+		p	6		maxY
+			c	the maximum y value for returned positions
+		p	7		maxZ
+			c	the maximum z value for returned positions
+		p	4		minZ
+			c	the minimum z value for returned positions
+		p	5		maxX
+			c	the maximum x value for returned positions
+		p	2		minX
+			c	the minimum x value for returned positions
+		p	3		minY
+			c	the minimum y value for returned positions
+		p	0		random
+			c	the {@link Random} object used to compute new positions
+		p	1		count
+			c	the number of positions to iterate
+	m	(JIII)J	method_10096	add
+		p	0		value
+		p	3		y
+		p	2		x
+		p	4		z
+	m	()Lnet/minecraft/class_2338$class_2339;	method_25503	mutableCopy
+		c	Returns a mutable copy of this block position.\n\n<p>If this block position is a mutable one, mutation to this block\nposition won't affect the returned position.
+	m	(I)Lnet/minecraft/class_2338;	method_10088	west
+		p	1		distance
+	m	(I)Lnet/minecraft/class_2338;	method_10076	north
+		p	1		distance
+	m	()J	method_10063	asLong
+	m	()Lnet/minecraft/class_2338;	method_10084	up
+	m	(Lnet/minecraft/class_2382;)V	<init>	<init>
+		p	1		pos
+	m	(Lnet/minecraft/class_2338;III)Ljava/util/stream/Stream;	method_25998	streamOutwards
+		p	0		center
+		p	3		maxZ
+		p	1		maxX
+		p	2		maxY
+	m	(Lnet/minecraft/class_2374;)V	<init>	<init>
+		p	1		pos
+	m	(Lnet/minecraft/class_2382;)Lnet/minecraft/class_2338;	method_10081	add
+	m	(Lnet/minecraft/class_238;)Ljava/util/stream/Stream;	method_29715	stream
+		p	0		box
+	m	()Lnet/minecraft/class_2338;	method_10072	south
+	m	(III)Lnet/minecraft/class_2338;	method_10069	add
+	m	(I)Lnet/minecraft/class_2338;	method_35830	multiply
+	m	(Ljava/util/Random;ILnet/minecraft/class_2338;I)Ljava/lang/Iterable;	method_34848	iterateRandomly
+		c	Iterates through {@code count} random block positions in a given range around the given position.\n\n<p>The iterator yields positions in no specific order. The same position\nmay be returned multiple times by the iterator.
+		p	0		random
+			c	the {@link Random} object used to compute new positions
+		p	1		count
+			c	the number of positions to iterate
+		p	2		around
+			c	the {@link BlockPos} to iterate around
+		p	3		range
+			c	the maximum distance from the given pos in any axis
+	m	(I)Lnet/minecraft/class_2338;	method_10077	south
+		p	1		distance
+	m	(I)Lnet/minecraft/class_2338;	method_10089	east
+		p	1		distance
+	m	(J)J	method_10091	removeChunkSectionLocalY
+		p	0		y
+	m	(J)I	method_10071	unpackLongY
+		p	0		packedPos
+	m	(Lnet/minecraft/class_2338;ILnet/minecraft/class_2350;Lnet/minecraft/class_2350;)Ljava/lang/Iterable;	method_30512	iterateInSquare
+		c	Iterates block positions around the {@code center} in a square of\n({@code 2 * radius + 1}) by ({@code 2 * radius + 1}). The blocks\nare iterated in a (square) spiral around the center.\n\n<p>The first block returned is the center, then the iterator moves\na block towards the first direction, followed by moving along\nthe second direction.\n\n@throws IllegalStateException when the 2 directions lie on the same axis
+		p	2		firstDirection
+			c	the direction the iterator moves first
+		p	3		secondDirection
+			c	the direction the iterator moves after the first
+		p	0		center
+			c	the center of iteration
+		p	1		radius
+			c	the maximum chebychev distance
+	m	(J)I	method_10083	unpackLongZ
+		p	0		packedPos
+	m	(J)Lnet/minecraft/class_2338;	method_10092	fromLong
+		p	0		packedPos
+	m	(I)Lnet/minecraft/class_2338;	method_33096	withY
+		p	1		y
+	m	(Ljava/util/stream/IntStream;)Lcom/mojang/serialization/DataResult;	method_29094	method_29094
+		p	0		stream
+	m	(Lnet/minecraft/class_2338;Lnet/minecraft/class_2338;)Ljava/util/stream/Stream;	method_20437	stream
+		p	1		end
+		p	0		start
+	m	(Lnet/minecraft/class_2350;)Lnet/minecraft/class_2338;	method_10093	offset
+	m	(I)Lnet/minecraft/class_2338;	method_10086	up
+		p	1		distance
+	m	(III)J	method_10064	asLong
+		p	0		x
+		p	1		y
+		p	2		z
+	m	()Lnet/minecraft/class_2338;	method_10074	down
+	m	(IIIIII)Ljava/lang/Iterable;	method_10094	iterate
+		p	1		startY
+		p	0		startX
+		p	3		endX
+		p	2		startZ
+		p	5		endZ
+		p	4		endY
+	m	()Lnet/minecraft/class_2338;	method_10062	toImmutable
+		c	Returns an immutable block position with the same x, y, and z as this\nposition.\n\n<p>This method should be called when a block position is used as map\nkeys as to prevent side effects of mutations of mutable block positions.
+	m	()Lnet/minecraft/class_2338;	method_10078	east
+	m	(Lnet/minecraft/class_3341;)Ljava/util/stream/Stream;	method_23627	stream
+		p	0		box
+	m	(Lnet/minecraft/class_2350;I)Lnet/minecraft/class_2338;	method_10079	offset
+	m	(Lnet/minecraft/class_2338;III)Ljava/lang/Iterable;	method_25996	iterateOutwards
+		c	Iterates block positions around the {@code center}. The iteration order\nis mainly based on the manhattan distance of the position from the\ncenter.\n\n<p>For the same manhattan distance, the positions are iterated by y\noffset, from negative to positive. For the same y offset, the positions\nare iterated by x offset, from negative to positive. For the two\npositions with the same x and y offsets and the same manhattan distance,\nthe one with a positive z offset is visited first before the one with a\nnegative z offset.
+		p	2		rangeY
+			c	the maximum y difference from the center
+		p	3		rangeZ
+			c	the maximum z difference from the center
+		p	0		center
+			c	the center of iteration
+		p	1		rangeX
+			c	the maximum x difference from the center
+	m	(Lnet/minecraft/class_2338;)Ljava/util/stream/IntStream;	method_29093	method_29093
+		p	0		pos
+	m	(Lnet/minecraft/class_2382;)Lnet/minecraft/class_2338;	method_10059	subtract
+	m	(Lnet/minecraft/class_2382;)Lnet/minecraft/class_2338;	method_10075	crossProduct
+		p	1		pos
+	m	(IIIIII)Ljava/util/stream/Stream;	method_17962	stream
+		p	1		startY
+		p	0		startX
+		p	3		endX
+		p	2		startZ
+		p	5		endZ
+		p	4		endY
+	m	(Lnet/minecraft/class_2350$class_2351;I)Lnet/minecraft/class_2338;	method_30513	offset
+	m	(Lnet/minecraft/class_2338;IILjava/util/function/Predicate;)Ljava/util/Optional;	method_25997	findClosest
+		p	3		condition
+		p	1		horizontalRange
+		p	2		verticalRange
+		p	0		pos
+	m	(I)Lnet/minecraft/class_2338;	method_10087	down
+	m	(DDD)Lnet/minecraft/class_2338;	method_10080	add
+	m	(Lnet/minecraft/class_2338;Lnet/minecraft/class_2338;)Ljava/lang/Iterable;	method_10097	iterate
+		p	1		end
+		p	0		start
+	m	()Lnet/minecraft/class_2338;	method_10095	north
+	m	()Lnet/minecraft/class_2338;	method_10067	west
+	m	(J)I	method_10061	unpackLongX
+		p	0		packedPos
+	m	(Lnet/minecraft/class_243;)V	<init>	<init>
+		p	1		pos
+	m	(JLnet/minecraft/class_2350;)J	method_10060	offset
+		p	2		direction
+		p	0		value
+	m	(Lnet/minecraft/class_2470;)Lnet/minecraft/class_2338;	method_10070	rotate
+		p	1		rotationrotate
+c	net/minecraft/class_1923	net/minecraft/util/math/ChunkPos
+	f	I	field_9180	z
+	f	I	field_9181	x
+	f	Lnet/minecraft/class_1923;	field_35107	ORIGIN
+	f	J	field_17348	MARKER
+	m	()Lnet/minecraft/class_2338;	method_8323	getStartPos
+	m	(Lnet/minecraft/class_1923;)I	method_24022	getChebyshevDistance
+		p	1		pos
+	m	()J	method_8324	toLong
+	m	(II)J	method_8331	toLong
+		p	1		chunkZ
+		p	0		chunkX
+	m	()I	method_17887	getRegionRelativeX
+	m	()I	method_17885	getRegionX
+	m	(J)V	<init>	<init>
+		p	1		pos
+	m	()I	method_33940	getCenterX
+	m	(J)I	method_8325	getPackedX
+		p	0		pos
+	m	(Lnet/minecraft/class_2338;)V	<init>	<init>
+		p	1		pos
+	m	()I	method_33942	getCenterZ
+	m	()I	method_8326	getStartX
+	m	()I	method_8328	getStartZ
+	m	(III)Lnet/minecraft/class_2338;	method_35231	getBlockPos
+		p	2		y
+		p	1		offsetX
+		p	3		offsetZ
+	m	(I)I	method_33939	getOffsetX
+		p	1		offset
+	m	(Lnet/minecraft/class_1923;Lnet/minecraft/class_1923;)Ljava/util/stream/Stream;	method_19281	stream
+		p	0		pos1
+		p	1		pos2
+	m	(Lnet/minecraft/class_2338;)J	method_37232	toLong
+		p	0		pos
+	m	(I)I	method_33941	getOffsetZ
+		p	1		offset
+	m	()I	method_17888	getRegionRelativeZ
+	m	(I)Lnet/minecraft/class_2338;	method_33943	getCenterAtY
+		p	1		y
+	m	()I	method_17886	getRegionZ
+	m	()I	method_8327	getEndX
+	m	(II)V	<init>	<init>
+		p	2		z
+		p	1		x
+	m	()I	method_8329	getEndZ
+	m	(J)I	method_8332	getPackedZ
+		p	0		pos
+	m	(Lnet/minecraft/class_1923;I)Ljava/util/stream/Stream;	method_19280	stream
+		p	0		center
+		p	1		radius
+	m	(Ljava/lang/Object;)Z	equals	equals
+		p	1		o

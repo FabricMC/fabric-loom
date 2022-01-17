@@ -79,14 +79,12 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 
 		workQueue.submit(ReadInputsAction.class, params -> {
 			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), remapJarTask.getTinyRemapperService()));
-			params.getInputTagName().set(remapJarTask.getInputTagName());
 			params.getInputFile().set(getInputFile());
 		});
 	}
 
 	public interface ReadInputsParams extends WorkParameters {
 		Property<String> getTinyRemapperBuildServiceUuid();
-		Property<String> getInputTagName();
 		RegularFileProperty getInputFile();
 	}
 
@@ -102,7 +100,7 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 			final TinyRemapper tinyRemapper = tinyRemapperService.getTinyRemapperForInputs();
 			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
 
-			tinyRemapper.readInputsAsync(tinyRemapperService.createTag(getParameters().getInputTagName().get()), inputFile);
+			tinyRemapper.readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
 		}
 	}
 }

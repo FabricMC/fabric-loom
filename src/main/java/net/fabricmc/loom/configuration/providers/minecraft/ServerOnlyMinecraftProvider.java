@@ -26,12 +26,15 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
 	private Path minecraftServerOnlyJar;
@@ -56,7 +59,7 @@ public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
-		boolean requiresRefresh = isRefreshDeps() || !Files.exists(minecraftServerOnlyJar);
+		boolean requiresRefresh = isRefreshDeps() || Files.notExists(minecraftServerOnlyJar);
 
 		if (!requiresRefresh) {
 			return;
@@ -70,7 +73,31 @@ public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
 
 		extractBundledServerJar();
 		final Path serverJar = getMinecraftExtractedServerJar().toPath();
-		Files.copy(serverJar, minecraftServerOnlyJar, StandardCopyOption.REPLACE_EXISTING);
+
+		TinyRemapper remapper = null;
+
+		try {
+			remapper = TinyRemapper.newRemapper().build();
+
+			// Pass through tiny remapper to fix the meta-inf
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(minecraftServerOnlyJar).filter(new Predicate<String>() {
+				@Override
+				public boolean test(String s) {
+					return false;
+				}
+			}).build()) {
+				outputConsumer.addNonClassFiles(serverJar, NonClassCopyMode.FIX_META_INF, remapper);
+				remapper.readInputs(serverJar);
+				remapper.apply(outputConsumer);
+			}
+		} catch (Exception e) {
+			Files.deleteIfExists(minecraftServerOnlyJar);
+			throw new RuntimeException("Failed to process server only jar", e);
+		} finally {
+			if (remapper != null) {
+				remapper.finish();
+			}
+		}
 	}
 
 	public Path getMinecraftServerOnlyJar() {

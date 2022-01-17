@@ -279,7 +279,6 @@ public abstract class MinecraftProvider {
 	}
 
 	// This may be the server bundler jar on newer versions prob not what you want.
-	@Deprecated
 	public File getMinecraftServerJar() {
 		return minecraftServerJar;
 	}

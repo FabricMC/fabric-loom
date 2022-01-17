@@ -47,7 +47,7 @@ public enum MinecraftJarConfiguration {
 		IntermediaryMinecraftProvider.MergedImpl::new,
 		NamedMinecraftProvider.MergedImpl::new,
 		ProcessedNamedMinecraftProvider.MergedImpl::new,
-		SingleJarDecompileConfiguration.Merged::new,
+		SingleJarDecompileConfiguration::new,
 		List.of("client", "server")
 	),
 	SERVER_ONLY(
@@ -55,7 +55,7 @@ public enum MinecraftJarConfiguration {
 		IntermediaryMinecraftProvider.ServerOnlyImpl::new,
 		NamedMinecraftProvider.ServerOnlyImpl::new,
 		ProcessedNamedMinecraftProvider.ServerOnlyImpl::new,
-		SingleJarDecompileConfiguration.ServerOnly::new,
+		SingleJarDecompileConfiguration::new,
 		List.of("server")
 	),
 	SPLIT(
@@ -74,7 +74,7 @@ public enum MinecraftJarConfiguration {
 	private final BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>> namedMinecraftProviderBiFunction;
 	private final BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> processedNamedMinecraftProviderBiFunction;
 	private final BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>> decompileConfigurationBiFunction;
-	private final List<String> supportedRunEnvironments;
+	private final List<String> supportedEnvironments;
 
 	@SuppressWarnings("unchecked") // Just a bit of a generic mess :)
 	<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>, Q extends MappedMinecraftProvider> MinecraftJarConfiguration(
@@ -83,14 +83,14 @@ public enum MinecraftJarConfiguration {
 			BiFunction<Project, M, P> namedMinecraftProviderBiFunction,
 			BiFunction<P, JarProcessorManager, ProcessedNamedMinecraftProvider<M, P>> processedNamedMinecraftProviderBiFunction,
 			BiFunction<Project, Q, DecompileConfiguration<?>> decompileConfigurationBiFunction,
-			List<String> supportedRunEnvironments
+			List<String> supportedEnvironments
 	) {
 		this.minecraftProviderFunction = (Function<Project, MinecraftProvider>) minecraftProviderFunction;
 		this.intermediaryMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>>) (Object) intermediaryMinecraftProviderBiFunction;
 		this.namedMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>>) namedMinecraftProviderBiFunction;
 		this.processedNamedMinecraftProviderBiFunction = (BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>>) (Object) processedNamedMinecraftProviderBiFunction;
 		this.decompileConfigurationBiFunction = (BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>>) decompileConfigurationBiFunction;
-		this.supportedRunEnvironments = supportedRunEnvironments;
+		this.supportedEnvironments = supportedEnvironments;
 	}
 
 	public static MinecraftJarConfiguration fromProjectConfiguration(Project project) {
@@ -127,7 +127,7 @@ public enum MinecraftJarConfiguration {
 		return decompileConfigurationBiFunction;
 	}
 
-	public List<String> getSupportedRunEnvironments() {
-		return supportedRunEnvironments;
+	public List<String> getSupportedEnvironments() {
+		return supportedEnvironments;
 	}
 }

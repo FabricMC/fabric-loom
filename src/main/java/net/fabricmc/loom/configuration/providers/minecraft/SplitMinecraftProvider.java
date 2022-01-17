@@ -57,7 +57,7 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
-		boolean requiresRefresh = isRefreshDeps() || !Files.exists(minecraftClientOnlyJar) || !Files.exists(minecraftCommonJar);
+		boolean requiresRefresh = isRefreshDeps() || Files.notExists(minecraftClientOnlyJar) || Files.notExists(minecraftCommonJar);
 
 		if (!requiresRefresh) {
 			return;

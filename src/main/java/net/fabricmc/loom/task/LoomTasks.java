@@ -138,7 +138,7 @@ public final class LoomTasks {
 			});
 		});
 
-		final List<String> supportedRunEnvironments = extension.getMinecraftJarConfiguration().getSupportedRunEnvironments();
+		final List<String> supportedRunEnvironments = extension.getMinecraftJarConfiguration().getSupportedEnvironments();
 
 		if (supportedRunEnvironments.contains("client")) {
 			extension.getRunConfigs().create("client", RunConfigSettings::client);

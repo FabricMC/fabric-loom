@@ -36,6 +36,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.ServerOnlyMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 
 public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>> extends NamedMinecraftProvider<M> {
@@ -152,6 +153,17 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		@Override
 		public Path getClientOnlyJar() {
 			return getProcessedPath(getParentMinecraftProvider().getClientOnlyJar());
+		}
+	}
+
+	public static final class ServerOnlyImpl extends ProcessedNamedMinecraftProvider<ServerOnlyMinecraftProvider, NamedMinecraftProvider.ServerOnlyImpl> implements ServerOnly {
+		public ServerOnlyImpl(NamedMinecraftProvider.ServerOnlyImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+			super(parentMinecraftProvide, jarProcessorManager);
+		}
+
+		@Override
+		public Path getServerOnlyJar() {
+			return getProcessedPath(getParentMinecraftProvider().getServerOnlyJar());
 		}
 	}
 }

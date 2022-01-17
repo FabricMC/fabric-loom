@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +37,7 @@ import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
-	private File minecraftMergedJar;
+	private Path minecraftMergedJar;
 
 	public MergedMinecraftProvider(Project project) {
 		super(project);
@@ -45,25 +46,25 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	@Override
 	protected void initFiles() {
 		super.initFiles();
-		minecraftMergedJar = file("minecraft-merged.jar");
+		minecraftMergedJar = path("minecraft-merged.jar");
 	}
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(minecraftMergedJar.toPath());
+		return List.of(minecraftMergedJar);
 	}
 
 	@Override
 	public void provide() throws Exception {
 		super.provide();
 
-		if (!minecraftMergedJar.exists() || isRefreshDeps()) {
+		if (!Files.exists(minecraftMergedJar) || isRefreshDeps()) {
 			try {
 				mergeJars();
 			} catch (Throwable e) {
 				HashedDownloadUtil.delete(getMinecraftClientJar());
 				HashedDownloadUtil.delete(getMinecraftServerJar());
-				minecraftMergedJar.delete();
+				Files.deleteIfExists(minecraftMergedJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
 				throw e;
@@ -83,13 +84,13 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 		Objects.requireNonNull(jarToMerge, "Cannot merge null input jar?");
 
-		try (JarMerger jarMerger = new JarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar)) {
+		try (JarMerger jarMerger = new JarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}
 	}
 
-	public File getMergedJar() {
+	public Path getMergedJar() {
 		return minecraftMergedJar;
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,40 +25,33 @@
 package net.fabricmc.loom.configuration.decompile;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
-public final class MergedDecompileConfiguration {
-	private final Project project;
-	private final MappedMinecraftProvider.Merged minecraftProvider;
-	private final LoomGradleExtension extension;
-	private final MappingsProviderImpl mappingsProvider;
-
-	public MergedDecompileConfiguration(Project project, MappedMinecraftProvider.Merged minecraftProvider) {
-		this.project = project;
-		this.minecraftProvider = minecraftProvider;
-		this.extension = LoomGradleExtension.get(project);
-		this.mappingsProvider = extension.getMappingsProvider();
+public class SingleJarDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider> {
+	public SingleJarDecompileConfiguration(Project project, MappedMinecraftProvider minecraftProvider) {
+		super(project, minecraftProvider);
 	}
 
-	public void afterEvaluation() {
-		File mappedJar = minecraftProvider.getMergedJar().toFile();
+	@Override
+	public final void afterEvaluation() {
+		List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
+		assert minecraftJars.size() == 1;
+
+		final File namedJar = minecraftJars.get(0).toFile();
+
+		File mappedJar = namedJar;
 
 		if (mappingsProvider.hasUnpickDefinitions()) {
 			File outputJar = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
-
-			project.getTasks().register("unpickJar", UnpickJarTask.class, unpickJarTask -> {
-				unpickJarTask.getUnpickDefinitions().set(mappingsProvider.getUnpickDefinitionsFile());
-				unpickJarTask.getInputJar().set(minecraftProvider.getMergedJar().toFile());
-				unpickJarTask.getOutputJar().set(outputJar);
-			});
+			createUnpickJarTask("unpickJar", namedJar, outputJar);
 
 			mappedJar = outputJar;
 		}
@@ -71,7 +64,7 @@ public final class MergedDecompileConfiguration {
 			// Decompiler will be passed to the constructor of GenerateSourcesTask
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				task.getInputJar().set(inputJar);
-				task.getRuntimeJar().set(minecraftProvider.getMergedJar().toFile());
+				task.getRuntimeJar().set(namedJar);
 
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));

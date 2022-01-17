@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,14 @@ import java.util.List;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
+import net.fabricmc.tinyremapper.OutputConsumerPath;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
-public final class SplitMinecraftProvider extends MinecraftProvider {
-	private Path minecraftClientOnlyJar;
-	private Path minecraftCommonJar;
+public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
+	private Path minecraftServerOnlyJar;
 
-	public SplitMinecraftProvider(Project project) {
+	public ServerOnlyMinecraftProvider(Project project) {
 		super(project);
 	}
 
@@ -44,20 +46,19 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	protected void initFiles() {
 		super.initFiles();
 
-		minecraftClientOnlyJar = path("minecraft-client-only.jar");
-		minecraftCommonJar = path("minecraft-common.jar");
+		minecraftServerOnlyJar = path("minecraft-server-only.jar");
 	}
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(minecraftClientOnlyJar, minecraftCommonJar);
+		return List.of(minecraftServerOnlyJar);
 	}
 
 	@Override
 	public void provide() throws Exception {
 		super.provide();
 
-		boolean requiresRefresh = isRefreshDeps() || Files.notExists(minecraftClientOnlyJar) || Files.notExists(minecraftCommonJar);
+		boolean requiresRefresh = isRefreshDeps() || Files.notExists(minecraftServerOnlyJar);
 
 		if (!requiresRefresh) {
 			return;
@@ -66,33 +67,36 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 		BundleMetadata serverBundleMetadata = getServerBundleMetadata();
 
 		if (serverBundleMetadata == null) {
-			throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar can be split, please use a merged jar setup for this version of minecraft");
+			throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar support server only configuration, please use a merged jar setup for this version of minecraft");
 		}
 
 		extractBundledServerJar();
-
-		final Path clientJar = getMinecraftClientJar().toPath();
 		final Path serverJar = getMinecraftExtractedServerJar().toPath();
 
-		try (MinecraftJarSplitter jarSplitter = new MinecraftJarSplitter(clientJar, serverJar)) {
-			// Required for loader to compute the version info also useful to have in both jars.
-			jarSplitter.sharedEntry("version.json");
-			jarSplitter.forcedClientEntry("assets/.mcassetsroot");
+		TinyRemapper remapper = null;
 
-			jarSplitter.split(minecraftClientOnlyJar, minecraftCommonJar);
+		try {
+			remapper = TinyRemapper.newRemapper().build();
+
+			Files.deleteIfExists(minecraftServerOnlyJar);
+
+			// Pass through tiny remapper to fix the meta-inf
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(minecraftServerOnlyJar).build()) {
+				outputConsumer.addNonClassFiles(serverJar, NonClassCopyMode.FIX_META_INF, remapper);
+				remapper.readInputs(serverJar);
+				remapper.apply(outputConsumer);
+			}
 		} catch (Exception e) {
-			Files.deleteIfExists(minecraftClientOnlyJar);
-			Files.deleteIfExists(minecraftCommonJar);
-
-			throw new RuntimeException("Failed to split minecraft", e);
+			Files.deleteIfExists(minecraftServerOnlyJar);
+			throw new RuntimeException("Failed to process server only jar", e);
+		} finally {
+			if (remapper != null) {
+				remapper.finish();
+			}
 		}
 	}
 
-	public Path getMinecraftClientOnlyJar() {
-		return minecraftClientOnlyJar;
-	}
-
-	public Path getMinecraftCommonJar() {
-		return minecraftCommonJar;
+	public Path getMinecraftServerOnlyJar() {
+		return minecraftServerOnlyJar;
 	}
 }

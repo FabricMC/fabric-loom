@@ -64,4 +64,17 @@ public interface MappedMinecraftProvider {
 			return List.of(getCommonJar(), getClientOnlyJar());
 		}
 	}
+
+	interface ServerOnly extends ProviderImpl {
+		String SERVER_ONLY = "serverOnly";
+
+		default Path getServerOnlyJar() {
+			return getJar(SERVER_ONLY);
+		}
+
+		@Override
+		default List<Path> getMinecraftJars() {
+			return List.of(getServerOnlyJar());
+		}
+	}
 }

@@ -33,6 +33,7 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.ServerOnlyMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SidedClassVisitor;
@@ -61,7 +62,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-					new RemappedJars(minecraftProvider.getMergedJar().toPath(), getMergedJar(), MappingsNamespace.OFFICIAL)
+					new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
 			);
 		}
 
@@ -79,8 +80,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-					new RemappedJars(minecraftProvider.getMinecraftCommonJar().toPath(), getCommonJar(), MappingsNamespace.OFFICIAL),
-					new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar().toPath(), getClientOnlyJar(), MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar().toPath())
+					new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), MappingsNamespace.OFFICIAL),
+					new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar())
 			);
 		}
 
@@ -95,6 +96,24 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		protected void applyDependencies(BiConsumer<String, String> consumer) {
 			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, COMMON);
 			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, CLIENT_ONLY);
+		}
+	}
+
+	public static final class ServerOnlyImpl extends NamedMinecraftProvider<ServerOnlyMinecraftProvider> implements ServerOnly {
+		public ServerOnlyImpl(Project project, ServerOnlyMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
+		}
+
+		@Override
+		public List<RemappedJars> getRemappedJars() {
+			return List.of(
+				new RemappedJars(minecraftProvider.getMinecraftServerOnlyJar(), getServerOnlyJar(), MappingsNamespace.OFFICIAL)
+			);
+		}
+
+		@Override
+		protected void applyDependencies(BiConsumer<String, String> consumer) {
+			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, SERVER_ONLY);
 		}
 	}
 }

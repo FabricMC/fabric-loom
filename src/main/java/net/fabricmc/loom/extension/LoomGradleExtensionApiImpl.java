@@ -45,6 +45,7 @@ import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -62,6 +63,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<String> intermediary;
 	protected final Property<Boolean> enableInterfaceInjection;
+	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
 
 	private final ModVersionParser versionParser;
 
@@ -96,6 +98,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
+
+		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
+		this.minecraftJarConfiguration.finalizeValueOnRead();
 
 		this.accessWidener.finalizeValueOnRead();
 		this.getGameJarProcessors().finalizeValueOnRead();
@@ -201,6 +206,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {
 		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
+	}
+
+	@Override
+	public Property<MinecraftJarConfiguration> getMinecraftJarConfiguration() {
+		return minecraftJarConfiguration;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

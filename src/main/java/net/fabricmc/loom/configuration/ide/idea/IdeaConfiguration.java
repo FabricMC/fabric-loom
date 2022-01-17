@@ -30,10 +30,12 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
 
+import net.fabricmc.loom.task.LoomTasks;
+
 public class IdeaConfiguration {
 	public static void setup(Project project) {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, ideaSyncTask1 -> {
-			ideaSyncTask1.dependsOn(project.getTasks().named("configureLaunch"));
+		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
+			task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(project));
 		});
 
 		if (!IdeaUtils.isIdeaSync()) {

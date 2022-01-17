@@ -199,6 +199,10 @@ trait GradleProjectTestTrait {
             return new File(getProjectDir(), "build.gradle")
         }
 
+        File getGradleProperties() {
+            return new File(getProjectDir(), "gradle.properties")
+        }
+
         String getOutputZipEntry(String filename, String entryName) {
             def file = getOutputFile(filename)
             def bytes = ZipUtils.unpackNullable(file.toPath(), entryName)

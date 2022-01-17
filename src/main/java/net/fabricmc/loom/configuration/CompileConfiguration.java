@@ -42,18 +42,13 @@ import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
-import net.fabricmc.loom.configuration.decompile.MergedDecompileConfiguration;
-import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.ProcessedNamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 
@@ -190,11 +185,10 @@ public final class CompileConfiguration {
 	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
 	private static synchronized void setupMinecraft(Project project) throws Exception {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		boolean split = project.getProperties().get("fabric.loom.experimental.splitMcJars") != null;
+		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars -- TODO share across projects.
-		final MinecraftProvider minecraftProvider = split ? new SplitMinecraftProvider(project) : new MergedMinecraftProvider(project);
+		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(project);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
@@ -204,26 +198,14 @@ public final class CompileConfiguration {
 		mappingsProvider.applyToProject(project, mappingsDep);
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
-		NamedMinecraftProvider<?> namedMinecraftProvider;
-
-		if (split) {
-			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
-			namedMinecraftProvider = new NamedMinecraftProvider.SplitImpl(project, (SplitMinecraftProvider) minecraftProvider);
-		} else {
-			intermediaryMinecraftProvider = new IntermediaryMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
-			namedMinecraftProvider = new NamedMinecraftProvider.MergedImpl(project, (MergedMinecraftProvider) minecraftProvider);
-		}
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
+		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
 
 		final JarProcessorManager jarProcessorManager = createJarProcessorManager(project);
 
 		if (jarProcessorManager.active()) {
 			// Wrap the named MC provider for one that will provide the processed jars
-			if (split) {
-				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.SplitImpl((NamedMinecraftProvider.SplitImpl) namedMinecraftProvider, jarProcessorManager);
-			} else {
-				namedMinecraftProvider = new ProcessedNamedMinecraftProvider.MergedImpl((NamedMinecraftProvider.MergedImpl) namedMinecraftProvider, jarProcessorManager);
-			}
+			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, jarProcessorManager);
 		}
 
 		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
@@ -289,13 +271,8 @@ public final class CompileConfiguration {
 	private static void configureDecompileTasks(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Merged mergedMappedMinecraftProvider) {
-			new MergedDecompileConfiguration(project, mergedMappedMinecraftProvider).afterEvaluation();
-		} else if (extension.getNamedMinecraftProvider() instanceof MappedMinecraftProvider.Split splitMinecraftProvider) {
-			new SplitDecompileConfiguration(project, splitMinecraftProvider).afterEvaluation();
-		} else {
-			throw new UnsupportedOperationException();
-		}
+		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
+				.apply(project, extension.getNamedMinecraftProvider()).afterEvaluation();
 	}
 
 	private static void extendsFrom(String a, String b, Project project) {

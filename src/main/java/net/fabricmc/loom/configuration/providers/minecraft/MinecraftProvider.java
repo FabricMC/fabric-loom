@@ -264,6 +264,10 @@ public abstract class MinecraftProvider {
 		return new File(workingDir(), path);
 	}
 
+	public Path path(String path) {
+		return file(path).toPath();
+	}
+
 	public File getMinecraftClientJar() {
 		return minecraftClientJar;
 	}
@@ -275,7 +279,6 @@ public abstract class MinecraftProvider {
 	}
 
 	// This may be the server bundler jar on newer versions prob not what you want.
-	@Deprecated
 	public File getMinecraftServerJar() {
 		return minecraftServerJar;
 	}

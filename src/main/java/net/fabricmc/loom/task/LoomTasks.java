@@ -26,11 +26,14 @@ package net.fabricmc.loom.task;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
@@ -67,13 +70,20 @@ public final class LoomTasks {
 		});
 
 		tasks.register("configureLaunch", task -> {
-			task.dependsOn(tasks.named("extractNatives"));
-			task.dependsOn(tasks.named("downloadAssets"));
 			task.dependsOn(tasks.named("generateDLIConfig"));
 			task.dependsOn(tasks.named("generateLog4jConfig"));
 			task.dependsOn(tasks.named("generateRemapClasspath"));
 
 			task.setDescription("Setup the required files to launch Minecraft");
+			task.setGroup(Constants.TaskGroup.FABRIC);
+		});
+
+		tasks.register("configureClientLaunch", task -> {
+			task.dependsOn(tasks.named("extractNatives"));
+			task.dependsOn(tasks.named("downloadAssets"));
+			task.dependsOn(tasks.named("configureLaunch"));
+
+			task.setDescription("Setup the required files to launch the Minecraft client");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
@@ -91,13 +101,13 @@ public final class LoomTasks {
 	private static void registerIDETasks(TaskContainer tasks) {
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
-			t.dependsOn("idea", "configureLaunch");
+			t.dependsOn("idea", getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
-			t.dependsOn("configureLaunch");
+			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
@@ -108,7 +118,7 @@ public final class LoomTasks {
 
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.setDescription("Generates VSCode launch configurations.");
-			t.dependsOn("configureLaunch");
+			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 	}
@@ -125,11 +135,25 @@ public final class LoomTasks {
 			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
-				t.dependsOn("configureLaunch");
+				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
 		});
-
 		extension.getRunConfigs().create("client", RunConfigSettings::client);
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
+
+		// Remove the client run config when server only. Done by name to not remove any possible custom run configs
+		project.afterEvaluate(p -> {
+			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
+				extension.getRunConfigs().removeIf(settings -> settings.getName().equals("client"));
+			}
+		});
+	}
+
+	public static Provider<Task> getIDELaunchConfigureTaskName(Project project) {
+		return project.provider(() -> {
+			final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration().get();
+			final String name = jarConfiguration == MinecraftJarConfiguration.SERVER_ONLY ? "configureLaunch" : "configureClientLaunch";
+			return project.getTasks().getByName(name);
+		});
 	}
 }

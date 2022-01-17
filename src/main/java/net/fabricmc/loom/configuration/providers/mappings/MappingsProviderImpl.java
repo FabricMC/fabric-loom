@@ -298,7 +298,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 	private void suggestFieldNames(MergedMinecraftProvider minecraftProvider, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
-		runCommand(command, minecraftProvider.getMergedJar().getAbsolutePath(),
+		runCommand(command, minecraftProvider.getMergedJar().toFile().getAbsolutePath(),
 						oldMappings.toAbsolutePath().toString(),
 						newMappings.toAbsolutePath().toString());
 	}

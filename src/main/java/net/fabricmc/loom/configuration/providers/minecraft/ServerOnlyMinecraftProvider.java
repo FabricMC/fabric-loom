@@ -27,7 +27,6 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.gradle.api.Project;
 
@@ -79,13 +78,10 @@ public final class ServerOnlyMinecraftProvider extends MinecraftProvider {
 		try {
 			remapper = TinyRemapper.newRemapper().build();
 
+			Files.deleteIfExists(minecraftServerOnlyJar);
+
 			// Pass through tiny remapper to fix the meta-inf
-			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(minecraftServerOnlyJar).filter(new Predicate<String>() {
-				@Override
-				public boolean test(String s) {
-					return false;
-				}
-			}).build()) {
+			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(minecraftServerOnlyJar).build()) {
 				outputConsumer.addNonClassFiles(serverJar, NonClassCopyMode.FIX_META_INF, remapper);
 				remapper.readInputs(serverJar);
 				remapper.apply(outputConsumer);

@@ -22,28 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.idea;
+package net.fabricmc.loom.test.integration
 
-import java.util.List;
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskProvider;
-import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-import net.fabricmc.loom.task.LoomTasks;
+class ServerOnlyTest extends Specification implements GradleProjectTestTrait {
+    @Unroll
+    def "server only (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "minimalBase", version: version)
 
-public class IdeaConfiguration {
-	public static void setup(Project project) {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			task.dependsOn(project.getTasks().named(LoomTasks.getIDELaunchConfigureTaskName(project)));
-		});
+            gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
 
-		if (!IdeaUtils.isIdeaSync()) {
-			return;
-		}
+            gradle.gradleProperties << '''
+                fabric.loom.minecraft.jar.configuration=server_only
+            '''
 
-		// Run the idea sync task, is this exposed via the api?
-		final TaskExecutionGraphInternal taskGraph = (TaskExecutionGraphInternal) project.getGradle().getTaskGraph();
-		taskGraph.whenReady(taskExecutionGraph -> taskGraph.addEntryTasks(List.of(ideaSyncTask.get())));
-	}
+        when:
+            def result = gradle.run(tasks: ["build", "unpick"])
+
+        then:
+            result.task(":build").outcome == SUCCESS
+
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

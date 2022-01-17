@@ -33,6 +33,7 @@ import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
@@ -100,13 +101,13 @@ public final class LoomTasks {
 	private static void registerIDETasks(TaskContainer tasks) {
 		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
-			t.dependsOn("idea", "configureLaunch");
+			t.dependsOn("idea", getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
 		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
-			t.dependsOn("configureLaunch");
+			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
@@ -117,7 +118,7 @@ public final class LoomTasks {
 
 		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.setDescription("Generates VSCode launch configurations.");
-			t.dependsOn("configureLaunch");
+			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 	}
@@ -147,5 +148,10 @@ public final class LoomTasks {
 		if (supportedRunEnvironments.contains("server")) {
 			extension.getRunConfigs().create("server", RunConfigSettings::server);
 		}
+	}
+
+	public static String getIDELaunchConfigureTaskName(Project project) {
+		final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration();
+		return jarConfiguration == MinecraftJarConfiguration.SERVER_ONLY ? "configureLaunch" : "configureClientLaunch";
 	}
 }

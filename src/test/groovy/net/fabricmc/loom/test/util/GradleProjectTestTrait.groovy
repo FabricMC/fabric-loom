@@ -107,10 +107,12 @@ trait GradleProjectTestTrait {
             throw new FileNotFoundException("Failed to find project directory at: $projectSourceDir.absolutePath")
         }
 
+        def settingsGradle = new File(projectDir, "settings.gradle")
+
         // Cleanup some basic things if they already exists
         new File(projectDir, "src").deleteDir()
         new File(projectDir, "build.gradle").delete()
-        new File(projectDir, "settings.gradle").delete()
+        settingsGradle.delete()
 
         projectSourceDir.eachFileRecurse { file ->
             if (file.isDirectory()) {
@@ -127,6 +129,10 @@ trait GradleProjectTestTrait {
 
             tempFile.parentFile.mkdirs()
             tempFile.bytes = file.bytes
+        }
+
+        if (!settingsGradle.exists()) {
+            settingsGradle.createNewFile()
         }
     }
 

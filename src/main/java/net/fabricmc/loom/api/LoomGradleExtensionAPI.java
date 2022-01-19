@@ -152,4 +152,6 @@ public interface LoomGradleExtensionAPI {
 	default void splitMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
 	}
+
+	Property<Boolean> getRuntimeOnlyLog4j();
 }

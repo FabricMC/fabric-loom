@@ -51,6 +51,10 @@ public record MinecraftVersionMeta(
 		return downloads().get(key);
 	}
 
+	public boolean isVersionOrNewer(String releaseTime) {
+		return this.releaseTime().compareTo(releaseTime) >= 0;
+	}
+
 	public record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
 		public String fabricId(String version) {
 			return id.equals(version) ? version : version + "-" + id;

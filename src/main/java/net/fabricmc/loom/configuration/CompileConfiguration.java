@@ -63,6 +63,7 @@ public final class CompileConfiguration {
 		extension.createLazyConfiguration(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NAMED, configuration -> configuration.setTransitive(false)); // The launchers do not recurse dependencies
 		NamedDomainObjectProvider<Configuration> serverDeps = extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
+		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_DEPENDENCIES, configuration -> {
 			configuration.extendsFrom(serverDeps.get());
 			configuration.setTransitive(false);
@@ -125,6 +126,8 @@ public final class CompileConfiguration {
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
 		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
+
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, project);
 
 		// Add the dev time dependencies
 		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);

@@ -38,9 +38,11 @@ public class MinecraftLibraryProvider {
 	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-([0-9].*?)-)(?<classifier>.*).jar$");
 
 	public void provide(MinecraftProvider minecraftProvider, Project project) {
-		final MinecraftJarConfiguration jarConfiguration = LoomGradleExtension.get(project).getMinecraftJarConfiguration().get();
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 		final MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
+		final boolean runtimeOnlyLog4j = versionInfo.isVersionOrNewer(Constants.MinecraftReleaseTimes.MC_20W03A) && extension.getRuntimeOnlyLog4j().get();
 
 		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 
@@ -54,11 +56,16 @@ public class MinecraftLibraryProvider {
 			}
 
 			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
+				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
+					// Make log4j a runtime only dep in 20w03a or later. Modders should use SLF4J.
+					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
+				} else if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
 				} else if (jarConfiguration.getSupportedEnvironments().contains("client")) {
 					// Client only library, or legacy version
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
+				} else {
+					throw new RuntimeException("Library %s was not added to a configuration".formatted(library.name()));
 				}
 			}
 

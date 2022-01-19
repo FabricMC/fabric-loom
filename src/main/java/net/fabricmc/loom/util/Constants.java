@@ -144,6 +144,6 @@ public class Constants {
 	}
 
 	public static final class MinecraftReleaseTimes {
-		public static final String MC_20W03A = "2022-01-19T16:04:59+00:00";
+		public static final String MC_22W03A = "2022-01-19T16:04:59+00:00";
 	}
 }

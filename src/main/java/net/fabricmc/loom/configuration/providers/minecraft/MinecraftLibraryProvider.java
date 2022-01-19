@@ -42,7 +42,7 @@ public class MinecraftLibraryProvider {
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 		final MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
-		final boolean runtimeOnlyLog4j = versionInfo.isVersionOrNewer(Constants.MinecraftReleaseTimes.MC_20W03A) && extension.getRuntimeOnlyLog4j().get();
+		final boolean runtimeOnlyLog4j = versionInfo.isVersionOrNewer(Constants.MinecraftReleaseTimes.MC_22W03A) && extension.getRuntimeOnlyLog4j().get();
 
 		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 

@@ -65,7 +65,7 @@ public class MinecraftLibraryProvider {
 					// Client only library, or legacy version
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
 				} else {
-					throw new RuntimeException("Library %s was not added to a configuration".formatted(library.name()));
+					project.getLogger().debug("Minecraft library ({}) was not added to any configuration", library.name());
 				}
 			}
 

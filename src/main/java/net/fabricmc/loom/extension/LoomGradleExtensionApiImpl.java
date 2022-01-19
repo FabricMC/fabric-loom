@@ -106,7 +106,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.accessWidener.finalizeValueOnRead();
 		this.getGameJarProcessors().finalizeValueOnRead();
 
-		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(true);
+		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(false);
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
 	}
 

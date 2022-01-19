@@ -142,8 +142,4 @@ public class Constants {
 		private TaskGroup() {
 		}
 	}
-
-	public static final class MinecraftReleaseTimes {
-		public static final String MC_22W03A = "2022-01-19T16:04:59+00:00";
-	}
 }

@@ -42,7 +42,7 @@ public class MinecraftLibraryProvider {
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 		final MinecraftVersionMeta versionInfo = minecraftProvider.getVersionInfo();
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
-		final boolean runtimeOnlyLog4j = versionInfo.isVersionOrNewer(Constants.MinecraftReleaseTimes.MC_22W03A) && extension.getRuntimeOnlyLog4j().get();
+		final boolean runtimeOnlyLog4j = extension.getRuntimeOnlyLog4j().get();
 
 		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 
@@ -57,7 +57,7 @@ public class MinecraftLibraryProvider {
 
 			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
 				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
-					// Make log4j a runtime only dep in 20w03a or later. Modders should use SLF4J.
+					// Make log4j a runtime only dep to force slf4j.
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
 				} else if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());

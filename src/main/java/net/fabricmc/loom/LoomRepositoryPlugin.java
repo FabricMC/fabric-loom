@@ -70,6 +70,13 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		repositories.maven(repo -> {
 			repo.setName("Mojang");
 			repo.setUrl(MirrorUtil.getLibrariesBase(target));
+
+			// Don't use the gradle module metadata. It has unintended side effects.
+			repo.metadataSources(sources -> {
+				sources.mavenPom();
+				sources.artifact();
+				sources.ignoreGradleMetadataRedirection();
+			});
 		});
 		repositories.mavenCentral();
 

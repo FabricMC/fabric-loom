@@ -29,20 +29,17 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Named;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+
+import net.fabricmc.loom.task.AbstractGenerateSourcesTask;
+import net.fabricmc.loom.task.GenerateSourcesTask;
 
 public abstract class DecompilerOptions implements Named {
 	/**
 	 * Class name for to the {@link LoomDecompiler}.
 	 */
 	public abstract Property<String> getDecompilerClassName();
-
-	/**
-	 * Additional classpath entries for the decompiler jvm.
-	 */
-	public abstract ConfigurableFileCollection getClasspath();
 
 	/**
 	 * Additional options to be passed to the decompiler.
@@ -59,12 +56,17 @@ public abstract class DecompilerOptions implements Named {
 	 */
 	public abstract Property<Integer> getMaxThreads();
 
+	/**
+	 * Task class used when registering the decompile tasks.
+	 */
+	public abstract Property<Class<? extends AbstractGenerateSourcesTask<?, ?>>> getTaskClass();
+
 	public DecompilerOptions() {
 		getDecompilerClassName().finalizeValueOnRead();
-		getClasspath().finalizeValueOnRead();
 		getOptions().finalizeValueOnRead();
 		getMemory().convention(4096L).finalizeValueOnRead();
 		getMaxThreads().convention(Runtime.getRuntime().availableProcessors()).finalizeValueOnRead();
+		getTaskClass().convention(GenerateSourcesTask.class).finalizeValueOnRead();
 	}
 
 	// Done to work around weird issues with the workers, possibly https://github.com/gradle/gradle/issues/13422

@@ -32,7 +32,7 @@ import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
-import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.task.AbstractGenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
@@ -93,12 +93,12 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		});
 	}
 
-	private TaskProvider<Task> createDecompileTasks(String name, Action<GenerateSourcesTask> configureAction) {
+	private TaskProvider<Task> createDecompileTasks(String name, Action<AbstractGenerateSourcesTask> configureAction) {
 		extension.getDecompilerOptions().forEach(options -> {
 			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
 			final String taskName = "gen%sSourcesWith%s".formatted(name, decompilerName);
 
-			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
+			project.getTasks().register(taskName, options.getTaskClass().get(), options).configure(task -> {
 				configureAction.execute(task);
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));

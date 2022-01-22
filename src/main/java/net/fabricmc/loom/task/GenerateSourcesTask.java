@@ -160,15 +160,17 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	private WorkQueue createWorkQueue(String jvmMarkerValue) {
 		if (!useProcessIsolation()) {
-			return getWorkerExecutor().noIsolation();
+			return getWorkerExecutor().classLoaderIsolation(spec -> {
+				spec.getClasspath().from(decompilerOptions.getClasspath());
+			});
 		}
 
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
 				forkOptions.setMaxHeapSize("%dm".formatted(decompilerOptions.getMemory().get()));
 				forkOptions.systemProperty(WorkerDaemonClientsManagerHelper.MARKER_PROP, jvmMarkerValue);
-				forkOptions.bootstrapClasspath(decompilerOptions.getClasspath());
 			});
+			spec.getClasspath().from(decompilerOptions.getClasspath());
 		});
 	}
 

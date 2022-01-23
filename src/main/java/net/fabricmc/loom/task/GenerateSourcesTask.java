@@ -100,6 +100,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getOutputs().upToDateWhen((o) -> false);
 		getClasspath().from(decompilerOptions.getClasspath()).finalizeValueOnRead();
+		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
 	}
 
 	@TaskAction
@@ -328,8 +329,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		try {
 			//noinspection unchecked
 			return (Constructor<LoomDecompiler>) Class.forName(clazz).getConstructor();
-		} catch (NoSuchMethodException | ClassNotFoundException e) {
+		} catch (NoSuchMethodException e) {
 			return null;
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

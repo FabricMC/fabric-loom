@@ -50,4 +50,28 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 			'cfr' 			| "genSourcesWithCfr"				| DEFAULT_GRADLE
 			'cfr' 			| "genSourcesWithCfr"				| PRE_RELEASE_GRADLE
 	}
+
+	@Unroll
+	def "custom decompiler (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "minimalBase", version: version)
+			gradle.buildSrc("decompile")
+			gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                }
+            '''
+		when:
+			def result = gradle.run(task: "genSourcesWithCustom")
+
+		then:
+			result.task(":genSourcesWithCustom").outcome == SUCCESS
+			result.task(":preDecompile").outcome == SUCCESS
+			result.output.contains("Writing test file")
+			result.output.contains("Running custom decompiler")
+
+		where:
+			version << STANDARD_TEST_VERSIONS
+	}
 }

@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.util
 import groovy.transform.Immutable
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.util.ZipUtils
+import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Shared
@@ -141,8 +142,8 @@ trait GradleProjectTestTrait {
         private String gradleVersion
         private String projectDir
         private String gradleHomeDir
-
         private String warningMode
+        private boolean useBuildSrc
 
         BuildResult run(Map options) {
             // Setup the system props to tell loom that its running in a test env
@@ -166,6 +167,10 @@ trait GradleProjectTestTrait {
             args.addAll(options.args ?: [])
 
             runner.withArguments(args as String[])
+
+            if (useBuildSrc) {
+                writeBuildSrcDeps(runner)
+            }
 
             return options.expectFailure ? runner.buildAndFail() : runner.build()
         }
@@ -227,6 +232,66 @@ trait GradleProjectTestTrait {
 
         File getGeneratedSources(String mappings) {
             return new File(getGradleHomeDir(), "caches/fabric-loom/${mappings}/minecraft-merged-named-sources.jar")
+        }
+
+        void buildSrc(String name) {
+            useBuildSrc = true
+
+            def buildSrcDir = new File(projectDir, "buildSrc")
+            buildSrcDir.mkdirs()
+
+            def pluginClass = "net.fabricmc.loom.test.integration.buildSrc.${name}.TestPlugin"
+            new File(buildSrcDir, "build.gradle") << """
+                plugins {
+                    id 'groovy-gradle-plugin'
+                    id 'groovy'
+                }
+
+                gradlePlugin {
+                    plugins {
+                        simplePlugin {
+                            id = 'loom-test-plugin'
+                            implementationClass = '${pluginClass}'
+                        }
+                    }
+                }
+            """
+
+            new File(buildSrcDir, "settings.gradle") << '''
+                rootProject.name='loom-test-plugin'
+            '''
+
+            // Patch the new plugin into the end of the plugins block
+            def matcher = buildGradle.text =~ /(?s)plugins \{(?<ids>.*)}/
+            assert matcher.find()
+            def ids = matcher.group("ids")
+
+            def pluginBlock = """
+                plugins {
+                    ${ids}
+                    id 'loom-test-plugin'
+                }
+            """
+
+            buildGradle.text = buildGradle.text.replaceAll("(?s)(plugins \\{.*})", pluginBlock)
+
+            def sourceSrc = new File("src/test/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)
+            def targetSrc = new File(buildSrcDir, "src/main/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)
+
+            FileUtils.copyDirectory(sourceSrc, targetSrc)
+        }
+
+        void writeBuildSrcDeps(GradleRunner runner) {
+            def dependencies = ""
+            runner.pluginClasspath.forEach { File file ->
+                dependencies += "implementation files('${file.absolutePath.replace("\\", "\\\\")}')\n"
+            }
+
+            new File(projectDir, "buildSrc/build.gradle") << """
+                dependencies {
+                    ${dependencies}
+                }
+            """
         }
     }
 }

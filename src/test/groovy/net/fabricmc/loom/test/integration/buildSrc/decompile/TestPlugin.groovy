@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,28 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.test.integration.buildSrc.decompile
 
-import org.gradle.util.GradleVersion
+import net.fabricmc.loom.LoomGradleExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.5-20220122232041+0000"
+class TestPlugin implements Plugin<Project> {
+    @Override
+    void apply(Project project) {
+        println("Test plugin")
+        def extension = LoomGradleExtension.get(project)
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+        def preDecompileTask = project.tasks.register("preDecompile", PreDecompileTask.class) {
+            outputFile = project.file("output.txt")
+        }
+
+        extension.decompilerOptions.register("custom") {
+            decompilerClassName.set(CustomDecompiler.class.name)
+
+            // BuiltBy shouldn't be required, but for some reason it is? Any ideas?
+            classpath.from(preDecompileTask)
+            classpath.builtBy(preDecompileTask)
+        }
+    }
 }

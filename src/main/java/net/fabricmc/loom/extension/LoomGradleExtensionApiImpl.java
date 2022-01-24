@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,13 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
+import org.gradle.api.tasks.SourceSet;
 
+import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -62,9 +65,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<String> intermediary;
-	protected final Property<Boolean> enableInterfaceInjection;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
+	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
 	private final ModVersionParser versionParser;
 
@@ -88,9 +91,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
-		this.enableInterfaceInjection = project.getObjects().property(Boolean.class)
-				.convention(true);
-		this.enableInterfaceInjection.finalizeValueOnRead();
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -108,6 +108,18 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(false);
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
+
+		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
+
+		// Add main source set by default
+		interfaceInjection(interfaceInjection -> {
+			final JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+			final SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+			interfaceInjection.getInterfaceInjectionSourceSets().add(main);
+
+			interfaceInjection.getInterfaceInjectionSourceSets().finalizeValueOnRead();
+			interfaceInjection.getEnableDependencyInterfaceInjection().convention(true).finalizeValueOnRead();
+		});
 	}
 
 	@Override
@@ -203,11 +215,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public Property<Boolean> getEnableInterfaceInjection() {
-		return enableInterfaceInjection;
-	}
-
-	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {
 		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
 	}
@@ -220,6 +227,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getRuntimeOnlyLog4j() {
 		return runtimeOnlyLog4j;
+	}
+
+	@Override
+	public InterfaceInjectionExtensionAPI getInterfaceInjection() {
+		return interfaceInjectionExtension;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

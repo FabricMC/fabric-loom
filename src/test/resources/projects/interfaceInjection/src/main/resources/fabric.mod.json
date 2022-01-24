@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "owndummy",
+  "version": "1",
+  "name": "Own Dummy Mod",
+  "custom": {
+    "loom:injected_interfaces": {
+      "net/minecraft/class_2248": ["OwnInjectedInterface"]
+    }
+  }
+}

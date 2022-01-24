@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,16 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -57,8 +61,9 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
+import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -69,6 +74,10 @@ import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 import net.fabricmc.loom.util.gradle.WorkerDaemonClientsManagerHelper;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
+import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private final DecompilerOptions decompilerOptions;
@@ -300,29 +309,62 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private Path getMappings() {
-		Path baseMappings = getExtension().getMappingsProvider().tinyMappings;
+		Path inputMappings = getExtension().getMappingsProvider().tinyMappings;
 
-		if (getExtension().getEnableTransitiveAccessWideners().get()) {
-			List<AccessWidenerFile> accessWideners = getExtension().getTransitiveAccessWideners();
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
-			if (accessWideners.isEmpty()) {
-				return baseMappings;
-			}
-
-			Path outputMappings;
-
-			try {
-				outputMappings = Files.createTempFile("loom-transitive-mappings", ".tiny");
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to create temp file", e);
-			}
-
-			TransitiveAccessWidenerMappingsProcessor.process(baseMappings, outputMappings, accessWideners, getProject().getLogger());
-
-			return outputMappings;
+		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
+			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString()));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to read mappings", e);
 		}
 
-		return baseMappings;
+		final List<MappingsProcessor> mappingsProcessors = new ArrayList<>();
+
+		if (getExtension().getEnableTransitiveAccessWideners().get()) {
+			mappingsProcessors.add(new TransitiveAccessWidenerMappingsProcessor(getProject()));
+		}
+
+		if (getExtension().getInterfaceInjection().isEnabled()) {
+			mappingsProcessors.add(new InterfaceInjectionProcessor(getProject()));
+		}
+
+		if (mappingsProcessors.isEmpty()) {
+			return inputMappings;
+		}
+
+		boolean transformed = false;
+
+		for (MappingsProcessor mappingsProcessor : mappingsProcessors) {
+			if (mappingsProcessor.transform(mappingTree)) {
+				transformed = true;
+			}
+		}
+
+		if (!transformed) {
+			return inputMappings;
+		}
+
+		final Path outputMappings;
+
+		try {
+			outputMappings = Files.createTempFile("loom-transitive-mappings", ".tiny");
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to create temp file", e);
+		}
+
+		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {
+			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, MappingsNamespace.NAMED.toString()));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to write mappings", e);
+		}
+
+		return outputMappings;
+	}
+
+	public interface MappingsProcessor {
+		boolean transform(MemoryMappingTree mappings);
 	}
 
 	private static Constructor<LoomDecompiler> getDecompilerConstructor(String clazz) {

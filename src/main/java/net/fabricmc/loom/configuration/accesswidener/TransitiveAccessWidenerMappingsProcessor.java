@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,58 +24,44 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
+import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.accesswidener.TransitiveOnlyFilter;
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.mappingio.MappingReader;
-import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
-import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public final class TransitiveAccessWidenerMappingsProcessor {
-	private TransitiveAccessWidenerMappingsProcessor() {
-	}
+public record TransitiveAccessWidenerMappingsProcessor(Project project) implements GenerateSourcesTask.MappingsProcessor {
+	@Override
+	public boolean transform(MemoryMappingTree mappings) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		List<AccessWidenerFile> accessWideners = extension.getTransitiveAccessWideners();
 
-	public static void process(Path inputMappings, Path outputMappings, List<AccessWidenerFile> accessWideners, Logger logger) {
-		MemoryMappingTree mappingTree = new MemoryMappingTree();
-
-		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
-			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString()));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read mappings", e);
+		if (accessWideners.isEmpty()) {
+			return false;
 		}
 
-		if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappingTree.getSrcNamespace())) {
-			throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappingTree.getSrcNamespace());
+		if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
+			throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
 		}
 
 		for (AccessWidenerFile accessWidener : accessWideners) {
-			MappingCommentVisitor mappingCommentVisitor = new MappingCommentVisitor(accessWidener.modId(), mappingTree, logger);
+			MappingCommentVisitor mappingCommentVisitor = new MappingCommentVisitor(accessWidener.modId(), mappings, project.getLogger());
 			AccessWidenerReader accessWidenerReader = new AccessWidenerReader(new TransitiveOnlyFilter(mappingCommentVisitor));
 			accessWidenerReader.read(accessWidener.content());
 		}
 
-		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {
-			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
-			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, MappingsNamespace.NAMED.toString()));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to write mappings", e);
-		}
+		return true;
 	}
 
-	private static record MappingCommentVisitor(String modId, MemoryMappingTree mappingTree, Logger logger) implements AccessWidenerVisitor {
+	private record MappingCommentVisitor(String modId, MemoryMappingTree mappingTree, Logger logger) implements AccessWidenerVisitor {
 		@Override
 		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(name);

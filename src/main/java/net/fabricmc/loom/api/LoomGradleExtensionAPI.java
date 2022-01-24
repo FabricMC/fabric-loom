@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -86,6 +86,12 @@ public interface LoomGradleExtensionAPI {
 	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.
 	MixinExtensionAPI getMixin();
 
+	default void interfaceInjection(Action<InterfaceInjectionExtensionAPI> action) {
+		action.execute(getInterfaceInjection());
+	}
+
+	InterfaceInjectionExtensionAPI getInterfaceInjection();
+
 	Property<String> getCustomMinecraftManifest();
 
 	/**
@@ -130,15 +136,6 @@ public interface LoomGradleExtensionAPI {
 	 * @return the intermediary url template
 	 */
 	Property<String> getIntermediaryUrl();
-
-	/**
-	 * When true loom will inject interfaces declared in mod manifests into the minecraft jar file.
-	 * This is used to expose interfaces that are implemented on Minecraft classes by mixins at runtime
-	 * in the dev environment.
-	 *
-	 * @return the property controlling interface injection.
-	 */
-	Property<Boolean> getEnableInterfaceInjection();
 
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration> getMinecraftJarConfiguration();

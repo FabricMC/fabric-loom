@@ -53,6 +53,7 @@ import net.fabricmc.loom.util.Constants;
 public abstract class AnnotationProcessorInvoker<T extends Task> {
 	public static final String JAVA = "java";
 	public static final String SCALA = "scala";
+	public static final String GROOVY = "groovy";
 
 	protected final Project project;
 	protected final Map<SourceSet, T> invokerTasks;

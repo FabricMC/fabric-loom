@@ -37,6 +37,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.build.mixin.GroovyApInvoker;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
@@ -268,6 +269,11 @@ public final class CompileConfiguration {
 		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
 			project.getLogger().info("Configuring compiler arguments for Kapt plugin");
 			new KaptApInvoker(project).configureMixin();
+		}
+
+		if (project.getPluginManager().hasPlugin("groovy")) {
+			project.getLogger().info("Configuring compiler arguments for Groovy");
+			new GroovyApInvoker(project).configureMixin();
 		}
 	}
 

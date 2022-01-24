@@ -52,6 +52,12 @@ public class LWJGLVersionOverride {
 	);
 	public static final List<String> NATIVES = DEPENDENCIES.stream().map(s -> s + ":" + NATIVE_CLASSIFIER).toList();
 
+	public static final List<String> MACOS_DEPENDENCIES = List.of(
+			"ca.weblite:java-objc-bridge:1.1"
+	);
+	// Same for now, as java-objc-bridge includes the natives in the main jar.
+	public static final List<String> MACOS_NATIVES = MACOS_DEPENDENCIES;
+
 	/**
 	 * Update lwjgl by default when running on arm and a supported configuration.
 	 */

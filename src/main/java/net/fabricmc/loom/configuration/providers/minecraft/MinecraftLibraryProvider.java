@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,13 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
 public class MinecraftLibraryProvider {
-	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-([0-9].*?)-)(?<classifier>.*).jar$");
+	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-(\\k<version>)-)(?<classifier>.*).jar$");
 
 	public void provide(MinecraftProvider minecraftProvider, Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -58,6 +59,11 @@ public class MinecraftLibraryProvider {
 			}
 
 			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
+				// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
+				if ("org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20130708-debug3".equals(library.name())) {
+					LoomRepositoryPlugin.setupForLegacyVersions(project);
+				}
+
 				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
 					// Make log4j a runtime only dep to force slf4j.
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
@@ -74,10 +80,15 @@ public class MinecraftLibraryProvider {
 			if (library.hasNativesForOS()) {
 				MinecraftVersionMeta.Download nativeDownload = library.classifierForOS();
 
-				Matcher matcher = NATIVES_PATTERN.matcher(nativeDownload.path());
+				if (nativeDownload == null) {
+					continue;
+				}
+
+				final String path = nativeDownload.path();
+				final Matcher matcher = NATIVES_PATTERN.matcher(path);
 
 				if (!matcher.find()) {
-					project.getLogger().warn("Failed to match regex for natives path : " + nativeDownload.path());
+					project.getLogger().warn("Failed to match regex for natives path : " + path);
 					continue;
 				}
 

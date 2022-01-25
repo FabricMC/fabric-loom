@@ -28,6 +28,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.ExtensionAware;
@@ -90,6 +91,17 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.setUrl(files.getRootProjectPersistentCache());
 			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
+		});
+	}
+
+	public static void setupForLegacyVersions(Project project) {
+		// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
+		project.getRepositories().named("Mojang", MavenArtifactRepository.class, repo -> {
+			repo.metadataSources(sources -> {
+				// Only use the maven artifact and not the pom or gradle metadata.
+				sources.artifact();
+				sources.ignoreGradleMetadataRedirection();
+			});
 		});
 	}
 }

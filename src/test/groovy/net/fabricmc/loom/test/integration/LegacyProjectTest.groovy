@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,8 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test uses gradle 4.9 and 1.14.4 v1 mappings
@@ -46,5 +47,41 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 
 		where:
 			version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "Unsupported minecraft (minecraft #version)"() {
+		setup:
+			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+			gradle.buildGradle << """
+				loom {
+                    intermediaryUrl = 'https://s.modm.us/intermediary-empty-v2.jar'
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:${version}"
+                    mappings loom.layered() {
+						// No names
+					}
+
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+			"""
+
+		when:
+			def result = gradle.run(task: "configureClientLaunch")
+
+		then:
+			result.task(":configureClientLaunch").outcome == SUCCESS
+
+		where:
+			version 		| _
+			'1.13.2'		| _
+			'1.12.2'		| _
+			'1.8.9'			| _
+			'1.7.10'		| _
+			'1.6.4'			| _
+			'1.4.7'			| _
+			'1.3.2'			| _
 	}
 }

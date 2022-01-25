@@ -24,18 +24,38 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.assets;
 
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SuppressWarnings("unused")
-public record AssetIndex(Map<String, AssetObject> objects, boolean virtual) {
+public record AssetIndex(Map<String, Entry> objects, boolean virtual, @JsonProperty("map_to_resources") boolean mapToResources) {
 	public AssetIndex() {
-		this(new LinkedHashMap<>(), false);
+		this(new LinkedHashMap<>(), false, false);
 	}
 
-	public Set<AssetObject> getUniqueObjects() {
-		return new HashSet<>(this.objects.values());
+	public Collection<Object> getObjects() {
+		return objects.entrySet().stream().map(Object::new).toList();
+	}
+
+	public record Entry(String hash, long size) {
+	}
+
+	public record Object(String path, String hash, long size) {
+		private Object(Map.Entry<String, Entry> entry) {
+			this(entry.getKey(), entry.getValue().hash(), entry.getValue().size());
+		}
+
+		public String name() {
+			int end = path().lastIndexOf("/") + 1;
+
+			if (end > 0) {
+				return path().substring(end);
+			}
+
+			return path();
+		}
 	}
 }

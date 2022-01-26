@@ -125,11 +125,16 @@ public class RemapTaskConfiguration {
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 
 			if (extension.getSetupRemappedVariants().get()) {
-				project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
+				if (project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
+					project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
 
-				// Remove the dev sources artifact
-				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+					// Remove the dev sources artifact
+					Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
+					configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+				} else {
+					// Sources jar may not have been created with withSourcesJar
+					project.getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
+				}
 			}
 		});
 

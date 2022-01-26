@@ -61,8 +61,14 @@ public class LWJGLVersionOverride {
 	/**
 	 * Update lwjgl by default when running on arm and a supported configuration.
 	 */
-	public static boolean overrideByDefault() {
-		return NATIVE_CLASSIFIER != null && Architecture.CURRENT.isArm();
+	public static boolean overrideByDefault(MinecraftVersionMeta versionMeta) {
+		if (NATIVE_CLASSIFIER == null || !Architecture.CURRENT.isArm()) {
+			return false;
+		}
+
+		return versionMeta.libraries().stream()
+				.map(MinecraftVersionMeta.Library::name)
+				.anyMatch(s -> s.startsWith("org.lwjgl:lwjgl:3"));
 	}
 
 	public static boolean forceOverride(Project project) {

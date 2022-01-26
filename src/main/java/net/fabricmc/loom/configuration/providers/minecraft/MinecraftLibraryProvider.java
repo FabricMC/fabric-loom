@@ -46,7 +46,7 @@ public class MinecraftLibraryProvider {
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 		final boolean runtimeOnlyLog4j = extension.getRuntimeOnlyLog4j().get();
 
-		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault() || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
+		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault(versionInfo) || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
 		final boolean isMacOS = OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS);
 
 		if (overrideLWJGL) {

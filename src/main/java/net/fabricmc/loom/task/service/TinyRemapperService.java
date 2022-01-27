@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import org.gradle.api.Project;
 
@@ -56,7 +57,19 @@ public class TinyRemapperService implements SharedService {
 		final boolean useKotlinExtension = project.getPluginManager().hasPlugin("org.jetbrains.kotlin.jvm");
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
-		final String id = extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to) + ":" + remapJarTask.getName() + (useKotlinExtension ? ":kotlin" : "");
+		final var joiner = new StringJoiner(":");
+		joiner.add(extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to));
+		joiner.add(remapJarTask.getName());
+
+		if (useKotlinExtension) {
+			joiner.add("kotlin");
+		}
+
+		if (remapJarTask.getRemapperIsolation().get()) {
+			joiner.add(project.getPath());
+		}
+
+		final String id = joiner.toString();
 
 		TinyRemapperService service = sharedServiceManager.getOrCreateService(id, () -> {
 			List<IMappingProvider> mappings = new ArrayList<>();

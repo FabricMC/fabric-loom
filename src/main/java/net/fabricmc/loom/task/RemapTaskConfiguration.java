@@ -80,7 +80,11 @@ public class RemapTaskConfiguration {
 
 		trySetupSourceRemapping(project);
 
-		if (extension.getSetupRemappedVariants().get()) {
+		if (!extension.getSetupRemappedVariants().get()) {
+			return;
+		}
+
+		project.afterEvaluate(p -> {
 			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
 				Configuration configuration = project.getConfigurations().getByName(configurationName);
@@ -90,19 +94,19 @@ public class RemapTaskConfiguration {
 					return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
 				});
 			}
-		}
+		});
 	}
 
 	private static void trySetupSourceRemapping(Project project) {
 		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		final String sourcesJarTaskName = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getSourcesJarTaskName();
 
 		TaskProvider<RemapSourcesJarTask> remapSourcesTask = tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
-			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-			final String sourcesJarTaskName = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getSourcesJarTaskName();
 			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
 
 			if (sourcesTask == null) {
@@ -123,21 +127,31 @@ public class RemapTaskConfiguration {
 
 			task.dependsOn(sourcesJarTask);
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
-
-			if (extension.getSetupRemappedVariants().get()) {
-				if (project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
-					project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, task);
-
-					// Remove the dev sources artifact
-					Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-					configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
-				} else {
-					// Sources jar may not have been created with withSourcesJar
-					project.getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
-				}
-			}
 		});
 
 		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
+
+		if (!extension.getSetupRemappedVariants().get()) {
+			return;
+		}
+
+		project.afterEvaluate(p -> {
+			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
+
+			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
+				return;
+			}
+
+			if (project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
+				project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask);
+
+				// Remove the dev sources artifact
+				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
+				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+			} else {
+				// Sources jar may not have been created with withSourcesJar
+				project.getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
+			}
+		});
 	}
 }

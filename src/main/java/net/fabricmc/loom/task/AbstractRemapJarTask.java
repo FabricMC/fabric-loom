@@ -58,6 +58,12 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Input
 	public abstract Property<String> getTargetNamespace();
 
+	/**
+	 * When enabled the TinyRemapperService will not be shared across sub projects.
+	 */
+	@Input
+	public abstract Property<Boolean> getRemapperIsolation();
+
 	@Inject
 	protected abstract WorkerExecutor getWorkerExecutor();
 
@@ -65,6 +71,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	public AbstractRemapJarTask() {
 		getSourceNamespace().convention(MappingsNamespace.NAMED.toString()).finalizeValueOnRead();
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
+		getRemapperIsolation().convention(false).finalizeValueOnRead();
 	}
 
 	public final <P extends AbstractRemapParams> void submitWork(Class<? extends AbstractRemapAction<P>> workAction, Action<P> action) {

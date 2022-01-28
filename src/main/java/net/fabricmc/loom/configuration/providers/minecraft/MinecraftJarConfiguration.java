@@ -49,12 +49,20 @@ public enum MinecraftJarConfiguration {
 		List.of("client", "server")
 	),
 	SERVER_ONLY(
-		ServerOnlyMinecraftProvider::new,
-		IntermediaryMinecraftProvider.ServerOnlyImpl::new,
-		NamedMinecraftProvider.ServerOnlyImpl::new,
-		ProcessedNamedMinecraftProvider.ServerOnlyImpl::new,
+		SingleJarMinecraftProvider::server,
+		IntermediaryMinecraftProvider.SingleJarImpl::server,
+		NamedMinecraftProvider.SingleJarImpl::server,
+		ProcessedNamedMinecraftProvider.SingleJarImpl::server,
 		SingleJarDecompileConfiguration::new,
 		List.of("server")
+	),
+	CLIENT_ONLY(
+		SingleJarMinecraftProvider::client,
+		IntermediaryMinecraftProvider.SingleJarImpl::client,
+		NamedMinecraftProvider.SingleJarImpl::client,
+		ProcessedNamedMinecraftProvider.SingleJarImpl::client,
+		SingleJarDecompileConfiguration::new,
+		List.of("client")
 	),
 	SPLIT(
 		SplitMinecraftProvider::new,

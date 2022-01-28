@@ -141,11 +141,19 @@ public final class LoomTasks {
 		extension.getRunConfigs().create("client", RunConfigSettings::client);
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
 
-		// Remove the client run config when server only. Done by name to not remove any possible custom run configs
+		// Remove the client or server run config when not required. Done by name to not remove any possible custom run configs
 		project.afterEvaluate(p -> {
-			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
-				extension.getRunConfigs().removeIf(settings -> settings.getName().equals("client"));
+			String taskName = switch (extension.getMinecraftJarConfiguration().get()) {
+			case SERVER_ONLY -> "client";
+			case CLIENT_ONLY -> "server";
+			default -> null;
+			};
+
+			if (taskName == null) {
+				return;
 			}
+
+			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
 		});
 	}
 

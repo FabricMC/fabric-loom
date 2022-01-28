@@ -36,7 +36,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.ServerOnlyMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 
 public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>> extends NamedMinecraftProvider<M> {
@@ -156,14 +156,30 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
-	public static final class ServerOnlyImpl extends ProcessedNamedMinecraftProvider<ServerOnlyMinecraftProvider, NamedMinecraftProvider.ServerOnlyImpl> implements ServerOnly {
-		public ServerOnlyImpl(NamedMinecraftProvider.ServerOnlyImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+	public static final class SingleJarImpl extends ProcessedNamedMinecraftProvider<SingleJarMinecraftProvider, NamedMinecraftProvider.SingleJarImpl> implements SingleJar {
+		private final String env;
+
+		private SingleJarImpl(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager, String env) {
 			super(parentMinecraftProvide, jarProcessorManager);
+			this.env = env;
+		}
+
+		public static ProcessedNamedMinecraftProvider.SingleJarImpl server(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, "server");
+		}
+
+		public static ProcessedNamedMinecraftProvider.SingleJarImpl client(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, "client");
 		}
 
 		@Override
-		public Path getServerOnlyJar() {
-			return getProcessedPath(getParentMinecraftProvider().getServerOnlyJar());
+		public Path getEnvOnlyJar() {
+			return getProcessedPath(getParentMinecraftProvider().getEnvOnlyJar());
+		}
+
+		@Override
+		public String env() {
+			return env;
 		}
 	}
 }

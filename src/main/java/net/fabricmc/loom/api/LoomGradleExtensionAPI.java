@@ -146,6 +146,11 @@ public interface LoomGradleExtensionAPI {
 	}
 
 	@ApiStatus.Experimental
+	default void clientOnlyMinecraftJar() {
+		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.CLIENT_ONLY);
+	}
+
+	@ApiStatus.Experimental
 	default void splitMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
 	}

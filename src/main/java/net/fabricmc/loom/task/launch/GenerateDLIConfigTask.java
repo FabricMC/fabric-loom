@@ -39,12 +39,20 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.task.AbstractLoomTask;
 
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@TaskAction
 	public void run() throws IOException {
 		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
+
+		final MinecraftVersionMeta versionInfo = getExtension().getMinecraftProvider().getVersionInfo();
+		File assetsDirectory = new File(getExtension().getFiles().getUserCache(), "assets");
+
+		if (versionInfo.assets().equals("legacy")) {
+			assetsDirectory = new File(assetsDirectory, "/legacy/" + versionInfo.id());
+		}
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
@@ -58,7 +66,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
+				.argument("client", assetsDirectory.getAbsolutePath());
 
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()

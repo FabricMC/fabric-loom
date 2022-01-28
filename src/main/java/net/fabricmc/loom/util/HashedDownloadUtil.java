@@ -35,7 +35,6 @@ import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nullable;
 
-import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.logging.Logger;
@@ -90,13 +89,6 @@ public class HashedDownloadUtil {
 		} catch (IOException e) {
 			delete(to); // Probably isn't good if it fails to copy/save
 			throw e;
-		}
-
-		if (!Checksum.equals(to, expectedHash)) {
-			String actualHash = Files.asByteSource(to).hash(Hashing.sha1()).toString();
-			delete(to);
-
-			throw new IOException(String.format("Downloaded file from %s to %s and got unexpected hash of %s expected %s", from, to, actualHash, expectedHash));
 		}
 
 		saveSha1(to, expectedHash, logger);

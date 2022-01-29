@@ -94,7 +94,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 	}
 
 	enum YarnSetupType {
-		TINY_JAR('tiny jar', { downloadFile(YARN_1_17_URL, "yarn.jar") }, {}),
+		TINY_JAR('tiny jar', { downloadFile(YARN_1_17_URL, "yarn.jar") }, { }),
 		BARE_TINY('bare tiny file', {
 			def yarnJar = downloadFile(YARN_1_17_URL, "yarn.jar")
 			def yarnTiny = new File(tempDir, "yarn.tiny")

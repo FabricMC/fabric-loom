@@ -24,11 +24,14 @@
 
 package net.fabricmc.loom.configuration.ide.idea;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.gradle.StartParameter;
+import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
+import org.gradle.internal.DefaultTaskExecutionRequest;
 
 import net.fabricmc.loom.task.LoomTasks;
 
@@ -42,8 +45,10 @@ public class IdeaConfiguration {
 			return;
 		}
 
-		// Run the idea sync task, is this exposed via the api?
-		final TaskExecutionGraphInternal taskGraph = (TaskExecutionGraphInternal) project.getGradle().getTaskGraph();
-		taskGraph.whenReady(taskExecutionGraph -> taskGraph.addEntryTasks(List.of(ideaSyncTask.get())));
+		final StartParameter startParameter = project.getGradle().getStartParameter();
+		final List<TaskExecutionRequest> taskRequests = new ArrayList<>(startParameter.getTaskRequests());
+
+		taskRequests.add(new DefaultTaskExecutionRequest(List.of("ideaSyncTask")));
+		startParameter.setTaskRequests(taskRequests);
 	}
 }

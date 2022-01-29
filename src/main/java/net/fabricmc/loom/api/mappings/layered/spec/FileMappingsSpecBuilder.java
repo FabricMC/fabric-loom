@@ -25,7 +25,6 @@
 package net.fabricmc.loom.api.mappings.layered.spec;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
@@ -36,15 +35,9 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 @ApiStatus.Experimental
 public interface FileMappingsSpecBuilder {
 	/**
-	 * Makes this spec read bare files instead of zips or jars.
-	 *
-	 * @return this builder
-	 */
-	FileMappingsSpecBuilder bareFile();
-
-	/**
 	 * Sets the mapping path inside a zip or jar.
-	 * If the specified path is null, behaves like {@link #bareFile()}.
+	 * This will have no effect if the file of this mapping spec
+	 * is not a zip.
 	 *
 	 * <p>Path components within the path should be separated with {@code /}.
 	 *
@@ -54,7 +47,7 @@ public interface FileMappingsSpecBuilder {
 	 * @param mappingPath the mapping path, or null if a bare file
 	 * @return this builder
 	 */
-	FileMappingsSpecBuilder mappingPath(@Nullable String mappingPath);
+	FileMappingsSpecBuilder mappingPath(String mappingPath);
 
 	/**
 	 * Sets the fallback namespaces. They will be used
@@ -68,7 +61,7 @@ public interface FileMappingsSpecBuilder {
 	 * @param targetNamespace the fallback target namespace
 	 * @return this builder
 	 */
-	FileMappingsSpecBuilder namespaces(String sourceNamespace, String targetNamespace);
+	FileMappingsSpecBuilder fallbackNamespaces(String sourceNamespace, String targetNamespace);
 
 	/**
 	 * Marks that the file contains Enigma mappings.
@@ -79,15 +72,15 @@ public interface FileMappingsSpecBuilder {
 	FileMappingsSpecBuilder enigmaMappings();
 
 	/**
-	 * Marks a namespace as the source namespace of this mappings spec.
+	 * Marks a namespace as the merge namespace of this mappings spec.
 	 *
-	 * <p>The source namespace is the namespace that is used to match up this layer's
-	 * names to the rest of the mappings. For example, Yarn mappings should be matched up through
+	 * <p>The merge namespace is the namespace that is used to match up this layer's
+	 * names to the rest of the mappings. For example, Yarn mappings should be merged through
 	 * the intermediary names.
 	 *
-	 * <p>The default source namespace is {@link MappingsNamespace#INTERMEDIARY}.
+	 * <p>The default merge namespace is {@link MappingsNamespace#INTERMEDIARY}.
 	 *
 	 * @return this builder
 	 */
-	FileMappingsSpecBuilder sourceNamespace(MappingsNamespace namespace);
+	FileMappingsSpecBuilder mergeNamespace(MappingsNamespace namespace);
 }

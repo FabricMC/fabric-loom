@@ -77,9 +77,8 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 			def mappings = getLayeredMappings(
 					new IntermediaryMappingsSpec(),
 					FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingsFile))
-							.bareFile()
-							.namespaces('named', 'official')
-							.sourceNamespace(MappingsNamespace.OFFICIAL)
+							.fallbackNamespaces('named', 'official')
+							.mergeNamespace(MappingsNamespace.OFFICIAL)
 							.build()
 			)
 			def tiny = getTiny(mappings)
@@ -100,9 +99,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 			def yarnTiny = new File(tempDir, "yarn.tiny")
 			yarnTiny.bytes = ZipUtils.unpack(yarnJar.toPath(), "mappings/mappings.tiny")
 			yarnTiny
-		}, {
-			it.bareFile()
-		}),
+		}, { }),
 		ENIGMA_ZIP('enigma zip', {
 			// Recent Yarn data is not published as Enigma zips, so this zip is just a copy
 			// of Yarn's repo at a60a3189

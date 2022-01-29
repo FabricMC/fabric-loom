@@ -35,6 +35,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
 import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingUtil;
 import net.fabricmc.mappingio.MappingVisitor;
@@ -43,15 +44,15 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.MappingFormat;
 
 public record FileMappingsLayer(
-		Path path, @Nullable String mappingPath,
+		Path path, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
 		@Nullable MappingFormat mappingFormat,
-		MappingsNamespace sourceNamespace
+		MappingsNamespace mergeNamespace
 ) implements MappingLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		// Bare file
-		if (mappingPath == null) {
+		if (!ZipUtils.isZip(path)) {
 			visit(path, mappingVisitor);
 		} else {
 			try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
@@ -61,7 +62,7 @@ public record FileMappingsLayer(
 	}
 
 	private void visit(Path path, MappingVisitor mappingVisitor) throws IOException {
-		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, sourceNamespace.toString());
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, mergeNamespace.toString());
 		MappingVisitor next = nsSwitch;
 
 		// Replace the default fallback namespaces with
@@ -79,7 +80,7 @@ public record FileMappingsLayer(
 
 	@Override
 	public MappingsNamespace getSourceNamespace() {
-		return sourceNamespace;
+		return mergeNamespace;
 	}
 
 	@Override

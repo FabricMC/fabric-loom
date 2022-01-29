@@ -38,11 +38,11 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	private static final String DEFAULT_FALLBACK_SOURCE_NAMESPACE = MappingsNamespace.INTERMEDIARY.toString();
 	private static final String DEFAULT_FALLBACK_TARGET_NAMESPACE = MappingsNamespace.NAMED.toString();
 	private final FileSpec fileSpec;
-	private @Nullable String mappingPath = DEFAULT_MAPPING_PATH;
+	private String mappingPath = DEFAULT_MAPPING_PATH;
 	private String fallbackSourceNamespace = DEFAULT_FALLBACK_SOURCE_NAMESPACE;
 	private String fallbackTargetNamespace = DEFAULT_FALLBACK_TARGET_NAMESPACE;
 	private @Nullable MappingFormat mappingFormat = null;
-	private MappingsNamespace sourceNamespace = MappingsNamespace.INTERMEDIARY;
+	private MappingsNamespace mergeNamespace = MappingsNamespace.INTERMEDIARY;
 
 	private FileMappingsSpecBuilderImpl(FileSpec fileSpec) {
 		this.fileSpec = fileSpec;
@@ -53,18 +53,13 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	}
 
 	@Override
-	public FileMappingsSpecBuilderImpl bareFile() {
-		return mappingPath(null);
-	}
-
-	@Override
-	public FileMappingsSpecBuilderImpl mappingPath(@Nullable String mappingPath) {
-		this.mappingPath = mappingPath;
+	public FileMappingsSpecBuilderImpl mappingPath(String mappingPath) {
+		this.mappingPath = Objects.requireNonNull(mappingPath, "mapping path cannot be null");
 		return this;
 	}
 
 	@Override
-	public FileMappingsSpecBuilderImpl namespaces(String sourceNamespace, String targetNamespace) {
+	public FileMappingsSpecBuilderImpl fallbackNamespaces(String sourceNamespace, String targetNamespace) {
 		fallbackSourceNamespace = Objects.requireNonNull(sourceNamespace, "fallback source namespace cannot be null");
 		fallbackTargetNamespace = Objects.requireNonNull(targetNamespace, "fallback target namespace cannot be null");
 		return this;
@@ -77,12 +72,12 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	}
 
 	@Override
-	public FileMappingsSpecBuilderImpl sourceNamespace(MappingsNamespace namespace) {
-		sourceNamespace = Objects.requireNonNull(namespace, "source namespace cannot be null");
+	public FileMappingsSpecBuilderImpl mergeNamespace(MappingsNamespace namespace) {
+		mergeNamespace = Objects.requireNonNull(namespace, "merge namespace cannot be null");
 		return this;
 	}
 
 	public FileMappingsSpec build() {
-		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, sourceNamespace);
+		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, mergeNamespace);
 	}
 }

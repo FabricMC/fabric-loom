@@ -33,13 +33,13 @@ import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.mappingio.format.MappingFormat;
 
 public record FileMappingsSpec(
-		FileSpec fileSpec, @Nullable String mappingPath,
+		FileSpec fileSpec, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
 		@Nullable MappingFormat mappingFormat,
-		MappingsNamespace sourceNamespace
+		MappingsNamespace mergeNamespace
 ) implements MappingsSpec<FileMappingsLayer> {
 	@Override
 	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, sourceNamespace);
+		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, mergeNamespace);
 	}
 }

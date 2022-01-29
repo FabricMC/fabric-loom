@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,4 +44,5 @@ interface LayeredMappingsTestConstants {
 
     public static final String PARCHMENT_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"
     public static final String PARCHMENT_URL = "https://maven.parchmentmc.net/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
+    public static final String YARN_1_17_URL = "https://maven.fabricmc.net/net/fabricmc/yarn/1.17%2Bbuild.13/yarn-1.17%2Bbuild.13-v2.jar"
 }

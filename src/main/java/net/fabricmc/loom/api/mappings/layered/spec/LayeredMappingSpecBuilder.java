@@ -86,8 +86,8 @@ public interface LayeredMappingSpecBuilder {
 	 * @see FileMappingsSpecBuilder
 	 */
 	@ApiStatus.Experimental
-	default LayeredMappingSpecBuilder fileMappings(Object file) {
-		return fileMappings(file, builder -> { });
+	default LayeredMappingSpecBuilder mappings(Object file) {
+		return mappings(file, builder -> { });
 	}
 
 	/**
@@ -99,8 +99,8 @@ public interface LayeredMappingSpecBuilder {
 	 * @see FileMappingsSpecBuilder
 	 */
 	@ApiStatus.Experimental
-	default LayeredMappingSpecBuilder fileMappings(Object file, @DelegatesTo(value = FileMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure<?> closure) {
-		return fileMappings(file, new ClosureAction<>(closure));
+	default LayeredMappingSpecBuilder mappings(Object file, @DelegatesTo(value = FileMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure<?> closure) {
+		return mappings(file, new ClosureAction<>(closure));
 	}
 
 	/**
@@ -112,5 +112,5 @@ public interface LayeredMappingSpecBuilder {
 	 * @see FileMappingsSpecBuilder
 	 */
 	@ApiStatus.Experimental
-	LayeredMappingSpecBuilder fileMappings(Object file, Action<? super FileMappingsSpecBuilder> action);
+	LayeredMappingSpecBuilder mappings(Object file, Action<? super FileMappingsSpecBuilder> action);
 }

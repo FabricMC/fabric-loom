@@ -71,7 +71,7 @@ public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder 
 	}
 
 	@Override
-	public LayeredMappingSpecBuilder fileMappings(Object file, Action<? super FileMappingsSpecBuilder> action) {
+	public LayeredMappingSpecBuilder mappings(Object file, Action<? super FileMappingsSpecBuilder> action) {
 		FileMappingsSpecBuilderImpl builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(file));
 		action.execute(builder);
 		return addLayer(builder.build());

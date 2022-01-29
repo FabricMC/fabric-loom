@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl
@@ -104,6 +105,20 @@ class LayeredMappingSpecBuilderTest extends Specification {
             layers[2].class == ParchmentMappingsSpec
             (parchment.fileSpec() as MavenFileSpec).dependencyNotation() == "I really like cake"
             parchment.removePrefix() == false
+    }
+
+    def "yarn through file mappings"() {
+        when:
+            def spec = layered {
+                mappings("net.fabricmc:yarn:1.18.1+build.1:v2")
+            }
+            def layers = spec.layers()
+        then:
+            spec.version == "layered+hash.1920540409"
+            layers.size() == 2
+            layers[0].class == IntermediaryMappingsSpec
+            layers[1].class == FileMappingsSpec
+            ((layers[1] as FileMappingsSpec).fileSpec() as MavenFileSpec).dependencyNotation() == "net.fabricmc:yarn:1.18.1+build.1:v2"
     }
 
     LayeredMappingSpec layered(@DelegatesTo(LayeredMappingSpecBuilderImpl) Closure cl) {

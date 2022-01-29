@@ -24,32 +24,18 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.file;
 
-import java.util.Objects;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
-import net.fabricmc.mappingio.format.MappingFormat;
 
 public record FileMappingsSpec(
 		FileSpec fileSpec, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		@Nullable MappingFormat mappingFormat,
-		MappingsNamespace mergeNamespace
+		boolean enigma,
+		String mergeNamespace
 ) implements MappingsSpec<FileMappingsLayer> {
 	@Override
 	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, mergeNamespace);
-	}
-
-	// Enums don't have a consistent hash code
-	@Override
-	public int hashCode() {
-		String mappingFormat = this.mappingFormat != null ? this.mappingFormat.name() : null;
-		String mergeNamespace = this.mergeNamespace.name();
-		return Objects.hash(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, mergeNamespace);
+		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, mergeNamespace);
 	}
 }

@@ -26,23 +26,22 @@ package net.fabricmc.loom.configuration.providers.mappings.file;
 
 import java.util.Objects;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.FileMappingsSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.mappingio.format.MappingFormat;
 
 public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
+	/**
+	 * The mapping path of regular mapping dependencies.
+	 */
 	private static final String DEFAULT_MAPPING_PATH = "mappings/mappings.tiny";
-	private static final String DEFAULT_FALLBACK_SOURCE_NAMESPACE = MappingsNamespace.INTERMEDIARY.toString();
-	private static final String DEFAULT_FALLBACK_TARGET_NAMESPACE = MappingsNamespace.NAMED.toString();
+
 	private final FileSpec fileSpec;
 	private String mappingPath = DEFAULT_MAPPING_PATH;
-	private String fallbackSourceNamespace = DEFAULT_FALLBACK_SOURCE_NAMESPACE;
-	private String fallbackTargetNamespace = DEFAULT_FALLBACK_TARGET_NAMESPACE;
-	private @Nullable MappingFormat mappingFormat = null;
-	private MappingsNamespace mergeNamespace = MappingsNamespace.INTERMEDIARY;
+	private String fallbackSourceNamespace = MappingsNamespace.INTERMEDIARY.toString();
+	private String fallbackTargetNamespace = MappingsNamespace.NAMED.toString();
+	private boolean enigma = false;
+	private String mergeNamespace = MappingsNamespace.INTERMEDIARY.toString();
 
 	private FileMappingsSpecBuilderImpl(FileSpec fileSpec) {
 		this.fileSpec = fileSpec;
@@ -67,17 +66,29 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 
 	@Override
 	public FileMappingsSpecBuilderImpl enigmaMappings() {
-		mappingFormat = MappingFormat.ENIGMA;
+		enigma = true;
 		return this;
 	}
 
 	@Override
 	public FileMappingsSpecBuilderImpl mergeNamespace(MappingsNamespace namespace) {
-		mergeNamespace = Objects.requireNonNull(namespace, "merge namespace cannot be null");
+		mergeNamespace = Objects.requireNonNull(namespace, "merge namespace cannot be null").toString();
+		return this;
+	}
+
+	@Override
+	public FileMappingsSpecBuilderImpl mergeNamespace(String namespace) {
+		Objects.requireNonNull(namespace, "merge namespace cannot be null");
+
+		if (MappingsNamespace.of(namespace) == null) {
+			throw new IllegalArgumentException("Namespace '" + namespace + "' is unsupported! It must be either 'official', 'intermediary' or 'named'.");
+		}
+
+		mergeNamespace = namespace;
 		return this;
 	}
 
 	public FileMappingsSpec build() {
-		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, mappingFormat, mergeNamespace);
+		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, mergeNamespace);
 	}
 }

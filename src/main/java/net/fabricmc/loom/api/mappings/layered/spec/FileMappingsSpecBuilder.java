@@ -72,7 +72,7 @@ public interface FileMappingsSpecBuilder {
 	FileMappingsSpecBuilder enigmaMappings();
 
 	/**
-	 * Marks a namespace as the merge namespace of this mappings spec.
+	 * Sets the merge namespace of this mappings spec.
 	 *
 	 * <p>The merge namespace is the namespace that is used to match up this layer's
 	 * names to the rest of the mappings. For example, Yarn mappings should be merged through
@@ -80,7 +80,22 @@ public interface FileMappingsSpecBuilder {
 	 *
 	 * <p>The default merge namespace is {@link MappingsNamespace#INTERMEDIARY}.
 	 *
+	 * @param namespace the new merge namespace
 	 * @return this builder
 	 */
 	FileMappingsSpecBuilder mergeNamespace(MappingsNamespace namespace);
+
+	/**
+	 * Sets the merge namespace of this mappings spec.
+	 *
+	 * <p>The merge namespace is the namespace that is used to match up this layer's
+	 * names to the rest of the mappings. For example, Yarn mappings should be merged through
+	 * the intermediary names.
+	 *
+	 * <p>The default merge namespace is {@code intermediary}.
+	 *
+	 * @param namespace the new merge namespace
+	 * @return this builder
+	 */
+	FileMappingsSpecBuilder mergeNamespace(String namespace);
 }

@@ -29,8 +29,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
@@ -46,8 +44,8 @@ import net.fabricmc.mappingio.format.MappingFormat;
 public record FileMappingsLayer(
 		Path path, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		@Nullable MappingFormat mappingFormat,
-		MappingsNamespace mergeNamespace
+		boolean enigma, // Enigma cannot be automatically detected since it's stored in a directory.
+		String mergeNamespace
 ) implements MappingLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
@@ -63,24 +61,21 @@ public record FileMappingsLayer(
 
 	private void visit(Path path, MappingVisitor mappingVisitor) throws IOException {
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, mergeNamespace.toString());
-		MappingVisitor next = nsSwitch;
 
 		// Replace the default fallback namespaces with
 		// our fallback namespaces if potentially needed.
-		if (mappingFormat == null || !mappingFormat.hasNamespaces) {
-			Map<String, String> fallbackNamespaceReplacements = Map.of(
-					MappingUtil.NS_SOURCE_FALLBACK, fallbackSourceNamespace,
-					MappingUtil.NS_TARGET_FALLBACK, fallbackTargetNamespace
-			);
-			next = new MappingNsRenamer(nsSwitch, fallbackNamespaceReplacements);
-		}
+		Map<String, String> fallbackNamespaceReplacements = Map.of(
+				MappingUtil.NS_SOURCE_FALLBACK, fallbackSourceNamespace,
+				MappingUtil.NS_TARGET_FALLBACK, fallbackTargetNamespace
+		);
+		MappingNsRenamer renamer = new MappingNsRenamer(nsSwitch, fallbackNamespaceReplacements);
 
-		MappingReader.read(path, mappingFormat, next);
+		MappingReader.read(path, enigma ? MappingFormat.ENIGMA : null, renamer);
 	}
 
 	@Override
 	public MappingsNamespace getSourceNamespace() {
-		return mergeNamespace;
+		return MappingsNamespace.of(mergeNamespace);
 	}
 
 	@Override

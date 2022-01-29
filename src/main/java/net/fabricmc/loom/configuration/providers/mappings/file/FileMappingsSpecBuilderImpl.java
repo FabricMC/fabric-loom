@@ -53,26 +53,31 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	}
 
 	@Override
-	public FileMappingsSpecBuilder mappingPath(@Nullable String mappingPath) {
+	public FileMappingsSpecBuilderImpl bareFile() {
+		return mappingPath(null);
+	}
+
+	@Override
+	public FileMappingsSpecBuilderImpl mappingPath(@Nullable String mappingPath) {
 		this.mappingPath = mappingPath;
 		return this;
 	}
 
 	@Override
-	public FileMappingsSpecBuilder namespaces(String sourceNamespace, String targetNamespace) {
+	public FileMappingsSpecBuilderImpl namespaces(String sourceNamespace, String targetNamespace) {
 		fallbackSourceNamespace = Objects.requireNonNull(sourceNamespace, "fallback source namespace cannot be null");
 		fallbackTargetNamespace = Objects.requireNonNull(targetNamespace, "fallback target namespace cannot be null");
 		return this;
 	}
 
 	@Override
-	public FileMappingsSpecBuilder enigmaMappings() {
+	public FileMappingsSpecBuilderImpl enigmaMappings() {
 		mappingFormat = MappingFormat.ENIGMA;
 		return this;
 	}
 
 	@Override
-	public FileMappingsSpecBuilder sourceNamespace(MappingsNamespace namespace) {
+	public FileMappingsSpecBuilderImpl sourceNamespace(MappingsNamespace namespace) {
 		sourceNamespace = Objects.requireNonNull(namespace, "source namespace cannot be null");
 		return this;
 	}

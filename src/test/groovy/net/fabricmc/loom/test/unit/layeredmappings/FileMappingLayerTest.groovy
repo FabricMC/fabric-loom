@@ -24,20 +24,31 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
 import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
+import net.fabricmc.loom.util.DownloadUtil
+import net.fabricmc.loom.util.ZipUtils
+import spock.lang.Unroll
+
+import java.nio.file.Path
+import java.util.function.Consumer
 
 class FileMappingLayerTest extends LayeredMappingsSpecification {
-	def "read Yarn tiny mappings"() {
+	@Unroll
+	def "read Yarn mappings from #setupType.displayName"() {
 		setup:
 			intermediaryUrl = INTERMEDIARY_1_17_URL
 			mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+			setupType.setup.delegate = this
+			def mappingFile = setupType.setup.call(this)
 		when:
-			def yarnJar = downloadFile(YARN_1_17_URL, "yarn.jar")
+			def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingFile))
+			setupType.mappingsSpec.accept(builder)
 			def mappings = getLayeredMappings(
 					new IntermediaryMappingsSpec(),
-					FileMappingsSpecBuilderImpl.builder(FileSpec.create(yarnJar)).build()
+					builder.build()
 			)
 		then:
 			mappings.srcNamespace == "named"
@@ -50,5 +61,65 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 			mappings.classes[0].methods[0].srcName == "canConnectToFence"
 			mappings.classes[0].methods[0].getDstName(0) == "method_26375"
 			mappings.classes[0].methods[0].args[0].srcName == "state"
+		where:
+			setupType << YarnSetupType.values()
+	}
+
+	// Also tests the custom fallback namespace and source namespace functionality
+	def "read Mojang mappings from proguard"() {
+		setup:
+			intermediaryUrl = INTERMEDIARY_1_17_URL
+			mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+			def mappingsDownload = VERSION_META_1_17.download('client_mappings')
+			def mappingsFile = new File(tempDir, 'mappings.txt')
+			DownloadUtil.downloadIfChanged(new URL(mappingsDownload.url()), mappingsFile, mappingContext.logger)
+		when:
+			def mappings = getLayeredMappings(
+					new IntermediaryMappingsSpec(),
+					FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingsFile))
+							.bareFile()
+							.namespaces('named', 'official')
+							.sourceNamespace(MappingsNamespace.OFFICIAL)
+							.build()
+			)
+			def tiny = getTiny(mappings)
+		then:
+			mappings.srcNamespace == "named"
+			mappings.dstNamespaces == ["intermediary", "official"]
+			mappings.classes.size() == 6113
+			mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+			mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+			mappings.classes[0].methods[0].args.size() == 0 // No Args
+			tiny.contains('this$0')
+	}
+
+	enum YarnSetupType {
+		TINY_JAR('tiny jar', { downloadFile(YARN_1_17_URL, "yarn.jar") }, {}),
+		BARE_TINY('bare tiny file', {
+			def yarnJar = downloadFile(YARN_1_17_URL, "yarn.jar")
+			def yarnTiny = new File(tempDir, "yarn.tiny")
+			yarnTiny.bytes = ZipUtils.unpack(yarnJar.toPath(), "mappings/mappings.tiny")
+			yarnTiny
+		}, {
+			it.bareFile()
+		}),
+		ENIGMA_ZIP('enigma zip', {
+			// Recent Yarn data is not published as Enigma zips, so this zip is just a copy
+			// of Yarn's repo at a60a3189
+			Path.of("src/test/resources/mappings/yarn-1.17.zip")
+		}, {
+			it.mappingPath("mappings").enigmaMappings()
+		}),
+		;
+
+		final String displayName
+		final Closure<?> setup
+		final Consumer<FileMappingsSpecBuilderImpl> mappingsSpec
+
+		YarnSetupType(String displayName, Closure<?> setup, Consumer<FileMappingsSpecBuilderImpl> mappingsSpec) {
+			this.displayName = displayName
+			this.setup = setup
+			this.mappingsSpec = mappingsSpec
+		}
 	}
 }

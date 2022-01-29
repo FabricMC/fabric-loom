@@ -35,15 +35,12 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
  */
 @ApiStatus.Experimental
 public interface FileMappingsSpecBuilder {
-	// TODO: More exhaustive tests for bareFile(), namespaces() and Enigma mappings
 	/**
 	 * Makes this spec read bare files instead of zips or jars.
 	 *
 	 * @return this builder
 	 */
-	default FileMappingsSpecBuilder bareFile() {
-		return mappingPath(null);
-	}
+	FileMappingsSpecBuilder bareFile();
 
 	/**
 	 * Sets the mapping path inside a zip or jar.

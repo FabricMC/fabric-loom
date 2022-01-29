@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -47,6 +48,22 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.LoomGradlePlugin;
 
 public class ZipUtils {
+	public static boolean isZip(Path zip) throws IOException {
+		if (Files.notExists(zip)) {
+			throw new NoSuchFileException("Cannot check if '" + zip + "' is a zip because it doesn't exist!");
+		}
+
+		if (Files.isRegularFile(zip)) {
+			try (DataInputStream in = new DataInputStream(Files.newInputStream(zip))) {
+				int header = in.readInt();
+				// See https://en.wikipedia.org/wiki/List_of_file_signatures
+				return header == 0x504B0304 || header == 0x504B0506 || header == 0x504B0708;
+			}
+		} else {
+			return false;
+		}
+	}
+
 	public static boolean contains(Path zip, String path) {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
 			Path fsPath = fs.get().getPath(path);

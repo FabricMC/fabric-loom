@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,33 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.idea;
+package net.fabricmc.loom.configuration.providers.mappings.file;
 
-import java.util.ArrayList;
-import java.util.List;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 
-import org.gradle.StartParameter;
-import org.gradle.TaskExecutionRequest;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskProvider;
-import org.gradle.internal.DefaultTaskExecutionRequest;
-
-import net.fabricmc.loom.task.LoomTasks;
-
-public class IdeaConfiguration {
-	public static void setup(Project project) {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(project));
-		});
-
-		if (!IdeaUtils.isIdeaSync()) {
-			return;
-		}
-
-		final StartParameter startParameter = project.getGradle().getStartParameter();
-		final List<TaskExecutionRequest> taskRequests = new ArrayList<>(startParameter.getTaskRequests());
-
-		taskRequests.add(new DefaultTaskExecutionRequest(List.of("ideaSyncTask")));
-		startParameter.setTaskRequests(taskRequests);
+public record FileMappingsSpec(
+		FileSpec fileSpec, String mappingPath,
+		String fallbackSourceNamespace, String fallbackTargetNamespace,
+		boolean enigma,
+		String mergeNamespace
+) implements MappingsSpec<FileMappingsLayer> {
+	@Override
+	public FileMappingsLayer createLayer(MappingContext context) {
+		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, mergeNamespace);
 	}
 }

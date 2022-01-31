@@ -121,4 +121,32 @@ class ZipUtilsTest extends Specification {
             outputFile.exists()
             outputFile.text == "This is a test of unpacking all"
     }
+
+    def "is zip"() {
+        setup:
+            // Create zip
+            def dir = Files.createTempDirectory("loom-zip-test")
+            def zip = Files.createTempFile("loom-zip-test", ".zip")
+            def fileInside = dir.resolve("text.txt")
+            Files.writeString(fileInside, "hello world")
+            ZipUtils.pack(dir, zip)
+
+        when:
+            def result = ZipUtils.isZip(zip)
+
+        then:
+            result
+    }
+
+    def "is not zip"() {
+        setup:
+            def textFile = Files.createTempFile("loom-zip-test", ".txt")
+            Files.writeString(textFile, "hello world")
+
+        when:
+            def result = ZipUtils.isZip(textFile)
+
+        then:
+            !result
+    }
 }

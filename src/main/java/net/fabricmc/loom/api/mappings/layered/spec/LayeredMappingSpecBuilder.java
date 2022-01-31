@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,4 +77,40 @@ public interface LayeredMappingSpecBuilder {
 	 */
 	@ApiStatus.Experimental
 	LayeredMappingSpecBuilder signatureFix(Object object);
+
+	/**
+	 * Add a layer that uses a mappings file or directory.
+	 *
+	 * @param file the file notation for a {@link FileSpec}
+	 * @return this builder
+	 * @see FileMappingsSpecBuilder
+	 */
+	@ApiStatus.Experimental
+	default LayeredMappingSpecBuilder mappings(Object file) {
+		return mappings(file, builder -> { });
+	}
+
+	/**
+	 * Configure and add a layer that uses a mappings file or directory.
+	 *
+	 * @param file    the file notation for a {@link FileSpec}
+	 * @param closure the configuration action
+	 * @return this builder
+	 * @see FileMappingsSpecBuilder
+	 */
+	@ApiStatus.Experimental
+	default LayeredMappingSpecBuilder mappings(Object file, @DelegatesTo(value = FileMappingsSpecBuilder.class, strategy = Closure.DELEGATE_FIRST) Closure<?> closure) {
+		return mappings(file, new ClosureAction<>(closure));
+	}
+
+	/**
+	 * Configure and add a layer that uses a mappings file or directory.
+	 *
+	 * @param file   the file notation for a {@link FileSpec}
+	 * @param action the configuration action
+	 * @return this builder
+	 * @see FileMappingsSpecBuilder
+	 */
+	@ApiStatus.Experimental
+	LayeredMappingSpecBuilder mappings(Object file, Action<? super FileMappingsSpecBuilder> action);
 }

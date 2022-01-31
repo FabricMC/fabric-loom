@@ -131,7 +131,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 			BundleMetadata serverBundleMetadata = provider.getServerBundleMetadata();
 
 			if (serverBundleMetadata == null) {
-				throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar support server only configuration, please use a merged jar setup for this version of minecraft");
+				return provider.getMinecraftServerJar().toPath();
 			}
 
 			provider.extractBundledServerJar();
@@ -142,7 +142,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 	private static final class Client implements Environment {
 		@Override
 		public String name() {
-			return "server";
+			return "client";
 		}
 
 		@Override

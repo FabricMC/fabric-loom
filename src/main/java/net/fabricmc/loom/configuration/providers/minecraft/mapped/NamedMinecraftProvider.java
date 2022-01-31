@@ -33,7 +33,7 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.ServerOnlyMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SidedClassVisitor;
@@ -99,21 +99,37 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 	}
 
-	public static final class ServerOnlyImpl extends NamedMinecraftProvider<ServerOnlyMinecraftProvider> implements ServerOnly {
-		public ServerOnlyImpl(Project project, ServerOnlyMinecraftProvider minecraftProvider) {
+	public static final class SingleJarImpl extends NamedMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
+		private final String env;
+
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, String env) {
 			super(project, minecraftProvider);
+			this.env = env;
+		}
+
+		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, "server");
+		}
+
+		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, "client");
 		}
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftServerOnlyJar(), getServerOnlyJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), MappingsNamespace.OFFICIAL)
 			);
 		}
 
 		@Override
 		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, SERVER_ONLY);
+			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, envName());
+		}
+
+		@Override
+		public String env() {
+			return env;
 		}
 	}
 }

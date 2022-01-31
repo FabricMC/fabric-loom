@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.Files;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -73,6 +74,14 @@ public abstract class MinecraftProvider {
 		this.project = project;
 	}
 
+	protected boolean provideClient() {
+		return true;
+	}
+
+	protected boolean provideServer() {
+		return true;
+	}
+
 	public void provide() throws Exception {
 		final DependencyInfo dependency = DependencyInfo.create(getProject(), Constants.Configurations.MINECRAFT);
 		minecraftVersion = dependency.getDependency().getVersion();
@@ -88,7 +97,17 @@ public abstract class MinecraftProvider {
 		}
 
 		if (offline) {
-			if (minecraftClientJar.exists() && minecraftServerJar.exists()) {
+			boolean exists = true;
+
+			if (provideServer() && !minecraftServerJar.exists()) {
+				exists = false;
+			}
+
+			if (provideClient() && !minecraftClientJar.exists()) {
+				exists = false;
+			}
+
+			if (exists) {
 				getProject().getLogger().debug("Found client and server jars, presuming up-to-date");
 			} else {
 				throw new GradleException("Missing jar(s); Client: " + minecraftClientJar.exists() + ", Server: " + minecraftServerJar.exists());
@@ -97,7 +116,9 @@ public abstract class MinecraftProvider {
 			downloadJars(getProject().getLogger());
 		}
 
-		serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
+		if (provideServer()) {
+			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
+		}
 
 		libraryProvider = new MinecraftLibraryProvider();
 		libraryProvider.provide(this, getProject());
@@ -107,11 +128,17 @@ public abstract class MinecraftProvider {
 		workingDir = new File(getExtension().getFiles().getUserCache(), minecraftVersion);
 		workingDir.mkdirs();
 		minecraftJson = file("minecraft-info.json");
-		minecraftClientJar = file("minecraft-client.jar");
-		minecraftServerJar = file("minecraft-server.jar");
-		minecraftExtractedServerJar = file("minecraft-extracted_server.jar");
 		versionManifestJson = new File(getExtension().getFiles().getUserCache(), "version_manifest.json");
 		experimentalVersionsJson = new File(getExtension().getFiles().getUserCache(), "experimental_version_manifest.json");
+
+		if (provideClient()) {
+			minecraftClientJar = file("minecraft-client.jar");
+		}
+
+		if (provideServer()) {
+			minecraftServerJar = file("minecraft-server.jar");
+			minecraftExtractedServerJar = file("minecraft-extracted_server.jar");
+		}
 	}
 
 	private void downloadMcJson(boolean offline) throws IOException {
@@ -231,14 +258,19 @@ public abstract class MinecraftProvider {
 			return;
 		}
 
-		MinecraftVersionMeta.Download client = versionInfo.download("client");
-		MinecraftVersionMeta.Download server = versionInfo.download("server");
+		if (provideClient()) {
+			MinecraftVersionMeta.Download client = versionInfo.download("client");
+			HashedDownloadUtil.downloadIfInvalid(new URL(client.url()), minecraftClientJar, client.sha1(), logger, false);
+		}
 
-		HashedDownloadUtil.downloadIfInvalid(new URL(client.url()), minecraftClientJar, client.sha1(), logger, false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(server.url()), minecraftServerJar, server.sha1(), logger, false);
+		if (provideServer()) {
+			MinecraftVersionMeta.Download server = versionInfo.download("server");
+			HashedDownloadUtil.downloadIfInvalid(new URL(server.url()), minecraftServerJar, server.sha1(), logger, false);
+		}
 	}
 
 	protected final void extractBundledServerJar() throws IOException {
+		Preconditions.checkArgument(provideServer(), "Not configured to provide server jar");
 		Objects.requireNonNull(getServerBundleMetadata(), "Cannot bundled mc jar from none bundled server jar");
 
 		getLogger().info(":Extracting server jar from bootstrap");
@@ -269,17 +301,20 @@ public abstract class MinecraftProvider {
 	}
 
 	public File getMinecraftClientJar() {
+		Preconditions.checkArgument(provideClient(), "Not configured to provide client jar");
 		return minecraftClientJar;
 	}
 
 	// May be null on older versions
 	@Nullable
 	public File getMinecraftExtractedServerJar() {
+		Preconditions.checkArgument(provideServer(), "Not configured to provide server jar");
 		return minecraftExtractedServerJar;
 	}
 
 	// This may be the server bundler jar on newer versions prob not what you want.
 	public File getMinecraftServerJar() {
+		Preconditions.checkArgument(provideServer(), "Not configured to provide server jar");
 		return minecraftServerJar;
 	}
 
@@ -289,14 +324,6 @@ public abstract class MinecraftProvider {
 
 	public MinecraftVersionMeta getVersionInfo() {
 		return versionInfo;
-	}
-
-	public MinecraftLibraryProvider getLibraryProvider() {
-		return libraryProvider;
-	}
-
-	public String getTargetConfig() {
-		return Constants.Configurations.MINECRAFT;
 	}
 
 	@Nullable

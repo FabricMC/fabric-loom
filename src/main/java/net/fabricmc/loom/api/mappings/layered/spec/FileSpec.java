@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,9 +50,10 @@ public interface FileSpec {
 	 * <p>The parameter will be evaluated like this:
 	 * <ul>
 	 * <li>{@link File}, {@link Path} and {@link FileSystemLocation} will be resolved as local files</li>
-	 * <li>{@link Provider} (including {@link org.gradle.api.provider.Property} will recursively be resolved as its current value</li>
+	 * <li>{@link Provider} (including {@link org.gradle.api.provider.Property}) will recursively be resolved as its current value</li>
 	 * <li>{@link CharSequence} (including {@link String} and {@link groovy.lang.GString}) will be resolved as Maven dependencies</li>
 	 * <li>{@link Dependency} will be resolved as any dependency</li>
+	 * <li>{@code FileSpec} will just return the spec itself</li>
 	 * </ul>
 	 *
 	 * @param o the file notation
@@ -73,6 +74,8 @@ public interface FileSpec {
 			return createFromFile(p);
 		} else if (o instanceof FileSystemLocation l) {
 			return createFromFile(l);
+		} else if (o instanceof FileSpec s) {
+			return s;
 		}
 
 		throw new UnsupportedOperationException("Cannot create FileSpec from object of type:" + o.getClass().getCanonicalName());

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@ package net.fabricmc.loom.api.mappings.layered;
 
 import java.util.Locale;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * The standard namespaces used by loom.
  */
@@ -48,6 +50,21 @@ public enum MappingsNamespace {
 	 * Named mappings are the developer friendly names used to develop mods against.
 	 */
 	NAMED;
+
+	/**
+	 * Gets a {@code MappingsNamespace} from a namespace string.
+	 *
+	 * @param namespace the name of the namespace as a lowercase string
+	 * @return the {@code MappingsNamespace}, or null if not found
+	 */
+	public static @Nullable MappingsNamespace of(String namespace) {
+		return switch (namespace) {
+		case "official" -> OFFICIAL;
+		case "intermediary" -> INTERMEDIARY;
+		case "named" -> NAMED;
+		default -> null;
+		};
+	}
 
 	@Override
 	public String toString() {

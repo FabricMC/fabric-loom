@@ -45,7 +45,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		setGroup(Constants.TaskGroup.FABRIC);
 		this.config = configProvider.apply(getProject());
 
-		setClasspath(config.sourceSet.getRuntimeClasspath().filter(new LibraryFilter()));
+		setClasspath(config.sourceSet.getRuntimeClasspath().filter(File::exists).filter(new LibraryFilter()));
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
 	}

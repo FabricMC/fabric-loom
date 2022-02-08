@@ -35,9 +35,11 @@ import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.DeprecationHelper;
 
@@ -129,6 +131,20 @@ public interface LoomGradleExtensionAPI {
 	 * @return the property controlling the transitive access wideners
 	 */
 	Property<Boolean> getEnableTransitiveAccessWideners();
+
+	@ApiStatus.Experimental
+	IntermediateMappingsProvider getIntermediateMappingsProvider();
+
+	@ApiStatus.Experimental
+	<T extends IntermediateMappingsProvider> void setIntermediateMappingsProvider(Class<T> clazz, Action<T> action);
+
+	/**
+	 * An Experimental option to provide empty intermediate mappings, to be used for game versions without any intermediate mappings.
+	 */
+	@ApiStatus.Experimental
+	default void noIntermediateMappings() {
+		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+	}
 
 	/**
 	 * Use "%1$s" as a placeholder for the minecraft version.

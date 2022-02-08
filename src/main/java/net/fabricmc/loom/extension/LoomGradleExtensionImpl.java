@@ -42,11 +42,13 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -78,6 +80,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		this.mixinApExtension = project.getObjects().newInstance(MixinExtensionImpl.class, project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
+
+		// Setup the default intermediate mappings provider.
+		setIntermediateMappingsProvider(IntermediaryMappingsProvider.class, provider -> {
+			provider.getIntermediaryUrl()
+					.convention(getIntermediaryUrl())
+					.finalizeValueOnRead();
+		});
 	}
 
 	@Override
@@ -225,5 +234,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles) {
 		transitiveAccessWideners.addAll(accessWidenerFiles);
+	}
+
+	@Override
+	protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
+		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
+		provider.getMinecraftVersion().disallowChanges();
 	}
 }

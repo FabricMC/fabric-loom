@@ -65,7 +65,7 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public Supplier<MemoryMappingTree> intermediaryTree() {
-		return () -> IntermediaryService.getInstance(project, minecraftProvider()).getMemoryMappingTree();
+		return () -> IntermediateMappingsService.getInstance(project, minecraftProvider()).getMemoryMappingTree();
 	}
 
 	@Override

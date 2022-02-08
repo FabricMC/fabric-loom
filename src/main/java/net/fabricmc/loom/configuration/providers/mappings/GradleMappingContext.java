@@ -82,4 +82,12 @@ public class GradleMappingContext implements MappingContext {
 	public Logger getLogger() {
 		return project.getLogger();
 	}
+
+	public Project getProject() {
+		return project;
+	}
+
+	public LoomGradleExtension getExtension() {
+		return extension;
+	}
 }

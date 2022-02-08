@@ -225,6 +225,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public void setIntermediateMappingsProvider(IntermediateMappingsProvider intermediateMappingsProvider) {
+		this.intermediateMappingsProvider.set(intermediateMappingsProvider);
+	}
+
+	@Override
 	public <T extends IntermediateMappingsProvider> void setIntermediateMappingsProvider(Class<T> clazz, Action<T> action) {
 		T provider = getProject().getObjects().newInstance(clazz);
 		configureIntermediateMappingsProviderInternal(provider);

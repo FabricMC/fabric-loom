@@ -136,6 +136,9 @@ public interface LoomGradleExtensionAPI {
 	IntermediateMappingsProvider getIntermediateMappingsProvider();
 
 	@ApiStatus.Experimental
+	void setIntermediateMappingsProvider(IntermediateMappingsProvider intermediateMappingsProvider);
+
+	@ApiStatus.Experimental
 	<T extends IntermediateMappingsProvider> void setIntermediateMappingsProvider(Class<T> clazz, Action<T> action);
 
 	/**

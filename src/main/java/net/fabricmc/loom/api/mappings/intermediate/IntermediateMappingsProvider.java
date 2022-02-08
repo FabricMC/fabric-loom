@@ -27,10 +27,7 @@ package net.fabricmc.loom.api.mappings.intermediate;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import javax.inject.Inject;
-
 import org.gradle.api.Named;
-import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -41,9 +38,6 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Experimental
 public abstract class IntermediateMappingsProvider implements Named {
 	public abstract Property<String> getMinecraftVersion();
-
-	@Inject
-	public abstract Project getProject();
 
 	/**
 	 * Generate or download a tinyv2 mapping file with intermediary and named namespaces.

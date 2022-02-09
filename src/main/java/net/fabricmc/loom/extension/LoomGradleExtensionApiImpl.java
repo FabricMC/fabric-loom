@@ -40,6 +40,7 @@ import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
@@ -65,6 +66,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<String> intermediary;
+	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
@@ -91,6 +93,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
+
+		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
+		this.intermediateMappingsProvider.finalizeValueOnRead();
 
 		this.versionParser = new ModVersionParser(project);
 
@@ -215,6 +220,26 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
+		return intermediateMappingsProvider.get();
+	}
+
+	@Override
+	public void setIntermediateMappingsProvider(IntermediateMappingsProvider intermediateMappingsProvider) {
+		this.intermediateMappingsProvider.set(intermediateMappingsProvider);
+	}
+
+	@Override
+	public <T extends IntermediateMappingsProvider> void setIntermediateMappingsProvider(Class<T> clazz, Action<T> action) {
+		T provider = getProject().getObjects().newInstance(clazz);
+		configureIntermediateMappingsProviderInternal(provider);
+		action.execute(provider);
+		intermediateMappingsProvider.set(provider);
+	}
+
+	protected abstract <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider);
+
+	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {
 		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
 	}
@@ -253,6 +278,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected LoomFiles getFiles() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 

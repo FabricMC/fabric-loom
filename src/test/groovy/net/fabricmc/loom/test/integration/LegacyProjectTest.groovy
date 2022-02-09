@@ -32,7 +32,6 @@ import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test uses gradle 4.9 and 1.14.4 v1 mappings
 class LegacyProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "legacy build (gradle #version)"() {
@@ -55,7 +54,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 			gradle.buildGradle << """
 				loom {
-                    intermediaryUrl = 'https://s.modm.us/intermediary-empty-v2.jar'
+                    noIntermediateMappings()
                 }
 
                 dependencies {
@@ -91,7 +90,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 			gradle.buildGradle << """
 				loom {
-                    intermediaryUrl = 'https://s.modm.us/intermediary-empty-v2.jar'
+                    noIntermediateMappings()
 					clientOnlyMinecraftJar()
                 }
 

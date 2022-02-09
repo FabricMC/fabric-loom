@@ -28,10 +28,11 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext
 import net.fabricmc.loom.api.mappings.layered.MappingLayer
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec
-import net.fabricmc.loom.configuration.providers.mappings.IntermediaryService
+import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
+import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
@@ -122,7 +123,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         @Override
         Supplier<MemoryMappingTree> intermediaryTree() {
             return {
-                IntermediaryService.create(intermediaryUrl, minecraftProvider()).memoryMappingTree
+                IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider()).memoryMappingTree
             }
         }
 

@@ -22,20 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.file;
+package net.fabricmc.loom.configuration.providers.mappings.extras.unpick;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-public record FileMappingsSpec(
-		FileSpec fileSpec, String mappingPath,
-		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, boolean unpick,
-		String mergeNamespace
-) implements MappingsSpec<FileMappingsLayer> {
-	@Override
-	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, mergeNamespace);
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+
+import net.fabricmc.loom.LoomGradlePlugin;
+
+@ApiStatus.Experimental
+public interface UnpickLayer {
+	@Nullable
+	UnpickData getUnpickData() throws IOException;
+
+	record UnpickData(Metadata metadata, byte[] definitions) {
+		public static UnpickData read(Path metadataPath, Path definitionPath) throws IOException {
+			final byte[] definitions = Files.readAllBytes(definitionPath);
+			final Metadata metadata;
+
+			try (Reader reader = Files.newBufferedReader(metadataPath, StandardCharsets.UTF_8)) {
+				metadata = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, Metadata.class);
+			}
+
+			return new UnpickData(metadata, definitions);
+		}
+
+		public record Metadata(int version, String unpickGroup, String unpickVersion) {
+			public String asJson() throws IOException {
+				return LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(this);
+			}
+		}
 	}
 }

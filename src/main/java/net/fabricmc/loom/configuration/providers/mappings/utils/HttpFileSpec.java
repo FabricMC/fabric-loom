@@ -22,20 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.file;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.util.DownloadUtil;
 
-public record FileMappingsSpec(
-		FileSpec fileSpec, String mappingPath,
-		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, boolean unpick,
-		String mergeNamespace
-) implements MappingsSpec<FileMappingsLayer> {
+public record HttpFileSpec(String url) implements FileSpec {
+	private static final Logger LOGGER = LoggerFactory.getLogger(HttpFileSpec.class);
 	@Override
-	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, mergeNamespace);
+	public Path get(MappingContext context) {
+		try {
+			Path output = Files.createTempFile("loom", "httpfile");
+			Files.delete(output);
+
+			DownloadUtil.downloadIfChanged(new URL(url), output.toFile(), LOGGER);
+			return output;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to download: " + url, e);
+		}
 	}
 }

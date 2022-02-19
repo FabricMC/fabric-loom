@@ -41,7 +41,7 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	private String fallbackSourceNamespace = MappingsNamespace.INTERMEDIARY.toString();
 	private String fallbackTargetNamespace = MappingsNamespace.NAMED.toString();
 	private boolean enigma = false;
-	private boolean unpick = true;
+	private boolean unpick = false;
 	private String mergeNamespace = MappingsNamespace.INTERMEDIARY.toString();
 
 	private FileMappingsSpecBuilderImpl(FileSpec fileSpec) {
@@ -72,8 +72,8 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	}
 
 	@Override
-	public FileMappingsSpecBuilderImpl disableUnpick() {
-		unpick = false;
+	public FileMappingsSpecBuilderImpl containsUnpick() {
+		unpick = true;
 		return this;
 	}
 

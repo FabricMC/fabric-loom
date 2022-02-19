@@ -93,9 +93,12 @@ public record FileMappingsLayer(
 
 	@Override
 	public @Nullable UnpickData getUnpickData() throws IOException {
-		if (!unpick || !ZipUtils.isZip(path)) {
-			// Unpick disabled for this layer or not a zip.
+		if (!unpick) {
 			return null;
+		}
+
+		if (!ZipUtils.isZip(path)) {
+			throw new UnsupportedOperationException("Unpick is only supported for zip file mapping layers.");
 		}
 
 		try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {

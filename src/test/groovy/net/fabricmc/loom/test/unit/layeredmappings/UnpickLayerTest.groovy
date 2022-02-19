@@ -34,7 +34,7 @@ class UnpickLayerTest extends LayeredMappingsSpecification {
             intermediaryUrl = INTERMEDIARY_1_17_URL
             mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
         when:
-            def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(YARN_1_17_URL))
+            def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(YARN_1_17_URL)).containsUnpick()
             def unpickData = getUnpickData(
                     new IntermediaryMappingsSpec(),
                     builder.build()

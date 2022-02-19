@@ -76,7 +76,7 @@ public interface FileMappingsSpecBuilder {
 	 *
 	 * @return this builder
 	 */
-	FileMappingsSpecBuilder disableUnpick();
+	FileMappingsSpecBuilder containsUnpick();
 
 	/**
 	 * Sets the merge namespace of this mappings spec.

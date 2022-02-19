@@ -72,7 +72,7 @@ public interface FileMappingsSpecBuilder {
 	FileMappingsSpecBuilder enigmaMappings();
 
 	/**
-	 * Any unpick data in a zip file will be ignored.
+	 * Marks that the zip file contains unpick data.
 	 *
 	 * @return this builder
 	 */

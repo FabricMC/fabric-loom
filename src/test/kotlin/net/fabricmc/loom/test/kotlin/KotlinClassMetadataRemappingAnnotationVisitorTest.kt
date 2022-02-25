@@ -68,6 +68,25 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
         println(d2Regex.find(asm)?.value)
     }
 
+    @Test
+    fun extensionTest() {
+        val input = getClassBytes("TestExtensionKt")
+        val classReader = ClassReader(input)
+
+        val tinyRemapper = TinyRemapper.newRemapper()
+            .withMappings(readMappings("TestExtensionKt"))
+            .build()
+
+        val stringWriter = StringWriter()
+        val traceClassVisitor = TraceClassVisitor(null, TextifierImpl(), PrintWriter(stringWriter))
+
+        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, traceClassVisitor), 0)
+
+        val d2Regex = Regex("(d2=)(.*)")
+        val asm = stringWriter.toString()
+        println(d2Regex.find(asm)?.value)
+    }
+
     private fun getClassBytes(name: String): ByteArray {
         return File("src/test/resources/classes/$name.class").readBytes()
     }

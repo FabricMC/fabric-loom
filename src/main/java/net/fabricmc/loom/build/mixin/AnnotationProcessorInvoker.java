@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2020-2021 FabricMC
+ * Copyright (c) 2020-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -89,6 +89,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, MixinMappingsService.getMixinMappingFile(project, sourceSet).getCanonicalPath());
 					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:intermediary");
+					put(Constants.MixinArguments.QUIET, "true");
 				}};
 
 			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);

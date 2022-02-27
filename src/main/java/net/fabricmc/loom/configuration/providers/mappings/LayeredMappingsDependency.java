@@ -48,6 +48,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -84,6 +85,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 
 				writeMapping(processor, layers, mappingsFile);
 				writeSignatureFixes(processor, layers, mappingsFile);
+				writeUnpickData(processor, layers, mappingsFile);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to resolve layered mappings", e);
 			}
@@ -117,6 +119,17 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 		byte[] data = LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(signatureFixes).getBytes(StandardCharsets.UTF_8);
 
 		ZipUtils.add(mappingsFile, "extras/record_signatures.json", data);
+	}
+
+	private void writeUnpickData(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		UnpickLayer.UnpickData unpickData = processor.getUnpickData(layers);
+
+		if (unpickData == null) {
+			return;
+		}
+
+		ZipUtils.add(mappingsFile, "extras/definitions.unpick", unpickData.definitions());
+		ZipUtils.add(mappingsFile, "extras/unpick.json", unpickData.metadata().asJson());
 	}
 
 	@Override

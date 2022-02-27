@@ -131,6 +131,10 @@ public class ZipUtils {
 		}
 	}
 
+	public static void add(Path zip, String path, String str) throws IOException {
+		add(zip, path, str.getBytes(StandardCharsets.UTF_8));
+	}
+
 	public static void add(Path zip, String path, byte[] bytes) throws IOException {
 		add(zip, Collections.singleton(new Pair<>(path, bytes)));
 	}

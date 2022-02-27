@@ -25,6 +25,8 @@
 package net.fabricmc.loom.api.mappings.layered.spec;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -36,6 +38,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.utils.DependencyFileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.utils.URLFileSpec;
 import net.fabricmc.loom.configuration.providers.mappings.utils.LocalFileSpec;
 import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec;
 
@@ -63,6 +66,14 @@ public interface FileSpec {
 		Objects.requireNonNull(o, "Object cannot be null");
 
 		if (o instanceof CharSequence s) {
+			if (s.toString().startsWith("https://") || s.toString().startsWith("http://")) {
+				try {
+					return create(new URL(s.toString()));
+				} catch (MalformedURLException e) {
+					throw new RuntimeException("Failed to convert string to URL", e);
+				}
+			}
+
 			return createFromMavenDependency(s.toString());
 		} else if (o instanceof Dependency d) {
 			return createFromDependency(d);
@@ -74,6 +85,8 @@ public interface FileSpec {
 			return createFromFile(p);
 		} else if (o instanceof FileSystemLocation l) {
 			return createFromFile(l);
+		} else if (o instanceof URL url) {
+			return createFromUrl(url);
 		} else if (o instanceof FileSpec s) {
 			return s;
 		}
@@ -99,6 +112,10 @@ public interface FileSpec {
 
 	static FileSpec createFromFile(Path path) {
 		return createFromFile(path.toFile());
+	}
+
+	static FileSpec createFromUrl(URL url) {
+		return new URLFileSpec(url);
 	}
 
 	// Note resolved instantly, this is not lazy

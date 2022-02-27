@@ -22,20 +22,38 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.file;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.util.DownloadUtil;
 
-public record FileMappingsSpec(
-		FileSpec fileSpec, String mappingPath,
-		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, boolean unpick,
-		String mergeNamespace
-) implements MappingsSpec<FileMappingsLayer> {
+public record URLFileSpec(URL url) implements FileSpec {
+	private static final Logger LOGGER = LoggerFactory.getLogger(URLFileSpec.class);
 	@Override
-	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, mergeNamespace);
+	public Path get(MappingContext context) {
+		try {
+			Path output = context.workingDirectory("%d.URLFileSpec".formatted(Objects.hash(url.toString())));
+			LOGGER.info("Downloading {} to {}", url, output);
+			DownloadUtil.downloadIfChanged(url, output.toFile(), LOGGER);
+			return output;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to download: " + url, e);
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		// URL performs DNS requests if you .hashCode it (:
+		return Objects.hash(url.toString());
 	}
 }

@@ -27,6 +27,7 @@ package net.fabricmc.loom.task.launch;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,7 +40,10 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
 
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
@@ -62,11 +66,14 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 
 				.property("client", "java.library.path", nativesPath)
 				.property("client", "org.lwjgl.librarypath", nativesPath)
+				.property("client", "fabric.gameJarPath", getGameJarPaths("client"))
 
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", assetsDirectory.getAbsolutePath());
+				.argument("client", assetsDirectory.getAbsolutePath())
+
+				.property("server", "fabric.gameJarPath", getGameJarPaths("server"));
 
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
@@ -85,6 +92,23 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		return getExtension().getLog4jConfigs().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.collect(Collectors.joining(","));
+	}
+
+	private String getGameJarPaths(String env) {
+		if (getExtension().getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT) {
+			MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) getExtension().getNamedMinecraftProvider();
+
+			return switch (env) {
+			case "server" -> split.getClientOnlyJar().toAbsolutePath().toString();
+			case "client" -> split.getMinecraftJars().stream().map(path -> path.toAbsolutePath().toString()).collect(Collectors.joining(","));
+			default -> throw new UnsupportedOperationException();
+			};
+		}
+
+		List<Path> minecraftJars = getExtension().getMinecraftJars(MappingsNamespace.NAMED);
+
+		assert minecraftJars.size() == 1;
+		return minecraftJars.get(0).toAbsolutePath().toString();
 	}
 
 	public static class LaunchConfig {

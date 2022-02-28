@@ -69,6 +69,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
+	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
 	private final ModVersionParser versionParser;
@@ -115,6 +116,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
+
+		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
+		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
@@ -252,6 +256,20 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getRuntimeOnlyLog4j() {
 		return runtimeOnlyLog4j;
+	}
+
+	@Override
+	public void splitEnvironmentSourceSets() {
+		splitMinecraftJar();
+
+		splitEnvironmentalSourceSet.set(true);
+		splitEnvironmentalSourceSet.finalizeValue();
+		minecraftJarConfiguration.finalizeValue();
+	}
+
+	@Override
+	public boolean areEnvironmentSourceSetsSplit() {
+		return splitEnvironmentalSourceSet.get();
 	}
 
 	@Override

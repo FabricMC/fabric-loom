@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 
@@ -85,7 +86,16 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (applyDependencies) {
-			parentMinecraftProvider.applyDependencies((configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)));
+			final List<String> dependencyTargets = getDependencyTargets();
+
+			if (dependencyTargets.isEmpty()) {
+				return;
+			}
+
+			MinecraftSourceSets.get(getProject()).applyDependencies(
+					(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
+					dependencyTargets
+			);
 		}
 	}
 

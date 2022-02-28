@@ -41,6 +41,7 @@ import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.MixinMappingsService;
 import net.fabricmc.loom.util.Constants;
@@ -101,15 +102,16 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	public void configureMixin() {
 		ConfigurationContainer configs = project.getConfigurations();
+		MinecraftSourceSets minecraftSourceSets = MinecraftSourceSets.get(project);
 
 		if (!IdeaUtils.isIdeaSync()) {
 			for (Configuration processorConfig : apConfigurations) {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath
 				processorConfig.extendsFrom(
-								configs.getByName(Constants.Configurations.MINECRAFT_NAMED),
-								configs.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED),
-								configs.getByName(Constants.Configurations.MAPPINGS_FINAL)
+						configs.getByName(minecraftSourceSets.getCombinedSourceSetName()),
+						configs.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED),
+						configs.getByName(Constants.Configurations.MAPPINGS_FINAL)
 				);
 
 				// Add Mixin and mixin extensions (fabric-mixin-compile-extensions pulls mixin itself too)

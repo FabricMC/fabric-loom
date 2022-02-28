@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import org.gradle.api.tasks.TaskProvider;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
@@ -154,6 +155,17 @@ public final class LoomTasks {
 			}
 
 			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
+		});
+
+		// Configure the run config source sets.
+		project.afterEvaluate(p -> {
+			if (!extension.areEnvironmentSourceSetsSplit()) {
+				return;
+			}
+
+			extension.getRunConfigs().configureEach(settings ->
+					settings.source(MinecraftSourceSets.get(project).getSourceSetForEnv(settings.getEnvironment()))
+			);
 		});
 	}
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,9 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.gradle.api.Project;
 
@@ -38,6 +38,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVisitor;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -58,8 +59,8 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	public abstract List<RemappedJars> getRemappedJars();
 
-	protected void applyDependencies(BiConsumer<String, String> consumer) {
-		// Override if needed
+	public List<String> getDependencyTargets() {
+		return Collections.emptyList();
 	}
 
 	public void provide(boolean applyDependencies) throws Exception {
@@ -77,7 +78,16 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (applyDependencies) {
-			applyDependencies((configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)));
+			final List<String> dependencyTargets = getDependencyTargets();
+
+			if (dependencyTargets.isEmpty()) {
+				return;
+			}
+
+			MinecraftSourceSets.get(getProject()).applyDependencies(
+					(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
+					dependencyTargets
+			);
 		}
 	}
 

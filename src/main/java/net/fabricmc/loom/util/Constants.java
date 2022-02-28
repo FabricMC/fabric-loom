@@ -70,7 +70,6 @@ public class Constants {
 		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
 		public static final String MINECRAFT_RUNTIME_DEPENDENCIES = "minecraftRuntimeOnlyLibraries";
 		public static final String MINECRAFT_NATIVES = "minecraftNatives";
-		public static final String MINECRAFT_NAMED = "minecraftNamed";
 		public static final String MAPPINGS = "mappings";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";

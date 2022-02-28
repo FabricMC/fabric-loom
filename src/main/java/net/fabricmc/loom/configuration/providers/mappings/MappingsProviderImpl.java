@@ -158,13 +158,17 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 	public void applyToProject(Project project, DependencyInfo dependency) {
 		if (hasUnpickDefinitions()) {
-			String notation = String.format("%s:%s:%s:constants",
-					dependency.getDependency().getGroup(),
-					dependency.getDependency().getName(),
-					dependency.getDependency().getVersion()
-			);
+			if (project.getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS).getDependencies().isEmpty()) {
+				// Add a constants jar dependency if not already present
+				String notation = String.format("%s:%s:%s:constants",
+						dependency.getDependency().getGroup(),
+						dependency.getDependency().getName(),
+						dependency.getDependency().getVersion()
+				);
 
-			project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+				project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+			}
+
 			populateUnpickClasspath(project);
 		}
 

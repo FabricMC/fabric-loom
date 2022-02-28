@@ -9,7 +9,7 @@ plugins {
 	id 'jacoco'
 	id 'codenarc'
 	id "org.jetbrains.kotlin.jvm" version "1.5.31" // Must match the version included with gradle.
-	id "com.diffplug.spotless" version "5.14.1"
+	id "com.diffplug.spotless" version "6.3.0"
 }
 
 sourceCompatibility = 17
@@ -68,8 +68,8 @@ dependencies {
 
 	// libraries
 	implementation ('commons-io:commons-io:2.11.0')
-	implementation ('com.google.code.gson:gson:2.8.9')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.0')
+	implementation ('com.google.code.gson:gson:2.9.0')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.1')
 	implementation ('com.google.guava:guava:31.0.1-jre')
 	implementation ('org.ow2.asm:asm:9.2')
 	implementation ('org.ow2.asm:asm-analysis:9.2')
@@ -111,8 +111,8 @@ dependencies {
 	testImplementation('org.spockframework:spock-core:2.0-groovy-3.0') {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-	testImplementation ('io.javalin:javalin:3.13.11') {
+	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+	testImplementation ('io.javalin:javalin:4.3.0') {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
@@ -153,7 +153,7 @@ spotless {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '9.2'
+	toolVersion = '9.3'
 }
 
 codenarc {

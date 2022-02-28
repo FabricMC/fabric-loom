@@ -24,10 +24,6 @@
 
 package net.fabricmc.loom.test.kotlin
 
-import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
-import java.nio.file.Paths
 import net.fabricmc.loom.kotlin.remapping.KotlinMetadataRemappingClassVisitor
 import net.fabricmc.loom.util.TinyRemapperHelper
 import net.fabricmc.mappingio.MappingReader
@@ -39,6 +35,10 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceClassVisitor
+import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.nio.file.Paths
 
 // See: https://github.com/JetBrains/kotlin/blob/master/libraries/kotlinx-metadata/jvm/test/kotlinx/metadata/test/MetadataSmokeTest.kt#L67
 class KotlinClassMetadataRemappingAnnotationVisitorTest {

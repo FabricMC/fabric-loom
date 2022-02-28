@@ -63,7 +63,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
             }
             // Can only be turned into KmPackage which is useless data
             is KotlinClassMetadata.FileFacade, is KotlinClassMetadata.MultiFileClassPart,
-                // Can't be turned into data
+            // Can't be turned into data
             is KotlinClassMetadata.MultiFileClassFacade, is KotlinClassMetadata.Unknown, null -> {
                 // do nothing
                 accept(next)

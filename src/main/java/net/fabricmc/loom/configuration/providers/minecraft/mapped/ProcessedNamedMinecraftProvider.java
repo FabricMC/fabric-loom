@@ -86,7 +86,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (applyDependencies) {
-			final List<String> dependencyTargets = getDependencyTargets();
+			final List<String> dependencyTargets = parentMinecraftProvider.getDependencyTargets();
 
 			if (dependencyTargets.isEmpty()) {
 				return;

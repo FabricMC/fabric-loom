@@ -177,6 +177,7 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	void splitEnvironmentSourceSets();
 
+	@ApiStatus.Experimental
 	boolean areEnvironmentSourceSetsSplit();
 
 	Property<Boolean> getRuntimeOnlyLog4j();

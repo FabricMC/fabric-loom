@@ -116,7 +116,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		private static final String MINECRAFT_CLIENT_ONLY_NAMED = "minecraftClientOnlyNamed";
 		private static final String MINECRAFT_COMBINED_NAMED = "minecraftCombinedNamed";
 
-		private static final String CLIENT_ONLY_SOURCE_SET_NAME = "clientOnly";
+		private static final String CLIENT_ONLY_SOURCE_SET_NAME = "client";
 
 		private static final Split INSTANCE = new Split();
 
@@ -154,6 +154,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, project);
 
 			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+			final LoomGradleExtension loomExtension = LoomGradleExtension.get(project);
 
 			// Register our new client only source set, main becomes common only, with their respective jars.
 			SourceSet commonSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
@@ -175,6 +176,11 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_COMMON_NAMED, project);
 			clientOnlySourceSet.setCompileClasspath(clientOnlySourceSet.getCompileClasspath().plus(commonSourceSet.getCompileClasspath()));
 			clientOnlySourceSet.setRuntimeClasspath(clientOnlySourceSet.getRuntimeClasspath().plus(commonSourceSet.getRuntimeClasspath()));
+
+			loomExtension.mixin(mixinExtension -> {
+				// Generate a refmap for mixins in the new source set.
+				mixinExtension.add(clientOnlySourceSet);
+			});
 
 			// Include the client only output in the jars
 			project.getTasks().named(commonSourceSet.getJarTaskName(), Jar.class).configure(jar -> {

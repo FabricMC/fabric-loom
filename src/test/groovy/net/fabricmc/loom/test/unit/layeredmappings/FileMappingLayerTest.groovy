@@ -107,6 +107,9 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 		}, {
 			it.mappingPath("mappings").enigmaMappings()
 		}),
+		YARN_V2_URL('yarn url', {
+			YARN_1_17_URL
+		}, { })
 		;
 
 		final String displayName

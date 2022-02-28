@@ -66,10 +66,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 	@TaskAction
 	public void runTask() throws IOException {
 		File projectDir = getProject().getRootProject().file(".idea");
-
-		if (!projectDir.exists()) {
-			throw new RuntimeException("No .idea directory found");
-		}
+		projectDir.mkdirs();
 
 		generateRunConfigs();
 	}

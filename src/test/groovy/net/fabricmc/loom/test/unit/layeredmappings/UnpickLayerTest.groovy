@@ -22,20 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.file;
+package net.fabricmc.loom.test.unit.layeredmappings
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
+import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 
-public record FileMappingsSpec(
-		FileSpec fileSpec, String mappingPath,
-		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, boolean unpick,
-		String mergeNamespace
-) implements MappingsSpec<FileMappingsLayer> {
-	@Override
-	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, mergeNamespace);
-	}
+class UnpickLayerTest extends LayeredMappingsSpecification {
+    def "read unpick data from yarn"() {
+        setup:
+            intermediaryUrl = INTERMEDIARY_1_17_URL
+            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+        when:
+            def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(YARN_1_17_URL)).containsUnpick()
+            def unpickData = getUnpickData(
+                    new IntermediaryMappingsSpec(),
+                    builder.build()
+            )
+            def metadata = unpickData.metadata()
+        then:
+            metadata.version() == 1
+            metadata.unpickGroup() == "net.fabricmc.unpick"
+            metadata.unpickVersion() == "2.2.0"
+
+            unpickData.definitions().length == 56119
+    }
 }

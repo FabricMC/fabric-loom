@@ -72,6 +72,13 @@ public interface FileMappingsSpecBuilder {
 	FileMappingsSpecBuilder enigmaMappings();
 
 	/**
+	 * Marks that the zip file contains unpick data.
+	 *
+	 * @return this builder
+	 */
+	FileMappingsSpecBuilder containsUnpick();
+
+	/**
 	 * Sets the merge namespace of this mappings spec.
 	 *
 	 * <p>The merge namespace is the namespace that is used to match up this layer's

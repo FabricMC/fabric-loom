@@ -31,6 +31,7 @@ import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
+import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
@@ -86,6 +87,12 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
         LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
         return processor.getMappings(processor.resolveLayers(mappingContext))
+    }
+
+    UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
+        LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
+        LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
+        return processor.getUnpickData(processor.resolveLayers(mappingContext))
     }
 
     String getTiny(MemoryMappingTree mappingTree) {

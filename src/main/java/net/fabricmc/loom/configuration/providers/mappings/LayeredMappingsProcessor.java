@@ -39,6 +39,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesLayer;
+import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -121,5 +122,30 @@ public class LayeredMappingsProcessor {
 		}
 
 		return Collections.unmodifiableMap(signatureFixes);
+	}
+
+	@Nullable
+	public UnpickLayer.UnpickData getUnpickData(List<MappingLayer> layers) throws IOException {
+		List<UnpickLayer.UnpickData> unpickDataList = new ArrayList<>();
+
+		for (MappingLayer layer : layers) {
+			if (layer instanceof UnpickLayer unpickLayer) {
+				UnpickLayer.UnpickData data = unpickLayer.getUnpickData();
+				if (data == null) continue;
+
+				unpickDataList.add(data);
+			}
+		}
+
+		if (unpickDataList.isEmpty()) {
+			return null;
+		}
+
+		if (unpickDataList.size() != 1) {
+			// TODO merge
+			throw new UnsupportedOperationException("Only one unpick layer is currently supported.");
+		}
+
+		return unpickDataList.get(0);
 	}
 }

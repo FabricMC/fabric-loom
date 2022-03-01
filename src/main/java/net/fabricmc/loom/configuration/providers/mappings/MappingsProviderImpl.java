@@ -158,11 +158,8 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 	public void applyToProject(Project project, DependencyInfo dependency) {
 		if (hasUnpickDefinitions()) {
-			if (project.getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS).getDependencies().isEmpty()) {
-				if (dependency.getDependency() instanceof LayeredMappingsDependency) {
-					throw new RuntimeException("No mappings constants dependency specified. Please provide one");
-				}
-
+			boolean layered = dependency.getDependency() instanceof LayeredMappingsDependency;
+			if (!layered && project.getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS).getDependencies().isEmpty()) {
 				// Add a constants jar dependency if not already present
 				String notation = String.format("%s:%s:%s:constants",
 						dependency.getDependency().getGroup(),

@@ -50,6 +50,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -263,8 +264,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		splitMinecraftJar();
 
 		splitEnvironmentalSourceSet.set(true);
+
+		// We need to lock these values, as we setup the new source sets right away.
 		splitEnvironmentalSourceSet.finalizeValue();
 		minecraftJarConfiguration.finalizeValue();
+
+		MinecraftSourceSets.get(getProject()).evaluateSplit(getProject());
 	}
 
 	@Override

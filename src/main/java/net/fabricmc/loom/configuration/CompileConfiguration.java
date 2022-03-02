@@ -141,7 +141,7 @@ public final class CompileConfiguration {
 		});
 
 		p.afterEvaluate(project -> {
-			MinecraftSourceSets.get(project).setup(project);
+			MinecraftSourceSets.get(project).afterEvaluate(project);
 
 			try {
 				setupMinecraft(project);

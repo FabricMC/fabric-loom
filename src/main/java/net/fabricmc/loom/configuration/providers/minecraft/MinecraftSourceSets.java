@@ -52,8 +52,17 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	protected abstract List<String> getAllSourceSetNames();
 
-	public void setup(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
+	public void evaluateSplit(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		Preconditions.checkArgument(extension.areEnvironmentSourceSetsSplit());
+
+		Split.INSTANCE.evaluate(project);
+	}
+
+	public abstract void afterEvaluate(Project project);
+
+	protected void createSourceSets(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		for (String name : getAllSourceSetNames()) {
 			extension.createLazyConfiguration(name, configuration -> configuration.setTransitive(false));
@@ -94,8 +103,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		@Override
-		public void setup(Project project) {
-			super.setup(project);
+		public void afterEvaluate(Project project) {
+			// This is done in afterEvaluate as we need to be sure that split source sets was not enabled.
+			createSourceSets(project);
 
 			// Default compile and runtime sourcesets.
 			extendsFrom(List.of(
@@ -145,9 +155,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_COMBINED_NAMED);
 		}
 
-		@Override
-		public void setup(Project project) {
-			super.setup(project);
+		// Called during evaluation, when the loom extension method is called.
+		private void evaluate(Project project) {
+			createSourceSets(project);
 
 			// Combined extends from the 2 environments.
 			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_COMMON_NAMED, project);
@@ -157,12 +167,12 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			final LoomGradleExtension loomExtension = LoomGradleExtension.get(project);
 
 			// Register our new client only source set, main becomes common only, with their respective jars.
-			SourceSet commonSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+			SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 			SourceSet clientOnlySourceSet = javaExtension.getSourceSets().create(CLIENT_ONLY_SOURCE_SET_NAME);
 
 			extendsFrom(List.of(
-					commonSourceSet.getCompileClasspathConfigurationName(),
-					commonSourceSet.getRuntimeClasspathConfigurationName()
+					mainSourceSet.getCompileClasspathConfigurationName(),
+					mainSourceSet.getRuntimeClasspathConfigurationName()
 				), MINECRAFT_COMMON_NAMED, project
 			);
 
@@ -174,28 +184,40 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			// Client depends on common.
 			extendsFrom(MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_COMMON_NAMED, project);
-			clientOnlySourceSet.setCompileClasspath(clientOnlySourceSet.getCompileClasspath().plus(commonSourceSet.getCompileClasspath()));
-			clientOnlySourceSet.setRuntimeClasspath(clientOnlySourceSet.getRuntimeClasspath().plus(commonSourceSet.getRuntimeClasspath()));
+			clientOnlySourceSet.setCompileClasspath(
+					clientOnlySourceSet.getCompileClasspath()
+							.plus(mainSourceSet.getCompileClasspath())
+							.plus(mainSourceSet.getOutput())
+			);
+			clientOnlySourceSet.setRuntimeClasspath(
+					clientOnlySourceSet.getRuntimeClasspath()
+							.plus(mainSourceSet.getRuntimeClasspath())
+							.plus(mainSourceSet.getOutput())
+			);
 
 			loomExtension.mixin(mixinExtension -> {
 				// Generate a refmap for mixins in the new source set.
-				mixinExtension.add(clientOnlySourceSet);
+				mixinExtension.add(clientOnlySourceSet, "client-" + mixinExtension.getDefaultRefmapName(), (p) -> { });
 			});
 
 			// Include the client only output in the jars
-			project.getTasks().named(commonSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
+			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
 			});
 
-			if (project.getTasks().findByName(commonSourceSet.getSourcesJarTaskName()) == null) {
+			if (project.getTasks().findByName(mainSourceSet.getSourcesJarTaskName()) == null) {
 				// No sources.
 				return;
 			}
 
-			project.getTasks().named(commonSourceSet.getSourcesJarTaskName(), Jar.class).configure(jar -> {
+			project.getTasks().named(mainSourceSet.getSourcesJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getAllSource());
 			});
+		}
+
+		@Override
+		public void afterEvaluate(Project project) {
 		}
 	}
 }

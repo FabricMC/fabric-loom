@@ -174,5 +174,11 @@ public interface LoomGradleExtensionAPI {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
 	}
 
+	@ApiStatus.Experimental
+	void splitEnvironmentSourceSets();
+
+	@ApiStatus.Experimental
+	boolean areEnvironmentSourceSetsSplit();
+
 	Property<Boolean> getRuntimeOnlyLog4j();
 }

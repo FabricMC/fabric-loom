@@ -40,6 +40,7 @@ import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
 
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
@@ -68,6 +69,11 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 				.argument("client", "--assetsDir")
 				.argument("client", assetsDirectory.getAbsolutePath());
 
+		if (getExtension().areEnvironmentSourceSetsSplit()) {
+			launchConfig.property("client", "fabric.gameJarPath.client", getGameJarPath("client"));
+			launchConfig.property("fabric.gameJarPath", getGameJarPath("common"));
+		}
+
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
 				|| new File(getProject().getRootDir(), ".idea").exists()
@@ -85,6 +91,16 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		return getExtension().getLog4jConfigs().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.collect(Collectors.joining(","));
+	}
+
+	private String getGameJarPath(String env) {
+		MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) getExtension().getNamedMinecraftProvider();
+
+		return switch (env) {
+		case "client" -> split.getClientOnlyJar().toAbsolutePath().toString();
+		case "common" -> split.getCommonJar().toAbsolutePath().toString();
+		default -> throw new UnsupportedOperationException();
+		};
 	}
 
 	public static class LaunchConfig {

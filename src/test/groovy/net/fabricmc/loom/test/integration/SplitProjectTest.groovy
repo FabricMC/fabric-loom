@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,28 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test
+package net.fabricmc.loom.test.integration
 
-import org.gradle.util.GradleVersion
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.5-20220228014109+0000"
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+class SplitProjectTest extends Specification implements GradleProjectTestTrait {
+    @Unroll
+    def "build (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "splitSources", version: version)
+
+        when:
+            def result = gradle.run(task: "build")
+
+        then:
+            result.task(":build").outcome == SUCCESS
+
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 
@@ -229,6 +232,20 @@ public class ZipUtils {
 	@FunctionalInterface
 	public interface UnsafeUnaryOperator<T> {
 		T apply(T arg) throws IOException;
+	}
+
+	public interface AsmClassOperator extends UnsafeUnaryOperator<byte[]> {
+		ClassVisitor visit(ClassVisitor classVisitor);
+
+		@Override
+		default byte[] apply(byte[] arg) throws IOException {
+			final ClassReader reader = new ClassReader(arg);
+			final ClassWriter writer = new ClassWriter(0);
+
+			reader.accept(visit(writer), 0);
+
+			return writer.toByteArray();
+		}
 	}
 
 	private static <T> Map<String, UnsafeUnaryOperator<T>> collectTransformersStream(Stream<Pair<String, UnsafeUnaryOperator<T>>> transforms) {

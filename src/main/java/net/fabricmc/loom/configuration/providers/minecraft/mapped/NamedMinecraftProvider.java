@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import org.gradle.api.Project;
 
@@ -35,7 +34,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvid
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -67,8 +65,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, MERGED);
+		public List<String> getDependencyTargets() {
+			return List.of(MERGED);
 		}
 	}
 
@@ -93,9 +91,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, COMMON);
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, CLIENT_ONLY);
+		public List<String> getDependencyTargets() {
+			return List.of(CLIENT_ONLY, COMMON);
 		}
 	}
 
@@ -123,8 +120,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, envName());
+		public List<String> getDependencyTargets() {
+			return List.of(envName());
 		}
 
 		@Override

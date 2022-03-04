@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -70,7 +71,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		});
 	}
 
-	public void apply(Manifest manifest) {
+	public void apply(Manifest manifest, Map<String, String> extraValues) {
 		// Don't set when running the reproducible build tests as it will break them when anything updates
 		if (Boolean.getBoolean("loom.test.reproducible")) {
 			return;
@@ -90,6 +91,10 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		if (!attributes.containsKey("Fabric-Mixin-Version")) {
 			attributes.putValue("Fabric-Mixin-Version", p.getMixinVersion().get().version());
 			attributes.putValue("Fabric-Mixin-Group", p.getMixinVersion().get().group());
+		}
+
+		for (Map.Entry<String, String> entry : extraValues.entrySet()) {
+			attributes.putValue(entry.getKey(), entry.getValue());
 		}
 	}
 

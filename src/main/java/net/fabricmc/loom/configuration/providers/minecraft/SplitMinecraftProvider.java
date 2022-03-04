@@ -77,7 +77,8 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 		try (MinecraftJarSplitter jarSplitter = new MinecraftJarSplitter(clientJar, serverJar)) {
 			// Required for loader to compute the version info also useful to have in both jars.
 			jarSplitter.sharedEntry("version.json");
-			jarSplitter.forcedClientEntry("assets/.mcassetsroot");
+			jarSplitter.sharedEntry("assets/.mcassetsroot");
+			jarSplitter.sharedEntry("assets/minecraft/lang/en_us.json");
 
 			jarSplitter.split(minecraftClientOnlyJar, minecraftCommonJar);
 		} catch (Exception e) {

@@ -50,6 +50,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -69,6 +70,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
+	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
 	private final ModVersionParser versionParser;
@@ -115,6 +117,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
+
+		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
+		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
@@ -252,6 +257,24 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getRuntimeOnlyLog4j() {
 		return runtimeOnlyLog4j;
+	}
+
+	@Override
+	public void splitEnvironmentSourceSets() {
+		splitMinecraftJar();
+
+		splitEnvironmentalSourceSet.set(true);
+
+		// We need to lock these values, as we setup the new source sets right away.
+		splitEnvironmentalSourceSet.finalizeValue();
+		minecraftJarConfiguration.finalizeValue();
+
+		MinecraftSourceSets.get(getProject()).evaluateSplit(getProject());
+	}
+
+	@Override
+	public boolean areEnvironmentSourceSetsSplit() {
+		return splitEnvironmentalSourceSet.get();
 	}
 
 	@Override

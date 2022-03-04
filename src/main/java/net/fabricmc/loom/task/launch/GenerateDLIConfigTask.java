@@ -74,6 +74,10 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 			launchConfig.property("fabric.gameJarPath", getGameJarPath("common"));
 		}
 
+		if (!getExtension().getMods().isEmpty()) {
+			launchConfig.property("fabric.classPathGroups", getClassPathGroups());
+		}
+
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
 				|| new File(getProject().getRootDir(), ".idea").exists()
@@ -101,6 +105,19 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		case "common" -> split.getCommonJar().toAbsolutePath().toString();
 		default -> throw new UnsupportedOperationException();
 		};
+	}
+
+	/**
+	 * See: https://github.com/FabricMC/fabric-loader/pull/585.
+	 */
+	private String getClassPathGroups() {
+		return getExtension().getMods().stream()
+				.map(modSettings ->
+						modSettings.getClasspath().get().stream()
+							.map(File::getAbsolutePath)
+							.collect(Collectors.joining(File.pathSeparator))
+				)
+				.collect(Collectors.joining(File.pathSeparator+File.pathSeparator));
 	}
 
 	public static class LaunchConfig {

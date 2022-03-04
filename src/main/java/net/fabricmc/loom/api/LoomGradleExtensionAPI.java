@@ -84,6 +84,16 @@ public interface LoomGradleExtensionAPI {
 
 	void mixin(Action<MixinExtensionAPI> action);
 
+	/**
+	 * Optionally register and configure a {@link ModSettings} object. The name should match the modid.
+	 * This is generally only required when the mod spans across multiple classpath directories, such as when using split sourcesets.
+	 */
+	@ApiStatus.Experimental
+	void mods(Action<NamedDomainObjectContainer<ModSettings>> action);
+
+	@ApiStatus.Experimental
+	NamedDomainObjectContainer<ModSettings> getMods();
+
 	@ApiStatus.Experimental
 	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.
 	MixinExtensionAPI getMixin();

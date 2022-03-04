@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,7 @@ public final class SidedClassVisitor extends ClassVisitor {
 	private static final String SIDE_DESCRIPTOR = "Lnet/fabricmc/api/EnvType;";
 
 	private final String side;
+	private boolean hasExisting = false;
 
 	private SidedClassVisitor(String side, ClassVisitor next) {
 		super(Constants.ASM_VERSION, next);
@@ -49,11 +50,22 @@ public final class SidedClassVisitor extends ClassVisitor {
 	}
 
 	@Override
-	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-		super.visit(version, access, name, signature, superName, interfaces);
+	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+		if (ENVIRONMENT_DESCRIPTOR.equals(descriptor)) {
+			hasExisting = true;
+		}
 
-		final AnnotationVisitor annotationVisitor = visitAnnotation(ENVIRONMENT_DESCRIPTOR, true);
-		annotationVisitor.visitEnum("value", SIDE_DESCRIPTOR, side.toUpperCase(Locale.ROOT));
-		annotationVisitor.visitEnd();
+		return super.visitAnnotation(descriptor, visible);
+	}
+
+	@Override
+	public void visitEnd() {
+		if (!hasExisting) {
+			final AnnotationVisitor annotationVisitor = visitAnnotation(ENVIRONMENT_DESCRIPTOR, true);
+			annotationVisitor.visitEnum("value", SIDE_DESCRIPTOR, side.toUpperCase(Locale.ROOT));
+			annotationVisitor.visitEnd();
+		}
+
+		super.visitEnd();
 	}
 }

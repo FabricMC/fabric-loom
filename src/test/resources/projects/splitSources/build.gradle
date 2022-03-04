@@ -1,0 +1,27 @@
+plugins {
+	id 'fabric-loom' version '0.12.local'
+	id 'maven-publish'
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+loom {
+	splitEnvironmentSourceSets()
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:1.18.2"
+	mappings "net.fabricmc:yarn:1.18.2+build.1:v2"
+	modImplementation "net.fabricmc:fabric-loader:0.13.3"
+
+	modImplementation "net.fabricmc.fabric-api:fabric-api:0.47.8+1.18.2"
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 17
+}
+
+java {
+	withSourcesJar()
+}

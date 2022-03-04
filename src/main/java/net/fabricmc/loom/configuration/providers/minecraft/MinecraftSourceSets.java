@@ -197,7 +197,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			loomExtension.mixin(mixinExtension -> {
 				// Generate a refmap for mixins in the new source set.
-				mixinExtension.add(clientOnlySourceSet, "client-" + mixinExtension.getDefaultRefmapName(), (p) -> { });
+				mixinExtension.add(clientOnlySourceSet, "client-" + mixinExtension.getDefaultRefmapName().get(), (p) -> { });
 			});
 
 			// Include the client only output in the jars
@@ -218,6 +218,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		public void afterEvaluate(Project project) {
+		}
+
+		public static SourceSet getClientSourceSet(Project project) {
+			Preconditions.checkArgument(LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit());
+
+			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+			return javaExtension.getSourceSets().getByName(CLIENT_ONLY_SOURCE_SET_NAME);
 		}
 	}
 }

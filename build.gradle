@@ -12,12 +12,14 @@ plugins {
 	id "com.diffplug.spotless" version "6.3.0"
 }
 
-sourceCompatibility = 17
-targetCompatibility = 17
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 17
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {

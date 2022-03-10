@@ -24,35 +24,32 @@
 
 package net.fabricmc.loom.api;
 
-import java.io.File;
+import javax.inject.Inject;
 
 import org.gradle.api.Named;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetOutput;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
- * A {@link Named} object for setting mod realted values. The {@link Named#getName()} should match the modid.
+ * A {@link Named} object for setting mod-related values. The {@linkplain Named#getName() name} should match the mod id.
  */
 @ApiStatus.Experimental
 public abstract class ModSettings implements Named {
 	/**
 	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
 	 */
-	public abstract ListProperty<File> getClasspath();
+	public abstract ListProperty<SourceSet> getSourceSets();
+
+	@Inject
+	public ModSettings() {
+		getSourceSets().finalizeValueOnRead();
+	}
 
 	/**
 	 * Mark a {@link SourceSet} output directories part of the named mod.
 	 */
 	public void sourceSet(SourceSet sourceSet) {
-		final SourceSetOutput output = sourceSet.getOutput();
-		final File resources = output.getResourcesDir();
-
-		getClasspath().addAll(output.getClassesDirs().getFiles());
-
-		if (resources != null) {
-			getClasspath().add(resources);
-		}
+		getSourceSets().add(sourceSet);
 	}
 }

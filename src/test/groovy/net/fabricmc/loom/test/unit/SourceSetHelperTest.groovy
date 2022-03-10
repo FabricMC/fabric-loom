@@ -22,34 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api;
+package net.fabricmc.loom.test.unit
 
-import javax.inject.Inject;
+import net.fabricmc.loom.util.gradle.SourceSetHelper
+import org.intellij.lang.annotations.Language
+import spock.lang.Specification
 
-import org.gradle.api.Named;
-import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.SourceSet;
-import org.jetbrains.annotations.ApiStatus;
+class SourceSetHelperTest extends Specification {
 
-/**
- * A {@link Named} object for setting mod-related values. The {@linkplain Named#getName() name} should match the mod id.
- */
-@ApiStatus.Experimental
-public abstract class ModSettings implements Named {
-	/**
-	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
-	 */
-	public abstract ListProperty<SourceSet> getModSourceSets();
+    def "read misc.xml output path"() {
+        given:
+            def miscXml = File.createTempFile("misc", ".xml")
+            miscXml.text = MISC_XML
+        when:
+            def result = SourceSetHelper.evaluateXpath(miscXml, SourceSetHelper.IDEA_OUTPUT_XPATH)
 
-	@Inject
-	public ModSettings() {
-		getModSourceSets().finalizeValueOnRead();
-	}
+        then:
+            result == "file://\$PROJECT_DIR\$/build/out"
+    }
 
-	/**
-	 * Mark a {@link SourceSet} output directories part of the named mod.
-	 */
-	public void sourceSet(SourceSet sourceSet) {
-		getModSourceSets().add(sourceSet);
-	}
+    @Language("xml")
+    private static String MISC_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">
+    <output url="file://\$PROJECT_DIR\$/build/out" />
+  </component>
+</project>"""
 }

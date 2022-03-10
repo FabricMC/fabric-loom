@@ -42,7 +42,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.util.gradle.SourceSetsHelper;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@TaskAction
@@ -114,7 +114,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	private String getClassPathGroups() {
 		return getExtension().getMods().stream()
 				.map(modSettings ->
-						SourceSetsHelper.getClasspath(modSettings, getProject()).stream()
+						SourceSetHelper.getClasspath(modSettings, getProject()).stream()
 							.map(File::getAbsolutePath)
 							.collect(Collectors.joining(File.pathSeparator))
 				)

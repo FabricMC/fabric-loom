@@ -50,6 +50,7 @@ import org.w3c.dom.Node;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
+import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
 
@@ -99,16 +100,6 @@ public class RunConfig {
 
 		parent.appendChild(e);
 		return e;
-	}
-
-	private static String getIdeaModuleName(Project project, SourceSet srcs) {
-		String module = project.getName() + "." + srcs.getName();
-
-		while ((project = project.getParent()) != null) {
-			module = project.getName() + "." + module;
-		}
-
-		return module;
 	}
 
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String environment) {
@@ -166,7 +157,7 @@ public class RunConfig {
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 		populate(project, extension, runConfig, environment);
-		runConfig.ideaModuleName = getIdeaModuleName(project, sourceSet);
+		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(project, sourceSet);
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
 		runConfig.sourceSet = sourceSet;

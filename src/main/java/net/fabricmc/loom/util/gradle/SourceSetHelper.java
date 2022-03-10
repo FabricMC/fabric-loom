@@ -25,22 +25,38 @@
 package net.fabricmc.loom.util.gradle;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
+import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.api.ModSettings;
+import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 
-public final class SourceSetsHelper {
-	private SourceSetsHelper() {
+public final class SourceSetHelper {
+	@VisibleForTesting
+	@Language("xpath")
+	public static final String IDEA_OUTPUT_XPATH = "/project/component[@name='ProjectRootManager']/output/@url";
+
+	private SourceSetHelper() {
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {
-		return modSettings.getSourceSets().get().stream()
+		return modSettings.getModSourceSets().get().stream()
 				.flatMap(sourceSet -> getClasspath(sourceSet, project).stream())
 				.toList();
 	}
@@ -70,8 +86,44 @@ public final class SourceSetsHelper {
 	}
 
 	private static List<File> getIdeaClasspath(SourceSet sourceSet, Project project) {
-		// TODO
-		return Collections.emptyList();
+		final File projectDir = project.getRootDir();
+		final File dotIdea = new File(projectDir, ".idea");
+
+		if (!dotIdea.exists()) {
+			return Collections.emptyList();
+		}
+
+		final File miscXml = new File(dotIdea, "misc.xml");
+
+		if (!miscXml.exists()) {
+			return Collections.emptyList();
+		}
+
+		String outputDirUrl = evaluateXpath(miscXml, IDEA_OUTPUT_XPATH);
+
+		if (outputDirUrl == null) {
+			return Collections.emptyList();
+		}
+
+		outputDirUrl = outputDirUrl.replace("$PROJECT_DIR$", projectDir.getAbsolutePath());
+		final File productionDir = new File(outputDirUrl, "production");
+		final File outputDir = new File(productionDir, IdeaUtils.getIdeaModuleName(project, sourceSet));
+
+		return Collections.singletonList(outputDir);
+	}
+
+	@VisibleForTesting
+	@Nullable
+	public static String evaluateXpath(File file, @Language("xpath") String expression) {
+		final XPath xpath = XPathFactory.newInstance().newXPath();
+
+		try (FileInputStream fis = new FileInputStream(file)) {
+			return xpath.evaluate(expression, new InputSource(fis));
+		} catch (XPathExpressionException e) {
+			return null;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private static List<File> getEclipseClasspath(SourceSet sourceSet, Project project) {

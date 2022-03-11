@@ -31,13 +31,12 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
-import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.ZipUtils;
 
@@ -53,10 +52,11 @@ public class ModDependencyInfo {
 
 	@Nullable
 	private final AccessWidenerData accessWidenerData;
-
+	private final LoomGradleExtension ext;
 	private boolean forceRemap = false;
 
-	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
+	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier,
+			File inputFile, Configuration targetConfig, RemapData remapData, LoomGradleExtension ext) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
@@ -64,9 +64,10 @@ public class ModDependencyInfo {
 		this.inputFile = inputFile;
 		this.targetConfig = targetConfig;
 		this.remapData = remapData;
+		this.ext = ext;
 
 		try {
-			this.accessWidenerData = tryReadAccessWidenerData(getInputFile().toPath());
+			this.accessWidenerData = tryReadAccessWidenerData(ext, getInputFile().toPath());
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read access widener data from" + inputFile, e);
 		}
@@ -126,7 +127,7 @@ public class ModDependencyInfo {
 		final AccessWidenerData outputAWData;
 
 		try {
-			outputAWData = tryReadAccessWidenerData(getRemappedOutput().toPath());
+			outputAWData = tryReadAccessWidenerData(ext, getRemappedOutput().toPath());
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read output access widener data from " + getRemappedOutput(), e);
 		}
@@ -191,15 +192,13 @@ public class ModDependencyInfo {
 		return accessWidenerData;
 	}
 
-	private static AccessWidenerData tryReadAccessWidenerData(Path inputJar) throws IOException {
-		byte[] modJsonBytes = ZipUtils.unpack(inputJar, "fabric.mod.json");
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
+	private static AccessWidenerData tryReadAccessWidenerData(LoomGradleExtension ext, Path inputJar) throws IOException {
+		String accessWidenerPath = ext.readMetadataFromJar(inputJar.toFile()).getAccessWidener();
 
-		if (!jsonObject.has("accessWidener")) {
+		if (accessWidenerPath == null) {
 			return null;
 		}
 
-		String accessWidenerPath = jsonObject.get("accessWidener").getAsString();
 		byte[] accessWidener = ZipUtils.unpack(inputJar, accessWidenerPath);
 		AccessWidenerReader.Header header = AccessWidenerReader.readHeader(accessWidener);
 

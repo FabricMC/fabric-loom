@@ -30,6 +30,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.jetbrains.annotations.ApiStatus;
@@ -37,6 +38,7 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
@@ -66,6 +68,12 @@ public interface LoomGradleExtensionAPI {
 
 	default void addJarProcessor(JarProcessor processor) {
 		getGameJarProcessors().add(processor);
+	}
+
+	MapProperty<String, ModMetadataHelper> getModMetadataHelpers();
+
+	default void addModMetadataHelper(ModMetadataHelper api) {
+		getModMetadataHelpers().put(api.getFileName(), api);
 	}
 
 	ConfigurableFileCollection getLog4jConfigs();
@@ -118,10 +126,10 @@ public interface LoomGradleExtensionAPI {
 	void disableDeprecatedPomGeneration(MavenPublication publication);
 
 	/**
-	 * Reads the mod version from the fabric.mod.json file located in the main sourcesets resources.
+	 * Reads the mod version from the mod metadata file located in the main sourcesets resources.
 	 * This is useful if you want to set the gradle version based of the version in the fabric.mod.json file.
 	 *
-	 * @return the version defined in the fabric.mod.json
+	 * @return the version defined in the mod metadata
 	 */
 	String getModVersion();
 

@@ -91,12 +91,12 @@ public class ModCompileRemapper {
 					String name = artifact.getModuleVersion().getId().getName();
 					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
 
-					if (!ModUtils.isMod(artifact.getFile())) {
+					if (!ModUtils.isMod(extension, artifact.getFile())) {
 						addToRegularCompile(project, regularConfig, artifact);
 						continue;
 					}
 
-					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
+					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData, extension);
 					modDependencies.add(info);
 
 					File remappedSources = info.getRemappedOutput("sources");
@@ -118,7 +118,7 @@ public class ModCompileRemapper {
 
 					// Create a mod dependency for each file in the file collection
 					for (File artifact : files) {
-						if (!ModUtils.isMod(artifact)) {
+						if (!ModUtils.isMod(extension, artifact)) {
 							dependencies.add(regularConfig.getName(), project.files(artifact));
 							continue;
 						}
@@ -126,7 +126,7 @@ public class ModCompileRemapper {
 						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
 						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.truncatedSha256(artifact));
 
-						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
+						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData, extension);
 						modDependencies.add(info);
 					}
 				}

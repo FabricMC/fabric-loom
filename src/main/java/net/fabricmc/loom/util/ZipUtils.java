@@ -77,6 +77,22 @@ public class ZipUtils {
 		}
 	}
 
+	public static boolean containsAny(Path zip, Collection<String> paths) {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false)) {
+			for (String path : paths) {
+				Path fsPath = fs.get().getPath(path);
+
+				if (Files.exists(fsPath)) {
+					return true;
+				}
+			}
+
+			return false;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to check file from zip", e);
+		}
+	}
+
 	public static void unpackAll(Path zip, Path output) throws IOException {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false);
 				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {

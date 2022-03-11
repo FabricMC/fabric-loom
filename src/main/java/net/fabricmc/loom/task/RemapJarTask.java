@@ -66,7 +66,7 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.MixinRefmapHelper;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
@@ -138,6 +138,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			params.getUseMixinExtension().set(!legacyMixin);
+			params.getMetadataHelpers().set(extension.getModMetadataHelpers());
 
 			if (legacyMixin) {
 				setupLegacyMixinRefmapRemapping(params);
@@ -159,14 +160,14 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final MixinExtension mixinExtension = extension.getMixin();
 
-		final JsonObject fabricModJson = MixinRefmapHelper.readFabricModJson(getInputFile().getAsFile().get());
+		ModMetadataHelper.Metadata helper = extension.readMetadataFromJar(getInputFile().getAsFile().get());
 
-		if (fabricModJson == null) {
-			getProject().getLogger().warn("Could not find fabric.mod.json file in: " + getInputFile().getAsFile().get().getName());
+		if (helper == null) {
+			getProject().getLogger().warn("Could not find a metadata file in: " + getInputFile().getAsFile().get().getName());
 			return;
 		}
 
-		final Collection<String> allMixinConfigs = MixinRefmapHelper.getMixinConfigurationFiles(fabricModJson);
+		final Collection<String> allMixinConfigs = helper.getMixinConfigurationFiles();
 
 		for (SourceSet sourceSet : mixinExtension.getMixinSourceSets()) {
 			MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
@@ -202,6 +203,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		MapProperty<String, String> getManifestAttributes();
 		ListProperty<String> getClientOnlyClasses();
+		MapProperty<String, ModMetadataHelper> getMetadataHelpers();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
@@ -262,7 +264,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void remapAccessWidener() throws IOException {
-			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
+			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(getParameters().getMetadataHelpers().get(), inputFile);
 
 			if (accessWidenerFile == null) {
 				return;
@@ -298,7 +300,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile(), LOGGER);
+			JarNester.nestJars(this.getParameters().getMetadataHelpers().get(), nestedJars.getFiles(), outputFile.toFile(), LOGGER);
 		}
 
 		private void modifyJarManifest() throws IOException {

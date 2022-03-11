@@ -25,12 +25,59 @@
 package net.fabricmc.loom.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipFile;
+
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 
 public final class ModUtils {
 	private ModUtils() {
 	}
 
-	public static boolean isMod(File input) {
-		return ZipUtils.contains(input.toPath(), "fabric.mod.json");
+	public static boolean isMod(LoomGradleExtensionAPI ext, File input) {
+		return ZipUtils.containsAny(input.toPath(), ext.getModMetadataHelpers().get().keySet());
+	}
+
+	public static boolean isMod(Map<String, ModMetadataHelper> helpers, File input) {
+		return ZipUtils.containsAny(input.toPath(), helpers.keySet());
+	}
+
+	/**
+	 * @throws UnsupportedOperationException if the jar file has more than one kind of metadata, or the metadata that is found cannot be read.
+	 */
+	public static ModMetadataHelper.Metadata readMetadataFromJar(LoomGradleExtensionAPI ext, File jar) {
+		return ModUtils.readMetadataFromJar(ext.getModMetadataHelpers().get(), jar);
+	}
+
+	/**
+	 * @throws UnsupportedOperationException if the jar file has more than one kind of metadata, or the metadata that is found cannot be read.
+	 */
+	public static ModMetadataHelper.Metadata readMetadataFromJar(Map<String, ModMetadataHelper> helpers, File jar) {
+		try (var zip = new ZipFile(jar)) {
+			List<String> entries = helpers.keySet()
+					.stream()
+					.filter(name -> zip.getEntry(name) != null)
+					.toList();
+
+			if (entries.isEmpty()) {
+				return null;
+			}
+
+			if (entries.size() > 1) {
+				throw new UnsupportedOperationException("Cannot read jars with more than one kind of metadata.");
+			}
+
+			String fileName = entries.get(0);
+
+			try (InputStreamReader reader = new InputStreamReader(zip.getInputStream(zip.getEntry(fileName)))) {
+				return helpers.get(fileName).createMetadata(reader);
+			}
+		} catch (IOException e) {
+			throw new UnsupportedOperationException("Cannot read metadata in the jar.", e);
+		}
 	}
 }

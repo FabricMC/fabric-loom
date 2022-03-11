@@ -143,12 +143,13 @@ public final class IncludedJarFactory {
 	}
 
 	private File getNestableJar(final File input, final Metadata metadata) {
-		if (ModUtils.isMod(input)) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (ModUtils.isMod(extension, input)) {
 			// Input is a mod, nothing needs to be done.
 			return input;
 		}
 
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
 
 		if (!tempDir.exists()) {

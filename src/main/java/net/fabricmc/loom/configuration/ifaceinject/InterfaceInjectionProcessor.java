@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.configuration.ifaceinject;
 
+import static net.fabricmc.loom.configuration.ModMetadataHelper.Metadata.InjectedInterface;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,9 +42,6 @@ import java.util.stream.Collectors;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 import org.objectweb.asm.ClassReader;
@@ -53,8 +50,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -192,7 +189,13 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 					.resolve();
 
 			for (File artifact : artifacts) {
-				result.addAll(InjectedInterface.fromModJar(artifact.toPath()));
+				ModMetadataHelper.Metadata meta = extension.readMetadataFromJar(artifact);
+
+				if (meta == null) {
+					continue;
+				}
+
+				result.addAll(meta.getInjectedInterfaces());
 			}
 		}
 
@@ -200,28 +203,19 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 	}
 
 	private List<InjectedInterface> getSourceInjectedInterface(SourceSet sourceSet) {
-		final File fabricModJson;
+		final File metadataFile;
+		Map<String, ModMetadataHelper> helpers = extension.getModMetadataHelpers().get();
 
 		try {
-			fabricModJson = sourceSet.getResources()
-					.matching(patternFilterable -> patternFilterable.include("fabric.mod.json"))
+			metadataFile = sourceSet.getResources()
+					.matching(patternFilterable -> patternFilterable.include(helpers.keySet()))
 					.getSingleFile();
 		} catch (IllegalStateException e) {
 			// File not found
 			return Collections.emptyList();
 		}
 
-		final String jsonString;
-
-		try {
-			jsonString = Files.readString(fabricModJson.toPath(), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read fabric.mod.json", e);
-		}
-
-		final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(jsonString, JsonObject.class);
-
-		return InjectedInterface.fromJson(jsonObject);
+		return helpers.get(metadataFile.getName()).createMetadata(metadataFile).getInjectedInterfaces();
 	}
 
 	@Override
@@ -254,7 +248,7 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
 		for (InjectedInterface injectedInterface : injectedInterfaces) {
-			String iiComment = "Interface {@link %s} injected by mod %s".formatted(injectedInterface.ifaceName.substring(injectedInterface.ifaceName.lastIndexOf("/") + 1), injectedInterface.modId);
+			String iiComment = "Interface {@link %s} injected by mod %s".formatted(injectedInterface.ifaceName().substring(injectedInterface.ifaceName().lastIndexOf("/") + 1), injectedInterface.modId());
 
 			if (comment == null || !comment.contains(iiComment)) {
 				if (comment == null) {
@@ -266,57 +260,6 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		}
 
 		return comment;
-	}
-
-	private record InjectedInterface(String modId, String className, String ifaceName) {
-		/**
-		 * Reads the injected interfaces contained in a mod jar, or returns null if there is none.
-		 */
-		public static List<InjectedInterface> fromModJar(Path modJarPath) {
-			final byte[] modJsonBytes;
-
-			try {
-				modJsonBytes = ZipUtils.unpackNullable(modJarPath, "fabric.mod.json");
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to extract fabric.mod.json from " + modJarPath);
-			}
-
-			if (modJsonBytes == null) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
-
-			return fromJson(jsonObject);
-		}
-
-		public static List<InjectedInterface> fromJson(JsonObject jsonObject) {
-			final String modId = jsonObject.get("id").getAsString();
-
-			if (!jsonObject.has("custom")) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject custom = jsonObject.getAsJsonObject("custom");
-
-			if (!custom.has("loom:injected_interfaces")) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject addedIfaces = custom.getAsJsonObject("loom:injected_interfaces");
-
-			final List<InjectedInterface> result = new ArrayList<>();
-
-			for (String className : addedIfaces.keySet()) {
-				final JsonArray ifaceNames = addedIfaces.getAsJsonArray(className);
-
-				for (JsonElement ifaceName : ifaceNames) {
-					result.add(new InjectedInterface(modId, className, ifaceName.getAsString()));
-				}
-			}
-
-			return result;
-		}
 	}
 
 	private static class InjectingClassVisitor extends ClassVisitor {

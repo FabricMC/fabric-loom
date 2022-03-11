@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
@@ -41,6 +42,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
@@ -49,6 +51,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMi
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.util.ModUtils;
 
 public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
@@ -118,4 +121,11 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	List<AccessWidenerFile> getTransitiveAccessWideners();
 
 	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
+
+	/**
+	 * @throws UnsupportedOperationException if the jar file has more than one kind of metadata, or the metadata that is found cannot be read.
+	 */
+	default ModMetadataHelper.Metadata readMetadataFromJar(File jar) {
+		return ModUtils.readMetadataFromJar(getModMetadataHelpers().get(), jar);
+	}
 }

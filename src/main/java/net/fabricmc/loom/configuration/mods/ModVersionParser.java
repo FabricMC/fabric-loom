@@ -25,14 +25,13 @@
 package net.fabricmc.loom.configuration.mods;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 
-import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 
 public class ModVersionParser {
 	private final Project project;
@@ -48,29 +47,41 @@ public class ModVersionParser {
 			return version;
 		}
 
-		File json = locateModJsonFile();
-		JsonObject jsonObject;
+		for (ModMetadataHelper helperFactory : project.getExtensions().getByType(LoomGradleExtensionAPI.class).getModMetadataHelpers().get().values()) {
+			File metadata = locateModMetadata(helperFactory.getFileName());
 
-		try (var reader = new FileReader(json)) {
-			jsonObject = LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read fabric.mod.json file");
+			if (metadata == null) {
+				continue;
+			}
+
+			ModMetadataHelper.Metadata helper;
+
+			try {
+				helper = helperFactory.createMetadata(metadata);
+			} catch (UnsupportedOperationException ignored) {
+				continue;
+			}
+
+			version = helper.getVersion();
+			break;
 		}
 
-		if (!jsonObject.has("version") || !jsonObject.get("version").isJsonPrimitive()) {
-			throw new UnsupportedOperationException("Could not find valid version in the fabric.mod.json file");
+		if (version == null) {
+			throw new UnsupportedOperationException("Unable to find the version in the mod metadata!");
 		}
-
-		version = jsonObject.get("version").getAsString();
 
 		return version;
 	}
 
-	private File locateModJsonFile() {
-		return project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets()
-				.getByName("main")
-				.getResources()
-				.matching(patternFilterable -> patternFilterable.include("fabric.mod.json"))
-				.getSingleFile();
+	private @Nullable File locateModMetadata(String fileName) {
+		try {
+			return project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets()
+					.getByName("main")
+					.getResources()
+					.matching(patternFilterable -> patternFilterable.include(fileName))
+					.getSingleFile();
+		} catch (IllegalStateException e) {
+			return null;
+		}
 	}
 }

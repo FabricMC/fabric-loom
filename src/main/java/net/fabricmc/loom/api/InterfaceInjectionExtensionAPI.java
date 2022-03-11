@@ -39,7 +39,7 @@ public interface InterfaceInjectionExtensionAPI {
 	Property<Boolean> getEnableDependencyInterfaceInjection();
 
 	/**
-	 * Contains a list of {@link SourceSet} that may contain a fabric.mod.json file with interfaces to inject.
+	 * Contains a list of {@link SourceSet} that may contain a mod metadata file with interfaces to inject.
 	 * By default, this list contains only the main {@link SourceSet}.
 	 *
 	 * @return the list property containing the {@link SourceSet}

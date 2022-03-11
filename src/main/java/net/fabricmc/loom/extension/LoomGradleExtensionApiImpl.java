@@ -32,6 +32,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
@@ -39,9 +40,11 @@ import org.gradle.api.tasks.SourceSet;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
+import net.fabricmc.loom.configuration.ModMetadataHelper;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.build.FabricModMetadataHelper;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -72,7 +75,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
-
+	private final MapProperty<String, ModMetadataHelper> modMetadataHelpers;
 	private final ModVersionParser versionParser;
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
@@ -121,6 +124,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
+		this.modMetadataHelpers = project.getObjects().mapProperty(String.class, ModMetadataHelper.class);
+		this.addModMetadataHelper(new FabricModMetadataHelper());
+		this.modMetadataHelpers.finalizeValueOnRead();
+
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
 			final JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
@@ -160,6 +167,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public ListProperty<JarProcessor> getGameJarProcessors() {
 		return jarProcessors;
+	}
+
+	@Override
+	public MapProperty<String, ModMetadataHelper> getModMetadataHelpers() {
+		return modMetadataHelpers;
 	}
 
 	@Override

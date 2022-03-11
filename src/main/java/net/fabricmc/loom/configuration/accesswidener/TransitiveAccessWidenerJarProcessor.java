@@ -118,7 +118,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 				continue;
 			}
 
-			AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(path);
+			AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(extension.getModMetadataHelpers().get(), path);
 
 			if (accessWidener == null) {
 				continue;

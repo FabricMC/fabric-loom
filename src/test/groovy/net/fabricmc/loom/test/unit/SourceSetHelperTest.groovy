@@ -25,20 +25,83 @@
 package net.fabricmc.loom.test.unit
 
 import net.fabricmc.loom.util.gradle.SourceSetHelper
+import org.gradle.api.Project
+import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
+import spock.lang.Shared
 import spock.lang.Specification
 
 class SourceSetHelperTest extends Specification {
+    @Shared
+    private static File projectDir = File.createTempDir()
 
-    def "read misc.xml output path"() {
+    def "idea classpath"() {
         given:
-            def miscXml = File.createTempFile("misc", ".xml")
+            def miscXml = new File(projectDir, ".idea/misc.xml")
+            miscXml.parentFile.mkdirs()
             miscXml.text = MISC_XML
+
+            def mockProject = Mock(Project)
+            def mockSourceSet = Mock(SourceSet)
+
+            mockProject.getName() >> "UnitTest"
+            mockProject.getRootDir() >> projectDir
+            mockSourceSet.getName() >> "main"
+
         when:
-            def result = SourceSetHelper.evaluateXpath(miscXml, SourceSetHelper.IDEA_OUTPUT_XPATH)
+            def result = SourceSetHelper.getIdeaClasspath(mockSourceSet, mockProject)
 
         then:
-            result == "file://\$PROJECT_DIR\$/build/out"
+            result.size() == 1
+            !result[0].toString().startsWith("file:")
+
+            println(result[0].toString())
+    }
+
+    def "eclipse classpath"() {
+        given:
+            def classpath = new File(projectDir, ".classpath")
+            classpath.createNewFile()
+
+            def binDir = new File(projectDir, "bin")
+            binDir.mkdirs()
+
+            def mockProject = Mock(Project)
+            def mockSourceSet = Mock(SourceSet)
+
+            mockProject.getName() >> "UnitTest"
+            mockProject.getProjectDir() >> projectDir
+            mockSourceSet.getName() >> "main"
+
+        when:
+            def result = SourceSetHelper.getEclipseClasspath(mockSourceSet, mockProject)
+
+        then:
+            result.size() == 1
+            println(result[0].toString())
+    }
+
+    def "vscode classpath"() {
+        given:
+            def dotVscode = new File(projectDir, ".vscode")
+            dotVscode.mkdirs()
+
+            def binDir = new File(projectDir, "bin")
+            binDir.mkdirs()
+
+            def mockProject = Mock(Project)
+            def mockSourceSet = Mock(SourceSet)
+
+            mockProject.getName() >> "UnitTest"
+            mockProject.getProjectDir() >> projectDir
+            mockSourceSet.getName() >> "main"
+
+        when:
+            def result = SourceSetHelper.getVscodeClasspath(mockSourceSet, mockProject)
+
+        then:
+            result.size() == 1
+            println(result[0].toString())
     }
 
     @Language("xml")

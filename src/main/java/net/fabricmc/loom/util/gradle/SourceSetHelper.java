@@ -66,6 +66,7 @@ public final class SourceSetHelper {
 
 		classpath.addAll(getIdeaClasspath(sourceSet, project));
 		classpath.addAll(getEclipseClasspath(sourceSet, project));
+		classpath.addAll(getVscodeClasspath(sourceSet, project));
 
 		return classpath;
 	}
@@ -85,7 +86,8 @@ public final class SourceSetHelper {
 		return classpath;
 	}
 
-	private static List<File> getIdeaClasspath(SourceSet sourceSet, Project project) {
+	@VisibleForTesting
+	public static List<File> getIdeaClasspath(SourceSet sourceSet, Project project) {
 		final File projectDir = project.getRootDir();
 		final File dotIdea = new File(projectDir, ".idea");
 
@@ -106,15 +108,16 @@ public final class SourceSetHelper {
 		}
 
 		outputDirUrl = outputDirUrl.replace("$PROJECT_DIR$", projectDir.getAbsolutePath());
+		outputDirUrl = outputDirUrl.replaceAll("^file:", "");
+
 		final File productionDir = new File(outputDirUrl, "production");
 		final File outputDir = new File(productionDir, IdeaUtils.getIdeaModuleName(project, sourceSet));
 
 		return Collections.singletonList(outputDir);
 	}
 
-	@VisibleForTesting
 	@Nullable
-	public static String evaluateXpath(File file, @Language("xpath") String expression) {
+	private static String evaluateXpath(File file, @Language("xpath") String expression) {
 		final XPath xpath = XPathFactory.newInstance().newXPath();
 
 		try (FileInputStream fis = new FileInputStream(file)) {
@@ -126,8 +129,39 @@ public final class SourceSetHelper {
 		}
 	}
 
-	private static List<File> getEclipseClasspath(SourceSet sourceSet, Project project) {
-		// TODO
-		return Collections.emptyList();
+	@VisibleForTesting
+	public static List<File> getEclipseClasspath(SourceSet sourceSet, Project project) {
+		// Somewhat of a guess, I'm unsure if this is correct for multi-project builds
+		final File projectDir = project.getProjectDir();
+		final File classpath = new File(projectDir, ".classpath");
+
+		if (!classpath.exists()) {
+			return Collections.emptyList();
+		}
+
+		return getBinDirClasspath(projectDir, sourceSet);
+	}
+
+	@VisibleForTesting
+	public static List<File> getVscodeClasspath(SourceSet sourceSet, Project project) {
+		// Somewhat of a guess, I'm unsure if this is correct for multi-project builds
+		final File projectDir = project.getProjectDir();
+		final File dotVscode = new File(projectDir, ".vscode");
+
+		if (!dotVscode.exists()) {
+			return Collections.emptyList();
+		}
+
+		return getBinDirClasspath(projectDir, sourceSet);
+	}
+
+	private static List<File> getBinDirClasspath(File projectDir, SourceSet sourceSet) {
+		final File binDir = new File(projectDir, "bin");
+
+		if (!binDir.exists()) {
+			return Collections.emptyList();
+		}
+
+		return Collections.singletonList(new File(binDir, sourceSet.getName()));
 	}
 }

@@ -39,6 +39,7 @@ import org.gradle.api.tasks.SourceSet;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
+import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
@@ -77,6 +78,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
+	private final NamedDomainObjectContainer<ModSettings> mods;
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
@@ -106,6 +108,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
+		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
 
 		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
@@ -280,6 +283,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public InterfaceInjectionExtensionAPI getInterfaceInjection() {
 		return interfaceInjectionExtension;
+	}
+
+	@Override
+	public void mods(Action<NamedDomainObjectContainer<ModSettings>> action) {
+		action.execute(getMods());
+	}
+
+	@Override
+	public NamedDomainObjectContainer<ModSettings> getMods() {
+		return mods;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

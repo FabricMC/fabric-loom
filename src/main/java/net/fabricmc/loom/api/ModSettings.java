@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,37 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.idea;
+package net.fabricmc.loom.api;
 
-import java.util.Objects;
+import javax.inject.Inject;
 
-import org.gradle.api.Project;
+import org.gradle.api.Named;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.ApiStatus;
 
-public class IdeaUtils {
-	public static boolean isIdeaSync() {
-		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
+/**
+ * A {@link Named} object for setting mod-related values. The {@linkplain Named#getName() name} should match the mod id.
+ */
+@ApiStatus.Experimental
+public abstract class ModSettings implements Named {
+	/**
+	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
+	 */
+	public abstract ListProperty<SourceSet> getModSourceSets();
+
+	@Inject
+	public ModSettings() {
+		getModSourceSets().finalizeValueOnRead();
 	}
 
-	public static String getIdeaVersion() {
-		return Objects.requireNonNull(System.getProperty("idea.version"), "Could not get idea version");
-	}
-
-	// 2021.3 or newer
-	public static boolean supportsCustomizableClasspath() {
-		final String[] split = getIdeaVersion().split("\\.");
-		final int major = Integer.parseInt(split[0]);
-		final int minor = Integer.parseInt(split[1]);
-		return major > 2021 || (major == 2021 && minor >= 3);
-	}
-
-	public static String getIdeaModuleName(Project project, SourceSet srcs) {
-		String module = project.getName() + "." + srcs.getName();
-
-		while ((project = project.getParent()) != null) {
-			module = project.getName() + "." + module;
-		}
-
-		return module;
+	/**
+	 * Mark a {@link SourceSet} output directories part of the named mod.
+	 */
+	public void sourceSet(SourceSet sourceSet) {
+		getModSourceSets().add(sourceSet);
 	}
 }

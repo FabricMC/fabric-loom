@@ -61,9 +61,18 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                     accept(next)
                 }
             }
-            // Can only be turned into KmPackage which is useless data
-            is KotlinClassMetadata.FileFacade, is KotlinClassMetadata.MultiFileClassPart,
-            // Can't be turned into data
+            is KotlinClassMetadata.FileFacade -> {
+                val kpackage = metadata.toKmPackage()
+                val writer = KotlinClassMetadata.FileFacade.Writer()
+                kpackage.accept(RemappingKmVisitors(remapper).RemappingKmPackageVisitor(writer))
+                writeClassHeader(writer.write().header)
+            }
+            is KotlinClassMetadata.MultiFileClassPart -> {
+                val kpackage = metadata.toKmPackage()
+                val writer = KotlinClassMetadata.MultiFileClassPart.Writer()
+                kpackage.accept(RemappingKmVisitors(remapper).RemappingKmPackageVisitor(writer))
+                writeClassHeader(writer.write(metadata.facadeClassName, metadata.header.metadataVersion, metadata.header.extraInt).header)
+            }
             is KotlinClassMetadata.MultiFileClassFacade, is KotlinClassMetadata.Unknown, null -> {
                 // do nothing
                 accept(next)

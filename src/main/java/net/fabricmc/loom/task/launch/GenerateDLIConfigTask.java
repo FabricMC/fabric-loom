@@ -39,12 +39,22 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@TaskAction
 	public void run() throws IOException {
 		final String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
+
+		final MinecraftVersionMeta versionInfo = getExtension().getMinecraftProvider().getVersionInfo();
+		File assetsDirectory = new File(getExtension().getFiles().getUserCache(), "assets");
+
+		if (versionInfo.assets().equals("legacy")) {
+			assetsDirectory = new File(assetsDirectory, "/legacy/" + versionInfo.id());
+		}
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
@@ -58,7 +68,16 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 				.argument("client", "--assetIndex")
 				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
 				.argument("client", "--assetsDir")
-				.argument("client", new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
+				.argument("client", assetsDirectory.getAbsolutePath());
+
+		if (getExtension().areEnvironmentSourceSetsSplit()) {
+			launchConfig.property("client", "fabric.gameJarPath.client", getGameJarPath("client"));
+			launchConfig.property("fabric.gameJarPath", getGameJarPath("common"));
+		}
+
+		if (!getExtension().getMods().isEmpty()) {
+			launchConfig.property("fabric.classPathGroups", getClassPathGroups());
+		}
 
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
@@ -77,6 +96,29 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		return getExtension().getLog4jConfigs().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.collect(Collectors.joining(","));
+	}
+
+	private String getGameJarPath(String env) {
+		MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) getExtension().getNamedMinecraftProvider();
+
+		return switch (env) {
+		case "client" -> split.getClientOnlyJar().toAbsolutePath().toString();
+		case "common" -> split.getCommonJar().toAbsolutePath().toString();
+		default -> throw new UnsupportedOperationException();
+		};
+	}
+
+	/**
+	 * See: https://github.com/FabricMC/fabric-loader/pull/585.
+	 */
+	private String getClassPathGroups() {
+		return getExtension().getMods().stream()
+				.map(modSettings ->
+						SourceSetHelper.getClasspath(modSettings, getProject()).stream()
+							.map(File::getAbsolutePath)
+							.collect(Collectors.joining(File.pathSeparator))
+				)
+				.collect(Collectors.joining(File.pathSeparator+File.pathSeparator));
 	}
 
 	public static class LaunchConfig {

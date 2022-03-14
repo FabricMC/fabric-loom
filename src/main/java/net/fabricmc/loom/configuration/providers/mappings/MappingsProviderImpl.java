@@ -83,9 +83,9 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
 
-	private final Supplier<IntermediaryService> intermediaryService;
+	private final Supplier<IntermediateMappingsService> intermediaryService;
 
-	private MappingsProviderImpl(String mappingsIdentifier, Path mappingsWorkingDir, Supplier<IntermediaryService> intermediaryService) {
+	private MappingsProviderImpl(String mappingsIdentifier, Path mappingsWorkingDir, Supplier<IntermediateMappingsService> intermediaryService) {
 		this.mappingsIdentifier = mappingsIdentifier;
 
 		this.mappingsWorkingDir = mappingsWorkingDir;
@@ -99,7 +99,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 	public static synchronized MappingsProviderImpl getInstance(Project project, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
 		return SharedServiceManager.get(project).getOrCreateService("MappingsProvider:%s:%s".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()), () -> {
-			Supplier<IntermediaryService> intermediaryService = Suppliers.memoize(() -> IntermediaryService.getInstance(project, minecraftProvider));
+			Supplier<IntermediateMappingsService> intermediaryService = Suppliers.memoize(() -> IntermediateMappingsService.getInstance(project, minecraftProvider));
 			return create(dependency, minecraftProvider, intermediaryService);
 		});
 	}
@@ -108,7 +108,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read").get();
 	}
 
-	private static MappingsProviderImpl create(DependencyInfo dependency, MinecraftProvider minecraftProvider, Supplier<IntermediaryService> intermediaryService) {
+	private static MappingsProviderImpl create(DependencyInfo dependency, MinecraftProvider minecraftProvider, Supplier<IntermediateMappingsService> intermediaryService) {
 		final String version = dependency.getResolvedVersion();
 		final Path inputJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve mappings: " + dependency)).toPath();
 		final String mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");

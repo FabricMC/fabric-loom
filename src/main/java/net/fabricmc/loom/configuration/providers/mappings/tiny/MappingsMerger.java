@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.IntermediaryService;
+import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Reader;
@@ -49,12 +49,12 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 public final class MappingsMerger {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingsMerger.class);
 
-	public static void mergeAndSaveMappings(Path from, Path out, IntermediaryService intermediaryService) throws IOException {
+	public static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
-		intermediaryService.getMemoryMappingTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
+		intermediateMappingsService.getMemoryMappingTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
 			Tiny2Reader.read(reader, intermediaryTree);

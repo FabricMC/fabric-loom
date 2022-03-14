@@ -25,10 +25,8 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,59 +35,52 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
-import com.google.common.net.UrlEscapers;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.util.DownloadUtil;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public final class IntermediaryService implements SharedService {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediaryService.class);
-
+public final class IntermediateMappingsService implements SharedService {
 	private final Path intermediaryTiny;
 	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
 
-	private IntermediaryService(Path intermediaryTiny) {
+	private IntermediateMappingsService(Path intermediaryTiny) {
 		this.intermediaryTiny = intermediaryTiny;
 	}
 
-	public static synchronized IntermediaryService getInstance(Project project, MinecraftProvider minecraftProvider) {
+	public static synchronized IntermediateMappingsService getInstance(Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final String encodedMinecraftVersion = UrlEscapers.urlFragmentEscaper().escape(minecraftProvider.minecraftVersion());
-		final String intermediaryArtifactUrl = extension.getIntermediaryUrl(encodedMinecraftVersion);
+		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
+		final String id = "IntermediateMappingsService:%s:%s".formatted(intermediateProvider.getName(), intermediateProvider.getMinecraftVersion().get());
 
-		return SharedServiceManager.get(project).getOrCreateService("IntermediaryService:" + intermediaryArtifactUrl,
-				() -> create(intermediaryArtifactUrl, minecraftProvider));
+		return SharedServiceManager.get(project).getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider));
 	}
 
 	@VisibleForTesting
-	public static IntermediaryService create(String intermediaryUrl, MinecraftProvider minecraftProvider) {
-		final Path intermediaryTiny = minecraftProvider.file("intermediary-v2.tiny").toPath();
+	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider) {
+		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
 
-		if (!Files.exists(intermediaryTiny) || LoomGradlePlugin.refreshDeps) {
-			// Download and extract intermediary
-			File intermediaryJar = minecraftProvider.file("intermediary-v2.jar");
-
+		try {
+			intermediateMappingsProvider.provide(intermediaryTiny);
+		} catch (IOException e) {
 			try {
-				DownloadUtil.downloadIfChanged(new URL(intermediaryUrl), intermediaryJar, LOGGER);
-				MappingsProviderImpl.extractMappings(intermediaryJar.toPath(), intermediaryTiny);
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to download and extract intermediary", e);
+				Files.deleteIfExists(intermediaryTiny);
+			} catch (IOException ex) {
+				ex.printStackTrace();
 			}
+
+			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
 		}
 
-		return new IntermediaryService(intermediaryTiny);
+		return new IntermediateMappingsService(intermediaryTiny);
 	}
 
 	private MemoryMappingTree createMemoryMappingTree() {

@@ -32,7 +32,6 @@ import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-// This test uses gradle 4.9 and 1.14.4 v1 mappings
 class LegacyProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "legacy build (gradle #version)"() {
@@ -55,7 +54,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 			gradle.buildGradle << """
 				loom {
-                    intermediaryUrl = 'https://s.modm.us/intermediary-empty-v2.jar'
+                    noIntermediateMappings()
                 }
 
                 dependencies {
@@ -83,5 +82,38 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			'1.6.4'			| _
 			'1.4.7'			| _
 			'1.3.2'			| _
+	}
+
+	@Unroll
+	def "Ancient minecraft (minecraft #version)"() {
+		setup:
+			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+			gradle.buildGradle << """
+				loom {
+                    noIntermediateMappings()
+					clientOnlyMinecraftJar()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:${version}"
+                    mappings loom.layered() {
+						// No names
+					}
+
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+			"""
+
+		when:
+			def result = gradle.run(task: "configureClientLaunch")
+
+		then:
+			result.task(":configureClientLaunch").outcome == SUCCESS
+
+		where:
+			version 		| _
+			'1.2.5'			| _
+			'b1.8.1'		| _
+			'a1.2.5'		| _
 	}
 }

@@ -31,11 +31,11 @@ import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 public record FileMappingsSpec(
 		FileSpec fileSpec, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma,
+		boolean enigma, boolean unpick,
 		String mergeNamespace
 ) implements MappingsSpec<FileMappingsLayer> {
 	@Override
 	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, mergeNamespace);
+		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, mergeNamespace);
 	}
 }

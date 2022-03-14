@@ -62,6 +62,9 @@ public class MinecraftLibraryProvider {
 				// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
 				if ("org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20130708-debug3".equals(library.name())) {
 					LoomRepositoryPlugin.setupForLegacyVersions(project);
+				} else if (library.name().startsWith("org.ow2.asm:asm-all")) {
+					// Don't want asm-all, use the modern split version.
+					continue;
 				}
 
 				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {

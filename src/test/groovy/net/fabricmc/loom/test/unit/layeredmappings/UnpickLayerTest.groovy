@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.assets;
+package net.fabricmc.loom.test.unit.layeredmappings
 
-@SuppressWarnings("unused")
-public record AssetObject(String hash, long size) {
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
+import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
+
+class UnpickLayerTest extends LayeredMappingsSpecification {
+    def "read unpick data from yarn"() {
+        setup:
+            intermediaryUrl = INTERMEDIARY_1_17_URL
+            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+        when:
+            def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(YARN_1_17_URL)).containsUnpick()
+            def unpickData = getUnpickData(
+                    new IntermediaryMappingsSpec(),
+                    builder.build()
+            )
+            def metadata = unpickData.metadata()
+        then:
+            metadata.version() == 1
+            metadata.unpickGroup() == "net.fabricmc.unpick"
+            metadata.unpickVersion() == "2.2.0"
+
+            unpickData.definitions().length == 56119
+    }
 }

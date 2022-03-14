@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,16 +26,14 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.ServerOnlyMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -67,8 +65,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, MERGED);
+		public List<String> getDependencyTargets() {
+			return List.of(MERGED);
 		}
 	}
 
@@ -93,27 +91,42 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, COMMON);
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, CLIENT_ONLY);
+		public List<String> getDependencyTargets() {
+			return List.of(CLIENT_ONLY, COMMON);
 		}
 	}
 
-	public static final class ServerOnlyImpl extends NamedMinecraftProvider<ServerOnlyMinecraftProvider> implements ServerOnly {
-		public ServerOnlyImpl(Project project, ServerOnlyMinecraftProvider minecraftProvider) {
+	public static final class SingleJarImpl extends NamedMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
+		private final String env;
+
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, String env) {
 			super(project, minecraftProvider);
+			this.env = env;
+		}
+
+		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, "server");
+		}
+
+		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, "client");
 		}
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftServerOnlyJar(), getServerOnlyJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), MappingsNamespace.OFFICIAL)
 			);
 		}
 
 		@Override
-		protected void applyDependencies(BiConsumer<String, String> consumer) {
-			consumer.accept(Constants.Configurations.MINECRAFT_NAMED, SERVER_ONLY);
+		public List<String> getDependencyTargets() {
+			return List.of(envName());
+		}
+
+		@Override
+		public String env() {
+			return env;
 		}
 	}
 }

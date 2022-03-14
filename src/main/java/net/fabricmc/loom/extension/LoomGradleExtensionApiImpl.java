@@ -39,7 +39,9 @@ import org.gradle.api.tasks.SourceSet;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
+import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
@@ -49,6 +51,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.DeprecationHelper;
 
 /**
@@ -65,14 +68,17 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<String> intermediary;
+	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
+	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
 	private final ModVersionParser versionParser;
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
+	private final NamedDomainObjectContainer<ModSettings> mods;
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
@@ -92,6 +98,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
 
+		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
+		this.intermediateMappingsProvider.finalizeValueOnRead();
+
 		this.versionParser = new ModVersionParser(project);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
@@ -99,6 +108,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runConfigs = project.container(RunConfigSettings.class,
 				baseName -> new RunConfigSettings(project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
+		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
 
 		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
@@ -110,6 +120,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
+
+		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
+		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
@@ -215,6 +228,26 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
+		return intermediateMappingsProvider.get();
+	}
+
+	@Override
+	public void setIntermediateMappingsProvider(IntermediateMappingsProvider intermediateMappingsProvider) {
+		this.intermediateMappingsProvider.set(intermediateMappingsProvider);
+	}
+
+	@Override
+	public <T extends IntermediateMappingsProvider> void setIntermediateMappingsProvider(Class<T> clazz, Action<T> action) {
+		T provider = getProject().getObjects().newInstance(clazz);
+		configureIntermediateMappingsProviderInternal(provider);
+		action.execute(provider);
+		intermediateMappingsProvider.set(provider);
+	}
+
+	protected abstract <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider);
+
+	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {
 		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
 	}
@@ -230,8 +263,36 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public void splitEnvironmentSourceSets() {
+		splitMinecraftJar();
+
+		splitEnvironmentalSourceSet.set(true);
+
+		// We need to lock these values, as we setup the new source sets right away.
+		splitEnvironmentalSourceSet.finalizeValue();
+		minecraftJarConfiguration.finalizeValue();
+
+		MinecraftSourceSets.get(getProject()).evaluateSplit(getProject());
+	}
+
+	@Override
+	public boolean areEnvironmentSourceSetsSplit() {
+		return splitEnvironmentalSourceSet.get();
+	}
+
+	@Override
 	public InterfaceInjectionExtensionAPI getInterfaceInjection() {
 		return interfaceInjectionExtension;
+	}
+
+	@Override
+	public void mods(Action<NamedDomainObjectContainer<ModSettings>> action) {
+		action.execute(getMods());
+	}
+
+	@Override
+	public NamedDomainObjectContainer<ModSettings> getMods() {
+		return mods;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
@@ -253,6 +314,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected LoomFiles getFiles() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 

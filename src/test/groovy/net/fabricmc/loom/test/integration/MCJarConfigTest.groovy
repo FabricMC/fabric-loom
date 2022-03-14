@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,6 +60,33 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
     }
 
     @Unroll
+    def "client only (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "minimalBase", version: version)
+
+        gradle.buildGradle << '''
+                loom {
+                    clientOnlyMinecraftJar()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
+
+        when:
+            def result = gradle.run(task: "build")
+
+        then:
+            result.task(":build").outcome == SUCCESS
+
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
+
+    @Unroll
     def "split (gradle #version)"() {
         setup:
         def gradle = gradleProject(project: "minimalBase", version: version)
@@ -67,6 +94,33 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
         gradle.buildGradle << '''
                 loom {
                     splitMinecraftJar()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
+
+        when:
+        def result = gradle.run(task: "build")
+
+        then:
+        result.task(":build").outcome == SUCCESS
+
+        where:
+        version << STANDARD_TEST_VERSIONS
+    }
+
+    @Unroll
+    def "split env (gradle #version)"() {
+        setup:
+        def gradle = gradleProject(project: "minimalBase", version: version)
+
+        gradle.buildGradle << '''
+                loom {
+                    splitEnvironmentSourceSets()
                 }
 
                 dependencies {

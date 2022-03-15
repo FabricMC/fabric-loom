@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
@@ -118,4 +119,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	List<AccessWidenerFile> getTransitiveAccessWideners();
 
 	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
+
+	DecompilerOptions getDefaultDecompiler();
 }

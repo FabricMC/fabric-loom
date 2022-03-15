@@ -32,6 +32,7 @@ import org.gradle.api.Named;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.jetbrains.annotations.ApiStatus;
 
 public abstract class DecompilerOptions implements Named {
 	/**
@@ -59,12 +60,26 @@ public abstract class DecompilerOptions implements Named {
 	 */
 	public abstract Property<Integer> getMaxThreads();
 
+	/**
+	 * When set to true this decompiler will be used as the default when running the parent "genSources" task.
+	 * If multiple decompilers are set as default project evaluation will fail.
+	 *
+	 * <p>Plugins should <strong>NOT</strong> set their own decompiler as default.
+	 */
+	public abstract Property<Boolean> getIsDefault();
+
 	public DecompilerOptions() {
 		getDecompilerClassName().finalizeValueOnRead();
 		getClasspath().finalizeValueOnRead();
 		getOptions().finalizeValueOnRead();
 		getMemory().convention(4096L).finalizeValueOnRead();
 		getMaxThreads().convention(Runtime.getRuntime().availableProcessors()).finalizeValueOnRead();
+		getIsDefault().convention(false).finalizeValueOnRead();
+	}
+
+	@ApiStatus.Internal
+	public final String getNameForTask() {
+		return getName().substring(0, 1).toUpperCase() + getName().substring(1);
 	}
 
 	// Done to work around weird issues with the workers, possibly https://github.com/gradle/gradle/issues/13422

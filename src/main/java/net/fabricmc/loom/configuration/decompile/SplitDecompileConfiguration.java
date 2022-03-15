@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@
 package net.fabricmc.loom.configuration.decompile;
 
 import java.io.File;
+
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -95,13 +97,12 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 	private TaskProvider<Task> createDecompileTasks(String name, Action<GenerateSourcesTask> configureAction) {
 		extension.getDecompilerOptions().forEach(options -> {
-			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
-			final String taskName = "gen%sSourcesWith%s".formatted(name, decompilerName);
+			final String taskName = "gen%sSourcesWith%s".formatted(name, options.getNameForTask());
 
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				configureAction.execute(task);
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
-				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
+				task.setDescription("Decompile minecraft using %s.".formatted(options.getName()));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 			});
 		});
@@ -110,7 +111,9 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			task.setDescription("Decompile minecraft (%s) using the default decompiler.".formatted(name));
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
-			task.dependsOn(project.getTasks().named("gen%sSourcesWithCfr".formatted(name)));
+			final DecompilerOptions defaultDecompiler = extension.getDefaultDecompiler();
+
+			task.dependsOn(project.getTasks().named("gen%sSourcesWith%s".formatted(name, defaultDecompiler.getNameForTask())));
 		});
 	}
 }

@@ -59,9 +59,17 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
                 }
+                
+                loom {
+                	decompilers {
+                		custom {
+                			isDefault = true
+                		}
+                	}
+                }
             '''
 		when:
-			def result = gradle.run(task: "genSourcesWithCustom")
+			def result = gradle.run(task: "genSources")
 
 		then:
 			result.task(":genSourcesWithCustom").outcome == SUCCESS

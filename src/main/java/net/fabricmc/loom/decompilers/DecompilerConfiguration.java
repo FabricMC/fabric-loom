@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,12 +32,16 @@ import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 
 public final class DecompilerConfiguration {
+	public static final String FERN_FLOWER = "fernFlower";
+	public static final String CFR = "cfr";
+	public static final String DEFAULT = CFR;
+
 	private DecompilerConfiguration() {
 	}
 
 	public static void setup(Project project) {
-		registerDecompiler(project, "fernFlower", FabricFernFlowerDecompiler.class);
-		registerDecompiler(project, "cfr", LoomCFRDecompiler.class);
+		registerDecompiler(project, FERN_FLOWER, FabricFernFlowerDecompiler.class);
+		registerDecompiler(project, CFR, LoomCFRDecompiler.class);
 	}
 
 	private static void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -53,6 +54,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -240,5 +242,27 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
 		provider.getMinecraftVersion().disallowChanges();
+	}
+
+	@Override
+	public DecompilerOptions getDefaultDecompiler() {
+		DecompilerOptions defaultDecompiler = null;
+
+		for (DecompilerOptions decompilerOption : getDecompilerOptions()) {
+			if (decompilerOption.getIsDefault().get()) {
+				if (defaultDecompiler != null) {
+					throw new IllegalStateException("2 or more decompilers have been set as default. %s and %s".formatted(defaultDecompiler.getName(), decompilerOption.getName()));
+				}
+
+				defaultDecompiler = decompilerOption;
+			}
+		}
+
+		if (defaultDecompiler == null) {
+			// No default set, fall back to our default.
+			defaultDecompiler = getDecompilerOptions().getByName(DecompilerConfiguration.DEFAULT);
+		}
+
+		return defaultDecompiler;
 	}
 }

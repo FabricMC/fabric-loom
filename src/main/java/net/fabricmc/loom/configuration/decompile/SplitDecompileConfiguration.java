@@ -26,13 +26,12 @@ package net.fabricmc.loom.configuration.decompile;
 
 import java.io.File;
 
-import net.fabricmc.loom.api.decompilers.DecompilerOptions;
-
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskProvider;
 
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;

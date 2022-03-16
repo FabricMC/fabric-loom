@@ -79,6 +79,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			'1.12.2'		| _
 			'1.8.9'			| _
 			'1.7.10'		| _
+			'1.7'			| _
 			'1.6.4'			| _
 			'1.4.7'			| _
 			'1.3.2'			| _

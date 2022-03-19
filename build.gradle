@@ -199,14 +199,6 @@ import org.w3c.dom.Node
 
 publishing {
 	publications {
-		plugin(MavenPublication) { publication ->
-			groupId project.group
-			artifactId project.archivesBaseName
-			version project.version
-
-			from components.java
-		}
-
 		// Also publish a snapshot so people can use the latest version if they wish
 		snapshot(MavenPublication) { publication ->
 			groupId project.group

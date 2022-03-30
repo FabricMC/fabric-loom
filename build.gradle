@@ -101,12 +101,12 @@ dependencies {
 	implementation ('net.fabricmc:mercury:0.2.5')
 
 	// Kotlin
-	implementation("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.1") {
+	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.2') {
 		transitive = false
 	}
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0')
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31') // Must match the version included with gradle.
 
 	// Testing
 	testImplementation(gradleTestKit())

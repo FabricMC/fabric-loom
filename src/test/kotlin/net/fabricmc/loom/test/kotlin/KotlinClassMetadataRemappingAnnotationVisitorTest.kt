@@ -30,8 +30,10 @@ import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import net.fabricmc.tinyremapper.IMappingProvider
 import net.fabricmc.tinyremapper.TinyRemapper
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceClassVisitor
@@ -58,14 +60,19 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
             .withMappings(readMappings("PosInChunk"))
             .build()
 
-        val stringWriter = StringWriter()
-        val traceClassVisitor = TraceClassVisitor(null, TextifierImpl(), PrintWriter(stringWriter))
+        val inputWriter = StringWriter()
+        classReader.accept(stringWriterVisitor(inputWriter), 0)
 
-        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, traceClassVisitor), 0)
+        val remappedWriter = StringWriter()
+        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, stringWriterVisitor(remappedWriter)), 0)
 
-        val d2Regex = Regex("(d2=)(.*)")
-        val asm = stringWriter.toString()
-        println(d2Regex.find(asm)?.value)
+        val d2In = d2(inputWriter.toString())
+        val d2Out = d2(remappedWriter.toString())
+
+        println(d2In)
+        println(d2Out)
+
+        assertEquals(d2In.size, d2Out.size)
     }
 
     @Test
@@ -77,14 +84,19 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
             .withMappings(readMappings("TestExtensionKt"))
             .build()
 
-        val stringWriter = StringWriter()
-        val traceClassVisitor = TraceClassVisitor(null, TextifierImpl(), PrintWriter(stringWriter))
+        val inputWriter = StringWriter()
+        classReader.accept(stringWriterVisitor(inputWriter), 0)
 
-        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, traceClassVisitor), 0)
+        val remappedWriter = StringWriter()
+        classReader.accept(KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, stringWriterVisitor(remappedWriter)), 0)
 
-        val d2Regex = Regex("(d2=)(.*)")
-        val asm = stringWriter.toString()
-        println(d2Regex.find(asm)?.value)
+        val d2In = d2(inputWriter.toString())
+        val d2Out = d2(remappedWriter.toString())
+
+        println(d2In)
+        println(d2Out)
+
+        assertEquals(d2In.size, d2Out.size)
     }
 
     private fun getClassBytes(name: String): ByteArray {
@@ -95,6 +107,15 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
         val mappingTree = MemoryMappingTree()
         MappingReader.read(Paths.get("src/test/resources/mappings/$name.mappings"), mappingTree)
         return TinyRemapperHelper.create(mappingTree, "named", "intermediary", false)
+    }
+
+    private fun stringWriterVisitor(writer: StringWriter): ClassVisitor {
+        return TraceClassVisitor(null, TextifierImpl(), PrintWriter(writer))
+    }
+
+    private fun d2(bytecode: String): List<String> {
+        val d2Regex = Regex("d2=\\{(.*)}")
+        return d2Regex.find(bytecode)!!.groupValues[1].split(",")
     }
 
     private class TextifierImpl : Textifier(Opcodes.ASM9)

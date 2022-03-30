@@ -35,11 +35,25 @@ class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: 
         val ANNOTATION_DESCRIPTOR: String = Type.getDescriptor(Metadata::class.java)
     }
 
+    var className: String? = null
+
+    override fun visit(
+        version: Int,
+        access: Int,
+        name: String?,
+        signature: String?,
+        superName: String?,
+        interfaces: Array<out String>?
+    ) {
+        this.className = name
+        super.visit(version, access, name, signature, superName, interfaces)
+    }
+
     override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
         var result: AnnotationVisitor? = super.visitAnnotation(descriptor, visible)
 
         if (descriptor == ANNOTATION_DESCRIPTOR && result != null) {
-            result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result)
+            result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result, className)
         }
 
         return result

@@ -40,6 +40,7 @@ public class FernflowerLogger extends IFernflowerLogger {
 	@Override
 	public void writeMessage(String message, Severity severity) {
 		if (message.contains("Inconsistent inner class entries for")) return;
+		if (message.contains("Inconsistent generic signature in method")) return;
 		System.err.println(message);
 	}
 

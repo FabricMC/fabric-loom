@@ -49,9 +49,11 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
 
         val header = readHeader() ?: return
 
-        val headerVersion = header.metadataVersion.joinToString(".")
-        if (headerVersion != KotlinVersion.CURRENT.toString()) {
-            logger.warn("Skipping remap of kotlin metadata for class ($className) as it was built with Kotlin ($headerVersion) while Gradle is running with the included Kotlin version (${KotlinVersion.CURRENT}).")
+        val headerVersion = KotlinVersion(header.metadataVersion[0], header.metadataVersion[1], 0)
+        val currentMinorVersion = KotlinVersion(KotlinVersion.CURRENT.major, KotlinVersion.CURRENT.minor, 0)
+
+        if (headerVersion != currentMinorVersion) {
+            logger.warn("Skipping remap of kotlin metadata for class ($className) as it was built using a different major Kotlin version (${header.metadataVersion[0]}.${header.metadataVersion[1]}.x) while the remapper is using (${KotlinVersion.CURRENT}).")
             accept(next)
             return
         }

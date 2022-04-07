@@ -24,44 +24,17 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import org.jetbrains.annotations.VisibleForTesting
-import org.objectweb.asm.AnnotationVisitor
+import net.fabricmc.loom.util.kotlin.KotlinMetadataTinyRemapperExtension
+import net.fabricmc.tinyremapper.TinyRemapper
+import net.fabricmc.tinyremapper.api.TrClass
 import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.Opcodes
-import org.objectweb.asm.Type
-import org.objectweb.asm.commons.Remapper
 
-class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: ClassVisitor?) : ClassVisitor(Opcodes.ASM9, next) {
-    companion object {
-        val ANNOTATION_DESCRIPTOR: String = Type.getDescriptor(Metadata::class.java)
+object KotlinMetadataTinyRemapperExtensionImpl : KotlinMetadataTinyRemapperExtension {
+    override fun insertApplyVisitor(cls: TrClass, next: ClassVisitor?): ClassVisitor {
+        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
     }
 
-    var className: String? = null
-
-    override fun visit(
-        version: Int,
-        access: Int,
-        name: String?,
-        signature: String?,
-        superName: String?,
-        interfaces: Array<out String>?
-    ) {
-        this.className = name
-        super.visit(version, access, name, signature, superName, interfaces)
-    }
-
-    override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
-        var result: AnnotationVisitor? = super.visitAnnotation(descriptor, visible)
-
-        if (descriptor == ANNOTATION_DESCRIPTOR && result != null) {
-            result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result, className)
-        }
-
-        return result
-    }
-
-    @VisibleForTesting
-    fun getRuntimeKotlinVersion(): String {
-        return KotlinVersion.CURRENT.toString()
+    override fun attach(builder: TinyRemapper.Builder) {
+        builder.extraPreApplyVisitor(this)
     }
 }

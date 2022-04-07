@@ -22,18 +22,19 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.kotlin.remapping
+package net.fabricmc.loom.util.kotlin;
 
-import net.fabricmc.tinyremapper.TinyRemapper
-import net.fabricmc.tinyremapper.api.TrClass
-import org.objectweb.asm.ClassVisitor
+import org.gradle.api.Project;
 
-object KotlinMetadataTinyRemapperExtension : TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
-    override fun insertApplyVisitor(cls: TrClass, next: ClassVisitor): ClassVisitor {
-        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
-    }
+public class KotlinPluginUtils {
+	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
 
-    override fun attach(builder: TinyRemapper.Builder) {
-        builder.extraPreApplyVisitor(this)
-    }
+	public static boolean hasKotlinPlugin(Project project) {
+		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
+	}
+
+	public static String getKotlinPluginVersion(Project project) {
+		// TODO!
+		return "1.6.10";
+	}
 }

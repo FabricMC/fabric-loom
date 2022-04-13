@@ -71,13 +71,13 @@ dependencies {
 	// libraries
 	implementation ('commons-io:commons-io:2.11.0')
 	implementation ('com.google.code.gson:gson:2.9.0')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.2.1')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.2.2')
 	implementation ('com.google.guava:guava:31.1-jre')
-	implementation ('org.ow2.asm:asm:9.2')
-	implementation ('org.ow2.asm:asm-analysis:9.2')
-	implementation ('org.ow2.asm:asm-commons:9.2')
-	implementation ('org.ow2.asm:asm-tree:9.2')
-	implementation ('org.ow2.asm:asm-util:9.2')
+	implementation ('org.ow2.asm:asm:9.3')
+	implementation ('org.ow2.asm:asm-analysis:9.3')
+	implementation ('org.ow2.asm:asm-commons:9.3')
+	implementation ('org.ow2.asm:asm-tree:9.3')
+	implementation ('org.ow2.asm:asm-util:9.3')
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.6.1') {
@@ -95,7 +95,7 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:1.5.0')
-	implementation ('net.fabricmc:cfr:0.1.0')
+	implementation ('net.fabricmc:cfr:0.1.1')
 
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.2.5')
@@ -114,7 +114,7 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
-	testImplementation ('io.javalin:javalin:4.3.0') {
+	testImplementation ('io.javalin:javalin:4.4.0') {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'

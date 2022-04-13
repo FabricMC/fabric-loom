@@ -26,7 +26,9 @@ package net.fabricmc.loom;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ArtifactRepositoryContainer;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.initialization.Settings;
@@ -68,7 +70,8 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.setName("Fabric");
 			repo.setUrl(MirrorUtil.getFabricRepository(target));
 		});
-		repositories.maven(repo -> {
+
+		MavenArtifactRepository mojangRepo = repositories.maven(repo -> {
 			repo.setName("Mojang");
 			repo.setUrl(MirrorUtil.getLibrariesBase(target));
 
@@ -79,6 +82,16 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 				sources.ignoreGradleMetadataRedirection();
 			});
 		});
+
+		// If a mavenCentral repo is already defined, remove the mojang repo and add it back before the mavenCentral repo so that it will be checked first.
+		// See: https://github.com/FabricMC/fabric-loom/issues/621
+		ArtifactRepository mavenCentral = repositories.findByName(ArtifactRepositoryContainer.DEFAULT_MAVEN_CENTRAL_REPO_NAME);
+
+		if (mavenCentral != null) {
+			repositories.remove(mojangRepo);
+			repositories.add(repositories.indexOf(mavenCentral), mojangRepo);
+		}
+
 		repositories.mavenCentral();
 
 		repositories.ivy(repo -> {

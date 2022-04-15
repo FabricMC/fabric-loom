@@ -83,7 +83,8 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
-	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+	public static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
 
 	@InputFiles
 	public abstract ConfigurableFileCollection getNestedJars();
@@ -306,7 +307,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
 				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
-				manifest.getMainAttributes().putValue("Fabric-Mapping-Namespace", getParameters().getTargetNamespace().get());
+				manifest.getMainAttributes().putValue(MANIFEST_NAMESPACE_KEY, getParameters().getTargetNamespace().get());
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				manifest.write(out);

@@ -78,6 +78,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
 
+	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
+	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
+
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
 				.empty();
@@ -163,9 +166,22 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public Dependency officialMojangMappings() {
+		if (layeredSpecBuilderScope.get()) {
+			throw new IllegalStateException("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`");
+		}
+
+		return layered(LayeredMappingSpecBuilder::officialMojangMappings);
+	}
+
+	@Override
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
 		LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl();
+
+		layeredSpecBuilderScope.set(true);
 		action.execute(builder);
+		layeredSpecBuilderScope.set(false);
+
 		LayeredMappingSpec builtSpec = builder.build();
 		return new LayeredMappingsDependency(getProject(), new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
 	}

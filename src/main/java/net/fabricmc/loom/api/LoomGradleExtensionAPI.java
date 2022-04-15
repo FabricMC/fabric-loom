@@ -70,9 +70,7 @@ public interface LoomGradleExtensionAPI {
 
 	ConfigurableFileCollection getLog4jConfigs();
 
-	default Dependency officialMojangMappings() {
-		return layered(LayeredMappingSpecBuilder::officialMojangMappings);
-	}
+	Dependency officialMojangMappings();
 
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 

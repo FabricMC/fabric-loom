@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -70,6 +70,31 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 
 		then:
 			result.task(":build").outcome == SUCCESS
+
+		where:
+			version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "fail with wrong officialMojangMappings usage (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "minimalBase", version: version)
+
+			gradle.buildGradle << '''
+				dependencies {
+					minecraft "com.mojang:minecraft:1.18.2"
+					mappings loom.layered {
+						// This is the wrong method to call!
+						loom.officialMojangMappings()
+					}
+				}
+			'''
+
+		when:
+			def result = gradle.run(task: "build", expectFailure: true)
+
+		then:
+			result.output.contains("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`")
 
 		where:
 			version << STANDARD_TEST_VERSIONS

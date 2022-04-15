@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.mods;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Manifest;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
@@ -47,6 +50,7 @@ import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtension;
+import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
@@ -217,8 +221,21 @@ public class ModProcessor {
 			}
 
 			stripNestedJars(info.getRemappedOutput());
+			remapJarManifestEntries(info.getRemappedOutput().toPath());
 
 			info.finaliseRemapping();
 		}
+	}
+
+	private void remapJarManifestEntries(Path jar) throws IOException {
+		ZipUtils.transform(jar, Map.of(RemapJarTask.MANIFEST_PATH, bytes -> {
+			var manifest = new Manifest(new ByteArrayInputStream(bytes));
+
+			manifest.getMainAttributes().putValue(RemapJarTask.MANIFEST_NAMESPACE_KEY, toM);
+
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			manifest.write(out);
+			return out.toByteArray();
+		}));
 	}
 }

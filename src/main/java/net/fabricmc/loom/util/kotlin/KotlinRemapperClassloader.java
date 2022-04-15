@@ -35,7 +35,11 @@ import kotlinx.metadata.jvm.KotlinClassHeader;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtensionImpl;
 
+/**
+ * Used to run the Kotlin remapper with a specific version of Koltin that may not match the kotlin version included with gradle.
+ */
 public class KotlinRemapperClassloader extends URLClassLoader {
+	// Packages that should be loaded from the gradle plugin classloader.
 	private static final List<String> PARENT_PACKAGES = List.of(
 			"net.fabricmc.tinyremapper",
 			"net.fabricmc.loom.util.kotlin",
@@ -57,15 +61,16 @@ public class KotlinRemapperClassloader extends URLClassLoader {
 	}
 
 	public static KotlinRemapperClassloader create(KotlinClasspath classpathProvider) {
-		// Include the libraries that may not be on the compile classpath
+		// Include the libraries that are not on the kotlin classpath.
 		final Stream<URL> loomUrls = getClassUrls(
 				KotlinMetadataTinyRemapperExtensionImpl.class, // Loom
 				KotlinClassHeader.class // Kotlin metadata api
 		);
 
-		final Stream<URL> kotlinClasspath = classpathProvider.classpath().stream();
-
-		final URL[] urls = Stream.concat(loomUrls, kotlinClasspath).toArray(URL[]::new);
+		final URL[] urls = Stream.concat(
+				loomUrls,
+				classpathProvider.classpath().stream()
+		).toArray(URL[]::new);
 
 		return new KotlinRemapperClassloader(urls);
 	}
@@ -74,6 +79,9 @@ public class KotlinRemapperClassloader extends URLClassLoader {
 		return Arrays.stream(classes).map(klass -> klass.getProtectionDomain().getCodeSource().getLocation());
 	}
 
+	/**
+	 * Load the {@link KotlinMetadataTinyRemapperExtensionImpl} class on the new classloader.
+	 */
 	public KotlinMetadataTinyRemapperExtension getTinyRemapperExtension() {
 		try {
 			Class<?> klass = this.loadClass(KotlinMetadataTinyRemapperExtensionImpl.class.getCanonicalName());

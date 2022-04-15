@@ -156,7 +156,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
     private fun validateKotlinClassHeader(remapped: KotlinClassHeader, original: KotlinClassHeader) {
         // This can happen when the remapper is ran on a kotlin version that does not match the version the class was compiled with.
         if (remapped.data2.size != original.data2.size) {
-            throw RuntimeException("Kotlin class metadata size mismatch: data2 size does not match original. New: ${remapped.data2.size} Old: ${original.data2.size}")
+            throw RuntimeException("Kotlin class metadata size mismatch: data2 size does not match original in class $className. New: ${remapped.data2.size} Old: ${original.data2.size}")
         }
     }
 }

@@ -44,6 +44,9 @@ class KotlinRemapperClassloaderTest extends Specification {
             def mockEnv = Mock(TrEnvironment)
             def mockRemapper = Mock(TrRemapper)
 
+            mockRemapper.map(_) >> {args -> args[0]}
+            mockRemapper.mapMethodDesc(_) >> {args -> args[0]}
+
             mockEnv.remapper >> mockRemapper
             mockTrClass.environment >> mockEnv
 

@@ -52,7 +52,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 	@Override
 	public void exec() {
-		setWorkingDir(new File(getProject().getRootDir(), config.runDir));
+		setWorkingDir(new File(getProject().getProjectDir(), config.runDir));
 
 		super.exec();
 	}

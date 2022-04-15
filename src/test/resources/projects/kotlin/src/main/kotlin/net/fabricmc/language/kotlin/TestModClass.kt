@@ -11,13 +11,15 @@ class TestModClass : ModInitializer {
     val logger = LogManager.getFormatterLogger("KotlinLanguageTest")
 
     override fun onInitialize() {
-        val json = Json.encodeToString(ExampleSerializable(Identifier("kotlin:hello"), 12.0))
+        val ident = Identifier("kotlin:hello")
+        val json = Json.encodeToString(ExampleSerializable(ident, 12.0))
         val obj = Json.decodeFromString<ExampleSerializable>(json)
 
         logger.info("**************************")
         logger.info("Hello from Kotlin TestModClass")
         logger.info(json)
         logger.info(obj)
+        logger.info(ident.testExt())
         logger.info("**************************")
     }
 }

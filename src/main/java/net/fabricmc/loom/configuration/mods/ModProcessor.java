@@ -46,10 +46,11 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtensionImpl;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
+import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -135,8 +136,6 @@ public class ModProcessor {
 	private void remapJars(List<ModDependencyInfo> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
-		final boolean useKotlinExtension = project.getPluginManager().hasPlugin("org.jetbrains.kotlin.jvm");
-
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
@@ -146,8 +145,12 @@ public class ModProcessor {
 				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
 				.renameInvalidLocals(false);
 
-		if (useKotlinExtension) {
-			builder.extension(KotlinMetadataTinyRemapperExtensionImpl.INSTANCE);
+		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(project);
+		KotlinRemapperClassloader kotlinRemapperClassloader = null;
+
+		if (kotlinClasspathService != null) {
+			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspathService);
+			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
 		final TinyRemapper remapper = builder.build();
@@ -205,6 +208,10 @@ public class ModProcessor {
 			}
 		} finally {
 			remapper.finish();
+
+			if (kotlinRemapperClassloader != null) {
+				kotlinRemapperClassloader.close();
+			}
 		}
 
 		for (ModDependencyInfo info : remapList) {

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
+import org.jetbrains.annotations.VisibleForTesting
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Opcodes
@@ -57,5 +58,10 @@ class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: 
         }
 
         return result
+    }
+
+    @VisibleForTesting
+    fun getRuntimeKotlinVersion(): String {
+        return KotlinVersion.CURRENT.toString()
     }
 }

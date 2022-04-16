@@ -22,18 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.kotlin.remapping
+package net.fabricmc.loom.util.kotlin;
 
-import net.fabricmc.tinyremapper.TinyRemapper
-import net.fabricmc.tinyremapper.api.TrClass
-import org.objectweb.asm.ClassVisitor
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencySet;
 
-object KotlinMetadataTinyRemapperExtension : TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
-    override fun insertApplyVisitor(cls: TrClass, next: ClassVisitor): ClassVisitor {
-        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
-    }
+public class KotlinPluginUtils {
+	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
+	private static final String KOTLIN_PLUGIN_GROUP = "org.jetbrains.kotlin.jvm";
+	private static final String KOTLIN_PLUGIN_NAME = "org.jetbrains.kotlin.jvm.gradle.plugin";
 
-    override fun attach(builder: TinyRemapper.Builder) {
-        builder.extraPreApplyVisitor(this)
-    }
+	public static boolean hasKotlinPlugin(Project project) {
+		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
+	}
+
+	public static String getKotlinPluginVersion(Project project) {
+		DependencySet buildDependencies = project.getBuildscript().getConfigurations()
+				.getByName("classpath").getDependencies();
+
+		for (Dependency dependency : buildDependencies) {
+			if (KOTLIN_PLUGIN_GROUP.equals(dependency.getGroup()) && KOTLIN_PLUGIN_NAME.equals(dependency.getName())) {
+				return dependency.getVersion();
+			}
+		}
+
+		throw new IllegalStateException("Unable to get the kotlin plugin version");
+	}
 }

@@ -1,6 +1,7 @@
 package net.fabricmc.language.kotlin
 
 import net.minecraft.entity.Entity
+import net.minecraft.util.Identifier
 
 class TestExtension {
     fun testExtCompile() {
@@ -11,4 +12,8 @@ class TestExtension {
 
 fun Entity.testExt() {
     velocityDirty = true
+}
+
+fun Identifier.testExt(): String {
+    return "Hello ext"
 }

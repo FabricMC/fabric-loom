@@ -61,6 +61,7 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
@@ -270,22 +271,14 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 	private record InjectedInterface(String modId, String className, String ifaceName) {
 		/**
-		 * Reads the injected interfaces contained in a mod jar, or returns null if there is none.
+		 * Reads the injected interfaces contained in a mod jar, or returns empty if there is none.
 		 */
 		public static List<InjectedInterface> fromModJar(Path modJarPath) {
-			final byte[] modJsonBytes;
+			final JsonObject jsonObject = ModUtils.getFabricModJson(modJarPath);
 
-			try {
-				modJsonBytes = ZipUtils.unpackNullable(modJarPath, "fabric.mod.json");
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to extract fabric.mod.json from " + modJarPath);
-			}
-
-			if (modJsonBytes == null) {
+			if (jsonObject == null) {
 				return Collections.emptyList();
 			}
-
-			final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
 
 			return fromJson(jsonObject);
 		}
@@ -299,11 +292,11 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 			final JsonObject custom = jsonObject.getAsJsonObject("custom");
 
-			if (!custom.has("loom:injected_interfaces")) {
+			if (!custom.has(Constants.CustomModJsonKeys.INJECTED_INTERFACE)) {
 				return Collections.emptyList();
 			}
 
-			final JsonObject addedIfaces = custom.getAsJsonObject("loom:injected_interfaces");
+			final JsonObject addedIfaces = custom.getAsJsonObject(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
 
 			final List<InjectedInterface> result = new ArrayList<>();
 

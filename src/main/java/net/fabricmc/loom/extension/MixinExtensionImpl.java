@@ -47,9 +47,12 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.NotNull;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+
 public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
 	private final Property<String> defaultRefmapName;
+	private final Property<String> refmapTargetNamespace;
 
 	@Inject
 	public MixinExtensionImpl(Project project) {
@@ -57,6 +60,10 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 		this.isDefault = true;
 		this.defaultRefmapName = project.getObjects().property(String.class)
 				.convention(project.provider(this::getDefaultMixinRefmapName));
+
+		this.refmapTargetNamespace = project.getObjects().property(String.class)
+				.convention(MappingsNamespace.INTERMEDIARY.toString());
+		this.refmapTargetNamespace.finalizeValueOnRead();
 	}
 
 	@Override
@@ -64,6 +71,13 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
 
 		return defaultRefmapName;
+	}
+
+	@Override
+	public Property<String> getRefmapTargetNamespace() {
+		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+
+		return refmapTargetNamespace;
 	}
 
 	private String getDefaultMixinRefmapName() {

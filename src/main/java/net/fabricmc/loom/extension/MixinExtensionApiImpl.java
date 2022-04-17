@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,15 +36,21 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
 
 import net.fabricmc.loom.api.MixinExtensionAPI;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	protected final Project project;
 	protected final Property<Boolean> useMixinAp;
+	private final Property<String> refmapTargetNamespace;
 
 	public MixinExtensionApiImpl(Project project) {
 		this.project = Objects.requireNonNull(project);
 		this.useMixinAp = project.getObjects().property(Boolean.class)
 				.convention(true);
+
+		this.refmapTargetNamespace = project.getObjects().property(String.class)
+				.convention(MappingsNamespace.INTERMEDIARY.toString());
+		this.refmapTargetNamespace.finalizeValueOnRead();
 	}
 
 	protected final PatternSet add0(SourceSet sourceSet, String refmapName) {
@@ -56,6 +62,13 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	@Override
 	public Property<Boolean> getUseLegacyMixinAp() {
 		return useMixinAp;
+	}
+
+	@Override
+	public Property<String> getRefmapTargetNamespace() {
+		if (!getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+
+		return refmapTargetNamespace;
 	}
 
 	@Override

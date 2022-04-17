@@ -34,7 +34,7 @@ class ServerRunner {
             "1.16.5": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.16/fabric-api-0.37.1+1.16.jar",
             "1.17.1": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.17/fabric-api-0.37.1+1.17.jar"
     ]
-    static final String FABRIC_LANG_KOTLIN = "https://maven.fabricmc.net/net/fabricmc/fabric-language-kotlin/1.7.1%2Bkotlin.1.6.10/fabric-language-kotlin-1.7.1%2Bkotlin.1.6.10.jar"
+    static final String FABRIC_LANG_KOTLIN = "https://maven.fabricmc.net/net/fabricmc/fabric-language-kotlin/1.7.3%2Bkotlin.1.6.20/fabric-language-kotlin-1.7.3%2Bkotlin.1.6.20.jar"
 
     final File serverDir
     final String minecraftVersion

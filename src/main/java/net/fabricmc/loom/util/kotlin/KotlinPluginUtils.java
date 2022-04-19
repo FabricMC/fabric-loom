@@ -24,29 +24,22 @@
 
 package net.fabricmc.loom.util.kotlin;
 
+import kotlinx.metadata.jvm.KotlinClassMetadata;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 
 public class KotlinPluginUtils {
 	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
-	private static final String KOTLIN_PLUGIN_GROUP = "org.jetbrains.kotlin.jvm";
-	private static final String KOTLIN_PLUGIN_NAME = "org.jetbrains.kotlin.jvm.gradle.plugin";
 
 	public static boolean hasKotlinPlugin(Project project) {
 		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
 	}
 
 	public static String getKotlinPluginVersion(Project project) {
-		DependencySet buildDependencies = project.getBuildscript().getConfigurations()
-				.getByName("classpath").getDependencies();
+		Class<?> koltinPluginClass = project.getPlugins().getPlugin(KOTLIN_PLUGIN_ID).getClass();
+		return koltinPluginClass.getPackage().getImplementationVersion().split("-")[0];
+	}
 
-		for (Dependency dependency : buildDependencies) {
-			if (KOTLIN_PLUGIN_GROUP.equals(dependency.getGroup()) && KOTLIN_PLUGIN_NAME.equals(dependency.getName())) {
-				return dependency.getVersion();
-			}
-		}
-
-		throw new IllegalStateException("Unable to get the kotlin plugin version");
+	public static String getKotlinMetadataVersion() {
+		return KotlinClassMetadata.class.getPackage().getImplementationVersion();
 	}
 }

@@ -140,6 +140,13 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<Boolean> getEnableTransitiveAccessWideners();
 
+	/**
+	 * When true loom will apply mod provided javadoc from dependencies.
+	 *
+	 * @return the property controlling the mod provided javadoc
+	 */
+	Property<Boolean> getEnableModProvidedJavadoc();
+
 	@ApiStatus.Experimental
 	IntermediateMappingsProvider getIntermediateMappingsProvider();
 

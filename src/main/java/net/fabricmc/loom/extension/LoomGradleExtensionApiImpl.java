@@ -67,6 +67,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> setupRemappedVariants;
 	protected final Property<Boolean> transitiveAccessWideners;
+	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
@@ -98,6 +99,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
+		this.modProvidedJavadoc = project.getObjects().property(Boolean.class)
+				.convention(true);
+		this.modProvidedJavadoc.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
 
@@ -232,6 +236,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getEnableTransitiveAccessWideners() {
 		return transitiveAccessWideners;
+	}
+
+	@Override
+	public Property<Boolean> getEnableModProvidedJavadoc() {
+		return modProvidedJavadoc;
 	}
 
 	protected abstract Project getProject();

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@ import net.fabricmc.loom.util.ZipUtils
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.nio.charset.StandardCharsets
+
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -41,11 +43,20 @@ class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 
 		when:
 			def result = gradle.run(task: "genSources")
+			def blocks = getClassSource(gradle, "net/minecraft/block/Blocks.java")
 
 		then:
 			result.task(":genSources").outcome == SUCCESS
+			blocks.contains("An example of a mod added class javadoc")
+			blocks.contains("An example of a mod added field javadoc")
+			blocks.contains("An example of a mod added method javadoc")
 
 		where:
 			version << STANDARD_TEST_VERSIONS
+	}
+
+	private static String getClassSource(GradleProject gradle, String classname) {
+		File sourcesJar = gradle.getGeneratedLocalSources("1.17.1/net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2")
+		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 }

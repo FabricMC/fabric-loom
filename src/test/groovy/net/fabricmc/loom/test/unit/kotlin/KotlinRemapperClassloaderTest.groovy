@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit.kotlin
 
 import net.fabricmc.loom.util.kotlin.KotlinClasspath
+import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader
 import net.fabricmc.tinyremapper.api.TrClass
 import net.fabricmc.tinyremapper.api.TrEnvironment
@@ -35,7 +36,9 @@ import spock.lang.Specification
 
 class KotlinRemapperClassloaderTest extends Specification {
     private static String KOTLIN_VERSION = "1.6.10"
+    private static String KOTLIN_METADATA_VERSION = KotlinPluginUtils.kotlinMetadataVersion
     private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
+    private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-metadata-jvm/${KOTLIN_METADATA_VERSION}/kotlinx-metadata-jvm-${KOTLIN_METADATA_VERSION}.jar"
 
     def "Test Koltin Remapper Classloader"() {
         given:
@@ -74,10 +77,12 @@ class KotlinRemapperClassloaderTest extends Specification {
 
         @Override
         Set<URL> classpath() {
-            def file = downloadFile(KOTLIN_URL, "kotlin-stdlib.jar")
+            def kotlin = downloadFile(KOTLIN_URL, "kotlin-stdlib.jar")
+            def metadata = downloadFile(KOTLIN_METADATA_URL, "kotlin-metadata.jar")
 
             return Set.of(
-                file.toURI().toURL()
+                kotlin.toURI().toURL(),
+                metadata.toURI().toURL()
             )
         }
     }

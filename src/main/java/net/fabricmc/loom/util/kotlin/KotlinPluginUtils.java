@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util.kotlin;
 
+import kotlinx.metadata.jvm.KotlinClassMetadata;
 import org.gradle.api.Project;
 
 public class KotlinPluginUtils {
@@ -36,5 +37,9 @@ public class KotlinPluginUtils {
 	public static String getKotlinPluginVersion(Project project) {
 		Class<?> koltinPluginClass = project.getPlugins().getPlugin(KOTLIN_PLUGIN_ID).getClass();
 		return koltinPluginClass.getPackage().getImplementationVersion().split("-")[0];
+	}
+
+	public static String getKotlinMetadataVersion() {
+		return KotlinClassMetadata.class.getPackage().getImplementationVersion();
 	}
 }

@@ -44,19 +44,21 @@ public record KotlinClasspathService(Set<URL> classpath, String version) impleme
 			return null;
 		}
 
-		return getOrCreate(project, KotlinPluginUtils.getKotlinPluginVersion(project));
+		return getOrCreate(project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
 	}
 
-	public static synchronized KotlinClasspathService getOrCreate(Project project, String kotlinVersion) {
-		final String id = "kotlinclasspath:" + kotlinVersion;
+	public static synchronized KotlinClasspathService getOrCreate(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+		final String id = "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
 		final SharedServiceManager sharedServiceManager = SharedServiceManager.get(project);
-		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion));
+		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion, kotlinMetadataVersion));
 	}
 
-	private static KotlinClasspathService create(Project project, String kotlinVersion) {
-		// Create a detached config to resolve the koltin std lib for the provided version.
+	private static KotlinClasspathService create(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+		// Create a detached config to resolve the kotlin std lib for the provided version.
 		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
-				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion)
+				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
+				// Load kotlinx-metadata-jvm like this to work around: https://github.com/gradle/gradle/issues/14727
+				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
 		);
 
 		Set<URL> classpath = detachedConfiguration.getFiles().stream()

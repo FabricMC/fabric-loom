@@ -1,0 +1,7 @@
+tiny	2	0	intermediary
+c	net/minecraft/class_2246
+	c	An example of a mod added class javadoc
+	f	Lnet/minecraft/class_2248;	field_10382
+		c	An example of a mod added field javadoc
+	m	(I)Ljava/util/function/ToIntFunction;	method_26107
+		c	An example of a mod added method javadoc

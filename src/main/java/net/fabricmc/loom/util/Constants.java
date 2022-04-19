@@ -142,4 +142,9 @@ public class Constants {
 		private TaskGroup() {
 		}
 	}
+
+	public static final class CustomModJsonKeys {
+		public static final String INJECTED_INTERFACE = "loom:injected_interfaces";
+		public static final String PROVIDED_JAVADOC = "loom:provided_javadoc";
+	}
 }

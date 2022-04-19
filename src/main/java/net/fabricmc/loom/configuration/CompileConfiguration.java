@@ -45,6 +45,7 @@ import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
+import net.fabricmc.loom.configuration.mods.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
@@ -236,6 +237,15 @@ public final class CompileConfiguration {
 
 			if (!jarProcessor.isEmpty()) {
 				extension.getGameJarProcessors().add(jarProcessor);
+			}
+		}
+
+		if (extension.getEnableModProvidedJavadoc().get()) {
+			// This doesn't do any processing on the compiled jar, but it does have an effect on the generated sources.
+			final ModJavadocProcessor javadocProcessor = ModJavadocProcessor.create(project);
+
+			if (javadocProcessor != null) {
+				extension.getGameJarProcessors().add(javadocProcessor);
 			}
 		}
 

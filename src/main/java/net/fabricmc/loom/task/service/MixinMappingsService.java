@@ -34,6 +34,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.tinyremapper.IMappingProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 
 public final class MixinMappingsService implements SharedService {
 	private final SharedServiceManager sharedServiceManager;
@@ -47,13 +48,13 @@ public final class MixinMappingsService implements SharedService {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		File mixinMapping = new File(extension.getFiles().getProjectBuildCache(), "mixin-map-" + extension.getMappingsProvider().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
 
-		getService(SharedServiceManager.get(project)).mixinMappings.add(mixinMapping);
+		getService(SharedServiceManager.get(project), extension.getMinecraftProvider()).mixinMappings.add(mixinMapping);
 
 		return mixinMapping;
 	}
 
-	static synchronized MixinMappingsService getService(SharedServiceManager sharedServiceManager) {
-		return sharedServiceManager.getOrCreateService("MixinMappings", () -> new MixinMappingsService(sharedServiceManager));
+	static synchronized MixinMappingsService getService(SharedServiceManager sharedServiceManager, MinecraftProvider minecraftProvider) {
+		return sharedServiceManager.getOrCreateService("MixinMappings-" + minecraftProvider.minecraftVersion(), () -> new MixinMappingsService(sharedServiceManager));
 	}
 
 	IMappingProvider getMappingProvider(String from, String to) {

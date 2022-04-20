@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import net.fabricmc.loom.util.Architecture;
 import net.fabricmc.loom.util.OperatingSystem;
 
 @SuppressWarnings("unused")
@@ -85,7 +86,7 @@ public record MinecraftVersionMeta(
 				return false;
 			}
 
-			if (natives.get(OperatingSystem.CURRENT_OS) == null) {
+			if (classifierForOS() == null) {
 				return false;
 			}
 
@@ -93,7 +94,13 @@ public record MinecraftVersionMeta(
 		}
 
 		public Download classifierForOS() {
-			return downloads().classifier(natives.get(OperatingSystem.CURRENT_OS));
+			String classifier = natives.get(OperatingSystem.CURRENT_OS);
+
+			if (Architecture.CURRENT.isArm()) {
+				classifier += "-arm64";
+			}
+
+			return downloads().classifier(classifier);
 		}
 
 		public Download artifact() {

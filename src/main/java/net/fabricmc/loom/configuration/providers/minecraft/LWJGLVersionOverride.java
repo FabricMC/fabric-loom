@@ -37,7 +37,7 @@ import net.fabricmc.loom.util.Architecture;
 import net.fabricmc.loom.util.OperatingSystem;
 
 public class LWJGLVersionOverride {
-	public static final String LWJGL_VERSION = "3.3.0";
+	public static final String LWJGL_VERSION = "3.3.1";
 	@Nullable
 	public static final String NATIVE_CLASSIFIER = getNativesClassifier();
 
@@ -66,9 +66,15 @@ public class LWJGLVersionOverride {
 			return false;
 		}
 
-		return versionMeta.libraries().stream()
-				.map(MinecraftVersionMeta.Library::name)
-				.anyMatch(s -> s.startsWith("org.lwjgl:lwjgl:3"));
+		boolean supportedLwjglVersion = versionMeta.libraries().stream()
+				.anyMatch(library -> library.name().startsWith("org.lwjgl:lwjgl:3"));
+
+		boolean hasExistingNatives = versionMeta.libraries().stream()
+				.filter(library -> library.name().startsWith("org.lwjgl:lwjgl"))
+				.anyMatch(MinecraftVersionMeta.Library::hasNativesForOS);
+
+		// Is LWJGL 3, and doesn't have any existing compatible LWGL natives.
+		return supportedLwjglVersion && !hasExistingNatives;
 	}
 
 	public static boolean forceOverride(Project project) {

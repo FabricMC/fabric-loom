@@ -76,7 +76,7 @@ public class TinyRemapperService implements SharedService {
 			mappings.add(MappingsService.createDefault(project, from, to).getMappingsProvider());
 
 			if (legacyMixin) {
-				mappings.add(MixinMappingsService.getService(SharedServiceManager.get(project), extension.getMinecraftProvider()).getMappingProvider(from, to));
+				mappings.add(MixinMappingsService.getService(SharedServiceManager.get(project), extension.getMappingsProvider()).getMappingProvider(from, to));
 			}
 
 			return new TinyRemapperService(mappings, !legacyMixin, useKotlinExtension);

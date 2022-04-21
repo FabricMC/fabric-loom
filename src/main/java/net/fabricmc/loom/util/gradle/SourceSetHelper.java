@@ -56,9 +56,14 @@ public final class SourceSetHelper {
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {
-		return modSettings.getModSourceSets().get().stream()
+		final List<File> files = new ArrayList<>();
+
+		files.addAll(modSettings.getModSourceSets().get().stream()
 				.flatMap(sourceSet -> getClasspath(sourceSet, project).stream())
-				.toList();
+				.toList());
+		files.addAll(modSettings.getModFiles().getFiles());
+
+		return Collections.unmodifiableList(files);
 	}
 
 	public static List<File> getClasspath(SourceSet sourceSet, Project project) {

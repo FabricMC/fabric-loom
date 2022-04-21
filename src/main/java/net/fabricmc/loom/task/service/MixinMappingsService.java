@@ -31,6 +31,7 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -47,13 +48,13 @@ public final class MixinMappingsService implements SharedService {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		File mixinMapping = new File(extension.getFiles().getProjectBuildCache(), "mixin-map-" + extension.getMappingsProvider().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
 
-		getService(SharedServiceManager.get(project)).mixinMappings.add(mixinMapping);
+		getService(SharedServiceManager.get(project), extension.getMappingsProvider()).mixinMappings.add(mixinMapping);
 
 		return mixinMapping;
 	}
 
-	static synchronized MixinMappingsService getService(SharedServiceManager sharedServiceManager) {
-		return sharedServiceManager.getOrCreateService("MixinMappings", () -> new MixinMappingsService(sharedServiceManager));
+	static synchronized MixinMappingsService getService(SharedServiceManager sharedServiceManager, MappingsProviderImpl mappingsProvider) {
+		return sharedServiceManager.getOrCreateService("MixinMappings-" + mappingsProvider.mappingsIdentifier(), () -> new MixinMappingsService(sharedServiceManager));
 	}
 
 	IMappingProvider getMappingProvider(String from, String to) {

@@ -24,7 +24,7 @@ _This guide assumes you are using IntelliJ IDEA, other IDE's have not been teste
    * Add `mavenLocal()` to the repositories:
      * If you're using `id 'fabric-loom'` inside `plugins`, the correct `repositories` block is inside `pluginManagement` in settings.gradle
      * If you're using `apply plugin:` for Loom, the correct `repositories` block is inside `buildscript` in build.gradle
-   * Change the loom version to `0.6.local`. For example `id 'fabric-loom' version '0.6.local'`
+   * Change the loom version to `0.11.local`. For example `id 'fabric-loom' version '0.11.local'`
 4. Create a Gradle run configuration:
    * Set the Gradle project path to the project you have just configured above
    * Set some tasks to run, such as `clean build` you can change these to suit your needs.

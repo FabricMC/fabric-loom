@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -43,7 +42,7 @@ import java.util.Map;
  * invocations are mirrored.
  */
 public final class FileSystemHandler {
-	public static FileSystem open(URI uri, Map<String,?> env) throws IOException {
+	public static FileSystem open(URI uri, Map<String, ?> env) throws IOException {
 		synchronized (fsRefs) {
 			boolean opened = false;
 			FileSystem ret;
@@ -78,8 +77,10 @@ public final class FileSystemHandler {
 	public static void close(FileSystem fs) throws IOException {
 		synchronized (fsRefs) {
 			Integer count = fsRefs.get(fs);
-			if (count == null || count == 0)
+
+			if (count == null || count == 0) {
 				throw new IllegalStateException("fs " + fs + " never opened via FileSystemHandler");
+			}
 
 			boolean canClose = count > 0;
 			count -= Integer.signum(count);

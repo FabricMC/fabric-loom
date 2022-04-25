@@ -30,8 +30,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -40,7 +38,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class FileSystemUtil {
-	public record Delegate(FileSystem fs, boolean owner) implements AutoCloseable, Supplier<FileSystem> {
+	public record Delegate(FileSystem fs) implements AutoCloseable, Supplier<FileSystem> {
 		public byte[] readAllBytes(String path) throws IOException {
 			Path fsPath = get().getPath(path);
 
@@ -57,9 +55,7 @@ public final class FileSystemUtil {
 
 		@Override
 		public void close() throws IOException {
-			if (owner) {
-				fs.close();
-			}
+			FileSystemHandler.close(fs);
 		}
 
 		@Override
@@ -95,10 +91,7 @@ public final class FileSystemUtil {
 			throw new IOException(e);
 		}
 
-		try {
-			return new Delegate(FileSystems.newFileSystem(jarUri, create ? jfsArgsCreate : jfsArgsEmpty), true);
-		} catch (FileSystemAlreadyExistsException e) {
-			return new Delegate(FileSystems.getFileSystem(jarUri), false);
-		}
+		FileSystem fileSystem = FileSystemHandler.open(jarUri, create ? jfsArgsCreate : jfsArgsEmpty);
+		return new Delegate(fileSystem);
 	}
 }

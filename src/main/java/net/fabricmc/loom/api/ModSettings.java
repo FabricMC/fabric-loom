@@ -27,7 +27,7 @@ package net.fabricmc.loom.api;
 import javax.inject.Inject;
 
 import org.gradle.api.Named;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
@@ -45,11 +45,12 @@ public abstract class ModSettings implements Named {
 	/**
 	 * List of classpath directories, or jar files used to populate the `fabric.classPathGroups` Fabric Loader system property.
 	 */
-	public abstract FileCollection getModFiles();
+	public abstract ConfigurableFileCollection getModFiles();
 
 	@Inject
 	public ModSettings() {
 		getModSourceSets().finalizeValueOnRead();
+		getModFiles().finalizeValueOnRead();
 	}
 
 	/**

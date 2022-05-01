@@ -45,6 +45,7 @@ import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
+import net.fabricmc.loom.util.LibraryLocationLogger;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
 	public static boolean refreshDeps;
@@ -63,6 +64,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 
 	public void apply(Project project) {
 		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
+		LibraryLocationLogger.logLibraryVersions();
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
 

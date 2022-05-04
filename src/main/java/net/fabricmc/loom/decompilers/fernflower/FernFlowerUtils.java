@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,10 @@ package net.fabricmc.loom.decompilers.fernflower;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
+
+import net.fabricmc.loom.util.ZipUtils;
 
 public class FernFlowerUtils {
 	public static byte[] getBytecode(String externalPath, String internalPath) throws IOException {
@@ -38,15 +38,7 @@ public class FernFlowerUtils {
 		if (internalPath == null) {
 			return InterpreterUtil.getBytes(file);
 		} else {
-			try (ZipFile archive = new ZipFile(file)) {
-				ZipEntry entry = archive.getEntry(internalPath);
-
-				if (entry == null) {
-					throw new IOException("Entry not found: " + internalPath);
-				}
-
-				return InterpreterUtil.getBytes(archive, entry);
-			}
+			return ZipUtils.unpack(file.toPath(), internalPath);
 		}
 	}
 }

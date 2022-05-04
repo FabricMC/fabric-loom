@@ -75,6 +75,7 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
@@ -160,7 +161,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final MixinExtension mixinExtension = extension.getMixin();
 
-		final JsonObject fabricModJson = MixinRefmapHelper.readFabricModJson(getInputFile().getAsFile().get());
+		final JsonObject fabricModJson = ModUtils.getFabricModJson(getInputFile().getAsFile().get().toPath());
 
 		if (fabricModJson == null) {
 			getProject().getLogger().warn("Could not find fabric.mod.json file in: " + getInputFile().getAsFile().get().getName());

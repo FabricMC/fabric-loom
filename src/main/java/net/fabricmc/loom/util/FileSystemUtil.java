@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2017 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,17 +30,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import net.fabricmc.tinyremapper.FileSystemHandler;
+
 public final class FileSystemUtil {
-	public record Delegate(FileSystem fs, boolean owner) implements AutoCloseable, Supplier<FileSystem> {
+	public record Delegate(FileSystem fs) implements AutoCloseable, Supplier<FileSystem> {
 		public byte[] readAllBytes(String path) throws IOException {
 			Path fsPath = get().getPath(path);
 
@@ -57,9 +57,7 @@ public final class FileSystemUtil {
 
 		@Override
 		public void close() throws IOException {
-			if (owner) {
-				fs.close();
-			}
+			FileSystemHandler.close(fs);
 		}
 
 		@Override
@@ -70,9 +68,6 @@ public final class FileSystemUtil {
 
 	private FileSystemUtil() {
 	}
-
-	private static final Map<String, String> jfsArgsCreate = Map.of("create", "true");
-	private static final Map<String, String> jfsArgsEmpty = Collections.emptyMap();
 
 	public static Delegate getJarFileSystem(File file, boolean create) throws IOException {
 		return getJarFileSystem(file.toURI(), create);
@@ -95,10 +90,10 @@ public final class FileSystemUtil {
 			throw new IOException(e);
 		}
 
-		try {
-			return new Delegate(FileSystems.newFileSystem(jarUri, create ? jfsArgsCreate : jfsArgsEmpty), true);
-		} catch (FileSystemAlreadyExistsException e) {
-			return new Delegate(FileSystems.getFileSystem(jarUri), false);
+		if (create) {
+			FileSystems.newFileSystem(jarUri, Map.of("create", "true")).close();
 		}
+
+		return new Delegate(FileSystemHandler.open(jarUri));
 	}
 }

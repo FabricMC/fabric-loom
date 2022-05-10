@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit
 
 import net.fabricmc.loom.util.gradle.SourceSetHelper
+import net.fabricmc.loom.util.gradle.SourceSetReference
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
@@ -48,8 +49,9 @@ class SourceSetHelperTest extends Specification {
             mockProject.getRootDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getIdeaClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getIdeaClasspath(ref, mockProject)
 
         then:
             result.size() == 1
@@ -73,8 +75,9 @@ class SourceSetHelperTest extends Specification {
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getEclipseClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getEclipseClasspath(ref, mockProject)
 
         then:
             result.size() == 1
@@ -96,8 +99,9 @@ class SourceSetHelperTest extends Specification {
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getVscodeClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getVscodeClasspath(ref, mockProject)
 
         then:
             result.size() == 1

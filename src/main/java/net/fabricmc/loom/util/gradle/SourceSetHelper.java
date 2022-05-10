@@ -37,7 +37,13 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
+import org.gradle.api.internal.tasks.DefaultTaskDependency;
+import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
+import org.gradle.api.tasks.TaskProvider;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -52,6 +58,40 @@ public final class SourceSetHelper {
 	public static final String IDEA_OUTPUT_XPATH = "/project/component[@name='ProjectRootManager']/output/@url";
 
 	private SourceSetHelper() {
+	}
+
+	/**
+	 * Returns true when the provided project contains the {@link SourceSet}.
+	 */
+	public static boolean isSourceSetOfProject(SourceSet sourceSet, Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets().stream()
+				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
+	}
+
+	/**
+	 * Attempts to compute the owning project for the {@link SourceSet}
+	 *
+	 * <p>A bit of a hack, would be nice for this to be added to the Gradle API.
+	 */
+	public static Project getSourceSetProject(SourceSet sourceSet) {
+		final DefaultSourceSetOutput sourceSetOutput = (DefaultSourceSetOutput) sourceSet.getOutput();
+		final DefaultTaskDependency taskDependency = (DefaultTaskDependency) sourceSetOutput.getClassesContributors();
+		Project project = null;
+
+		for (Object object : taskDependency.getMutableValues()) {
+			if (object instanceof Task task) {
+				project = task.getProject();
+			} else if (object instanceof TaskProvider<?> provider) {
+				project = provider.get().getProject();
+			}
+		}
+
+		if (project == null) {
+			throw new NullPointerException("Unable to determine owning project for SourceSet: " + sourceSet.getName());
+		}
+
+		return project;
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util.gradle;
 
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 
@@ -31,4 +32,10 @@ import org.gradle.api.tasks.SourceSet;
  * A reference to a {@link SourceSet} from a {@link Project}.
  */
 public record SourceSetReference(SourceSet sourceSet, Project project) {
+	public SourceSetReference {
+		Preconditions.checkArgument(
+				SourceSetHelper.isSourceSetOfProject(sourceSet, project),
+				"SourceSet (%s) does not own to (%s) project".formatted(sourceSet.getName(), project.getName())
+		);
+	}
 }

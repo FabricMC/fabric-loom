@@ -44,9 +44,17 @@ allprojects {
 	}
 }
 
-subprojects { p ->
-	loom.mods.register(p.name) {
-		sourceSet(p.sourceSets.main, p)
+loom {
+	mods {
+		core {
+			sourceSet project(':core').sourceSets.main
+		}
+		example {
+			sourceSet project(':example').sourceSets.main
+		}
+		root {
+			sourceSet sourceSets.main
+		}
 	}
 }
 

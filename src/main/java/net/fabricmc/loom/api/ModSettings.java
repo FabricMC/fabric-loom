@@ -33,6 +33,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 /**
@@ -55,7 +56,18 @@ public abstract class ModSettings implements Named {
 	 * Add {@link SourceSet}'s output directories  from the current project to be grouped with the named mod.
 	 */
 	public void sourceSet(SourceSet sourceSet) {
-		sourceSet(sourceSet, getProject());
+		Project project = getProject();
+
+		if (!SourceSetHelper.isSourceSetOfProject(sourceSet, project)) {
+			getProject().getLogger().info("Computing owner project for SourceSet {} as it is not a sourceset of {}", sourceSet.getName(), project.getPath());
+			project = SourceSetHelper.getSourceSetProject(sourceSet);
+
+			if (project == getProject()) {
+				throw new IllegalStateException("isSourceSetOfProject lied, report to loom devs.");
+			}
+		}
+
+		sourceSet(sourceSet, project);
 	}
 
 	/**

@@ -42,7 +42,12 @@ allprojects {
 	java {
 		withSourcesJar()
 	}
+}
 
+subprojects { p ->
+	loom.mods.register(p.name) {
+		sourceSet(p.sourceSets.main, p)
+	}
 }
 
 dependencies {

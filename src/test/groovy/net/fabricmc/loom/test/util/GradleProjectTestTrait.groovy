@@ -48,6 +48,11 @@ trait GradleProjectTestTrait {
 
         setupProject(options, projectDir)
 
+        println([
+            projectDir: projectDir.absolutePath,
+            gradleHomeDir: gradleHomeDir.absolutePath
+        ])
+
         return new GradleProject(
                 gradleVersion: gradleVersion,
                 projectDir: projectDir.absolutePath,

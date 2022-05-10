@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2020-2021 FabricMC
+ * Copyright (c) 2020-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -99,7 +99,9 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	}
 
 	// Pulled out from the internal class: https://github.com/JetBrains/kotlin/blob/33a0ec9b4f40f3d6f1f96b2db504ade4c2fafe03/libraries/tools/kotlin-gradle-plugin/src/main/kotlin/org/jetbrains/kotlin/gradle/internal/kapt/Kapt3KotlinGradleSubplugin.kt#L92
-	private static String getKaptConfigurationName(String sourceSetName) {
+	private static String getKaptConfigurationName(SourceSet sourceSet) {
+		String sourceSetName = sourceSet.getName();
+
 		if (!sourceSetName.equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
 			return "kapt" + (sourceSetName.substring(0, 1).toUpperCase() + sourceSetName.substring(1));
 		}

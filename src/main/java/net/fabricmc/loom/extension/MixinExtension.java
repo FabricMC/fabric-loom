@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2017 FabricMC
+ * Copyright (c) 2016-2012 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -78,7 +78,7 @@ public interface MixinExtension extends MixinExtensionAPI {
 	Stream<SourceSet> getMixinSourceSetsStream();
 
 	@NotNull
-	Stream<Configuration> getApConfigurationsStream(Function<String, String> getApConfigNameFunc);
+	Stream<Configuration> getApConfigurationsStream(Function<SourceSet, String> getApConfigNameFunc);
 
 	@NotNull
 	Stream<Map.Entry<SourceSet, Task>> getInvokerTasksStream(String compileTaskLanguage);

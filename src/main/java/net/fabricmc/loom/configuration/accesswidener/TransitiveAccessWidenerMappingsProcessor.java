@@ -67,7 +67,7 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(name);
 
 			if (classMapping == null) {
-				logger.warn("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
+				logger.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
 				return;
 			}
 
@@ -82,14 +82,14 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
 
 			if (classMapping == null) {
-				logger.warn("Failed to find class ({}) to mark access widened by mod ({})", owner, modId());
+				logger.info("Failed to find class ({}) to mark access widened by mod ({})", owner, modId());
 				return;
 			}
 
 			MappingTree.MethodMapping methodMapping = classMapping.getMethod(name, descriptor);
 
 			if (methodMapping == null) {
-				logger.warn("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
+				logger.info("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
 				return;
 			}
 
@@ -104,14 +104,14 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
 
 			if (classMapping == null) {
-				logger.warn("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
+				logger.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
 				return;
 			}
 
 			MappingTree.FieldMapping fieldMapping = classMapping.getField(name, descriptor);
 
 			if (fieldMapping == null) {
-				logger.warn("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
+				logger.info("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
 				return;
 			}
 

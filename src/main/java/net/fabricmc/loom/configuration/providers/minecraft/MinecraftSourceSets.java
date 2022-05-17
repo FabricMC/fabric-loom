@@ -195,11 +195,6 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 							.plus(mainSourceSet.getOutput())
 			);
 
-			loomExtension.mixin(mixinExtension -> {
-				// Generate a refmap for mixins in the new source set.
-				mixinExtension.add(clientOnlySourceSet, "client-" + mixinExtension.getDefaultRefmapName().get(), (p) -> { });
-			});
-
 			// Include the client only output in the jars
 			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());

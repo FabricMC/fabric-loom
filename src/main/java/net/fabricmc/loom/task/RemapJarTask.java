@@ -75,6 +75,7 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
@@ -241,7 +242,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					LOGGER.error("Failed to delete output file", ex);
 				}
 
-				throw new RuntimeException("Failed to remap", e);
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
 			}
 		}
 

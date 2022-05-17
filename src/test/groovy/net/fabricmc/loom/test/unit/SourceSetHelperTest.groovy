@@ -31,11 +31,13 @@ import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.util.environment.RestoreSystemProperties
 
 class SourceSetHelperTest extends Specification {
     @Shared
     private static File projectDir = File.createTempDir()
 
+    @RestoreSystemProperties
     def "idea classpath"() {
         given:
             def miscXml = new File(projectDir, ".idea/misc.xml")
@@ -49,6 +51,8 @@ class SourceSetHelperTest extends Specification {
             mockProject.getRootDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            System.setProperty("fabric-loom.unit.testing", "true")
+
             def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
             def result = SourceSetHelper.getIdeaClasspath(ref, mockProject)
@@ -60,6 +64,7 @@ class SourceSetHelperTest extends Specification {
             println(result[0].toString())
     }
 
+    @RestoreSystemProperties
     def "eclipse classpath"() {
         given:
             def classpath = new File(projectDir, ".classpath")
@@ -75,6 +80,8 @@ class SourceSetHelperTest extends Specification {
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            System.setProperty("fabric-loom.unit.testing", "true")
+
             def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
             def result = SourceSetHelper.getEclipseClasspath(ref, mockProject)
@@ -84,6 +91,7 @@ class SourceSetHelperTest extends Specification {
             println(result[0].toString())
     }
 
+    @RestoreSystemProperties
     def "vscode classpath"() {
         given:
             def dotVscode = new File(projectDir, ".vscode")
@@ -98,6 +106,8 @@ class SourceSetHelperTest extends Specification {
             mockProject.getName() >> "UnitTest"
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
+
+            System.setProperty("fabric-loom.unit.testing", "true")
 
             def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:

@@ -167,7 +167,13 @@ public final class SourceSetHelper {
 		final XPath xpath = XPathFactory.newInstance().newXPath();
 
 		try (FileInputStream fis = new FileInputStream(file)) {
-			return xpath.evaluate(expression, new InputSource(fis));
+			String result = xpath.evaluate(expression, new InputSource(fis));
+
+			if (result.isEmpty()) {
+				return null;
+			}
+
+			return result;
 		} catch (XPathExpressionException e) {
 			return null;
 		} catch (IOException e) {

@@ -54,9 +54,6 @@ public final class LoomTasks {
 
 		RemapTaskConfiguration.setupRemap(project);
 
-		tasks.register("extractNatives", ExtractNativesTask.class, t -> {
-			t.setDescription("Extracts the minecraft platform specific natives.");
-		});
 		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
 			t.setDescription("Downloads required assets for Fabric.");
 		});
@@ -80,7 +77,6 @@ public final class LoomTasks {
 		});
 
 		tasks.register("configureClientLaunch", task -> {
-			task.dependsOn(tasks.named("extractNatives"));
 			task.dependsOn(tasks.named("downloadAssets"));
 			task.dependsOn(tasks.named("configureLaunch"));
 

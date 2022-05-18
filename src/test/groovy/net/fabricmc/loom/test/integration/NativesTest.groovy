@@ -83,4 +83,34 @@ class NativesTest extends Specification implements GradleProjectTestTrait  {
         where:
             version << STANDARD_TEST_VERSIONS
     }
+
+    @RestoreSystemProperties
+    @Unroll
+    def "1.19 classpath natives (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "minimalBase", version: version)
+
+            gradle.buildGradle << '''
+                loom {
+                    noIntermediateMappings()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.19-pre1"
+                    mappings loom.layered() {
+                        // No names
+                    }
+                }
+                '''
+
+        when:
+            // Run the task twice to ensure its up to date
+            def result = gradle.run(task: "build")
+
+        then:
+            result.task(":build").outcome == SUCCESS
+
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

@@ -122,9 +122,19 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	@Override
 	public void init() {
 		if (isDefault) {
-			project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().forEach(this::add);
+			initDefault();
 		}
 
 		isDefault = false;
+	}
+
+	private void initDefault() {
+		project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().forEach(sourceSet -> {
+			if (sourceSet.getName().equals("main")) {
+				add(sourceSet);
+			} else {
+				add(sourceSet, sourceSet.getName() + "-" + getDefaultRefmapName().get());
+			}
+		});
 	}
 }

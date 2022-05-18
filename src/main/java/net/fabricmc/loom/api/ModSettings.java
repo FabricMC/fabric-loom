@@ -27,21 +27,20 @@ package net.fabricmc.loom.api;
 import javax.inject.Inject;
 
 import org.gradle.api.Named;
+import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
+
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 /**
  * A {@link Named} object for setting mod-related values. The {@linkplain Named#getName() name} should match the mod id.
  */
 @ApiStatus.Experimental
 public abstract class ModSettings implements Named {
-	/**
-	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
-	 */
-	public abstract ListProperty<SourceSet> getModSourceSets();
-
 	/**
 	 * List of classpath directories, or jar files used to populate the `fabric.classPathGroups` Fabric Loader system property.
 	 */
@@ -54,9 +53,37 @@ public abstract class ModSettings implements Named {
 	}
 
 	/**
-	 * Mark a {@link SourceSet} output directories part of the named mod.
+	 * Add {@link SourceSet}'s output directories  from the current project to be grouped with the named mod.
 	 */
 	public void sourceSet(SourceSet sourceSet) {
-		getModSourceSets().add(sourceSet);
+		Project project = getProject();
+
+		if (!SourceSetHelper.isSourceSetOfProject(sourceSet, project)) {
+			getProject().getLogger().info("Computing owner project for SourceSet {} as it is not a sourceset of {}", sourceSet.getName(), project.getPath());
+			project = SourceSetHelper.getSourceSetProject(sourceSet);
+
+			if (project == getProject()) {
+				throw new IllegalStateException("isSourceSetOfProject lied, report to loom devs.");
+			}
+		}
+
+		sourceSet(sourceSet, project);
 	}
+
+	/**
+	 * Add {@link SourceSet}'s output directories from supplied project to be grouped with the named mod.
+	 */
+	public void sourceSet(SourceSet sourceSet, Project project) {
+		getModSourceSets().add(new SourceSetReference(sourceSet, project));
+	}
+
+	/**
+	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
+	 * Use the {@link ModSettings#sourceSet} methods to add to this.
+	 */
+	@ApiStatus.Internal
+	public abstract ListProperty<SourceSetReference> getModSourceSets();
+
+	@Inject
+	public abstract Project getProject();
 }

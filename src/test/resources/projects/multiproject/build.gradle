@@ -42,7 +42,20 @@ allprojects {
 	java {
 		withSourcesJar()
 	}
+}
 
+loom {
+	mods {
+		core {
+			sourceSet project(':core').sourceSets.main
+		}
+		example {
+			sourceSet project(':example').sourceSets.main
+		}
+		root {
+			sourceSet sourceSets.main
+		}
+	}
 }
 
 dependencies {

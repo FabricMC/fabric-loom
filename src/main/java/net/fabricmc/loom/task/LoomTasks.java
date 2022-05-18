@@ -59,6 +59,10 @@ public final class LoomTasks {
 		});
 		tasks.register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");
+
+			// Must allow these IDE files to be generated first
+			t.mustRunAfter(tasks.named("eclipse"));
+			t.mustRunAfter(tasks.named("idea"));
 		});
 		tasks.register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
 			t.setDescription("Generate the log4j config file");

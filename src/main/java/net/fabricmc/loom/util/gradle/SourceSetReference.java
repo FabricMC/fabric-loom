@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,39 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.ide.idea;
+package net.fabricmc.loom.util.gradle;
 
-import java.util.Objects;
-
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.util.gradle.SourceSetReference;
-
-public class IdeaUtils {
-	public static boolean isIdeaSync() {
-		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
-	}
-
-	public static String getIdeaVersion() {
-		return Objects.requireNonNull(System.getProperty("idea.version"), "Could not get idea version");
-	}
-
-	// 2021.3 or newer
-	public static boolean supportsCustomizableClasspath() {
-		final String[] split = getIdeaVersion().split("\\.");
-		final int major = Integer.parseInt(split[0]);
-		final int minor = Integer.parseInt(split[1]);
-		return major > 2021 || (major == 2021 && minor >= 3);
-	}
-
-	public static String getIdeaModuleName(SourceSetReference reference) {
-		Project project = reference.project();
-		String module = project.getName() + "." + reference.sourceSet().getName();
-
-		while ((project = project.getParent()) != null) {
-			module = project.getName() + "." + module;
-		}
-
-		return module;
+/**
+ * A reference to a {@link SourceSet} from a {@link Project}.
+ */
+public record SourceSetReference(SourceSet sourceSet, Project project) {
+	public SourceSetReference {
+		Preconditions.checkArgument(
+				SourceSetHelper.isSourceSetOfProject(sourceSet, project),
+				"SourceSet (%s) does not own to (%s) project".formatted(sourceSet.getName(), project.getName())
+		);
 	}
 }

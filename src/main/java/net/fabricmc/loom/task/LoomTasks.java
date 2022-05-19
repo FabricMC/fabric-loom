@@ -34,7 +34,6 @@ import org.gradle.api.tasks.TaskProvider;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
@@ -155,17 +154,6 @@ public final class LoomTasks {
 			}
 
 			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
-		});
-
-		// Configure the run config source sets.
-		project.afterEvaluate(p -> {
-			if (!extension.areEnvironmentSourceSetsSplit()) {
-				return;
-			}
-
-			extension.getRunConfigs().configureEach(settings ->
-					settings.source(MinecraftSourceSets.get(project).getSourceSetForEnv(settings.getEnvironment()))
-			);
 		});
 	}
 

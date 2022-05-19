@@ -48,7 +48,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                 val klass = metadata.toKmClass()
                 val writer = KotlinClassMetadata.Class.Writer()
                 klass.accept(RemappingKmVisitors(remapper).RemappingKmClassVisitor(writer))
-                writeClassHeader(writer.write().header)
+                writeClassHeader(writer.write(extraInt = metadata.header.extraInt).header)
             }
             is KotlinClassMetadata.SyntheticClass -> {
                 val klambda = metadata.toKmLambda()
@@ -56,7 +56,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                 if (klambda != null) {
                     val writer = KotlinClassMetadata.SyntheticClass.Writer()
                     klambda.accept(RemappingKmVisitors(remapper).RemappingKmLambdaVisitor(writer))
-                    writeClassHeader(writer.write().header)
+                    writeClassHeader(writer.write(extraInt = metadata.header.extraInt).header)
                 } else {
                     accept(next)
                 }

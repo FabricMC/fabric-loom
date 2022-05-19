@@ -56,9 +56,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 			serverResult.successful()
 			serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
 		where:
-			version              | _
-			DEFAULT_GRADLE       | _
-			PRE_RELEASE_GRADLE   | _
+			version << STANDARD_TEST_VERSIONS
 	}
 
 	@Unroll

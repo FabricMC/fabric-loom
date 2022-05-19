@@ -27,8 +27,22 @@ package net.fabricmc.loom.test
 import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
-    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-    public final static String PRE_RELEASE_GRADLE = "7.6-20220516224938+0000"
+    private final static String NIGHTLY_VERSION = "7.6-20220519002827+0000"
+    private final static boolean NIGHTLY_EXISTS = nightlyExists(NIGHTLY_VERSION)
 
-    public final static String[] STANDARD_TEST_VERSIONS = [DEFAULT_GRADLE, PRE_RELEASE_GRADLE]
+    public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
+    // Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
+    public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? "7.6-20220516224938+0000" : DEFAULT_GRADLE
+    public final static String[] STANDARD_TEST_VERSIONS = NIGHTLY_EXISTS ? [DEFAULT_GRADLE, PRE_RELEASE_GRADLE] : [DEFAULT_GRADLE]
+
+    /**
+     * Nightly gradle versions get removed after a certain amount of time, lets check to see if its still online before running the tests.
+     */
+    private static boolean nightlyExists(String version) {
+        def url = "https://services.gradle.org/distributions-snapshots/gradle-${version}-bin.zip"
+        def con = new URL(url).openConnection() as HttpURLConnection
+        con.setRequestMethod("HEAD") // No need to request the whole file.
+
+        return con.getResponseCode() == HttpURLConnection.HTTP_OK
+    }
 }

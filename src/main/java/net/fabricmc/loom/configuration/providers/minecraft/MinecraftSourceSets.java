@@ -37,6 +37,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split {
@@ -199,6 +200,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
+			});
+
+			// Remap with the client compile classpath.
+			project.getTasks().withType(AbstractRemapJarTask.class).configureEach(remapJarTask -> {
+				remapJarTask.getClasspath().from(
+						project.getConfigurations().getByName(clientOnlySourceSet.getCompileClasspathConfigurationName())
+				);
 			});
 
 			if (project.getTasks().findByName(mainSourceSet.getSourcesJarTaskName()) == null) {

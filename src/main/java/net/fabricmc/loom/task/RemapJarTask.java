@@ -93,6 +93,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	public abstract Property<Boolean> getAddNestedDependencies();
 
+	@Input
+	public abstract Property<Boolean> getIncludesClientOnlyClasses();
+
 	private Supplier<TinyRemapperService> tinyRemapperService = Suppliers.memoize(() -> TinyRemapperService.getOrCreate(this));
 
 	@Inject
@@ -101,6 +104,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
+		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
@@ -144,7 +148,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				setupLegacyMixinRefmapRemapping(params);
 			}
 
-			if (extension.areEnvironmentSourceSetsSplit()) {
+			if (getIncludesClientOnlyClasses().get()) {
+				if (!extension.areEnvironmentSourceSetsSplit()) {
+					throw new UnsupportedOperationException("Jar cannot include client only classes as the sources are not split");
+				}
+
 				final List<String> clientOnlyJarEntries = getClientOnlyJarEntries();
 				params.getManifestAttributes().set(Map.of(
 						"Fabric-Loom-Split-Environment", "true",

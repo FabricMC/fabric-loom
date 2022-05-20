@@ -29,13 +29,10 @@ import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ExternalModuleDependency;
-import org.gradle.api.tasks.TaskContainer;
-import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.task.ExtractNativesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
@@ -57,15 +54,7 @@ public class MinecraftLibraryProvider {
 		}
 
 		if (versionInfo.hasNativesToExtract()) {
-			final TaskContainer tasks = project.getTasks();
-
 			extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
-
-			TaskProvider<ExtractNativesTask> extractNativesTask = tasks.register("extractNatives", ExtractNativesTask.class, t -> {
-				t.setDescription("Extracts the minecraft platform specific natives.");
-			});
-
-			tasks.named("configureClientLaunch", configureClientLaunch -> configureClientLaunch.dependsOn(extractNativesTask));
 		}
 
 		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {

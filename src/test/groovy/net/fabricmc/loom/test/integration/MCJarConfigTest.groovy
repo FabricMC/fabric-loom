@@ -50,7 +50,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
         when:
-            def result = gradle.run(task: "build")
+            def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
         then:
             result.task(":build").outcome == SUCCESS
@@ -77,7 +77,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
         when:
-            def result = gradle.run(task: "build")
+            def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
         then:
             result.task(":build").outcome == SUCCESS
@@ -104,7 +104,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
         when:
-        def result = gradle.run(task: "build")
+        def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
         then:
         result.task(":build").outcome == SUCCESS
@@ -131,7 +131,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
         when:
-        def result = gradle.run(task: "build")
+        def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
         then:
         result.task(":build").outcome == SUCCESS

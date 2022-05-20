@@ -52,10 +52,6 @@ public final class LoomTasks {
 		});
 
 		RemapTaskConfiguration.setupRemap(project);
-
-		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
-			t.setDescription("Downloads required assets for Fabric.");
-		});
 		tasks.register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");
 
@@ -79,14 +75,6 @@ public final class LoomTasks {
 			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
-		tasks.register("configureClientLaunch", task -> {
-			task.dependsOn(tasks.named("downloadAssets"));
-			task.dependsOn(tasks.named("configureLaunch"));
-
-			task.setDescription("Setup the required files to launch the Minecraft client");
-			task.setGroup(Constants.TaskGroup.FABRIC);
-		});
-
 		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
 			t.setDescription("Validate all the rules in the access widener against the Minecraft jar");
 			t.setGroup("verification");
@@ -96,6 +84,18 @@ public final class LoomTasks {
 
 		registerIDETasks(tasks);
 		registerRunTasks(tasks, project);
+
+		// Must be done in afterEvaluate to allow time for the build script to configure the jar config.
+		project.afterEvaluate(p -> {
+			LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
+				// Server only, nothing more to do.
+				return;
+			}
+
+			registerClientSetupTasks(project.getTasks(), extension.getMinecraftProvider().getVersionInfo().hasNativesToExtract());
+		});
 	}
 
 	private static void registerIDETasks(TaskContainer tasks) {
@@ -154,6 +154,30 @@ public final class LoomTasks {
 			}
 
 			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
+		});
+	}
+
+	private static void registerClientSetupTasks(TaskContainer tasks, boolean extractNatives) {
+		tasks.register("downloadAssets", DownloadAssetsTask.class, t -> {
+			t.setDescription("Downloads required game assets for Minecraft.");
+		});
+
+		if (extractNatives) {
+			tasks.register("extractNatives", ExtractNativesTask.class, t -> {
+				t.setDescription("Extracts the Minecraft platform specific natives.");
+			});
+		}
+
+		tasks.register("configureClientLaunch", task -> {
+			task.dependsOn(tasks.named("downloadAssets"));
+			task.dependsOn(tasks.named("configureLaunch"));
+
+			if (extractNatives) {
+				task.dependsOn(tasks.named("extractNatives"));
+			}
+
+			task.setDescription("Setup the required files to launch the Minecraft client");
+			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 	}
 

@@ -140,7 +140,11 @@ public class RunConfig {
 			configName = "";
 			String srcName = sourceSet.getName();
 
-			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+			final boolean isSplitClientSourceSet = extension.areEnvironmentSourceSetsSplit()
+					&& srcName.equals("client")
+					&& environment.equals("client");
+
+			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
 				configName += capitalizeCamelCaseName(srcName) + " ";
 			}
 

@@ -130,7 +130,9 @@ public final class SourceRemapperService implements SharedService {
 		}
 
 		for (File file : classpath.getFiles()) {
-			mercury.getClassPath().add(file.toPath());
+			if (file.exists()) {
+				mercury.getClassPath().add(file.toPath());
+			}
 		}
 
 		return mercury;

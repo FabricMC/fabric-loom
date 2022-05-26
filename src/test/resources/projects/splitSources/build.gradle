@@ -6,8 +6,21 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
 
+configurations {
+	shade
+}
+
 loom {
 	splitEnvironmentSourceSets()
+
+	mods {
+		modid {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+
+			configuration configurations.shade
+		}
+	}
 }
 
 dependencies {
@@ -16,6 +29,8 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:0.13.3"
 
 	modImplementation "net.fabricmc.fabric-api:fabric-api:0.47.8+1.18.2"
+
+	shade "com.googlecode.json-simple:json-simple:1.1.1"
 }
 
 tasks.withType(JavaCompile).configureEach {

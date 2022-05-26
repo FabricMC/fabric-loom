@@ -28,6 +28,8 @@ import javax.inject.Inject;
 
 import org.gradle.api.Named;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
@@ -75,6 +77,23 @@ public abstract class ModSettings implements Named {
 	 */
 	public void sourceSet(SourceSet sourceSet, Project project) {
 		getModSourceSets().add(new SourceSetReference(sourceSet, project));
+	}
+
+	/**
+	 * Add a number of {@link Dependency} to the mod's classpath group. Should be used to include all dependencies that are shaded into your mod.
+	 *
+	 * <p>Uses a detached configuration.
+	 */
+	public void dependency(Dependency... dependencies) {
+		Configuration detachedConfiguration = getProject().getConfigurations().detachedConfiguration(dependencies);
+		configuration(detachedConfiguration);
+	}
+
+	/**
+	 * Add a {@link Configuration} to the mod's classpath group. Should be used to include all dependencies that are shaded into your mod.
+	 */
+	public void configuration(Configuration configuration) {
+		getModFiles().from(configuration);
 	}
 
 	/**

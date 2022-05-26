@@ -40,7 +40,7 @@ class KotlinRemapperClassloaderTest extends Specification {
     private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
     private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-metadata-jvm/${KOTLIN_METADATA_VERSION}/kotlinx-metadata-jvm-${KOTLIN_METADATA_VERSION}.jar"
 
-    def "Test Koltin Remapper Classloader"() {
+    def "Test Kotlin Remapper Classloader"() {
         given:
             def classLoader = KotlinRemapperClassloader.create(new TestKotlinClasspath())
             def mockTrClass = Mock(TrClass)

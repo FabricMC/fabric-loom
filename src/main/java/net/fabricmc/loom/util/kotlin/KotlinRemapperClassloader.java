@@ -34,7 +34,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtensionImpl;
 
 /**
- * Used to run the Kotlin remapper with a specific version of Koltin that may not match the kotlin version included with gradle.
+ * Used to run the Kotlin remapper with a specific version of Kotlin that may not match the kotlin version included with gradle.
  */
 public class KotlinRemapperClassloader extends URLClassLoader {
 	// Packages that should be loaded from the gradle plugin classloader.

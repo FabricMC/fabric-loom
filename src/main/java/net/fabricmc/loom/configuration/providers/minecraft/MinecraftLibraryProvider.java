@@ -46,14 +46,15 @@ public class MinecraftLibraryProvider {
 		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 		final boolean runtimeOnlyLog4j = extension.getRuntimeOnlyLog4j().get();
 
-		final boolean overrideLWJGL = LWJGLVersionOverride.overrideByDefault(versionInfo) || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride");
+		final boolean hasNativesToExtract = versionInfo.hasNativesToExtract();
+		final boolean overrideLWJGL = hasNativesToExtract && (LWJGLVersionOverride.overrideByDefault(versionInfo) || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride"));
 		final boolean isMacOS = OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS);
 
 		if (overrideLWJGL) {
 			project.getLogger().warn("Loom is upgrading Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
 		}
 
-		if (versionInfo.hasNativesToExtract()) {
+		if (hasNativesToExtract) {
 			extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
 		}
 

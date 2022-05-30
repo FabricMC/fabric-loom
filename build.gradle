@@ -285,8 +285,11 @@ task writeActionsTestMatrix() {
 			}
 		}
 
-		// Run all the unit tests togeather
+		// Run all the unit tests together
 		testMatrix.add("net.fabricmc.loom.test.unit.*")
+
+		// Kotlin tests
+		testMatrix.add("net.fabricmc.loom.test.kotlin.*")
 
 		def json = groovy.json.JsonOutput.toJson(testMatrix)
 		def output = file("build/test_matrix.json")

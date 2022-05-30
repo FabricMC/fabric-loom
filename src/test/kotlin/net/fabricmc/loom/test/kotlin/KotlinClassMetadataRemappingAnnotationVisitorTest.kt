@@ -71,8 +71,6 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
 
         println(d2In)
         println(d2Out)
-
-        assertEquals(d2In.size, d2Out.size)
     }
 
     @Test
@@ -95,8 +93,6 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
 
         println(d2In)
         println(d2Out)
-
-        assertEquals(d2In.size, d2Out.size)
     }
 
     private fun getClassBytes(name: String): ByteArray {

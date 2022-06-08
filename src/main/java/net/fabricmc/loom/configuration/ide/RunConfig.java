@@ -256,6 +256,14 @@ public class RunConfig {
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {
+		if (true) {
+			/*
+				This whole excluded libraries idea breaks down when the server library version does not match the client.
+				This is a quick change to disable it meanwhile a proper solution is sorted.
+			 */
+			return Collections.emptyList();
+		}
+
 		if (!environment.equals("server")) {
 			return Collections.emptyList();
 		}

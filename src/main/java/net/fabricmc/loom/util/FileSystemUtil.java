@@ -27,14 +27,11 @@ package net.fabricmc.loom.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import net.fabricmc.tinyremapper.FileSystemReference;
@@ -87,18 +84,6 @@ public final class FileSystemUtil {
 	}
 
 	public static Delegate getJarFileSystem(URI uri, boolean create) throws IOException {
-		URI jarUri;
-
-		try {
-			jarUri = new URI("jar:" + uri.getScheme(), uri.getHost(), uri.getPath(), uri.getFragment());
-		} catch (URISyntaxException e) {
-			throw new IOException(e);
-		}
-
-		if (create) {
-			FileSystems.newFileSystem(jarUri, Map.of("create", "true")).close();
-		}
-
-		return new Delegate(FileSystemReference.open(jarUri, create));
+		return new Delegate(FileSystemReference.open(uri, create));
 	}
 }

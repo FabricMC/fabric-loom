@@ -22,39 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.kotlin;
+package net.fabricmc.loom.util.gradle;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import kotlinx.metadata.jvm.KotlinClassMetadata;
+import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
 
-public class KotlinPluginUtils {
-	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
-	private static final Pattern VERSION_PATTERN = Pattern.compile("\\((.*?)\\)");
-
-	public static boolean hasKotlinPlugin(Project project) {
-		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
-	}
-
-	public static String getKotlinPluginVersion(Project project) {
-		final Class<?> kotlinPluginClass = project.getPlugins().getPlugin(KOTLIN_PLUGIN_ID).getClass();
-		/*
-			1.7.0-RC-release-217(1.7.0-RC)
-			1.6.21-release-334(1.6.21)
-		 */
-		final String implVersion = kotlinPluginClass.getPackage().getImplementationVersion();
-		final Matcher matcher = VERSION_PATTERN.matcher(implVersion);
-
-		if (!matcher.find()) {
-			throw new IllegalStateException("Unable to match Kotlin version from: " + implVersion);
-		}
-
-		return matcher.group(1);
-	}
-
-	public static String getKotlinMetadataVersion() {
-		return KotlinClassMetadata.class.getPackage().getImplementationVersion();
+/**
+ * A reference to a {@link SourceSet} from a {@link Project}.
+ */
+public record SourceSetReference(SourceSet sourceSet, Project project) {
+	public SourceSetReference {
+		Preconditions.checkArgument(
+				SourceSetHelper.isSourceSetOfProject(sourceSet, project),
+				"SourceSet (%s) does not own to (%s) project".formatted(sourceSet.getName(), project.getName())
+		);
 	}
 }

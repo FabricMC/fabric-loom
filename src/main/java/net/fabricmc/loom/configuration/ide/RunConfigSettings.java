@@ -38,6 +38,7 @@ import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
@@ -103,7 +104,11 @@ public final class RunConfigSettings implements Named {
 		this.extension = LoomGradleExtension.get(project);
 		this.ideConfigGenerated = extension.isRootProject();
 
-		source("main");
+		setSource(p -> {
+			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
+			return p.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(sourceSetName);
+		});
+
 		runDir("run");
 	}
 

@@ -68,7 +68,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 		this.invokerTasks = invokerTasks;
 	}
 
-	protected static Collection<Configuration> getApConfigurations(Project project, Function<String, String> getApConfigNameFunc) {
+	protected static Collection<Configuration> getApConfigurations(Project project, Function<SourceSet, String> getApConfigNameFunc) {
 		MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 		return mixin.getApConfigurationsStream(getApConfigNameFunc).collect(Collectors.toList());
 	}

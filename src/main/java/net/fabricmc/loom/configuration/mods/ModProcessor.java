@@ -102,7 +102,7 @@ public class ModProcessor {
 		// Check all the mods we expect exist
 		for (ModDependencyInfo info : processList) {
 			if (!info.getRemappedOutput().exists()) {
-				throw new RuntimeException("Failed to find remapped mod" + info);
+				throw new RuntimeException("Failed to find remapped mod: " + info);
 			}
 		}
 	}

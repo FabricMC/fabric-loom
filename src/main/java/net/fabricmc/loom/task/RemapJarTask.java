@@ -75,6 +75,7 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.SidedClassVisitor;
@@ -93,6 +94,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	public abstract Property<Boolean> getAddNestedDependencies();
 
+	@Input
+	public abstract Property<Boolean> getIncludesClientOnlyClasses();
+
 	private Supplier<TinyRemapperService> tinyRemapperService = Suppliers.memoize(() -> TinyRemapperService.getOrCreate(this));
 
 	@Inject
@@ -101,6 +105,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
+		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
@@ -118,7 +123,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			project.getTasks().configureEach(task -> {
 				if (task instanceof PrepareJarRemapTask otherTask) {
 					// Ensure that all remap jars run after all prepare tasks
-					dependsOn(otherTask);
 					mustRunAfter(otherTask);
 				}
 			});
@@ -145,7 +149,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				setupLegacyMixinRefmapRemapping(params);
 			}
 
-			if (extension.areEnvironmentSourceSetsSplit()) {
+			if (getIncludesClientOnlyClasses().get()) {
+				if (!extension.areEnvironmentSourceSetsSplit()) {
+					throw new UnsupportedOperationException("Jar cannot include client only classes as the sources are not split");
+				}
+
 				final List<String> clientOnlyJarEntries = getClientOnlyJarEntries();
 				params.getManifestAttributes().set(Map.of(
 						"Fabric-Loom-Split-Environment", "true",
@@ -243,7 +251,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					LOGGER.error("Failed to delete output file", ex);
 				}
 
-				throw new RuntimeException("Failed to remap", e);
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
 			}
 		}
 

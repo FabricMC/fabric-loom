@@ -37,8 +37,13 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
+import org.gradle.api.internal.tasks.DefaultTaskDependency;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
+import org.gradle.api.tasks.TaskProvider;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -55,6 +60,42 @@ public final class SourceSetHelper {
 	private SourceSetHelper() {
 	}
 
+	/**
+	 * Returns true when the provided project contains the {@link SourceSet}.
+	 */
+	public static boolean isSourceSetOfProject(SourceSet sourceSet, Project project) {
+		if (System.getProperty("fabric-loom.unit.testing") != null) return true;
+
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets().stream()
+				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
+	}
+
+	/**
+	 * Attempts to compute the owning project for the {@link SourceSet}
+	 *
+	 * <p>A bit of a hack, would be nice for this to be added to the Gradle API.
+	 */
+	public static Project getSourceSetProject(SourceSet sourceSet) {
+		final DefaultSourceSetOutput sourceSetOutput = (DefaultSourceSetOutput) sourceSet.getOutput();
+		final DefaultTaskDependency taskDependency = (DefaultTaskDependency) sourceSetOutput.getClassesContributors();
+		Project project = null;
+
+		for (Object object : taskDependency.getMutableValues()) {
+			if (object instanceof Task task) {
+				project = task.getProject();
+			} else if (object instanceof TaskProvider<?> provider) {
+				project = provider.get().getProject();
+			}
+		}
+
+		if (project == null) {
+			throw new NullPointerException("Unable to determine owning project for SourceSet: " + sourceSet.getName());
+		}
+
+		return project;
+	}
+
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {
 		final List<File> files = new ArrayList<>();
 
@@ -66,18 +107,18 @@ public final class SourceSetHelper {
 		return Collections.unmodifiableList(files);
 	}
 
-	public static List<File> getClasspath(SourceSet sourceSet, Project project) {
-		final List<File> classpath = getGradleClasspath(sourceSet);
+	public static List<File> getClasspath(SourceSetReference reference, Project project) {
+		final List<File> classpath = getGradleClasspath(reference);
 
-		classpath.addAll(getIdeaClasspath(sourceSet, project));
-		classpath.addAll(getEclipseClasspath(sourceSet, project));
-		classpath.addAll(getVscodeClasspath(sourceSet, project));
+		classpath.addAll(getIdeaClasspath(reference, project));
+		classpath.addAll(getEclipseClasspath(reference, project));
+		classpath.addAll(getVscodeClasspath(reference, project));
 
 		return classpath;
 	}
 
-	private static List<File> getGradleClasspath(SourceSet sourceSet) {
-		final SourceSetOutput output = sourceSet.getOutput();
+	private static List<File> getGradleClasspath(SourceSetReference reference) {
+		final SourceSetOutput output = reference.sourceSet().getOutput();
 		final File resources = output.getResourcesDir();
 
 		final List<File> classpath = new ArrayList<>();
@@ -92,7 +133,7 @@ public final class SourceSetHelper {
 	}
 
 	@VisibleForTesting
-	public static List<File> getIdeaClasspath(SourceSet sourceSet, Project project) {
+	public static List<File> getIdeaClasspath(SourceSetReference reference, Project project) {
 		final File projectDir = project.getRootDir();
 		final File dotIdea = new File(projectDir, ".idea");
 
@@ -116,7 +157,7 @@ public final class SourceSetHelper {
 		outputDirUrl = outputDirUrl.replaceAll("^file:", "");
 
 		final File productionDir = new File(outputDirUrl, "production");
-		final File outputDir = new File(productionDir, IdeaUtils.getIdeaModuleName(project, sourceSet));
+		final File outputDir = new File(productionDir, IdeaUtils.getIdeaModuleName(reference));
 
 		return Collections.singletonList(outputDir);
 	}
@@ -126,7 +167,13 @@ public final class SourceSetHelper {
 		final XPath xpath = XPathFactory.newInstance().newXPath();
 
 		try (FileInputStream fis = new FileInputStream(file)) {
-			return xpath.evaluate(expression, new InputSource(fis));
+			String result = xpath.evaluate(expression, new InputSource(fis));
+
+			if (result.isEmpty()) {
+				return null;
+			}
+
+			return result;
 		} catch (XPathExpressionException e) {
 			return null;
 		} catch (IOException e) {
@@ -135,7 +182,7 @@ public final class SourceSetHelper {
 	}
 
 	@VisibleForTesting
-	public static List<File> getEclipseClasspath(SourceSet sourceSet, Project project) {
+	public static List<File> getEclipseClasspath(SourceSetReference reference, Project project) {
 		// Somewhat of a guess, I'm unsure if this is correct for multi-project builds
 		final File projectDir = project.getProjectDir();
 		final File classpath = new File(projectDir, ".classpath");
@@ -144,11 +191,11 @@ public final class SourceSetHelper {
 			return Collections.emptyList();
 		}
 
-		return getBinDirClasspath(projectDir, sourceSet);
+		return getBinDirClasspath(projectDir, reference);
 	}
 
 	@VisibleForTesting
-	public static List<File> getVscodeClasspath(SourceSet sourceSet, Project project) {
+	public static List<File> getVscodeClasspath(SourceSetReference reference, Project project) {
 		// Somewhat of a guess, I'm unsure if this is correct for multi-project builds
 		final File projectDir = project.getProjectDir();
 		final File dotVscode = new File(projectDir, ".vscode");
@@ -157,16 +204,16 @@ public final class SourceSetHelper {
 			return Collections.emptyList();
 		}
 
-		return getBinDirClasspath(projectDir, sourceSet);
+		return getBinDirClasspath(projectDir, reference);
 	}
 
-	private static List<File> getBinDirClasspath(File projectDir, SourceSet sourceSet) {
+	private static List<File> getBinDirClasspath(File projectDir, SourceSetReference reference) {
 		final File binDir = new File(projectDir, "bin");
 
 		if (!binDir.exists()) {
 			return Collections.emptyList();
 		}
 
-		return Collections.singletonList(new File(binDir, sourceSet.getName()));
+		return Collections.singletonList(new File(binDir, reference.sourceSet().getName()));
 	}
 }

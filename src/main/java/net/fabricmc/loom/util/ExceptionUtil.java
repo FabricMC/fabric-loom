@@ -22,39 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.kotlin;
+package net.fabricmc.loom.util;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.BiFunction;
 
-import kotlinx.metadata.jvm.KotlinClassMetadata;
-import org.gradle.api.Project;
-
-public class KotlinPluginUtils {
-	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
-	private static final Pattern VERSION_PATTERN = Pattern.compile("\\((.*?)\\)");
-
-	public static boolean hasKotlinPlugin(Project project) {
-		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
-	}
-
-	public static String getKotlinPluginVersion(Project project) {
-		final Class<?> kotlinPluginClass = project.getPlugins().getPlugin(KOTLIN_PLUGIN_ID).getClass();
-		/*
-			1.7.0-RC-release-217(1.7.0-RC)
-			1.6.21-release-334(1.6.21)
-		 */
-		final String implVersion = kotlinPluginClass.getPackage().getImplementationVersion();
-		final Matcher matcher = VERSION_PATTERN.matcher(implVersion);
-
-		if (!matcher.find()) {
-			throw new IllegalStateException("Unable to match Kotlin version from: " + implVersion);
-		}
-
-		return matcher.group(1);
-	}
-
-	public static String getKotlinMetadataVersion() {
-		return KotlinClassMetadata.class.getPackage().getImplementationVersion();
+public final class ExceptionUtil {
+	/**
+	 * Creates a descriptive user-facing wrapper exception for an underlying cause.
+	 *
+	 * <p>The output format has a message like this: {@code [message], [cause class]: [cause message]}.
+	 * For example: {@code Failed to remap, java.io.IOException: Access denied}.
+	 *
+	 * @param constructor the exception factory which takes in a message and a cause
+	 * @param message     the more general message for the resulting exception
+	 * @param cause       the causing exception
+	 * @param <E> the created exception type
+	 * @param <C> the cause type
+	 * @return the created exception
+	 */
+	public static <E, C extends Throwable> E createDescriptiveWrapper(BiFunction<String, C, E> constructor, String message, C cause) {
+		String descriptiveMessage = "%s, %s: %s".formatted(message, cause.getClass().getName(), cause.getMessage());
+		return constructor.apply(descriptiveMessage, cause);
 	}
 }

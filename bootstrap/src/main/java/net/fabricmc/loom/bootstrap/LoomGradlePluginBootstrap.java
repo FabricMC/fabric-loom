@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 import org.gradle.api.plugins.PluginAware;
 import org.gradle.util.GradleVersion;
 
@@ -21,7 +22,21 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final String IDEA_VERSION_PROP_KEY = "idea.version";
 
 	@Override
-	public void apply(PluginAware project) {
+	public void apply(PluginAware pluginAware) {
+		if (pluginAware instanceof Project) {
+			Project project = (Project) pluginAware;
+
+			if (project.findProperty("fabric.loom.skip-env-validation") == null) {
+				validateEnvironment();
+			} else {
+				project.getLogger().lifecycle("Loom environment validation disabled. Please re-enable before reporting any issues.");
+			}
+		}
+
+		getActivePlugin().apply(pluginAware);
+	}
+
+	private void validateEnvironment() {
 		List<String> errors = new ArrayList<>();
 
 		if (!isValidGradleRuntime()) {
@@ -50,8 +65,6 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 		if (!errors.isEmpty()) {
 			throw new UnsupportedOperationException(String.join("\n", errors));
 		}
-
-		getActivePlugin().apply(project);
 	}
 
 	private static boolean isValidJavaRuntime() {

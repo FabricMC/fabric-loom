@@ -38,7 +38,7 @@ class SplitProjectTest extends Specification implements GradleProjectTestTrait {
             def gradle = gradleProject(project: "splitSources", version: version)
 
         when:
-            def result = gradle.run(task: "build")
+            def result = gradle.run(tasks: ["build", "generateDLIConfig"])
 
         then:
             result.task(":build").outcome == SUCCESS

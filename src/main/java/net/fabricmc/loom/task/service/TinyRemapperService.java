@@ -26,6 +26,7 @@ package net.fabricmc.loom.task.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -85,7 +86,7 @@ public class TinyRemapperService implements SharedService {
 			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService);
 		});
 
-		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).toList());
+		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).filter(Files::exists).toList());
 
 		return service;
 	}

@@ -56,6 +56,10 @@ public record MinecraftVersionMeta(
 		return this.releaseTime().compareTo(releaseTime) >= 0;
 	}
 
+	public boolean hasNativesToExtract() {
+		return libraries.stream().anyMatch(Library::hasNatives);
+	}
+
 	public record AssetIndex(String id, long totalSize, String path, String sha1, long size, String url) {
 		public String fabricId(String version) {
 			return id.equals(version) ? version : version + "-" + id;
@@ -64,17 +68,20 @@ public record MinecraftVersionMeta(
 
 	public record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
 		public boolean isValidForOS() {
-			if (rules == null || rules.isEmpty()) {
+			if (rules == null) {
+				// No rules allow everything.
 				return true;
 			}
 
-			for (Rule rule : rules) {
-				if (rule.appliesToOS() && !rule.isAllowed()) {
-					return false;
+			boolean valid = false;
+
+			for (Rule rule : this.rules) {
+				if (rule.appliesToOS()) {
+					valid = rule.isAllowed();
 				}
 			}
 
-			return true;
+			return valid;
 		}
 
 		public boolean hasNatives() {

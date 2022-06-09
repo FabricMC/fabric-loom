@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -93,9 +93,9 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	@NotNull
-	public Stream<Configuration> getApConfigurationsStream(Function<String, String> getApConfigNameFunc) {
+	public Stream<Configuration> getApConfigurationsStream(Function<SourceSet, String> getApConfigNameFunc) {
 		return getMixinSourceSetsStream()
-				.map(sourceSet -> project.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet.getName())));
+				.map(sourceSet -> project.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet)));
 	}
 
 	@Override
@@ -122,9 +122,19 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	@Override
 	public void init() {
 		if (isDefault) {
-			project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().forEach(this::add);
+			initDefault();
 		}
 
 		isDefault = false;
+	}
+
+	private void initDefault() {
+		project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().forEach(sourceSet -> {
+			if (sourceSet.getName().equals("main")) {
+				add(sourceSet);
+			} else {
+				add(sourceSet, sourceSet.getName() + "-" + getDefaultRefmapName().get());
+			}
+		});
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 
@@ -41,7 +40,7 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	public JavaApInvoker(Project project) {
 		super(
 				project,
-				AnnotationProcessorInvoker.getApConfigurations(project, JavaApInvoker::getAptConfigurationName),
+				AnnotationProcessorInvoker.getApConfigurations(project, SourceSet::getAnnotationProcessorConfigurationName),
 				getInvokerTasks(project));
 	}
 
@@ -59,10 +58,5 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 	@Override
 	protected File getRefmapDestinationDir(JavaCompile task) {
 		return task.getDestinationDirectory().getAsFile().get();
-	}
-
-	private static String getAptConfigurationName(String sourceSet) {
-		// This is documented by the gradle 4.6 release notes https://docs.gradle.org/4.6/release-notes.html#potential-breaking-changes
-		return sourceSet.equals("main") ? JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME : sourceSet + "AnnotationProcessor";
 	}
 }

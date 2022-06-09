@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -225,6 +225,7 @@ public class SourceRemapper {
 	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
 		Mercury m = new Mercury();
 		m.setGracefulClasspathChecks(true);
+		m.setSourceCompatibility(Constants.MERCURY_SOURCE_VERSION);
 
 		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
 			m.getClassPath().add(file.toPath());

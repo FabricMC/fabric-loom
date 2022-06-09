@@ -55,6 +55,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMi
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 
 public final class CompileConfiguration {
 	private CompileConfiguration() {
@@ -71,7 +72,6 @@ public final class CompileConfiguration {
 			configuration.extendsFrom(serverDeps.get());
 			configuration.setTransitive(false);
 		});
-		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));
 		extension.createLazyConfiguration(Constants.Configurations.INCLUDE, configuration -> configuration.setTransitive(false)); // Dont get transitive deps
@@ -147,7 +147,7 @@ public final class CompileConfiguration {
 			try {
 				setupMinecraft(project);
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to setup minecraft", e);
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();

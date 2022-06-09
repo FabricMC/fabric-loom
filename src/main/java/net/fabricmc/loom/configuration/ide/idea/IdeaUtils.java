@@ -27,7 +27,8 @@ package net.fabricmc.loom.configuration.ide.idea;
 import java.util.Objects;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
+
+import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class IdeaUtils {
 	public static boolean isIdeaSync() {
@@ -46,8 +47,9 @@ public class IdeaUtils {
 		return major > 2021 || (major == 2021 && minor >= 3);
 	}
 
-	public static String getIdeaModuleName(Project project, SourceSet srcs) {
-		String module = project.getName() + "." + srcs.getName();
+	public static String getIdeaModuleName(SourceSetReference reference) {
+		Project project = reference.project();
+		String module = project.getName() + "." + reference.sourceSet().getName();
 
 		while ((project = project.getParent()) != null) {
 			module = project.getName() + "." + module;

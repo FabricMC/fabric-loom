@@ -61,7 +61,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                 val klass = metadata.toKmClass()
                 val writer = KotlinClassMetadata.Class.Writer()
                 klass.accept(RemappingKmVisitors(remapper).RemappingKmClassVisitor(writer))
-                val remapped = writer.write(header.metadataVersion).header
+                val remapped = writer.write(header.metadataVersion, header.extraInt).header
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }
@@ -71,7 +71,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                 if (klambda != null) {
                     val writer = KotlinClassMetadata.SyntheticClass.Writer()
                     klambda.accept(RemappingKmVisitors(remapper).RemappingKmLambdaVisitor(writer))
-                    val remapped = writer.write(header.metadataVersion).header
+                    val remapped = writer.write(header.metadataVersion, header.extraInt).header
                     writeClassHeader(remapped)
                     validateKotlinClassHeader(remapped, header)
                 } else {
@@ -82,7 +82,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
                 val kpackage = metadata.toKmPackage()
                 val writer = KotlinClassMetadata.FileFacade.Writer()
                 kpackage.accept(RemappingKmVisitors(remapper).RemappingKmPackageVisitor(writer))
-                val remapped = writer.write(header.metadataVersion).header
+                val remapped = writer.write(header.metadataVersion, header.extraInt).header
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }

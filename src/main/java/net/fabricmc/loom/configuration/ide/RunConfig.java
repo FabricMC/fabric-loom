@@ -53,6 +53,7 @@ import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
 	public String configName;
@@ -139,7 +140,11 @@ public class RunConfig {
 			configName = "";
 			String srcName = sourceSet.getName();
 
-			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+			final boolean isSplitClientSourceSet = extension.areEnvironmentSourceSetsSplit()
+					&& srcName.equals("client")
+					&& environment.equals("client");
+
+			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
 				configName += capitalizeCamelCaseName(srcName) + " ";
 			}
 
@@ -157,7 +162,7 @@ public class RunConfig {
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 		populate(project, extension, runConfig, environment);
-		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(project, sourceSet);
+		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;
 		runConfig.sourceSet = sourceSet;
@@ -251,6 +256,14 @@ public class RunConfig {
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {
+		if (true) {
+			/*
+				This whole excluded libraries idea breaks down when the server library version does not match the client.
+				This is a quick change to disable it meanwhile a proper solution is sorted.
+			 */
+			return Collections.emptyList();
+		}
+
 		if (!environment.equals("server")) {
 			return Collections.emptyList();
 		}

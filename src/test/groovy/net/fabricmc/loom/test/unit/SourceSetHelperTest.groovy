@@ -25,16 +25,19 @@
 package net.fabricmc.loom.test.unit
 
 import net.fabricmc.loom.util.gradle.SourceSetHelper
+import net.fabricmc.loom.util.gradle.SourceSetReference
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.util.environment.RestoreSystemProperties
 
 class SourceSetHelperTest extends Specification {
     @Shared
     private static File projectDir = File.createTempDir()
 
+    @RestoreSystemProperties
     def "idea classpath"() {
         given:
             def miscXml = new File(projectDir, ".idea/misc.xml")
@@ -48,8 +51,11 @@ class SourceSetHelperTest extends Specification {
             mockProject.getRootDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            System.setProperty("fabric-loom.unit.testing", "true")
+
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getIdeaClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getIdeaClasspath(ref, mockProject)
 
         then:
             result.size() == 1
@@ -58,6 +64,7 @@ class SourceSetHelperTest extends Specification {
             println(result[0].toString())
     }
 
+    @RestoreSystemProperties
     def "eclipse classpath"() {
         given:
             def classpath = new File(projectDir, ".classpath")
@@ -73,14 +80,18 @@ class SourceSetHelperTest extends Specification {
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            System.setProperty("fabric-loom.unit.testing", "true")
+
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getEclipseClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getEclipseClasspath(ref, mockProject)
 
         then:
             result.size() == 1
             println(result[0].toString())
     }
 
+    @RestoreSystemProperties
     def "vscode classpath"() {
         given:
             def dotVscode = new File(projectDir, ".vscode")
@@ -96,8 +107,11 @@ class SourceSetHelperTest extends Specification {
             mockProject.getProjectDir() >> projectDir
             mockSourceSet.getName() >> "main"
 
+            System.setProperty("fabric-loom.unit.testing", "true")
+
+            def ref = new SourceSetReference(mockSourceSet, mockProject)
         when:
-            def result = SourceSetHelper.getVscodeClasspath(mockSourceSet, mockProject)
+            def result = SourceSetHelper.getVscodeClasspath(ref, mockProject)
 
         then:
             result.size() == 1

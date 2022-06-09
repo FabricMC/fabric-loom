@@ -37,10 +37,10 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import net.fabricmc.tinyremapper.FileSystemHandler;
+import net.fabricmc.tinyremapper.FileSystemReference;
 
 public final class FileSystemUtil {
-	public record Delegate(FileSystem fs) implements AutoCloseable, Supplier<FileSystem> {
+	public record Delegate(FileSystemReference reference) implements AutoCloseable, Supplier<FileSystem> {
 		public byte[] readAllBytes(String path) throws IOException {
 			Path fsPath = get().getPath(path);
 
@@ -57,12 +57,17 @@ public final class FileSystemUtil {
 
 		@Override
 		public void close() throws IOException {
-			FileSystemHandler.close(fs);
+			reference.close();
 		}
 
 		@Override
 		public FileSystem get() {
-			return fs;
+			return reference.getFs();
+		}
+
+		// TODO cleanup
+		public FileSystem fs() {
+			return get();
 		}
 	}
 
@@ -94,6 +99,6 @@ public final class FileSystemUtil {
 			FileSystems.newFileSystem(jarUri, Map.of("create", "true")).close();
 		}
 
-		return new Delegate(FileSystemHandler.open(jarUri));
+		return new Delegate(FileSystemReference.open(jarUri, create));
 	}
 }

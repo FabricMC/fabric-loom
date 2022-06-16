@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -56,6 +56,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvid
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -184,9 +185,9 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	private void storeMappings(MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
 		LOGGER.info(":extracting " + inputJar.getFileName());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(inputJar, (ClassLoader) null)) {
-			extractMappings(fileSystem, baseTinyMappings);
-			extractExtras(fileSystem);
+		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(inputJar)) {
+			extractMappings(delegate.fs(), baseTinyMappings);
+			extractExtras(delegate.fs());
 		}
 
 		if (areMappingsV2(baseTinyMappings)) {
@@ -221,8 +222,8 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	}
 
 	public static void extractMappings(Path jar, Path extractTo) throws IOException {
-		try (FileSystem unmergedIntermediaryFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
-			extractMappings(unmergedIntermediaryFs, extractTo);
+		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(jar)) {
+			extractMappings(delegate.fs(), extractTo);
 		}
 	}
 

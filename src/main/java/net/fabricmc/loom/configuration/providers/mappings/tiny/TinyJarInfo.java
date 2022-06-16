@@ -27,12 +27,11 @@ package net.fabricmc.loom.configuration.providers.mappings.tiny;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
 
@@ -46,8 +45,8 @@ public record TinyJarInfo(boolean v2, Optional<String> minecraftVersionId) {
 	}
 
 	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
-			try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(path)) {
+			try (BufferedReader reader = Files.newBufferedReader(delegate.fs().getPath("mappings", "mappings.tiny"))) {
 				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
 			}
 		}

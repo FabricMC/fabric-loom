@@ -27,13 +27,10 @@ package net.fabricmc.loom.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.Nullable;
-
-import net.fabricmc.loom.LoomGradlePlugin;
 
 public final class ModUtils {
 	private ModUtils() {
@@ -49,18 +46,10 @@ public final class ModUtils {
 
 	@Nullable
 	public static JsonObject getFabricModJson(Path path) {
-		final byte[] modJsonBytes;
-
 		try {
-			modJsonBytes = ZipUtils.unpackNullable(path, "fabric.mod.json");
+			return ZipUtils.unpackGson(path, "fabric.mod.json", JsonObject.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to extract fabric.mod.json from " + path, e);
 		}
-
-		if (modJsonBytes == null) {
-			return null;
-		}
-
-		return LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
 	}
 }

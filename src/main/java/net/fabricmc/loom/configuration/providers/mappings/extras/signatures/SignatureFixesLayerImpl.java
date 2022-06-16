@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,17 +25,13 @@
 package net.fabricmc.loom.configuration.providers.mappings.extras.signatures;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Objects;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingVisitor;
 
 @ApiStatus.Experimental
@@ -49,14 +45,9 @@ public record SignatureFixesLayerImpl(Path mappingsFile) implements MappingLayer
 
 	@Override
 	public Map<String, String> getSignatureFixes() {
-		try (var zipFile = new ZipFile(mappingsFile().toFile())) {
-			ZipEntry zipFileEntry = zipFile.getEntry(SIGNATURE_FIXES_PATH);
-			Objects.requireNonNull(zipFileEntry, "Could not find %s in file".formatted(SIGNATURE_FIXES_PATH));
-
-			try (var reader = new InputStreamReader(zipFile.getInputStream(zipFileEntry))) {
-				//noinspection unchecked
-				return LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, Map.class);
-			}
+		try {
+			//noinspection unchecked
+			return ZipUtils.unpackJackson(mappingsFile(), SIGNATURE_FIXES_PATH, Map.class);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to extract signature fixes", e);
 		}

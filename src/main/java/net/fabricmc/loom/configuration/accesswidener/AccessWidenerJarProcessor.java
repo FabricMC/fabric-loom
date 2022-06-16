@@ -25,28 +25,19 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
 
 import com.google.common.hash.Hashing;
 import org.gradle.api.Project;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.ZipUtils;
 
 public class AccessWidenerJarProcessor implements JarProcessor {
-	// Filename used to store hash of input access widener in processed jar file
-	private static final String HASH_FILENAME = "aw.sha256";
 	// The mod's own access widener file
-	private byte[] modAccessWidener;
-	private final AccessWidener accessWidener = new AccessWidener();
+	private AccessWidenerProvider accessWidener;
 	private final Project project;
 	// This is a SHA256 hash across the mod's and all transitive AWs
 	private byte[] inputHash;
@@ -63,32 +54,20 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 	@Override
 	public void setup() {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		Path awPath = extension.getAccessWidenerPath().get().getAsFile().toPath();
+		Path ctPath = extension.getAccessWidenerPath().get().getAsFile().toPath();
 
 		// Read our own mod's access widener, used later for producing a version remapped to intermediary
 		try {
-			modAccessWidener = Files.readAllBytes(awPath);
-		} catch (NoSuchFileException e) {
-			throw new RuntimeException("Could not find access widener file @ " + awPath.toAbsolutePath());
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read access widener: " + awPath);
+			accessWidener = SimpleAccessWidenerProvider.fromPath(ctPath);
+		} catch (Exception e) {
+			throw new RuntimeException("Could not find %s file @ %s".formatted(AccessWidenerAdapter.get(project).getName(), ctPath.toAbsolutePath()));
 		}
 
-		AccessWidenerReader reader = new AccessWidenerReader(accessWidener);
-		reader.read(modAccessWidener);
-
-		inputHash = Hashing.sha256().hashBytes(modAccessWidener).asBytes();
+		inputHash = Hashing.sha256().hashBytes(accessWidener.getAccessWidener()).asBytes();
 	}
 
 	@Override
 	public void process(File file) {
-		AccessWidenerTransformer applier = new AccessWidenerTransformer(project.getLogger(), accessWidener);
-		applier.apply(file);
-
-		try {
-			ZipUtils.add(file.toPath(), HASH_FILENAME, inputHash);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to write aw jar hash", e);
-		}
+		AccessWidenerAdapter.get(project).transformJar(file.toPath(), List.of(accessWidener));
 	}
 }

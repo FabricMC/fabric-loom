@@ -33,14 +33,14 @@ import org.gradle.api.provider.Property;
 
 // Massive hack to work around WorkerExecutor.noIsolation() doing isolation checks.
 public final class UnsafeWorkQueueHelper {
-	private static final Map<String, SharedService> SERVICE_MAP = new ConcurrentHashMap<>();
+	private static final Map<String, Object> SERVICE_MAP = new ConcurrentHashMap<>();
 
 	private UnsafeWorkQueueHelper() {
 	}
 
-	public static String create(Project project, SharedService service) {
+	public static String create(Project project, Object object) {
 		final String uuid = UUID.randomUUID().toString();
-		SERVICE_MAP.put(uuid, service);
+		SERVICE_MAP.put(uuid, object);
 
 		// Ensure we don't make a mess if things go wrong.
 		project.getGradle().buildFinished(buildResult -> SERVICE_MAP.remove(uuid));
@@ -48,13 +48,13 @@ public final class UnsafeWorkQueueHelper {
 	}
 
 	public static <S> S get(Property<String> property, Class<S> clazz) {
-		SharedService service = SERVICE_MAP.remove(property.get());
+		Object object = SERVICE_MAP.remove(property.get());
 
-		if (service == null) {
-			throw new NullPointerException("Failed to get service for " + clazz);
+		if (object == null) {
+			throw new NullPointerException("Failed to get object for " + clazz);
 		}
 
 		//noinspection unchecked
-		return (S) service;
+		return (S) object;
 	}
 }

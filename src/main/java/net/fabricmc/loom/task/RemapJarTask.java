@@ -62,14 +62,12 @@ import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.MixinRefmapHelper;
 import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerAdapter;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
@@ -139,6 +137,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			params.getJarManifestService().set(JarManifestService.get(getProject()));
 			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), tinyRemapperService.get()));
+			params.getAccessWidenerUuid().set(UnsafeWorkQueueHelper.create(getProject(), AccessWidenerAdapter.get(getProject())));
 			params.getRemapClasspath().from(getClasspath());
 
 			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
@@ -208,6 +207,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		Property<JarManifestService> getJarManifestService();
 		Property<String> getTinyRemapperBuildServiceUuid();
+		Property<String> getAccessWidenerUuid();
 
 		MapProperty<String, String> getManifestAttributes();
 		ListProperty<String> getClientOnlyClasses();
@@ -217,10 +217,12 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
 		private final TinyRemapperService tinyRemapperService;
+		private final AccessWidenerAdapter accessWidenerAdapter;
 		private TinyRemapper tinyRemapper;
 
 		public RemapAction() {
 			this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
+			this.accessWidenerAdapter = UnsafeWorkQueueHelper.get(getParameters().getAccessWidenerUuid(), AccessWidenerAdapter.class);
 		}
 
 		@Override
@@ -271,32 +273,18 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void remapAccessWidener() throws IOException {
-			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
+			final ModAccessWidener accessWidenerFile = ModAccessWidener.fromModJar(inputFile);
 
 			if (accessWidenerFile == null) {
 				return;
 			}
 
-			byte[] remapped = remapAccessWidener(accessWidenerFile.content());
+			byte[] remapped = accessWidenerAdapter.remap(accessWidenerFile.content(), tinyRemapper.getEnvironment().getRemapper(),
+					getParameters().getSourceNamespace().get(),
+					getParameters().getTargetNamespace().get());
 
 			// Finally, replace the output with the remaped aw
 			ZipUtils.replace(outputFile, accessWidenerFile.path(), remapped);
-		}
-
-		private byte[] remapAccessWidener(byte[] input) {
-			int version = AccessWidenerReader.readVersion(input);
-
-			AccessWidenerWriter writer = new AccessWidenerWriter(version);
-			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
-					writer,
-					tinyRemapper.getEnvironment().getRemapper(),
-					getParameters().getSourceNamespace().get(),
-					getParameters().getTargetNamespace().get()
-			);
-			AccessWidenerReader reader = new AccessWidenerReader(remapper);
-			reader.read(input);
-
-			return writer.write();
 		}
 
 		private void addNestedJars() {

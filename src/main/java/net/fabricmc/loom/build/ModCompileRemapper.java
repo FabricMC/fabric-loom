@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerAdapter;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
@@ -96,7 +97,7 @@ public class ModCompileRemapper {
 						continue;
 					}
 
-					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData);
+					ModDependencyInfo info = new ModDependencyInfo(group, name, version, artifact.getClassifier(), artifact.getFile(), remappedConfig, remapData, AccessWidenerAdapter.get(project));
 					modDependencies.add(info);
 
 					File remappedSources = info.getRemappedOutput("sources");
@@ -126,7 +127,7 @@ public class ModCompileRemapper {
 						String name = Files.getNameWithoutExtension(artifact.getAbsolutePath());
 						String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.truncatedSha256(artifact));
 
-						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData);
+						ModDependencyInfo info = new ModDependencyInfo(group, name, version, null, artifact, remappedConfig, remapData, AccessWidenerAdapter.get(project));
 						modDependencies.add(info);
 					}
 				}

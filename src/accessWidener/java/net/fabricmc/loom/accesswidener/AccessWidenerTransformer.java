@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.accesswidener;
+package net.fabricmc.loom.accesswidener;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.gradle.api.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -43,11 +42,9 @@ import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 
 final class AccessWidenerTransformer {
-	private final Logger logger;
 	private final AccessWidener accessWidener;
 
-	AccessWidenerTransformer(Logger logger, AccessWidener accessWidener) {
-		this.logger = logger;
+	AccessWidenerTransformer(AccessWidener accessWidener) {
 		this.accessWidener = accessWidener;
 	}
 
@@ -55,8 +52,6 @@ final class AccessWidenerTransformer {
 	 * Apply the rules from an access-widener to the given jar or zip file.
 	 */
 	void apply(File jarFile) {
-		logger.lifecycle("Processing file: " + jarFile.getName());
-
 		try {
 			ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
 		} catch (IOException e) {
@@ -75,9 +70,6 @@ final class AccessWidenerTransformer {
 			ClassReader reader = new ClassReader(input);
 			ClassWriter writer = new ClassWriter(0);
 			ClassVisitor classVisitor = AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
-
-			logger.info("Applying access widener to " + className);
-
 			reader.accept(classVisitor, 0);
 			return writer.toByteArray();
 		};

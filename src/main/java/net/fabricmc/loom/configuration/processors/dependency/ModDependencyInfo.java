@@ -27,19 +27,15 @@ package net.fabricmc.loom.configuration.processors.dependency;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
-import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerAdapter;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 
 public class ModDependencyInfo {
 	private final String group;
@@ -52,11 +48,12 @@ public class ModDependencyInfo {
 	public final RemapData remapData;
 
 	@Nullable
-	private final AccessWidenerData accessWidenerData;
+	private final ModAccessWidener accessWidenerData;
+	private final AccessWidenerAdapter accessWidenerAdapter;
 
 	private boolean forceRemap = false;
 
-	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
+	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier, File inputFile, Configuration targetConfig, RemapData remapData, AccessWidenerAdapter accessWidenerAdapter) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
@@ -64,12 +61,8 @@ public class ModDependencyInfo {
 		this.inputFile = inputFile;
 		this.targetConfig = targetConfig;
 		this.remapData = remapData;
-
-		try {
-			this.accessWidenerData = tryReadAccessWidenerData(getInputFile().toPath());
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read access widener data from" + inputFile, e);
-		}
+		this.accessWidenerAdapter = accessWidenerAdapter;
+		this.accessWidenerData = ModAccessWidener.fromModJar(getInputFile().toPath());
 	}
 
 	public String getRemappedNotation() {
@@ -123,13 +116,7 @@ public class ModDependencyInfo {
 		}
 
 		assert getRemappedOutput().exists();
-		final AccessWidenerData outputAWData;
-
-		try {
-			outputAWData = tryReadAccessWidenerData(getRemappedOutput().toPath());
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read output access widener data from " + getRemappedOutput(), e);
-		}
+		final ModAccessWidener outputAWData = ModAccessWidener.fromModJar(getRemappedOutput().toPath());
 
 		if (outputAWData == null) {
 			// We know for sure the input has an AW, something is wrong if the output hasn't got one.
@@ -137,7 +124,7 @@ public class ModDependencyInfo {
 		}
 
 		// The output jar must have an AW in the "named" namespace.
-		return !MappingsNamespace.NAMED.toString().equals(outputAWData.header().getNamespace());
+		return !MappingsNamespace.NAMED.toString().equals(accessWidenerAdapter.getNamespace(outputAWData));
 	}
 
 	public boolean requiresRemapping() {
@@ -150,7 +137,7 @@ public class ModDependencyInfo {
 
 		// Validate that the remapped AW is what we want.
 		if (outputHasInvalidAccessWidener()) {
-			throw new RuntimeException("Failed to validate remapped access widener in " + getRemappedOutput());
+			throw new RuntimeException("Failed to validate remapped %s in %s".formatted(accessWidenerAdapter.getName(), getRemappedOutput()));
 		}
 	}
 
@@ -187,25 +174,7 @@ public class ModDependencyInfo {
 	}
 
 	@Nullable
-	public AccessWidenerData getAccessWidenerData() {
+	public ModAccessWidener getAccessWidenerData() {
 		return accessWidenerData;
-	}
-
-	private static AccessWidenerData tryReadAccessWidenerData(Path inputJar) throws IOException {
-		byte[] modJsonBytes = ZipUtils.unpack(inputJar, "fabric.mod.json");
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
-
-		if (!jsonObject.has("accessWidener")) {
-			return null;
-		}
-
-		String accessWidenerPath = jsonObject.get("accessWidener").getAsString();
-		byte[] accessWidener = ZipUtils.unpack(inputJar, accessWidenerPath);
-		AccessWidenerReader.Header header = AccessWidenerReader.readHeader(accessWidener);
-
-		return new AccessWidenerData(accessWidenerPath, header, accessWidener);
-	}
-
-	public record AccessWidenerData(String path, AccessWidenerReader.Header header, byte[] content) {
 	}
 }

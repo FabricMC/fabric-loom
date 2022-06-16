@@ -40,11 +40,6 @@ import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.file.FileCollection;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
@@ -59,12 +54,14 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	private final Project project;
 	private final LoomGradleExtension extension;
+	private final AccessWidenerAdapter accessWidenerAdapter;
 
-	private final List<AccessWidenerFile> transitiveAccessWideners;
+	private final List<ModAccessWidener> transitiveAccessWideners;
 
 	public TransitiveAccessWidenerJarProcessor(Project project) {
 		this.project = project;
 		this.extension = LoomGradleExtension.get(project);
+		this.accessWidenerAdapter = AccessWidenerAdapter.get(project);
 
 		transitiveAccessWideners = getTransitiveAccessWideners();
 
@@ -83,11 +80,11 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	public String getId() {
 		Preconditions.checkArgument(!isEmpty());
 
-		return "loom:transitive_access_wideners:" + transitiveAccessWideners.hashCode();
+		return "loom:transitive_class_tweakers:" + transitiveAccessWideners.hashCode();
 	}
 
-	private List<AccessWidenerFile> getTransitiveAccessWideners() {
-		final List<AccessWidenerFile> accessWideners = new ArrayList<>();
+	private List<ModAccessWidener> getTransitiveAccessWideners() {
+		final List<ModAccessWidener> accessWideners = new ArrayList<>();
 		final Set<Path> possibleModJars = new HashSet<>();
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
@@ -114,22 +111,22 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 		for (Path path : possibleModJars) {
 			if (!Files.exists(path)) {
-				project.getLogger().debug("Could not find transitive access widener in {} as it does not exist", path.toAbsolutePath());
+				project.getLogger().debug("Could not find transitive {} in {} as it does not exist", accessWidenerAdapter.getName(), path.toAbsolutePath());
 				continue;
 			}
 
-			AccessWidenerFile accessWidener = AccessWidenerFile.fromModJar(path);
+			ModAccessWidener tweaker = ModAccessWidener.fromModJar(path);
 
-			if (accessWidener == null) {
+			if (tweaker == null) {
 				continue;
 			}
 
-			if (!TransitiveDetectorVisitor.isTransitive(accessWidener.content())) {
+			if (!accessWidenerAdapter.isTransitive(tweaker)) {
 				// AW does not contain anything transitive, skip over it
 				continue;
 			}
 
-			accessWideners.add(accessWidener);
+			accessWideners.add(tweaker);
 		}
 
 		return accessWideners;
@@ -139,34 +136,16 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 	public void process(File file) {
 		Preconditions.checkArgument(!isEmpty());
 
-		AccessWidener accessWidener = createAccessWidener();
-		AccessWidenerTransformer transformer = new AccessWidenerTransformer(project.getLogger(), accessWidener);
-		transformer.apply(file);
-	}
-
-	private AccessWidener createAccessWidener() {
-		AccessWidener accessWidener = new AccessWidener();
 		// For other mods, only consider transitive AWs and remap from intermediary->named
-		TinyRemapper tinyRemapper = createTinyRemapper();
+		final TinyRemapper tinyRemapper = createTinyRemapper();
 
 		try {
-			AccessWidenerRemapper remappingVisitor = new AccessWidenerRemapper(
-					accessWidener,
-					tinyRemapper.getEnvironment().getRemapper(),
-					MappingsNamespace.INTERMEDIARY.toString(),
-					MappingsNamespace.NAMED.toString()
-			);
-			AccessWidenerReader transitiveReader = new AccessWidenerReader(new TransitiveOnlyFilter(remappingVisitor));
-
-			for (AccessWidenerFile accessWidenerFile : transitiveAccessWideners) {
-				project.getLogger().info("Reading transitive access widener from {}", accessWidenerFile.modId());
-				transitiveReader.read(accessWidenerFile.content());
-			}
+			accessWidenerAdapter.transformJar(file.toPath(), transitiveAccessWideners,
+					tinyRemapper.getEnvironment().getRemapper(), MappingsNamespace.INTERMEDIARY.toString(),
+					MappingsNamespace.NAMED.toString());
 		} finally {
 			tinyRemapper.finish();
 		}
-
-		return accessWidener;
 	}
 
 	private TinyRemapper createTinyRemapper() {
@@ -182,42 +161,6 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 			return tinyRemapper;
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to create tiny remapper for intermediary->named", e);
-		}
-	}
-
-	private static class TransitiveDetectorVisitor implements AccessWidenerVisitor {
-		private boolean transitive = false;
-
-		@Override
-		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (transitive) {
-				this.transitive = true;
-			}
-		}
-
-		@Override
-		public void visitMethod(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (transitive) {
-				this.transitive = true;
-			}
-		}
-
-		@Override
-		public void visitField(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (transitive) {
-				this.transitive = true;
-			}
-		}
-
-		public static boolean isTransitive(byte[] content) {
-			if (AccessWidenerReader.readVersion(content) < 2) {
-				// Transitive AWs are only in v2 or higher, so we can save parsing the file to find out...
-				return false;
-			}
-
-			TransitiveDetectorVisitor transitiveDetector = new TransitiveDetectorVisitor();
-			new AccessWidenerReader(transitiveDetector).read(content);
-			return transitiveDetector.transitive;
 		}
 	}
 }

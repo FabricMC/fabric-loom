@@ -39,14 +39,12 @@ import java.util.jar.Manifest;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
-import org.objectweb.asm.commons.Remapper;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerAdapter;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.task.RemapJarTask;
@@ -65,9 +63,11 @@ public class ModProcessor {
 	private static final String toM = MappingsNamespace.NAMED.toString();
 
 	private final Project project;
+	private final AccessWidenerAdapter accessWidenerAdapter;
 
 	public ModProcessor(Project project) {
 		this.project = project;
+		this.accessWidenerAdapter = AccessWidenerAdapter.get(project);
 	}
 
 	public void processMods(List<ModDependencyInfo> processList) throws IOException {
@@ -117,24 +117,6 @@ public class ModProcessor {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to strip nested jars from %s".formatted(file), e);
 		}
-	}
-
-	/**
-	 * Remap another mod's access widener from intermediary to named, so that loader can apply it in our dev-env.
-	 */
-	private byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		int version = AccessWidenerReader.readVersion(input);
-
-		AccessWidenerWriter writer = new AccessWidenerWriter(version);
-		AccessWidenerRemapper awRemapper = new AccessWidenerRemapper(
-				writer,
-				remapper,
-				MappingsNamespace.INTERMEDIARY.toString(),
-				MappingsNamespace.NAMED.toString()
-		);
-		AccessWidenerReader reader = new AccessWidenerReader(awRemapper);
-		reader.read(input);
-		return writer.write();
 	}
 
 	private void remapJars(List<ModDependencyInfo> remapList) throws IOException {
@@ -197,11 +179,12 @@ public class ModProcessor {
 					outputConsumer.addNonClassFiles(info.getInputFile().toPath(), NonClassCopyMode.FIX_META_INF, remapper);
 					outputConsumerMap.put(info, outputConsumer);
 
-					final ModDependencyInfo.AccessWidenerData accessWidenerData = info.getAccessWidenerData();
+					final ModAccessWidener accessWidenerData = info.getAccessWidenerData();
 
 					if (accessWidenerData != null) {
-						project.getLogger().debug("Remapping access widener in {}", info.getInputFile());
-						byte[] remappedAw = remapAccessWidener(accessWidenerData.content(), remapper.getEnvironment().getRemapper());
+						project.getLogger().debug("Remapping {} in {}", accessWidenerAdapter.getName(), info.getInputFile());
+						byte[] remappedAw = accessWidenerAdapter.remap(accessWidenerData.content(), remapper.getEnvironment().getRemapper(),
+								MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString());
 						accessWidenerMap.put(info, remappedAw);
 					}
 

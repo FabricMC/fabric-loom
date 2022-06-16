@@ -46,7 +46,7 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
@@ -63,7 +63,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final MappingSet[] srcMappingCache = new MappingSet[2];
 	private final Mercury[] srcMercuryCache = new Mercury[2];
 	private final Map<String, NamedDomainObjectProvider<Configuration>> lazyConfigurations = new HashMap<>();
-	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
+	private final List<ModAccessWidener> transitiveAccessWideners = new ArrayList<>();
 
 	private LoomDependencyManager dependencyManager;
 	private JarProcessorManager jarProcessorManager;
@@ -227,12 +227,12 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public List<AccessWidenerFile> getTransitiveAccessWideners() {
+	public List<ModAccessWidener> getTransitiveAccessWideners() {
 		return transitiveAccessWideners;
 	}
 
 	@Override
-	public void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles) {
+	public void addTransitiveAccessWideners(List<ModAccessWidener> accessWidenerFiles) {
 		transitiveAccessWideners.addAll(accessWidenerFiles);
 	}
 

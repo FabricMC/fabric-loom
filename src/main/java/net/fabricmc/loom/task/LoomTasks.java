@@ -32,6 +32,8 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerAdapter;
+import net.fabricmc.loom.configuration.accesswidener.ValidateAccessWidenerBaseTask;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
@@ -75,11 +77,7 @@ public final class LoomTasks {
 			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
-		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
-			t.setDescription("Validate all the rules in the access widener against the Minecraft jar");
-			t.setGroup("verification");
-		});
-
+		TaskProvider<? extends ValidateAccessWidenerBaseTask> validateAccessWidener = AccessWidenerAdapter.get(project).createValidationTask(tasks);
 		tasks.named("check").configure(task -> task.dependsOn(validateAccessWidener));
 
 		registerIDETasks(tasks);

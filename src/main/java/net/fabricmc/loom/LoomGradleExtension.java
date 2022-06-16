@@ -41,7 +41,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
-import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -115,7 +115,7 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	@Override
 	MixinExtension getMixin();
 
-	List<AccessWidenerFile> getTransitiveAccessWideners();
+	List<ModAccessWidener> getTransitiveAccessWideners();
 
-	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
+	void addTransitiveAccessWideners(List<ModAccessWidener> accessWidenerFiles);
 }

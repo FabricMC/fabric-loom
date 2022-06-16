@@ -36,15 +36,15 @@ import com.google.gson.JsonObject;
 
 import net.fabricmc.loom.util.ZipUtils;
 
-public record AccessWidenerFile(
+public record ModAccessWidener(
 		String path,
 		String modId,
 		byte[] content
-) {
+) implements AccessWidenerProvider {
 	/**
 	 * Reads the access-widener contained in a mod jar, or returns null if there is none.
 	 */
-	public static AccessWidenerFile fromModJar(Path modJarPath) {
+	public static ModAccessWidener fromModJar(Path modJarPath) {
 		byte[] modJsonBytes;
 
 		try {
@@ -74,7 +74,7 @@ public record AccessWidenerFile(
 			throw new UncheckedIOException("Could not find access widener file (%s) defined in the fabric.mod.json file of %s".formatted(awPath, modJarPath.toAbsolutePath()), e);
 		}
 
-		return new AccessWidenerFile(
+		return new ModAccessWidener(
 				awPath,
 				modId,
 				content
@@ -86,5 +86,10 @@ public record AccessWidenerFile(
 		int result = Objects.hash(path, modId);
 		result = 31 * result + Arrays.hashCode(content);
 		return result;
+	}
+
+	@Override
+	public byte[] getAccessWidener() {
+		return content();
 	}
 }

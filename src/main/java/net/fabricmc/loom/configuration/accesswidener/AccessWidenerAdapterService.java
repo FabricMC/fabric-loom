@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2020-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +24,12 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
-import java.util.List;
-
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.loom.util.service.SharedService;
 
-public record TransitiveAccessWidenerMappingsProcessor(Project project) implements GenerateSourcesTask.MappingsProcessor {
-	@Override
-	public boolean transform(MemoryMappingTree mappings) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		List<ModAccessWidener> accessWideners = extension.getTransitiveAccessWideners();
-
-		if (accessWideners.isEmpty()) {
-			return false;
-		}
-
-		if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
-			throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
-		}
-
-		AccessWidenerAdapter.get(project).applyMappingComments(accessWideners, mappings);
-
-		return true;
+class AccessWidenerAdapterService implements SharedService {
+	public static AccessWidenerAdapter get(Project project) {
+		throw new RuntimeException("Impl me!");
 	}
 }

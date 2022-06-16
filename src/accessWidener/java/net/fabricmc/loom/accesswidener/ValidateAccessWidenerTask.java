@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.accesswidener;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,10 +46,11 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.accesswidener.ValidateAccessWidenerBaseTask;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrEnvironment;
 
-public abstract class ValidateAccessWidenerTask extends DefaultTask {
+public abstract class ValidateAccessWidenerTask extends DefaultTask implements ValidateAccessWidenerBaseTask {
 	@SkipWhenEmpty
 	@InputFile
 	public abstract RegularFileProperty getAccessWidener();
@@ -94,7 +95,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	/**
 	 * Validates that all entries in an access-widner file relate to a class/method/field in the mc jar.
 	 */
-	private static record AccessWidenerValidator(TrEnvironment environment) implements AccessWidenerVisitor {
+	private record AccessWidenerValidator(TrEnvironment environment) implements AccessWidenerVisitor {
 		@Override
 		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
 			if (environment().getClass(name) == null) {

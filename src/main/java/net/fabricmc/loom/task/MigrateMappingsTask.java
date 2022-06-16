@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2021 FabricMC
+ * Copyright (c) 2019-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,6 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
@@ -51,6 +49,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 import net.fabricmc.mappingio.MappingReader;
@@ -149,8 +148,8 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	private static MemoryMappingTree getMappings(File mappings) throws IOException {
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.toPath(), (ClassLoader) null)) {
-			MappingReader.read(fileSystem.getPath("mappings/mappings.tiny"), mappingTree);
+		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(mappings.toPath())) {
+			MappingReader.read(delegate.fs().getPath("mappings/mappings.tiny"), mappingTree);
 		}
 
 		return mappingTree;

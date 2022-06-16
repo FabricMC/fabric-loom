@@ -102,6 +102,7 @@ public class Constants {
 		public static final String TERMINAL_CONSOLE_APPENDER = "net.minecrell:terminalconsoleappender:";
 		public static final String JETBRAINS_ANNOTATIONS = "org.jetbrains:annotations:";
 		public static final String NATIVE_SUPPORT = "net.fabricmc:fabric-loom-native-support:";
+		public static final String ACCESS_WIDENER = "net.fabricmc:access-widener:";
 
 		private Dependencies() {
 		}

@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.util.kotlin;
 
-import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,6 +32,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.util.UrlUtil;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
@@ -61,14 +60,8 @@ public record KotlinClasspathService(Set<URL> classpath, String version) impleme
 				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
 		);
 
-		Set<URL> classpath = detachedConfiguration.getFiles().stream()
-				.map(file -> {
-					try {
-						return file.toURI().toURL();
-					} catch (MalformedURLException e) {
-						throw new UncheckedIOException(e);
-					}
-				}).collect(Collectors.toSet());;
+		Set<URL> classpath = UrlUtil.streamFileUrls(detachedConfiguration.getFiles())
+				.collect(Collectors.toSet());
 
 		return new KotlinClasspathService(classpath, kotlinVersion);
 	}

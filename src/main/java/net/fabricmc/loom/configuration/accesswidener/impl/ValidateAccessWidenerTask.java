@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.accesswidener;
+package net.fabricmc.loom.configuration.accesswidener.impl;
 
 import java.io.BufferedReader;
 import java.io.File;

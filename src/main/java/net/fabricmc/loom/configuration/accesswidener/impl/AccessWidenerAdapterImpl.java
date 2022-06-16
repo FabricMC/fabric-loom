@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.accesswidener;
+package net.fabricmc.loom.configuration.accesswidener.impl;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -42,7 +42,7 @@ import net.fabricmc.loom.configuration.accesswidener.ModAccessWidener;
 import net.fabricmc.loom.configuration.accesswidener.ValidateAccessWidenerBaseTask;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class AccessWidenerAccessWidenerAdapter implements AccessWidenerAdapter {
+public class AccessWidenerAdapterImpl implements AccessWidenerAdapter {
 	@Override
 	public byte[] remap(byte[] input, Remapper remapper, String from, String to) {
 		int version = AccessWidenerReader.readVersion(input);

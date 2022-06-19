@@ -3,14 +3,12 @@ plugins {
 	id 'groovy'
 }
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(8)
-	}
-}
+sourceCompatibility = 8
+targetCompatibility = 8
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
+	it.options.release = 8
 }
 
 repositories {

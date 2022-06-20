@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration.ide;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +40,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.w3c.dom.Document;
@@ -256,14 +258,6 @@ public class RunConfig {
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {
-		if (true) {
-			/*
-				This whole excluded libraries idea breaks down when the server library version does not match the client.
-				This is a quick change to disable it meanwhile a proper solution is sorted.
-			 */
-			return Collections.emptyList();
-		}
-
 		if (!environment.equals("server")) {
 			return Collections.emptyList();
 		}
@@ -275,17 +269,30 @@ public class RunConfig {
 			return Collections.emptyList();
 		}
 
-		final Set<File> allLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles();
-		final Set<File> serverLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES).getFiles();
+		final Set<ResolvedArtifact> allLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_DEPENDENCIES);
+		final Set<ResolvedArtifact> serverLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES);
 		final List<String> clientOnlyLibraries = new LinkedList<>();
 
-		for (File commonLibrary : allLibraries) {
-			if (!serverLibraries.contains(commonLibrary)) {
-				clientOnlyLibraries.add(commonLibrary.getAbsolutePath());
+		for (ResolvedArtifact library : allLibraries) {
+			if (!containsLibrary(serverLibraries, library.getModuleVersion().getId())) {
+				clientOnlyLibraries.add(library.getFile().getAbsolutePath());
 			}
 		}
 
 		return clientOnlyLibraries;
+	}
+
+	private static Set<ResolvedArtifact> getArtifacts(Project project, String configuration) {
+		return project.getConfigurations().getByName(configuration)
+				.getResolvedConfiguration()
+				.getResolvedArtifacts();
+	}
+
+	private static boolean containsLibrary(Set<ResolvedArtifact> artifacts, ModuleVersionIdentifier identifier) {
+		return artifacts.stream()
+				.map(ResolvedArtifact::getModuleVersion)
+				.map(ResolvedModuleVersion::getId)
+				.anyMatch(test -> test.getGroup().equals(identifier.getGroup()) && test.getName().equals(identifier.getName()));
 	}
 
 	private static String encodeEscaped(String s) {

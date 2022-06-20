@@ -75,8 +75,6 @@ public class MinecraftLibraryProvider {
 				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
 					// Make log4j a runtime only dep to force slf4j.
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
-				} else if (serverBundleMetadata != null && isLibraryInBundle(serverBundleMetadata, library)) {
-					project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
 				} else if (jarConfiguration.getSupportedEnvironments().contains("client")) {
 					// Client only library, or legacy version
 					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, library.name());
@@ -117,6 +115,12 @@ public class MinecraftLibraryProvider {
 			}
 		}
 
+		if (serverBundleMetadata != null) {
+			for (BundleMetadata.Entry library : serverBundleMetadata.libraries()) {
+				project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
+			}
+		}
+
 		if (overrideLWJGL) {
 			LWJGLVersionOverride.DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
 			LWJGLVersionOverride.NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
@@ -131,9 +135,5 @@ public class MinecraftLibraryProvider {
 			dependency.setTransitive(false);
 			project.getDependencies().add("modLocalRuntime", dependency);
 		}
-	}
-
-	private static boolean isLibraryInBundle(BundleMetadata bundleMetadata, MinecraftVersionMeta.Library library) {
-		return bundleMetadata.libraries().stream().anyMatch(entry -> entry.name().equals(library.name()));
 	}
 }

@@ -128,6 +128,7 @@ public class RemapTaskConfiguration {
 
 			task.dependsOn(sourcesJarTask);
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
+			task.getIncludesClientOnlyClasses().set(project.provider(extension::areEnvironmentSourceSetsSplit));
 		});
 
 		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));

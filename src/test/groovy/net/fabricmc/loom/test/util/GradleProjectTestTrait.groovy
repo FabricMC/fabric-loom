@@ -50,7 +50,7 @@ trait GradleProjectTestTrait {
 		def homeDirOverride = System.getProperty("fabric.loom.test.homeDir")
 
 		if (homeDirOverride) {
-			gradleHomeDir = new File(homeDirOverride);
+			gradleHomeDir = new File(homeDirOverride)
 		}
 
         setupProject(options, projectDir)

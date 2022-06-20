@@ -226,7 +226,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		public static SourceSet getClientSourceSet(Project project) {
-			Preconditions.checkArgument(LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit());
+			Preconditions.checkArgument(LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit(), "Cannot get client only sourceset as project is not split");
 
 			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
 			return javaExtension.getSourceSets().getByName(CLIENT_ONLY_SOURCE_SET_NAME);

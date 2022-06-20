@@ -26,15 +26,18 @@ package net.fabricmc.loom.task;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 
 import javax.inject.Inject;
 
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.service.SourceRemapperService;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 
@@ -51,6 +54,15 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 		submitWork(RemapSourcesAction.class, params -> {
 			params.getSourcesRemapperServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), SourceRemapperService.create(this)));
 		});
+	}
+
+	@Override
+	protected List<String> getClientOnlyEntries() {
+		final SourceSet clientSourceSet = MinecraftSourceSets.Split.getClientSourceSet(getProject());
+
+		return clientSourceSet.getAllSource().getFiles().stream()
+				.map(relativePath(getRootPaths(clientSourceSet.getAllSource().getSrcDirs())))
+				.toList();
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {
@@ -73,6 +85,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 			try {
 				sourceRemapperService.remapSourcesJar(inputFile, outputFile);
 
+				modifyJarManifest();
 				rewriteJar();
 			} catch (Exception e) {
 				try {

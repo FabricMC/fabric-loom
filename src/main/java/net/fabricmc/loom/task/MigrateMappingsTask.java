@@ -116,7 +116,7 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 		Set<File> files;
 
 		try {
-			if (mappings.startsWith("net.minecraft:mappings:") || mappings.startsWith("net.mojang.minecraft:mappings:")) {
+			if (mappings.startsWith("net.minecraft:mappings:")) {
 				if (!mappings.endsWith(":" + LoomGradleExtension.get(project).getMinecraftProvider().minecraftVersion())) {
 					throw new UnsupportedOperationException("Migrating Mojang mappings is currently only supported for the specified minecraft version");
 				}

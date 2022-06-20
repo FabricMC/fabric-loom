@@ -210,14 +210,14 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			});
 
 			// The sources task can be registered at a later time.
-			project.getTasks().withType(Jar.class, sources -> {
-				if (!mainSourceSet.getSourcesJarTaskName().equals(sources.getName())) {
+			project.getTasks().configureEach(task -> {
+				if (!mainSourceSet.getSourcesJarTaskName().equals(task.getName()) || !(task instanceof Jar jar)) {
 					// Not the sources task we are looking for.
 					return;
 				}
 
 				// The client only sources to the combined sources jar.
-				sources.from(clientOnlySourceSet.getAllSource());
+				jar.from(clientOnlySourceSet.getAllSource());
 			});
 		}
 

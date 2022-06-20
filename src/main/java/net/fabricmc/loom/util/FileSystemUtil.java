@@ -72,15 +72,15 @@ public final class FileSystemUtil {
 	}
 
 	public static Delegate getJarFileSystem(File file, boolean create) throws IOException {
-		return getJarFileSystem(file.toURI(), create);
+		return new Delegate(FileSystemReference.openJar(file.toPath(), create));
 	}
 
 	public static Delegate getJarFileSystem(Path path, boolean create) throws IOException {
-		return getJarFileSystem(path.toUri(), create);
+		return new Delegate(FileSystemReference.openJar(path, create));
 	}
 
 	public static Delegate getJarFileSystem(Path path) throws IOException {
-		return getJarFileSystem(path, false);
+		return new Delegate(FileSystemReference.openJar(path));
 	}
 
 	public static Delegate getJarFileSystem(URI uri, boolean create) throws IOException {

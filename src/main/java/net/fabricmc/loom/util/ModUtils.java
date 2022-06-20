@@ -47,7 +47,7 @@ public final class ModUtils {
 	@Nullable
 	public static JsonObject getFabricModJson(Path path) {
 		try {
-			return ZipUtils.unpackGson(path, "fabric.mod.json", JsonObject.class);
+			return ZipUtils.unpackGsonNullable(path, "fabric.mod.json", JsonObject.class);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to extract fabric.mod.json from " + path, e);
 		}

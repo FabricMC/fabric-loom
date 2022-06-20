@@ -189,6 +189,11 @@ jacocoTestReport {
 test {
 	maxHeapSize = "1536m"
 	useJUnitPlatform()
+
+	// Forward system prop onto tests.
+	if (System.getProperty("fabric.loom.test.homeDir")) {
+		systemProperty "fabric.loom.test.homeDir", System.getProperty("fabric.loom.test.homeDir")
+	}
 }
 
 import org.gradle.util.GradleVersion

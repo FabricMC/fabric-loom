@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2021 FabricMC
+ * Copyright (c) 2019-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.configuration.mods.ModProcessor;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
@@ -79,10 +79,10 @@ public class ModCompileRemapper {
 		final File modStore = extension.getFiles().getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
 
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			extension.getLazyConfigurationProvider(entry.getRemappedConfiguration()).configure(remappedConfig -> {
-				Configuration sourceConfig = project.getConfigurations().getByName(entry.sourceConfiguration());
-				Configuration regularConfig = project.getConfigurations().getByName(entry.getTargetConfiguration(project.getConfigurations()));
+		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+			entry.getRemappedConfiguration().configure(remappedConfig -> {
+				Configuration sourceConfig = entry.getSourceConfiguration().get();
+				Configuration targetConfig = entry.getTargetConfiguration().get();
 
 				List<ModDependencyInfo> modDependencies = new ArrayList<>();
 
@@ -92,7 +92,7 @@ public class ModCompileRemapper {
 					String version = replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
 
 					if (!ModUtils.isMod(artifact.getFile())) {
-						addToRegularCompile(project, regularConfig, artifact);
+						addToRegularCompile(project, targetConfig, artifact);
 						continue;
 					}
 
@@ -119,7 +119,7 @@ public class ModCompileRemapper {
 					// Create a mod dependency for each file in the file collection
 					for (File artifact : files) {
 						if (!ModUtils.isMod(artifact)) {
-							dependencies.add(regularConfig.getName(), project.files(artifact));
+							dependencies.add(targetConfig.getName(), project.files(artifact));
 							continue;
 						}
 
@@ -154,7 +154,7 @@ public class ModCompileRemapper {
 				}
 
 				// Export to other projects
-				if (entry.targetConfiguration().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
+				if (entry.getTargetConfigurationName().get().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
 					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
 				}
 			});

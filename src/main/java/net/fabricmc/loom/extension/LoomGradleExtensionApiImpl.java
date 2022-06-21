@@ -40,6 +40,7 @@ import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.ModSettings;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
@@ -80,6 +81,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
 	private final NamedDomainObjectContainer<ModSettings> mods;
+	private final NamedDomainObjectContainer<RemapConfigurationSettings> remapConfigurations;
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
@@ -116,6 +118,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				baseName -> new RunConfigSettings(project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
 		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
+		this.remapConfigurations = project.getObjects().domainObjectContainer(RemapConfigurationSettings.class);
 
 		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
@@ -318,6 +321,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public NamedDomainObjectContainer<ModSettings> getMods() {
 		return mods;
+	}
+
+	@Override
+	public void remapConfigurations(Action<NamedDomainObjectContainer<RemapConfigurationSettings>> action) {
+		action.execute(getRemapConfigurations());
+	}
+
+	@Override
+	public NamedDomainObjectContainer<RemapConfigurationSettings> getRemapConfigurations() {
+		return remapConfigurations;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

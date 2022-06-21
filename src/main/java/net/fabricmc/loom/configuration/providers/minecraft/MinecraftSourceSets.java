@@ -37,6 +37,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
 
@@ -63,10 +64,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 	public abstract void afterEvaluate(Project project);
 
 	protected void createSourceSets(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-
 		for (String name : getAllSourceSetNames()) {
-			extension.createLazyConfiguration(name, configuration -> configuration.setTransitive(false));
+			project.getConfigurations().register(name, configuration -> configuration.setTransitive(false));
 
 			// All the configurations extend the loader deps.
 			extendsFrom(name, Constants.Configurations.LOADER_DEPENDENCIES, project);
@@ -195,6 +194,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 							.plus(mainSourceSet.getRuntimeClasspath())
 							.plus(mainSourceSet.getOutput())
 			);
+
+			RemapConfigurations.configureClientConfigurations(project, clientOnlySourceSet);
 
 			// Include the client only output in the jars
 			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {

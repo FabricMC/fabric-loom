@@ -45,8 +45,8 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.task.RemapJarTask;
@@ -169,8 +169,8 @@ public class ModProcessor {
 		final Map<ModDependencyInfo, OutputConsumerPath> outputConsumerMap = new HashMap<>();
 		final Map<ModDependencyInfo, byte[]> accessWidenerMap = new HashMap<>();
 
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			for (File inputFile : project.getConfigurations().getByName(entry.sourceConfiguration()).getFiles()) {
+		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+			for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 

@@ -26,6 +26,7 @@ package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -91,6 +92,19 @@ public interface LoomGradleExtensionAPI {
 
 	@ApiStatus.Experimental
 	NamedDomainObjectContainer<ModSettings> getMods();
+
+	@ApiStatus.Experimental
+	void remapConfigurations(Action<NamedDomainObjectContainer<RemapConfigurationSettings>> action);
+
+	NamedDomainObjectContainer<RemapConfigurationSettings> getRemapConfigurations();
+
+	default NamedDomainObjectSet<RemapConfigurationSettings> getCompileRemapConfigurations() {
+		return getRemapConfigurations().matching(element -> element.getOnCompileClasspath().get());
+	}
+
+	default NamedDomainObjectSet<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
+		return getRemapConfigurations().matching(element -> element.getOnCompileClasspath().get());
+	}
 
 	@ApiStatus.Experimental
 	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.

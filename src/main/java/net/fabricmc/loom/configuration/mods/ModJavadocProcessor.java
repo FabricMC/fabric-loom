@@ -42,8 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
@@ -67,10 +67,8 @@ public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesT
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final List<ModJavadoc> javadocs = new ArrayList<>();
 
-		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			Set<File> artifacts = extension.getLazyConfigurationProvider(entry.sourceConfiguration())
-					.get()
-					.resolve();
+		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
 				if (!ModUtils.isMod(artifact.toPath())) {

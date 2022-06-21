@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.gradle.api.Action;
-import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 
@@ -59,30 +60,53 @@ public final class RemapConfigurations {
 
 	public static void setupConfigurations(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final NamedDomainObjectContainer<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
-
-		// Realise the RemapConfigurationSetting's right away to ensure that source configuration is lazily registered.
-		configurations.whenObjectAdded(RemapConfigurationSettings::registerConfigurations);
-
-		configurations.register(modApi, configure(JavaPlugin.API_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME));
-		configurations.register(modImplementation, configure(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
-		configurations.register(modCompileOnly, configure(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.NONE));
-		configurations.register(modCompileOnlyApi, configure(JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY));
-		configurations.register(modRuntimeOnly, configure(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
-		configurations.register(modLocalRuntime, configure(Constants.Configurations.LOCAL_RUNTIME, false, true, RemapConfigurationSettings.PublishingMode.NONE));
+		extension.addRemapConfiguration(modApi, configure(JavaPlugin.API_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME));
+		extension.addRemapConfiguration(modImplementation, configure(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
+		extension.addRemapConfiguration(modCompileOnly, configure(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.NONE));
+		extension.addRemapConfiguration(modCompileOnlyApi, configure(JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY));
+		extension.addRemapConfiguration(modRuntimeOnly, configure(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
+		extension.addRemapConfiguration(modLocalRuntime, configure(Constants.Configurations.LOCAL_RUNTIME, false, true, RemapConfigurationSettings.PublishingMode.NONE));
 	}
 
 	public static void configureClientConfigurations(Project project, SourceSet clientSourceSet) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final NamedDomainObjectContainer<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
+		final List<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
 
-		CONFIG_NAME_MAP.forEach((config, function) -> {
-			configurations.named(config).configure(settings -> {
-				settings.getClientTargetConfigurationName().convention(function.apply(clientSourceSet));
-			});
-		});
+		for (RemapConfigurationSettings configuration : configurations) {
+			Function<SourceSet, String> function = CONFIG_NAME_MAP.get(configuration.getName());
+
+			if (function != null) {
+				configuration.getClientTargetConfigurationName().set(function.apply(clientSourceSet));
+			}
+		}
 
 		// TODO create client only versions of the configurations
+	}
+
+	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
+		// No point bothering to make it lazily, gradle realises configurations right away.
+		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
+		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getRemappedConfigurationName());
+		final Configuration configuration = project.getConfigurations().create(settings.getName());
+		configuration.setTransitive(true);
+		// Don't get transitive deps of already remapped mods
+		remappedConfiguration.setTransitive(false);
+
+		if (settings.getOnCompileClasspath().get()) {
+			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
+			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
+			extendsFrom(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+		}
+
+		if (settings.getOnRuntimeClasspath().get()) {
+			extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+		}
+
+		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
+			extendsFrom(outgoingConfigurationName, configuration, project);
+		}
 	}
 
 	private static Action<RemapConfigurationSettings> configure(String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
@@ -92,5 +116,11 @@ public final class RemapConfigurations {
 			configuration.getOnRuntimeClasspath().convention(runtimeClasspath);
 			configuration.getPublishingMode().convention(publishingMode);
 		};
+	}
+
+	private static void extendsFrom(String name, Configuration configuration, Project project) {
+		project.getConfigurations().named(name).configure(namedConfiguration -> {
+			namedConfiguration.extendsFrom(configuration);
+		});
 	}
 }

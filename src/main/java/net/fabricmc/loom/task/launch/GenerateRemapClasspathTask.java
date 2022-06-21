@@ -39,6 +39,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
@@ -54,12 +55,10 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 
 		getRemapClasspath().from(configurations.named(Constants.Configurations.LOADER_DEPENDENCIES));
-
-		for (String sourceConfigurations : getExtension().getRuntimeRemapConfigurations().getNames()) {
-			getRemapClasspath().from(configurations.named(sourceConfigurations));
-		}
-
-		getRemapClasspathFile().set(getExtension().getFiles().getRemapClasspathFile());
+		getExtension().getRuntimeRemapConfigurations().stream()
+				.map(RemapConfigurationSettings::getName)
+				.map(configurations::named)
+				.forEach(getRemapClasspath()::from);
 	}
 
 	@TaskAction

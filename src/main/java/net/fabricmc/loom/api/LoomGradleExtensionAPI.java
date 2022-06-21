@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.api;
 
+import java.util.List;
+
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -93,17 +94,16 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	NamedDomainObjectContainer<ModSettings> getMods();
 
-	@ApiStatus.Experimental
-	void remapConfigurations(Action<NamedDomainObjectContainer<RemapConfigurationSettings>> action);
+	List<RemapConfigurationSettings> getRemapConfigurations();
 
-	NamedDomainObjectContainer<RemapConfigurationSettings> getRemapConfigurations();
+	RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action);
 
-	default NamedDomainObjectSet<RemapConfigurationSettings> getCompileRemapConfigurations() {
-		return getRemapConfigurations().matching(element -> element.getOnCompileClasspath().get());
+	default List<RemapConfigurationSettings> getCompileRemapConfigurations() {
+		return getRemapConfigurations().stream().filter(element -> element.getOnCompileClasspath().get()).toList();
 	}
 
-	default NamedDomainObjectSet<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
-		return getRemapConfigurations().matching(element -> element.getOnCompileClasspath().get());
+	default List<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
+		return getRemapConfigurations().stream().filter(element -> element.getOnCompileClasspath().get()).toList();
 	}
 
 	@ApiStatus.Experimental

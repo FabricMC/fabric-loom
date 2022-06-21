@@ -24,8 +24,12 @@
 
 package net.fabricmc.loom.extension;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -44,6 +48,7 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ModVersionParser;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -81,7 +86,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
 	private final NamedDomainObjectContainer<ModSettings> mods;
-	private final NamedDomainObjectContainer<RemapConfigurationSettings> remapConfigurations;
+	private final NamedDomainObjectList<RemapConfigurationSettings> remapConfigurations;
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
@@ -118,7 +123,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				baseName -> new RunConfigSettings(project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
 		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
-		this.remapConfigurations = project.getObjects().domainObjectContainer(RemapConfigurationSettings.class);
+		this.remapConfigurations = project.getObjects().namedDomainObjectList(RemapConfigurationSettings.class);
 
 		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
@@ -324,13 +329,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void remapConfigurations(Action<NamedDomainObjectContainer<RemapConfigurationSettings>> action) {
-		action.execute(getRemapConfigurations());
+	public List<RemapConfigurationSettings> getRemapConfigurations() {
+		return Collections.unmodifiableList(remapConfigurations);
 	}
 
 	@Override
-	public NamedDomainObjectContainer<RemapConfigurationSettings> getRemapConfigurations() {
-		return remapConfigurations;
+	public RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action) {
+		final RemapConfigurationSettings configurationSettings = getProject().getObjects().newInstance(RemapConfigurationSettings.class, name);
+
+		action.execute(configurationSettings);
+		RemapConfigurations.applyToProject(getProject(), configurationSettings);
+		remapConfigurations.add(configurationSettings);
+
+		return configurationSettings;
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

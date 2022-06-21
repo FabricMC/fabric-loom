@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.api;
 
-import java.util.Objects;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -39,15 +38,33 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Internal;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
-import net.fabricmc.loom.util.Constants;
 
 /**
  * A {@link Named} object for configuring "proxy" configurations that remap artifacts.
  */
 public abstract class RemapConfigurationSettings implements Named {
+	private final String name;
+
+	@Inject
+	public RemapConfigurationSettings(String name) {
+		this.name = name;
+
+		getTargetConfigurationName().finalizeValueOnRead();
+		getClientTargetConfigurationName().finalizeValueOnRead();
+		getOnCompileClasspath().finalizeValueOnRead();
+		getOnRuntimeClasspath().finalizeValueOnRead();
+		getPublishingMode().convention(PublishingMode.NONE).finalizeValueOnRead();
+	}
+
+	@Override
+	public @NotNull String getName() {
+		return name;
+	}
+
 	/**
 	 * @return The target configuration name
 	 */
@@ -96,18 +113,6 @@ public abstract class RemapConfigurationSettings implements Named {
 	@Inject
 	protected abstract Project getProject();
 
-	private NamedDomainObjectProvider<Configuration> sourceConfiguration = null;
-	private NamedDomainObjectProvider<Configuration> remappedConfiguration = null;
-
-	@Inject
-	public RemapConfigurationSettings() {
-		getTargetConfigurationName().finalizeValueOnRead();
-		getClientTargetConfigurationName().finalizeValueOnRead();
-		getOnCompileClasspath().finalizeValueOnRead();
-		getOnRuntimeClasspath().finalizeValueOnRead();
-		getPublishingMode().convention(PublishingMode.NONE).finalizeValueOnRead();
-	}
-
 	@ApiStatus.Internal
 	@Internal
 	public final String getRemappedConfigurationName() {
@@ -117,13 +122,13 @@ public abstract class RemapConfigurationSettings implements Named {
 	@ApiStatus.Internal
 	@Internal
 	public final NamedDomainObjectProvider<Configuration> getSourceConfiguration() {
-		return Objects.requireNonNull(sourceConfiguration);
+		return getConfigurationByName(getName());
 	}
 
 	@ApiStatus.Internal
 	@Internal
 	public final NamedDomainObjectProvider<Configuration> getRemappedConfiguration() {
-		return Objects.requireNonNull(remappedConfiguration);
+		return getConfigurationByName(getRemappedConfigurationName());
 	}
 
 	@ApiStatus.Internal
@@ -145,49 +150,5 @@ public abstract class RemapConfigurationSettings implements Named {
 	@Internal
 	private NamedDomainObjectProvider<Configuration> getConfigurationByName(String name) {
 		return getProject().getConfigurations().named(name);
-	}
-
-	public void registerConfigurations() {
-		sourceConfiguration = createSourceConfigurationProvider();
-		remappedConfiguration = createRemappedConfigurationProvider();
-	}
-
-	private void extendsFrom(String name, Configuration configuration) {
-		getConfigurationByName(name).configure(outgoingConfiguration -> {
-			outgoingConfiguration.extendsFrom(configuration);
-		});
-	}
-
-	private NamedDomainObjectProvider<Configuration> createSourceConfigurationProvider() {
-		return getProject().getConfigurations().register(getName(), configuration -> {
-			configuration.setTransitive(true);
-
-			if (getOnCompileClasspath().get()) {
-				final Configuration targetConfiguration = getTargetConfiguration().get();
-
-				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration);
-				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, targetConfiguration);
-				extendsFrom(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, targetConfiguration);
-				extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, targetConfiguration);
-			}
-
-			if (getOnRuntimeClasspath().get()) {
-				final Configuration targetConfiguration = getTargetConfiguration().get();
-
-				extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, targetConfiguration);
-				extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, targetConfiguration);
-			}
-
-			for (String outgoingConfigurationName : getPublishingMode().get().outgoingConfigurations()) {
-				extendsFrom(outgoingConfigurationName, configuration);
-			}
-		});
-	}
-
-	private NamedDomainObjectProvider<Configuration> createRemappedConfigurationProvider() {
-		return getProject().getConfigurations().register(getRemappedConfigurationName(), configuration -> {
-			// Don't get transitive deps of already remapped mods
-			configuration.setTransitive(false);
-		});
 	}
 }

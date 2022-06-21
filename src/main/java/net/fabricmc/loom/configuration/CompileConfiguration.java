@@ -57,6 +57,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraft
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class CompileConfiguration {
 	private CompileConfiguration() {
@@ -116,7 +117,7 @@ public final class CompileConfiguration {
 		LoomGradleExtension extension = LoomGradleExtension.get(p);
 
 		p.getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
-			final SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+			final SourceSet main = SourceSetHelper.getMainSourceSet(p);
 			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 		});
 

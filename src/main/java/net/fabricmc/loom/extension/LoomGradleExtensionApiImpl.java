@@ -34,7 +34,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.publish.maven.MavenPublication;
@@ -59,6 +58,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDepende
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.DeprecationHelper;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
  * This class implements the public extension api.
@@ -141,8 +141,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
-			final JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-			final SourceSet main = javaPluginExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+			final SourceSet main = SourceSetHelper.getMainSourceSet(project);
 			interfaceInjection.getInterfaceInjectionSourceSets().add(main);
 
 			interfaceInjection.getInterfaceInjectionSourceSets().finalizeValueOnRead();

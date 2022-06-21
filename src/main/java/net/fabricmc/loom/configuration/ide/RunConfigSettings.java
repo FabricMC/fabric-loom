@@ -34,13 +34,13 @@ import java.util.function.Function;
 
 import org.gradle.api.Named;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RunConfigSettings implements Named {
 	/**
@@ -106,7 +106,7 @@ public final class RunConfigSettings implements Named {
 
 		setSource(p -> {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
-			return p.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(sourceSetName);
+			return SourceSetHelper.getSourceSetByName(sourceSetName, p);
 		});
 
 		runDir("run");
@@ -234,7 +234,7 @@ public final class RunConfigSettings implements Named {
 	}
 
 	public void source(String source) {
-		setSource(proj -> project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().getByName(source));
+		setSource(proj -> SourceSetHelper.getSourceSetByName(source, proj));
 	}
 
 	public void ideConfigGenerated(boolean ideConfigGenerated) {

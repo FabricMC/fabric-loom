@@ -32,7 +32,6 @@ import java.util.function.BiConsumer;
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
 
@@ -40,6 +39,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split {
 	public static MinecraftSourceSets get(Project project) {
@@ -163,12 +163,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_COMMON_NAMED, project);
 			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, project);
 
-			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-			final LoomGradleExtension loomExtension = LoomGradleExtension.get(project);
-
 			// Register our new client only source set, main becomes common only, with their respective jars.
-			SourceSet mainSourceSet = javaExtension.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-			SourceSet clientOnlySourceSet = javaExtension.getSourceSets().create(CLIENT_ONLY_SOURCE_SET_NAME);
+			SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+			SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
 
 			extendsFrom(List.of(
 					mainSourceSet.getCompileClasspathConfigurationName(),
@@ -228,9 +225,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		public static SourceSet getClientSourceSet(Project project) {
 			Preconditions.checkArgument(LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit(), "Cannot get client only sourceset as project is not split");
-
-			final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-			return javaExtension.getSourceSets().getByName(CLIENT_ONLY_SOURCE_SET_NAME);
+			return SourceSetHelper.getSourceSetByName(CLIENT_ONLY_SOURCE_SET_NAME, project);
 		}
 	}
 }

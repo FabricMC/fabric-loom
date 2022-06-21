@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
 import org.gradle.api.Action;
@@ -37,6 +36,7 @@ import org.gradle.api.tasks.SourceSet;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RemapConfigurations {
 	private static final String modApi = "modApi";
@@ -46,41 +46,65 @@ public final class RemapConfigurations {
 	private static final String modRuntimeOnly = "modRuntimeOnly";
 	private static final String modLocalRuntime = "modLocalRuntime";
 
-	private static final Map<String, Function<SourceSet, String>> CONFIG_NAME_MAP = Map.of(
-			modApi, SourceSet::getApiConfigurationName,
-			modImplementation, SourceSet::getImplementationConfigurationName,
-			modCompileOnly, SourceSet::getCompileOnlyConfigurationName,
-			modCompileOnlyApi, SourceSet::getCompileOnlyApiConfigurationName,
-			modRuntimeOnly, SourceSet::getRuntimeOnlyConfigurationName,
-			modLocalRuntime, SourceSet::getRuntimeOnlyConfigurationName
+	private static final List<ConfigurationOptions> OPTIONS = List.of(
+			new ConfigurationOptions(modApi, mainOnly(SourceSet::getApiConfigurationName), true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME),
+			new ConfigurationOptions(modImplementation, SourceSet::getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
+			new ConfigurationOptions(modCompileOnly, SourceSet::getCompileOnlyConfigurationName, true, false, RemapConfigurationSettings.PublishingMode.NONE),
+			new ConfigurationOptions(modCompileOnlyApi, mainOnly(SourceSet::getCompileOnlyApiConfigurationName), true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY),
+			new ConfigurationOptions(modRuntimeOnly, SourceSet::getRuntimeOnlyConfigurationName, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
+			new ConfigurationOptions(modLocalRuntime, mainOnly(Constants.Configurations.LOCAL_RUNTIME), false, true, RemapConfigurationSettings.PublishingMode.NONE)
 	);
+
+	private static final List<String> MAIN_CONFIGURATIONS = OPTIONS.stream().map(ConfigurationOptions::baseName).toList();
 
 	private RemapConfigurations() {
 	}
 
 	public static void setupConfigurations(Project project) {
+		setupForSourceSet(project, SourceSetHelper.getMainSourceSet(project));
+	}
+
+	// TODO expose this?
+	private static void setupForSourceSet(Project project, SourceSet sourceSet) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.addRemapConfiguration(modApi, configure(JavaPlugin.API_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME));
-		extension.addRemapConfiguration(modImplementation, configure(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
-		extension.addRemapConfiguration(modCompileOnly, configure(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.NONE));
-		extension.addRemapConfiguration(modCompileOnlyApi, configure(JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME, true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY));
-		extension.addRemapConfiguration(modRuntimeOnly, configure(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY));
-		extension.addRemapConfiguration(modLocalRuntime, configure(Constants.Configurations.LOCAL_RUNTIME, false, true, RemapConfigurationSettings.PublishingMode.NONE));
+
+		for (ConfigurationOptions option : OPTIONS) {
+			String targetConfiguration = option.targetNameFunc.apply(sourceSet);
+
+			if (targetConfiguration == null) {
+				continue;
+			}
+
+			String name = option.baseName();
+
+			if (!sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME)) {
+				name = sourceSet.getName() + (name.substring(0, 1).toUpperCase() + name.substring(1));
+			}
+
+			extension.addRemapConfiguration(name, configure(
+					targetConfiguration,
+					option.compileClasspath(),
+					option.runtimeClasspath(),
+					option.publishingMode()
+			));
+		}
 	}
 
 	public static void configureClientConfigurations(Project project, SourceSet clientSourceSet) {
+		setupForSourceSet(project, clientSourceSet);
+
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final List<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
 
+		// Apply the client target names to the main configurations
 		for (RemapConfigurationSettings configuration : configurations) {
-			Function<SourceSet, String> function = CONFIG_NAME_MAP.get(configuration.getName());
-
-			if (function != null) {
-				configuration.getClientTargetConfigurationName().set(function.apply(clientSourceSet));
+			if (!MAIN_CONFIGURATIONS.contains(configuration.getName())) {
+				return;
 			}
-		}
 
-		// TODO create client only versions of the configurations
+			final String clientTargetName = getOptionsByName(configuration.getName()).targetNameFunc.apply(clientSourceSet);
+			configuration.getClientTargetConfigurationName().convention(clientTargetName);
+		}
 	}
 
 	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
@@ -123,4 +147,19 @@ public final class RemapConfigurations {
 			namedConfiguration.extendsFrom(configuration);
 		});
 	}
+
+	private static ConfigurationOptions getOptionsByName(String name) {
+		return OPTIONS.stream().filter(options -> options.baseName.equals(name))
+				.findFirst().orElseThrow();
+	}
+
+	private static Function<SourceSet, String> mainOnly(Function<SourceSet, String> function) {
+		return sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? function.apply(sourceSet) : null;
+	}
+
+	private static Function<SourceSet, String> mainOnly(String name) {
+		return mainOnly(sourceSet -> name);
+	}
+
+	private record ConfigurationOptions(String baseName, Function<SourceSet, String> targetNameFunc, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) { }
 }

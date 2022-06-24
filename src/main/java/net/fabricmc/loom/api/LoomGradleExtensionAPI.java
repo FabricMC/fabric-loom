@@ -96,8 +96,10 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	NamedDomainObjectContainer<ModSettings> getMods();
 
+	@ApiStatus.Experimental
 	NamedDomainObjectList<RemapConfigurationSettings> getRemapConfigurations();
 
+	@ApiStatus.Experimental
 	RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action);
 
 	void createRemapConfigurations(SourceSet sourceSet);

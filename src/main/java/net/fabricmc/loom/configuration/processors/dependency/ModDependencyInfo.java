@@ -39,16 +39,19 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.util.ZipUtils;
 
 public class ModDependencyInfo {
+	private final ArtifactRef artifact;
 	private final String group;
 	public final String name;
 	public final String version;
 	@Nullable
 	public final String classifier;
-	public final File inputFile;
 	public final Configuration targetConfig;
+	@Nullable
+	public final Configuration targetClientConfig;
 	public final RemapData remapData;
 
 	@Nullable
@@ -56,20 +59,25 @@ public class ModDependencyInfo {
 
 	private boolean forceRemap = false;
 
-	public ModDependencyInfo(String group, String name, String version, @Nullable String classifier, File inputFile, Configuration targetConfig, RemapData remapData) {
-		this.group = group;
-		this.name = name;
-		this.version = version;
-		this.classifier = classifier;
-		this.inputFile = inputFile;
+	public ModDependencyInfo(ArtifactRef artifact, Configuration targetConfig, @Nullable Configuration targetClientConfig, RemapData remapData) {
+		this.artifact = artifact;
+		this.group = artifact.group();
+		this.name = artifact.name();
+		this.version = artifact.version();
+		this.classifier = artifact.classifier();
 		this.targetConfig = targetConfig;
+		this.targetClientConfig = targetClientConfig;
 		this.remapData = remapData;
 
 		try {
-			this.accessWidenerData = tryReadAccessWidenerData(getInputFile().toPath());
+			this.accessWidenerData = readAccessWidenerData(artifact.path());
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read access widener data from" + inputFile, e);
+			throw new UncheckedIOException("Failed to read access widener data from" + artifact.path(), e);
 		}
+	}
+
+	public ArtifactRef getArtifact() {
+		return artifact;
 	}
 
 	public String getRemappedNotation() {
@@ -113,7 +121,7 @@ public class ModDependencyInfo {
 	}
 
 	public File getInputFile() {
-		return inputFile;
+		return artifact.path().toFile();
 	}
 
 	private boolean outputHasInvalidAccessWidener() {
@@ -126,7 +134,7 @@ public class ModDependencyInfo {
 		final AccessWidenerData outputAWData;
 
 		try {
-			outputAWData = tryReadAccessWidenerData(getRemappedOutput().toPath());
+			outputAWData = readAccessWidenerData(getRemappedOutput().toPath());
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read output access widener data from " + getRemappedOutput(), e);
 		}
@@ -141,11 +149,13 @@ public class ModDependencyInfo {
 	}
 
 	public boolean requiresRemapping() {
-		return !getRemappedOutput().exists() || inputFile.lastModified() <= 0 || inputFile.lastModified() > getRemappedOutput().lastModified() || forceRemap || !getRemappedPom().exists() || outputHasInvalidAccessWidener();
+		final File inputFile = artifact.path().toFile();
+		final long lastModified = inputFile.lastModified();
+		return !getRemappedOutput().exists() || lastModified <= 0 || lastModified > getRemappedOutput().lastModified() || forceRemap || !getRemappedPom().exists() || outputHasInvalidAccessWidener();
 	}
 
 	public void finaliseRemapping() {
-		getRemappedOutput().setLastModified(inputFile.lastModified());
+		getRemappedOutput().setLastModified(artifact.path().toFile().lastModified());
 		savePom();
 
 		// Validate that the remapped AW is what we want.
@@ -191,7 +201,7 @@ public class ModDependencyInfo {
 		return accessWidenerData;
 	}
 
-	private static AccessWidenerData tryReadAccessWidenerData(Path inputJar) throws IOException {
+	private static AccessWidenerData readAccessWidenerData(Path inputJar) throws IOException {
 		byte[] modJsonBytes = ZipUtils.unpack(inputJar, "fabric.mod.json");
 		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
 

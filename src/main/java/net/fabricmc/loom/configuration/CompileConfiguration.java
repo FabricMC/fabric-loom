@@ -65,6 +65,7 @@ public final class CompileConfiguration {
 
 	public static void setupConfigurations(Project project) {
 		final ConfigurationContainer configurations = project.getConfigurations();
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		configurations.register(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration -> configuration.setTransitive(true));
 		configurations.register(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration -> configuration.setTransitive(false));
@@ -93,7 +94,7 @@ public final class CompileConfiguration {
 		configurations.register(Constants.Configurations.LOCAL_RUNTIME);
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME, project);
 
-		RemapConfigurations.setupConfigurations(project);
+		extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(project));
 
 		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES, project);
 

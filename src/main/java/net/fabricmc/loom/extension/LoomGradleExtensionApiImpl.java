@@ -24,9 +24,6 @@
 
 package net.fabricmc.loom.extension;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
@@ -328,8 +325,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public List<RemapConfigurationSettings> getRemapConfigurations() {
-		return Collections.unmodifiableList(remapConfigurations);
+	public NamedDomainObjectList<RemapConfigurationSettings> getRemapConfigurations() {
+		return remapConfigurations;
 	}
 
 	@Override
@@ -341,6 +338,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		remapConfigurations.add(configurationSettings);
 
 		return configurationSettings;
+	}
+
+	@Override
+	public void createRemapConfigurations(SourceSet sourceSet) {
+		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

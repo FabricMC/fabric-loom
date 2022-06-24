@@ -59,6 +59,8 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 				.map(RemapConfigurationSettings::getName)
 				.map(configurations::named)
 				.forEach(getRemapClasspath()::from);
+
+		getRemapClasspathFile().set(getExtension().getFiles().getRemapClasspathFile());
 	}
 
 	@TaskAction

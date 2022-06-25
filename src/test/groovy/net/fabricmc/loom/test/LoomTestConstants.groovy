@@ -27,7 +27,7 @@ package net.fabricmc.loom.test
 import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
-    private final static String NIGHTLY_VERSION = "7.6-20220519002827+0000"
+    private final static String NIGHTLY_VERSION = "7.6-20220620222921+0000"
     private final static boolean NIGHTLY_EXISTS = nightlyExists(NIGHTLY_VERSION)
 
     public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()

@@ -71,6 +71,20 @@ public final class SourceSetHelper {
 				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
 	}
 
+	public static SourceSet getSourceSetByName(String name, Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets().getByName(name);
+	}
+
+	public static SourceSet getMainSourceSet(Project project) {
+		return getSourceSetByName(SourceSet.MAIN_SOURCE_SET_NAME, project);
+	}
+
+	public static SourceSet createSourceSet(String name, Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets().create(name);
+	}
+
 	/**
 	 * Attempts to compute the owning project for the {@link SourceSet}
 	 *

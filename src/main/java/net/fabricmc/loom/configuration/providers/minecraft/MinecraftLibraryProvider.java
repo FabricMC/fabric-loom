@@ -55,7 +55,7 @@ public class MinecraftLibraryProvider {
 		}
 
 		if (hasNativesToExtract) {
-			extension.createLazyConfiguration(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
+			project.getConfigurations().register(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
 		}
 
 		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {

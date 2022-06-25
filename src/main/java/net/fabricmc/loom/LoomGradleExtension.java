@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,7 @@ import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
-import org.gradle.api.Action;
-import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 
@@ -56,15 +53,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	LoomFiles getFiles();
-
-	default NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name) {
-		return createLazyConfiguration(name, config -> {
-		});
-	}
-
-	NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name, Action<? super Configuration> configurationAction);
-
-	NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name);
 
 	MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory);
 

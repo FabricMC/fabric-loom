@@ -40,8 +40,8 @@ import org.gradle.api.Project;
 import org.slf4j.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
@@ -236,8 +236,10 @@ public class SourceRemapper {
 				m.getClassPath().add(file.toPath());
 			}
 		} else {
-			for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-				for (File inputFile : project.getConfigurations().getByName(entry.sourceConfiguration()).getFiles()) {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+			for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+				for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
 					m.getClassPath().add(inputFile.toPath());
 				}
 			}

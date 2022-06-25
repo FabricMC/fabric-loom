@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,25 +32,40 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.RemappedConfigurationEntry;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
 public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
+	@InputFiles
+	public abstract ConfigurableFileCollection getRemapClasspath();
+
+	@OutputFile
+	public abstract RegularFileProperty getRemapClasspathFile();
+
+	public GenerateRemapClasspathTask() {
+		final ConfigurationContainer configurations = getProject().getConfigurations();
+
+		getRemapClasspath().from(configurations.named(Constants.Configurations.LOADER_DEPENDENCIES));
+		getExtension().getRuntimeRemapConfigurations().stream()
+				.map(RemapConfigurationSettings::getName)
+				.map(configurations::named)
+				.forEach(getRemapClasspath()::from);
+
+		getRemapClasspathFile().set(getExtension().getFiles().getRemapClasspathFile());
+	}
+
 	@TaskAction
 	public void run() {
-		List<String> inputConfigurations = new ArrayList<>();
-		inputConfigurations.add(Constants.Configurations.LOADER_DEPENDENCIES);
-		inputConfigurations.addAll(Constants.MOD_COMPILE_ENTRIES.stream().map(RemappedConfigurationEntry::sourceConfiguration).toList());
-
-		List<File> remapClasspath = new ArrayList<>();
-
-		for (String inputConfiguration : inputConfigurations) {
-			remapClasspath.addAll(getProject().getConfigurations().getByName(inputConfiguration).getFiles());
-		}
+		final List<File> remapClasspath = new ArrayList<>(getRemapClasspath().getFiles());
 
 		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
 			remapClasspath.add(minecraftJar.toFile());
@@ -61,7 +76,7 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 				.collect(Collectors.joining(File.pathSeparator));
 
 		try {
-			Files.writeString(getExtension().getFiles().getRemapClasspathFile().toPath(), str);
+			Files.writeString(getRemapClasspathFile().getAsFile().get().toPath(), str);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to generate remap classpath", e);
 		}

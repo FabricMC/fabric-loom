@@ -26,18 +26,13 @@ package net.fabricmc.loom.extension;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
-import org.gradle.api.Action;
-import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 
@@ -62,7 +57,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	private final MappingSet[] srcMappingCache = new MappingSet[2];
 	private final Mercury[] srcMercuryCache = new Mercury[2];
-	private final Map<String, NamedDomainObjectProvider<Configuration>> lazyConfigurations = new HashMap<>();
 	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
 
 	private LoomDependencyManager dependencyManager;
@@ -195,30 +189,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public boolean isRootProject() {
 		return project.getRootProject() == project;
-	}
-
-	@Override
-	public NamedDomainObjectProvider<Configuration> createLazyConfiguration(String name, Action<? super Configuration> configurationAction) {
-		NamedDomainObjectProvider<Configuration> provider = project.getConfigurations().register(name, configurationAction);
-
-		if (lazyConfigurations.containsKey(name)) {
-			throw new IllegalStateException("Duplicate configuration name" + name);
-		}
-
-		lazyConfigurations.put(name, provider);
-
-		return provider;
-	}
-
-	@Override
-	public NamedDomainObjectProvider<Configuration> getLazyConfigurationProvider(String name) {
-		NamedDomainObjectProvider<Configuration> provider = lazyConfigurations.get(name);
-
-		if (provider == null) {
-			throw new NullPointerException("Could not find provider with name: " + name);
-		}
-
-		return provider;
 	}
 
 	@Override

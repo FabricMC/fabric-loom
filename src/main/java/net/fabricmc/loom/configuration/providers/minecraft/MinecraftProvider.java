@@ -120,8 +120,8 @@ public abstract class MinecraftProvider {
 			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
 		}
 
-		libraryProvider = new MinecraftLibraryProvider();
-		libraryProvider.provide(this, getProject());
+		libraryProvider = new MinecraftLibraryProvider(this, project);
+		libraryProvider.provide();
 	}
 
 	protected void initFiles() {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,6 +114,24 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 				// Only use the maven artifact and not the pom or gradle metadata.
 				sources.artifact();
 				sources.ignoreGradleMetadataRedirection();
+			});
+		});
+	}
+
+	public static void forceLWJGLFromMavenCentral(Project project) {
+		// Force LWJGL from central, as it contains all the platform natives.
+		MavenArtifactRepository central = project.getRepositories().maven(repo -> {
+			repo.setName("MavenCentralLWJGL");
+			repo.setUrl(ArtifactRepositoryContainer.MAVEN_CENTRAL_URL);
+			repo.content(content -> {
+				content.includeGroup("org.lwjgl");
+			});
+		});
+
+		project.getRepositories().exclusiveContent(repository -> {
+			repository.forRepositories(central);
+			repository.filter(filter -> {
+				filter.includeGroup("org.lwjgl");
 			});
 		});
 	}

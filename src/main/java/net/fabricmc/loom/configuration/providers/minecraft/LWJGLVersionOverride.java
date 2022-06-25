@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,11 @@ import static net.fabricmc.loom.util.OperatingSystem.WINDOWS;
 import java.util.List;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.util.Architecture;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 
 public class LWJGLVersionOverride {
@@ -79,6 +81,21 @@ public class LWJGLVersionOverride {
 
 	public static boolean forceOverride(Project project) {
 		return project.getProperties().get("fabric.loom.override-lwjgl") != null;
+	}
+
+	public static void applyOverrides(Project project, boolean isMacOS) {
+		DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
+		NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
+
+		if (isMacOS) {
+			MACOS_DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
+			MACOS_NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
+		}
+
+		// Add the native support mod that fixes a handful of issues related to the LWJGL update at runtime.
+		ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION);
+		dependency.setTransitive(false);
+		project.getDependencies().add("modLocalRuntime", dependency);
 	}
 
 	@Nullable

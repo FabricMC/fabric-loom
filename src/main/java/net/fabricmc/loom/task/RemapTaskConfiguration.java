@@ -40,6 +40,7 @@ import org.gradle.api.tasks.bundling.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.PropertyUtils;
 
 public class RemapTaskConfiguration {
 	public static final String REMAP_JAR_TASK_NAME = "remapJar";
@@ -49,7 +50,7 @@ public class RemapTaskConfiguration {
 		final TaskContainer tasks = project.getTasks();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		if (!extension.getRemapArchives().get()) {
+		if (PropertyUtils.propertyHasProject(project, "fabric.loom.dontRemap")) {
 			extension.getUnmappedModCollection().from(project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
 			return;
 		}
@@ -81,7 +82,7 @@ public class RemapTaskConfiguration {
 
 		trySetupSourceRemapping(project);
 
-		if (!extension.getSetupRemappedVariants().get()) {
+		if (PropertyUtils.propertyHasProject(project, "fabric.loom.disableRemappedVariants")) {
 			return;
 		}
 

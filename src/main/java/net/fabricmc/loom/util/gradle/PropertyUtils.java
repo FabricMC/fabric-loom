@@ -31,13 +31,13 @@ import org.gradle.api.Project;
 public class PropertyUtils {
 	/**
 	 * Used to supply configuration options to loom's pre-evaluation setup steps.
-	 * Accepts a semicolon seperated list of project paths, or * set for all projects.
+	 * Accepts a semicolon seperated list of project paths, or "true" for all projects.
 	 */
 	public static boolean propertyHasProject(Project project, String property) {
 		final Object value = project.findProperty(property);
 
 		if (value instanceof String str) {
-			if (str.equals("*")) {
+			if (str.equals("true")) {
 				return true;
 			}
 

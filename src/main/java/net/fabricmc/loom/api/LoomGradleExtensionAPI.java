@@ -75,7 +75,7 @@ public interface LoomGradleExtensionAPI {
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 
 	/**
-	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.dontRemap" system property containing a semicolon seperated list of project paths.
+	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.dontRemap" gradle property.
 	 */
 	@Deprecated(forRemoval = true)
 	Property<Boolean> getRemapArchives();
@@ -109,7 +109,7 @@ public interface LoomGradleExtensionAPI {
 	Property<String> getCustomMinecraftManifest();
 
 	/**
-	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.disableRemappedVariants" system property containing a semicolon seperated list of project paths.
+	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.disableRemappedVariants" gradle property.
 	 */
 	@Deprecated(forRemoval = true)
 	Property<Boolean> getSetupRemappedVariants();

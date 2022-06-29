@@ -35,6 +35,7 @@ import com.google.common.io.Files;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.MutableVersionConstraint;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
@@ -124,6 +125,20 @@ public class ModConfigurationRemapper {
 				// Add all of the remapped mods onto the config
 				for (ModDependencyInfo info : modDependencies) {
 					project.getDependencies().add(info.targetConfig.getName(), info.getRemappedNotation());
+
+					if (info.getArtifact() instanceof ArtifactRef.ResolvedArtifactRef mavenArtifact) {
+						final String dependencyCoordinate = "%s:%s".formatted(mavenArtifact.group(), mavenArtifact.name());
+
+						// Prevent adding the same un-remapped dependency to the target configuration.
+						targetConfig.getDependencyConstraints().add(dependencies.getConstraints().create(dependencyCoordinate, constraint -> {
+							constraint.because("configuration (%s) already contains the remapped module from configuration (%s)".formatted(
+									targetConfig.getName(),
+									sourceConfig.getName()
+							));
+
+							constraint.version(MutableVersionConstraint::rejectAll);
+						}));
+					}
 				}
 
 				// Export to other projects

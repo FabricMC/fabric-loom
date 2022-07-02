@@ -157,17 +157,13 @@ public class RemapTaskConfiguration {
 	}
 
 	private static boolean getBooleanProperty(Project project, String key) {
-		boolean result = false;
-		Object value = project.getProperties().get(key);
-
-		if (value instanceof String) {
+		return project.getProviders().gradleProperty(key).map(string -> {
 			try {
-				result = Boolean.parseBoolean((String) value);
-			} catch (IllegalArgumentException ignored) {
-				// False
+				return Boolean.parseBoolean(string);
+			} catch (final IllegalArgumentException ex) {
+				return false;
 			}
-		}
-
-		return result;
+		})
+		.getOrElse(false);
 	}
 }

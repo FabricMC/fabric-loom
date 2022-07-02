@@ -78,6 +78,10 @@ public interface LoomGradleExtensionAPI {
 
 	Dependency layered(Action<LayeredMappingSpecBuilder> action);
 
+	/**
+	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.dontRemap" gradle property.
+	 */
+	@Deprecated(forRemoval = true)
 	Property<Boolean> getRemapArchives();
 
 	void runs(Action<NamedDomainObjectContainer<RunConfigSettings>> action);
@@ -125,13 +129,9 @@ public interface LoomGradleExtensionAPI {
 	Property<String> getCustomMinecraftManifest();
 
 	/**
-	 * If true, Loom will replace the {@code -dev} jars in the {@code *Elements} configurations
-	 * with remapped outgoing variants.
-	 *
-	 * <p>Will only apply if {@link #getRemapArchives()} is also true.
-	 *
-	 * @return the property controlling the setup of remapped variants
+	 * @deprecated Broken due to be evaluated too early. Replaced with "fabric.loom.disableRemappedVariants" gradle property.
 	 */
+	@Deprecated(forRemoval = true)
 	Property<Boolean> getSetupRemappedVariants();
 
 	/**

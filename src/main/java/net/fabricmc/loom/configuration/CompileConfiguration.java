@@ -135,8 +135,6 @@ public final class CompileConfiguration {
 			extension.setDependencyManager(dependencyManager);
 			dependencyManager.handleDependencies(project);
 
-			extension.getRemapArchives().finalizeValue();
-
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 
 			if (mixin.getUseLegacyMixinAp().get()) {

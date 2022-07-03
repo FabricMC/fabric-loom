@@ -73,6 +73,10 @@ loom {
 		defaultRefmapName = "default-refmap0000.json"
 		add(sourceSets["main"], "main-refmap0000.json")
 		add(sourceSets["mixin"])
+
+		messages {
+			MIXIN_SOFT_TARGET_IS_PUBLIC = 'error'
+		}
 	}
 }
 

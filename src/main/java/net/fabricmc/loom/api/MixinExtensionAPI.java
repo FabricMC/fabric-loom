@@ -25,6 +25,7 @@
 package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
@@ -37,6 +38,10 @@ public interface MixinExtensionAPI {
 	Property<String> getDefaultRefmapName();
 
 	Property<String> getRefmapTargetNamespace();
+
+	MapProperty<String, String> getMessages();
+
+	Property<Boolean> getShowMessageTypes();
 
 	/**
 	 * Apply Mixin AP to sourceSet.
@@ -95,4 +100,6 @@ public interface MixinExtensionAPI {
 	 * @param sourceSetName the name of sourceSet that applies Mixin AP.
 	 */
 	void add(String sourceSetName);
+
+	void messages(Action<MapProperty<String, String>> action);
 }

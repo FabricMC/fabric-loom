@@ -30,6 +30,7 @@ import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -42,6 +43,8 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	protected final Project project;
 	protected final Property<Boolean> useMixinAp;
 	private final Property<String> refmapTargetNamespace;
+	private final MapProperty<String, String> messages;
+	private final Property<Boolean> showMessageTypes;
 
 	public MixinExtensionApiImpl(Project project) {
 		this.project = Objects.requireNonNull(project);
@@ -51,6 +54,12 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 		this.refmapTargetNamespace = project.getObjects().property(String.class)
 				.convention(MappingsNamespace.INTERMEDIARY.toString());
 		this.refmapTargetNamespace.finalizeValueOnRead();
+
+		this.messages = project.getObjects().mapProperty(String.class, String.class);
+		this.messages.finalizeValueOnRead();
+
+		this.showMessageTypes = project.getObjects().property(Boolean.class);
+		this.showMessageTypes.convention(false).finalizeValueOnRead();
 	}
 
 	protected final PatternSet add0(SourceSet sourceSet, String refmapName) {
@@ -119,6 +128,21 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	@Override
 	public void add(String sourceSetName) {
 		add(sourceSetName, x -> { });
+	}
+
+	@Override
+	public MapProperty<String, String> getMessages() {
+		return messages;
+	}
+
+	@Override
+	public Property<Boolean> getShowMessageTypes() {
+		return showMessageTypes;
+	}
+
+	@Override
+	public void messages(Action<MapProperty<String, String>> action) {
+		action.execute(messages);
 	}
 
 	private SourceSet resolveSourceSet(String sourceSetName) {

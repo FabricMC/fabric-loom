@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
@@ -56,7 +58,11 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	public static final String SCALA = "scala";
 	public static final String GROOVY = "groovy";
 
+	private static final Pattern MSG_KEY_PATTERN = Pattern.compile("^[A-Z]+[A-Z_]+$");
+	private static final Pattern MSG_VALUE_PATTERN = Pattern.compile("^(note|warning|error|disabled)$");
+
 	protected final Project project;
+	protected final MixinExtension mixinExtension;
 	protected final Map<SourceSet, T> invokerTasks;
 	private final Collection<Configuration> apConfigurations;
 
@@ -64,6 +70,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 										Collection<Configuration> apConfigurations,
 										Map<SourceSet, T> invokerTasks) {
 		this.project = project;
+		this.mixinExtension = LoomGradleExtension.get(project).getMixin();
 		this.apConfigurations = apConfigurations;
 		this.invokerTasks = invokerTasks;
 	}
@@ -92,6 +99,17 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:" + loom.getMixin().getRefmapTargetNamespace().get());
 					put(Constants.MixinArguments.QUIET, "true");
 				}};
+
+			if (mixinExtension.getShowMessageTypes().get()) {
+				args.put(Constants.MixinArguments.SHOW_MESSAGE_TYPES, "true");
+			}
+
+			mixinExtension.getMessages().get().forEach((key, value) -> {
+				checkPattern(key, MSG_KEY_PATTERN);
+				checkPattern(value, MSG_VALUE_PATTERN);
+
+				args.put("AMSG_" + key, value);
+			});
 
 			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);
 			args.forEach((k, v) -> passArgument(task, k, v));
@@ -122,6 +140,14 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 		for (Map.Entry<SourceSet, T> entry : invokerTasks.entrySet()) {
 			passMixinArguments(entry.getValue(), entry.getKey());
+		}
+	}
+
+	private static void checkPattern(String input, Pattern pattern) {
+		final Matcher matcher = pattern.matcher(input);
+
+		if (!matcher.find()) {
+			throw new IllegalArgumentException("Mixin argument (%s) does not match pattern (%s)".formatted(input, pattern.toString()));
 		}
 	}
 }

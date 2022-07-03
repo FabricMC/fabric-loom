@@ -111,6 +111,7 @@ public class Constants {
 		public static final String OUT_REFMAP_FILE = "outRefMapFile";
 		public static final String DEFAULT_OBFUSCATION_ENV = "defaultObfuscationEnv";
 		public static final String QUIET = "quiet";
+		public static final String SHOW_MESSAGE_TYPES = "showMessageTypes";
 
 		private MixinArguments() {
 		}

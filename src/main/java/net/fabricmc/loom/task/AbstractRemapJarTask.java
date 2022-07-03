@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
@@ -62,6 +63,10 @@ import net.fabricmc.loom.util.ZipUtils;
 public abstract class AbstractRemapJarTask extends Jar {
 	public static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
+	public static final String MANIFEST_SPLIT_ENV_KEY = "Fabric-Loom-Split-Environment";
+	public static final String MANIFEST_CLIENT_ENTRIES_KEY = "Fabric-Loom-Client-Only-Entries";
+	public static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(MANIFEST_SPLIT_ENV_KEY);
+	public static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(MANIFEST_CLIENT_ENTRIES_KEY);
 
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
@@ -141,8 +146,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	protected void applyClientOnlyManifestAttributes(AbstractRemapParams params, List<String> entries) {
 		params.getManifestAttributes().set(Map.of(
-				"Fabric-Loom-Split-Environment", "true",
-				"Fabric-Loom-Client-Only-Entries", String.join(";", entries)
+				MANIFEST_SPLIT_ENV_KEY, "true",
+				MANIFEST_CLIENT_ENTRIES_KEY, String.join(";", entries)
 		));
 	}
 

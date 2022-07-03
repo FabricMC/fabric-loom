@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -38,13 +39,23 @@ import net.fabricmc.tinyremapper.FileSystemReference;
 
 public final class FileSystemUtil {
 	public record Delegate(FileSystemReference reference) implements AutoCloseable, Supplier<FileSystem> {
+		public Path getPath(String path, String... more) {
+			return get().getPath(path, more);
+		}
+
 		public byte[] readAllBytes(String path) throws IOException {
-			Path fsPath = get().getPath(path);
+			Path fsPath = getPath(path);
 
 			if (Files.exists(fsPath)) {
 				return Files.readAllBytes(fsPath);
 			} else {
 				throw new NoSuchFileException(fsPath.toString());
+			}
+		}
+
+		public <T> T fromInputStream(IOFunction<InputStream, T> function, String path, String... more) throws IOException {
+			try (InputStream inputStream = Files.newInputStream(getPath(path, more))) {
+				return function.apply(inputStream);
 			}
 		}
 

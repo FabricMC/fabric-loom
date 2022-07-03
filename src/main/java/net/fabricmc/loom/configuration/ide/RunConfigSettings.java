@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -94,6 +95,8 @@ public final class RunConfigSettings implements Named {
 	 * <p>By default only run configs on the root project will be generated.
 	 */
 	private boolean ideConfigGenerated;
+
+	private final Map<String, Object> environmentVariables = new HashMap<>();
 
 	private final Project project;
 	private final LoomGradleExtension extension;
@@ -239,6 +242,14 @@ public final class RunConfigSettings implements Named {
 
 	public void ideConfigGenerated(boolean ideConfigGenerated) {
 		this.ideConfigGenerated = ideConfigGenerated;
+	}
+
+	public Map<String, Object> getEnvironmentVariables() {
+		return environmentVariables;
+	}
+
+	public void environmentVariable(String name, Object value) {
+		environmentVariables.put(name, value);
 	}
 
 	/**

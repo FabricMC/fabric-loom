@@ -8,5 +8,8 @@
     <method v="2">
       <option name="Make" enabled="true" />
     </method>
+    <envs>
+      %IDEA_ENV_VARS%
+    </envs>
   </configuration>
 </component>

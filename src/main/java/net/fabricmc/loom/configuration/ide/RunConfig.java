@@ -30,11 +30,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
@@ -68,6 +70,8 @@ public class RunConfig {
 	public List<String> vmArgs = new ArrayList<>();
 	public List<String> programArgs = new ArrayList<>();
 	public SourceSet sourceSet;
+	public Map<String, Object> environmentVariables;
+	public String projectName;
 
 	public Element genRuns(Element doc) {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -174,6 +178,9 @@ public class RunConfig {
 		runConfig.programArgs.addAll(settings.getProgramArgs());
 		runConfig.vmArgs.addAll(settings.getVmArgs());
 		runConfig.vmArgs.add("-Dfabric.dli.main=" + getMainClass(environment, extension, defaultMain));
+		runConfig.environmentVariables = new HashMap<>();
+		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
+		runConfig.projectName = project.getName();
 
 		return runConfig;
 	}
@@ -202,8 +209,17 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", joinArguments(programArgs).replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", joinArguments(vmArgs).replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%IDEA_ENV_VARS%", getEnvVars("<env name=\"%s\" value=\"%s\"/>"));
+		dummyConfig = dummyConfig.replace("%ECLIPSE_ENV_VARS%", getEnvVars("<mapEntry key=\"%s\" value=\"%s\"/>"));
 
 		return dummyConfig;
+	}
+
+	private String getEnvVars(String pattern) {
+		return environmentVariables.entrySet().stream()
+			.map(entry ->
+				pattern.formatted(entry.getKey(), entry.getValue().toString())
+			).collect(Collectors.joining());
 	}
 
 	public static String joinArguments(List<String> args) {

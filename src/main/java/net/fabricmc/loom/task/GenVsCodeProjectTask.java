@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
@@ -99,6 +101,8 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		public String mainClass;
 		public String vmArgs;
 		public String args;
+		public Map<String, Object> env;
+		public String projectName;
 
 		VsCodeConfiguration(RunConfig runConfig) {
 			this.name = runConfig.configName;
@@ -106,6 +110,8 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			this.vmArgs = RunConfig.joinArguments(runConfig.vmArgs);
 			this.args = RunConfig.joinArguments(runConfig.programArgs);
 			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
+			this.env = new HashMap<>(runConfig.environmentVariables);
+			this.projectName = runConfig.projectName;
 
 			if (getProject().getRootProject() != getProject()) {
 				Path rootPath = getProject().getRootDir().toPath();

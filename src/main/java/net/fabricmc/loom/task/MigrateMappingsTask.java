@@ -40,9 +40,13 @@ import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -55,7 +59,8 @@ import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class MigrateMappingsTask extends AbstractLoomTask {
+@DisableCachingByDefault(because = "Always rerun this task.")
+public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	private Path inputDir;
 	private Path outputDir;
 	private String mappings;
@@ -63,6 +68,9 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	public MigrateMappingsTask() {
 		inputDir = getProject().file("src/main/java").toPath();
 		outputDir = getProject().file("remappedSrc").toPath();
+
+		// Ensure we resolve the classpath inputs before running the task.
+		getCompileClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 	}
 
 	@Option(option = "input", description = "Java source file directory")
@@ -79,6 +87,9 @@ public class MigrateMappingsTask extends AbstractLoomTask {
 	public void setMappings(String mappings) {
 		this.mappings = mappings;
 	}
+
+	@InputFiles
+	public abstract ConfigurableFileCollection getCompileClasspath();
 
 	@TaskAction
 	public void doTask() throws Throwable {

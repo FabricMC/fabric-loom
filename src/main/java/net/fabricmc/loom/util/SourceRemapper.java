@@ -227,21 +227,29 @@ public class SourceRemapper {
 		m.setGracefulClasspathChecks(true);
 		m.setSourceCompatibility(Constants.MERCURY_SOURCE_VERSION);
 
+		final List<Path> classPath = new ArrayList<>();
+
 		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
-			m.getClassPath().add(file.toPath());
+			classPath.add(file.toPath());
 		}
 
 		if (!toNamed) {
 			for (File file : project.getConfigurations().getByName("compileClasspath").getFiles()) {
-				m.getClassPath().add(file.toPath());
+				classPath.add(file.toPath());
 			}
 		} else {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
 				for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
-					m.getClassPath().add(inputFile.toPath());
+					classPath.add(inputFile.toPath());
 				}
+			}
+		}
+
+		for (Path path : classPath) {
+			if (Files.exists(path)) {
+				m.getClassPath().add(path);
 			}
 		}
 

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.extension;
 
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,8 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.util.download.Download;
+import net.fabricmc.loom.util.download.DownloadBuilder;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -204,6 +207,30 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles) {
 		transitiveAccessWideners.addAll(accessWidenerFiles);
+	}
+
+	@Override
+	public DownloadBuilder download(String url) {
+		DownloadBuilder builder = null;
+
+		try {
+			builder = Download.create(url);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+
+		if (project.getGradle().getStartParameter().isOffline()) {
+			builder.offline();
+		}
+
+		if (project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh")) {
+			builder.forceDownload();
+		}
+
+		// TODO
+		//builder.executor();
+
+		return builder;
 	}
 
 	@Override

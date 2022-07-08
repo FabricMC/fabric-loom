@@ -46,6 +46,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMi
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.util.download.DownloadBuilder;
 
 public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
@@ -106,4 +107,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	List<AccessWidenerFile> getTransitiveAccessWideners();
 
 	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
+
+	DownloadBuilder download(String url);
 }

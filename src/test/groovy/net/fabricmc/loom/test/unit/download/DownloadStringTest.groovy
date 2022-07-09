@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit.download
 
 import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadException
 
 class DownloadStringTest extends DownloadTest {
 	def "String: Download"() {
@@ -50,7 +51,7 @@ class DownloadStringTest extends DownloadTest {
 			def result = Download.create("$PATH/stringNotFound").downloadString()
 
 		then:
-			thrown RuntimeException
+			thrown DownloadException
 	}
 
 	def "String: Redirect"() {

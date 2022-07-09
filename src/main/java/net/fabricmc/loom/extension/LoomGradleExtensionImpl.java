@@ -211,12 +211,12 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	@Override
 	public DownloadBuilder download(String url) {
-		DownloadBuilder builder = null;
+		DownloadBuilder builder;
 
 		try {
 			builder = Download.create(url);
 		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("Failed to create downloader for: " + e);
 		}
 
 		if (project.getGradle().getStartParameter().isOffline()) {
@@ -237,5 +237,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
 		provider.getMinecraftVersion().disallowChanges();
+
+		provider.getDownloader().set(this::download);
+		provider.getDownloader().disallowChanges();
 	}
 }

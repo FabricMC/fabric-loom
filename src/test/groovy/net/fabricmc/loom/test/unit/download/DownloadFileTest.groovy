@@ -25,19 +25,38 @@
 package net.fabricmc.loom.test.unit.download
 
 import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadException
 
 import java.nio.file.Files
 
 class DownloadFileTest extends DownloadTest {
-	def "test"() {
-		when:
-			def output = new File(File.createTempDir(), "output.json").toPath()
+	def "File: Simple"() {
+		setup:
+			server.get("/simpleFile") {
+				it.result("Hello World")
+			}
 
-			def url = "https://maven2.fabricmc.net/net/fabricmc/yarn/1.19%2Bbuild.4/yarn-1.19%2Bbuild.4.jar"
-			Download.create(url).etag(true).downloadPath(output)
-			Download.create(url).etag(true).downloadPath(output)
+			def output = new File(File.createTempDir(), "file.txt").toPath()
+
+		when:
+			def result = Download.create("$PATH/simpleFile").downloadPath(output)
 
 		then:
-			Files.exists(output)
+			Files.readString(output) == "Hello World"
+	}
+
+	def "File: Not found"() {
+		setup:
+			server.get("/fileNotfound") {
+				it.status(404)
+			}
+
+			def output = new File(File.createTempDir(), "file.txt").toPath()
+
+		when:
+			def result = Download.create("$PATH/stringNotFound").downloadPath(output)
+
+		then:
+			thrown DownloadException
 	}
 }

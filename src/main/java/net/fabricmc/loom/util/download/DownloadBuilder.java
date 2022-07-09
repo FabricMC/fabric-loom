@@ -24,10 +24,16 @@
 
 package net.fabricmc.loom.util.download;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +42,7 @@ import java.util.concurrent.ForkJoinPool;
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
 	private static final ExecutorService DEFAULT_EXECUTOR = ForkJoinPool.commonPool();
+	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
 	private ExecutorService executor = DEFAULT_EXECUTOR;
@@ -83,6 +90,11 @@ public class DownloadBuilder {
 		return this;
 	}
 
+	public DownloadBuilder defaultCache() {
+		etag(true);
+		return maxAge(ONE_DAY);
+	}
+
 	private Download build() {
 		return new Download(this.url, this.executor, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge);
 	}
@@ -91,19 +103,55 @@ public class DownloadBuilder {
 		return build().downloadPath(path);
 	}
 
-	public void downloadPath(Path path) {
-		downloadPathAsync(path).join();
+	public void downloadPath(Path path) throws DownloadException {
+		awaitDownload(downloadPathAsync(path));
 	}
 
 	public CompletableFuture<String> downloadStringAsync() {
 		return build().downloadString();
 	}
 
-	public String downloadString() {
+	public String downloadString() throws DownloadException {
+		return awaitDownload(downloadStringAsync());
+	}
+
+	public String downloadString(Path cache) throws DownloadException {
+		downloadPath(cache);
+
 		try {
-			return downloadStringAsync().get();
-		} catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
+			return Files.readString(cache, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			try {
+				Files.delete(cache);
+			} catch (IOException ex) {
+				// Ignored
+			}
+
+			throw new DownloadException("Failed to download and read string", e);
 		}
+	}
+
+	public static <T> T awaitDownload(CompletableFuture<T> completableFuture) throws DownloadException {
+		try {
+			return completableFuture.get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof DownloadException downloadException) {
+				throw downloadException;
+			}
+
+			throw new RuntimeException("Uncaught error when downloading", e);
+		}
+	}
+
+	public static <T> Collection<T> awaitDownloads(Collection<CompletableFuture<T>> completableFutures) throws DownloadException {
+		final List<T> results = new ArrayList<>();
+
+		for (CompletableFuture<T> completableFuture : completableFutures) {
+			results.add(awaitDownload(completableFuture));
+		}
+
+		return results;
 	}
 }

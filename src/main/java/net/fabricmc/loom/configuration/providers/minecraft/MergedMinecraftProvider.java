@@ -33,7 +33,6 @@ import java.util.Objects;
 
 import org.gradle.api.Project;
 
-import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
@@ -66,8 +65,8 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 			try {
 				mergeJars();
 			} catch (Throwable e) {
-				HashedDownloadUtil.delete(getMinecraftClientJar());
-				HashedDownloadUtil.delete(getMinecraftServerJar());
+				Files.deleteIfExists(getMinecraftClientJar().toPath());
+				Files.deleteIfExists(getMinecraftServerJar().toPath());
 				Files.deleteIfExists(minecraftMergedJar);
 
 				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);

@@ -22,15 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit.download
+package net.fabricmc.loom.util.download;
 
-import net.fabricmc.loom.util.download.Download
+import java.io.IOException;
 
-class Test {
-	static void main(String[] args) {
-		def output = new File(File.createTempDir(), "output.json").toPath()
+public class DownloadException extends IOException {
+	public DownloadException(String message) {
+		super(message);
+	}
 
-		Download.create("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json").etag(true).downloadPath(output)
-		Download.create("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json").etag(true).downloadPath(output)
+	public DownloadException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public DownloadException(Throwable cause) {
+		super(cause);
 	}
 }

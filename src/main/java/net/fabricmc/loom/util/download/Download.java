@@ -46,6 +46,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -83,7 +84,7 @@ public class Download {
 
 	private HttpClient getHttpClient() {
 		if (offline) {
-			throw new IllegalStateException("Unable to download %s in offline mode".formatted(this.url));
+			throw error("Unable to download %s in offline mode", this.url);
 		}
 
 		return Methanol.newBuilder()
@@ -131,7 +132,7 @@ public class Download {
 					final int statusCode = response.statusCode();
 
 					if (statusCode < 200 || statusCode > 299) {
-						throw new RuntimeException("Failed to request url (%s)".formatted(url));
+						throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 					}
 
 					return response.body();
@@ -149,7 +150,8 @@ public class Download {
 					return doDownload(output);
 				}).exceptionally(throwable -> {
 					tryCleanup(output);
-					throw new RuntimeException("Failed to download (%s) to (%s)".formatted(url, output), throwable);
+
+					throw error(throwable, "Failed to download (%s) to (%s)", url, output);
 				});
 	}
 
@@ -158,6 +160,12 @@ public class Download {
 
 		if (!forceDownload && useEtag && exists(output)) {
 			eTag = readEtag(output);
+		}
+
+		try {
+			Files.createDirectories(output.getParent());
+		} catch (IOException e) {
+			throw error(e, "Failed to create parent directories");
 		}
 
 		final HttpRequest httpRequest = eTag
@@ -173,7 +181,7 @@ public class Download {
 			}
 
 			if (statusCode < 200 || statusCode > 299) {
-				throw new RuntimeException("Failed to download file");
+				throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 			}
 
 			if (useEtag) {
@@ -220,7 +228,7 @@ public class Download {
 		try {
 			String computedHash = switch (algorithm) {
 			case "sha1" -> Checksum.sha1Hex(path);
-			default -> throw new UnsupportedOperationException("Unsupported hash algorithm: " + algorithm);
+			default -> throw error("Unsupported hash algorithm (%s)", algorithm);
 			};
 
 			return computedHash.equalsIgnoreCase(hash);
@@ -235,7 +243,7 @@ public class Download {
 			return lastModified.toInstant().plus(maxAge)
 					.isBefore(Instant.now());
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw error(e, "Failed to check if (%s) is outdated", path);
 		}
 	}
 
@@ -251,7 +259,7 @@ public class Download {
 		try {
 			writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			throw error(e, "Failed to write etag to (%s)", output);
 		}
 	}
 
@@ -283,7 +291,7 @@ public class Download {
 	}
 
 	private static void writeAttribute(Path path, String key, String value) throws IOException {
-		// TODO may need to fallback to creating a seprate file if this isnt supported.
+		// TODO may need to fallback to creating a separate file if this isnt supported.
 		final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
 		final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
 		final ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -294,5 +302,17 @@ public class Download {
 	private FileTime getLastModified(Path path) throws IOException {
 		final BasicFileAttributeView basicView = Files.getFileAttributeView(path, BasicFileAttributeView.class);
 		return basicView.readAttributes().lastModifiedTime();
+	}
+
+	private RuntimeException error(String message, Object... args) {
+		return new CompletionException(new DownloadException(message.formatted(args)));
+	}
+
+	private RuntimeException error(Throwable throwable) {
+		return new CompletionException(new DownloadException(throwable));
+	}
+
+	private RuntimeException error(Throwable throwable, String message, Object... args) {
+		return new CompletionException(new DownloadException(message.formatted(args), throwable));
 	}
 }

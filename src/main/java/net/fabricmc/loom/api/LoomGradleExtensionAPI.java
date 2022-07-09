@@ -56,6 +56,7 @@ public interface LoomGradleExtensionAPI {
 
 	RegularFileProperty getAccessWidenerPath();
 
+	@Deprecated(forRemoval = true)
 	Property<Boolean> getShareRemapCaches();
 
 	default void shareCaches() {

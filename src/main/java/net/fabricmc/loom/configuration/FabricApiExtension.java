@@ -25,8 +25,7 @@
 package net.fabricmc.loom.configuration;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +39,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.loom.util.download.DownloadException;
 
 public class FabricApiExtension {
 	private final Project project;
@@ -116,10 +115,11 @@ public class FabricApiExtension {
 		}
 
 		try {
-			URL url = new URL(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/%1$s/fabric-api-%1$s.pom", fabricApiVersion));
-			DownloadUtil.downloadIfChanged(url, mavenPom, project.getLogger());
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to download maven info for " + fabricApiVersion);
+			extension.download(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/%1$s/fabric-api-%1$s.pom", fabricApiVersion))
+					.defaultCache()
+					.downloadPath(mavenPom.toPath());
+		} catch (DownloadException e) {
+			throw new UncheckedIOException("Failed to download maven info for " + fabricApiVersion, e);
 		}
 
 		return mavenPom;

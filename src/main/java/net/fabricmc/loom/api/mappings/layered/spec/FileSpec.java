@@ -115,7 +115,7 @@ public interface FileSpec {
 	}
 
 	static FileSpec createFromUrl(URL url) {
-		return new URLFileSpec(url);
+		return new URLFileSpec(url.toString());
 	}
 
 	// Note resolved instantly, this is not lazy

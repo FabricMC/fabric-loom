@@ -26,7 +26,6 @@ package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,25 +38,16 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
 import net.fabricmc.loom.configuration.providers.mappings.utils.DstNameFilterMappingVisitor;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.ProGuardReader;
 
-public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
-									MinecraftVersionMeta.Download serverDownload,
-									Path workingDir, boolean nameSyntheticMembers,
+public record MojangMappingLayer(Path clientMappings, Path serverMappings, boolean nameSyntheticMembers,
 									Logger logger) implements MappingLayer {
 	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile("^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
 
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		Path clientMappings = workingDir().resolve("client.txt");
-		Path serverMappings = workingDir().resolve("server.txt");
-
-		download(clientMappings, serverMappings);
-
 		printMappingsLicense(clientMappings);
 
 		// Filter out field names matching the pattern
@@ -71,11 +61,6 @@ public record MojangMappingLayer(MinecraftVersionMeta.Download clientDownload,
 			ProGuardReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 			ProGuardReader.read(serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
 		}
-	}
-
-	private void download(Path clientMappings, Path serverMappings) throws IOException {
-		HashedDownloadUtil.downloadIfInvalid(new URL(clientDownload().url()), clientMappings.toFile(), clientDownload().sha1(), logger(), false);
-		HashedDownloadUtil.downloadIfInvalid(new URL(serverDownload().url()), serverMappings.toFile(), serverDownload().sha1(), logger(), false);
 	}
 
 	private void printMappingsLicense(Path clientMappings) {

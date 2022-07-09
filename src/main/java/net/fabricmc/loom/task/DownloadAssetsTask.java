@@ -25,16 +25,15 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.URL;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -53,7 +52,6 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.assets.AssetIndex;
-import net.fabricmc.loom.util.HashedDownloadUtil;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 
@@ -129,20 +127,24 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 				return logger;
 			};
 
-			executor.execute(() -> {
+			// TODO look at this again, its a bit of a mess.
+			CompletableFuture.supplyAsync(() -> {
 				final ProgressLoggerHelper logger = getOrCreateLogger.get();
-
-				try {
-					HashedDownloadUtil.downloadIfInvalid(new URL(MirrorUtil.getResourcesBase(project) + sha1.substring(0, 2) + "/" + sha1), file, sha1, project.getLogger(), true, () -> {
-						project.getLogger().debug("downloading asset " + object.name());
-						logger.progress(String.format("%-30.30s", object.name()) + " - " + sha1);
-					});
-				} catch (IOException e) {
-					throw new UncheckedIOException("Failed to download: " + object.name(), e);
-				}
-
+				project.getLogger().debug("downloading asset " + object.name());
+				// TODO use the download util progress logger.
+				logger.progress(String.format("%-30.30s", object.name()) + " - " + sha1);
+				return logger;
+			}, executor).thenCompose(logger -> {
+				final String url = MirrorUtil.getResourcesBase(project) + sha1.substring(0, 2) + "/" + sha1;
+				return getExtension()
+						.download(url)
+						.executor(executor)
+						.downloadPathAsync(file.toPath())
+						.thenApply(unused -> logger);
+			}).thenApply((Function<ProgressLoggerHelper, Void>) logger -> {
 				// Give this logger back
 				loggers.add(logger);
+				return null;
 			});
 		}
 
@@ -168,27 +170,14 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 	private AssetIndex getAssetIndex() throws IOException {
 		final LoomGradleExtension extension = getExtension();
 		final MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
+		final MinecraftVersionMeta.AssetIndex assetIndex = getAssetIndexMeta();
+		final File indexFile = new File(getAssetsDirectory().get().getAsFile(), "indexes" + File.separator + assetIndex.fabricId(minecraftProvider.minecraftVersion()) + ".json");
 
-		MinecraftVersionMeta.AssetIndex assetIndex = getAssetIndexMeta();
-		File assetsInfo = new File(getAssetsDirectory().get().getAsFile(), "indexes" + File.separator + assetIndex.fabricId(minecraftProvider.minecraftVersion()) + ".json");
+		final String json = extension.download(assetIndex.url())
+				.sha1(assetIndex.sha1())
+				.downloadString(indexFile.toPath());
 
-		getProject().getLogger().info(":downloading asset index");
-
-		if (getProject().getGradle().getStartParameter().isOffline()) {
-			if (assetsInfo.exists()) {
-				// We know it's outdated but can't do anything about it, oh well
-				getProject().getLogger().warn("Asset index outdated");
-			} else {
-				// We don't know what assets we need, just that we don't have any
-				throw new GradleException("Asset index not found at " + assetsInfo.getAbsolutePath());
-			}
-		} else {
-			HashedDownloadUtil.downloadIfInvalid(new URL(assetIndex.url()), assetsInfo, assetIndex.sha1(), getProject().getLogger(), false);
-		}
-
-		try (FileReader fileReader = new FileReader(assetsInfo)) {
-			return LoomGradlePlugin.OBJECT_MAPPER.readValue(fileReader, AssetIndex.class);
-		}
+		return LoomGradlePlugin.OBJECT_MAPPER.readValue(json, AssetIndex.class);
 	}
 
 	private File getAssetsFile(AssetIndex.Object object, AssetIndex index) {

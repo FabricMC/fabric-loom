@@ -29,7 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -75,7 +75,6 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
@@ -218,40 +217,32 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		private final TinyRemapperService tinyRemapperService;
 		private TinyRemapper tinyRemapper;
+		private Path inputFile;
 
 		public RemapAction() {
 			this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
 		}
 
 		@Override
-		public void execute() {
-			try {
-				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
+		protected void execute(Path inputFile) throws IOException {
+			LOGGER.info("Remapping {} to {}", inputFile, outputFile);
+			this.inputFile = inputFile;
 
-				tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
+			tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
 
-				remap();
+			remap();
 
-				if (getParameters().getClientOnlyClasses().isPresent()) {
-					markClientOnlyClasses();
-				}
-
-				remapAccessWidener();
-				addRefmaps();
-				addNestedJars();
-				modifyJarManifest();
-				rewriteJar();
-
-				LOGGER.debug("Finished remapping {}", inputFile);
-			} catch (Exception e) {
-				try {
-					Files.deleteIfExists(outputFile);
-				} catch (IOException ex) {
-					LOGGER.error("Failed to delete output file", ex);
-				}
-
-				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
+			if (getParameters().getClientOnlyClasses().isPresent()) {
+				markClientOnlyClasses();
 			}
+
+			remapAccessWidener();
+			addRefmaps();
+			addNestedJars();
+			modifyJarManifest();
+			rewriteJar();
+
+			LOGGER.debug("Finished remapping {}", inputFile);
 		}
 
 		private void remap() throws IOException {

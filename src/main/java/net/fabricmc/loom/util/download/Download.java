@@ -53,12 +53,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.github.mizosoft.methanol.Methanol;
 import com.github.mizosoft.methanol.ProgressTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.Checksum;
 
 // TODO better error handling
 public class Download {
 	private static final String E_TAG = "ETag";
+	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
 
 	public static DownloadBuilder create(String url) throws URISyntaxException {
 		return DownloadBuilder.create(url);
@@ -165,8 +168,9 @@ public class Download {
 
 		try {
 			Files.createDirectories(output.getParent());
+			Files.deleteIfExists(output);
 		} catch (IOException e) {
-			throw error(e, "Failed to create parent directories");
+			throw error(e, "Failed to prepare path for download");
 		}
 
 		final HttpRequest httpRequest = eTag
@@ -194,7 +198,15 @@ public class Download {
 			if (expectedHash != null) {
 				// Ensure we downloaded the expected hash.
 				if (!isHashValid(output)) {
-					throw error("Failed to download (%s) with expected hash: %s", url, expectedHash);
+					String downloadedHash;
+
+					try {
+						downloadedHash = Checksum.sha1Hex(output);
+					} catch (IOException e) {
+						downloadedHash = "unknown hash";
+					}
+
+					throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
 				}
 			}
 
@@ -214,9 +226,19 @@ public class Download {
 			return false;
 		}
 
-		if (expectedHash != null && isHashValid(output)) {
-			// Valid hash, no need to re-download
-			return false;
+		if (expectedHash != null) {
+			if (isHashValid(output)) {
+				// Valid hash, no need to re-download
+				return false;
+			}
+
+			if (System.getProperty("fabric.loom.test") != null) {
+				// This should never happen in an ideal world.
+				// It means that something has altered a file that should be cached.
+				throw error("Download file (%s) may have been modified", output);
+			}
+
+			LOGGER.info("Found existing file ({}) to download with unexpected hash.", output);
 		}
 
 		//noinspection RedundantIfStatement

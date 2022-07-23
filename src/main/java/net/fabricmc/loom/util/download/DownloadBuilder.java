@@ -51,6 +51,7 @@ public class DownloadBuilder {
 	private boolean forceDownload = false;
 	private boolean offline = false;
 	private Duration maxAge = Duration.ZERO;
+	private DownloadProgressListener progressListener = DownloadProgressListener.NONE;
 
 	private DownloadBuilder(URI url) {
 		this.url = url;
@@ -90,13 +91,18 @@ public class DownloadBuilder {
 		return this;
 	}
 
+	public DownloadBuilder progress(DownloadProgressListener progressListener) {
+		this.progressListener = progressListener;
+		return this;
+	}
+
 	public DownloadBuilder defaultCache() {
 		etag(true);
 		return maxAge(ONE_DAY);
 	}
 
 	private Download build() {
-		return new Download(this.url, this.executor, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge);
+		return new Download(this.url, this.executor, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
 	}
 
 	public CompletableFuture<Void> downloadPathAsync(Path path) {

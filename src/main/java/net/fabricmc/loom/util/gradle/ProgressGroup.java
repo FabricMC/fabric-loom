@@ -22,26 +22,35 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.download;
+package net.fabricmc.loom.util.gradle;
 
-public interface DownloadProgressListener {
-	void onStart();
+import java.io.Closeable;
+import java.io.IOException;
 
-	void onProgress(long bytesTransferred, long contentLength);
+import org.gradle.api.Project;
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.internal.logging.progress.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 
-	void onEnd(boolean success);
+public class ProgressGroup implements Closeable {
+	private final ProgressLoggerFactory progressLoggerFactory;
+	private final ProgressLogger progressGroup;
 
-	DownloadProgressListener NONE = new DownloadProgressListener() {
-		@Override
-		public void onStart() {
-		}
+	public ProgressGroup(Project project, String name) {
+		this.progressLoggerFactory = ((ProjectInternal) project).getServices().get(ProgressLoggerFactory.class);
+		this.progressGroup = this.progressLoggerFactory.newOperation(name).setDescription(name);
+		this.progressGroup.started();
+	}
 
-		@Override
-		public void onProgress(long bytesTransferred, long contentLength) {
-		}
+	public ProgressLogger createProgressLogger(String name) {
+		ProgressLogger progressLogger = this.progressLoggerFactory.newOperation(getClass(), progressGroup);
+		progressLogger.setDescription(name);
+		progressLogger.start(name, null);
+		return progressLogger;
+	}
 
-		@Override
-		public void onEnd(boolean success) {
-		}
-	};
+	@Override
+	public void close() throws IOException {
+		this.progressGroup.completed();
+	}
 }

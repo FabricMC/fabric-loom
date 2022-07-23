@@ -37,20 +37,22 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
+import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.internal.logging.progress.ProgressLogger;
+import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.slf4j.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
-import net.fabricmc.loom.util.gradle.ProgressLoggerHelper;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class SourceRemapper {
 	private final Project project;
 	private final boolean toNamed;
-	private final List<Consumer<ProgressLoggerHelper>> remapTasks = new ArrayList<>();
+	private final List<Consumer<ProgressLogger>> remapTasks = new ArrayList<>();
 
 	private Mercury mercury;
 
@@ -89,7 +91,8 @@ public class SourceRemapper {
 
 		project.getLogger().lifecycle(":remapping sources");
 
-		ProgressLoggerHelper progressLogger = ProgressLoggerHelper.getProgressFactory(project, SourceRemapper.class.getName());
+		ProgressLoggerFactory progressLoggerFactory = ((ProjectInternal) project).getServices().get(ProgressLoggerFactory.class);
+		ProgressLogger progressLogger = progressLoggerFactory.newOperation(SourceRemapper.class.getName());
 		progressLogger.start("Remapping dependency sources", "sources");
 
 		remapTasks.forEach(consumer -> consumer.accept(progressLogger));

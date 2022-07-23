@@ -45,6 +45,8 @@ import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
+import net.fabricmc.loom.util.gradle.ProgressGroup;
 
 public abstract class MinecraftProvider {
 	private String minecraftVersion;
@@ -81,8 +83,6 @@ public abstract class MinecraftProvider {
 	public void provide() throws Exception {
 		final DependencyInfo dependency = DependencyInfo.create(getProject(), Constants.Configurations.MINECRAFT);
 		minecraftVersion = dependency.getDependency().getVersion();
-
-		boolean offline = getProject().getGradle().getStartParameter().isOffline();
 
 		initFiles();
 
@@ -184,26 +184,30 @@ public abstract class MinecraftProvider {
 	private void downloadJars() throws IOException {
 		final List<CompletableFuture<Void>> downloads = new ArrayList<>();
 
-		if (provideClient()) {
-			final MinecraftVersionMeta.Download client = versionInfo.download("client");
-			final CompletableFuture<Void> download = getExtension().download(client.url())
-					.sha1(client.sha1())
-					.downloadPathAsync(minecraftClientJar.toPath());
+		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars")) {
+			if (provideClient()) {
+				final MinecraftVersionMeta.Download client = versionInfo.download("client");
+				final CompletableFuture<Void> download = getExtension().download(client.url())
+						.sha1(client.sha1())
+						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
+						.downloadPathAsync(minecraftClientJar.toPath());
 
-			downloads.add(download);
+				downloads.add(download);
+			}
+
+			if (provideServer()) {
+				final MinecraftVersionMeta.Download server = versionInfo.download("server");
+				final CompletableFuture<Void> download = getExtension().download(server.url())
+						.sha1(server.sha1())
+						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
+						.downloadPathAsync(minecraftServerJar.toPath());
+
+				downloads.add(download);
+			}
+
+			// Download the client and server jar async, await for both downloads to complete.
+			DownloadBuilder.awaitDownloads(downloads);
 		}
-
-		if (provideServer()) {
-			final MinecraftVersionMeta.Download server = versionInfo.download("server");
-			final CompletableFuture<Void> download = getExtension().download(server.url())
-					.sha1(server.sha1())
-					.downloadPathAsync(minecraftServerJar.toPath());
-
-			downloads.add(download);
-		}
-
-		// Download the client and server jar async, await for both downloads to complete.
-		DownloadBuilder.awaitDownloads(downloads);
 	}
 
 	protected final void extractBundledServerJar() throws IOException {

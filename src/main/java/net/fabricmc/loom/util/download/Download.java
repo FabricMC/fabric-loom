@@ -49,7 +49,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import com.github.mizosoft.methanol.Methanol;
 import com.github.mizosoft.methanol.ProgressTracker;
@@ -74,9 +74,9 @@ public class Download {
 	private final boolean forceDownload;
 	private final boolean offline;
 	private final Duration maxAge;
-	private final DownloadProgressListener progressListener = DownloadProgressListener.NONE;
+	private final DownloadProgressListener progressListener;
 
-	Download(URI url, ExecutorService executor, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge) {
+	Download(URI url, ExecutorService executor, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener) {
 		this.url = url;
 		this.executor = executor;
 		this.expectedHash = expectedHash;
@@ -84,6 +84,7 @@ public class Download {
 		this.forceDownload = forceDownload;
 		this.offline = offline;
 		this.maxAge = maxAge;
+		this.progressListener = progressListener;
 	}
 
 	private HttpClient getHttpClient() {
@@ -114,37 +115,39 @@ public class Download {
 
 	private <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest httpRequest, HttpResponse.BodyHandler<T> bodyHandler) {
 		final ProgressTracker tracker = ProgressTracker.create();
-		final AtomicBoolean started = new AtomicBoolean(false);
 
 		return getHttpClient().sendAsync(httpRequest, tracker.tracking(bodyHandler, progress -> {
-			if (started.compareAndSet(false, true)) {
-				progressListener.onStart(url.toString());
-			}
-
-			progressListener.onProgress(progress.value());
-
-			if (progress.done()) {
-				progressListener.onEnd(true);
-			}
+			progressListener.onProgress(progress.totalBytesTransferred(), progress.contentLength());
 		}));
 	}
 
 	CompletableFuture<String> downloadString() {
-		// No caching to be done.
-		return sendAsync(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-				.thenApply(response -> {
-					final int statusCode = response.statusCode();
+		return CompletableFuture.supplyAsync((Supplier<Void>) () -> {
+			progressListener.onStart();
+			return null;
+		}, executor).thenCompose(unused -> {
+			// No caching to be done.
+			return sendAsync(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+					.thenApply(response -> {
+						final int statusCode = response.statusCode();
+						final boolean successful = statusCode < 200 || statusCode > 299;
 
-					if (statusCode < 200 || statusCode > 299) {
-						throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
-					}
+						progressListener.onEnd(successful);
 
-					return response.body();
-				});
+						if (successful) {
+							throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+						}
+
+						return response.body();
+					});
+		});
 	}
 
 	CompletableFuture<Void> downloadPath(Path output) {
-		return CompletableFuture.supplyAsync(() -> requiresDownload(output), executor)
+		return CompletableFuture.supplyAsync(() -> {
+			progressListener.onStart();
+			return requiresDownload(output);
+		}, executor)
 				.thenCompose(downloadRequired -> {
 					if (!downloadRequired) {
 						// Does not require download, we are done here.
@@ -179,13 +182,16 @@ public class Download {
 
 		return sendAsync(httpRequest, HttpResponse.BodyHandlers.ofFile(output)).thenCompose(response -> {
 			final int statusCode = response.statusCode();
+			boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
+
+			progressListener.onEnd(success);
 
 			if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
 				// Success, etag matched.
 				return CompletableFuture.completedFuture(null);
 			}
 
-			if (statusCode < 200 || statusCode > 299) {
+			if (!success) {
 				throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 			}
 

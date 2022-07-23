@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.download
 import io.javalin.http.HttpCode
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
+import net.fabricmc.loom.util.download.DownloadProgressListener
 
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
@@ -191,5 +192,70 @@ class DownloadFileTest extends DownloadTest {
 
 		then:
 			requestCount == 1
+	}
+
+	def "Progress: File"() {
+		setup:
+			server.get("/progressFile") {
+				it.result("Hello World")
+			}
+
+			def output = new File(File.createTempDir(), "file.txt").toPath()
+			def started, ended = false
+
+		when:
+			Download.create("$PATH/progressFile")
+				.progress(new DownloadProgressListener() {
+					@Override
+					void onStart() {
+						started = true
+					}
+
+					@Override
+					void onProgress(long bytesTransferred, long contentLength) {
+					}
+
+					@Override
+					void onEnd(boolean success) {
+						ended = true
+					}
+				})
+				.downloadPath(output)
+
+		then:
+			started
+			ended
+	}
+
+	def "Progress: String"() {
+		setup:
+			server.get("/progressString") {
+				it.result("Hello World")
+			}
+
+			def started, ended = false
+
+		when:
+			Download.create("$PATH/progressFile")
+				.progress(new DownloadProgressListener() {
+					@Override
+					void onStart() {
+						started = true
+					}
+
+					@Override
+					void onProgress(long bytesTransferred, long contentLength) {
+					}
+
+					@Override
+					void onEnd(boolean success) {
+						ended = true
+					}
+				})
+				.downloadString()
+
+		then:
+			started
+			ended
 	}
 }

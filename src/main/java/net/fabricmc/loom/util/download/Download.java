@@ -44,6 +44,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -104,7 +105,7 @@ public class Download {
 	private HttpRequest getETagRequest(String etag) {
 		return HttpRequest.newBuilder(url)
 				.GET()
-				.header("If-Match", etag)
+				.header("If-None-Match", etag)
 				.build();
 	}
 
@@ -186,8 +187,15 @@ public class Download {
 
 			if (useEtag) {
 				final HttpHeaders headers = response.headers();
-				headers.firstValue(E_TAG)
+				headers.firstValue(E_TAG.toLowerCase(Locale.ROOT))
 						.ifPresent(responseETag -> writeEtag(output, responseETag));
+			}
+
+			if (expectedHash != null) {
+				// Ensure we downloaded the expected hash.
+				if (!isHashValid(output)) {
+					throw error("Failed to download (%s) with expected hash: %s", url, expectedHash);
+				}
 			}
 
 			// We are done :)
@@ -222,8 +230,8 @@ public class Download {
 
 	private boolean isHashValid(Path path) {
 		int i = expectedHash.indexOf(':');
-		String algorithm = expectedHash.substring(0, i -1);
-		String hash = expectedHash.substring(i);
+		String algorithm = expectedHash.substring(0, i);
+		String hash = expectedHash.substring(i + 1);
 
 		try {
 			String computedHash = switch (algorithm) {
@@ -305,7 +313,7 @@ public class Download {
 	}
 
 	private RuntimeException error(String message, Object... args) {
-		return new CompletionException(new DownloadException(message.formatted(args)));
+		return new CompletionException(new DownloadException(String.format(Locale.ENGLISH, message, args)));
 	}
 
 	private RuntimeException error(Throwable throwable) {

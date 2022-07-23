@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -318,7 +319,7 @@ public class RunConfig {
 			char c = s.charAt(i);
 
 			if (c == '@' && i > 0 && s.charAt(i - 1) == '@' || c == ' ') {
-				ret.append(String.format("@@%04x", (int) c));
+				ret.append(String.format(Locale.ENGLISH, "@@%04x", (int) c));
 			} else {
 				ret.append(c);
 			}

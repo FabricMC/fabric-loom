@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.mappings.utils;
 
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public record URLFileSpec(String url) implements FileSpec {
 	@Override
 	public Path get(MappingContext context) {
 		try {
-			Path output = context.workingDirectory("%d.URLFileSpec".formatted(Objects.hash(url.toString())));
+			Path output = context.workingDirectory(String.format(Locale.ENGLISH, "%d.URLFileSpec", Objects.hash(url)));
 			LOGGER.info("Downloading {} to {}", url, output);
 			context.download(url)
 					.defaultCache()

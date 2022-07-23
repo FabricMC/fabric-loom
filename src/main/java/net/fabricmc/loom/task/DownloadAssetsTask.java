@@ -27,6 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.util.Deque;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -132,7 +133,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 				final ProgressLoggerHelper logger = getOrCreateLogger.get();
 				project.getLogger().debug("downloading asset " + object.name());
 				// TODO use the download util progress logger.
-				logger.progress(String.format("%-30.30s", object.name()) + " - " + sha1);
+				logger.progress(String.format(Locale.ENGLISH, "%-30.30s", object.name()) + " - " + sha1);
 				return logger;
 			}, executor).thenCompose(logger -> {
 				final String url = MirrorUtil.getResourcesBase(project) + sha1.substring(0, 2) + "/" + sha1;

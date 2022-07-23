@@ -80,7 +80,7 @@ dependencies {
 	implementation ('com.github.mizosoft.methanol:methanol:1.7.0')
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.6.1') {
+	implementation ('net.fabricmc:stitch:0.6.2') {
 		exclude module: 'enigma'
 	}
 

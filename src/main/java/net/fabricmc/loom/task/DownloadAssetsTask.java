@@ -91,7 +91,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 				DownloadExecutor executor = new DownloadExecutor(getDownloadThreads().get())) {
 			for (AssetIndex.Object object : assetIndex.getObjects()) {
 				final String sha1 = object.hash();
-				final String url = MirrorUtil.getResourcesBase(getProject()) + sha1.substring(0, 2) + "/" + sha1 + "abc";
+				final String url = MirrorUtil.getResourcesBase(getProject()) + sha1.substring(0, 2) + "/" + sha1;
 
 				getExtension()
 						.download(url)

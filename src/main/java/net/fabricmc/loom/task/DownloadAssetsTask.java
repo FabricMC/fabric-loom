@@ -27,12 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
@@ -49,13 +44,16 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.assets.AssetIndex;
 import net.fabricmc.loom.util.MirrorUtil;
-import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
 
 public abstract class DownloadAssetsTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<String> getAssetsHash();
+
+	@Input
+	public abstract Property<Integer> getDownloadThreads();
 
 	@OutputDirectory
 	public abstract RegularFileProperty getAssetsDirectory();
@@ -70,6 +68,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 
 		getAssetsDirectory().set(assetsDir);
 		getAssetsHash().set(versionInfo.assetIndex().sha1());
+		getDownloadThreads().convention(Runtime.getRuntime().availableProcessors());
 
 		if (versionInfo.assets().equals("legacy")) {
 			getLegacyResourcesDirectory().set(new File(assetsDir, "/legacy/" + versionInfo.id()));
@@ -79,35 +78,27 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 			getLegacyResourcesDirectory().set(new File(getProject().getProjectDir(), client.getRunDir() + "/resources"));
 		}
 
-		getAssetsHash().finalizeValueOnRead();
+		getAssetsHash().finalizeValue();
 		getAssetsDirectory().finalizeValueOnRead();
 		getLegacyResourcesDirectory().finalizeValueOnRead();
 	}
 
 	@TaskAction
 	public void downloadAssets() throws IOException {
-		final ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(Runtime.getRuntime().availableProcessors() / 2, 1)));
 		final AssetIndex assetIndex = getAssetIndex();
 
-		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Assets")) {
-			final List<CompletableFuture<Void>> downloads = new ArrayList<>();
-
+		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Assets");
+				DownloadExecutor executor = new DownloadExecutor(getDownloadThreads().get())) {
 			for (AssetIndex.Object object : assetIndex.getObjects()) {
 				final String sha1 = object.hash();
-				final String url = MirrorUtil.getResourcesBase(getProject()) + sha1.substring(0, 2) + "/" + sha1;
+				final String url = MirrorUtil.getResourcesBase(getProject()) + sha1.substring(0, 2) + "/" + sha1 + "abc";
 
-				downloads.add(
-						getExtension()
-								.download(url)
-								.sha1(sha1)
-								.executor(executor)
-								.progress(new GradleDownloadProgressListener(object.name(), progressGroup::createProgressLogger))
-								.downloadPathAsync(getAssetsPath(object, assetIndex))
-				);
+				getExtension()
+						.download(url)
+						.sha1(sha1)
+						.progress(new GradleDownloadProgressListener(object.name(), progressGroup::createProgressLogger))
+						.downloadPathAsync(getAssetsPath(object, assetIndex), executor);
 			}
-
-			DownloadBuilder.awaitDownloads(downloads);
-			executor.shutdown();
 		}
 	}
 

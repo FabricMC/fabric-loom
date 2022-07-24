@@ -46,10 +46,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.github.mizosoft.methanol.Methanol;
 import com.github.mizosoft.methanol.ProgressTracker;
@@ -58,7 +55,6 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.Checksum;
 
-// TODO better error handling
 public class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
@@ -68,7 +64,6 @@ public class Download {
 	}
 
 	private final URI url;
-	private final ExecutorService executor;
 	private final String expectedHash;
 	private final boolean useEtag;
 	private final boolean forceDownload;
@@ -76,9 +71,8 @@ public class Download {
 	private final Duration maxAge;
 	private final DownloadProgressListener progressListener;
 
-	Download(URI url, ExecutorService executor, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener) {
+	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener) {
 		this.url = url;
-		this.executor = executor;
 		this.expectedHash = expectedHash;
 		this.useEtag = useEtag;
 		this.forceDownload = forceDownload;
@@ -87,13 +81,12 @@ public class Download {
 		this.progressListener = progressListener;
 	}
 
-	private HttpClient getHttpClient() {
+	private HttpClient getHttpClient() throws DownloadException {
 		if (offline) {
 			throw error("Unable to download %s in offline mode", this.url);
 		}
 
 		return Methanol.newBuilder()
-				.executor(executor)
 				.followRedirects(HttpClient.Redirect.ALWAYS)
 				.proxy(ProxySelector.getDefault())
 				.autoAcceptEncoding(true)
@@ -113,56 +106,56 @@ public class Download {
 				.build();
 	}
 
-	private <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest httpRequest, HttpResponse.BodyHandler<T> bodyHandler) {
+	private <T> HttpResponse<T> send(HttpRequest httpRequest, HttpResponse.BodyHandler<T> bodyHandler) throws DownloadException {
 		final ProgressTracker tracker = ProgressTracker.create();
+		final AtomicBoolean started = new AtomicBoolean(false);
 
-		return getHttpClient().sendAsync(httpRequest, tracker.tracking(bodyHandler, progress -> {
-			progressListener.onProgress(progress.totalBytesTransferred(), progress.contentLength());
-		}));
+		try {
+			return getHttpClient().send(httpRequest, tracker.tracking(bodyHandler, progress -> {
+				if (started.compareAndSet(false, true)) {
+					progressListener.onStart();
+				}
+
+				progressListener.onProgress(progress.totalBytesTransferred(), progress.contentLength());
+
+				if (progress.done()) {
+					progressListener.onEnd(true);
+				}
+			}));
+		} catch (IOException | InterruptedException e) {
+			throw error(e, "Failed to download (%s)", url);
+		}
 	}
 
-	CompletableFuture<String> downloadString() {
-		return CompletableFuture.supplyAsync((Supplier<Void>) () -> {
-			progressListener.onStart();
-			return null;
-		}, executor).thenCompose(unused -> {
-			// No caching to be done.
-			return sendAsync(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-					.thenApply(response -> {
-						final int statusCode = response.statusCode();
-						final boolean successful = statusCode < 200 || statusCode > 299;
+	String downloadString() throws DownloadException {
+		final HttpResponse<String> response = send(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+		final int statusCode = response.statusCode();
+		final boolean successful = statusCode < 200 || statusCode > 299;
 
-						progressListener.onEnd(successful);
+		if (successful) {
+			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+		}
 
-						if (successful) {
-							throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
-						}
-
-						return response.body();
-					});
-		});
+		return response.body();
 	}
 
-	CompletableFuture<Void> downloadPath(Path output) {
-		return CompletableFuture.supplyAsync(() -> {
-			progressListener.onStart();
-			return requiresDownload(output);
-		}, executor)
-				.thenCompose(downloadRequired -> {
-					if (!downloadRequired) {
-						// Does not require download, we are done here.
-						return CompletableFuture.completedFuture(null);
-					}
+	void downloadPath(Path output) throws DownloadException {
+		boolean downloadRequired = requiresDownload(output);
 
-					return doDownload(output);
-				}).exceptionally(throwable -> {
-					tryCleanup(output);
+		if (!downloadRequired) {
+			// Does not require download, we are done here.
+			return;
+		}
 
-					throw error(throwable, "Failed to download (%s) to (%s)", url, output);
-				});
+		try {
+			doDownload(output);
+		} catch (Throwable throwable) {
+			tryCleanup(output);
+			throw error(throwable, "Failed to download (%s) to (%s)", url, output);
+		}
 	}
 
-	private CompletableFuture<Void> doDownload(Path output) {
+	private void doDownload(Path output) throws DownloadException {
 		Optional<String> eTag = Optional.empty();
 
 		if (!forceDownload && useEtag && exists(output)) {
@@ -180,48 +173,46 @@ public class Download {
 				.map(this::getETagRequest)
 				.orElseGet(this::getRequest);
 
-		return sendAsync(httpRequest, HttpResponse.BodyHandlers.ofFile(output)).thenCompose(response -> {
-			final int statusCode = response.statusCode();
-			boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
+		HttpResponse<Path> response = send(httpRequest, HttpResponse.BodyHandlers.ofFile(output));
 
-			progressListener.onEnd(success);
+		final int statusCode = response.statusCode();
+		boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
 
-			if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
-				// Success, etag matched.
-				return CompletableFuture.completedFuture(null);
+		if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
+			// Success, etag matched.
+			return;
+		}
+
+		if (!success) {
+			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+		}
+
+		if (useEtag) {
+			final HttpHeaders headers = response.headers();
+			final String responseETag = headers.firstValue(E_TAG.toLowerCase(Locale.ROOT)).orElse(null);
+
+			if (responseETag != null) {
+				writeEtag(output, responseETag);
 			}
+		}
 
-			if (!success) {
-				throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
-			}
+		if (expectedHash != null) {
+			// Ensure we downloaded the expected hash.
+			if (!isHashValid(output)) {
+				String downloadedHash;
 
-			if (useEtag) {
-				final HttpHeaders headers = response.headers();
-				headers.firstValue(E_TAG.toLowerCase(Locale.ROOT))
-						.ifPresent(responseETag -> writeEtag(output, responseETag));
-			}
-
-			if (expectedHash != null) {
-				// Ensure we downloaded the expected hash.
-				if (!isHashValid(output)) {
-					String downloadedHash;
-
-					try {
-						downloadedHash = Checksum.sha1Hex(output);
-					} catch (IOException e) {
-						downloadedHash = "unknown hash";
-					}
-
-					throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
+				try {
+					downloadedHash = Checksum.sha1Hex(output);
+				} catch (IOException e) {
+					downloadedHash = "unknown hash";
 				}
-			}
 
-			// We are done :)
-			return CompletableFuture.completedFuture(null);
-		});
+				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
+			}
+		}
 	}
 
-	private boolean requiresDownload(Path output) {
+	private boolean requiresDownload(Path output) throws DownloadException {
 		if (forceDownload || !exists(output)) {
 			// File does not exist, or we are forced to download again.
 			return true;
@@ -273,7 +264,7 @@ public class Download {
 		}
 	}
 
-	private boolean isOutdated(Path path) {
+	private boolean isOutdated(Path path) throws DownloadException {
 		try {
 			final FileTime lastModified = getLastModified(path);
 			return lastModified.toInstant().plus(maxAge)
@@ -291,7 +282,7 @@ public class Download {
 		}
 	}
 
-	private void writeEtag(Path output, String eTag) {
+	private void writeEtag(Path output, String eTag) throws DownloadException {
 		try {
 			writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
@@ -340,15 +331,15 @@ public class Download {
 		return basicView.readAttributes().lastModifiedTime();
 	}
 
-	private RuntimeException error(String message, Object... args) {
-		return new CompletionException(new DownloadException(String.format(Locale.ENGLISH, message, args)));
+	private DownloadException error(String message, Object... args) {
+		return new DownloadException(String.format(Locale.ENGLISH, message, args));
 	}
 
-	private RuntimeException error(Throwable throwable) {
-		return new CompletionException(new DownloadException(throwable));
+	private DownloadException error(Throwable throwable) {
+		return new DownloadException(throwable);
 	}
 
-	private RuntimeException error(Throwable throwable, String message, Object... args) {
-		return new CompletionException(new DownloadException(message.formatted(args), throwable));
+	private DownloadException error(Throwable throwable, String message, Object... args) {
+		return new DownloadException(message.formatted(args), throwable);
 	}
 }

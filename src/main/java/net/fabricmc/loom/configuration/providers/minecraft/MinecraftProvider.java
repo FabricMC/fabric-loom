@@ -28,10 +28,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
@@ -45,6 +43,7 @@ import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
 
@@ -182,31 +181,23 @@ public abstract class MinecraftProvider {
 	}
 
 	private void downloadJars() throws IOException {
-		final List<CompletableFuture<Void>> downloads = new ArrayList<>();
-
-		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars")) {
+		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
+				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
 				final MinecraftVersionMeta.Download client = versionInfo.download("client");
-				final CompletableFuture<Void> download = getExtension().download(client.url())
+				getExtension().download(client.url())
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftClientJar.toPath());
-
-				downloads.add(download);
+						.downloadPathAsync(minecraftClientJar.toPath(), executor);
 			}
 
 			if (provideServer()) {
 				final MinecraftVersionMeta.Download server = versionInfo.download("server");
-				final CompletableFuture<Void> download = getExtension().download(server.url())
+				getExtension().download(server.url())
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftServerJar.toPath());
-
-				downloads.add(download);
+						.downloadPathAsync(minecraftServerJar.toPath(), executor);
 			}
-
-			// Download the client and server jar async, await for both downloads to complete.
-			DownloadBuilder.awaitDownloads(downloads);
 		}
 	}
 

@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit.download
 
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
+import net.fabricmc.loom.util.download.DownloadExecutor
 
 class DownloadStringTest extends DownloadTest {
 	def "String: Download"() {
@@ -68,5 +69,34 @@ class DownloadStringTest extends DownloadTest {
 
 		then:
 			result == "Hello World!"
+	}
+
+	def "String: Async Download"() {
+		setup:
+			server.get("/async1") {
+				it.result("Hello World!")
+			}
+
+		when:
+			def result
+
+			new DownloadExecutor(1).withCloseable {
+				Download.create("$PATH/async1").downloadStringAsync(it).thenAccept { r ->
+					result = r
+				}
+			}
+
+		then:
+			result == "Hello World!"
+	}
+
+	def "String: Async Error"() {
+		when:
+			new DownloadExecutor(1).withCloseable {
+				Download.create("$PATH/notFound").downloadStringAsync(it)
+			}
+
+		then:
+			thrown DownloadException
 	}
 }

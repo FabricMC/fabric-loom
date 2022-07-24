@@ -31,21 +31,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CompletionException;
 
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
-	private static final ExecutorService DEFAULT_EXECUTOR = ForkJoinPool.commonPool();
 	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
-	private ExecutorService executor = DEFAULT_EXECUTOR;
 	private String expectedHash = null;
 	private boolean useEtag = true;
 	private boolean forceDownload = false;
@@ -59,11 +52,6 @@ public class DownloadBuilder {
 
 	static DownloadBuilder create(String url) throws URISyntaxException {
 		return new DownloadBuilder(new URI(url));
-	}
-
-	public DownloadBuilder executor(ExecutorService executor) {
-		this.executor = executor;
-		return this;
 	}
 
 	public DownloadBuilder sha1(String sha1) {
@@ -102,23 +90,39 @@ public class DownloadBuilder {
 	}
 
 	private Download build() {
-		return new Download(this.url, this.executor, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
+		return new Download(this.url, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
 	}
 
-	public CompletableFuture<Void> downloadPathAsync(Path path) {
-		return build().downloadPath(path);
+	public CompletableFuture<Void> downloadPathAsync(Path path, DownloadExecutor executor) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				downloadPath(path);
+			} catch (DownloadException e) {
+				executor.downloadExceptions.add(e);
+				throw new CompletionException(e);
+			}
+
+			return null;
+		}, executor);
 	}
 
 	public void downloadPath(Path path) throws DownloadException {
-		awaitDownload(downloadPathAsync(path));
+		build().downloadPath(path);
 	}
 
-	public CompletableFuture<String> downloadStringAsync() {
-		return build().downloadString();
+	public CompletableFuture<String> downloadStringAsync(DownloadExecutor executor) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return downloadString();
+			} catch (DownloadException e) {
+				executor.downloadExceptions.add(e);
+				throw new CompletionException(e);
+			}
+		}, executor);
 	}
 
 	public String downloadString() throws DownloadException {
-		return awaitDownload(downloadStringAsync());
+		return build().downloadString();
 	}
 
 	public String downloadString(Path cache) throws DownloadException {
@@ -135,29 +139,5 @@ public class DownloadBuilder {
 
 			throw new DownloadException("Failed to download and read string", e);
 		}
-	}
-
-	public static <T> T awaitDownload(CompletableFuture<T> completableFuture) throws DownloadException {
-		try {
-			return completableFuture.get();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof DownloadException downloadException) {
-				throw downloadException;
-			}
-
-			throw new RuntimeException("Uncaught error when downloading", e);
-		}
-	}
-
-	public static <T> Collection<T> awaitDownloads(Collection<CompletableFuture<T>> completableFutures) throws DownloadException {
-		final List<T> results = new ArrayList<>();
-
-		for (CompletableFuture<T> completableFuture : completableFutures) {
-			results.add(awaitDownload(completableFuture));
-		}
-
-		return results;
 	}
 }

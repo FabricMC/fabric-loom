@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.download
 import io.javalin.http.HttpCode
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
+import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
 
 import java.nio.file.Files
@@ -257,5 +258,48 @@ class DownloadFileTest extends DownloadTest {
 		then:
 			started
 			ended
+	}
+
+	def "File: Async"() {
+		setup:
+			server.get("/async1") {
+				it.result("Hello World")
+			}
+
+			def dir = File.createTempDir().toPath()
+
+		when:
+			new DownloadExecutor(2).withCloseable {
+				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("1.txt"), it)
+				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("2.txt"), it)
+				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("3.txt"), it)
+				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("4.txt"), it)
+			}
+
+		then:
+			Files.readString(dir.resolve("4.txt")) == "Hello World"
+	}
+
+	def "File: Async Error"() {
+		setup:
+			server.get("/async2") {
+				it.result("Hello World")
+			}
+
+			def dir = File.createTempDir().toPath()
+
+		when:
+			new DownloadExecutor(2).withCloseable {
+				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("1.txt"), it)
+				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("2.txt"), it)
+				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("3.txt"), it)
+				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("4.txt"), it)
+
+				Download.create("$PATH/asyncError").downloadPathAsync(dir.resolve("5.txt"), it)
+				Download.create("$PATH/asyncError2").downloadPathAsync(dir.resolve("6.txt"), it)
+			}
+
+		then:
+			thrown DownloadException
 	}
 }

@@ -209,6 +209,9 @@ public class Download {
 
 				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
 			}
+
+			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
+			writeHash(output, expectedHash);
 		}
 	}
 
@@ -224,6 +227,13 @@ public class Download {
 		}
 
 		if (expectedHash != null) {
+			final String hashAttribute = readHash(output).orElse("");
+
+			if (expectedHash.equalsIgnoreCase(hashAttribute)) {
+				// File has a matching hash attribute, assume file intact.
+				return false;
+			}
+
 			if (isHashValid(output)) {
 				// Valid hash, no need to re-download
 				return false;
@@ -287,6 +297,22 @@ public class Download {
 			writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
 			throw error(e, "Failed to write etag to (%s)", output);
+		}
+	}
+
+	private Optional<String> readHash(Path output) {
+		try {
+			return readAttribute(output, "LoomHash");
+		} catch (IOException e) {
+			return Optional.empty();
+		}
+	}
+
+	private void writeHash(Path output, String eTag) throws DownloadException {
+		try {
+			writeAttribute(output, "LoomHash", eTag);
+		} catch (IOException e) {
+			throw error(e, "Failed to write hash to (%s)", output);
 		}
 	}
 

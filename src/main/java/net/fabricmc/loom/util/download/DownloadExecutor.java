@@ -24,27 +24,36 @@
 
 package net.fabricmc.loom.util.download;
 
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.jetbrains.annotations.NotNull;
-
-public class DownloadExecutor implements Executor, AutoCloseable {
+public class DownloadExecutor implements AutoCloseable {
 	private final ExecutorService executorService;
-	final List<DownloadException> downloadExceptions = Collections.synchronizedList(new ArrayList<>());
+	private final List<DownloadException> downloadExceptions = Collections.synchronizedList(new ArrayList<>());
 
 	public DownloadExecutor(int threads) {
 		executorService = Executors.newFixedThreadPool(threads);
 	}
 
-	@Override
-	public void execute(@NotNull Runnable command) {
-		executorService.execute(command);
+	void runAsync(DownloadRunner downloadRunner) {
+		if (!downloadExceptions.isEmpty()) {
+			return;
+		}
+
+		executorService.execute(() -> {
+			try {
+				downloadRunner.run();
+			} catch (DownloadException e) {
+				executorService.shutdownNow();
+				downloadExceptions.add(e);
+				throw new UncheckedIOException(e);
+			}
+		});
 	}
 
 	@Override
@@ -66,5 +75,10 @@ public class DownloadExecutor implements Executor, AutoCloseable {
 
 			throw downloadException;
 		}
+	}
+
+	@FunctionalInterface
+	public interface DownloadRunner {
+		void run() throws DownloadException;
 	}
 }

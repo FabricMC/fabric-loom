@@ -31,8 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
@@ -93,32 +91,12 @@ public class DownloadBuilder {
 		return new Download(this.url, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
 	}
 
-	public CompletableFuture<Void> downloadPathAsync(Path path, DownloadExecutor executor) {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				downloadPath(path);
-			} catch (DownloadException e) {
-				executor.downloadExceptions.add(e);
-				throw new CompletionException(e);
-			}
-
-			return null;
-		}, executor);
+	public void downloadPathAsync(Path path, DownloadExecutor executor) {
+		executor.runAsync(() -> downloadPath(path));
 	}
 
 	public void downloadPath(Path path) throws DownloadException {
 		build().downloadPath(path);
-	}
-
-	public CompletableFuture<String> downloadStringAsync(DownloadExecutor executor) {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				return downloadString();
-			} catch (DownloadException e) {
-				executor.downloadExceptions.add(e);
-				throw new CompletionException(e);
-			}
-		}, executor);
 	}
 
 	public String downloadString() throws DownloadException {

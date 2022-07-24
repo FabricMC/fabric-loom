@@ -130,9 +130,9 @@ public class Download {
 	String downloadString() throws DownloadException {
 		final HttpResponse<String> response = send(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 		final int statusCode = response.statusCode();
-		final boolean successful = statusCode < 200 || statusCode > 299;
+		final boolean successful = statusCode >= 200 && statusCode < 300;
 
-		if (successful) {
+		if (!successful) {
 			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 		}
 

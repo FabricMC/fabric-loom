@@ -65,7 +65,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
-	protected final Property<Boolean> shareCaches;
 	protected final Property<String> customManifest;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
@@ -91,8 +90,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.empty();
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
-		this.shareCaches = project.getObjects().property(Boolean.class)
-				.convention(false);
 		this.customManifest = project.getObjects().property(String.class);
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
@@ -148,11 +145,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
 		return accessWidener;
-	}
-
-	@Override
-	public Property<Boolean> getShareRemapCaches() {
-		return shareCaches;
 	}
 
 	@Override

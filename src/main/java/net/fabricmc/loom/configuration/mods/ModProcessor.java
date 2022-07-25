@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.jar.Manifest;
 
@@ -91,10 +92,10 @@ public class ModProcessor {
 		}
 
 		try {
-			project.getLogger().lifecycle(":remapping %d mods from %s".formatted(remapList.size(), sourceConfiguration.getName()));
+			project.getLogger().lifecycle(":remapping {} mods from {}", remapList.size(), sourceConfiguration.getName());
 			remapJars(remapList);
 		} catch (Exception e) {
-			project.getLogger().error("Failed to remap %d mods".formatted(remapList.size()), e);
+			project.getLogger().error(String.format(Locale.ENGLISH, "Failed to remap %d mods", remapList.size()), e);
 
 			for (ModDependencyInfo info : remapList) {
 				Files.deleteIfExists(info.getRemappedOutput().toPath());

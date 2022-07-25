@@ -22,39 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.utils;
+package net.fabricmc.loom.util.download;
 
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
+public interface DownloadProgressListener {
+	void onStart();
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+	void onProgress(long bytesTransferred, long contentLength);
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.util.download.DownloadException;
+	void onEnd(boolean success);
 
-public record URLFileSpec(String url) implements FileSpec {
-	private static final Logger LOGGER = LoggerFactory.getLogger(URLFileSpec.class);
-	@Override
-	public Path get(MappingContext context) {
-		try {
-			Path output = context.workingDirectory(String.format(Locale.ENGLISH, "%d.URLFileSpec", Objects.hash(url)));
-			LOGGER.info("Downloading {} to {}", url, output);
-			context.download(url)
-					.defaultCache()
-					.downloadPath(output);
-			return output;
-		} catch (DownloadException e) {
-			throw new UncheckedIOException("Failed to download: " + url, e);
+	DownloadProgressListener NONE = new DownloadProgressListener() {
+		@Override
+		public void onStart() {
 		}
-	}
 
-	@Override
-	public int hashCode() {
-		// URL performs DNS requests if you .hashCode it (:
-		return Objects.hash(url.toString());
-	}
+		@Override
+		public void onProgress(long bytesTransferred, long contentLength) {
+		}
+
+		@Override
+		public void onEnd(boolean success) {
+		}
+	};
 }

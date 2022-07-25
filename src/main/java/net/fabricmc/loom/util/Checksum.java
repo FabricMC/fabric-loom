@@ -27,6 +27,7 @@ package net.fabricmc.loom.util;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
@@ -61,6 +62,11 @@ public class Checksum {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to get file hash");
 		}
+	}
+
+	public static String sha1Hex(Path path) throws IOException {
+		HashCode hash = Files.asByteSource(path.toFile()).hash(Hashing.sha1());
+		return toHex(hash.asBytes());
 	}
 
 	public static String truncatedSha256(File file) {

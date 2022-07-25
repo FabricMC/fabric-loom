@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
-import net.fabricmc.loom.util.DownloadUtil;
 
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider {
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsProvider.class);
@@ -53,14 +51,17 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 		// Download and extract intermediary
 		final Path intermediaryJarPath = Files.createTempFile(getName(), ".jar");
 		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
-		final URL url = new URL(getIntermediaryUrl().get().formatted(encodedMcVersion));
+		final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
 
 		LOGGER.info("Downloading intermediary from {}", url);
 
 		Files.deleteIfExists(tinyMappings);
 		Files.deleteIfExists(intermediaryJarPath);
 
-		DownloadUtil.downloadIfChanged(url, intermediaryJarPath.toFile(), LOGGER);
+		getDownloader().get().apply(url)
+				.defaultCache()
+				.downloadPath(intermediaryJarPath);
+
 		MappingsProviderImpl.extractMappings(intermediaryJarPath, tinyMappings);
 	}
 

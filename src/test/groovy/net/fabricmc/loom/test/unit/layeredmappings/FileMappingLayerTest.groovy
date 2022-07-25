@@ -28,8 +28,8 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
 import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
-import net.fabricmc.loom.util.DownloadUtil
 import net.fabricmc.loom.util.ZipUtils
+import net.fabricmc.loom.util.download.Download
 import spock.lang.Unroll
 
 import java.nio.file.Path
@@ -72,7 +72,8 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 			mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
 			def mappingsDownload = VERSION_META_1_17.download('client_mappings')
 			def mappingsFile = new File(tempDir, 'mappings.txt')
-			DownloadUtil.downloadIfChanged(new URL(mappingsDownload.url()), mappingsFile, mappingContext.logger)
+			Download.create(mappingsDownload.url())
+				.downloadPath(mappingsFile.toPath())
 		when:
 			def mappings = getLayeredMappings(
 					new IntermediaryMappingsSpec(),

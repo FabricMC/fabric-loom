@@ -37,6 +37,7 @@ import org.gradle.api.logging.Logger;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class GradleMappingContext implements MappingContext {
@@ -81,6 +82,11 @@ public class GradleMappingContext implements MappingContext {
 	@Override
 	public Logger getLogger() {
 		return project.getLogger();
+	}
+
+	@Override
+	public DownloadBuilder download(String url) {
+		return extension.download(url);
 	}
 
 	public Project getProject() {

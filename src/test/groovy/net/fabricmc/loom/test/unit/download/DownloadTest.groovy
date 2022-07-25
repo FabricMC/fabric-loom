@@ -22,39 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.utils;
+package net.fabricmc.loom.test.unit.download
 
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
+import io.javalin.Javalin
+import spock.lang.Shared
+import spock.lang.Specification
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+abstract class DownloadTest extends Specification {
+	static final String PATH = "http://localhost:9081"
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.util.download.DownloadException;
+	@Shared
+	Javalin server = Javalin.create { config ->
+		config.enableDevLogging()
+	}.start(9081)
 
-public record URLFileSpec(String url) implements FileSpec {
-	private static final Logger LOGGER = LoggerFactory.getLogger(URLFileSpec.class);
-	@Override
-	public Path get(MappingContext context) {
-		try {
-			Path output = context.workingDirectory(String.format(Locale.ENGLISH, "%d.URLFileSpec", Objects.hash(url)));
-			LOGGER.info("Downloading {} to {}", url, output);
-			context.download(url)
-					.defaultCache()
-					.downloadPath(output);
-			return output;
-		} catch (DownloadException e) {
-			throw new UncheckedIOException("Failed to download: " + url, e);
-		}
-	}
-
-	@Override
-	public int hashCode() {
-		// URL performs DNS requests if you .hashCode it (:
-		return Objects.hash(url.toString());
+	def cleanupSpec() {
+		server.stop()
 	}
 }

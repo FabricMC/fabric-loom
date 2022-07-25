@@ -24,9 +24,13 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.mojmap;
 
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.util.download.DownloadException;
 
 public record MojangMappingsSpec(boolean nameSyntheticMembers) implements MappingsSpec<MojangMappingLayer> {
 	// Keys in dependency manifest
@@ -35,16 +39,32 @@ public record MojangMappingsSpec(boolean nameSyntheticMembers) implements Mappin
 
 	@Override
 	public MojangMappingLayer createLayer(MappingContext context) {
-		MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
+		final MinecraftVersionMeta versionInfo = context.minecraftProvider().getVersionInfo();
+		final MinecraftVersionMeta.Download clientDownload = versionInfo.download(MANIFEST_CLIENT_MAPPINGS);
+		final MinecraftVersionMeta.Download serverDownload = versionInfo.download(MANIFEST_SERVER_MAPPINGS);
 
-		if (versionInfo.download(MANIFEST_CLIENT_MAPPINGS) == null) {
+		if (clientDownload == null) {
 			throw new RuntimeException("Failed to find official mojang mappings for " + context.minecraftVersion());
 		}
 
+		final Path clientMappings = context.workingDirectory("mojang").resolve("client.txt");
+		final Path serverMappings = context.workingDirectory("mojang").resolve("server.txt");
+
+		try {
+			context.download(clientDownload.url())
+					.sha1(clientDownload.sha1())
+					.downloadPath(clientMappings);
+
+			context.download(serverDownload.url())
+					.sha1(serverDownload.sha1())
+					.downloadPath(serverMappings);
+		} catch (DownloadException e) {
+			throw new UncheckedIOException("Failed to download mappings", e);
+		}
+
 		return new MojangMappingLayer(
-				versionInfo.download(MANIFEST_CLIENT_MAPPINGS),
-				versionInfo.download(MANIFEST_SERVER_MAPPINGS),
-				context.workingDirectory("mojang"),
+				clientMappings,
+				serverMappings,
 				nameSyntheticMembers(),
 				context.getLogger()
 		);

@@ -34,6 +34,8 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcess
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.unit.LoomMocks
+import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadBuilder
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
@@ -148,5 +150,10 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
         Logger getLogger() {
             return mockLogger
         }
-    }
+
+		@Override
+		DownloadBuilder download(String url) {
+			return Download.create(url)
+		}
+	}
 }

@@ -22,39 +22,51 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.utils;
+package net.fabricmc.loom.test.unit.download
 
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Objects;
+import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadException
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+class DownloadStringTest extends DownloadTest {
+	def "String: Download"() {
+		setup:
+			server.get("/downloadString") {
+				it.result("Hello World!")
+			}
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.util.download.DownloadException;
+		when:
+			def result = Download.create("$PATH/downloadString").downloadString()
 
-public record URLFileSpec(String url) implements FileSpec {
-	private static final Logger LOGGER = LoggerFactory.getLogger(URLFileSpec.class);
-	@Override
-	public Path get(MappingContext context) {
-		try {
-			Path output = context.workingDirectory(String.format(Locale.ENGLISH, "%d.URLFileSpec", Objects.hash(url)));
-			LOGGER.info("Downloading {} to {}", url, output);
-			context.download(url)
-					.defaultCache()
-					.downloadPath(output);
-			return output;
-		} catch (DownloadException e) {
-			throw new UncheckedIOException("Failed to download: " + url, e);
-		}
+		then:
+			result == "Hello World!"
 	}
 
-	@Override
-	public int hashCode() {
-		// URL performs DNS requests if you .hashCode it (:
-		return Objects.hash(url.toString());
+	def "String: Not found"() {
+		setup:
+			server.get("/stringNotFound") {
+				it.status(404)
+			}
+
+		when:
+			def result = Download.create("$PATH/stringNotFound").downloadString()
+
+		then:
+			thrown DownloadException
+	}
+
+	def "String: Redirect"() {
+		setup:
+			server.get("/redirectString2") {
+				it.result("Hello World!")
+			}
+			server.get("/redirectString") {
+				it.redirect("$PATH/redirectString2")
+			}
+
+		when:
+			def result = Download.create("$PATH/redirectString").downloadString()
+
+		then:
+			result == "Hello World!"
 	}
 }

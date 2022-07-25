@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Locale;
 
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
@@ -43,6 +44,7 @@ public class DownloadBuilder {
 	private boolean offline = false;
 	private Duration maxAge = Duration.ZERO;
 	private DownloadProgressListener progressListener = DownloadProgressListener.NONE;
+	private int maxRetries = 1;
 
 	private DownloadBuilder(URI url) {
 		this.url = url;
@@ -82,6 +84,11 @@ public class DownloadBuilder {
 		return this;
 	}
 
+	public DownloadBuilder maxRetries(int maxRetries) {
+		this.maxRetries = maxRetries;
+		return this;
+	}
+
 	public DownloadBuilder defaultCache() {
 		etag(true);
 		return maxAge(ONE_DAY);
@@ -96,15 +103,21 @@ public class DownloadBuilder {
 	}
 
 	public void downloadPath(Path path) throws DownloadException {
-		build().downloadPath(path);
+		withRetries(() -> {
+			build().downloadPath(path);
+			return null;
+		});
 	}
 
 	public String downloadString() throws DownloadException {
-		return build().downloadString();
+		return withRetries(() -> build().downloadString());
 	}
 
 	public String downloadString(Path cache) throws DownloadException {
-		downloadPath(cache);
+		withRetries(() -> {
+			build().downloadPath(cache);
+			return null;
+		});
 
 		try {
 			return Files.readString(cache, StandardCharsets.UTF_8);
@@ -117,5 +130,24 @@ public class DownloadBuilder {
 
 			throw new DownloadException("Failed to download and read string", e);
 		}
+	}
+
+	private <T> T withRetries(DownloadSupplier<T> supplier) throws DownloadException {
+		for (int i = 1; i <= maxRetries; i++) {
+			try {
+				return supplier.get();
+			} catch (DownloadException e) {
+				if (i == maxRetries) {
+					throw new DownloadException(String.format(Locale.ENGLISH, "Failed download after %d attempts", maxRetries), e);
+				}
+			}
+		}
+
+		throw new IllegalStateException();
+	}
+
+	@FunctionalInterface
+	private interface DownloadSupplier<T> {
+		T get() throws DownloadException;
 	}
 }

@@ -97,6 +97,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 						.download(url)
 						.sha1(sha1)
 						.progress(new GradleDownloadProgressListener(object.name(), progressGroup::createProgressLogger))
+						.maxRetries(3)
 						.downloadPathAsync(getAssetsPath(object, assetIndex), executor);
 			}
 		}

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.download
 
+import io.javalin.http.HttpCode
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 
@@ -48,7 +49,9 @@ class DownloadStringTest extends DownloadTest {
 			}
 
 		when:
-			def result = Download.create("$PATH/stringNotFound").downloadString()
+			def result = Download.create("$PATH/stringNotFound")
+				.maxRetries(3) // Ensure we still error as expected when retrying
+				.downloadString()
 
 		then:
 			thrown DownloadException
@@ -68,5 +71,28 @@ class DownloadStringTest extends DownloadTest {
 
 		then:
 			result == "Hello World!"
+	}
+
+	def "String: Retries"() {
+		setup:
+			int requests = 0
+			server.get("/retryString") {
+				requests ++
+
+				if (requests < 3) {
+					it.status(HttpCode.INTERNAL_SERVER_ERROR)
+					return
+				}
+
+				it.result("Hello World " + requests)
+			}
+
+		when:
+			def result = Download.create("$PATH/retryString")
+				.maxRetries(3)
+				.downloadString()
+
+		then:
+			result == "Hello World 3"
 	}
 }

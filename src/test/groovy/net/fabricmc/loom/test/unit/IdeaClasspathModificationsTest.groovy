@@ -81,6 +81,9 @@ class IdeaClasspathModificationsTest extends Specification {
     <method v="2">
       <option enabled="true" name="Make"/>
     </method>
+    <envs>
+      %IDEA_ENV_VARS%
+    </envs>
   <classpathModifications><entry exclude="true" path="/path/to/file.jar"/></classpathModifications></configuration>
 </component>
 '''.trim()
@@ -97,6 +100,9 @@ class IdeaClasspathModificationsTest extends Specification {
     <method v="2">
       <option enabled="true" name="Make"/>
     </method>
+    <envs>
+      %IDEA_ENV_VARS%
+    </envs>
   <classpathModifications><entry exclude="true" path="/path/to/file.jar"/><entry exclude="true" path="/path/to/another.jar"/></classpathModifications></configuration>
 </component>
 '''.trim()

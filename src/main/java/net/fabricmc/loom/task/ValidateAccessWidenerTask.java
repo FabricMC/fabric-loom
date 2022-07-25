@@ -94,7 +94,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	/**
 	 * Validates that all entries in an access-widner file relate to a class/method/field in the mc jar.
 	 */
-	private static record AccessWidenerValidator(TrEnvironment environment) implements AccessWidenerVisitor {
+	private record AccessWidenerValidator(TrEnvironment environment) implements AccessWidenerVisitor {
 		@Override
 		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
 			if (environment().getClass(name) == null) {

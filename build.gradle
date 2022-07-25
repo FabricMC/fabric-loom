@@ -8,8 +8,8 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	id "org.jetbrains.kotlin.jvm" version "1.5.31" // Must match the version included with gradle.
-	id "com.diffplug.spotless" version "6.3.0"
+	id "org.jetbrains.kotlin.jvm" version "1.6.10" // Must match the version included with gradle.
+	id "com.diffplug.spotless" version "6.8.0"
 }
 
 java {
@@ -24,7 +24,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 	kotlinOptions {
-		jvmTarget = "16" // Change to 17 when updating gradle/kotlin to 1.6.10
+		jvmTarget = "17"
 	}
 }
 
@@ -106,7 +106,7 @@ dependencies {
 	}
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31') // Must match the version included with gradle.
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10') // Must match the version included with gradle.
 
 	// Testing
 	testImplementation(gradleTestKit())
@@ -156,11 +156,11 @@ spotless {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '9.3'
+	toolVersion = '10.3.1'
 }
 
 codenarc {
-	toolVersion = "2.2.0"
+	toolVersion = "3.1.0"
 	configFile = file("codenarc.groovy")
 }
 

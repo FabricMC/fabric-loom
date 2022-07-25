@@ -37,7 +37,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
@@ -179,19 +181,22 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		return result;
 	}
 
+	// Find the injected interfaces from mods that are both on the compile and runtime classpath.
+	// Runtime is also required to ensure that the interface and it's impl is present when running the mc jar.
 	private List<InjectedInterface> getDependencyInjectedInterfaces() {
-		List<InjectedInterface> result = new ArrayList<>();
+		final Function<RemapConfigurationSettings, Stream<Path>> resolve = settings ->
+				settings.getSourceConfiguration().get().resolve().stream()
+						.map(File::toPath);
 
-		// Only apply injected interfaces from mods that are part of the compile classpath
-		for (RemapConfigurationSettings entry : extension.getCompileRemapConfigurations()) {
-			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
+		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
+				.flatMap(resolve)
+				.toList();
 
-			for (File artifact : artifacts) {
-				result.addAll(InjectedInterface.fromModJar(artifact.toPath()));
-			}
-		}
-
-		return result;
+		return extension.getCompileRemapConfigurations().stream()
+				.flatMap(resolve)
+				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
+				.flatMap(path -> InjectedInterface.fromModJar(path).stream())
+				.toList();
 	}
 
 	private List<InjectedInterface> getSourceInjectedInterface(SourceSet sourceSet) {

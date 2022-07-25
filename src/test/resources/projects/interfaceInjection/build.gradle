@@ -14,5 +14,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:1.17.1+build.59:v2"
 	modImplementation "net.fabricmc:fabric-loader:0.11.6"
 
-	modImplementation files("dummy.jar")
+	// I-faces will still be applied as the jar is on both configurations.
+	modCompileOnly files("dummy.jar")
+	modRuntimeOnly files("dummy.jar")
 }

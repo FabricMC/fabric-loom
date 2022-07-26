@@ -183,8 +183,9 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		List<InjectedInterface> result = new ArrayList<>();
 
 		for (RemappedConfigurationEntry entry : Constants.MOD_COMPILE_ENTRIES) {
-			// Only apply injected interfaces from mods that are part of the compile classpath
-			if (!entry.compileClasspath()) {
+			// Only apply injected interfaces from mods that are part of the compile and runtime classpath.
+			// Runtime is also required to ensure that the interface and it's impl is present when running the mc jar.
+			if (!(entry.compileClasspath() && entry.runtimeClasspath())) {
 				continue;
 			}
 

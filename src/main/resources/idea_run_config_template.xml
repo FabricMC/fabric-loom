@@ -11,5 +11,6 @@
     <envs>
       %IDEA_ENV_VARS%
     </envs>
+    <shortenClasspath name="ARGS_FILE" />
   </configuration>
 </component>

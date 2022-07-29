@@ -51,6 +51,8 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +61,14 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.extension.mixin.common.data.Constant;
 
 /**
+ * Task to validate mixin names.
+ *
+ * <pre>{@code
  * task validateMixinNames(type: net.fabricmc.loom.task.ValidateMixinNameTask) {
  * 		source(sourceSets.main.output)
  * 		softFailures = false
  * }
+ * }</pre>
  */
 public abstract class ValidateMixinNameTask extends SourceTask {
 	@Input
@@ -109,7 +115,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 				}
 
 				final String mixinClassName = toSimpleName(mixin.className);
-				final String expectedMixinClassName = innerName(toSimpleName(mixin.target.getInternalName())) + "Mixin";
+				final String expectedMixinClassName = toSimpleName(mixin.target.getInternalName()).replace("$", "") + (mixin.accessor ? "Accessor" : "Mixin");
 
 				if (expectedMixinClassName.startsWith("class_")) {
 					// Don't enforce intermediary named mixins.
@@ -139,10 +145,6 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 			return internalName.substring(internalName.lastIndexOf("/") + 1);
 		}
 
-		private static String innerName(String simpleName) {
-			return simpleName.substring(simpleName.lastIndexOf("$") + 1);
-		}
-
 		@Nullable
 		private Mixin getMixin(File file) {
 			try (InputStream is = new FileInputStream(file)) {
@@ -152,7 +154,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 				reader.accept(classVisitor, ClassReader.SKIP_CODE);
 
 				if (classVisitor.mixinTarget != null) {
-					return new Mixin(classVisitor.className, classVisitor.mixinTarget);
+					return new Mixin(classVisitor.className, classVisitor.mixinTarget, classVisitor.accessor);
 				}
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to read input file: " + file, e);
@@ -162,11 +164,14 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 		}
 	}
 
-	private record Mixin(String className, Type target) { }
+	private record Mixin(String className, Type target, boolean accessor) { }
 
 	private static class MixinTargetClassVisitor extends ClassVisitor {
 		Type mixinTarget;
 		String className;
+		boolean accessor;
+
+		boolean isInterface;
 
 		protected MixinTargetClassVisitor() {
 			super(Constants.ASM_VERSION);
@@ -175,6 +180,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			this.className = name;
+			this.isInterface = (access & Opcodes.ACC_INTERFACE) != 0;
 			super.visit(version, access, name, signature, superName, interfaces);
 		}
 
@@ -187,6 +193,17 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 			}
 
 			return av;
+		}
+
+		@Override
+		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+			MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+
+			if (mixinTarget != null) {
+				mv = new MixinMethodVisitor(mv);
+			}
+
+			return mv;
 		}
 
 		private class MixinAnnotationVisitor extends AnnotationVisitor {
@@ -210,6 +227,23 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 				}
 
 				return av;
+			}
+		}
+
+		private class MixinMethodVisitor extends MethodVisitor {
+			protected MixinMethodVisitor(MethodVisitor methodVisitor) {
+				super(Constants.ASM_VERSION, methodVisitor);
+			}
+
+			@Override
+			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+				if ("Lorg/spongepowered/asm/mixin/gen/Accessor;".equals(descriptor)) {
+					accessor = true;
+				} else if ("Lorg/spongepowered/asm/mixin/gen/Invoker;".equals(descriptor)) {
+					accessor = true;
+				}
+
+				return super.visitAnnotation(descriptor, visible);
 			}
 		}
 	}

@@ -173,7 +173,10 @@ public class Download {
 				.map(this::getETagRequest)
 				.orElseGet(this::getRequest);
 
+		// Create a .lock file, this allows us to re-download if the download was forcefully aborted part way through.
+		createLock(output);
 		HttpResponse<Path> response = send(httpRequest, HttpResponse.BodyHandlers.ofFile(output));
+		getAndResetLock(output);
 
 		final int statusCode = response.statusCode();
 		boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
@@ -184,6 +187,12 @@ public class Download {
 		}
 
 		if (!success) {
+			try {
+				Files.deleteIfExists(output);
+			} catch (IOException ignored) {
+				// We tried.
+			}
+
 			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 		}
 
@@ -203,6 +212,7 @@ public class Download {
 
 				try {
 					downloadedHash = Checksum.sha1Hex(output);
+					Files.deleteIfExists(output);
 				} catch (IOException e) {
 					downloadedHash = "unknown hash";
 				}
@@ -224,6 +234,11 @@ public class Download {
 		if (offline) {
 			// We know the file exists, nothing more we can do.
 			return false;
+		}
+
+		if (getAndResetLock(output)) {
+			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
+			return true;
 		}
 
 		if (expectedHash != null) {
@@ -355,6 +370,33 @@ public class Download {
 	private FileTime getLastModified(Path path) throws IOException {
 		final BasicFileAttributeView basicView = Files.getFileAttributeView(path, BasicFileAttributeView.class);
 		return basicView.readAttributes().lastModifiedTime();
+	}
+
+	private Path getLockFile(Path output) {
+		return output.resolveSibling(output.getFileName() + ".lock");
+	}
+
+	private boolean getAndResetLock(Path output) throws DownloadException {
+		final Path lock = getLockFile(output);
+		final boolean exists = Files.exists(lock);
+
+		try {
+			Files.deleteIfExists(lock);
+		} catch (IOException e) {
+			throw error(e, "Failed to release lock on %s", lock);
+		}
+
+		return exists;
+	}
+
+	private void createLock(Path output) throws DownloadException {
+		final Path lock = getLockFile(output);
+
+		try {
+			Files.createFile(lock);
+		} catch (IOException e) {
+			throw error(e, "Failed to acquire lock on %s", lock);
+		}
 	}
 
 	private DownloadException error(String message, Object... args) {

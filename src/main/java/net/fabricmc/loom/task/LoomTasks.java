@@ -34,6 +34,7 @@ import org.gradle.api.tasks.TaskProvider;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
@@ -94,7 +95,14 @@ public final class LoomTasks {
 				return;
 			}
 
-			registerClientSetupTasks(project.getTasks(), extension.getMinecraftProvider().getVersionInfo().hasNativesToExtract());
+			final MinecraftVersionMeta versionInfo = extension.getMinecraftProvider().getVersionInfo();
+
+			if (versionInfo == null) {
+				// Something has gone wrong, don't register the task.
+				return;
+			}
+
+			registerClientSetupTasks(project.getTasks(), versionInfo.hasNativesToExtract());
 		});
 	}
 

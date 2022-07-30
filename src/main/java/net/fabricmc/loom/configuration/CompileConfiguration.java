@@ -24,7 +24,11 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.gradle.api.NamedDomainObjectProvider;
@@ -32,7 +36,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -114,7 +117,6 @@ public final class CompileConfiguration {
 	}
 
 	public static void configureCompile(Project p) {
-		final JavaPluginExtension javaPluginExtension = p.getExtensions().getByType(JavaPluginExtension.class);
 		LoomGradleExtension extension = LoomGradleExtension.get(p);
 
 		p.getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
@@ -125,6 +127,13 @@ public final class CompileConfiguration {
 		p.afterEvaluate(project -> {
 			MinecraftSourceSets.get(project).afterEvaluate(project);
 
+			final boolean previousRefreshDeps = extension.refreshDeps();
+
+			if (getAndLock(project)) {
+				project.getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
+				extension.setRefreshDeps(true);
+			}
+
 			try {
 				setupMinecraft(project);
 			} catch (Exception e) {
@@ -134,6 +143,9 @@ public final class CompileConfiguration {
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
 			dependencyManager.handleDependencies(project);
+
+			releaseLock(project);
+			extension.setRefreshDeps(previousRefreshDeps);
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 
@@ -268,6 +280,38 @@ public final class CompileConfiguration {
 
 		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
 				.apply(project, extension.getNamedMinecraftProvider()).afterEvaluation();
+	}
+
+	private static Path getLockFile(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final Path cacheDirectory = extension.getFiles().getProjectPersistentCache().toPath();
+		return cacheDirectory.resolve("configuration.lock");
+	}
+
+	private static boolean getAndLock(Project project) {
+		final Path lock = getLockFile(project);
+
+		if (Files.exists(lock)) {
+			return true;
+		}
+
+		try {
+			Files.createFile(lock);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to acquire project configuration lock", e);
+		}
+
+		return false;
+	}
+
+	private static void releaseLock(Project project) {
+		final Path lock = getLockFile(project);
+
+		try {
+			Files.deleteIfExists(lock);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to release project configuration lock", e);
+		}
 	}
 
 	public static void extendsFrom(List<String> parents, String b, Project project) {

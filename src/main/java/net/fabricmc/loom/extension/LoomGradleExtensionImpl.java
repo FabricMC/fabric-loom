@@ -69,6 +69,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private NamedMinecraftProvider<?> namedMinecraftProvider;
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
 	private InstallerData installerData;
+	private boolean refreshDeps;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
@@ -83,7 +84,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			provider.getIntermediaryUrl()
 					.convention(getIntermediaryUrl())
 					.finalizeValueOnRead();
+
+			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
 		});
+
+		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
+
+		if (refreshDeps) {
+			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
+		}
 	}
 
 	@Override
@@ -227,10 +236,17 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			builder.forceDownload();
 		}
 
-		// TODO
-		//builder.executor();
-
 		return builder;
+	}
+
+	@Override
+	public boolean refreshDeps() {
+		return refreshDeps;
+	}
+
+	@Override
+	public void setRefreshDeps(boolean refreshDeps) {
+		this.refreshDeps = refreshDeps;
 	}
 
 	@Override

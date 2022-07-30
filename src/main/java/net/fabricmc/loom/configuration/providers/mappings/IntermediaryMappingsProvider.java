@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider {
@@ -42,9 +41,11 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 	public abstract Property<String> getIntermediaryUrl();
 
+	public abstract Property<Boolean> getRefreshDeps();
+
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		if (Files.exists(tinyMappings) && !LoomGradlePlugin.refreshDeps) {
+		if (Files.exists(tinyMappings) && !getRefreshDeps().get()) {
 			return;
 		}
 

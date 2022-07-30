@@ -48,7 +48,6 @@ import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.util.LibraryLocationLogger;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
-	public static boolean refreshDeps;
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
@@ -65,12 +64,6 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 	public void apply(Project project) {
 		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
 		LibraryLocationLogger.logLibraryVersions();
-
-		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
-
-		if (refreshDeps) {
-			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
-		}
 
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java-library"));

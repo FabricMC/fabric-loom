@@ -69,7 +69,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
-		boolean requiresRefresh = isRefreshDeps() || Files.notExists(minecraftEnvOnlyJar);
+		boolean requiresRefresh = getExtension().refreshDeps() || Files.notExists(minecraftEnvOnlyJar);
 
 		if (!requiresRefresh) {
 			return;

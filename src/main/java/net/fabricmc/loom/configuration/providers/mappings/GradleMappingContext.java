@@ -89,6 +89,11 @@ public class GradleMappingContext implements MappingContext {
 		return extension.download(url);
 	}
 
+	@Override
+	public boolean refreshDeps() {
+		return extension.refreshDeps();
+	}
+
 	public Project getProject() {
 		return project;
 	}

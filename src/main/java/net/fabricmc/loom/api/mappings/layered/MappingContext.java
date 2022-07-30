@@ -57,4 +57,6 @@ public interface MappingContext {
 	Logger getLogger();
 
 	DownloadBuilder download(String url);
+
+	boolean refreshDeps();
 }

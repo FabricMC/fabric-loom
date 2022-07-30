@@ -277,7 +277,7 @@ public abstract class MinecraftProvider {
 		return LoomGradleExtension.get(getProject());
 	}
 
-	protected boolean isRefreshDeps() {
-		return LoomGradlePlugin.refreshDeps;
+	public boolean refreshDeps() {
+		return getExtension().refreshDeps();
 	}
 }

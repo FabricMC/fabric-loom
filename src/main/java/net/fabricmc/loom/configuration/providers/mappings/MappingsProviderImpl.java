@@ -137,11 +137,11 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	}
 
 	private void setup(MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
-		if (isRefreshDeps()) {
+		if (minecraftProvider.refreshDeps()) {
 			cleanWorkingDirectory(mappingsWorkingDir);
 		}
 
-		if (Files.notExists(tinyMappings) || isRefreshDeps()) {
+		if (Files.notExists(tinyMappings) || minecraftProvider.refreshDeps()) {
 			storeMappings(minecraftProvider, inputJar);
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(inputJar, (ClassLoader) null)) {
@@ -149,7 +149,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 			}
 		}
 
-		if (Files.notExists(tinyMappingsJar) || isRefreshDeps()) {
+		if (Files.notExists(tinyMappingsJar) || minecraftProvider.refreshDeps()) {
 			Files.deleteIfExists(tinyMappingsJar);
 			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
 		}
@@ -362,10 +362,6 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
-	}
-
-	protected static boolean isRefreshDeps() {
-		return LoomGradlePlugin.refreshDeps;
 	}
 
 	@Override

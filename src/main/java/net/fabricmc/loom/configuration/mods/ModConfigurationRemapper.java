@@ -49,7 +49,6 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.configuration.processors.dependency.ModDependencyInfo;
 import net.fabricmc.loom.configuration.processors.dependency.RemapData;
@@ -67,7 +66,6 @@ public class ModConfigurationRemapper {
 
 	public static void supplyModConfigurations(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		final DependencyHandler dependencies = project.getDependencies();
-		final boolean refreshDeps = LoomGradlePlugin.refreshDeps;
 
 		final File modStore = extension.getFiles().getRemappedModCache();
 		final RemapData remapData = new RemapData(mappingsSuffix, modStore);
@@ -99,7 +97,7 @@ public class ModConfigurationRemapper {
 
 					final ModDependencyInfo info = new ModDependencyInfo(artifact, remappedConfig, clientRemappedConfig, remapData);
 
-					if (refreshDeps) {
+					if (extension.refreshDeps()) {
 						info.forceRemap();
 					}
 
@@ -198,7 +196,7 @@ public class ModConfigurationRemapper {
 			return;
 		}
 
-		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified() || LoomGradlePlugin.refreshDeps) {
+		if (!output.exists() || input.lastModified() <= 0 || input.lastModified() > output.lastModified() || LoomGradleExtension.get(project).refreshDeps()) {
 			sourceRemapper.scheduleRemapSources(input, output, false, true); // Depenedency sources are used in ide only so don't need to be reproducable
 		} else {
 			project.getLogger().info(output.getName() + " is up to date with " + input.getName());

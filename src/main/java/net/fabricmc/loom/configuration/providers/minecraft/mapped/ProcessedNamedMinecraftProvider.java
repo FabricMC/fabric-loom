@@ -32,7 +32,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -64,7 +63,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		parentMinecraftProvider.provide(false);
 
 		final List<Path> inputJars = parentMinecraftProvider.getMinecraftJars();
-		boolean requiresProcessing = LoomGradlePlugin.refreshDeps || inputJars.stream()
+		boolean requiresProcessing = extension.refreshDeps() || inputJars.stream()
 				.map(this::getProcessedPath)
 				.map(Path::toFile)
 				.anyMatch(jarProcessorManager::isInvalid);

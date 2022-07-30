@@ -155,5 +155,10 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		DownloadBuilder download(String url) {
 			return Download.create(url)
 		}
+
+		@Override
+		boolean refreshDeps() {
+			return false
+		}
 	}
 }

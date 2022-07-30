@@ -109,4 +109,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	void addTransitiveAccessWideners(List<AccessWidenerFile> accessWidenerFiles);
 
 	DownloadBuilder download(String url);
+
+	boolean refreshDeps();
+
+	void setRefreshDeps(boolean refreshDeps);
 }

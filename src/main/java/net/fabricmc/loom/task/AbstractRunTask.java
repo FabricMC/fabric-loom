@@ -25,20 +25,30 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
+import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.util.Constants;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private final RunConfig config;
+	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
+	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
@@ -46,6 +56,9 @@ public abstract class AbstractRunTask extends JavaExec {
 		this.config = configProvider.apply(getProject());
 
 		setClasspath(config.sourceSet.getRuntimeClasspath().filter(File::exists).filter(new LibraryFilter()));
+		// Pass an empty classpath to the super JavaExec.
+		super.setClasspath(getProject().files());
+
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
 	}
@@ -69,10 +82,44 @@ public abstract class AbstractRunTask extends JavaExec {
 
 	@Override
 	public List<String> getJvmArgs() {
-		List<String> superArgs = super.getJvmArgs();
-		List<String> args = new ArrayList<>(superArgs != null ? superArgs : Collections.emptyList());
+		final List<String> superArgs = super.getJvmArgs();
+		final List<String> args = new ArrayList<>();
+
+		final String content = "-classpath\n" + this.classpath.getFiles().stream()
+				.map(File::getAbsolutePath)
+				.collect(Collectors.joining(System.getProperty("path.separator")));
+
+		try {
+			final Path argsFile = Files.createTempFile("loom-classpath", ".args");
+			Files.writeString(argsFile, content, StandardCharsets.UTF_8);
+			args.add("@" + argsFile.toAbsolutePath());
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create classpath file", e);
+		}
+
+		if (superArgs != null) {
+			args.addAll(superArgs);
+		}
+
 		args.addAll(config.vmArgs);
 		return args;
+	}
+
+	@Override
+	public @NotNull JavaExec setClasspath(@NotNull FileCollection classpath) {
+		this.classpath.setFrom(classpath);
+		return this;
+	}
+
+	@Override
+	public @NotNull JavaExec classpath(Object @NotNull... paths) {
+		this.classpath.from(paths);
+		return this;
+	}
+
+	@Override
+	public @NotNull FileCollection getClasspath() {
+		return this.classpath;
 	}
 
 	private class LibraryFilter implements Spec<File> {

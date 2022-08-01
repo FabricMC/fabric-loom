@@ -49,7 +49,7 @@ import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.mods.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;

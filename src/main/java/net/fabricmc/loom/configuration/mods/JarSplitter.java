@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.mods;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -47,13 +48,24 @@ public class JarSplitter {
 		this.inputJar = inputJar;
 	}
 
+	public boolean canSplit() {
+		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
+			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
+			final Attributes attributes = manifest.getMainAttributes();
+			final String splitEnvValue = attributes.getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY);
+			return Boolean.parseBoolean(splitEnvValue);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read jar", e);
+		}
+	}
+
 	public boolean split(Path commonOutputJar, Path clientOutputJar) throws IOException {
 		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
 			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
 			final List<String> clientEntries = readClientEntries(manifest);
 
 			if (clientEntries.isEmpty()) {
-				// No client entries, just copy the input jar
+				// No client entries, just copy the input jar to the common jar
 				Files.copy(inputJar, commonOutputJar);
 				return false;
 			}

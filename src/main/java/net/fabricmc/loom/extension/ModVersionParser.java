@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.mods;
+package net.fabricmc.loom.extension;
 
 import java.io.File;
 import java.io.FileReader;

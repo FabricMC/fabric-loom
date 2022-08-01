@@ -91,4 +91,9 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 
 		return extension.getFiles().getProjectBuildCache().toPath().resolve("remapped_working").resolve(fileName);
 	}
+
+	@Override
+	public String toString() {
+		return "ModDependency{" + "group='" + group + '\'' + ", name='" + name + '\'' + ", version='" + version + '\'' + ", classifier='" + classifier + '\'' + '}';
+	}
 }

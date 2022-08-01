@@ -28,15 +28,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 
-import net.fabricmc.loom.LoomGradleExtension;
-
-import net.fabricmc.loom.configuration.mods.JarSplitter;
-
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
+import net.fabricmc.loom.configuration.mods.JarSplitter;
 
 // Single jar in, 2 out.
 public final class SplitModDependency extends ModDependency {
@@ -51,7 +49,7 @@ public final class SplitModDependency extends ModDependency {
 		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
 
 		this.commonMaven = new LocalMavenHelper(getRemappedGroup(), name + "-common", version, project);
-		this.clientMaven = new LocalMavenHelper(getRemappedGroup(), name  + "-client", version, project);
+		this.clientMaven = new LocalMavenHelper(getRemappedGroup(), name + "-client", version, project);
 	}
 
 	@Override

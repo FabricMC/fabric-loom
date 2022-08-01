@@ -61,7 +61,7 @@ public class SourceRemapper {
 		this.toNamed = toNamed;
 	}
 
-	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps, Runnable compilationCallback) {
+	public void scheduleRemapSources(File source, File destination, boolean reproducibleFileOrder, boolean preserveFileTimestamps, Runnable completionCallback) {
 		remapTasks.add((logger) -> {
 			try {
 				logger.progress("remapping sources - " + source.getName());
@@ -70,6 +70,7 @@ public class SourceRemapper {
 
 				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
 				destination.setLastModified(source.lastModified());
+				completionCallback.run();
 			} catch (Exception e) {
 				// Failed to remap, lets clean up to ensure we try again next time
 				destination.delete();

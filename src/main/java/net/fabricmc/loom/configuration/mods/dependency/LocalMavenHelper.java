@@ -40,12 +40,15 @@ public final class LocalMavenHelper {
 	private final String group;
 	private final String name;
 	private final String version;
+	@Nullable
+	private final String baseClassifier;
 	private final Project project;
 
-	LocalMavenHelper(String group, String name, String version, Project project) {
+	LocalMavenHelper(String group, String name, String version, @Nullable String classifier, Project project) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
+		this.baseClassifier = classifier;
 		this.project = project;
 	}
 
@@ -64,6 +67,10 @@ public final class LocalMavenHelper {
 	}
 
 	public String getNotation() {
+		if (baseClassifier != null) {
+			return String.format("%s:%s:%s:%s", group, name, version, baseClassifier);
+		}
+
 		return String.format("%s:%s:%s", group, name, version);
 	}
 
@@ -100,6 +107,10 @@ public final class LocalMavenHelper {
 	}
 
 	private Path getOutputFile(@Nullable String classifier) {
+		if (classifier == null) {
+			classifier = baseClassifier;
+		}
+
 		final String fileName = classifier == null ? String.format("%s-%s.jar", name, version)
 													: String.format("%s-%s-%s.jar", name, version, classifier);
 		return getDirectory().resolve(fileName);

@@ -28,15 +28,54 @@ import net.fabricmc.loom.configuration.mods.JarSplitter
 import spock.lang.Specification
 
 class JarSplitterTest extends Specification {
-	public static final String INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-lifecycle-events-v1/2.1.0%2B33fbc738a9/fabric-lifecycle-events-v1-2.1.0%2B33fbc738a9.jar"
+	public static final String SPLIT_INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-lifecycle-events-v1/2.1.0%2B33fbc738a9/fabric-lifecycle-events-v1-2.1.0%2B33fbc738a9.jar"
+	public static final String CLIENT_INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-renderer-indigo/0.6.10%2B5187d39f95/fabric-renderer-indigo-0.6.10%2B5187d39f95.jar"
+	public static final String COMMON_INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api-lookup-api-v1/1.6.7%2B9ff28f4095/fabric-api-lookup-api-v1-1.6.7%2B9ff28f4095.jar"
+	public static final String NORMAL_INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.14.8/fabric-loader-0.14.8.jar"
 
 	public static final File workingDir = new File("build/test/split")
 
+	def "analyse: split"() {
+		given:
+			def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
+		when:
+			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		then:
+			target == JarSplitter.Target.SPLIT
+	}
+
+	def "analyse: client"() {
+		given:
+			def inputJar = downloadJarIfNotExists(CLIENT_INPUT_JAR_URL, "client.jar")
+		when:
+			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		then:
+			target == JarSplitter.Target.CLIENT_ONLY
+	}
+
+	def "analyse: common"() {
+		given:
+			def inputJar = downloadJarIfNotExists(COMMON_INPUT_JAR_URL, "common.jar")
+		when:
+			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		then:
+			target == JarSplitter.Target.COMMON_ONLY
+	}
+
+	def "analyse: normal"() {
+		given:
+			def inputJar = downloadJarIfNotExists(NORMAL_INPUT_JAR_URL, "normal.jar")
+		when:
+			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		then:
+			target == null
+	}
+
 	def "split jar"() {
 		given:
-			def inputJar = downloadJarIfNotExists(INPUT_JAR_URL, "input.jar")
-			def commonOutputJar = getFile("common.jar")
-			def clientOutputJar = getFile("client.jar")
+			def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
+			def commonOutputJar = getFile("common-out.jar")
+			def clientOutputJar = getFile("client-out.jar")
 
 			def jarSplitter = new JarSplitter(inputJar.toPath())
 		when:

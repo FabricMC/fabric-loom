@@ -33,10 +33,13 @@ import net.fabricmc.loom.configuration.mods.JarSplitter;
 
 public class ModDependencyFactory {
 	public static ModDependency create(ArtifactRef artifact, Configuration targetConfig, @Nullable Configuration targetClientConfig, String mappingsSuffix, Project project) {
-		// TODO this is hot code, it must be fast speed me up.
-		if (targetClientConfig != null && new JarSplitter(artifact.path()).canSplit()) {
-			// TODO support using simple for common or client only jars that were built with split jars enabled.
-			return new SplitModDependency(artifact, mappingsSuffix, targetConfig, targetClientConfig, project);
+		if (targetClientConfig != null) {
+			// TODO this is hot and slow code, cache me
+			final JarSplitter.Target target = new JarSplitter(artifact.path()).analyseTarget();
+
+			if (target != null) {
+				return new SplitModDependency(artifact, mappingsSuffix, targetConfig, targetClientConfig, target, project);
+			}
 		}
 
 		return new SimpleModDependency(artifact, mappingsSuffix, targetConfig, project);

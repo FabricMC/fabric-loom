@@ -226,6 +226,11 @@ public class Download {
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {
+		if (getAndResetLock(output)) {
+			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
+			return true;
+		}
+
 		if (forceDownload || !exists(output)) {
 			// File does not exist, or we are forced to download again.
 			return true;
@@ -234,11 +239,6 @@ public class Download {
 		if (offline) {
 			// We know the file exists, nothing more we can do.
 			return false;
-		}
-
-		if (getAndResetLock(output)) {
-			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
-			return true;
 		}
 
 		if (expectedHash != null) {
@@ -380,10 +380,12 @@ public class Download {
 		final Path lock = getLockFile(output);
 		final boolean exists = Files.exists(lock);
 
-		try {
-			Files.deleteIfExists(lock);
-		} catch (IOException e) {
-			throw error(e, "Failed to release lock on %s", lock);
+		if (exists) {
+			try {
+				Files.delete(lock);
+			} catch (IOException e) {
+				throw error(e, "Failed to release lock on %s", lock);
+			}
 		}
 
 		return exists;

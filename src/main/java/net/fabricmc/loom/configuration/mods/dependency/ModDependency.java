@@ -56,17 +56,21 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	/**
 	 * Returns true when the cache is invalid.
 	 */
-	public abstract boolean isCacheInvalid(Project project, @Nullable String classifier);
+	public abstract boolean isCacheInvalid(Project project, @Nullable String variant);
 
 	/**
 	 * Write an artifact to the local cache.
 	 */
-	public abstract void copyToCache(Project project, Path path, @Nullable String classifier) throws IOException;
+	public abstract void copyToCache(Project project, Path path, @Nullable String variant) throws IOException;
 
 	/**
 	 * Apply the dependency to the project.
 	 */
 	public abstract void applyToProject(Project project);
+
+	protected LocalMavenHelper createMaven(String name) {
+		return new LocalMavenHelper(getRemappedGroup(), name, this.version, this.classifier, this.project);
+	}
 
 	public ArtifactRef getInputArtifact() {
 		return artifact;

@@ -40,43 +40,86 @@ import net.fabricmc.loom.configuration.mods.JarSplitter;
 public final class SplitModDependency extends ModDependency {
 	private final Configuration targetConfig;
 	private final Configuration targetClientConfig;
+	private final JarSplitter.Target target;
+	@Nullable
 	private final LocalMavenHelper commonMaven;
+	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetConfig, Configuration targetClientConfig, Project project) {
+	public SplitModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
 		super(artifact, mappingsSuffix, project);
 		this.targetConfig = Objects.requireNonNull(targetConfig);
 		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
-
-		this.commonMaven = new LocalMavenHelper(getRemappedGroup(), name + "-common", version, project);
-		this.clientMaven = new LocalMavenHelper(getRemappedGroup(), name + "-client", version, project);
+		this.target = Objects.requireNonNull(target);
+		this.commonMaven = target.common() ? createMaven(name + "-common") : null;
+		this.clientMaven = target.client() ? createMaven(name + "-client") : null;
 	}
 
 	@Override
-	public boolean isCacheInvalid(Project project, @Nullable String classifier) {
+	public boolean isCacheInvalid(Project project, @Nullable String variant) {
 		if (LoomGradleExtension.get(project).refreshDeps()) {
 			return true;
 		}
 
-		return !commonMaven.exists(classifier) || !clientMaven.exists(classifier);
+		boolean exists = switch (target) {
+		case COMMON_ONLY -> getCommonMaven().exists(variant);
+		case CLIENT_ONLY -> getClientMaven().exists(variant);
+		case SPLIT -> getCommonMaven().exists(variant) && getClientMaven().exists(variant);
+		};
+
+		return !exists;
 	}
 
 	@Override
-	public void copyToCache(Project project, Path path, @Nullable String classifier) throws IOException {
-		final JarSplitter splitter = new JarSplitter(path);
-		final String suffix = classifier == null ? "" : "-" + classifier;
+	public void copyToCache(Project project, Path path, @Nullable String variant) throws IOException {
+		final String suffix = variant == null ? "" : "-" + variant;
 		final Path commonTempJar = getWorkingFile("common" + suffix);
 		final Path clientTempJar = getWorkingFile("client" + suffix);
 
-		splitter.split(commonTempJar, clientTempJar);
+		// Split dependencies build with loom 0.12 do not contain the required data to split the sources
+		if (target == JarSplitter.Target.SPLIT && variant != null) {
+			final JarSplitter.Target artifactTarget = new JarSplitter(path).analyseTarget();
 
-		commonMaven.copyToMaven(commonTempJar, classifier);
-		clientMaven.copyToMaven(clientTempJar, classifier);
+			if (artifactTarget != target) {
+				// Found a broken artifact, copy it to both locations without splitting.
+				getCommonMaven().copyToMaven(path, variant);
+				getClientMaven().copyToMaven(path, variant);
+				return;
+			}
+		}
+
+		switch (target) {
+		// Split the jar into 2
+		case SPLIT -> {
+			final JarSplitter splitter = new JarSplitter(path);
+			splitter.split(commonTempJar, clientTempJar);
+
+			getCommonMaven().copyToMaven(commonTempJar, variant);
+			getClientMaven().copyToMaven(clientTempJar, variant);
+		}
+
+		// No splitting to be done, just add the input jar onto the respective target configuration.
+		case CLIENT_ONLY -> getClientMaven().copyToMaven(path, variant);
+		case COMMON_ONLY -> getCommonMaven().copyToMaven(path, variant);
+		}
 	}
 
 	@Override
 	public void applyToProject(Project project) {
-		project.getDependencies().add(targetConfig.getName(), commonMaven.getNotation());
-		project.getDependencies().add(targetClientConfig.getName(), clientMaven.getNotation());
+		if (target.common()) {
+			project.getDependencies().add(targetConfig.getName(), getCommonMaven().getNotation());
+		}
+
+		if (target.client()) {
+			project.getDependencies().add(targetClientConfig.getName(), getClientMaven().getNotation());
+		}
+	}
+
+	public LocalMavenHelper getCommonMaven() {
+		return Objects.requireNonNull(commonMaven, "Cannot get null common maven helper");
+	}
+
+	public LocalMavenHelper getClientMaven() {
+		return Objects.requireNonNull(clientMaven, "Cannot get null client maven helper");
 	}
 }

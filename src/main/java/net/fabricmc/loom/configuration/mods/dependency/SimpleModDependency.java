@@ -43,21 +43,21 @@ public final class SimpleModDependency extends ModDependency {
 	public SimpleModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetConfig, Project project) {
 		super(artifact, mappingsSuffix, project);
 		this.targetConfig = Objects.requireNonNull(targetConfig);
-		this.maven = new LocalMavenHelper(getRemappedGroup(), name, version, project);
+		this.maven = createMaven(name);
 	}
 
 	@Override
-	public boolean isCacheInvalid(Project project, @Nullable String classifier) {
+	public boolean isCacheInvalid(Project project, @Nullable String variant) {
 		if (LoomGradleExtension.get(project).refreshDeps()) {
 			return true;
 		}
 
-		return !maven.exists(classifier);
+		return !maven.exists(variant);
 	}
 
 	@Override
-	public void copyToCache(Project project, Path path, @Nullable String classifier) throws IOException {
-		maven.copyToMaven(path, classifier);
+	public void copyToCache(Project project, Path path, @Nullable String variant) throws IOException {
+		maven.copyToMaven(path, variant);
 	}
 
 	@Override

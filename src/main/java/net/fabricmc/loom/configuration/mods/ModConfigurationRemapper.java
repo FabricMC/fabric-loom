@@ -119,7 +119,7 @@ public class ModConfigurationRemapper {
 				// Add all of the remapped mods onto the config
 				for (ModDependency info : modDependencies) {
 					info.applyToProject(project);
-					createConstraints(info.getInputArtifact(), targetConfig, clientRemappedConfig, dependencies);
+					createConstraints(info.getInputArtifact(), targetConfig, sourceConfig, dependencies);
 				}
 
 				// Export to other projects

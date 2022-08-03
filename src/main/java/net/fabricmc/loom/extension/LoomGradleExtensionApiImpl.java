@@ -70,6 +70,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
+	private final Property<Boolean> splitModDependencies;
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
@@ -120,6 +121,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(false);
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
+
+		this.splitModDependencies = project.getObjects().property(Boolean.class).convention(true);
+		this.splitModDependencies.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
 
@@ -264,6 +268,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getRuntimeOnlyLog4j() {
 		return runtimeOnlyLog4j;
+	}
+
+	@Override
+	public Property<Boolean> getSplitModDependencies() {
+		return splitModDependencies;
 	}
 
 	@Override

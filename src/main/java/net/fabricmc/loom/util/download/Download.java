@@ -34,14 +34,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
@@ -53,6 +51,7 @@ import com.github.mizosoft.methanol.ProgressTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.util.AttributeHelper;
 import net.fabricmc.loom.util.Checksum;
 
 public class Download {
@@ -301,7 +300,7 @@ public class Download {
 
 	private Optional<String> readEtag(Path output) {
 		try {
-			return readAttribute(output, E_TAG);
+			return AttributeHelper.readAttribute(output, E_TAG);
 		} catch (IOException e) {
 			return Optional.empty();
 		}
@@ -309,7 +308,7 @@ public class Download {
 
 	private void writeEtag(Path output, String eTag) throws DownloadException {
 		try {
-			writeAttribute(output, E_TAG, eTag);
+			AttributeHelper.writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
 			throw error(e, "Failed to write etag to (%s)", output);
 		}
@@ -317,7 +316,7 @@ public class Download {
 
 	private Optional<String> readHash(Path output) {
 		try {
-			return readAttribute(output, "LoomHash");
+			return AttributeHelper.readAttribute(output, "LoomHash");
 		} catch (IOException e) {
 			return Optional.empty();
 		}
@@ -325,7 +324,7 @@ public class Download {
 
 	private void writeHash(Path output, String eTag) throws DownloadException {
 		try {
-			writeAttribute(output, "LoomHash", eTag);
+			AttributeHelper.writeAttribute(output, "LoomHash", eTag);
 		} catch (IOException e) {
 			throw error(e, "Failed to write hash to (%s)", output);
 		}
@@ -342,29 +341,6 @@ public class Download {
 	// A faster exists check
 	private static boolean exists(Path path) {
 		return path.getFileSystem() == FileSystems.getDefault() ? path.toFile().exists() : Files.exists(path);
-	}
-
-	private static Optional<String> readAttribute(Path path, String key) throws IOException {
-		final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
-
-		if (!attributeView.list().contains(key)) {
-			return Optional.empty();
-		}
-
-		final ByteBuffer buffer = ByteBuffer.allocate(attributeView.size(key));
-		attributeView.read(key, buffer);
-		buffer.flip();
-		final String value = StandardCharsets.UTF_8.decode(buffer).toString();
-		return Optional.of(value);
-	}
-
-	private static void writeAttribute(Path path, String key, String value) throws IOException {
-		// TODO may need to fallback to creating a separate file if this isnt supported.
-		final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
-		final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-		final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		final int written = attributeView.write(key, buffer);
-		assert written == bytes.length;
 	}
 
 	private FileTime getLastModified(Path path) throws IOException {

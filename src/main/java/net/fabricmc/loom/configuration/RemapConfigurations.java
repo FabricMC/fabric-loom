@@ -89,15 +89,11 @@ public final class RemapConfigurations {
 	}
 
 	private static void createClientMappedConfiguration(Project project, RemapConfigurationSettings settings, SourceSet clientSourceSet) {
-		final Configuration sourceConfiguration = project.getConfigurations().getByName(settings.getClientSourceConfigurationName().get());
-		sourceConfiguration.setTransitive(true);
-
 		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getClientRemappedConfigurationName().get());
 		// Don't get transitive deps of already remapped mods
 		remappedConfiguration.setTransitive(false);
 
 		if (settings.getOnCompileClasspath().get()) {
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, sourceConfiguration, project);
 			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
 
 			extendsFrom(clientSourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);

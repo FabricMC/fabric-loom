@@ -26,7 +26,10 @@ package net.fabricmc.loom.util.gradle;
 
 import org.gradle.api.Project;
 
-public class GradleUtils {
+public final class GradleUtils {
+	private GradleUtils() {
+	}
+
 	// For some crazy reason afterEvaluate is still invoked when the configuration fails
 	public static void afterSuccessfulEvaluation(Project project, Runnable afterEvaluate) {
 		project.afterEvaluate(p -> {

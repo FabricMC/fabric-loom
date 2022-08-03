@@ -82,16 +82,12 @@ public interface LoomGradleExtensionAPI {
 	 * Optionally register and configure a {@link ModSettings} object. The name should match the modid.
 	 * This is generally only required when the mod spans across multiple classpath directories, such as when using split sourcesets.
 	 */
-	@ApiStatus.Experimental
 	void mods(Action<NamedDomainObjectContainer<ModSettings>> action);
 
-	@ApiStatus.Experimental
 	NamedDomainObjectContainer<ModSettings> getMods();
 
-	@ApiStatus.Experimental
 	NamedDomainObjectList<RemapConfigurationSettings> getRemapConfigurations();
 
-	@ApiStatus.Experimental
 	RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action);
 
 	void createRemapConfigurations(SourceSet sourceSet);
@@ -173,29 +169,25 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<String> getIntermediaryUrl();
 
-	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration> getMinecraftJarConfiguration();
 
-	@ApiStatus.Experimental
 	default void serverOnlyMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SERVER_ONLY);
 	}
 
-	@ApiStatus.Experimental
 	default void clientOnlyMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.CLIENT_ONLY);
 	}
 
-	@ApiStatus.Experimental
 	default void splitMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
 	}
 
-	@ApiStatus.Experimental
 	void splitEnvironmentSourceSets();
 
-	@ApiStatus.Experimental
 	boolean areEnvironmentSourceSetsSplit();
 
 	Property<Boolean> getRuntimeOnlyLog4j();
+
+	Property<Boolean> getSplitModDependencies();
 }

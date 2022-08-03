@@ -24,18 +24,33 @@
 
 package net.fabricmc.loom.configuration.mods.dependency;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Optional;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.configuration.mods.JarSplitter;
+import net.fabricmc.loom.util.AttributeHelper;
 
 public class ModDependencyFactory {
+	private static final String TARGET_ATTRIBUTE_KEY = "loom-target";
+
 	public static ModDependency create(ArtifactRef artifact, Configuration targetConfig, @Nullable Configuration targetClientConfig, String mappingsSuffix, Project project) {
-		if (targetClientConfig != null) {
-			// TODO this is hot and slow code, cache me
-			final JarSplitter.Target target = new JarSplitter(artifact.path()).analyseTarget();
+		if (targetClientConfig != null && LoomGradleExtension.get(project).getSplitModDependencies().get()) {
+			final Optional<JarSplitter.Target> cachedTarget = readTarget(artifact);
+			JarSplitter.Target target;
+
+			if (cachedTarget.isPresent()) {
+				target = cachedTarget.get();
+			} else {
+				target = new JarSplitter(artifact.path()).analyseTarget();
+				writeTarget(artifact, target);
+			}
 
 			if (target != null) {
 				return new SplitModDependency(artifact, mappingsSuffix, targetConfig, targetClientConfig, target, project);
@@ -43,5 +58,29 @@ public class ModDependencyFactory {
 		}
 
 		return new SimpleModDependency(artifact, mappingsSuffix, targetConfig, project);
+	}
+
+	private static Optional<JarSplitter.Target> readTarget(ArtifactRef artifact) {
+		try {
+			return AttributeHelper.readAttribute(artifact.path(), TARGET_ATTRIBUTE_KEY).map(s -> {
+				if ("null".equals(s)) {
+					return null;
+				}
+
+				return JarSplitter.Target.valueOf(s);
+			});
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read artifact target attribute", e);
+		}
+	}
+
+	private static void writeTarget(ArtifactRef artifact, JarSplitter.Target target) {
+		final String value = target != null ? target.name() : "null";
+
+		try {
+			AttributeHelper.writeAttribute(artifact.path(), TARGET_ATTRIBUTE_KEY, value);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to write artifact target attribute", e);
+		}
 	}
 }

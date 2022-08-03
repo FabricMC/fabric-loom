@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -137,6 +138,8 @@ public class ModProcessor {
 
 			remapper.readInputsAsync(tag, info.getInputFile());
 			tagMap.put(info, tag);
+
+			Files.deleteIfExists(getRemappedOutput(info));
 		}
 
 		try {

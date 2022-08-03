@@ -32,7 +32,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 
 // Single jar in and out
@@ -48,10 +47,6 @@ public final class SimpleModDependency extends ModDependency {
 
 	@Override
 	public boolean isCacheInvalid(Project project, @Nullable String variant) {
-		if (LoomGradleExtension.get(project).refreshDeps()) {
-			return true;
-		}
-
 		return !maven.exists(variant);
 	}
 

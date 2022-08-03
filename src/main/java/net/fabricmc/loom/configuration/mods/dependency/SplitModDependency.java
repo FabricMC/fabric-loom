@@ -57,10 +57,6 @@ public final class SplitModDependency extends ModDependency {
 
 	@Override
 	public boolean isCacheInvalid(Project project, @Nullable String variant) {
-		if (LoomGradleExtension.get(project).refreshDeps()) {
-			return true;
-		}
-
 		boolean exists = switch (target) {
 		case COMMON_ONLY -> getCommonMaven().exists(variant);
 		case CLIENT_ONLY -> getClientMaven().exists(variant);
@@ -72,10 +68,6 @@ public final class SplitModDependency extends ModDependency {
 
 	@Override
 	public void copyToCache(Project project, Path path, @Nullable String variant) throws IOException {
-		final String suffix = variant == null ? "" : "-" + variant;
-		final Path commonTempJar = getWorkingFile("common" + suffix);
-		final Path clientTempJar = getWorkingFile("client" + suffix);
-
 		// Split dependencies build with loom 0.12 do not contain the required data to split the sources
 		if (target == JarSplitter.Target.SPLIT && variant != null) {
 			final JarSplitter.Target artifactTarget = new JarSplitter(path).analyseTarget();
@@ -91,6 +83,10 @@ public final class SplitModDependency extends ModDependency {
 		switch (target) {
 		// Split the jar into 2
 		case SPLIT -> {
+			final String suffix = variant == null ? "" : "-" + variant;
+			final Path commonTempJar = getWorkingFile("common" + suffix);
+			final Path clientTempJar = getWorkingFile("client" + suffix);
+
 			final JarSplitter splitter = new JarSplitter(path);
 			splitter.split(commonTempJar, clientTempJar);
 

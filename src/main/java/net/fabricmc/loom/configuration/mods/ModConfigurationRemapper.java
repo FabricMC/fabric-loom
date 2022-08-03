@@ -77,12 +77,12 @@ public class ModConfigurationRemapper {
 				 */
 				final Configuration sourceConfig = entry.getSourceConfiguration().get();
 				final Configuration targetConfig = entry.getTargetConfiguration().get();
-				final boolean hasClientTarget = entry.getClientTargetConfigurationName().isPresent();
+				final boolean hasClientTarget = entry.getClientSourceConfigurationName().isPresent();
 
 				Configuration clientRemappedConfig = null;
 
 				if (hasClientTarget) {
-					clientRemappedConfig = entry.getClientTargetConfiguration().get();
+					clientRemappedConfig = entry.getClientRemappedConfiguration().get();
 				}
 
 				final List<ModDependency> modDependencies = new ArrayList<>();
@@ -119,7 +119,7 @@ public class ModConfigurationRemapper {
 				// Add all of the remapped mods onto the config
 				for (ModDependency info : modDependencies) {
 					info.applyToProject(project);
-					createConstraints(info.getInputArtifact(), targetConfig, sourceConfig, dependencies);
+					createConstraints(info.getInputArtifact(), targetConfig, clientRemappedConfig, dependencies);
 				}
 
 				// Export to other projects

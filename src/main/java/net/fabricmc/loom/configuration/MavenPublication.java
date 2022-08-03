@@ -47,6 +47,7 @@ import org.gradle.api.publish.PublishingExtension;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.GroovyXmlUtil;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public final class MavenPublication {
 	// ImmutableMap is needed since it guarantees ordering
@@ -61,14 +62,14 @@ public final class MavenPublication {
 	}
 
 	public static void configure(Project project) {
-		project.afterEvaluate((p) -> {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
 			AtomicBoolean reportedDeprecation = new AtomicBoolean(false);
 
 			CONFIGURATION_TO_SCOPE.forEach((configurationName, scope) -> {
-				Configuration config = p.getConfigurations().getByName(configurationName);
+				Configuration config = project.getConfigurations().getByName(configurationName);
 
 				// add modsCompile to maven-publish
-				PublishingExtension mavenPublish = p.getExtensions().findByType(PublishingExtension.class);
+				PublishingExtension mavenPublish = project.getExtensions().findByType(PublishingExtension.class);
 
 				if (mavenPublish != null) {
 					processEntry(project, scope, config, mavenPublish, reportedDeprecation);

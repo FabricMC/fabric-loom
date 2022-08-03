@@ -94,7 +94,7 @@ public final class SplitModDependency extends ModDependency {
 			getClientMaven().copyToMaven(clientTempJar, variant);
 		}
 
-		// No splitting to be done, just add the input jar onto the respective target configuration.
+		// No splitting to be done, just copy the input jar to the respective location.
 		case CLIENT_ONLY -> getClientMaven().copyToMaven(path, variant);
 		case COMMON_ONLY -> getCommonMaven().copyToMaven(path, variant);
 		}

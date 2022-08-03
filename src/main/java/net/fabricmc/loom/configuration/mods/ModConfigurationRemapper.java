@@ -120,6 +120,10 @@ public class ModConfigurationRemapper {
 				for (ModDependency info : modDependencies) {
 					info.applyToProject(project);
 					createConstraints(info.getInputArtifact(), targetConfig, sourceConfig, dependencies);
+
+					if (clientRemappedConfig != null) {
+						createConstraints(info.getInputArtifact(), entry.getClientTargetConfiguration().get(), sourceConfig, dependencies);
+					}
 				}
 
 				// Export to other projects
@@ -131,6 +135,11 @@ public class ModConfigurationRemapper {
 	}
 
 	private static void createConstraints(ArtifactRef artifact, Configuration targetConfig, Configuration sourceConfig, DependencyHandler dependencies) {
+		if (true) {
+			// Disabled due to the gradle module metadata causing issues. Try the MavenProject test to reproduce issue.
+			return;
+		}
+
 		if (artifact instanceof ArtifactRef.ResolvedArtifactRef mavenArtifact) {
 			final String dependencyCoordinate = "%s:%s".formatted(mavenArtifact.group(), mavenArtifact.name());
 

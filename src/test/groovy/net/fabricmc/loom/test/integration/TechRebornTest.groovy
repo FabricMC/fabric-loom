@@ -25,7 +25,6 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll

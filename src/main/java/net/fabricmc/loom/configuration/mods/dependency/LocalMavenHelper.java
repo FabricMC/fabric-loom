@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
@@ -59,7 +60,7 @@ public final class LocalMavenHelper {
 
 		Files.createDirectories(getDirectory());
 		savePom();
-		return Files.copy(artifact, getOutputFile(classifier));
+		return Files.copy(artifact, getOutputFile(classifier), StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public boolean exists(String classifier) {
@@ -106,7 +107,7 @@ public final class LocalMavenHelper {
 		return getDirectory().resolve("%s-%s.pom".formatted(name, version));
 	}
 
-	private Path getOutputFile(@Nullable String classifier) {
+	public Path getOutputFile(@Nullable String classifier) {
 		if (classifier == null) {
 			classifier = baseClassifier;
 		}

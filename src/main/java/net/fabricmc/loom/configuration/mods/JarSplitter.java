@@ -116,6 +116,9 @@ public class JarSplitter {
 	}
 
 	public boolean split(Path commonOutputJar, Path clientOutputJar) throws IOException {
+		Files.deleteIfExists(commonOutputJar);
+		Files.deleteIfExists(clientOutputJar);
+
 		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
 			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
 

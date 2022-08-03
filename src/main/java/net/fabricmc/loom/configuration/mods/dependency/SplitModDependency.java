@@ -38,7 +38,7 @@ import net.fabricmc.loom.configuration.mods.JarSplitter;
 
 // Single jar in, 2 out.
 public final class SplitModDependency extends ModDependency {
-	private final Configuration targetConfig;
+	private final Configuration targetCommonConfig;
 	private final Configuration targetClientConfig;
 	private final JarSplitter.Target target;
 	@Nullable
@@ -46,9 +46,9 @@ public final class SplitModDependency extends ModDependency {
 	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
+	public SplitModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
 		super(artifact, mappingsSuffix, project);
-		this.targetConfig = Objects.requireNonNull(targetConfig);
+		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig);
 		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
 		this.target = Objects.requireNonNull(target);
 		this.commonMaven = target.common() ? createMaven(name + "-common") : null;
@@ -107,12 +107,29 @@ public final class SplitModDependency extends ModDependency {
 	@Override
 	public void applyToProject(Project project) {
 		if (target.common()) {
-			project.getDependencies().add(targetConfig.getName(), getCommonMaven().getNotation());
+			project.getDependencies().add(targetCommonConfig.getName(), getCommonMaven().getNotation());
 		}
 
 		if (target.client()) {
 			project.getDependencies().add(targetClientConfig.getName(), getClientMaven().getNotation());
 		}
+
+		if (target == JarSplitter.Target.SPLIT) {
+			createModGroup(
+					getCommonMaven().getOutputFile(null),
+					getClientMaven().getOutputFile(null)
+			);
+		}
+	}
+
+	private void createModGroup(Path commonJar, Path clientJar) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		extension.getMods().register(String.format("%s-%s-%s", getRemappedGroup(), name, version), modSettings ->
+				modSettings.getModFiles().from(
+					commonJar.toFile(),
+					clientJar.toFile()
+				)
+		);
 	}
 
 	public LocalMavenHelper getCommonMaven() {

@@ -38,6 +38,7 @@ import org.gradle.api.tasks.bundling.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public class RemapTaskConfiguration {
@@ -84,7 +85,7 @@ public class RemapTaskConfiguration {
 			return;
 		}
 
-		project.afterEvaluate(p -> {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
 			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
 				Configuration configuration = project.getConfigurations().getByName(configurationName);
@@ -135,7 +136,7 @@ public class RemapTaskConfiguration {
 			return;
 		}
 
-		project.afterEvaluate(p -> {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
 			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
 
 			if (!(sourcesTask instanceof Jar sourcesJarTask)) {

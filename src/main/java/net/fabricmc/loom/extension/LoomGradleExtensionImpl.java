@@ -232,7 +232,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			builder.offline();
 		}
 
-		if (project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh")) {
+		if (refreshDeps()) {
 			builder.forceDownload();
 		}
 

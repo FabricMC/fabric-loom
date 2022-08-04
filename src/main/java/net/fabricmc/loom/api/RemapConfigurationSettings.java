@@ -54,7 +54,7 @@ public abstract class RemapConfigurationSettings implements Named {
 		this.name = name;
 
 		getTargetConfigurationName().finalizeValueOnRead();
-		getClientTargetConfigurationName().finalizeValueOnRead();
+		getClientSourceConfigurationName().finalizeValueOnRead();
 		getOnCompileClasspath().finalizeValueOnRead();
 		getOnRuntimeClasspath().finalizeValueOnRead();
 		getPublishingMode().convention(PublishingMode.NONE).finalizeValueOnRead();
@@ -74,9 +74,9 @@ public abstract class RemapConfigurationSettings implements Named {
 	 * Optional, only used when split sourcesets are enabled.
 	 * When not present client only entries should go onto the target configuration.
 	 *
-	 * @return The client target configuration name
+	 * @return The client source configuration name
 	 */
-	public abstract Property<String> getClientTargetConfigurationName();
+	public abstract Property<String> getClientSourceConfigurationName();
 
 	/**
 	 * @return True if this configuration's artifacts should be exposed for compile operations.
@@ -121,6 +121,12 @@ public abstract class RemapConfigurationSettings implements Named {
 
 	@ApiStatus.Internal
 	@Internal
+	public final Provider<String> getClientRemappedConfigurationName() {
+		return getClientSourceConfigurationName().map(s -> s + "Mapped");
+	}
+
+	@ApiStatus.Internal
+	@Internal
 	public final NamedDomainObjectProvider<Configuration> getSourceConfiguration() {
 		return getConfigurationByName(getName());
 	}
@@ -143,7 +149,17 @@ public abstract class RemapConfigurationSettings implements Named {
 		return getProject().provider(() -> {
 			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
 			Preconditions.checkArgument(split, "Cannot get client target configuration when project is not split");
-			return getConfigurationByName(getClientTargetConfigurationName().get()).get();
+			return getConfigurationByName(getClientSourceConfigurationName().get()).get();
+		});
+	}
+
+	@ApiStatus.Internal
+	@Internal
+	public final Provider<Configuration> getClientRemappedConfiguration() {
+		return getProject().provider(() -> {
+			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
+			Preconditions.checkArgument(split, "Cannot get client remapped configuration when project is not split");
+			return getConfigurationByName(getClientRemappedConfigurationName().get()).get();
 		});
 	}
 

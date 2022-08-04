@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.mods;
+package net.fabricmc.loom.configuration.processors;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ModUtils;

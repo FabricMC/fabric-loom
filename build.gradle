@@ -188,7 +188,7 @@ jacocoTestReport {
 }
 
 test {
-	maxHeapSize = "1536m"
+	maxHeapSize = "2560m"
 	useJUnitPlatform()
 
 	// Forward system prop onto tests.

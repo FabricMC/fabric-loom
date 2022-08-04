@@ -76,8 +76,31 @@ public final class RemapConfigurations {
 		// Apply the client target names to the main configurations
 		for (ConfigurationOption option : getValidOptions(mainSourceSet)) {
 			configurations.getByName(option.name(mainSourceSet), settings -> {
-				settings.getClientTargetConfigurationName().convention(option.targetName(clientSourceSet));
+				String name = option.targetName(clientSourceSet);
+
+				if (name == null) {
+					return;
+				}
+
+				settings.getClientSourceConfigurationName().set(name);
+				createClientMappedConfiguration(project, settings, clientSourceSet);
 			});
+		}
+	}
+
+	private static void createClientMappedConfiguration(Project project, RemapConfigurationSettings settings, SourceSet clientSourceSet) {
+		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getClientRemappedConfigurationName().get());
+		// Don't get transitive deps of already remapped mods
+		remappedConfiguration.setTransitive(false);
+
+		if (settings.getOnCompileClasspath().get()) {
+			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
+
+			extendsFrom(clientSourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
+		}
+
+		if (settings.getOnRuntimeClasspath().get()) {
+			extendsFrom(clientSourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
 		}
 	}
 

@@ -39,6 +39,7 @@ import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public final class LoomTasks {
 	private LoomTasks() {
@@ -87,7 +88,7 @@ public final class LoomTasks {
 		registerRunTasks(tasks, project);
 
 		// Must be done in afterEvaluate to allow time for the build script to configure the jar config.
-		project.afterEvaluate(p -> {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
 			LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
@@ -150,7 +151,7 @@ public final class LoomTasks {
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
 
 		// Remove the client or server run config when not required. Done by name to not remove any possible custom run configs
-		project.afterEvaluate(p -> {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
 			String taskName = switch (extension.getMinecraftJarConfiguration().get()) {
 			case SERVER_ONLY -> "client";
 			case CLIENT_ONLY -> "server";

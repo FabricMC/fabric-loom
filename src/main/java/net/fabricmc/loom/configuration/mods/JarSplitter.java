@@ -26,16 +26,22 @@ package net.fabricmc.loom.configuration.mods;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -47,15 +53,83 @@ public class JarSplitter {
 		this.inputJar = inputJar;
 	}
 
-	public boolean split(Path commonOutputJar, Path clientOutputJar) throws IOException {
+	@Nullable
+	public Target analyseTarget() {
 		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
 			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
+
+			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY))) {
+				// Jar was not built with splitting enabled.
+				return null;
+			}
+
+			final HashSet<String> clientEntries = new HashSet<>(readClientEntries(manifest));
+
+			if (clientEntries.isEmpty()) {
+				// No client entries.
+				return Target.COMMON_ONLY;
+			}
+
+			final List<String> entries = new LinkedList<>();
+
+			// Must collect all the input entries to see if this might be a client only jar.
+			try (Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
+				final Iterator<Path> iterator = walk.iterator();
+
+				while (iterator.hasNext()) {
+					final Path entry = iterator.next();
+
+					if (!Files.isRegularFile(entry)) {
+						continue;
+					}
+
+					final Path relativePath = input.get().getPath("/").relativize(entry);
+
+					if (relativePath.startsWith("META-INF")) {
+						if (isSignatureData(relativePath)) {
+							// Ignore any signature data
+							continue;
+						}
+
+						if (relativePath.endsWith("MANIFEST.MF")) {
+							// Ignore the manifest
+							continue;
+						}
+					}
+
+					entries.add(relativePath.toString());
+				}
+			}
+
+			for (String entry : entries) {
+				if (!clientEntries.contains(entry)) {
+					// Found a common entry, we need to split,.
+					return Target.SPLIT;
+				}
+			}
+
+			// All input entries are client only entries.
+			return Target.CLIENT_ONLY;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read jar", e);
+		}
+	}
+
+	public boolean split(Path commonOutputJar, Path clientOutputJar) throws IOException {
+		Files.deleteIfExists(commonOutputJar);
+		Files.deleteIfExists(clientOutputJar);
+
+		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
+			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
+
+			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY))) {
+				throw new UnsupportedOperationException("Cannot split jar that has not been built with a split env");
+			}
+
 			final List<String> clientEntries = readClientEntries(manifest);
 
 			if (clientEntries.isEmpty()) {
-				// No client entries, just copy the input jar
-				Files.copy(inputJar, commonOutputJar);
-				return false;
+				throw new IllegalStateException("Expected to split jar with no client entries");
 			}
 
 			try (FileSystemUtil.Delegate commonOutput = FileSystemUtil.getJarFileSystem(commonOutputJar, true);
@@ -126,15 +200,10 @@ public class JarSplitter {
 
 	private List<String> readClientEntries(Manifest manifest) {
 		final Attributes attributes = manifest.getMainAttributes();
-		final String splitEnvValue = attributes.getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY);
 		final String clientEntriesValue = attributes.getValue(AbstractRemapJarTask.MANIFEST_CLIENT_ENTRIES_KEY);
 
-		if (splitEnvValue == null || !splitEnvValue.equals("true")) {
-			throw new UnsupportedOperationException("Cannot split jar that has not been built with a split env");
-		}
-
-		if (clientEntriesValue == null) {
-			throw new IllegalStateException("Split jar does not contain any client only classes");
+		if (clientEntriesValue == null || clientEntriesValue.isBlank()) {
+			return Collections.emptyList();
 		}
 
 		return Arrays.stream(clientEntriesValue.split(";")).toList();
@@ -174,5 +243,26 @@ public class JarSplitter {
 		}
 
 		Files.write(path, bytes);
+	}
+
+	public enum Target {
+		COMMON_ONLY(true, false),
+		CLIENT_ONLY(false, true),
+		SPLIT(true, true);
+
+		final boolean common, client;
+
+		Target(boolean common, boolean client) {
+			this.common = common;
+			this.client = client;
+		}
+
+		public boolean common() {
+			return common;
+		}
+
+		public boolean client() {
+			return client;
+		}
 	}
 }

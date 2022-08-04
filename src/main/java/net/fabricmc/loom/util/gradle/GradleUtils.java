@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,14 +24,21 @@
 
 package net.fabricmc.loom.util.gradle;
 
-import org.gradle.util.GradleVersion;
+import org.gradle.api.Project;
 
-// This is used to bridge the gap over large gradle api changes.
-public class GradleSupport {
-	public static final boolean IS_GRADLE_7_OR_NEWER = isIsGradle7OrNewer();
+public final class GradleUtils {
+	private GradleUtils() {
+	}
 
-	public static boolean isIsGradle7OrNewer() {
-		String version = GradleVersion.current().getVersion();
-		return Integer.parseInt(version.substring(0, version.indexOf("."))) >= 7;
+	// For some crazy reason afterEvaluate is still invoked when the configuration fails
+	public static void afterSuccessfulEvaluation(Project project, Runnable afterEvaluate) {
+		project.afterEvaluate(p -> {
+			if (p.getState().getFailure() != null) {
+				// Let gradle handle the failure
+				return;
+			}
+
+			afterEvaluate.run();
+		});
 	}
 }

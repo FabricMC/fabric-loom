@@ -84,7 +84,7 @@ class IdeaClasspathModificationsTest extends Specification {
     <envs>
       %IDEA_ENV_VARS%
     </envs>
-    <shortenClasspath name="ARGS_FILE" />
+    <shortenClasspath name="ARGS_FILE"/>
   <classpathModifications><entry exclude="true" path="/path/to/file.jar"/></classpathModifications></configuration>
 </component>
 '''.trim()
@@ -104,7 +104,7 @@ class IdeaClasspathModificationsTest extends Specification {
     <envs>
       %IDEA_ENV_VARS%
     </envs>
-    <shortenClasspath name="ARGS_FILE" />
+    <shortenClasspath name="ARGS_FILE"/>
   <classpathModifications><entry exclude="true" path="/path/to/file.jar"/><entry exclude="true" path="/path/to/another.jar"/></classpathModifications></configuration>
 </component>
 '''.trim()

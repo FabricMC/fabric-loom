@@ -44,7 +44,7 @@ public interface FileMappingsSpecBuilder {
 	 * <p>The default mapping path is {@code mappings/mappings.tiny}, matching regular mapping dependency jars
 	 * such as Yarn's.
 	 *
-	 * @param mappingPath the mapping path, or null if a bare file
+	 * @param mappingPath the mapping path
 	 * @return this builder
 	 */
 	FileMappingsSpecBuilder mappingPath(String mappingPath);

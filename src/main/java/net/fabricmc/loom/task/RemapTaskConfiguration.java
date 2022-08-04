@@ -34,7 +34,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
-import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
@@ -89,10 +89,10 @@ public class RemapTaskConfiguration {
 			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
 				Configuration configuration = project.getConfigurations().getByName(configurationName);
-				final Task jarTask = project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+				final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
 				configuration.getArtifacts().removeIf(artifact -> {
-					// if the artifact is a -dev jar and "builtBy jar"
-					return "dev".equals(artifact.getClassifier()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
+					// if the artifact is built by the jar task, and has the same output path.
+					return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
 				});
 			}
 		});

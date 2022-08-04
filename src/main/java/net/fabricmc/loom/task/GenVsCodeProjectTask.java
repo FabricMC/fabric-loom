@@ -24,61 +24,88 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
-// Recommended vscode plugins:
-// https://marketplace.visualstudio.com/items?itemName=redhat.java
-// https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-debug
+// Recommended vscode plugin pack:
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
 public class GenVsCodeProjectTask extends AbstractLoomTask {
 	@TaskAction
-	public void genRuns() {
-		Project project = getProject();
-		File projectDir = project.file(".vscode");
+	public void genRuns() throws IOException {
+		final Path projectDir = getProject().getRootDir().toPath().resolve(".vscode");
 
-		if (!projectDir.exists()) {
-			projectDir.mkdir();
+		if (Files.notExists(projectDir)) {
+			Files.createDirectories(projectDir);
 		}
 
-		File launchJson = new File(projectDir, "launch.json");
+		final Path launchJson = projectDir.resolve("launch.json");
+		final JsonObject root;
 
-		if (launchJson.exists()) {
-			launchJson.delete();
+		if (Files.exists(launchJson)) {
+			root = LoomGradlePlugin.GSON.fromJson(Files.readString(launchJson, StandardCharsets.UTF_8), JsonObject.class);
+		} else {
+			root = new JsonObject();
+			root.addProperty("version", "0.2.0");
 		}
 
-		VsCodeLaunch launch = new VsCodeLaunch();
+		final JsonArray configurations;
+
+		if (root.has("configurations")) {
+			configurations = root.getAsJsonArray("configurations");
+		} else {
+			configurations = new JsonArray();
+			root.add("configurations", configurations);
+		}
 
 		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
 				continue;
 			}
 
-			launch.add(RunConfig.runConfig(project, settings));
+			final VsCodeConfiguration configuration = new VsCodeConfiguration(RunConfig.runConfig(getProject(), settings));
+			final JsonElement configurationJson = LoomGradlePlugin.GSON.toJsonTree(configuration);
+
+			final List<JsonElement> toRemove = new LinkedList<>();
+
+			// Remove any existing with the same name
+			for (JsonElement jsonElement : configurations) {
+				if (!jsonElement.isJsonObject()) {
+					continue;
+				}
+
+				final JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+				if (jsonObject.has("name")) {
+					if (jsonObject.get("name").getAsString().equalsIgnoreCase(configuration.name)) {
+						toRemove.add(jsonElement);
+					}
+				}
+			}
+
+			toRemove.forEach(configurations::remove);
+
+			configurations.add(configurationJson);
 			settings.makeRunDir();
 		}
 
-		String json = LoomGradlePlugin.GSON.toJson(launch);
-
-		try {
-			FileUtils.writeStringToFile(launchJson, json, StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to write launch.json", e);
-		}
+		final String json = LoomGradlePlugin.GSON.toJson(root);
+		Files.writeString(launchJson, json, StandardCharsets.UTF_8);
 	}
 
 	private class VsCodeLaunch {

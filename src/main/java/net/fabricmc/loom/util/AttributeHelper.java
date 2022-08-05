@@ -27,6 +27,8 @@ package net.fabricmc.loom.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystemException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
@@ -37,25 +39,55 @@ public final class AttributeHelper {
 	}
 
 	public static Optional<String> readAttribute(Path path, String key) throws IOException {
-		final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
+		final Path attributesFile = getFallbackPath(path, key);
 
-		if (!attributeView.list().contains(key)) {
-			return Optional.empty();
+		if (exists(attributesFile)) {
+			// Use the fallback file if it exists.
+			return Optional.of(Files.readString(attributesFile, StandardCharsets.UTF_8));
 		}
 
-		final ByteBuffer buffer = ByteBuffer.allocate(attributeView.size(key));
-		attributeView.read(key, buffer);
-		buffer.flip();
-		final String value = StandardCharsets.UTF_8.decode(buffer).toString();
-		return Optional.of(value);
+		try {
+			final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
+
+			if (!attributeView.list().contains(key)) {
+				return Optional.empty();
+			}
+
+			final ByteBuffer buffer = ByteBuffer.allocate(attributeView.size(key));
+			attributeView.read(key, buffer);
+			buffer.flip();
+			final String value = StandardCharsets.UTF_8.decode(buffer).toString();
+			return Optional.of(value);
+		} catch (FileSystemException ignored) {
+			return Optional.empty();
+		}
 	}
 
 	public static void writeAttribute(Path path, String key, String value) throws IOException {
-		// TODO may need to fallback to creating a separate file if this isnt supported.
-		final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
-		final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-		final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-		final int written = attributeView.write(key, buffer);
-		assert written == bytes.length;
+		final Path attributesFile = getFallbackPath(path, key);
+
+		try {
+			final UserDefinedFileAttributeView attributeView = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
+			final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+			final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+			final int written = attributeView.write(key, buffer);
+			assert written == bytes.length;
+
+			if (exists(attributesFile)) {
+				Files.delete(attributesFile);
+			}
+		} catch (FileSystemException ignored) {
+			// Fallback to a separate file when using a file system that does not attributes.
+			Files.writeString(attributesFile, value, StandardCharsets.UTF_8);
+		}
+	}
+
+	private static Path getFallbackPath(Path path, String key) {
+		return path.resolveSibling(path.getFileName() + "." + key + ".att");
+	}
+
+	// A faster exists check
+	private static boolean exists(Path path) {
+		return path.getFileSystem() == FileSystems.getDefault() ? path.toFile().exists() : Files.exists(path);
 	}
 }

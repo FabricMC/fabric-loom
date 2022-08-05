@@ -33,16 +33,26 @@ import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 
 public class ProgressGroup implements Closeable {
+	private final String name;
 	private final ProgressLoggerFactory progressLoggerFactory;
-	private final ProgressLogger progressGroup;
+
+	private ProgressLogger progressGroup;
 
 	public ProgressGroup(Project project, String name) {
+		this.name = name;
 		this.progressLoggerFactory = ((ProjectInternal) project).getServices().get(ProgressLoggerFactory.class);
+	}
+
+	private void start() {
 		this.progressGroup = this.progressLoggerFactory.newOperation(name).setDescription(name);
 		this.progressGroup.started();
 	}
 
 	public ProgressLogger createProgressLogger(String name) {
+		if (progressGroup == null) {
+			start();
+		}
+
 		ProgressLogger progressLogger = this.progressLoggerFactory.newOperation(getClass(), progressGroup);
 		progressLogger.setDescription(name);
 		progressLogger.start(name, null);
@@ -51,6 +61,9 @@ public class ProgressGroup implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		this.progressGroup.completed();
+		if (this.progressGroup != null) {
+			this.progressGroup.completed();
+			this.progressGroup = null;
+		}
 	}
 }

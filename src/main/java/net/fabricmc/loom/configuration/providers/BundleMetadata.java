@@ -25,16 +25,20 @@
 package net.fabricmc.loom.configuration.providers;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.AttributeHelper;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public record BundleMetadata(List<Entry> libraries, List<Entry> versions, String mainClass) {
@@ -83,10 +87,38 @@ public record BundleMetadata(List<Entry> libraries, List<Entry> versions, String
 	}
 
 	public record Entry(String sha1, String name, String path) {
-		public void unpackEntry(Path jar, Path dest) throws IOException {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar);
-					InputStream is = Files.newInputStream(fs.get().getPath(path()))) {
-				Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+		public void unpackEntry(Path jar, Path dest, Project project) throws IOException {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+			if (!extension.refreshDeps() && Files.exists(dest)) {
+				final String hash = readHash(dest).orElse("");
+
+				if (hash.equals(sha1)) {
+					// File exists with expected hash
+					return;
+				}
+			}
+
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar)) {
+				Files.copy(fs.get().getPath(path()), dest, StandardCopyOption.REPLACE_EXISTING);
+			}
+
+			writeHash(dest, sha1);
+		}
+
+		private Optional<String> readHash(Path output) {
+			try {
+				return AttributeHelper.readAttribute(output, "LoomHash");
+			} catch (IOException e) {
+				return Optional.empty();
+			}
+		}
+
+		private void writeHash(Path output, String eTag) {
+			try {
+				AttributeHelper.writeAttribute(output, "LoomHash", eTag);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to write hash to (%s)".formatted(output), e);
 			}
 		}
 	}

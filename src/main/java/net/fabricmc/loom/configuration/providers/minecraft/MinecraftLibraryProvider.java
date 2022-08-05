@@ -89,7 +89,7 @@ public class MinecraftLibraryProvider {
 
 	private void provideClientLibraries(boolean overrideLWJGL, boolean hasNativesToExtract) {
 		final boolean isArm = Architecture.CURRENT.isArm();
-		final boolean classpathArmNatives = !hasNativesToExtract && isArm;
+		final boolean classpathArmNatives = !hasNativesToExtract && isArm && !IS_MACOS;
 
 		if (classpathArmNatives) {
 			LoomRepositoryPlugin.forceLWJGLFromMavenCentral(project);

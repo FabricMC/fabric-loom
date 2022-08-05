@@ -250,6 +250,7 @@ public class Download {
 
 			if (isHashValid(output)) {
 				// Valid hash, no need to re-download
+				writeHash(output, expectedHash);
 				return false;
 			}
 
@@ -322,9 +323,9 @@ public class Download {
 		}
 	}
 
-	private void writeHash(Path output, String eTag) throws DownloadException {
+	private void writeHash(Path output, String value) throws DownloadException {
 		try {
-			AttributeHelper.writeAttribute(output, "LoomHash", eTag);
+			AttributeHelper.writeAttribute(output, "LoomHash", value);
 		} catch (IOException e) {
 			throw error(e, "Failed to write hash to (%s)", output);
 		}
@@ -354,7 +355,7 @@ public class Download {
 
 	private boolean getAndResetLock(Path output) throws DownloadException {
 		final Path lock = getLockFile(output);
-		final boolean exists = Files.exists(lock);
+		final boolean exists = exists(lock);
 
 		if (exists) {
 			try {

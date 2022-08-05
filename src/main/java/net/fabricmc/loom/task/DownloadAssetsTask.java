@@ -55,6 +55,9 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<Integer> getDownloadThreads();
 
+	@Input
+	public abstract Property<String> getMinecraftVersion();
+
 	@OutputDirectory
 	public abstract RegularFileProperty getAssetsDirectory();
 
@@ -69,6 +72,8 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 		getAssetsDirectory().set(assetsDir);
 		getAssetsHash().set(versionInfo.assetIndex().sha1());
 		getDownloadThreads().convention(Runtime.getRuntime().availableProcessors());
+		getMinecraftVersion().set(versionInfo.id());
+		getMinecraftVersion().finalizeValue();
 
 		if (versionInfo.assets().equals("legacy")) {
 			getLegacyResourcesDirectory().set(new File(assetsDir, "/legacy/" + versionInfo.id()));

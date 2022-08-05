@@ -31,6 +31,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskProvider;
 
+import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
@@ -83,6 +84,18 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			// Don't allow them to run at the same time.
 			task.mustRunAfter(commonDecompileTask);
 		});
+
+		for (DecompilerOptions options : extension.getDecompilerOptions()) {
+			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+
+			project.getTasks().register("genSourcesWith" + decompilerName, task -> {
+				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
+				task.setGroup(Constants.TaskGroup.FABRIC);
+
+				task.dependsOn(commonDecompileTask);
+				task.dependsOn(clientOnlyDecompileTask);
+			});
+		}
 
 		project.getTasks().register("genSources", task -> {
 			task.setDescription("Decompile minecraft using the default decompiler.");

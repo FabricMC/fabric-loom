@@ -92,8 +92,8 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 
-				task.dependsOn(commonDecompileTask);
-				task.dependsOn(clientOnlyDecompileTask);
+				task.dependsOn(project.getTasks().named("gen%sSourcesWith%s".formatted("Common", decompilerName)));
+				task.dependsOn(project.getTasks().named("gen%sSourcesWith%s".formatted("ClientOnly", decompilerName)));
 			});
 		}
 

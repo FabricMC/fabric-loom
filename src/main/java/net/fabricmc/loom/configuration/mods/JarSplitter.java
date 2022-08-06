@@ -47,6 +47,8 @@ import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public class JarSplitter {
+	public static final String MANIFEST_SPLIT_ENV_NAME_KEY = "Fabric-Loom-Split-Environment-Name";
+
 	final Path inputJar;
 
 	public JarSplitter(Path inputJar) {
@@ -155,30 +157,7 @@ public class JarSplitter {
 
 					final String entryPath = relativePath.toString();
 
-					/*
-					Copy the manifest to both jars
-					- Remove signature data
-					- Remove split data as its already been split.
-					 */
 					if (entryPath.equals(AbstractRemapJarTask.MANIFEST_PATH)) {
-						final Manifest outManifest = new Manifest(manifest);
-						final Attributes attributes = outManifest.getMainAttributes();
-						stripSignatureData(outManifest);
-
-						attributes.remove(Attributes.Name.SIGNATURE_VERSION);
-						Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_NAME));
-						Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_CLIENT_ENTRIES_NAME));
-
-						// TODO add an attribute to denote if the jar is common or client now
-
-						final ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-						outManifest.write(out);
-						final byte[] manifestBytes = out.toByteArray();
-
-						writeBytes(manifestBytes, commonOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
-						writeBytes(manifestBytes, clientOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
-
 						continue;
 					}
 
@@ -192,10 +171,37 @@ public class JarSplitter {
 
 					Files.copy(entry, outputEntry, StandardCopyOption.COPY_ATTRIBUTES);
 				}
+
+				/*
+				Write the manifest to both jars
+				- Remove signature data
+				- Remove split data as its already been split.
+				- Add env name.
+				 */
+				final Manifest outManifest = new Manifest(manifest);
+				final Attributes attributes = outManifest.getMainAttributes();
+				stripSignatureData(outManifest);
+
+				attributes.remove(Attributes.Name.SIGNATURE_VERSION);
+				Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_NAME));
+				Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_CLIENT_ENTRIES_NAME));
+
+				writeBytes(writeWithEnvironment(outManifest, "common"), commonOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
+				writeBytes(writeWithEnvironment(outManifest, "client"), clientOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
 			}
 		}
 
 		return true;
+	}
+
+	private byte[] writeWithEnvironment(Manifest in, String value) throws IOException {
+		final Manifest manifest = new Manifest(in);
+		final Attributes attributes = manifest.getMainAttributes();
+		attributes.putValue(MANIFEST_SPLIT_ENV_NAME_KEY, value);
+
+		final ByteArrayOutputStream out = new ByteArrayOutputStream();
+		manifest.write(out);
+		return out.toByteArray();
 	}
 
 	private List<String> readClientEntries(Manifest manifest) {

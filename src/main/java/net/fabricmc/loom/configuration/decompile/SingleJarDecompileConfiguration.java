@@ -59,7 +59,7 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 		final File inputJar = mappedJar;
 
 		LoomGradleExtension.get(project).getDecompilerOptions().forEach(options -> {
-			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+			final String decompilerName = options.getFormattedName();
 			String taskName = "genSourcesWith" + decompilerName;
 			// Decompiler will be passed to the constructor of GenerateSourcesTask
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {

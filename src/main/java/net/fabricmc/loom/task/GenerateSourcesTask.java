@@ -50,7 +50,9 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
@@ -80,6 +82,7 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
+@DisableCachingByDefault
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private final DecompilerOptions decompilerOptions;
 
@@ -98,6 +101,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@InputFiles
 	public abstract ConfigurableFileCollection getClasspath();
 
+	@OutputFile
+	public abstract RegularFileProperty getOutputJar();
+
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
 
@@ -111,6 +117,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getOutputs().upToDateWhen((o) -> false);
 		getClasspath().from(decompilerOptions.getClasspath()).finalizeValueOnRead();
 		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
+
+		getOutputJar().fileProvider(getProject().provider(() -> getMappedJarFileWithSuffix("-sources.jar")));
 	}
 
 	@TaskAction
@@ -149,7 +157,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 			params.getInputJar().set(getInputJar());
 			params.getRuntimeJar().set(getRuntimeJar());
-			params.getSourcesDestinationJar().set(getMappedJarFileWithSuffix("-sources.jar"));
+			params.getSourcesDestinationJar().set(getOutputJar());
 			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
 			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
 			params.getMappings().set(getMappings().toFile());

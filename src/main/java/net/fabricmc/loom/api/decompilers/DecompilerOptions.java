@@ -67,6 +67,10 @@ public abstract class DecompilerOptions implements Named {
 		getMaxThreads().convention(Runtime.getRuntime().availableProcessors()).finalizeValueOnRead();
 	}
 
+	public String getFormattedName() {
+		return getName().substring(0, 1).toUpperCase() + getName().substring(1);
+	}
+
 	// Done to work around weird issues with the workers, possibly https://github.com/gradle/gradle/issues/13422
 	public record Dto(String className, Map<String, String> options, int maxThreads) implements Serializable { }
 

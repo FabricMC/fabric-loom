@@ -86,7 +86,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		});
 
 		for (DecompilerOptions options : extension.getDecompilerOptions()) {
-			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+			final String decompilerName = options.getFormattedName();
 
 			project.getTasks().register("genSourcesWith" + decompilerName, task -> {
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
@@ -108,7 +108,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 	private TaskProvider<Task> createDecompileTasks(String name, Action<GenerateSourcesTask> configureAction) {
 		extension.getDecompilerOptions().forEach(options -> {
-			final String decompilerName = options.getName().substring(0, 1).toUpperCase() + options.getName().substring(1);
+			final String decompilerName = options.getFormattedName();
 			final String taskName = "gen%sSourcesWith%s".formatted(name, decompilerName);
 
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {

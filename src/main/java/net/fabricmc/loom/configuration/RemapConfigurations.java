@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
@@ -161,7 +162,8 @@ public final class RemapConfigurations {
 		return str.substring(0, 1).toUpperCase(Locale.ROOT) + str.substring(1);
 	}
 
-	private record ConfigurationOption(Function<SourceSet, String> targetNameFunc, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
+	@VisibleForTesting
+	public record ConfigurationOption(Function<SourceSet, String> targetNameFunc, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
 		String targetName(SourceSet sourceSet) {
 			return targetNameFunc.apply(sourceSet);
 		}
@@ -170,27 +172,25 @@ public final class RemapConfigurations {
 			return targetName(sourceSet) != null;
 		}
 
-		String name(SourceSet sourceSet) {
+		public String name(SourceSet sourceSet) {
 			String targetName = targetName(sourceSet);
 
 			if (targetName == null) {
 				throw new UnsupportedOperationException("Configuration option is not available for sourceset (%s)".formatted(sourceSet.getName()));
 			}
 
-			final StringBuilder builder = new StringBuilder();
-
-			if (!SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
-				builder.append(sourceSet.getName());
+			if (targetName.startsWith(sourceSet.getName())) {
+				targetName = targetName.substring(sourceSet.getName().length());
 			}
 
-			if (builder.isEmpty()) {
-				builder.append("mod");
-			} else {
-				builder.append("Mod");
+			final StringBuilder builder = new StringBuilder();
+			builder.append("mod");
+
+			if (!SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+				builder.append(capitalise(sourceSet.getName()));
 			}
 
 			builder.append(capitalise(targetName));
-
 			return builder.toString();
 		}
 	}

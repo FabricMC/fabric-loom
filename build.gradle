@@ -122,6 +122,10 @@ dependencies {
 
 	compileOnly 'org.jetbrains:annotations:23.0.0'
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
+
+	testCompileOnly ('net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5') {
+		transitive = false
+	}
 }
 
 jar {

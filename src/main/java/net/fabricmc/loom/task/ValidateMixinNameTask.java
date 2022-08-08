@@ -48,6 +48,7 @@ import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -115,7 +116,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 				}
 
 				final String mixinClassName = toSimpleName(mixin.className);
-				final String expectedMixinClassName = toSimpleName(mixin.target.getInternalName()).replace("$", "") + (mixin.accessor ? "Accessor" : "Mixin");
+				final String expectedMixinClassName = mixin.expectedClassName();
 
 				if (expectedMixinClassName.startsWith("class_")) {
 					// Don't enforce intermediary named mixins.
@@ -140,36 +141,48 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 
 			throw new GradleException("Mixin name validation failed: " + errors.stream().collect(Collectors.joining(System.lineSeparator())));
 		}
+	}
 
-		private static String toSimpleName(String internalName) {
-			return internalName.substring(internalName.lastIndexOf("/") + 1);
-		}
+	private static String toSimpleName(String internalName) {
+		return internalName.substring(internalName.lastIndexOf("/") + 1);
+	}
 
-		@Nullable
-		private Mixin getMixin(File file) {
-			try (InputStream is = new FileInputStream(file)) {
-				ClassReader reader = new ClassReader(is);
-
-				var classVisitor = new MixinTargetClassVisitor();
-				reader.accept(classVisitor, ClassReader.SKIP_CODE);
-
-				if (classVisitor.mixinTarget != null) {
-					return new Mixin(classVisitor.className, classVisitor.mixinTarget, classVisitor.accessor);
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read input file: " + file, e);
-			}
-
-			return null;
+	@VisibleForTesting
+	public record Mixin(String className, Type target, boolean accessor) {
+		public String expectedClassName() {
+			return toSimpleName(target.getInternalName()).replace("$", "") + (accessor ? "Accessor" : "Mixin");
 		}
 	}
 
-	private record Mixin(String className, Type target, boolean accessor) { }
+	@Nullable
+	private static Mixin getMixin(File file) {
+		try (InputStream is = new FileInputStream(file)) {
+			return getMixin(is);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read input file: " + file, e);
+		}
+	}
+
+	@Nullable
+	@VisibleForTesting
+	public static Mixin getMixin(InputStream is) throws IOException {
+		final ClassReader reader = new ClassReader(is);
+
+		var classVisitor = new MixinTargetClassVisitor();
+		reader.accept(classVisitor, ClassReader.SKIP_CODE);
+
+		if (classVisitor.mixinTarget != null && classVisitor.targets == 1) {
+			return new Mixin(classVisitor.className, classVisitor.mixinTarget, classVisitor.accessor);
+		}
+
+		return null;
+	}
 
 	private static class MixinTargetClassVisitor extends ClassVisitor {
 		Type mixinTarget;
 		String className;
 		boolean accessor;
+		int targets = 0;
 
 		boolean isInterface;
 
@@ -220,6 +233,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 						@Override
 						public void visit(String name, Object value) {
 							mixinTarget = Objects.requireNonNull((Type) value);
+							targets++;
 
 							super.visit(name, value);
 						}

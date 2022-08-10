@@ -28,6 +28,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
@@ -58,6 +60,16 @@ public class MinecraftLibraryProvider {
 		this.provideClient = jarConfiguration.getSupportedEnvironments().contains("client");
 		this.provideServer = jarConfiguration.getSupportedEnvironments().contains("server");
 		assert provideClient || provideServer;
+	}
+
+	private void addDependency(String configuration, Object dependency) {
+		Dependency created = project.getDependencies().add(configuration, dependency);
+
+		// The launcher doesn't download transitive deps, so neither will we.
+		// This will also prevent a LaunchWrapper library dependency from pulling in outdated ASM jars.
+		if (created instanceof ModuleDependency md) {
+			md.setTransitive(false);
+		}
 	}
 
 	public void provide() {
@@ -116,17 +128,17 @@ public class MinecraftLibraryProvider {
 
 				if (runtimeOnlyLog4j && name.startsWith("org.apache.logging.log4j")) {
 					// Make log4j a runtime only dep to force slf4j.
-					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, name);
+					addDependency(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, name);
 					continue;
 				}
 
 				if (classpathArmNatives && name.startsWith("org.lwjgl:")
 						&& (name.endsWith("natives-windows") || name.endsWith("natives-linux"))) {
 					// Add windows and Linux arm64 natives for modern classpath native MC versions.
-					project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, name + "-arm64");
+					addDependency(Constants.Configurations.MINECRAFT_DEPENDENCIES, name + "-arm64");
 				}
 
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, name);
+				addDependency(Constants.Configurations.MINECRAFT_DEPENDENCIES, name);
 			}
 
 			if (library.hasNativesForOS()) {
@@ -140,11 +152,11 @@ public class MinecraftLibraryProvider {
 			for (BundleMetadata.Entry library : serverBundleMetadata.libraries()) {
 				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
 					// Make log4j a runtime only dep to force slf4j.
-					project.getDependencies().add(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
+					addDependency(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
 					continue;
 				}
 
-				project.getDependencies().add(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
+				addDependency(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
 			}
 		}
 	}
@@ -177,6 +189,6 @@ public class MinecraftLibraryProvider {
 		}
 
 		project.getLogger().debug("Add native dependency '{}'", dependencyNotation);
-		project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, dependencyNotation);
+		addDependency(Constants.Configurations.MINECRAFT_NATIVES, dependencyNotation);
 	}
 }

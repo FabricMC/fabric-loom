@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
@@ -79,12 +78,6 @@ public final class CompileConfiguration {
 		configurations.register(Constants.Configurations.MINECRAFT_DEPENDENCIES, configuration -> {
 			configuration.extendsFrom(serverDeps.get());
 			configuration.setTransitive(false);
-
-			// On some very old versions, LaunchWrapper pulls in asm-debug-all as a transitive dependency.
-			// We want to use the modern separate artifacts, so we exclude it.
-			// Note: since it's a transitive dependency, it can't be excluded the same way as asm-all in
-			// MinecraftLibraryProvider.
-			configuration.exclude(Map.of("group", "org.ow2.asm", "module", "asm-debug-all"));
 		});
 		configurations.register(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
 		configurations.register(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));

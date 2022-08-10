@@ -56,15 +56,28 @@ public abstract class AbstractRunTask extends JavaExec {
 		this.config = configProvider.apply(getProject());
 
 		setClasspath(config.sourceSet.getRuntimeClasspath().filter(File::exists).filter(new LibraryFilter()));
-		// Pass an empty classpath to the super JavaExec.
-		super.setClasspath(getProject().files());
 
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
 	}
 
+	private boolean canUseArgFile() {
+		// @-files were added for java (not javac) in Java 9, see https://bugs.openjdk.org/browse/JDK-8027634
+		return getJavaVersion().isJava9Compatible();
+	}
+
 	@Override
 	public void exec() {
+		if (canUseArgFile()) {
+			getProject().getLogger().debug("Using arg file for {}", getName());
+			// We're using an arg file, pass an empty classpath to the super JavaExec.
+			super.setClasspath(getProject().files());
+		} else {
+			getProject().getLogger().debug("Using bare classpath for {}", getName());
+			// The classpath is passed normally, so pass the full classpath to the super JavaExec.
+			super.setClasspath(classpath);
+		}
+
 		setWorkingDir(new File(getProject().getProjectDir(), config.runDir));
 		environment(config.environmentVariables);
 
@@ -85,16 +98,18 @@ public abstract class AbstractRunTask extends JavaExec {
 		final List<String> superArgs = super.getJvmArgs();
 		final List<String> args = new ArrayList<>();
 
-		final String content = "-classpath\n" + this.classpath.getFiles().stream()
-				.map(File::getAbsolutePath)
-				.collect(Collectors.joining(System.getProperty("path.separator")));
+		if (canUseArgFile()) {
+			final String content = "-classpath\n" + this.classpath.getFiles().stream()
+					.map(File::getAbsolutePath)
+					.collect(Collectors.joining(System.getProperty("path.separator")));
 
-		try {
-			final Path argsFile = Files.createTempFile("loom-classpath", ".args");
-			Files.writeString(argsFile, content, StandardCharsets.UTF_8);
-			args.add("@" + argsFile.toAbsolutePath());
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to create classpath file", e);
+			try {
+				final Path argsFile = Files.createTempFile("loom-classpath", ".args");
+				Files.writeString(argsFile, content, StandardCharsets.UTF_8);
+				args.add("@" + argsFile.toAbsolutePath());
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to create classpath file", e);
+			}
 		}
 
 		if (superArgs != null) {

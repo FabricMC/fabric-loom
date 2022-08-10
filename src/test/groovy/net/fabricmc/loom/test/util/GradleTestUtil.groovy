@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.util
 
+import net.fabricmc.loom.LoomGradleExtension
+import org.gradle.api.Project
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
@@ -48,6 +50,26 @@ class GradleTestUtil {
 			final ExtensionContainer extensions = null
 		}
 		return sourceSet
+	}
+
+	static Project mockProject() {
+		def mock = mock(Project.class)
+		def extensions = mockExtensionContainer()
+		when(mock.getExtensions()).thenReturn(extensions)
+		return mock
+	}
+
+	static ExtensionContainer mockExtensionContainer() {
+		def mock = mock(ExtensionContainer.class)
+		def extension = mockLoomGradleExtension()
+		when(mock.getByName("loom")).thenReturn(extension)
+		return mock
+	}
+
+	static LoomGradleExtension mockLoomGradleExtension() {
+		def mock = mock(LoomGradleExtension.class)
+		when(mock.refreshDeps()).thenReturn(false)
+		return mock
 	}
 
 	static ObjectFactory mockObjectFactory() {

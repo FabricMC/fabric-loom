@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarSplitter
+import net.fabricmc.loom.test.util.GradleTestUtil
 import spock.lang.Specification
 
 class MinecraftJarSplitterTest extends Specification {
@@ -44,7 +45,7 @@ class MinecraftJarSplitterTest extends Specification {
             def commonJar = new File(mcJarDir, "common.jar")
         when:
             def serverBundleMetadata = BundleMetadata.fromJar(serverBundleJar.toPath())
-            serverBundleMetadata.versions().find().unpackEntry(serverBundleJar.toPath(), serverJar.toPath())
+            serverBundleMetadata.versions().find().unpackEntry(serverBundleJar.toPath(), serverJar.toPath(), GradleTestUtil.mockProject())
 
             clientOnlyJar.delete()
             commonJar.delete()

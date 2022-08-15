@@ -308,10 +308,23 @@ public final class CompileConfiguration {
 	private static void releaseLock(Project project) {
 		final Path lock = getLockFile(project);
 
+		if (!Files.exists(lock)) {
+			return;
+		}
+
 		try {
-			Files.deleteIfExists(lock);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to release project configuration lock", e);
+			Files.delete(lock);
+		} catch (IOException e1) {
+			try {
+				// If we failed to delete the lock file, moving it before trying to delete it may help.
+				final Path del = lock.resolveSibling(lock.getFileName() + ".del");
+				Files.move(lock, del);
+				Files.delete(del);
+			} catch (IOException e2) {
+				var exception = new UncheckedIOException("Failed to release project configuration lock", e2);
+				exception.addSuppressed(e1);
+				throw exception;
+			}
 		}
 	}
 

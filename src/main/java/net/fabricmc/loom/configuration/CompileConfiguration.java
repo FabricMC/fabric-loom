@@ -58,6 +58,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -285,8 +286,9 @@ public final class CompileConfiguration {
 
 	private static Path getLockFile(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final Path cacheDirectory = extension.getFiles().getProjectPersistentCache().toPath();
-		return cacheDirectory.resolve("configuration.lock");
+		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
+		final String pathHash = Checksum.toHex(project.getProjectDir().getAbsolutePath().getBytes(StandardCharsets.UTF_8)).substring(0, 16);
+		return cacheDirectory.resolve( "." + pathHash + ".lock");
 	}
 
 	private static boolean getAndLock(Project project) {

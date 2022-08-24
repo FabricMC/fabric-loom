@@ -20,14 +20,3 @@ diff --git a/build.gradle b/build.gradle
  }
 
  def getBranch() {
-@@ -207,10 +197,6 @@
- 		testmodImplementation sourceSets.client.output
- 	}
-
--	loom {
--		shareRemapCaches = true
--	}
--
- 	tasks.withType(ProcessResources).configureEach {
- 		inputs.property "version", project.version
-

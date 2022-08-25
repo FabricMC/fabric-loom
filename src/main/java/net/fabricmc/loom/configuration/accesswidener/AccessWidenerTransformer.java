@@ -55,8 +55,6 @@ final class AccessWidenerTransformer {
 	 * Apply the rules from an access-widener to the given jar or zip file.
 	 */
 	void apply(File jarFile) {
-		logger.lifecycle("Processing file: " + jarFile.getName());
-
 		try {
 			ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
 		} catch (IOException e) {

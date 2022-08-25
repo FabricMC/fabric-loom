@@ -135,8 +135,6 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 			}
 		}
 
-		project.getLogger().lifecycle("Processing file: " + jarFile.getName());
-
 		try {
 			ZipUtils.transform(jarFile.toPath(), getTransformers());
 		} catch (IOException e) {

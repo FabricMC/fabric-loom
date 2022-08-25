@@ -88,7 +88,6 @@ public final class MavenPublication {
 		}
 	}
 
-	// TODO: Remove this in Loom 0.12
 	private static void processEntry(Project project, String scope, Configuration config, PublishingExtension mavenPublish, AtomicBoolean reportedDeprecation) {
 		mavenPublish.publications((publications) -> {
 			for (Publication publication : publications) {
@@ -100,7 +99,7 @@ public final class MavenPublication {
 					continue;
 				} else if (!reportedDeprecation.get()) {
 					DeprecationHelper deprecationHelper = LoomGradleExtension.get(project).getDeprecationHelper();
-					deprecationHelper.warn("Loom is applying dependency data manually to publications instead of using a software component (from(components[\"java\"])). This is deprecated and will be removed in Loom 0.13.");
+					deprecationHelper.warn("Loom is applying dependency data manually to publications instead of using a software component (from(components[\"java\"])). This is deprecated.");
 					reportedDeprecation.set(true);
 				}
 

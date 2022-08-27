@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit.download
 
 import io.javalin.http.HttpCode
+import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
@@ -301,5 +302,36 @@ class DownloadFileTest extends DownloadTest {
 
 		then:
 			thrown DownloadException
+	}
+
+	def "File: Large"() {
+		setup:
+			byte[] data = new byte[1024 * 1024 * 10] // 10MB
+			new Random().nextBytes(data)
+
+			server.get("/largeFile") {
+				it.result(data)
+			}
+
+			def output = new File(File.createTempDir(), "file").toPath()
+
+		when:
+			def result = Download.create("$PATH/largeFile").downloadPath(output)
+
+		then:
+			Files.readAllBytes(output) == data
+	}
+
+	// Known
+	def "Download Mojang Mappings"() {
+		setup:
+			def file = File.createTempDir().toPath().resolve("client.txt")
+		when:
+			Download.create("https://piston-data.mojang.com/v1/objects/8e8c9be5dc27802caba47053d4fdea328f7f89bd/client.txt")
+					.sha1("8e8c9be5dc27802caba47053d4fdea328f7f89bd")
+					.downloadPath(file)
+
+		then:
+			Checksum.sha1Hex(file) == "8e8c9be5dc27802caba47053d4fdea328f7f89bd"
 	}
 }

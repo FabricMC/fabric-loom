@@ -28,6 +28,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -92,22 +94,62 @@ public final class SourceSetHelper {
 	 */
 	public static Project getSourceSetProject(SourceSet sourceSet) {
 		final DefaultSourceSetOutput sourceSetOutput = (DefaultSourceSetOutput) sourceSet.getOutput();
-		final DefaultTaskDependency taskDependency = (DefaultTaskDependency) sourceSetOutput.getClassesContributors();
-		Project project = null;
-
-		for (Object object : taskDependency.getMutableValues()) {
-			if (object instanceof Task task) {
-				project = task.getProject();
-			} else if (object instanceof TaskProvider<?> provider) {
-				project = provider.get().getProject();
-			}
-		}
+		final Project project = getProjectFromSourceSetOutput(sourceSetOutput);
 
 		if (project == null) {
 			throw new NullPointerException("Unable to determine owning project for SourceSet: " + sourceSet.getName());
 		}
 
 		return project;
+	}
+
+	private static Project getProjectFromSourceSetOutput(SourceSetOutput sourceSetOutput) {
+		final Class<? extends DefaultSourceSetOutput> clazz = DefaultSourceSetOutput.class;
+
+		try {
+			final Method getClassesContributorsMethod = clazz.getMethod("getClassesContributors");
+			final Object classesContributors = getClassesContributorsMethod.invoke(sourceSetOutput);
+
+			if (classesContributors instanceof List<?> list) {
+				// Gradle 7.7
+				return getProjectFromDirectoryContributions(list);
+			} else if (classesContributors instanceof DefaultTaskDependency taskDependency) {
+				// Pre Gradle 7.7
+				return getProjectFromTaskDependency(taskDependency);
+			} else {
+				throw new UnsupportedOperationException();
+			}
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	// Pre Gradle 7.7
+	private static Project getProjectFromTaskDependency(DefaultTaskDependency taskDependency) {
+		for (Object object : taskDependency.getMutableValues()) {
+			if (object instanceof Task task) {
+				return task.getProject();
+			} else if (object instanceof TaskProvider<?> provider) {
+				return provider.get().getProject();
+			}
+		}
+
+		return null;
+	}
+
+	// Gradle 7.7: https://github.com/gradle/gradle/commit/2797942dc71f0e0e186b7d0c5ba3e09eceea4507#diff-b19ce8fbc4aa4ebaeea74e39609636d65e385bce6990fd42d68581dd829f29b3L153
+	private static Project getProjectFromDirectoryContributions(List<? /*DirectoryContribution*/> classesContributions) {
+		for (Object classesContribution : classesContributions) {
+			try {
+				final Method getTask = classesContribution.getClass().getMethod("getTask");
+				final TaskProvider<?> taskProvider = (TaskProvider<?>) getTask.invoke(classesContribution);
+				return taskProvider.get().getProject();
+			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		return null;
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util.download;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.ProxySelector;
@@ -45,8 +46,8 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPInputStream;
 
-import com.github.mizosoft.methanol.Methanol;
 import com.github.mizosoft.methanol.ProgressTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,10 +86,9 @@ public class Download {
 			throw error("Unable to download %s in offline mode", this.url);
 		}
 
-		return Methanol.newBuilder()
+		return HttpClient.newBuilder()
 				.followRedirects(HttpClient.Redirect.ALWAYS)
 				.proxy(ProxySelector.getDefault())
-				.autoAcceptEncoding(true)
 				.build();
 	}
 
@@ -127,7 +127,7 @@ public class Download {
 	}
 
 	String downloadString() throws DownloadException {
-		final HttpResponse<String> response = send(getRequest(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+		final HttpResponse<InputStream> response = send(getRequest(), HttpResponse.BodyHandlers.ofInputStream());
 		final int statusCode = response.statusCode();
 		final boolean successful = statusCode >= 200 && statusCode < 300;
 
@@ -135,7 +135,11 @@ public class Download {
 			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 		}
 
-		return response.body();
+		try (InputStream inputStream = decodeOutput(response)) {
+			return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw error(e, "Failed to decode download output");
+		}
 	}
 
 	void downloadPath(Path output) throws DownloadException {
@@ -174,7 +178,7 @@ public class Download {
 
 		// Create a .lock file, this allows us to re-download if the download was forcefully aborted part way through.
 		createLock(output);
-		HttpResponse<Path> response = send(httpRequest, HttpResponse.BodyHandlers.ofFile(output));
+		HttpResponse<InputStream> response = send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
 		getAndResetLock(output);
 
 		final int statusCode = response.statusCode();
@@ -185,13 +189,15 @@ public class Download {
 			return;
 		}
 
-		if (!success) {
-			try {
-				Files.deleteIfExists(output);
-			} catch (IOException ignored) {
-				// We tried.
+		if (success) {
+			try (InputStream inputStream = decodeOutput(response)) {
+				Files.write(output, inputStream.readAllBytes());
+			} catch (IOException e) {
+				tryCleanup(output);
+				throw error(e, "Failed to decode and write download output");
 			}
-
+		} else {
+			tryCleanup(output);
 			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 		}
 
@@ -222,6 +228,16 @@ public class Download {
 			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
 			writeHash(output, expectedHash);
 		}
+	}
+
+	private InputStream decodeOutput(HttpResponse<InputStream> response) throws IOException {
+		final String encoding = response.headers().firstValue("Content-Encoding").orElse("");
+
+		return switch (encoding) {
+		case "gzip" -> new GZIPInputStream(response.body());
+		case "" -> response.body();
+		default -> throw error("Unsupported encoding: %s", encoding);
+		};
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {

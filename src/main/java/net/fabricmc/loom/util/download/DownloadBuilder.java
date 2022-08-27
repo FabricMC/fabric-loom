@@ -44,7 +44,7 @@ public class DownloadBuilder {
 	private boolean offline = false;
 	private Duration maxAge = Duration.ZERO;
 	private DownloadProgressListener progressListener = DownloadProgressListener.NONE;
-	private int maxRetries = 1;
+	private int maxRetries = 3;
 
 	private DownloadBuilder(URI url) {
 		this.url = url;

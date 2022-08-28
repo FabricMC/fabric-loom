@@ -101,6 +101,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		if (canUseArgFile()) {
 			final String content = "-classpath\n" + this.classpath.getFiles().stream()
 					.map(File::getAbsolutePath)
+					.map(AbstractRunTask::quoteArg)
 					.collect(Collectors.joining(System.getProperty("path.separator")));
 
 			try {
@@ -118,6 +119,50 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		args.addAll(config.vmArgs);
 		return args;
+	}
+
+	// Based off https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/src/com/intellij/execution/CommandLineWrapperUtil.java#L87
+	private static String quoteArg(String arg) {
+		final String specials = " #'\"\n\r\t\f";
+
+		if (!containsAnyChar(arg, specials)) {
+			return arg;
+		}
+
+		final StringBuilder sb = new StringBuilder(arg.length() * 2);
+
+		for (int i = 0; i < arg.length(); i++) {
+			char c = arg.charAt(i);
+
+			switch (c) {
+			case ' ', '#', '\'' -> sb.append('"').append(c).append('"');
+			case '"' -> sb.append("\"\\\"\"");
+			case '\n' -> sb.append("\"\\n\"");
+			case '\r' -> sb.append("\"\\r\"");
+			case '\t' -> sb.append("\"\\t\"");
+			case '\f' -> sb.append("\"\\f\"");
+			default -> sb.append(c);
+			}
+		}
+
+		return sb.toString();
+	}
+
+	// https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/base/src/com/intellij/openapi/util/text/Strings.java#L100-L118
+	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars) {
+		return chars.length() > value.length()
+				? containsAnyChar(value, chars, 0, value.length())
+				: containsAnyChar(chars, value, 0, chars.length());
+	}
+
+	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars, final int start, final int end) {
+		for (int i = start; i < end; i++) {
+			if (chars.indexOf(value.charAt(i)) >= 0) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override

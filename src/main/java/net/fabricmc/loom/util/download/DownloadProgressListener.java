@@ -29,7 +29,7 @@ public interface DownloadProgressListener {
 
 	void onProgress(long bytesTransferred, long contentLength);
 
-	void onEnd(boolean success);
+	void onEnd();
 
 	DownloadProgressListener NONE = new DownloadProgressListener() {
 		@Override
@@ -41,7 +41,7 @@ public interface DownloadProgressListener {
 		}
 
 		@Override
-		public void onEnd(boolean success) {
+		public void onEnd() {
 		}
 	};
 }

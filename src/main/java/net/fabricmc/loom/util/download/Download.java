@@ -26,6 +26,7 @@ package net.fabricmc.loom.util.download;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.ProxySelector;
@@ -45,10 +46,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
 import java.util.zip.GZIPInputStream;
 
-import com.github.mizosoft.methanol.ProgressTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,21 +107,10 @@ public class Download {
 	}
 
 	private <T> HttpResponse<T> send(HttpRequest httpRequest, HttpResponse.BodyHandler<T> bodyHandler) throws DownloadException {
-		final ProgressTracker tracker = ProgressTracker.create();
-		final AtomicBoolean started = new AtomicBoolean(false);
+		progressListener.onStart();
 
 		try {
-			return getHttpClient().send(httpRequest, tracker.tracking(bodyHandler, progress -> {
-				if (started.compareAndSet(false, true)) {
-					progressListener.onStart();
-				}
-
-				progressListener.onProgress(progress.totalBytesTransferred(), progress.contentLength());
-
-				if (progress.done()) {
-					progressListener.onEnd(true);
-				}
-			}));
+			return getHttpClient().send(httpRequest, bodyHandler);
 		} catch (IOException | InterruptedException e) {
 			throw error(e, "Failed to download (%s)", url);
 		}
@@ -139,6 +129,8 @@ public class Download {
 			return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw error(e, "Failed to decode download output");
+		} finally {
+			progressListener.onEnd();
 		}
 	}
 
@@ -155,6 +147,8 @@ public class Download {
 		} catch (Throwable throwable) {
 			tryCleanup(output);
 			throw error(throwable, "Failed to download (%s) to (%s)", url, output);
+		} finally {
+			progressListener.onEnd();
 		}
 	}
 
@@ -190,8 +184,17 @@ public class Download {
 		}
 
 		if (success) {
-			try (InputStream inputStream = decodeOutput(response)) {
-				Files.write(output, inputStream.readAllBytes());
+			final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
+			AtomicLong totalBytes = new AtomicLong(0);
+
+			try (OutputStream outputStream = Files.newOutputStream(output)) {
+				copyWithCallback(decodeOutput(response), outputStream, value -> {
+					if (length < 0) {
+						return;
+					}
+
+					progressListener.onProgress(totalBytes.addAndGet(value), length);
+				});
 			} catch (IOException e) {
 				tryCleanup(output);
 				throw error(e, "Failed to decode and write download output");
@@ -227,6 +230,16 @@ public class Download {
 
 			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
 			writeHash(output, expectedHash);
+		}
+	}
+
+	private void copyWithCallback(InputStream is, OutputStream os, IntConsumer consumer) throws IOException {
+		byte[] buffer = new byte[1024];
+		int length;
+
+		while ((length = is.read(buffer)) > 0) {
+			os.write(buffer, 0, length);
+			consumer.accept(length);
 		}
 	}
 

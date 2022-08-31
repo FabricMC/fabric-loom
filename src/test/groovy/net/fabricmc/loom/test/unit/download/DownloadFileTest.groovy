@@ -218,7 +218,7 @@ class DownloadFileTest extends DownloadTest {
 					}
 
 					@Override
-					void onEnd(boolean success) {
+					void onEnd() {
 						ended = true
 					}
 				})
@@ -250,7 +250,7 @@ class DownloadFileTest extends DownloadTest {
 					}
 
 					@Override
-					void onEnd(boolean success) {
+					void onEnd() {
 						ended = true
 					}
 				})

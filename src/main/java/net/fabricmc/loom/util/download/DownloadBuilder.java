@@ -114,22 +114,21 @@ public class DownloadBuilder {
 	}
 
 	public String downloadString(Path cache) throws DownloadException {
-		withRetries(() -> {
+		return withRetries(() -> {
 			build().downloadPath(cache);
-			return null;
-		});
 
-		try {
-			return Files.readString(cache, StandardCharsets.UTF_8);
-		} catch (IOException e) {
 			try {
-				Files.delete(cache);
-			} catch (IOException ex) {
-				// Ignored
-			}
+				return Files.readString(cache, StandardCharsets.UTF_8);
+			} catch (IOException e) {
+				try {
+					Files.deleteIfExists(cache);
+				} catch (IOException ex) {
+					// Ignored
+				}
 
-			throw new DownloadException("Failed to download and read string", e);
-		}
+				throw new DownloadException("Failed to download and read string", e);
+			}
+		});
 	}
 
 	private <T> T withRetries(DownloadSupplier<T> supplier) throws DownloadException {

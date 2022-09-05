@@ -95,4 +95,18 @@ class DownloadStringTest extends DownloadTest {
 		then:
 			result == "Hello World 3"
 	}
+
+	def "String: File cache"() {
+		setup:
+			server.get("/downloadString2") {
+				it.result("Hello World!")
+			}
+
+		when:
+			def output = new File(File.createTempDir(), "file.txt").toPath()
+			def result = Download.create("$PATH/downloadString2").downloadString(output)
+
+		then:
+			result == "Hello World!"
+	}
 }

@@ -84,7 +84,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" --tests ${{ matrix.test }} --stacktrace --warning-mode fail
+      - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
         id: test

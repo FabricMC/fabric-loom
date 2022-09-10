@@ -37,6 +37,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -53,6 +54,7 @@ public abstract class RemapConfigurationSettings implements Named {
 	public RemapConfigurationSettings(String name) {
 		this.name = name;
 
+		getSourceSet().finalizeValueOnRead();
 		getTargetConfigurationName().finalizeValueOnRead();
 		getClientSourceConfigurationName().finalizeValueOnRead();
 		getOnCompileClasspath().finalizeValueOnRead();
@@ -64,6 +66,11 @@ public abstract class RemapConfigurationSettings implements Named {
 	public @NotNull String getName() {
 		return name;
 	}
+
+	/**
+	 * @return The target source set
+	 */
+	public abstract Property<SourceSet> getSourceSet();
 
 	/**
 	 * @return The target configuration name

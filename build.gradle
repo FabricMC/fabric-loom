@@ -335,3 +335,21 @@ task downloadGradleSources() {
 		gradleApiSources << new URL(url).newInputStream()
 	}
 }
+
+task printActionsTestName(type: PrintActionsTestName) {
+}
+
+/**
+ * Replaces invalid characters in test names for GitHub Actions artifacts.
+ */
+class PrintActionsTestName extends DefaultTask {
+	@Input
+	@Option(option = "name", description = "The test name")
+	String testName
+
+	@TaskAction
+	def run() {
+		def sanitised = testName.replace('*', '_')
+		println "::set-output name=test::$sanitised"
+	}
+}

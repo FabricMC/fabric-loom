@@ -56,14 +56,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - run: gradle test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
+      - run: gradle printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
+        id: test
 
       - uses: actions/upload-artifact@v2
         if: ${{ failure() }}
         with:
-          name: ${{ matrix.test }} (${{ matrix.java }}) Results
+          name: ${{ steps.test.outputs.test }} Results
           path: build/reports/
 
   run_tests_windows:
@@ -83,14 +84,15 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: ./gradlew test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
+      - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
+        id: test
 
       - uses: actions/upload-artifact@v2
         if: ${{ failure() }}
         with:
-          name: ${{ matrix.test }} (${{ matrix.java }}) Results
+          name: ${{ steps.test.outputs.test }} (${{ matrix.java }}) Results (Windows)
           path: build/reports/
 
   # Special case this test to run across all os's

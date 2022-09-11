@@ -1,9 +1,9 @@
-name: Test latest Gradle RC
+name: Gradle Nightly Test
 on:
   schedule:
     - cron: 0 0 * * * # daily
 jobs:
-  gradle-rc:
+  nightly-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3

@@ -174,6 +174,7 @@ trait GradleProjectTestTrait {
             args.addAll(options.tasks ?: [])
 
             args << "--stacktrace"
+			args << "--parallel"
             args << "--warning-mode" << warningMode
             args << "--gradle-user-home" << gradleHomeDir
             args.addAll(options.args ?: [])

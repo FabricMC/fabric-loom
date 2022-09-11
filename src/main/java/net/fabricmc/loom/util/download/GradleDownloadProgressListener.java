@@ -55,9 +55,10 @@ public class GradleDownloadProgressListener implements DownloadProgressListener 
 
 	@Override
 	public void onEnd() {
-		Objects.requireNonNull(progressLogger);
-		progressLogger.completed();
-		progressLogger = null;
+		if (progressLogger != null) {
+			progressLogger.completed();
+			progressLogger = null;
+		}
 	}
 
 	private static String humanBytes(long bytes) {

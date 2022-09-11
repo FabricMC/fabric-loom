@@ -10,6 +10,7 @@ plugins {
 	id 'codenarc'
 	id "org.jetbrains.kotlin.jvm" version "1.6.10" // Must match the version included with gradle.
 	id "com.diffplug.spotless" version "6.8.0"
+	id "org.gradle.test-retry" version "1.4.1"
 }
 
 java {
@@ -197,6 +198,10 @@ test {
 	// Forward system prop onto tests.
 	if (System.getProperty("fabric.loom.test.homeDir")) {
 		systemProperty "fabric.loom.test.homeDir", System.getProperty("fabric.loom.test.homeDir")
+	}
+
+	retry {
+		maxRetries = 3
 	}
 }
 

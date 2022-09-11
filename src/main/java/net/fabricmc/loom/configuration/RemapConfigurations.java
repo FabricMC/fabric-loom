@@ -59,6 +59,7 @@ public final class RemapConfigurations {
 
 		for (ConfigurationOption option : getValidOptions(sourceSet)) {
 			extension.addRemapConfiguration(option.name(sourceSet), configure(
+					sourceSet,
 					option.targetName(sourceSet),
 					option.compileClasspath(),
 					option.runtimeClasspath(),
@@ -106,6 +107,8 @@ public final class RemapConfigurations {
 	}
 
 	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
+		final SourceSet sourceSet = settings.getSourceSet().get();
+		final boolean isMainSourceSet = sourceSet.getName().equals("main");
 		// No point bothering to make it lazily, gradle realises configurations right away.
 		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
 		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getRemappedConfigurationName());
@@ -117,13 +120,19 @@ public final class RemapConfigurations {
 		if (settings.getOnCompileClasspath().get()) {
 			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
 			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
-			extendsFrom(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
-			extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			extendsFrom(sourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
+
+			if (isMainSourceSet) {
+				extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			}
 		}
 
 		if (settings.getOnRuntimeClasspath().get()) {
-			extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
-			extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
+
+			if (isMainSourceSet) {
+				extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+			}
 		}
 
 		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
@@ -131,8 +140,9 @@ public final class RemapConfigurations {
 		}
 	}
 
-	private static Action<RemapConfigurationSettings> configure(String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
+	private static Action<RemapConfigurationSettings> configure(SourceSet sourceSet, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
 		return configuration -> {
+			configuration.getSourceSet().convention(sourceSet);
 			configuration.getTargetConfigurationName().convention(targetConfiguration);
 			configuration.getOnCompileClasspath().convention(compileClasspath);
 			configuration.getOnRuntimeClasspath().convention(runtimeClasspath);

@@ -340,6 +340,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	public RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action) {
 		final RemapConfigurationSettings configurationSettings = getProject().getObjects().newInstance(RemapConfigurationSettings.class, name);
 
+		// TODO remove in 2.0, this is a fallback to mimic the previous (Broken) behaviour
+		configurationSettings.getSourceSet().convention(SourceSetHelper.getMainSourceSet(getProject()));
+
 		action.execute(configurationSettings);
 		RemapConfigurations.applyToProject(getProject(), configurationSettings);
 		remapConfigurations.add(configurationSettings);

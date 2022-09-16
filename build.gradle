@@ -94,11 +94,11 @@ dependencies {
 	}
 
 	// decompilers
-	implementation ('net.fabricmc:fabric-fernflower:1.5.0')
-	implementation ('net.fabricmc:cfr:0.1.1')
+	implementation ('net.fabricmc:fabric-fernflower:2.0.0')
+	implementation ('net.fabricmc:cfr:0.2.0')
 
 	// source code remapping
-	implementation ('net.fabricmc:mercury:0.2.6')
+	implementation ('net.fabricmc:mercury:0.2.7')
 
 	// Kotlin
 	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.2') {

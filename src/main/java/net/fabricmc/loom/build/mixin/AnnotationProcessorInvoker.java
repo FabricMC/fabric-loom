@@ -108,7 +108,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 				checkPattern(key, MSG_KEY_PATTERN);
 				checkPattern(value, MSG_VALUE_PATTERN);
 
-				args.put("AMSG_" + key, value);
+				args.put("MSG_" + key, value);
 			});
 
 			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);

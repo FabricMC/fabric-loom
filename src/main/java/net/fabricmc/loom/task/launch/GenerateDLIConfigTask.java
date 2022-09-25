@@ -85,6 +85,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
 		final boolean ansiSupportedIDE = new File(getProject().getRootDir(), ".vscode").exists()
 				|| new File(getProject().getRootDir(), ".idea").exists()
+				|| new File(getProject().getRootDir(), ".project").exists()
 				|| (Arrays.stream(getProject().getRootDir().listFiles()).anyMatch(file -> file.getName().endsWith(".iws")));
 
 		//Enable ansi by default for idea and vscode when gradle is not ran with plain console.

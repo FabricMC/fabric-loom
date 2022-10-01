@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -101,12 +102,8 @@ public final class SourceSetHelper {
 	@Nullable
 	private static Project getProjectFromSourceSetOutput(SourceSetOutput sourceSetOutput) {
 		Set<? extends Task> dependencies = sourceSetOutput.getBuildDependencies().getDependencies(null);
-
-		for (Task dependency : dependencies) {
-			return dependency.getProject();
-		}
-
-		return null;
+		Iterator<? extends Task> it = dependencies.iterator();
+		return it.hasNext() ? it.next().getProject() : null;
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {

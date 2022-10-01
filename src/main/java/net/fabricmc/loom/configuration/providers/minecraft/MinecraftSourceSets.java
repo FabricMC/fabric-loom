@@ -198,6 +198,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
+
+				jar.dependsOn(project.getTasks().named(clientOnlySourceSet.getProcessResourcesTaskName()));
 			});
 
 			// Remap with the client compile classpath.

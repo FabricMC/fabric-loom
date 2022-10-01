@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -46,8 +46,9 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
@@ -70,7 +71,7 @@ public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesT
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
-				if (!ModUtils.isMod(artifact.toPath())) {
+				if (!FabricModJsonFactory.isModJar(artifact.toPath())) {
 					continue;
 				}
 
@@ -121,20 +122,15 @@ public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesT
 	public record ModJavadoc(String modId, MemoryMappingTree mappingTree) {
 		@Nullable
 		public static ModJavadoc fromModJar(Path path) throws IOException {
-			JsonObject jsonObject = ModUtils.getFabricModJson(path);
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromZip(path);
+			final String modId = fabricModJson.getId();
+			final JsonElement customElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.PROVIDED_JAVADOC);
 
-			if (jsonObject == null || !jsonObject.has("custom")) {
+			if (customElement == null) {
 				return null;
 			}
 
-			final String modId = jsonObject.get("id").getAsString();
-			final JsonObject custom = jsonObject.getAsJsonObject("custom");
-
-			if (!custom.has(Constants.CustomModJsonKeys.PROVIDED_JAVADOC)) {
-				return null;
-			}
-
-			final String javaDocPath = custom.getAsJsonPrimitive(Constants.CustomModJsonKeys.PROVIDED_JAVADOC).getAsString();
+			final String javaDocPath = customElement.getAsString();
 			final byte[] data = ZipUtils.unpack(path, javaDocPath);
 			final MemoryMappingTree mappings = new MemoryMappingTree();
 

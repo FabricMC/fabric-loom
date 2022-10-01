@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,7 +54,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -63,10 +61,11 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -198,28 +197,15 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 	}
 
 	private List<InjectedInterface> getSourceInjectedInterface(SourceSet sourceSet) {
-		final File fabricModJson;
+		final FabricModJson fabricModJson;
 
 		try {
-			fabricModJson = sourceSet.getResources()
-					.matching(patternFilterable -> patternFilterable.include("fabric.mod.json"))
-					.getSingleFile();
-		} catch (IllegalStateException e) {
-			// File not found
-			return Collections.emptyList();
-		}
-
-		final String jsonString;
-
-		try {
-			jsonString = Files.readString(fabricModJson.toPath(), StandardCharsets.UTF_8);
+			fabricModJson = FabricModJsonFactory.createFromSourceSetNullable(sourceSet);
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read fabric.mod.json", e);
+			throw new UncheckedIOException(e);
 		}
 
-		final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(jsonString, JsonObject.class);
-
-		return InjectedInterface.fromJson(jsonObject);
+		return InjectedInterface.fromFabricModJson(fabricModJson);
 	}
 
 	@Override
@@ -271,29 +257,18 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		 * Reads the injected interfaces contained in a mod jar, or returns empty if there is none.
 		 */
 		public static List<InjectedInterface> fromModJar(Path modJarPath) {
-			final JsonObject jsonObject = ModUtils.getFabricModJson(modJarPath);
-
-			if (jsonObject == null) {
-				return Collections.emptyList();
-			}
-
-			return fromJson(jsonObject);
+			return fromFabricModJson(FabricModJsonFactory.createFromZip(modJarPath));
 		}
 
-		public static List<InjectedInterface> fromJson(JsonObject jsonObject) {
-			final String modId = jsonObject.get("id").getAsString();
+		public static List<InjectedInterface> fromFabricModJson(FabricModJson fabricModJson) {
+			final String modId = fabricModJson.getId();
+			final JsonElement jsonElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
 
-			if (!jsonObject.has("custom")) {
+			if (jsonElement == null) {
 				return Collections.emptyList();
 			}
 
-			final JsonObject custom = jsonObject.getAsJsonObject("custom");
-
-			if (!custom.has(Constants.CustomModJsonKeys.INJECTED_INTERFACE)) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject addedIfaces = custom.getAsJsonObject(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
+			final JsonObject addedIfaces = jsonElement.getAsJsonObject();
 
 			final List<InjectedInterface> result = new ArrayList<>();
 

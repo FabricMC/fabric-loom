@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.util.fmj;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
+import static net.fabricmc.loom.util.fmj.FabricModJsonUtils.readString;
 
+import java.util.List;
+import java.util.Objects;
+
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.Nullable;
 
-public final class ModUtils {
-	private ModUtils() {
+public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJsonV1, FabricModJsonV2 {
+	protected final JsonObject jsonObject;
+	private final FabricModJsonSource source;
+
+	protected FabricModJson(JsonObject jsonObject, FabricModJsonSource source) {
+		this.jsonObject = Objects.requireNonNull(jsonObject);
+		this.source = Objects.requireNonNull(source);
 	}
 
-	public static boolean isMod(File file) {
-		return isMod(file.toPath());
-	}
+	public abstract int getVersion();
 
-	public static boolean isMod(Path input) {
-		return ZipUtils.contains(input, "fabric.mod.json");
+	public String getId() {
+		return readString(jsonObject, "id");
 	}
 
 	@Nullable
-	public static JsonObject getFabricModJson(Path path) {
-		try {
-			return ZipUtils.unpackGsonNullable(path, "fabric.mod.json", JsonObject.class);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to extract fabric.mod.json from " + path, e);
-		}
+	public abstract JsonElement getCustom(String key);
+
+	public abstract List<String> getMixinConfigurations();
+
+	public abstract List<String> getClassTweakers(ModEnvironment modEnvironment);
+
+	public final FabricModJsonSource getSource() {
+		return source;
 	}
 }

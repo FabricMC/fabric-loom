@@ -55,9 +55,9 @@ import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModConfigurationRemapper {
@@ -88,7 +88,7 @@ public class ModConfigurationRemapper {
 				final List<ModDependency> modDependencies = new ArrayList<>();
 
 				for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
-					if (!ModUtils.isMod(artifact.path())) {
+					if (!FabricModJsonFactory.isModJar(artifact.path())) {
 						artifact.applyToConfiguration(project, targetConfig);
 						continue;
 					}

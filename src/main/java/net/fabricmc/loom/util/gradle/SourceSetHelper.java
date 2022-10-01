@@ -272,4 +272,16 @@ public final class SourceSetHelper {
 
 		return Collections.singletonList(new File(binDir, reference.sourceSet().getName()));
 	}
+
+	@Nullable
+	public static File findFileInResource(SourceSet sourceSet, String path) {
+		try {
+			return sourceSet.getResources()
+					.matching(patternFilterable -> patternFilterable.include(path))
+					.getSingleFile();
+		} catch (IllegalStateException e) {
+			// File not found
+			return null;
+		}
+	}
 }

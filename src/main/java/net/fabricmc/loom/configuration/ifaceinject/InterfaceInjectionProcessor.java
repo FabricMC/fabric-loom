@@ -205,6 +205,10 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 			throw new UncheckedIOException(e);
 		}
 
+		if (fabricModJson == null) {
+			return Collections.emptyList();
+		}
+
 		return InjectedInterface.fromFabricModJson(fabricModJson);
 	}
 

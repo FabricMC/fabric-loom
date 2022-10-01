@@ -157,6 +157,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		// Called during evaluation, when the loom extension method is called.
 		private void evaluate(Project project) {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 			createSourceSets(project);
 
 			// Combined extends from the 2 environments.
@@ -217,6 +218,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 				// The client only sources to the combined sources jar.
 				jar.from(clientOnlySourceSet.getAllSource());
 			});
+
+			extension.getInterfaceInjection().getInterfaceInjectionSourceSets().add(clientOnlySourceSet);
 		}
 
 		@Override

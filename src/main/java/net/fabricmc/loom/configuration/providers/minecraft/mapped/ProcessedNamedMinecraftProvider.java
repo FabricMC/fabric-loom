@@ -30,25 +30,29 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Objects;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
+import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 
 public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>> extends NamedMinecraftProvider<M> {
 	private final P parentMinecraftProvider;
-	private final JarProcessorManager jarProcessorManager;
+	private final MinecraftJarProcessorManager jarProcessorManager;
 	private final String projectMappedName;
 	private final Path projectMappedDir;
 
-	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
 		super(parentMinecraftProvide.getProject(), parentMinecraftProvide.getMinecraftProvider());
 		this.parentMinecraftProvider = parentMinecraftProvide;
-		this.jarProcessorManager = jarProcessorManager;
+		this.jarProcessorManager = Objects.requireNonNull(jarProcessorManager);
 
 		this.projectMappedName = "minecraft-project-%s-".formatted(getProject().getPath().replace(':', '@'));
 
@@ -62,40 +66,47 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	public void provide(boolean applyDependencies) throws Exception {
 		parentMinecraftProvider.provide(false);
 
-		final List<Path> inputJars = parentMinecraftProvider.getMinecraftJars();
-		boolean requiresProcessing = extension.refreshDeps() || inputJars.stream()
-				.map(this::getProcessedPath)
-				.map(Path::toFile)
-				.anyMatch(jarProcessorManager::isInvalid);
+		boolean requiresProcessing = parentMinecraftProvider.getMinecraftJarPaths().stream()
+				.anyMatch(jarProcessorManager::requiresProcessingJar);
 
 		if (requiresProcessing) {
-			try {
-				Files.createDirectories(projectMappedDir);
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to create project mapped dir", e);
-			}
-
-			for (Path inputJar : inputJars) {
-				final Path outputJar = getProcessedPath(inputJar);
-				deleteSimilarJars(outputJar);
-
-				Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
-				jarProcessorManager.process(outputJar.toFile());
-			}
+			processJars();
 		}
 
 		if (applyDependencies) {
-			final List<String> dependencyTargets = parentMinecraftProvider.getDependencyTargets();
-
-			if (dependencyTargets.isEmpty()) {
-				return;
-			}
-
-			MinecraftSourceSets.get(getProject()).applyDependencies(
-					(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
-					dependencyTargets
-			);
+			applyDependencies();
 		}
+	}
+
+	private void processJars() throws IOException {
+		try {
+			Files.createDirectories(projectMappedDir);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create project mapped dir", e);
+		}
+
+		for (MinecraftJar minecraftJar : parentMinecraftProvider.getMinecraftJars()) {
+			Path inputJar = minecraftJar.getPath();
+			final Path outputJar = getProcessedPath(inputJar);
+			deleteSimilarJars(outputJar);
+
+			Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
+
+			jarProcessorManager.processJar(outputJar, ProcessorContextImpl.create(getProject(), minecraftJar));
+		}
+	}
+
+	private void applyDependencies() {
+		final List<String> dependencyTargets = parentMinecraftProvider.getDependencyTargets();
+
+		if (dependencyTargets.isEmpty()) {
+			return;
+		}
+
+		MinecraftSourceSets.get(getProject()).applyDependencies(
+				(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
+				dependencyTargets
+		);
 	}
 
 	private void deleteSimilarJars(Path jar) throws IOException {
@@ -124,8 +135,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	@Override
-	public List<Path> getMinecraftJars() {
-		return getParentMinecraftProvider().getMinecraftJars().stream()
+	public List<Path> getMinecraftJarPaths() {
+		return getParentMinecraftProvider().getMinecraftJarPaths().stream()
 				.map(this::getProcessedPath)
 				.toList();
 	}
@@ -139,7 +150,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	public static final class MergedImpl extends ProcessedNamedMinecraftProvider<MergedMinecraftProvider, NamedMinecraftProvider.MergedImpl> implements Merged {
-		public MergedImpl(NamedMinecraftProvider.MergedImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+		public MergedImpl(NamedMinecraftProvider.MergedImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
 			super(parentMinecraftProvide, jarProcessorManager);
 		}
 
@@ -150,7 +161,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	public static final class SplitImpl extends ProcessedNamedMinecraftProvider<SplitMinecraftProvider, NamedMinecraftProvider.SplitImpl> implements Split {
-		public SplitImpl(NamedMinecraftProvider.SplitImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
+		public SplitImpl(NamedMinecraftProvider.SplitImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
 			super(parentMinecraftProvide, jarProcessorManager);
 		}
 
@@ -166,19 +177,19 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	public static final class SingleJarImpl extends ProcessedNamedMinecraftProvider<SingleJarMinecraftProvider, NamedMinecraftProvider.SingleJarImpl> implements SingleJar {
-		private final String env;
+		private final SingleJarEnvType env;
 
-		private SingleJarImpl(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager, String env) {
+		private SingleJarImpl(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager, SingleJarEnvType env) {
 			super(parentMinecraftProvide, jarProcessorManager);
 			this.env = env;
 		}
 
-		public static ProcessedNamedMinecraftProvider.SingleJarImpl server(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
-			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, "server");
+		public static ProcessedNamedMinecraftProvider.SingleJarImpl server(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
+			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, SingleJarEnvType.SERVER);
 		}
 
-		public static ProcessedNamedMinecraftProvider.SingleJarImpl client(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, JarProcessorManager jarProcessorManager) {
-			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, "client");
+		public static ProcessedNamedMinecraftProvider.SingleJarImpl client(NamedMinecraftProvider.SingleJarImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
+			return new ProcessedNamedMinecraftProvider.SingleJarImpl(parentMinecraftProvide, jarProcessorManager, SingleJarEnvType.CLIENT);
 		}
 
 		@Override
@@ -187,7 +198,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		@Override
-		public String env() {
+		public SingleJarEnvType env() {
 			return env;
 		}
 	}

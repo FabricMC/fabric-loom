@@ -39,7 +39,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -69,10 +68,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	LoomDependencyManager getDependencyManager();
 
-	void setJarProcessorManager(JarProcessorManager jarProcessorManager);
-
-	JarProcessorManager getJarProcessorManager();
-
 	MinecraftProvider getMinecraftProvider();
 
 	void setMinecraftProvider(MinecraftProvider minecraftProvider);
@@ -91,8 +86,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
 		return switch (mappingsNamespace) {
-		case NAMED -> getNamedMinecraftProvider().getMinecraftJars();
-		case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJars();
+		case NAMED -> getNamedMinecraftProvider().getMinecraftJarPaths();
+		case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJarPaths();
 		case OFFICIAL -> getMinecraftProvider().getMinecraftJars();
 		};
 	}

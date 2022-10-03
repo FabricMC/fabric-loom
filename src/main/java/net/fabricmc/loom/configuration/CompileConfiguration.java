@@ -49,8 +49,9 @@ import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.processors.SpecContextImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -196,11 +197,12 @@ public final class CompileConfiguration {
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
 
-		final JarProcessorManager jarProcessorManager = createJarProcessorManager(project);
+		registerGameProcessors(project);
+		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(extension.getMinecraftJarProcessors().get(), new SpecContextImpl());
 
-		if (jarProcessorManager.active()) {
+		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
-			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, jarProcessorManager);
+			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, minecraftJarProcessorManager);
 		}
 
 		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
@@ -210,7 +212,7 @@ public final class CompileConfiguration {
 		namedMinecraftProvider.provide(true);
 	}
 
-	private static JarProcessorManager createJarProcessorManager(Project project) {
+	private static void registerGameProcessors(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.getAccessWidenerPath().isPresent()) {
@@ -241,12 +243,6 @@ public final class CompileConfiguration {
 				extension.getGameJarProcessors().add(javadocProcessor);
 			}
 		}
-
-		JarProcessorManager processorManager = new JarProcessorManager(extension.getGameJarProcessors().get());
-		extension.setJarProcessorManager(processorManager);
-		processorManager.setupProcessors();
-
-		return processorManager;
 	}
 
 	private static void setupMixinAp(Project project, MixinExtension mixin) {

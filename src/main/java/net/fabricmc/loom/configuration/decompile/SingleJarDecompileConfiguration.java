@@ -42,7 +42,7 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 
 	@Override
 	public final void afterEvaluation() {
-		List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
+		List<Path> minecraftJars = minecraftProvider.getMinecraftJarPaths();
 		assert minecraftJars.size() == 1;
 
 		final File namedJar = minecraftJars.get(0).toFile();

@@ -27,8 +27,15 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 import java.nio.file.Path;
 import java.util.List;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
+
 public interface MappedMinecraftProvider {
-	List<Path> getMinecraftJars();
+	default List<Path> getMinecraftJarPaths() {
+		return getMinecraftJars().stream().map(MinecraftJar::getPath).toList();
+	}
+
+	List<MinecraftJar> getMinecraftJars();
 
 	interface ProviderImpl extends MappedMinecraftProvider {
 		Path getJar(String name);
@@ -42,8 +49,8 @@ public interface MappedMinecraftProvider {
 		}
 
 		@Override
-		default List<Path> getMinecraftJars() {
-			return List.of(getMergedJar());
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(new MinecraftJar.Merged(getMergedJar()));
 		}
 	}
 
@@ -60,13 +67,13 @@ public interface MappedMinecraftProvider {
 		}
 
 		@Override
-		default List<Path> getMinecraftJars() {
-			return List.of(getCommonJar(), getClientOnlyJar());
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(new MinecraftJar.Common(getCommonJar()), new MinecraftJar.ClientOnly(getClientOnlyJar()));
 		}
 	}
 
 	interface SingleJar extends ProviderImpl {
-		String env();
+		SingleJarEnvType env();
 
 		default String envName() {
 			return "%sOnly".formatted(env());
@@ -77,8 +84,8 @@ public interface MappedMinecraftProvider {
 		}
 
 		@Override
-		default List<Path> getMinecraftJars() {
-			return List.of(getEnvOnlyJar());
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(env().getJar().apply(getEnvOnlyJar()));
 		}
 	}
 }

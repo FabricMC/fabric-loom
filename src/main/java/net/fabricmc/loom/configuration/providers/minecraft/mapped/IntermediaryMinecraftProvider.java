@@ -32,6 +32,7 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.util.SidedClassVisitor;
@@ -87,19 +88,19 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	public static final class SingleJarImpl extends IntermediaryMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
-		private final String env;
+		private final SingleJarEnvType env;
 
-		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, String env) {
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
 			super(project, minecraftProvider);
 			this.env = env;
 		}
 
 		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, "server");
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER);
 		}
 
 		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, "client");
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT);
 		}
 
 		@Override
@@ -110,7 +111,7 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		}
 
 		@Override
-		public String env() {
+		public SingleJarEnvType env() {
 			return env;
 		}
 	}

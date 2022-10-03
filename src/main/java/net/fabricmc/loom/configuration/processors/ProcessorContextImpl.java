@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,35 @@
 
 package net.fabricmc.loom.configuration.processors;
 
-import java.io.File;
+import org.gradle.api.Project;
 
-@Deprecated(forRemoval = true)
-public interface JarProcessor {
-	/**
-	 * Returns a unique ID for this jar processor, containing all configuration details.
-	 *
-	 * <p>If the jar processor implementation class supports creating multiple jar processors with different effects,
-	 * the needed configuration should also be included in this ID. Example: {@code path.to.MyJarProcessor#someOption}.
-	 *
-	 * @return the unique ID of this jar processor
-	 */
-	String getId();
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.processor.ProcessorContext;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 
-	void setup();
+public record ProcessorContextImpl(MinecraftJarConfiguration jarConfiguration, MinecraftJar minecraftJar) implements ProcessorContext {
+	public static ProcessorContext create(Project project, MinecraftJar minecraftJar) {
+		return new ProcessorContextImpl(LoomGradleExtension.get(project).getMinecraftJarConfiguration().get(), minecraftJar);
+	}
 
-	/**
-	 * Currently this is a destructive process that replaces the existing jar.
-	 */
-	void process(File file);
+	@Override
+	public MinecraftJarConfiguration getJarConfiguration() {
+		return jarConfiguration;
+	}
+
+	@Override
+	public boolean isMerged() {
+		return minecraftJar.isMerged();
+	}
+
+	@Override
+	public boolean includesClient() {
+		return minecraftJar.includesClient();
+	}
+
+	@Override
+	public boolean includesServer() {
+		return minecraftJar.includesServer();
+	}
 }

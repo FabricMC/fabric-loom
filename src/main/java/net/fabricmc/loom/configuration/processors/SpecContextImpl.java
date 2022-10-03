@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,21 @@
 
 package net.fabricmc.loom.configuration.processors;
 
-import java.io.File;
+import java.util.List;
 
-@Deprecated(forRemoval = true)
-public interface JarProcessor {
-	/**
-	 * Returns a unique ID for this jar processor, containing all configuration details.
-	 *
-	 * <p>If the jar processor implementation class supports creating multiple jar processors with different effects,
-	 * the needed configuration should also be included in this ID. Example: {@code path.to.MyJarProcessor#someOption}.
-	 *
-	 * @return the unique ID of this jar processor
-	 */
-	String getId();
+import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.util.fmj.FabricModJson;
 
-	void setup();
+public class SpecContextImpl implements SpecContext {
+	@Override
+	public List<FabricModJson> getModDependencies() {
+		// TODO
+		return null;
+	}
 
-	/**
-	 * Currently this is a destructive process that replaces the existing jar.
-	 */
-	void process(File file);
+	@Override
+	public List<FabricModJson> getMods() {
+		// TODO
+		return null;
+	}
 }

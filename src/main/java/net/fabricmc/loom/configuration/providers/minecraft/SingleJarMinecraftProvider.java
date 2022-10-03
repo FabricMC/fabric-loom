@@ -57,7 +57,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 	protected void initFiles() {
 		super.initFiles();
 
-		minecraftEnvOnlyJar = path("minecraft-%s-only.jar".formatted(environment.name()));
+		minecraftEnvOnlyJar = path("minecraft-%s-only.jar".formatted(environment.type()));
 	}
 
 	@Override
@@ -92,7 +92,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 			}
 		} catch (Exception e) {
 			Files.deleteIfExists(minecraftEnvOnlyJar);
-			throw new RuntimeException("Failed to process %s only jar".formatted(environment.name()), e);
+			throw new RuntimeException("Failed to process %s only jar".formatted(environment.type()), e);
 		} finally {
 			if (remapper != null) {
 				remapper.finish();
@@ -115,15 +115,15 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 	}
 
 	private interface Environment {
-		String name();
+		SingleJarEnvType type();
 
 		Path getInputJar(SingleJarMinecraftProvider provider) throws Exception;
 	}
 
 	private static final class Server implements Environment {
 		@Override
-		public String name() {
-			return "server";
+		public SingleJarEnvType type() {
+			return SingleJarEnvType.SERVER;
 		}
 
 		@Override
@@ -141,8 +141,8 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 
 	private static final class Client implements Environment {
 		@Override
-		public String name() {
-			return "client";
+		public SingleJarEnvType type() {
+			return SingleJarEnvType.CLIENT;
 		}
 
 		@Override

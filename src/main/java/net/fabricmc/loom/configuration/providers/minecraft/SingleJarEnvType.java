@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,22 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.processors;
+package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.util.function.Function;
 
-@Deprecated(forRemoval = true)
-public interface JarProcessor {
-	/**
-	 * Returns a unique ID for this jar processor, containing all configuration details.
-	 *
-	 * <p>If the jar processor implementation class supports creating multiple jar processors with different effects,
-	 * the needed configuration should also be included in this ID. Example: {@code path.to.MyJarProcessor#someOption}.
-	 *
-	 * @return the unique ID of this jar processor
-	 */
-	String getId();
+public enum SingleJarEnvType {
+	CLIENT(MinecraftJar.ClientOnly::new),
+	SERVER(MinecraftJar.ServerOnly::new);
 
-	void setup();
+	private final Function<Path, MinecraftJar> jarFunction;
 
-	/**
-	 * Currently this is a destructive process that replaces the existing jar.
-	 */
-	void process(File file);
+	SingleJarEnvType(Function<Path, MinecraftJar> jarFunction) {
+		this.jarFunction = jarFunction;
+	}
+
+	public Function<Path, MinecraftJar> getJar() {
+		return jarFunction;
+	}
 }

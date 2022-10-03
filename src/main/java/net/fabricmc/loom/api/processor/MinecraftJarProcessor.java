@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2020 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,32 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.processors;
+package net.fabricmc.loom.api.processor;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
-@Deprecated(forRemoval = true)
-public interface JarProcessor {
-	/**
-	 * Returns a unique ID for this jar processor, containing all configuration details.
-	 *
-	 * <p>If the jar processor implementation class supports creating multiple jar processors with different effects,
-	 * the needed configuration should also be included in this ID. Example: {@code path.to.MyJarProcessor#someOption}.
-	 *
-	 * @return the unique ID of this jar processor
-	 */
-	String getId();
+import org.gradle.api.Named;
+import org.jetbrains.annotations.Nullable;
 
-	void setup();
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-	/**
-	 * Currently this is a destructive process that replaces the existing jar.
-	 */
-	void process(File file);
+public interface MinecraftJarProcessor<S extends MinecraftJarProcessor.Spec> extends Named {
+	@Nullable
+	S buildSpec(SpecContext context);
+
+	void processJar(Path jar, S spec, ProcessorContext context) throws IOException;
+
+	@Nullable
+	default MappingsProcessor<S> processMappings() {
+		return null;
+	}
+
+	interface Spec {
+		String cacheValue();
+	}
+
+	interface MappingsProcessor<S> {
+		boolean transform(MemoryMappingTree mappings, S spec, ProcessorContext context);
+	}
 }

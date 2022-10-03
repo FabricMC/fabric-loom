@@ -33,7 +33,7 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.configuration.decompile.DecompileConfiguration;
 import net.fabricmc.loom.configuration.decompile.SingleJarDecompileConfiguration;
 import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
+import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
@@ -76,7 +76,7 @@ public enum MinecraftJarConfiguration {
 	private final Function<Project, MinecraftProvider> minecraftProviderFunction;
 	private final BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>> intermediaryMinecraftProviderBiFunction;
 	private final BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>> namedMinecraftProviderBiFunction;
-	private final BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> processedNamedMinecraftProviderBiFunction;
+	private final BiFunction<NamedMinecraftProvider<?>, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> processedNamedMinecraftProviderBiFunction;
 	private final BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>> decompileConfigurationBiFunction;
 	private final List<String> supportedEnvironments;
 
@@ -85,14 +85,14 @@ public enum MinecraftJarConfiguration {
 			Function<Project, M> minecraftProviderFunction,
 			BiFunction<Project, M, IntermediaryMinecraftProvider<M>> intermediaryMinecraftProviderBiFunction,
 			BiFunction<Project, M, P> namedMinecraftProviderBiFunction,
-			BiFunction<P, JarProcessorManager, ProcessedNamedMinecraftProvider<M, P>> processedNamedMinecraftProviderBiFunction,
+			BiFunction<P, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<M, P>> processedNamedMinecraftProviderBiFunction,
 			BiFunction<Project, Q, DecompileConfiguration<?>> decompileConfigurationBiFunction,
 			List<String> supportedEnvironments
 	) {
 		this.minecraftProviderFunction = (Function<Project, MinecraftProvider>) minecraftProviderFunction;
 		this.intermediaryMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>>) (Object) intermediaryMinecraftProviderBiFunction;
 		this.namedMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>>) namedMinecraftProviderBiFunction;
-		this.processedNamedMinecraftProviderBiFunction = (BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>>) (Object) processedNamedMinecraftProviderBiFunction;
+		this.processedNamedMinecraftProviderBiFunction = (BiFunction<NamedMinecraftProvider<?>, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>>) (Object) processedNamedMinecraftProviderBiFunction;
 		this.decompileConfigurationBiFunction = (BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>>) decompileConfigurationBiFunction;
 		this.supportedEnvironments = supportedEnvironments;
 	}
@@ -109,7 +109,7 @@ public enum MinecraftJarConfiguration {
 		return namedMinecraftProviderBiFunction;
 	}
 
-	public BiFunction<NamedMinecraftProvider<?>, JarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> getProcessedNamedMinecraftProviderBiFunction() {
+	public BiFunction<NamedMinecraftProvider<?>, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> getProcessedNamedMinecraftProviderBiFunction() {
 		return processedNamedMinecraftProviderBiFunction;
 	}
 

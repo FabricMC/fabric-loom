@@ -42,6 +42,7 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
+import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
@@ -62,11 +63,13 @@ public interface LoomGradleExtensionAPI {
 
 	void decompilers(Action<NamedDomainObjectContainer<DecompilerOptions>> action);
 
+	@Deprecated(forRemoval = true)
 	ListProperty<JarProcessor> getGameJarProcessors();
 
-	default void addJarProcessor(JarProcessor processor) {
-		getGameJarProcessors().add(processor);
-	}
+	@Deprecated(forRemoval = true)
+	void addJarProcessor(JarProcessor processor);
+
+	ListProperty<MinecraftJarProcessor<?>> getMinecraftJarProcessors();
 
 	ConfigurableFileCollection getLog4jConfigs();
 

@@ -64,9 +64,10 @@ import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -338,10 +339,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			mappingsProcessors.add(new InterfaceInjectionProcessor(getProject()));
 		}
 
-		final ModJavadocProcessor javadocProcessor = ModJavadocProcessor.create(getProject());
+		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
-		if (javadocProcessor != null) {
-			mappingsProcessors.add(javadocProcessor);
+		if (minecraftJarProcessorManager != null) {
+			mappingsProcessors.add(mappings -> minecraftJarProcessorManager.processMappings(mappings, new MappingProcessorContextImpl()));
 		}
 
 		if (mappingsProcessors.isEmpty()) {
@@ -391,5 +392,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static class MappingProcessorContextImpl implements MappingProcessorContext {
 	}
 }

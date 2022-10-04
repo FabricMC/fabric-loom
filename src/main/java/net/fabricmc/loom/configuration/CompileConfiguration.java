@@ -51,7 +51,6 @@ import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarP
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
-import net.fabricmc.loom.configuration.processors.SpecContextImpl;
 import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -198,7 +197,7 @@ public final class CompileConfiguration {
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
 
 		registerGameProcessors(project);
-		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(extension.getMinecraftJarProcessors().get(), new SpecContextImpl());
+		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(project);
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
@@ -235,14 +234,7 @@ public final class CompileConfiguration {
 			}
 		}
 
-		if (extension.getEnableModProvidedJavadoc().get()) {
-			// This doesn't do any processing on the compiled jar, but it does have an effect on the generated sources.
-			final ModJavadocProcessor javadocProcessor = ModJavadocProcessor.create(project);
-
-			if (javadocProcessor != null) {
-				extension.getGameJarProcessors().add(javadocProcessor);
-			}
-		}
+		extension.addMinecraftJarProcessor(ModJavadocProcessor.class, "fabric-loom:mod-javadoc");
 	}
 
 	private static void setupMixinAp(Project project, MixinExtension mixin) {

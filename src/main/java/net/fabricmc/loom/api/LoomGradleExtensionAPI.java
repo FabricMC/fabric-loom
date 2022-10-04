@@ -71,6 +71,8 @@ public interface LoomGradleExtensionAPI {
 
 	ListProperty<MinecraftJarProcessor<?>> getMinecraftJarProcessors();
 
+	void addMinecraftJarProcessor(Class<? extends MinecraftJarProcessor<?>> clazz, Object... parameters);
+
 	ConfigurableFileCollection getLog4jConfigs();
 
 	Dependency officialMojangMappings();

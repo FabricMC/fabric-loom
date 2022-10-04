@@ -71,9 +71,6 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class InterfaceInjectionProcessor implements JarProcessor, GenerateSourcesTask.MappingsProcessor {
-	// Filename used to store hash of injected interfaces in processed jar file
-	private static final String HASH_FILENAME = "injected_interfaces.sha256";
-
 	private final Map<String, List<InjectedInterface>> injectedInterfaces;
 	private final Project project;
 	private final LoomGradleExtension extension;
@@ -200,7 +197,7 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		final FabricModJson fabricModJson;
 
 		try {
-			fabricModJson = FabricModJsonFactory.createFromSourceSetNullable(sourceSet);
+			fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(sourceSet);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

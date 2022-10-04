@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -275,6 +276,9 @@ public final class SourceSetHelper {
 
 	@Nullable
 	public static File findFileInResource(SourceSet sourceSet, String path) {
+		Objects.requireNonNull(sourceSet);
+		Objects.requireNonNull(path);
+
 		try {
 			return sourceSet.getResources()
 					.matching(patternFilterable -> patternFilterable.include(path))
@@ -283,5 +287,18 @@ public final class SourceSetHelper {
 			// File not found
 			return null;
 		}
+	}
+
+	@Nullable
+	public static File findFirstFileInResource(String path, SourceSet... sourceSets) {
+		for (SourceSet sourceSet : sourceSets) {
+			File file = findFileInResource(sourceSet, path);
+
+			if (file != null) {
+				return file;
+			}
+		}
+
+		return null;
 	}
 }

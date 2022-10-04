@@ -173,7 +173,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public ListProperty<JarProcessor> getGameJarProcessors() {
-		getDeprecationHelper().replaceWithInLoom2_0("getGameJarProcessors", "getMinecraftJarProcessors");
 		return jarProcessors;
 	}
 
@@ -186,6 +185,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public ListProperty<MinecraftJarProcessor<?>> getMinecraftJarProcessors() {
 		return minecraftJarProcessors;
+	}
+
+	@Override
+	public void addMinecraftJarProcessor(Class<? extends MinecraftJarProcessor<?>> clazz, Object... parameters) {
+		getMinecraftJarProcessors().add(getProject().getObjects().newInstance(clazz, parameters));
 	}
 
 	@Override

@@ -56,10 +56,10 @@ public interface FabricModJsonSource {
 		}
 	}
 
-	record SourceSetSource(SourceSet sourceSet) implements FabricModJsonSource {
+	record SourceSetSource(SourceSet... sourceSets) implements FabricModJsonSource {
 		@Override
 		public byte[] read(String path) throws IOException {
-			final File file = SourceSetHelper.findFileInResource(sourceSet, path);
+			final File file = SourceSetHelper.findFirstFileInResource(path, sourceSets);
 
 			if (file == null) {
 				throw new FileNotFoundException("Could not find: " + path);

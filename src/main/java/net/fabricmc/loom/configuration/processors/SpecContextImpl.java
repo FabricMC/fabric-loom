@@ -24,21 +24,85 @@
 
 package net.fabricmc.loom.configuration.processors;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
+import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public class SpecContextImpl implements SpecContext {
-	@Override
-	public List<FabricModJson> getModDependencies() {
-		// TODO
-		return null;
+/**
+ * @param modDependencies External mods that are depended on
+ * @param localMods The main mod being built. In the future this may also include other mods.
+ */
+public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods) implements SpecContext {
+	public static SpecContextImpl create(Project project) {
+		return new SpecContextImpl(getDependentMods(project), getMods(project));
 	}
 
-	@Override
-	public List<FabricModJson> getMods() {
-		// TODO
-		return null;
+	private static List<FabricModJson> getDependentMods(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		var mods = new ArrayList<FabricModJson>();
+
+		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
+
+			for (File artifact : artifacts) {
+				final FabricModJson fabricModJson;
+
+				try {
+					fabricModJson = FabricModJsonFactory.createFromZipNullable(artifact.toPath());
+				} catch (IOException e) {
+					throw new UncheckedIOException("Failed to read dependent mod jar: " + artifact, e);
+				}
+
+				if (fabricModJson != null) {
+					mods.add(fabricModJson);
+				}
+			}
+		}
+
+		// TODO supporting projects here should magically allow TAWs and what not to work across project deps :)
+
+		return sorted(mods);
+	}
+
+	private static List<FabricModJson> getMods(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		var sourceSets = new ArrayList<SourceSet>();
+		sourceSets.add(SourceSetHelper.getMainSourceSet(project));
+
+		if (extension.areEnvironmentSourceSetsSplit()) {
+			sourceSets.add(SourceSetHelper.getSourceSetByName("client", project));
+		}
+
+		try {
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(sourceSets.toArray(SourceSet[]::new));
+
+			if (fabricModJson != null) {
+				return List.of(fabricModJson);
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		return Collections.emptyList();
+	}
+
+	// Sort to ensure stable caching
+	private static List<FabricModJson> sorted(List<FabricModJson> mods) {
+		return mods.stream().sorted(Comparator.comparing(FabricModJson::getId)).toList();
 	}
 }

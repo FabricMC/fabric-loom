@@ -44,10 +44,10 @@ public interface MinecraftJarProcessor<S extends MinecraftJarProcessor.Spec> ext
 	}
 
 	interface Spec {
-		String cacheValue();
+		// Must make sure hashCode is correctly implemented.
 	}
 
 	interface MappingsProcessor<S> {
-		boolean transform(MemoryMappingTree mappings, S spec, ProcessorContext context);
+		boolean transform(MemoryMappingTree mappings, S spec, MappingProcessorContext context);
 	}
 }

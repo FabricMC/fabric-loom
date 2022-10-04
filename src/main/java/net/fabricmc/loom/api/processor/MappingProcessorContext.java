@@ -24,17 +24,5 @@
 
 package net.fabricmc.loom.api.processor;
 
-import java.util.List;
-import java.util.stream.Stream;
-
-import net.fabricmc.loom.util.fmj.FabricModJson;
-
-public interface SpecContext {
-	List<FabricModJson> modDependencies();
-
-	List<FabricModJson> localMods();
-
-	default List<FabricModJson> allMods() {
-		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();
-	}
+public interface MappingProcessorContext {
 }

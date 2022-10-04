@@ -36,8 +36,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
@@ -51,6 +54,12 @@ public final class MinecraftJarProcessorManager {
 
 	private MinecraftJarProcessorManager(List<ProcessorEntry<?>> jarProcessors) {
 		this.jarProcessors = Collections.unmodifiableList(jarProcessors);
+	}
+
+	@Nullable
+	public static MinecraftJarProcessorManager create(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		return MinecraftJarProcessorManager.create(extension.getMinecraftJarProcessors().get(), SpecContextImpl.create(project));
 	}
 
 	@Nullable
@@ -114,10 +123,16 @@ public final class MinecraftJarProcessorManager {
 		ZipUtils.add(jar, CACHE_VALUE_FILE_PATH, getCacheValue());
 	}
 
-	public void processMappings(MemoryMappingTree mappings, ProcessorContext context) {
+	public boolean processMappings(MemoryMappingTree mappings, MappingProcessorContext context) {
+		boolean transformed = false;
+
 		for (ProcessorEntry<?> entry : jarProcessors) {
-			entry.processMappings(mappings, context);
+			if (entry.processMappings(mappings, context)) {
+				transformed = true;
+			}
 		}
+
+		return transformed;
 	}
 
 	record ProcessorEntry<S extends MinecraftJarProcessor.Spec>(S spec, MinecraftJarProcessor<S> processor, @Nullable MinecraftJarProcessor.MappingsProcessor<S> mappingsProcessor) {
@@ -130,8 +145,8 @@ public final class MinecraftJarProcessorManager {
 			processor().processJar(jar, spec, context);
 		}
 
-		private void processMappings(MemoryMappingTree mappings, ProcessorContext context) {
-			mappingsProcessor().transform(mappings, spec, context);
+		private boolean processMappings(MemoryMappingTree mappings, MappingProcessorContext context) {
+			return mappingsProcessor().transform(mappings, spec, context);
 		}
 
 		private String name() {
@@ -139,7 +154,7 @@ public final class MinecraftJarProcessorManager {
 		}
 
 		private String cacheValue() {
-			return processor.getName() + ":" + spec.cacheValue();
+			return processor.getName() + ":" + spec.hashCode();
 		}
 	}
 }

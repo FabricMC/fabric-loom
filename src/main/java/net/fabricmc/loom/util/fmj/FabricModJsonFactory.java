@@ -94,15 +94,15 @@ public final class FabricModJsonFactory {
 	}
 
 	@Nullable
-	public static FabricModJson createFromSourceSetNullable(SourceSet sourceSet) throws IOException {
-		final File file = SourceSetHelper.findFileInResource(sourceSet, FABRIC_MOD_JSON);
+	public static FabricModJson createFromSourceSetsNullable(SourceSet... sourceSets) throws IOException {
+		final File file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, sourceSets);
 
 		if (file == null) {
 			return null;
 		}
 
 		try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
-			return create(LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class), new FabricModJsonSource.SourceSetSource(sourceSet));
+			return create(LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class), new FabricModJsonSource.SourceSetSource(sourceSets));
 		}
 	}
 

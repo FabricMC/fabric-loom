@@ -25,15 +25,16 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+
+import javax.inject.Inject;
 
 import com.google.gson.JsonElement;
 import org.gradle.api.Project;
@@ -42,50 +43,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.api.processor.ProcessorContext;
+import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesTask.MappingsProcessor {
+public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJavadocProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModJavadocProcessor.class);
 
-	private final List<ModJavadoc> javadocs;
+	@Inject
+	public abstract Project getProject();
 
-	private ModJavadocProcessor(List<ModJavadoc> javadocs) {
-		this.javadocs = javadocs;
+	private final String name;
+
+	@Inject
+	public ModJavadocProcessor(String name) {
+		this.name = name;
 	}
 
-	@Nullable
-	public static ModJavadocProcessor create(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final List<ModJavadoc> javadocs = new ArrayList<>();
+	@Override
+	public String getName() {
+		return name;
+	}
 
-		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
-			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
+	@Override
+	public @Nullable ModJavadocProcessor.Spec buildSpec(SpecContext context) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
-			for (File artifact : artifacts) {
-				if (!FabricModJsonFactory.isModJar(artifact.toPath())) {
-					continue;
-				}
+		if (!extension.getEnableModProvidedJavadoc().get()) {
+			return null;
+		}
 
-				final ModJavadoc modJavadoc;
+		List<ModJavadoc> javadocs = new ArrayList<>();
 
-				try {
-					modJavadoc = ModJavadoc.fromModJar(artifact.toPath());
-				} catch (IOException e) {
-					throw new UncheckedIOException("Failed to read mod jar (%s)".formatted(artifact), e);
-				}
+		for (FabricModJson fabricModJson : context.allMods()) {
+			ModJavadoc javadoc = ModJavadoc.create(fabricModJson);
 
-				if (modJavadoc != null) {
-					javadocs.add(modJavadoc);
-				}
+			if (javadoc != null) {
+				javadocs.add(javadoc);
 			}
 		}
 
@@ -93,36 +93,31 @@ public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesT
 			return null;
 		}
 
-		return new ModJavadocProcessor(javadocs);
+		return new Spec(Collections.unmodifiableList(javadocs));
+	}
+
+	public record Spec(List<ModJavadoc> javadocs) implements MinecraftJarProcessor.Spec {
 	}
 
 	@Override
-	public boolean transform(MemoryMappingTree mappings) {
-		for (ModJavadoc javadoc : javadocs) {
-			javadoc.apply(mappings);
-		}
-
-		return true;
+	public void processJar(Path jar, Spec spec, ProcessorContext context) {
+		// Nothing to do for the jar
 	}
 
 	@Override
-	public String getId() {
-		return "loom:interface_injection:" + javadocs.hashCode();
-	}
+	public @Nullable MappingsProcessor<Spec> processMappings() {
+		return (mappings, spec, context) -> {
+			for (ModJavadoc javadoc : spec.javadocs()) {
+				javadoc.apply(mappings);
+			}
 
-	@Override
-	public void setup() {
-	}
-
-	@Override
-	public void process(File file) {
-		// No need to actually process anything, we need to be a JarProcessor to ensure that the jar is cached correctly.
+			return true;
+		};
 	}
 
 	public record ModJavadoc(String modId, MemoryMappingTree mappingTree) {
 		@Nullable
-		public static ModJavadoc fromModJar(Path path) throws IOException {
-			final FabricModJson fabricModJson = FabricModJsonFactory.createFromZip(path);
+		public static ModJavadoc create(FabricModJson fabricModJson) {
 			final String modId = fabricModJson.getId();
 			final JsonElement customElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.PROVIDED_JAVADOC);
 
@@ -131,11 +126,16 @@ public final class ModJavadocProcessor implements JarProcessor, GenerateSourcesT
 			}
 
 			final String javaDocPath = customElement.getAsString();
-			final byte[] data = ZipUtils.unpack(path, javaDocPath);
 			final MemoryMappingTree mappings = new MemoryMappingTree();
 
-			try (Reader reader = new InputStreamReader(new ByteArrayInputStream(data))) {
-				MappingReader.read(reader, mappings);
+			try {
+				final byte[] data = fabricModJson.getSource().read(javaDocPath);
+
+				try (Reader reader = new InputStreamReader(new ByteArrayInputStream(data))) {
+					MappingReader.read(reader, mappings);
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read javadoc from mod: " + modId, e);
 			}
 
 			if (!mappings.getSrcNamespace().equals(MappingsNamespace.INTERMEDIARY.toString())) {

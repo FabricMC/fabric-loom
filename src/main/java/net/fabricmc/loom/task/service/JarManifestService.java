@@ -40,6 +40,7 @@ import org.gradle.util.GradleVersion;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -63,10 +64,10 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 				params.getGradleVersion().set(GradleVersion.current().getVersion());
 				params.getLoomVersion().set(LoomGradlePlugin.LOOM_VERSION);
 				params.getMCEVersion().set(Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
-				params.getMinecraftVersion().set(extension.getMinecraftProvider().minecraftVersion());
+				params.getMinecraftVersion().set(project.provider(() -> extension.getMinecraftProvider().minecraftVersion()));
 				params.getTinyRemapperVersion().set(tinyRemapperVersion.orElse("unknown"));
-				params.getFabricLoaderVersion().set(getLoaderVersion(project).orElse("unknown"));
-				params.getMixinVersion().set(getMixinVersion(project).orElse(new MixinVersion("unknown", "unknown")));
+				params.getFabricLoaderVersion().set(project.provider(() -> Optional.ofNullable(extension.getInstallerData()).map(InstallerData::version).orElse("unknown")));
+				params.getMixinVersion().set(getMixinVersion(project));
 			});
 		});
 	}
@@ -98,31 +99,23 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		}
 	}
 
-	private static Optional<String> getLoaderVersion(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		if (extension.getInstallerData() == null) {
-			project.getLogger().warn("Could not determine fabric loader version for jar manifest");
-			return Optional.empty();
-		}
-
-		return Optional.of(extension.getInstallerData().version());
-	}
-
 	private record MixinVersion(String group, String version) implements Serializable { }
 
-	private static Optional<MixinVersion> getMixinVersion(Project project) {
-		// Not super ideal that this uses the mod compile classpath, should prob look into making this not a thing at somepoint
-		Optional<Dependency> dependency = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
-				.getDependencies()
-				.stream()
-				.filter(dep -> "sponge-mixin".equals(dep.getName()))
-				.findFirst();
+	private static Provider<MixinVersion> getMixinVersion(Project project) {
+		return project.getConfigurations().named(Constants.Configurations.LOADER_DEPENDENCIES).map(configuration -> {
+			// Not super ideal that this uses the mod compile classpath, should prob look into making this not a thing at somepoint
+			Optional<Dependency> dependency = configuration
+					.getDependencies()
+					.stream()
+					.filter(dep -> "sponge-mixin".equals(dep.getName()))
+					.findFirst();
 
-		if (dependency.isEmpty()) {
-			project.getLogger().warn("Could not determine Mixin version for jar manifest");
-		}
+			if (dependency.isEmpty()) {
+				project.getLogger().warn("Could not determine Mixin version for jar manifest");
+			}
 
-		return dependency.map(d -> new MixinVersion(d.getGroup(), d.getVersion()));
+			return dependency.map(d -> new MixinVersion(d.getGroup(), d.getVersion()))
+					.orElse(new MixinVersion("unknown", "unknown"));
+		});
 	}
 }

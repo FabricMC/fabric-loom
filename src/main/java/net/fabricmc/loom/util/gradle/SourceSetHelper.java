@@ -45,6 +45,7 @@ import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
 import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.TaskProvider;
 import org.intellij.lang.annotations.Language;
@@ -63,20 +64,23 @@ public final class SourceSetHelper {
 	private SourceSetHelper() {
 	}
 
+	public static SourceSetContainer getSourceSets(Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets();
+	}
+
 	/**
 	 * Returns true when the provided project contains the {@link SourceSet}.
 	 */
 	public static boolean isSourceSetOfProject(SourceSet sourceSet, Project project) {
 		if (System.getProperty("fabric-loom.unit.testing") != null) return true;
 
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().stream()
+		return getSourceSets(project).stream()
 				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
 	}
 
 	public static SourceSet getSourceSetByName(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().getByName(name);
+		return getSourceSets(project).getByName(name);
 	}
 
 	public static SourceSet getMainSourceSet(Project project) {
@@ -84,8 +88,7 @@ public final class SourceSetHelper {
 	}
 
 	public static SourceSet createSourceSet(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().create(name);
+		return getSourceSets(project).create(name);
 	}
 
 	/**

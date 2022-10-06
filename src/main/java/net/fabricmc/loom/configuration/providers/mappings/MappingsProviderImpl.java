@@ -98,9 +98,9 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		this.intermediaryService = intermediaryService;
 	}
 
-	public static synchronized MappingsProviderImpl getInstance(Project project, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
-		return SharedServiceManager.get(project).getOrCreateService("MappingsProvider:%s:%s".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()), () -> {
-			Supplier<IntermediateMappingsService> intermediaryService = Suppliers.memoize(() -> IntermediateMappingsService.getInstance(project, minecraftProvider));
+	public static synchronized MappingsProviderImpl getInstance(SharedServiceManager sharedServiceManager, Project project, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
+		return sharedServiceManager.getOrCreateService("MappingsProvider:%s:%s".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()), () -> {
+			Supplier<IntermediateMappingsService> intermediaryService = Suppliers.memoize(() -> IntermediateMappingsService.getInstance(sharedServiceManager, project, minecraftProvider));
 			return create(dependency, minecraftProvider, intermediaryService);
 		});
 	}

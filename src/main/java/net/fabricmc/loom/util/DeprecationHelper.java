@@ -49,13 +49,6 @@ public interface DeprecationHelper {
 
 		public ProjectBased(Project project) {
 			this.project = project;
-
-			project.getGradle().buildFinished(buildResult -> {
-				if (usingDeprecatedApi.get()) {
-					project.getLogger().lifecycle("Deprecated Loom APIs were used in this build, making it incompatible with future versions of Loom. "
-											+ "Use Gradle warning modes to control the verbosity of the warnings.");
-				}
-			});
 		}
 
 		@Override

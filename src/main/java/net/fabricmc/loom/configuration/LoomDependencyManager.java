@@ -44,9 +44,10 @@ import net.fabricmc.loom.configuration.mods.ModConfigurationRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public class LoomDependencyManager {
-	public void handleDependencies(Project project) {
+	public void handleDependencies(Project project, SharedServiceManager serviceManager) {
 		List<Runnable> afterTasks = new ArrayList<>();
 
 		project.getLogger().info(":setting up loom dependencies");
@@ -78,7 +79,7 @@ public class LoomDependencyManager {
 		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
 		String mappingsIdentifier = extension.getMappingsProvider().mappingsIdentifier();
 
-		ModConfigurationRemapper.supplyModConfigurations(project, mappingsIdentifier, extension, sourceRemapper);
+		ModConfigurationRemapper.supplyModConfigurations(project, serviceManager, mappingsIdentifier, extension, sourceRemapper);
 
 		sourceRemapper.remapAll();
 

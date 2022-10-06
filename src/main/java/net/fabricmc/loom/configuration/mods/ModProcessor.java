@@ -53,6 +53,7 @@ import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -64,10 +65,12 @@ public class ModProcessor {
 
 	private final Project project;
 	private final Configuration sourceConfiguration;
+	private final SharedServiceManager serviceManager;
 
-	public ModProcessor(Project project, Configuration sourceConfiguration) {
+	public ModProcessor(Project project, Configuration sourceConfiguration, SharedServiceManager serviceManager) {
 		this.project = project;
 		this.sourceConfiguration = sourceConfiguration;
+		this.serviceManager = serviceManager;
 	}
 
 	public void processMods(List<ModDependency> remapList) throws IOException {
@@ -101,7 +104,7 @@ public class ModProcessor {
 				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
 				.renameInvalidLocals(false);
 
-		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(project);
+		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;
 
 		if (kotlinClasspathService != null) {

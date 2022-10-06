@@ -42,21 +42,17 @@ import net.fabricmc.tinyremapper.IMappingProvider;
 public final class MappingsService implements SharedService {
 	private record Options(Path mappingsFile, String from, String to, boolean remapLocals) { }
 
-	public static MappingsService create(Project project, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
-		return create(SharedServiceManager.get(project), name, mappingsFile, from, to, remapLocals);
-	}
-
 	public static synchronized MappingsService create(SharedServiceManager sharedServiceManager, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
 		final Options options = new Options(mappingsFile, from, to, remapLocals);
 		final String id = name + options.hashCode();
 		return sharedServiceManager.getOrCreateService(id, () -> new MappingsService(options));
 	}
 
-	public static MappingsService createDefault(Project project, String from, String to) {
+	public static MappingsService createDefault(Project project, SharedServiceManager serviceManager, String from, String to) {
 		final MappingsProviderImpl mappingsProvider = LoomGradleExtension.get(project).getMappingsProvider();
 
 		final String name = mappingsProvider.getBuildServiceName("mappingsProvider", from, to);
-		return MappingsService.create(project, name, mappingsProvider.tinyMappings, from, to, false);
+		return MappingsService.create(serviceManager, name, mappingsProvider.tinyMappings, from, to, false);
 	}
 
 	private final Options options;

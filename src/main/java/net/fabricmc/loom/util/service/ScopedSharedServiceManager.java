@@ -24,34 +24,12 @@
 
 package net.fabricmc.loom.util.service;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.gradle.api.provider.Property;
-
-// Massive hack to work around WorkerExecutor.noIsolation() doing isolation checks.
-public final class UnsafeWorkQueueHelper {
-	private static final Map<String, SharedService> SERVICE_MAP = new ConcurrentHashMap<>();
-
-	private UnsafeWorkQueueHelper() {
+public final class ScopedSharedServiceManager extends SharedServiceManager implements AutoCloseable {
+	public ScopedSharedServiceManager() {
 	}
 
-	public static String create(SharedService service) {
-		final String uuid = UUID.randomUUID().toString();
-		SERVICE_MAP.put(uuid, service);
-
-		return uuid;
-	}
-
-	public static <S> S get(Property<String> property, Class<S> clazz) {
-		SharedService service = SERVICE_MAP.remove(property.get());
-
-		if (service == null) {
-			throw new NullPointerException("Failed to get service for " + clazz);
-		}
-
-		//noinspection unchecked
-		return (S) service;
+	@Override
+	public void close() {
+		onFinish();
 	}
 }

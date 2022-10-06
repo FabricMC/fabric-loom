@@ -31,33 +31,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import org.gradle.BuildResult;
-import org.gradle.api.Project;
-import org.gradle.api.invocation.Gradle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple manager for {@link SharedService} to be used across gradle (sub) projects.
  * This is a basic replacement for gradle's build service api.
  */
-public final class SharedServiceManager {
-	private static final Map<Gradle, SharedServiceManager> SERVICE_FACTORY_MAP = new ConcurrentHashMap<>();
-	private final Gradle gradle;
-
+public abstract class SharedServiceManager {
+	private static final Logger LOGGER = LoggerFactory.getLogger(BuildSharedServiceManager.class);
 	private final Map<String, SharedService> sharedServiceMap = new ConcurrentHashMap<>();
 
 	private boolean shutdown = false;
 
-	private SharedServiceManager(Gradle gradle) {
-		this.gradle = gradle;
-		this.gradle.buildFinished(this::onFinish);
-	}
-
-	public static SharedServiceManager get(Project project) {
-		return get(project.getGradle());
-	}
-
-	public static SharedServiceManager get(Gradle gradle) {
-		return SERVICE_FACTORY_MAP.computeIfAbsent(gradle, SharedServiceManager::new);
+	SharedServiceManager() {
+		LOGGER.info("Creating new SharedServiceManager({})", hashCode());
 	}
 
 	public <S extends SharedService> S getOrCreateService(String id, Supplier<S> function) {
@@ -78,12 +66,12 @@ public final class SharedServiceManager {
 		}
 	}
 
-	private void onFinish(BuildResult buildResult) {
+	protected void onFinish() {
 		synchronized (sharedServiceMap) {
 			shutdown = true;
 		}
 
-		SERVICE_FACTORY_MAP.remove(gradle);
+		LOGGER.info("Closing SharedServiceManager({})", hashCode());
 
 		final List<IOException> exceptionList = new ArrayList<>();
 

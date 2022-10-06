@@ -24,7 +24,10 @@
 
 package net.fabricmc.loom.util.gradle;
 
+import java.util.function.Consumer;
+
 import org.gradle.api.Project;
+import org.gradle.api.invocation.Gradle;
 
 public final class GradleUtils {
 	private GradleUtils() {
@@ -39,6 +42,14 @@ public final class GradleUtils {
 			}
 
 			afterEvaluate.run();
+		});
+	}
+
+	public static void allLoomProjects(Gradle gradle, Consumer<Project> consumer) {
+		gradle.allprojects(project -> {
+			if (project.getPluginManager().hasPlugin("fabric-loom")) {
+				consumer.accept(project);
+			}
 		});
 	}
 }

@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
@@ -63,6 +64,8 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public final class CompileConfiguration {
 	private CompileConfiguration() {
@@ -126,7 +129,7 @@ public final class CompileConfiguration {
 			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 		});
 
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
+		afterEvaluationWithService(project, (serviceManager) -> {
 			MinecraftSourceSets.get(project).afterEvaluate(project);
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
@@ -137,14 +140,14 @@ public final class CompileConfiguration {
 			}
 
 			try {
-				setupMinecraft(project);
+				setupMinecraft(project, serviceManager);
 			} catch (Exception e) {
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
-			dependencyManager.handleDependencies(project);
+			dependencyManager.handleDependencies(project, serviceManager);
 
 			releaseLock(project);
 			extension.setRefreshDeps(previousRefreshDeps);
@@ -178,7 +181,7 @@ public final class CompileConfiguration {
 	}
 
 	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
-	private static synchronized void setupMinecraft(Project project) throws Exception {
+	private static synchronized void setupMinecraft(Project project, SharedServiceManager serviceManager) throws Exception {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
@@ -188,7 +191,7 @@ public final class CompileConfiguration {
 		minecraftProvider.provide();
 
 		final DependencyInfo mappingsDep = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
-		final MappingsProviderImpl mappingsProvider = MappingsProviderImpl.getInstance(project, mappingsDep, minecraftProvider);
+		final MappingsProviderImpl mappingsProvider = MappingsProviderImpl.getInstance(serviceManager, project, mappingsDep, minecraftProvider);
 		extension.setMappingsProvider(mappingsProvider);
 		mappingsProvider.applyToProject(project, mappingsDep);
 
@@ -330,5 +333,13 @@ public final class CompileConfiguration {
 
 	private static void finalizedBy(Project project, String a, String b) {
 		project.getTasks().named(a).configure(task -> task.finalizedBy(project.getTasks().named(b)));
+	}
+
+	private static void afterEvaluationWithService(Project project, Consumer<SharedServiceManager> consumer) {
+		GradleUtils.afterSuccessfulEvaluation(project, () -> {
+			try (var serviceManager = new ScopedSharedServiceManager()) {
+				consumer.accept(serviceManager);
+			}
+		});
 	}
 }

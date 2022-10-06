@@ -60,13 +60,7 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
-				final FabricModJson fabricModJson;
-
-				try {
-					fabricModJson = FabricModJsonFactory.createFromZipNullable(artifact.toPath());
-				} catch (IOException e) {
-					throw new UncheckedIOException("Failed to read dependent mod jar: " + artifact, e);
-				}
+				final FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(artifact.toPath());
 
 				if (fabricModJson != null) {
 					mods.add(fabricModJson);

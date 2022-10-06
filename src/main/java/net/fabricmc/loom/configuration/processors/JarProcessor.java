@@ -26,7 +26,7 @@ package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
 
-@Deprecated(forRemoval = true)
+@Deprecated()
 public interface JarProcessor {
 	/**
 	 * Returns a unique ID for this jar processor, containing all configuration details.

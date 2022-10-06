@@ -75,8 +75,14 @@ public final class FabricModJsonFactory {
 	}
 
 	@Nullable
-	public static FabricModJson createFromZipNullable(Path zipPath) throws IOException {
-		JsonObject jsonObject = ZipUtils.unpackGsonNullable(zipPath, FABRIC_MOD_JSON, JsonObject.class);
+	public static FabricModJson createFromZipNullable(Path zipPath) {
+		JsonObject jsonObject;
+
+		try {
+			jsonObject = ZipUtils.unpackGsonNullable(zipPath, FABRIC_MOD_JSON, JsonObject.class);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read zip: " + zipPath, e);
+		}
 
 		if (jsonObject == null) {
 			return null;

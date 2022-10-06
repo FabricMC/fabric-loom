@@ -47,7 +47,13 @@ public abstract class LegacyJarProcessorWrapper implements MinecraftJarProcessor
 		this.delegate = delegate;
 	}
 
+	@Inject
 	public abstract Project getProject();
+
+	@Override
+	public String getName() {
+		return "legacy:" + delegate.getClass().getCanonicalName();
+	}
 
 	@Override
 	public @Nullable LegacyJarProcessorWrapper.Spec buildSpec(SpecContext context) {

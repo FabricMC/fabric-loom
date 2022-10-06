@@ -51,7 +51,6 @@ import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.processors.LegacyJarProcessorWrapper;
 import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
@@ -67,7 +66,7 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
  */
 public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionAPI {
 	protected final DeprecationHelper deprecationHelper;
-	@Deprecated(forRemoval = true)
+	@Deprecated()
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
@@ -174,12 +173,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public ListProperty<JarProcessor> getGameJarProcessors() {
 		return jarProcessors;
-	}
-
-	@Override
-	public void addJarProcessor(JarProcessor processor) {
-		getDeprecationHelper().replaceWithInLoom2_0("addJarProcessor", "getMinecraftJarProcessors");
-		getMinecraftJarProcessors().add(getProject().getObjects().newInstance(LegacyJarProcessorWrapper.class, processor));
 	}
 
 	@Override

@@ -63,11 +63,13 @@ public interface LoomGradleExtensionAPI {
 
 	void decompilers(Action<NamedDomainObjectContainer<DecompilerOptions>> action);
 
-	@Deprecated(forRemoval = true)
+	@Deprecated()
 	ListProperty<JarProcessor> getGameJarProcessors();
 
-	@Deprecated(forRemoval = true)
-	void addJarProcessor(JarProcessor processor);
+	@Deprecated()
+	default void addJarProcessor(JarProcessor processor) {
+		getGameJarProcessors().add(processor);
+	}
 
 	ListProperty<MinecraftJarProcessor<?>> getMinecraftJarProcessors();
 

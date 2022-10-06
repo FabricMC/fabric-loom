@@ -59,7 +59,13 @@ public final class MinecraftJarProcessorManager {
 	@Nullable
 	public static MinecraftJarProcessorManager create(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		return MinecraftJarProcessorManager.create(extension.getMinecraftJarProcessors().get(), SpecContextImpl.create(project));
+		List<MinecraftJarProcessor<?>> processors = new ArrayList<>(extension.getMinecraftJarProcessors().get());
+
+		for (JarProcessor legacyProcessor : extension.getGameJarProcessors().get()) {
+			processors.add(project.getObjects().newInstance(LegacyJarProcessorWrapper.class, legacyProcessor));
+		}
+
+		return MinecraftJarProcessorManager.create(processors, SpecContextImpl.create(project));
 	}
 
 	@Nullable

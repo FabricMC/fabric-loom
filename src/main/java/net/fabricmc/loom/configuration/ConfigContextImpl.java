@@ -29,8 +29,5 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
-public interface ConfigContext {
-	Project project();
-	SharedServiceManager serviceManager();
-	LoomGradleExtension extension();
+public record ConfigContextImpl(Project project, SharedServiceManager serviceManager, LoomGradleExtension extension) implements ConfigContext {
 }

@@ -27,19 +27,19 @@ package net.fabricmc.loom.configuration.decompile;
 import java.io.File;
 
 import org.gradle.api.Action;
-import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class SplitDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider.Split> {
-	public SplitDecompileConfiguration(Project project, MappedMinecraftProvider.Split minecraftProvider) {
-		super(project, minecraftProvider);
+	public SplitDecompileConfiguration(ConfigContext configContext, MappedMinecraftProvider.Split minecraftProvider) {
+		super(configContext, minecraftProvider);
 	}
 
 	@Override

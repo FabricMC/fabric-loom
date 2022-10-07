@@ -28,16 +28,15 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.gradle.api.Project;
-
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
 
 public class SingleJarDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider> {
-	public SingleJarDecompileConfiguration(Project project, MappedMinecraftProvider minecraftProvider) {
-		super(project, minecraftProvider);
+	public SingleJarDecompileConfiguration(ConfigContext configContext, MappedMinecraftProvider minecraftProvider) {
+		super(configContext, minecraftProvider);
 	}
 
 	@Override

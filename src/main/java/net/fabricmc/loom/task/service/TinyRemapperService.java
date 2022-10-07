@@ -66,7 +66,7 @@ public class TinyRemapperService implements SharedService {
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
 		final var joiner = new StringJoiner(":");
-		joiner.add(extension.getMappingsProvider().getBuildServiceName("remapJarService", from, to));
+		joiner.add(extension.getMappingConfiguration().getBuildServiceName("remapJarService", from, to));
 		joiner.add(remapJarTask.getName());
 
 		if (kotlinClasspathService != null) {

@@ -32,8 +32,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -54,6 +52,7 @@ import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarP
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -131,6 +130,8 @@ public final class CompileConfiguration {
 		});
 
 		afterEvaluationWithService(project, (serviceManager) -> {
+			final ConfigContext configContext = new ConfigContextImpl(project, serviceManager, extension);
+
 			MinecraftSourceSets.get(project).afterEvaluate(project);
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
@@ -141,7 +142,7 @@ public final class CompileConfiguration {
 			}
 
 			try {
-				setupMinecraft(project, serviceManager);
+				setupMinecraft(configContext);
 			} catch (Exception e) {
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
@@ -159,7 +160,7 @@ public final class CompileConfiguration {
 				setupMixinAp(project, mixin);
 			}
 
-			configureDecompileTasks(project);
+			configureDecompileTasks(configContext);
 		});
 
 		finalizedBy(project, "idea", "genIdeaWorkspace");
@@ -182,23 +183,24 @@ public final class CompileConfiguration {
 	}
 
 	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
-	private static synchronized void setupMinecraft(Project project, SharedServiceManager serviceManager) throws Exception {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private static synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
+		final Project project = configContext.project();
+		final LoomGradleExtension extension = configContext.extension();
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars -- TODO share across projects.
-		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(project);
+		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
 		final DependencyInfo mappingsDep = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
-		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(project, serviceManager, mappingsDep, minecraftProvider);
+		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(project, configContext.serviceManager(), mappingsDep, minecraftProvider);
 		extension.setMappingConfiguration(mappingConfiguration);
 		mappingConfiguration.applyToProject(project, mappingsDep);
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
-		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
+		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
 
 		registerGameProcessors(project);
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(project);
@@ -238,7 +240,9 @@ public final class CompileConfiguration {
 			}
 		}
 
-		extension.addMinecraftJarProcessor(ModJavadocProcessor.class, "fabric-loom:mod-javadoc");
+		if (extension.getEnableModProvidedJavadoc().get()) {
+			extension.addMinecraftJarProcessor(ModJavadocProcessor.class, "fabric-loom:mod-javadoc");
+		}
 	}
 
 	private static void setupMixinAp(Project project, MixinExtension mixin) {
@@ -269,11 +273,11 @@ public final class CompileConfiguration {
 		}
 	}
 
-	private static void configureDecompileTasks(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private static void configureDecompileTasks(ConfigContext configContext) {
+		final LoomGradleExtension extension = configContext.extension();
 
 		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
-				.apply(project, extension.getNamedMinecraftProvider()).afterEvaluation();
+				.apply(configContext, extension.getNamedMinecraftProvider()).afterEvaluation();
 	}
 
 	private static Path getLockFile(Project project) {

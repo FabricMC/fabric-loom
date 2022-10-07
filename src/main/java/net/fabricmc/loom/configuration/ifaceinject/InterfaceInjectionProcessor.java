@@ -329,7 +329,12 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 	private TinyRemapper createTinyRemapper() {
 		try {
-			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
+			// TODO service manager, via new processor api
+			if (true) {
+				throw new UnsupportedOperationException("ToDO");
+			}
+
+			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, null, "intermediary", "named");
 			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
 
 			for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {

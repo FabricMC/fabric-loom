@@ -50,7 +50,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	private final Path projectMappedDir;
 
 	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
-		super(parentMinecraftProvide.getProject(), parentMinecraftProvide.getMinecraftProvider());
+		super(parentMinecraftProvide.getConfigContext(), parentMinecraftProvide.getMinecraftProvider());
 		this.parentMinecraftProvider = parentMinecraftProvide;
 		this.jarProcessorManager = Objects.requireNonNull(jarProcessorManager);
 

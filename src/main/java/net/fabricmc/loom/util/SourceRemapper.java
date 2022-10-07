@@ -33,10 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-
-import net.fabricmc.loom.util.service.SharedServiceManager;
-
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
@@ -49,6 +45,8 @@ import org.slf4j.Logger;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 

@@ -22,15 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import org.gradle.api.Project;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public interface ConfigContext {
-	Project project();
-	SharedServiceManager serviceManager();
-	LoomGradleExtension extension();
+public final class TinyMappingsService implements SharedService {
+	private final MemoryMappingTree mappingTree;
+
+	public TinyMappingsService(Path tinyMappings) {
+		try {
+			this.mappingTree = new MemoryMappingTree();
+			MappingReader.read(tinyMappings, mappingTree);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read mappings", e);
+		}
+	}
+
+	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings) {
+		return serviceManager.getOrCreateService("TinyMappingsService:" + tinyMappings.toAbsolutePath(), () -> new TinyMappingsService(tinyMappings));
+	}
+
+	public MemoryMappingTree getMappingTree() {
+		return mappingTree;
+	}
 }

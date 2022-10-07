@@ -32,13 +32,11 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
-
-import net.fabricmc.loom.util.service.SharedServiceManager;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;

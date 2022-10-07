@@ -35,6 +35,7 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -45,13 +46,13 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvider> implements MappedMinecraftProvider.ProviderImpl {
 	protected final M minecraftProvider;
-	private final Project project;
+	protected final ConfigContext configContext;
 	protected final LoomGradleExtension extension;
 
-	public AbstractMappedMinecraftProvider(Project project, M minecraftProvider) {
-		this.project = project;
+	public AbstractMappedMinecraftProvider(ConfigContext configContext, M minecraftProvider) {
+		this.configContext = configContext;
 		this.minecraftProvider = minecraftProvider;
-		this.extension = LoomGradleExtension.get(project);
+		this.extension = configContext.extension();
 	}
 
 	public abstract MappingsNamespace getTargetNamespace();
@@ -130,15 +131,15 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 		Files.deleteIfExists(remappedJars.outputJar());
 
-		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingConfiguration, project, toM);
-		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(project, fromM, toM, true, (builder) -> {
+		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingConfiguration, getProject(), configContext.serviceManager(), toM);
+		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), configContext.serviceManager(), fromM, toM, true, (builder) -> {
 			builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));
 			configureRemapper(remappedJars, builder);
 		});
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(remappedJars.outputJar()).build()) {
 			outputConsumer.addNonClassFiles(remappedJars.inputJar());
-			remapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
+			remapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(getProject()));
 
 			for (Path path : remappedJars.remapClasspath()) {
 				remapper.readClassPath(path);
@@ -162,8 +163,12 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
+	public ConfigContext getConfigContext() {
+		return configContext;
+	}
+
 	public Project getProject() {
-		return project;
+		return getConfigContext().project();
 	}
 
 	public M getMinecraftProvider() {

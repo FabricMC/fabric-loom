@@ -37,12 +37,10 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.google.gson.JsonElement;
-import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
@@ -55,9 +53,6 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJavadocProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModJavadocProcessor.class);
-
-	@Inject
-	public abstract Project getProject();
 
 	private final String name;
 
@@ -73,12 +68,6 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 	@Override
 	public @Nullable ModJavadocProcessor.Spec buildSpec(SpecContext context) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-
-		if (!extension.getEnableModProvidedJavadoc().get()) {
-			return null;
-		}
-
 		List<ModJavadoc> javadocs = new ArrayList<>();
 
 		for (FabricModJson fabricModJson : context.allMods()) {

@@ -93,7 +93,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 			LoomGradleExtension loom = LoomGradleExtension.get(project);
 			String refmapName = Objects.requireNonNull(MixinExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
 			Map<String, String> args = new HashMap<>() {{
-					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.toFile().getCanonicalPath());
+					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingConfiguration().tinyMappings.toFile().getCanonicalPath());
 					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, getMixinMappingsForSourceSet(project, sourceSet).getCanonicalPath());
 					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:" + loom.getMixin().getRefmapTargetNamespace().get());
@@ -162,6 +162,6 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	public static File getMixinMappingsForSourceSet(Project project, SourceSet sourceSet) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		return new File(extension.getFiles().getProjectBuildCache(), "mixin-map-" + extension.getMappingsProvider().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
+		return new File(extension.getFiles().getProjectBuildCache(), "mixin-map-" + extension.getMappingConfiguration().mappingsIdentifier() + "." + sourceSet.getName() + ".tiny");
 	}
 }

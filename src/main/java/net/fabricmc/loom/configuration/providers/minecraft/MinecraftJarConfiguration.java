@@ -28,8 +28,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.gradle.api.Project;
-
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.decompile.DecompileConfiguration;
 import net.fabricmc.loom.configuration.decompile.SingleJarDecompileConfiguration;
 import net.fabricmc.loom.configuration.decompile.SplitDecompileConfiguration;
@@ -73,39 +72,39 @@ public enum MinecraftJarConfiguration {
 		List.of("client", "server")
 	);
 
-	private final Function<Project, MinecraftProvider> minecraftProviderFunction;
-	private final BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>> intermediaryMinecraftProviderBiFunction;
-	private final BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>> namedMinecraftProviderBiFunction;
+	private final Function<ConfigContext, MinecraftProvider> minecraftProviderFunction;
+	private final BiFunction<ConfigContext, MinecraftProvider, IntermediaryMinecraftProvider<?>> intermediaryMinecraftProviderBiFunction;
+	private final BiFunction<ConfigContext, MinecraftProvider, NamedMinecraftProvider<?>> namedMinecraftProviderBiFunction;
 	private final BiFunction<NamedMinecraftProvider<?>, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>> processedNamedMinecraftProviderBiFunction;
-	private final BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>> decompileConfigurationBiFunction;
+	private final BiFunction<ConfigContext, MappedMinecraftProvider, DecompileConfiguration<?>> decompileConfigurationBiFunction;
 	private final List<String> supportedEnvironments;
 
 	@SuppressWarnings("unchecked") // Just a bit of a generic mess :)
 	<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>, Q extends MappedMinecraftProvider> MinecraftJarConfiguration(
-			Function<Project, M> minecraftProviderFunction,
-			BiFunction<Project, M, IntermediaryMinecraftProvider<M>> intermediaryMinecraftProviderBiFunction,
-			BiFunction<Project, M, P> namedMinecraftProviderBiFunction,
+			Function<ConfigContext, M> minecraftProviderFunction,
+			BiFunction<ConfigContext, M, IntermediaryMinecraftProvider<M>> intermediaryMinecraftProviderBiFunction,
+			BiFunction<ConfigContext, M, P> namedMinecraftProviderBiFunction,
 			BiFunction<P, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<M, P>> processedNamedMinecraftProviderBiFunction,
-			BiFunction<Project, Q, DecompileConfiguration<?>> decompileConfigurationBiFunction,
+			BiFunction<ConfigContext, Q, DecompileConfiguration<?>> decompileConfigurationBiFunction,
 			List<String> supportedEnvironments
 	) {
-		this.minecraftProviderFunction = (Function<Project, MinecraftProvider>) minecraftProviderFunction;
-		this.intermediaryMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>>) (Object) intermediaryMinecraftProviderBiFunction;
-		this.namedMinecraftProviderBiFunction = (BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>>) namedMinecraftProviderBiFunction;
+		this.minecraftProviderFunction = (Function<ConfigContext, MinecraftProvider>) minecraftProviderFunction;
+		this.intermediaryMinecraftProviderBiFunction = (BiFunction<ConfigContext, MinecraftProvider, IntermediaryMinecraftProvider<?>>) (Object) intermediaryMinecraftProviderBiFunction;
+		this.namedMinecraftProviderBiFunction = (BiFunction<ConfigContext, MinecraftProvider, NamedMinecraftProvider<?>>) namedMinecraftProviderBiFunction;
 		this.processedNamedMinecraftProviderBiFunction = (BiFunction<NamedMinecraftProvider<?>, MinecraftJarProcessorManager, ProcessedNamedMinecraftProvider<?, ?>>) (Object) processedNamedMinecraftProviderBiFunction;
-		this.decompileConfigurationBiFunction = (BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>>) decompileConfigurationBiFunction;
+		this.decompileConfigurationBiFunction = (BiFunction<ConfigContext, MappedMinecraftProvider, DecompileConfiguration<?>>) decompileConfigurationBiFunction;
 		this.supportedEnvironments = supportedEnvironments;
 	}
 
-	public Function<Project, MinecraftProvider> getMinecraftProviderFunction() {
+	public Function<ConfigContext, MinecraftProvider> getMinecraftProviderFunction() {
 		return minecraftProviderFunction;
 	}
 
-	public BiFunction<Project, MinecraftProvider, IntermediaryMinecraftProvider<?>> getIntermediaryMinecraftProviderBiFunction() {
+	public BiFunction<ConfigContext, MinecraftProvider, IntermediaryMinecraftProvider<?>> getIntermediaryMinecraftProviderBiFunction() {
 		return intermediaryMinecraftProviderBiFunction;
 	}
 
-	public BiFunction<Project, MinecraftProvider, NamedMinecraftProvider<?>> getNamedMinecraftProviderBiFunction() {
+	public BiFunction<ConfigContext, MinecraftProvider, NamedMinecraftProvider<?>> getNamedMinecraftProviderBiFunction() {
 		return namedMinecraftProviderBiFunction;
 	}
 
@@ -113,7 +112,7 @@ public enum MinecraftJarConfiguration {
 		return processedNamedMinecraftProviderBiFunction;
 	}
 
-	public BiFunction<Project, MappedMinecraftProvider, DecompileConfiguration<?>> getDecompileConfigurationBiFunction() {
+	public BiFunction<ConfigContext, MappedMinecraftProvider, DecompileConfiguration<?>> getDecompileConfigurationBiFunction() {
 		return decompileConfigurationBiFunction;
 	}
 

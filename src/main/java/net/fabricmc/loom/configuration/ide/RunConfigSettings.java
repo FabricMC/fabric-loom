@@ -293,6 +293,7 @@ public final class RunConfigSettings implements Named {
 	public void inherit(RunConfigSettings parent) {
 		vmArgs.addAll(0, parent.vmArgs);
 		programArgs.addAll(0, parent.programArgs);
+		environmentVariables.putAll(parent.environmentVariables);
 
 		environment = parent.environment;
 		name = parent.name;

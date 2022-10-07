@@ -200,8 +200,11 @@ test {
 		systemProperty "fabric.loom.test.homeDir", System.getProperty("fabric.loom.test.homeDir")
 	}
 
-	retry {
-		maxRetries = 3
+
+	if (ENV.CI) {
+		retry {
+			maxRetries = 3
+		}
 	}
 }
 

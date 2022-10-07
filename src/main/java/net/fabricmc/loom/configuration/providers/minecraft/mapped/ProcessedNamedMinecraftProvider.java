@@ -59,7 +59,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		this.projectMappedDir = extension.getFiles().getRootProjectPersistentCache().toPath()
 				.resolve(getMinecraftProvider().minecraftVersion())
-				.resolve(extension.getMappingsProvider().mappingsIdentifier());
+				.resolve(extension.getMappingConfiguration().mappingsIdentifier());
 	}
 
 	@Override

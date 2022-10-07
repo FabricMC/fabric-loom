@@ -32,6 +32,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -52,7 +54,6 @@ import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarP
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -191,9 +192,9 @@ public final class CompileConfiguration {
 		minecraftProvider.provide();
 
 		final DependencyInfo mappingsDep = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
-		final MappingsProviderImpl mappingsProvider = MappingsProviderImpl.getInstance(serviceManager, project, mappingsDep, minecraftProvider);
-		extension.setMappingsProvider(mappingsProvider);
-		mappingsProvider.applyToProject(project, mappingsDep);
+		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(project, serviceManager, mappingsDep, minecraftProvider);
+		extension.setMappingConfiguration(mappingConfiguration);
+		mappingConfiguration.applyToProject(project, mappingsDep);
 
 		// Provide the remapped mc jars
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);

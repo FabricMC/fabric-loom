@@ -275,7 +275,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public File getMappingsFile() {
-		return LoomGradleExtension.get(getProject()).getMappingsProvider().tinyMappings.toFile();
+		return LoomGradleExtension.get(getProject()).getMappingConfiguration().tinyMappings.toFile();
 	}
 
 	@Override

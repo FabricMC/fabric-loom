@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -49,10 +49,10 @@ public final class MappingsService implements SharedService {
 	}
 
 	public static MappingsService createDefault(Project project, SharedServiceManager serviceManager, String from, String to) {
-		final MappingsProviderImpl mappingsProvider = LoomGradleExtension.get(project).getMappingsProvider();
+		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
 
-		final String name = mappingsProvider.getBuildServiceName("mappingsProvider", from, to);
-		return MappingsService.create(serviceManager, name, mappingsProvider.tinyMappings, from, to, false);
+		final String name = mappingConfiguration.getBuildServiceName("mappingsProvider", from, to);
+		return MappingsService.create(serviceManager, name, mappingConfiguration.tinyMappings, from, to, false);
 	}
 
 	private final Options options;

@@ -33,6 +33,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+
+import net.fabricmc.loom.util.service.SharedServiceManager;
+
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
@@ -45,19 +49,20 @@ import org.slf4j.Logger;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class SourceRemapper {
 	private final Project project;
+	private final SharedServiceManager serviceManager;
 	private final boolean toNamed;
 	private final List<Consumer<ProgressLogger>> remapTasks = new ArrayList<>();
 
 	private Mercury mercury;
 
-	public SourceRemapper(Project project, boolean toNamed) {
+	public SourceRemapper(Project project, SharedServiceManager serviceManager, boolean toNamed) {
 		this.project = project;
+		this.serviceManager = serviceManager;
 		this.toNamed = toNamed;
 	}
 
@@ -158,11 +163,11 @@ public class SourceRemapper {
 		}
 
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
 		MappingSet mappings = extension.getOrCreateSrcMappingCache(toNamed ? 1 : 0, () -> {
 			try {
-				MemoryMappingTree m = mappingsProvider.getMappings();
+				MemoryMappingTree m = mappingConfiguration.getMappingsService(serviceManager).getMappingTree();
 				project.getLogger().info(":loading " + (toNamed ? "intermediary -> named" : "named -> intermediary") + " source mappings");
 				return new TinyMappingsReader(m, toNamed ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.NAMED.toString(), toNamed ? MappingsNamespace.NAMED.toString() : MappingsNamespace.INTERMEDIARY.toString()).read();
 			} catch (Exception e) {

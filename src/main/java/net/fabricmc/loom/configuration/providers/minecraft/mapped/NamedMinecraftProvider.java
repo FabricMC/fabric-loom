@@ -45,7 +45,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 	@Override
 	protected Path getDirectory() {
-		return extension.getMappingsProvider().mappingsWorkingDir();
+		return extension.getMappingConfiguration().mappingsWorkingDir();
 	}
 
 	@Override

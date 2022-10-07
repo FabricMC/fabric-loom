@@ -319,7 +319,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private Path getMappings() {
-		Path inputMappings = getExtension().getMappingsProvider().tinyMappings;
+		Path inputMappings = getExtension().getMappingConfiguration().tinyMappings;
 
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 

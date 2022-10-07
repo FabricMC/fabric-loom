@@ -32,6 +32,9 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
+
+import net.fabricmc.loom.util.service.SharedServiceManager;
+
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -60,13 +63,13 @@ public final class TinyRemapperHelper {
 	private TinyRemapperHelper() {
 	}
 
-	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM) throws IOException {
-		return getTinyRemapper(project, fromM, toM, false, (builder) -> { });
+	public static TinyRemapper getTinyRemapper(Project project, SharedServiceManager serviceManager, String fromM, String toM) throws IOException {
+		return getTinyRemapper(project, serviceManager, fromM, toM, false, (builder) -> { });
 	}
 
-	public static TinyRemapper getTinyRemapper(Project project, String fromM, String toM, boolean fixRecords, Consumer<TinyRemapper.Builder> builderConsumer) throws IOException {
+	public static TinyRemapper getTinyRemapper(Project project, SharedServiceManager serviceManager, String fromM, String toM, boolean fixRecords, Consumer<TinyRemapper.Builder> builderConsumer) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		MemoryMappingTree mappingTree = extension.getMappingsProvider().getMappings();
+		MemoryMappingTree mappingTree = extension.getMappingConfiguration().getMappingsService(serviceManager).getMappingTree();
 
 		if (fixRecords && !mappingTree.getSrcNamespace().equals(fromM)) {
 			throw new IllegalStateException("Mappings src namespace must match remap src namespace");

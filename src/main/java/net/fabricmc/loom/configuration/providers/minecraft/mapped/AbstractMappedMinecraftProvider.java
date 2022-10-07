@@ -35,7 +35,7 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVisitor;
@@ -102,7 +102,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	protected String getDependencyNotation(String name) {
-		return "net.minecraft:%s:%s/%s".formatted(getName(name), extension.getMinecraftProvider().minecraftVersion(), extension.getMappingsProvider().mappingsIdentifier());
+		return "net.minecraft:%s:%s/%s".formatted(getName(name), extension.getMinecraftProvider().minecraftVersion(), extension.getMappingConfiguration().mappingsIdentifier());
 	}
 
 	private boolean areOutputsValid(List<RemappedJars> remappedJars) {
@@ -124,13 +124,13 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	private void remapJar(RemappedJars remappedJars) throws IOException {
-		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 		final String fromM = remappedJars.sourceNamespace().toString();
 		final String toM = getTargetNamespace().toString();
 
 		Files.deleteIfExists(remappedJars.outputJar());
 
-		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingsProvider, project, toM);
+		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingConfiguration, project, toM);
 		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(project, fromM, toM, true, (builder) -> {
 			builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));
 			configureRemapper(remappedJars, builder);
@@ -147,7 +147,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 			remapper.readInputs(remappedJars.inputJar());
 			remapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap JAR " + remappedJars.inputJar() + " with mappings from " + mappingsProvider.tinyMappings, e);
+			throw new RuntimeException("Failed to remap JAR " + remappedJars.inputJar() + " with mappings from " + mappingConfiguration.tinyMappings, e);
 		} finally {
 			remapper.finish();
 		}

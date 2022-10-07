@@ -63,7 +63,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 				.defaultCache()
 				.downloadPath(intermediaryJarPath);
 
-		MappingsProviderImpl.extractMappings(intermediaryJarPath, tinyMappings);
+		MappingConfiguration.extractMappings(intermediaryJarPath, tinyMappings);
 	}
 
 	@Override

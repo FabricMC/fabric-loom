@@ -50,9 +50,9 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		TaskProvider<UnpickJarTask> unpickCommonJar = null;
 		TaskProvider<UnpickJarTask> unpickClientOnlyJar = null;
 
-		if (mappingsProvider.hasUnpickDefinitions()) {
-			commonJarToDecompile = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
-			clientOnlyJarToDecompile = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
+		if (mappingConfiguration.hasUnpickDefinitions()) {
+			commonJarToDecompile = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
+			clientOnlyJarToDecompile = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
 
 			unpickCommonJar = createUnpickJarTask("unpickCommonJar", minecraftProvider.getCommonJar().toFile(), commonJarToDecompile);
 			unpickClientOnlyJar = createUnpickJarTask("unpickClientOnlyJar", minecraftProvider.getClientOnlyJar().toFile(), clientOnlyJarToDecompile);

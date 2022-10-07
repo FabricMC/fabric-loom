@@ -49,8 +49,8 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 
 		File mappedJar = namedJar;
 
-		if (mappingsProvider.hasUnpickDefinitions()) {
-			File outputJar = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
+		if (mappingConfiguration.hasUnpickDefinitions()) {
+			File outputJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
 			createUnpickJarTask("unpickJar", namedJar, outputJar);
 
 			mappedJar = outputJar;
@@ -70,7 +70,7 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 
-				if (mappingsProvider.hasUnpickDefinitions()) {
+				if (mappingConfiguration.hasUnpickDefinitions()) {
 					task.dependsOn(project.getTasks().named("unpickJar"));
 				}
 			});

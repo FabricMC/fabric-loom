@@ -76,8 +76,8 @@ public class LoomDependencyManager {
 			}
 		}
 
-		SourceRemapper sourceRemapper = new SourceRemapper(project, true);
-		String mappingsIdentifier = extension.getMappingsProvider().mappingsIdentifier();
+		SourceRemapper sourceRemapper = new SourceRemapper(project, serviceManager, true);
+		String mappingsIdentifier = extension.getMappingConfiguration().mappingsIdentifier();
 
 		ModConfigurationRemapper.supplyModConfigurations(project, serviceManager, mappingsIdentifier, extension, sourceRemapper);
 

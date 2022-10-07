@@ -26,9 +26,9 @@ package net.fabricmc.loom.util.service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SharedServiceManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BuildSharedServiceManager.class);
-	private final Map<String, SharedService> sharedServiceMap = new ConcurrentHashMap<>();
+	private final Map<String, SharedService> sharedServiceMap = new HashMap<>();
 
 	private boolean shutdown = false;
 
@@ -58,6 +58,7 @@ public abstract class SharedServiceManager {
 			S sharedService = (S) sharedServiceMap.get(id);
 
 			if (sharedService == null) {
+				LOGGER.debug("Creating service for {}", id);
 				sharedService = function.get();
 				sharedServiceMap.put(id, sharedService);
 			}
@@ -85,14 +86,14 @@ public abstract class SharedServiceManager {
 
 		sharedServiceMap.clear();
 
+		// This is required to ensure that mercury releases all of the file handles.
+		System.gc();
+
 		if (!exceptionList.isEmpty()) {
 			// Done to try and close all the services.
 			RuntimeException exception = new RuntimeException("Failed to close all shared services");
 			exceptionList.forEach(exception::addSuppressed);
 			throw exception;
 		}
-
-		// This is required to ensure that mercury releases all of the file handles.
-		System.gc();
 	}
 }

@@ -258,7 +258,13 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 		 * Reads the injected interfaces contained in a mod jar, or returns empty if there is none.
 		 */
 		public static List<InjectedInterface> fromModJar(Path modJarPath) {
-			return fromFabricModJson(FabricModJsonFactory.createFromZip(modJarPath));
+			FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(modJarPath);
+
+			if (fabricModJson == null) {
+				return Collections.emptyList();
+			}
+
+			return fromFabricModJson(fabricModJson);
 		}
 
 		public static List<InjectedInterface> fromFabricModJson(FabricModJson fabricModJson) {

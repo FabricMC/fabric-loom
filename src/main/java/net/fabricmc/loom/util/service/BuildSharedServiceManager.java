@@ -57,6 +57,10 @@ public abstract class BuildSharedServiceManager implements BuildService<BuildSer
 		return provider;
 	}
 
+	public BuildSharedServiceManager() {
+		LOGGER.debug("New BuildSharedServiceManager instance");
+	}
+
 	public SharedServiceManager get() {
 		LOGGER.debug("Shared build service get");
 		return Objects.requireNonNull(sharedServiceManager);

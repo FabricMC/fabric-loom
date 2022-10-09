@@ -84,7 +84,7 @@ public class TinyRemapperService implements SharedService {
 			mappings.add(MappingsService.createDefault(project, serviceManager, from, to).getMappingsProvider());
 
 			if (legacyMixin) {
-				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), from, to));
+				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), extension.getMappingConfiguration().mappingsIdentifier, from, to));
 			}
 
 			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService);
@@ -96,8 +96,15 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	// Add all of the mixin mappings from all loom projects.
-	private static IMappingProvider gradleMixinMappingProvider(SharedServiceManager serviceManager, Gradle gradle, String from, String to) {
+	private static IMappingProvider gradleMixinMappingProvider(SharedServiceManager serviceManager, Gradle gradle, String mappingId, String from, String to) {
 		return out -> GradleUtils.allLoomProjects(gradle, project -> {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+			if (!mappingId.equals(extension.getMappingConfiguration().mappingsIdentifier)) {
+				// Only find mixin mappings that are from other projects with the same mapping id.
+				return;
+			}
+
 			for (SourceSet sourceSet : SourceSetHelper.getSourceSets(project)) {
 				final File mixinMappings = AnnotationProcessorInvoker.getMixinMappingsForSourceSet(project, sourceSet);
 

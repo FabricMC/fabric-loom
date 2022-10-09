@@ -43,6 +43,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.build.mixin.GroovyApInvoker;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
@@ -202,7 +203,7 @@ public final class CompileConfiguration {
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
 
-		registerGameProcessors(project);
+		registerGameProcessors(configContext);
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(project);
 
 		if (minecraftJarProcessorManager != null) {
@@ -217,31 +218,29 @@ public final class CompileConfiguration {
 		namedMinecraftProvider.provide(true);
 	}
 
-	private static void registerGameProcessors(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private static void registerGameProcessors(ConfigContext configContext) {
+		final LoomGradleExtension extension = configContext.extension();
 
 		if (extension.getAccessWidenerPath().isPresent()) {
-			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(project));
+			extension.getGameJarProcessors().add(new AccessWidenerJarProcessor(configContext));
 		}
 
 		if (extension.getEnableTransitiveAccessWideners().get()) {
-			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(project);
+			TransitiveAccessWidenerJarProcessor transitiveAccessWidenerJarProcessor = new TransitiveAccessWidenerJarProcessor(configContext);
 
 			if (!transitiveAccessWidenerJarProcessor.isEmpty()) {
 				extension.getGameJarProcessors().add(transitiveAccessWidenerJarProcessor);
 			}
 		}
 
-		if (extension.getInterfaceInjection().isEnabled()) {
-			InterfaceInjectionProcessor jarProcessor = new InterfaceInjectionProcessor(project);
-
-			if (!jarProcessor.isEmpty()) {
-				extension.getGameJarProcessors().add(jarProcessor);
-			}
-		}
-
 		if (extension.getEnableModProvidedJavadoc().get()) {
 			extension.addMinecraftJarProcessor(ModJavadocProcessor.class, "fabric-loom:mod-javadoc");
+		}
+
+		final InterfaceInjectionExtensionAPI interfaceInjection = extension.getInterfaceInjection();
+
+		if (interfaceInjection.isEnabled()) {
+			extension.addMinecraftJarProcessor(InterfaceInjectionProcessor.class, "fabric-loom:interface-inject", interfaceInjection.getEnableDependencyInterfaceInjection().get());
 		}
 	}
 

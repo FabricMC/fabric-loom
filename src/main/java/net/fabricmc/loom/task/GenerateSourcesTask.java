@@ -66,7 +66,6 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
-import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
@@ -333,10 +332,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		if (getExtension().getEnableTransitiveAccessWideners().get()) {
 			mappingsProcessors.add(new TransitiveAccessWidenerMappingsProcessor(getProject()));
-		}
-
-		if (getExtension().getInterfaceInjection().isEnabled()) {
-			mappingsProcessors.add(new InterfaceInjectionProcessor(getProject()));
 		}
 
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());

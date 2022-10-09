@@ -136,6 +136,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.splitModDependencies.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
+		this.interfaceInjectionExtension.getIsEnabled().convention(true);
 
 		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();

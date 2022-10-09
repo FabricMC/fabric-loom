@@ -24,21 +24,22 @@
 
 package net.fabricmc.loom.configuration.processors;
 
-import org.gradle.api.Project;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.ProcessorContext;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record ProcessorContextImpl(MinecraftJarConfiguration jarConfiguration, MinecraftJar minecraftJar) implements ProcessorContext {
-	public static ProcessorContext create(Project project, MinecraftJar minecraftJar) {
-		return new ProcessorContextImpl(LoomGradleExtension.get(project).getMinecraftJarConfiguration().get(), minecraftJar);
-	}
-
+public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar minecraftJar) implements ProcessorContext {
 	@Override
 	public MinecraftJarConfiguration getJarConfiguration() {
-		return jarConfiguration;
+		return configContext.extension().getMinecraftJarConfiguration().get();
 	}
 
 	@Override
@@ -54,5 +55,21 @@ public record ProcessorContextImpl(MinecraftJarConfiguration jarConfiguration, M
 	@Override
 	public boolean includesServer() {
 		return minecraftJar.includesServer();
+	}
+
+	@Override
+	public TinyRemapper createRemapper(MappingsNamespace from, MappingsNamespace to) {
+		try {
+			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext().project(), configContext().serviceManager(), from.toString(), to.toString());
+			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(configContext.project()));
+
+			for (Path minecraftJar : configContext.extension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+				tinyRemapper.readClassPath(minecraftJar);
+			}
+
+			return tinyRemapper;
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create tiny remapper", e);
+		}
 	}
 }

@@ -27,11 +27,15 @@ package net.fabricmc.loom.configuration.processors;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
@@ -47,9 +51,9 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
  * @param modDependencies External mods that are depended on
  * @param localMods The main mod being built. In the future this may also include other mods.
  */
-public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods) implements SpecContext {
+public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods, List<FabricModJson> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
-		return new SpecContextImpl(getDependentMods(project), getMods(project));
+		return new SpecContextImpl(getDependentMods(project), getMods(project), getCompileRuntimeMods(project));
 	}
 
 	private static List<FabricModJson> getDependentMods(Project project) {
@@ -95,8 +99,33 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 		return Collections.emptyList();
 	}
 
+	private static List<FabricModJson> getCompileRuntimeMods(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final Function<RemapConfigurationSettings, Stream<Path>> resolve = settings ->
+				settings.getSourceConfiguration().get().resolve().stream()
+						.map(File::toPath);
+
+		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
+				.flatMap(resolve)
+				.toList();
+
+		return extension.getCompileRemapConfigurations().stream()
+				.flatMap(resolve)
+				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
+				.map(FabricModJsonFactory::createFromZipOptional)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.sorted(Comparator.comparing(FabricModJson::getId))
+				.toList();
+	}
+
 	// Sort to ensure stable caching
 	private static List<FabricModJson> sorted(List<FabricModJson> mods) {
 		return mods.stream().sorted(Comparator.comparing(FabricModJson::getId)).toList();
+	}
+
+	@Override
+	public List<FabricModJson> modDependenciesCompileRuntime() {
+		return compileRuntimeMods;
 	}
 }

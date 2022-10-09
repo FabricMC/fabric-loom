@@ -34,6 +34,9 @@ public interface SpecContext {
 
 	List<FabricModJson> localMods();
 
+	// Returns mods that are both on the compile and runtime classpath
+	List<FabricModJson> modDependenciesCompileRuntime();
+
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();
 	}

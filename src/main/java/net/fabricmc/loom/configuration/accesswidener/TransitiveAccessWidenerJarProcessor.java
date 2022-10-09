@@ -48,6 +48,7 @@ import net.fabricmc.accesswidener.TransitiveOnlyFilter;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -56,14 +57,16 @@ import net.fabricmc.tinyremapper.TinyRemapper;
  * Applies transitive access wideners that are inherited from mod and api dependencies.
  */
 public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
+	private final ConfigContext configContext;
 	private final Project project;
 	private final LoomGradleExtension extension;
 
 	private final List<AccessWidenerFile> transitiveAccessWideners;
 
-	public TransitiveAccessWidenerJarProcessor(Project project) {
-		this.project = project;
-		this.extension = LoomGradleExtension.get(project);
+	public TransitiveAccessWidenerJarProcessor(ConfigContext configContext) {
+		this.configContext = configContext;
+		this.project = configContext.project();
+		this.extension = configContext.extension();
 
 		transitiveAccessWideners = getTransitiveAccessWideners();
 
@@ -166,12 +169,7 @@ public class TransitiveAccessWidenerJarProcessor implements JarProcessor {
 
 	private TinyRemapper createTinyRemapper() {
 		try {
-			// TODO service manager, via new processor api
-			if (true) {
-				throw new UnsupportedOperationException("ToDO");
-			}
-
-			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, null, "intermediary", "named");
+			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, configContext.serviceManager(), "intermediary", "named");
 
 			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
 

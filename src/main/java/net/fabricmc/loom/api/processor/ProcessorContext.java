@@ -24,7 +24,9 @@
 
 package net.fabricmc.loom.api.processor;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public interface ProcessorContext {
 	MinecraftJarConfiguration getJarConfiguration();
@@ -34,4 +36,6 @@ public interface ProcessorContext {
 	boolean includesClient();
 
 	boolean includesServer();
+
+	TinyRemapper createRemapper(MappingsNamespace from, MappingsNamespace to);
 }

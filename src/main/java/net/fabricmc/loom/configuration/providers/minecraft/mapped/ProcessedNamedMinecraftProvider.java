@@ -92,7 +92,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 			Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
 
-			jarProcessorManager.processJar(outputJar, ProcessorContextImpl.create(getProject(), minecraftJar));
+			jarProcessorManager.processJar(outputJar, new ProcessorContextImpl(configContext, minecraftJar));
 		}
 	}
 

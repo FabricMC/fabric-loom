@@ -33,6 +33,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.tasks.SourceSet;
@@ -89,6 +90,10 @@ public final class FabricModJsonFactory {
 		}
 
 		return create(jsonObject, new FabricModJsonSource.ZipSource(zipPath));
+	}
+
+	public static Optional<FabricModJson> createFromZipOptional(Path zipPath) {
+		return Optional.ofNullable(createFromZipNullable(zipPath));
 	}
 
 	public static FabricModJson createFromDirectory(Path directory) throws IOException {

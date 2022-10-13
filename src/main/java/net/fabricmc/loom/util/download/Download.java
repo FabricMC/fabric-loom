@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.util.download;
 
+import static net.fabricmc.loom.util.SymlinkWalker.getRealPath;
+import static net.fabricmc.loom.util.SymlinkWalker.isPathSymbolic;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -160,7 +163,12 @@ public class Download {
 		}
 
 		try {
-			Files.createDirectories(output.getParent());
+			if (isPathSymbolic(output.getParent())) {
+				Files.createDirectories(getRealPath(output.getParent()));
+			} else {
+				Files.createDirectories(output.getParent());
+			}
+
 			Files.deleteIfExists(output);
 		} catch (IOException e) {
 			throw error(e, "Failed to prepare path for download");

@@ -25,14 +25,14 @@
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 
-import net.fabricmc.loom.LoomGradleExtension;
+import org.gradle.api.Project;
+
+import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
@@ -46,20 +46,11 @@ import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvide
 public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvider, P extends NamedMinecraftProvider<M>> extends NamedMinecraftProvider<M> {
 	private final P parentMinecraftProvider;
 	private final MinecraftJarProcessorManager jarProcessorManager;
-	private final String projectMappedName;
-	private final Path projectMappedDir;
 
 	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
 		super(parentMinecraftProvide.getConfigContext(), parentMinecraftProvide.getMinecraftProvider());
 		this.parentMinecraftProvider = parentMinecraftProvide;
 		this.jarProcessorManager = Objects.requireNonNull(jarProcessorManager);
-
-		this.projectMappedName = "minecraft-project-%s-".formatted(getProject().getPath().replace(':', '@'));
-
-		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		this.projectMappedDir = extension.getFiles().getRootProjectPersistentCache().toPath()
-				.resolve(getMinecraftProvider().minecraftVersion())
-				.resolve(extension.getMappingConfiguration().mappingsIdentifier());
 	}
 
 	@Override
@@ -78,21 +69,20 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
+	@Override
+	public MavenScope getMavenScope() {
+		return MavenScope.LOCAL;
+	}
+
 	private void processJars() throws IOException {
-		try {
-			Files.createDirectories(projectMappedDir);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to create project mapped dir", e);
-		}
-
 		for (MinecraftJar minecraftJar : parentMinecraftProvider.getMinecraftJars()) {
-			Path inputJar = minecraftJar.getPath();
-			final Path outputJar = getProcessedPath(inputJar);
-			deleteSimilarJars(outputJar);
+			final MinecraftJar outputJar = getProcessedPath(minecraftJar);
+			deleteSimilarJars(outputJar.getPath());
 
-			Files.copy(inputJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
+			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());
+			final Path outputPath = mavenHelper.copyToMaven(minecraftJar.getPath(), null);
 
-			jarProcessorManager.processJar(outputJar, new ProcessorContextImpl(configContext, minecraftJar));
+			jarProcessorManager.processJar(outputPath, new ProcessorContextImpl(configContext, minecraftJar));
 		}
 	}
 
@@ -111,8 +101,13 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	private void deleteSimilarJars(Path jar) throws IOException {
 		Files.deleteIfExists(jar);
+		final Path parent = jar.getParent();
 
-		for (Path path : Files.list(jar.getParent()).filter(Files::isRegularFile)
+		if (Files.notExists(parent)) {
+			return;
+		}
+
+		for (Path path : Files.list(parent).filter(Files::isRegularFile)
 				.filter(path -> path.getFileName().startsWith(jar.getFileName().toString().replace(".jar", ""))).toList()) {
 			Files.deleteIfExists(path);
 		}
@@ -120,7 +115,14 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	protected String getName(String name) {
-		return "%s%s-%s".formatted(projectMappedName, name, getTargetNamespace().toString());
+		final Project project = getProject();
+
+		if (project.getRootProject() == project) {
+			return "minecraft-%s-project-root".formatted(name);
+		}
+
+		final String projectPath = project.getPath().replace(':', '@');
+		return "minecraft-%s-project-%s".formatted(name, projectPath);
 	}
 
 	@Override
@@ -135,8 +137,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	@Override
-	public List<Path> getMinecraftJarPaths() {
-		return getParentMinecraftProvider().getMinecraftJarPaths().stream()
+	public List<MinecraftJar> getMinecraftJars() {
+		return getParentMinecraftProvider().getMinecraftJars().stream()
 				.map(this::getProcessedPath)
 				.toList();
 	}
@@ -145,8 +147,9 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		return parentMinecraftProvider;
 	}
 
-	public Path getProcessedPath(Path input) {
-		return projectMappedDir.resolve(input.getFileName().toString().replace("minecraft-", projectMappedName));
+	public MinecraftJar getProcessedPath(MinecraftJar minecraftJar) {
+		final Path path = getMavenHelper(minecraftJar.getName()).getOutputFile(null);
+		return minecraftJar.forPath(path);
 	}
 
 	public static final class MergedImpl extends ProcessedNamedMinecraftProvider<MergedMinecraftProvider, NamedMinecraftProvider.MergedImpl> implements Merged {
@@ -155,7 +158,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		@Override
-		public Path getMergedJar() {
+		public MinecraftJar getMergedJar() {
 			return getProcessedPath(getParentMinecraftProvider().getMergedJar());
 		}
 	}
@@ -166,12 +169,12 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		@Override
-		public Path getCommonJar() {
+		public MinecraftJar getCommonJar() {
 			return getProcessedPath(getParentMinecraftProvider().getCommonJar());
 		}
 
 		@Override
-		public Path getClientOnlyJar() {
+		public MinecraftJar getClientOnlyJar() {
 			return getProcessedPath(getParentMinecraftProvider().getClientOnlyJar());
 		}
 	}
@@ -193,7 +196,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		@Override
-		public Path getEnvOnlyJar() {
+		public MinecraftJar getEnvOnlyJar() {
 			return getProcessedPath(getParentMinecraftProvider().getEnvOnlyJar());
 		}
 

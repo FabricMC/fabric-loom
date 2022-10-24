@@ -44,13 +44,13 @@ public interface MappedMinecraftProvider {
 	interface Merged extends ProviderImpl {
 		String MERGED = "merged";
 
-		default Path getMergedJar() {
-			return getJar(MERGED);
+		default MinecraftJar getMergedJar() {
+			return new MinecraftJar.Merged(getJar(MERGED));
 		}
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(new MinecraftJar.Merged(getMergedJar()));
+			return List.of(getMergedJar());
 		}
 	}
 
@@ -58,17 +58,17 @@ public interface MappedMinecraftProvider {
 		String COMMON = "common";
 		String CLIENT_ONLY = "clientOnly";
 
-		default Path getCommonJar() {
-			return getJar(COMMON);
+		default MinecraftJar getCommonJar() {
+			return new MinecraftJar.Common(getJar(COMMON));
 		}
 
-		default Path getClientOnlyJar() {
-			return getJar(CLIENT_ONLY);
+		default MinecraftJar getClientOnlyJar() {
+			return new MinecraftJar.ClientOnly(getJar(CLIENT_ONLY));
 		}
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(new MinecraftJar.Common(getCommonJar()), new MinecraftJar.ClientOnly(getClientOnlyJar()));
+			return List.of(getCommonJar(), getClientOnlyJar());
 		}
 	}
 
@@ -79,13 +79,13 @@ public interface MappedMinecraftProvider {
 			return "%sOnly".formatted(env());
 		}
 
-		default Path getEnvOnlyJar() {
-			return getJar(envName());
+		default MinecraftJar getEnvOnlyJar() {
+			return env().getJar().apply(getJar(envName()));
 		}
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(env().getJar().apply(getEnvOnlyJar()));
+			return List.of(getEnvOnlyJar());
 		}
 	}
 }

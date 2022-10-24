@@ -152,6 +152,10 @@ public final class MinecraftJarProcessorManager {
 		}
 
 		private boolean processMappings(MemoryMappingTree mappings, MappingProcessorContext context) {
+			if (mappingsProcessor() == null) {
+				return false;
+			}
+
 			return mappingsProcessor().transform(mappings, spec, context);
 		}
 

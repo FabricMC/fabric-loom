@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -43,13 +42,13 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	@Override
-	protected Path getDirectory() {
-		return extension.getMinecraftProvider().workingDir().toPath();
+	public final MappingsNamespace getTargetNamespace() {
+		return MappingsNamespace.INTERMEDIARY;
 	}
 
 	@Override
-	public final MappingsNamespace getTargetNamespace() {
-		return MappingsNamespace.INTERMEDIARY;
+	public MavenScope getMavenScope() {
+		return MavenScope.GLOBAL;
 	}
 
 	public static final class MergedImpl extends IntermediaryMinecraftProvider<MergedMinecraftProvider> implements Merged {

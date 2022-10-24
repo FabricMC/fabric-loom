@@ -24,22 +24,29 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
 public abstract sealed class MinecraftJar permits MinecraftJar.Merged, MinecraftJar.Common, MinecraftJar.ServerOnly, MinecraftJar.ClientOnly {
 	private final Path path;
 	private final boolean merged, client, server;
+	private final String name;
 
-	protected MinecraftJar(Path path, boolean merged, boolean client, boolean server) {
+	protected MinecraftJar(Path path, boolean merged, boolean client, boolean server, String name) {
 		this.path = Objects.requireNonNull(path);
 		this.merged = merged;
 		this.client = client;
 		this.server = server;
+		this.name = name;
 	}
 
 	public Path getPath() {
 		return path;
+	}
+
+	public File toFile() {
+		return getPath().toFile();
 	}
 
 	public boolean isMerged() {
@@ -54,27 +61,53 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Merged, Minecraft
 		return server;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public abstract MinecraftJar forPath(Path path);
+
 	public static final class Merged extends MinecraftJar {
 		public Merged(Path path) {
-			super(path, true, true, true);
+			super(path, true, true, true, "merged");
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new Merged(path);
 		}
 	}
 
 	public static final class Common extends MinecraftJar {
 		public Common(Path path) {
-			super(path, false, false, true);
+			super(path, false, false, true, "common");
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new Common(path);
 		}
 	}
 
 	public static final class ServerOnly extends MinecraftJar {
 		public ServerOnly(Path path) {
-			super(path, false, false, true);
+			super(path, false, false, true, "serverOnly");
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new ServerOnly(path);
 		}
 	}
 
 	public static final class ClientOnly extends MinecraftJar {
 		public ClientOnly(Path path) {
-			super(path, false, true, false);
+			super(path, false, true, false, "clientOnly");
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new ClientOnly(path);
 		}
 	}
 }

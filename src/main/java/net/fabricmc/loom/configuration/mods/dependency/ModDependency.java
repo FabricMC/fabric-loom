@@ -69,7 +69,9 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	public abstract void applyToProject(Project project);
 
 	protected LocalMavenHelper createMaven(String name) {
-		return new LocalMavenHelper(getRemappedGroup(), name, this.version, this.classifier, this.project);
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final Path root = extension.getFiles().getRemappedModCache().toPath();
+		return new LocalMavenHelper(getRemappedGroup(), name, this.version, this.classifier, root);
 	}
 
 	public ArtifactRef getInputArtifact() {

@@ -38,15 +38,15 @@ public interface InterfaceInjectionExtensionAPI {
 	 */
 	Property<Boolean> getEnableDependencyInterfaceInjection();
 
+	Property<Boolean> getIsEnabled();
+
 	/**
-	 * Contains a list of {@link SourceSet} that may contain a fabric.mod.json file with interfaces to inject.
-	 * By default, this list contains only the main {@link SourceSet}.
-	 *
-	 * @return the list property containing the {@link SourceSet}
+	 * @deprecated now uses the source sets defined in {@link LoomGradleExtensionAPI#getMods()}
 	 */
+	@Deprecated(forRemoval = true)
 	ListProperty<SourceSet> getInterfaceInjectionSourceSets();
 
 	default boolean isEnabled() {
-		return getEnableDependencyInterfaceInjection().get() || !getInterfaceInjectionSourceSets().get().isEmpty();
+		return getIsEnabled().get();
 	}
 }

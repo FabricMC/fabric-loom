@@ -32,10 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
-
-import net.fabricmc.loom.LoomGradleExtension;
 
 public final class LocalMavenHelper {
 	private final String group;
@@ -43,14 +40,14 @@ public final class LocalMavenHelper {
 	private final String version;
 	@Nullable
 	private final String baseClassifier;
-	private final Project project;
+	private final Path root;
 
-	LocalMavenHelper(String group, String name, String version, @Nullable String classifier, Project project) {
+	public LocalMavenHelper(String group, String name, String version, @Nullable String classifier, Path root) {
 		this.group = group;
 		this.name = name;
 		this.version = version;
 		this.baseClassifier = classifier;
-		this.project = project;
+		this.root = root;
 	}
 
 	public Path copyToMaven(Path artifact, @Nullable String classifier) throws IOException {
@@ -75,7 +72,7 @@ public final class LocalMavenHelper {
 		return String.format("%s:%s:%s", group, name, version);
 	}
 
-	private void savePom() {
+	public void savePom() {
 		try {
 			String pomTemplate;
 
@@ -94,13 +91,8 @@ public final class LocalMavenHelper {
 		}
 	}
 
-	private Path getRoot() {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		return extension.getFiles().getRemappedModCache().toPath();
-	}
-
 	private Path getDirectory() {
-		return getRoot().resolve("%s/%s/%s".formatted(group.replace(".", "/"), name, version));
+		return root.resolve("%s/%s/%s".formatted(group.replace(".", "/"), name, version));
 	}
 
 	private Path getPomPath() {

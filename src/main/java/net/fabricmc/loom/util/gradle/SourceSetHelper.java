@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.xml.xpath.XPath;
@@ -42,6 +43,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
@@ -59,20 +61,23 @@ public final class SourceSetHelper {
 	private SourceSetHelper() {
 	}
 
+	public static SourceSetContainer getSourceSets(Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets();
+	}
+
 	/**
 	 * Returns true when the provided project contains the {@link SourceSet}.
 	 */
 	public static boolean isSourceSetOfProject(SourceSet sourceSet, Project project) {
 		if (System.getProperty("fabric-loom.unit.testing") != null) return true;
 
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().stream()
+		return getSourceSets(project).stream()
 				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
 	}
 
 	public static SourceSet getSourceSetByName(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().getByName(name);
+		return getSourceSets(project).getByName(name);
 	}
 
 	public static SourceSet getMainSourceSet(Project project) {
@@ -80,8 +85,7 @@ public final class SourceSetHelper {
 	}
 
 	public static SourceSet createSourceSet(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().create(name);
+		return getSourceSets(project).create(name);
 	}
 
 	/**
@@ -225,5 +229,33 @@ public final class SourceSetHelper {
 		}
 
 		return Collections.singletonList(new File(binDir, reference.sourceSet().getName()));
+	}
+
+	@Nullable
+	public static File findFileInResource(SourceSet sourceSet, String path) {
+		Objects.requireNonNull(sourceSet);
+		Objects.requireNonNull(path);
+
+		try {
+			return sourceSet.getResources()
+					.matching(patternFilterable -> patternFilterable.include(path))
+					.getSingleFile();
+		} catch (IllegalStateException e) {
+			// File not found
+			return null;
+		}
+	}
+
+	@Nullable
+	public static File findFirstFileInResource(String path, SourceSet... sourceSets) {
+		for (SourceSet sourceSet : sourceSets) {
+			File file = findFileInResource(sourceSet, path);
+
+			if (file != null) {
+				return file;
+			}
+		}
+
+		return null;
 	}
 }

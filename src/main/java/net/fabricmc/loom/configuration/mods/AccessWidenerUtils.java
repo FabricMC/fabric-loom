@@ -25,18 +25,18 @@
 package net.fabricmc.loom.configuration.mods;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 
-import com.google.gson.JsonObject;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.fmj.ModEnvironment;
 
 public class AccessWidenerUtils {
 	/**
@@ -58,16 +58,20 @@ public class AccessWidenerUtils {
 	}
 
 	public static AccessWidenerData readAccessWidenerData(Path inputJar) throws IOException {
-		byte[] modJsonBytes = ZipUtils.unpack(inputJar, "fabric.mod.json");
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(new String(modJsonBytes, StandardCharsets.UTF_8), JsonObject.class);
+		final FabricModJson fabricModJson = FabricModJsonFactory.createFromZip(inputJar);
+		final List<String> classTweakers = fabricModJson.getClassTweakers(ModEnvironment.UNIVERSAL);
 
-		if (!jsonObject.has("accessWidener")) {
+		if (classTweakers.isEmpty()) {
 			return null;
 		}
 
-		String accessWidenerPath = jsonObject.get("accessWidener").getAsString();
-		byte[] accessWidener = ZipUtils.unpack(inputJar, accessWidenerPath);
-		AccessWidenerReader.Header header = AccessWidenerReader.readHeader(accessWidener);
+		if (classTweakers.size() != 1) {
+			throw new UnsupportedOperationException("TODO: support multiple class tweakers");
+		}
+
+		final String accessWidenerPath = classTweakers.get(0);
+		final byte[] accessWidener = fabricModJson.getSource().read(accessWidenerPath);
+		final AccessWidenerReader.Header header = AccessWidenerReader.readHeader(accessWidener);
 
 		return new AccessWidenerData(accessWidenerPath, header, accessWidener);
 	}

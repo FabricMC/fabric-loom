@@ -220,8 +220,6 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 				// The client only sources to the combined sources jar.
 				jar.from(clientOnlySourceSet.getAllSource());
 			});
-
-			extension.getInterfaceInjection().getInterfaceInjectionSourceSets().add(clientOnlySourceSet);
 		}
 
 		@Override

@@ -28,16 +28,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.gradle.api.Project;
-
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 
 public final class SplitMinecraftProvider extends MinecraftProvider {
 	private Path minecraftClientOnlyJar;
 	private Path minecraftCommonJar;
 
-	public SplitMinecraftProvider(Project project) {
-		super(project);
+	public SplitMinecraftProvider(ConfigContext configContext) {
+		super(configContext);
 	}
 
 	@Override

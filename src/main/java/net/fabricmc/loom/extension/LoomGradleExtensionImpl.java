@@ -43,9 +43,8 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
@@ -63,9 +62,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
 
 	private LoomDependencyManager dependencyManager;
-	private JarProcessorManager jarProcessorManager;
 	private MinecraftProvider minecraftProvider;
-	private MappingsProviderImpl mappingsProvider;
+	private MappingConfiguration mappingConfiguration;
 	private NamedMinecraftProvider<?> namedMinecraftProvider;
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
 	private InstallerData installerData;
@@ -116,16 +114,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public void setJarProcessorManager(JarProcessorManager jarProcessorManager) {
-		this.jarProcessorManager = jarProcessorManager;
-	}
-
-	@Override
-	public JarProcessorManager getJarProcessorManager() {
-		return Objects.requireNonNull(jarProcessorManager, "Cannot get JarProcessorManager before it has been setup");
-	}
-
-	@Override
 	public MinecraftProvider getMinecraftProvider() {
 		return Objects.requireNonNull(minecraftProvider, "Cannot get MinecraftProvider before it has been setup");
 	}
@@ -136,13 +124,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
-	public MappingsProviderImpl getMappingsProvider() {
-		return Objects.requireNonNull(mappingsProvider, "Cannot get MappingsProvider before it has been setup");
+	public MappingConfiguration getMappingConfiguration() {
+		return Objects.requireNonNull(mappingConfiguration, "Cannot get MappingsProvider before it has been setup");
 	}
 
 	@Override
-	public void setMappingsProvider(MappingsProviderImpl mappingsProvider) {
-		this.mappingsProvider = mappingsProvider;
+	public void setMappingConfiguration(MappingConfiguration mappingConfiguration) {
+		this.mappingConfiguration = mappingConfiguration;
 	}
 
 	@Override

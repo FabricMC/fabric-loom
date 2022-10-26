@@ -29,7 +29,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ArtifactRepositoryContainer;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
-import org.gradle.api.artifacts.repositories.IvyArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.invocation.Gradle;
@@ -62,10 +61,8 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	}
 
 	private void declareRepositories(RepositoryHandler repositories, LoomFiles files, ExtensionAware target) {
-		repositories.maven(repo -> {
-			repo.setName("UserLocalRemappedMods");
-			repo.setUrl(files.getRemappedModCache());
-		});
+		declareLocalRepositories(repositories, files);
+
 		repositories.maven(repo -> {
 			repo.setName("Fabric");
 			repo.setUrl(MirrorUtil.getFabricRepository(target));
@@ -93,17 +90,22 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		}
 
 		repositories.mavenCentral();
+	}
 
-		repositories.ivy(repo -> {
-			repo.setUrl(files.getUserCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
-			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
+	private void declareLocalRepositories(RepositoryHandler repositories, LoomFiles files) {
+		repositories.maven(repo -> {
+			repo.setName("LoomLocalRemappedMods");
+			repo.setUrl(files.getRemappedModCache());
 		});
 
-		repositories.ivy(repo -> {
-			repo.setUrl(files.getRootProjectPersistentCache());
-			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
-			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
+		repositories.maven(repo -> {
+			repo.setName("LoomGlobalMinecraft");
+			repo.setUrl(files.getGlobalMinecraftRepo());
+		});
+
+		repositories.maven(repo -> {
+			repo.setName("LoomLocalMinecraft");
+			repo.setUrl(files.getLocalMinecraftRepo());
 		});
 	}
 

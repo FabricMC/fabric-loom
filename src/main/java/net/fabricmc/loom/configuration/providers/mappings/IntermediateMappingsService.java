@@ -56,12 +56,12 @@ public final class IntermediateMappingsService implements SharedService {
 		this.intermediaryTiny = intermediaryTiny;
 	}
 
-	public static synchronized IntermediateMappingsService getInstance(Project project, MinecraftProvider minecraftProvider) {
+	public static synchronized IntermediateMappingsService getInstance(SharedServiceManager sharedServiceManager, Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		final String id = "IntermediateMappingsService:%s:%s".formatted(intermediateProvider.getName(), intermediateProvider.getMinecraftVersion().get());
 
-		return SharedServiceManager.get(project).getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider));
+		return sharedServiceManager.getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider));
 	}
 
 	@VisibleForTesting

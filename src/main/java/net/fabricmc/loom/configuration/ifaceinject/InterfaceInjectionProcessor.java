@@ -24,230 +24,157 @@
 
 package net.fabricmc.loom.configuration.ifaceinject;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import com.google.common.base.Preconditions;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
+import javax.inject.Inject;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.commons.Remapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
-import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.api.processor.ProcessorContext;
+import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.Pair;
-import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public class InterfaceInjectionProcessor implements JarProcessor, GenerateSourcesTask.MappingsProcessor {
-	// Filename used to store hash of injected interfaces in processed jar file
-	private static final String HASH_FILENAME = "injected_interfaces.sha256";
+public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
 
-	private final Map<String, List<InjectedInterface>> injectedInterfaces;
-	private final Project project;
-	private final LoomGradleExtension extension;
-	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
-	private final byte[] inputHash;
-	private Map<String, List<InjectedInterface>> remappedInjectedInterfaces;
+	private final String name;
+	private final boolean fromDependencies;
 
-	public InterfaceInjectionProcessor(Project project) {
-		this.project = project;
-		this.extension = LoomGradleExtension.get(project);
-		this.interfaceInjectionExtension = this.extension.getInterfaceInjection();
-		this.injectedInterfaces = getInjectedInterfaces().stream()
-				.collect(Collectors.groupingBy(InjectedInterface::className));
-
-		this.inputHash = hashInjectedInterfaces();
-	}
-
-	public boolean isEmpty() {
-		return injectedInterfaces.isEmpty();
+	@Inject
+	public InterfaceInjectionProcessor(String name, boolean fromDependencies) {
+		this.name = name;
+		this.fromDependencies = fromDependencies;
 	}
 
 	@Override
-	public String getId() {
-		Preconditions.checkArgument(!isEmpty());
-		return "loom:interface_injection:" + Checksum.toHex(inputHash);
+	public String getName() {
+		return name;
 	}
 
 	@Override
-	public void setup() {
+	public @Nullable InterfaceInjectionProcessor.Spec buildSpec(SpecContext context) {
+		List<InjectedInterface> injectedInterfaces = new ArrayList<>();
+
+		injectedInterfaces.addAll(InjectedInterface.fromMods(context.localMods()));
+		// Find the injected interfaces from mods that are both on the compile and runtime classpath.
+		// Runtime is also required to ensure that the interface and it's impl is present when running the mc jar.
+
+		if (fromDependencies) {
+			injectedInterfaces.addAll(InjectedInterface.fromMods(context.modDependenciesCompileRuntime()));
+		}
+
+		if (injectedInterfaces.isEmpty()) {
+			return null;
+		}
+
+		return new Spec(injectedInterfaces);
+	}
+
+	public record Spec(List<InjectedInterface> injectedInterfaces) implements MinecraftJarProcessor.Spec {
 	}
 
 	@Override
-	public void process(File jarFile) {
-		// Lazily remap from intermediary->named
-		if (remappedInjectedInterfaces == null) {
-			TinyRemapper tinyRemapper = createTinyRemapper();
-			Remapper remapper = tinyRemapper.getEnvironment().getRemapper();
+	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
+		// Remap from intermediary->named
+		final TinyRemapper tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED);
+		final Remapper remapper = tinyRemapper.getEnvironment().getRemapper();
+		final List<InjectedInterface> remappedInjectedInterfaces;
 
-			try {
-				remappedInjectedInterfaces = new HashMap<>(injectedInterfaces.size());
-
-				for (Map.Entry<String, List<InjectedInterface>> entry : injectedInterfaces.entrySet()) {
-					String namedClassName = remapper.map(entry.getKey());
-					remappedInjectedInterfaces.put(
-							namedClassName,
-							entry.getValue().stream()
-									.map(injectedInterface ->
-											new InjectedInterface(
-													injectedInterface.modId(),
-													namedClassName,
-													remapper.map(injectedInterface.ifaceName())
-											))
-									.toList()
-					);
-				}
-			} finally {
-				tinyRemapper.finish();
-			}
+		try {
+			remappedInjectedInterfaces = spec.injectedInterfaces().stream()
+					.map(injectedInterface -> remap(injectedInterface, remapper))
+					.toList();
+		} finally {
+			tinyRemapper.finish();
 		}
 
 		try {
-			ZipUtils.transform(jarFile.toPath(), getTransformers());
+			ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to apply interface injections to " + jarFile, e);
+			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
 		}
 	}
 
-	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers() {
-		return remappedInjectedInterfaces.keySet().stream()
-				.map(string -> new Pair<>(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
-				.collect(Collectors.toList());
+	private InjectedInterface remap(InjectedInterface in, Remapper remapper) {
+		return new InjectedInterface(
+				in.modId(),
+				remapper.map(in.className()),
+				remapper.map(in.ifaceName())
+		);
 	}
 
-	private ZipUtils.UnsafeUnaryOperator<byte[]> getTransformer(String className) {
+	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(List<InjectedInterface> injectedInterfaces) {
+		return injectedInterfaces.stream()
+				.collect(Collectors.groupingBy(InjectedInterface::className))
+				.entrySet()
+				.stream()
+				.map(entry -> {
+					final String zipEntry = entry.getKey().replaceAll("\\.", "/") + ".class";
+					return new Pair<>(zipEntry, getTransformer(entry.getValue()));
+				}).toList();
+	}
+
+	private ZipUtils.UnsafeUnaryOperator<byte[]> getTransformer(List<InjectedInterface> injectedInterfaces) {
 		return input -> {
-			ClassReader reader = new ClassReader(input);
-			ClassWriter writer = new ClassWriter(0);
-			List<InjectedInterface> ifaces = remappedInjectedInterfaces.get(className);
-			ClassVisitor classVisitor = new InjectingClassVisitor(Constants.ASM_VERSION, writer, ifaces);
-
-			// Log which mods add which interface to the class
-			project.getLogger().info("Injecting interfaces into " + className + ": "
-					+ ifaces.stream().map(i -> i.ifaceName() + " [" + i.modId() + "]"
-			).collect(Collectors.joining(", ")));
-
+			final ClassReader reader = new ClassReader(input);
+			final ClassWriter writer = new ClassWriter(0);
+			final ClassVisitor classVisitor = new InjectingClassVisitor(Constants.ASM_VERSION, writer, injectedInterfaces);
 			reader.accept(classVisitor, 0);
 			return writer.toByteArray();
 		};
 	}
 
-	private List<InjectedInterface> getInjectedInterfaces() {
-		List<InjectedInterface> result = new ArrayList<>();
-
-		if (interfaceInjectionExtension.getEnableDependencyInterfaceInjection().get()) {
-			result.addAll(getDependencyInjectedInterfaces());
-		}
-
-		for (SourceSet sourceSet : interfaceInjectionExtension.getInterfaceInjectionSourceSets().get()) {
-			result.addAll(getSourceInjectedInterface(sourceSet));
-		}
-
-		return result;
-	}
-
-	// Find the injected interfaces from mods that are both on the compile and runtime classpath.
-	// Runtime is also required to ensure that the interface and it's impl is present when running the mc jar.
-	private List<InjectedInterface> getDependencyInjectedInterfaces() {
-		final Function<RemapConfigurationSettings, Stream<Path>> resolve = settings ->
-				settings.getSourceConfiguration().get().resolve().stream()
-						.map(File::toPath);
-
-		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
-				.flatMap(resolve)
-				.toList();
-
-		return extension.getCompileRemapConfigurations().stream()
-				.flatMap(resolve)
-				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
-				.flatMap(path -> InjectedInterface.fromModJar(path).stream())
-				.toList();
-	}
-
-	private List<InjectedInterface> getSourceInjectedInterface(SourceSet sourceSet) {
-		final File fabricModJson;
-
-		try {
-			fabricModJson = sourceSet.getResources()
-					.matching(patternFilterable -> patternFilterable.include("fabric.mod.json"))
-					.getSingleFile();
-		} catch (IllegalStateException e) {
-			// File not found
-			return Collections.emptyList();
-		}
-
-		final String jsonString;
-
-		try {
-			jsonString = Files.readString(fabricModJson.toPath(), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read fabric.mod.json", e);
-		}
-
-		final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(jsonString, JsonObject.class);
-
-		return InjectedInterface.fromJson(jsonObject);
-	}
-
 	@Override
-	public boolean transform(MemoryMappingTree mappings) {
-		if (injectedInterfaces.isEmpty()) {
-			return false;
-		}
-
-		if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
-			throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
-		}
-
-		for (Map.Entry<String, List<InjectedInterface>> entry : injectedInterfaces.entrySet()) {
-			final String className = entry.getKey();
-			final List<InjectedInterface> injectedInterfaces = entry.getValue();
-
-			MappingTree.ClassMapping classMapping = mappings.getClass(className);
-
-			if (classMapping == null) {
-				final String modIds = injectedInterfaces.stream().map(InjectedInterface::modId).distinct().collect(Collectors.joining(","));
-				project.getLogger().warn("Failed to find class ({}) to add injected interfaces from mod(s) ({})", className, modIds);
-				continue;
+	public MappingsProcessor<Spec> processMappings() {
+		return (mappings, spec, context) -> {
+			if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
+				throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
 			}
 
-			classMapping.setComment(appendComment(classMapping.getComment(), injectedInterfaces));
-		}
+			Map<String, List<InjectedInterface>> map = spec.injectedInterfaces().stream()
+					.collect(Collectors.groupingBy(InjectedInterface::className));
 
-		return true;
+			for (Map.Entry<String, List<InjectedInterface>> entry : map.entrySet()) {
+				final String className = entry.getKey();
+				final List<InjectedInterface> injectedInterfaces = entry.getValue();
+
+				MappingTree.ClassMapping classMapping = mappings.getClass(className);
+
+				if (classMapping == null) {
+					final String modIds = injectedInterfaces.stream().map(InjectedInterface::modId).distinct().collect(Collectors.joining(","));
+					LOGGER.warn("Failed to find class ({}) to add injected interfaces from mod(s) ({})", className, modIds);
+					continue;
+				}
+
+				classMapping.setComment(appendComment(classMapping.getComment(), injectedInterfaces));
+			}
+
+			return true;
+		};
 	}
 
 	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
@@ -267,33 +194,15 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 	}
 
 	private record InjectedInterface(String modId, String className, String ifaceName) {
-		/**
-		 * Reads the injected interfaces contained in a mod jar, or returns empty if there is none.
-		 */
-		public static List<InjectedInterface> fromModJar(Path modJarPath) {
-			final JsonObject jsonObject = ModUtils.getFabricModJson(modJarPath);
+		public static List<InjectedInterface> fromMod(FabricModJson fabricModJson) {
+			final String modId = fabricModJson.getId();
+			final JsonElement jsonElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
 
-			if (jsonObject == null) {
+			if (jsonElement == null) {
 				return Collections.emptyList();
 			}
 
-			return fromJson(jsonObject);
-		}
-
-		public static List<InjectedInterface> fromJson(JsonObject jsonObject) {
-			final String modId = jsonObject.get("id").getAsString();
-
-			if (!jsonObject.has("custom")) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject custom = jsonObject.getAsJsonObject("custom");
-
-			if (!custom.has(Constants.CustomModJsonKeys.INJECTED_INTERFACE)) {
-				return Collections.emptyList();
-			}
-
-			final JsonObject addedIfaces = custom.getAsJsonObject(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
+			final JsonObject addedIfaces = jsonElement.getAsJsonObject();
 
 			final List<InjectedInterface> result = new ArrayList<>();
 
@@ -306,6 +215,13 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 			}
 
 			return result;
+		}
+
+		public static List<InjectedInterface> fromMods(List<FabricModJson> fabricModJsons) {
+			return fabricModJsons.stream()
+					.map(InjectedInterface::fromMod)
+					.flatMap(List::stream)
+					.toList();
 		}
 	}
 
@@ -343,37 +259,5 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 			super.visit(version, access, name, signature, superName, modifiedInterfaces.toArray(new String[0]));
 		}
-	}
-
-	private TinyRemapper createTinyRemapper() {
-		try {
-			TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(project, "intermediary", "named");
-			tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(project));
-
-			for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
-				tinyRemapper.readClassPath(minecraftJar);
-			}
-
-			return tinyRemapper;
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to create tiny remapper for intermediary->named", e);
-		}
-	}
-
-	private byte[] hashInjectedInterfaces() {
-		// Hash the interfaces we're about to inject to not have to repeat this everytime
-		Hasher hasher = Hashing.sha256().newHasher();
-
-		for (Map.Entry<String, List<InjectedInterface>> entry : injectedInterfaces.entrySet()) {
-			hasher.putString("class:", StandardCharsets.UTF_8);
-			hasher.putString(entry.getKey(), StandardCharsets.UTF_8);
-
-			for (InjectedInterface ifaceName : entry.getValue()) {
-				hasher.putString("iface:", StandardCharsets.UTF_8);
-				hasher.putString(ifaceName.ifaceName(), StandardCharsets.UTF_8);
-			}
-		}
-
-		return hasher.hash().asBytes();
 	}
 }

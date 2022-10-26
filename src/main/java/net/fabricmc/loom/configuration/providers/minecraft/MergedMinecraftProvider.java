@@ -31,15 +31,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import org.gradle.api.Project;
-
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.stitch.merge.JarMerger;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
 	private Path minecraftMergedJar;
 
-	public MergedMinecraftProvider(Project project) {
-		super(project);
+	public MergedMinecraftProvider(ConfigContext configContext) {
+		super(configContext);
 	}
 
 	@Override

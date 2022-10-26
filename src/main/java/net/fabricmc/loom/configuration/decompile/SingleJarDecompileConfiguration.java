@@ -28,29 +28,28 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.gradle.api.Project;
-
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
 
 public class SingleJarDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider> {
-	public SingleJarDecompileConfiguration(Project project, MappedMinecraftProvider minecraftProvider) {
-		super(project, minecraftProvider);
+	public SingleJarDecompileConfiguration(ConfigContext configContext, MappedMinecraftProvider minecraftProvider) {
+		super(configContext, minecraftProvider);
 	}
 
 	@Override
 	public final void afterEvaluation() {
-		List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
+		List<Path> minecraftJars = minecraftProvider.getMinecraftJarPaths();
 		assert minecraftJars.size() == 1;
 
 		final File namedJar = minecraftJars.get(0).toFile();
 
 		File mappedJar = namedJar;
 
-		if (mappingsProvider.hasUnpickDefinitions()) {
-			File outputJar = new File(extension.getMappingsProvider().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
+		if (mappingConfiguration.hasUnpickDefinitions()) {
+			File outputJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-unpicked.jar");
 			createUnpickJarTask("unpickJar", namedJar, outputJar);
 
 			mappedJar = outputJar;
@@ -70,7 +69,7 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 
-				if (mappingsProvider.hasUnpickDefinitions()) {
+				if (mappingConfiguration.hasUnpickDefinitions()) {
 					task.dependsOn(project.getTasks().named("unpickJar"));
 				}
 			});

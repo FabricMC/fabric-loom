@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.test.unit.download
 
-import io.javalin.http.HttpCode
+import io.javalin.http.HttpStatus
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 
@@ -80,7 +80,7 @@ class DownloadStringTest extends DownloadTest {
 				requests ++
 
 				if (requests < 3) {
-					it.status(HttpCode.INTERNAL_SERVER_ERROR)
+					it.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					return
 				}
 

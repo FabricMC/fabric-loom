@@ -31,7 +31,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '1.0'
+def baseVersion = '1.1'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {

@@ -45,7 +45,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
@@ -53,6 +53,7 @@ import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -64,10 +65,12 @@ public class ModProcessor {
 
 	private final Project project;
 	private final Configuration sourceConfiguration;
+	private final SharedServiceManager serviceManager;
 
-	public ModProcessor(Project project, Configuration sourceConfiguration) {
+	public ModProcessor(Project project, Configuration sourceConfiguration, SharedServiceManager serviceManager) {
 		this.project = project;
 		this.sourceConfiguration = sourceConfiguration;
+		this.serviceManager = serviceManager;
 	}
 
 	public void processMods(List<ModDependency> remapList) throws IOException {
@@ -93,15 +96,15 @@ public class ModProcessor {
 
 	private void remapJars(List<ModDependency> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperHelper.create(mappingsProvider.getMappings(), fromM, toM, false))
+				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false);
 
-		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(project);
+		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;
 
 		if (kotlinClasspathService != null) {

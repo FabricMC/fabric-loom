@@ -24,27 +24,21 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
-import java.nio.file.Path;
 import java.util.List;
 
-import org.gradle.api.Project;
-
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
-	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
-		super(project, minecraftProvider);
-	}
-
-	@Override
-	protected Path getDirectory() {
-		return extension.getMinecraftProvider().workingDir().toPath();
+	public IntermediaryMinecraftProvider(ConfigContext configContext, M minecraftProvider) {
+		super(configContext, minecraftProvider);
 	}
 
 	@Override
@@ -52,9 +46,14 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		return MappingsNamespace.INTERMEDIARY;
 	}
 
+	@Override
+	public MavenScope getMavenScope() {
+		return MavenScope.GLOBAL;
+	}
+
 	public static final class MergedImpl extends IntermediaryMinecraftProvider<MergedMinecraftProvider> implements Merged {
-		public MergedImpl(Project project, MergedMinecraftProvider minecraftProvider) {
-			super(project, minecraftProvider);
+		public MergedImpl(ConfigContext configContext, MergedMinecraftProvider minecraftProvider) {
+			super(configContext, minecraftProvider);
 		}
 
 		@Override
@@ -66,8 +65,8 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	public static final class SplitImpl extends IntermediaryMinecraftProvider<SplitMinecraftProvider> implements Split {
-		public SplitImpl(Project project, SplitMinecraftProvider minecraftProvider) {
-			super(project, minecraftProvider);
+		public SplitImpl(ConfigContext configContext, SplitMinecraftProvider minecraftProvider) {
+			super(configContext, minecraftProvider);
 		}
 
 		@Override
@@ -87,19 +86,19 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	public static final class SingleJarImpl extends IntermediaryMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
-		private final String env;
+		private final SingleJarEnvType env;
 
-		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, String env) {
-			super(project, minecraftProvider);
+		private SingleJarImpl(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
+			super(configContext, minecraftProvider);
 			this.env = env;
 		}
 
-		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, "server");
+		public static SingleJarImpl server(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(configContext, minecraftProvider, SingleJarEnvType.SERVER);
 		}
 
-		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, "client");
+		public static SingleJarImpl client(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(configContext, minecraftProvider, SingleJarEnvType.CLIENT);
 		}
 
 		@Override
@@ -110,7 +109,7 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		}
 
 		@Override
-		public String env() {
+		public SingleJarEnvType env() {
 			return env;
 		}
 	}

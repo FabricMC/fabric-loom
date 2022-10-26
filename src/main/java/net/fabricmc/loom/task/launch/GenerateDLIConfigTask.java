@@ -105,8 +105,8 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) getExtension().getNamedMinecraftProvider();
 
 		return switch (env) {
-		case "client" -> split.getClientOnlyJar().toAbsolutePath().toString();
-		case "common" -> split.getCommonJar().toAbsolutePath().toString();
+		case "client" -> split.getClientOnlyJar().getPath().toAbsolutePath().toString();
+		case "common" -> split.getCommonJar().getPath().toAbsolutePath().toString();
 		default -> throw new UnsupportedOperationException();
 		};
 	}

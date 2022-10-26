@@ -26,38 +26,26 @@ package net.fabricmc.loom.util.service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import org.gradle.BuildResult;
-import org.gradle.api.Project;
-import org.gradle.api.invocation.Gradle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple manager for {@link SharedService} to be used across gradle (sub) projects.
  * This is a basic replacement for gradle's build service api.
  */
-public final class SharedServiceManager {
-	private static final Map<Gradle, SharedServiceManager> SERVICE_FACTORY_MAP = new ConcurrentHashMap<>();
-	private final Gradle gradle;
-
-	private final Map<String, SharedService> sharedServiceMap = new ConcurrentHashMap<>();
+public abstract class SharedServiceManager {
+	private static final Logger LOGGER = LoggerFactory.getLogger(BuildSharedServiceManager.class);
+	private final Map<String, SharedService> sharedServiceMap = new HashMap<>();
 
 	private boolean shutdown = false;
 
-	private SharedServiceManager(Gradle gradle) {
-		this.gradle = gradle;
-		this.gradle.buildFinished(this::onFinish);
-	}
-
-	public static SharedServiceManager get(Project project) {
-		return get(project.getGradle());
-	}
-
-	public static SharedServiceManager get(Gradle gradle) {
-		return SERVICE_FACTORY_MAP.computeIfAbsent(gradle, SharedServiceManager::new);
+	SharedServiceManager() {
+		LOGGER.info("Creating new SharedServiceManager({})", hashCode());
 	}
 
 	public <S extends SharedService> S getOrCreateService(String id, Supplier<S> function) {
@@ -70,6 +58,7 @@ public final class SharedServiceManager {
 			S sharedService = (S) sharedServiceMap.get(id);
 
 			if (sharedService == null) {
+				LOGGER.debug("Creating service for {}", id);
 				sharedService = function.get();
 				sharedServiceMap.put(id, sharedService);
 			}
@@ -78,12 +67,12 @@ public final class SharedServiceManager {
 		}
 	}
 
-	private void onFinish(BuildResult buildResult) {
+	protected void onFinish() {
 		synchronized (sharedServiceMap) {
 			shutdown = true;
 		}
 
-		SERVICE_FACTORY_MAP.remove(gradle);
+		LOGGER.info("Closing SharedServiceManager({})", hashCode());
 
 		final List<IOException> exceptionList = new ArrayList<>();
 
@@ -97,14 +86,14 @@ public final class SharedServiceManager {
 
 		sharedServiceMap.clear();
 
+		// This is required to ensure that mercury releases all of the file handles.
+		System.gc();
+
 		if (!exceptionList.isEmpty()) {
 			// Done to try and close all the services.
 			RuntimeException exception = new RuntimeException("Failed to close all shared services");
 			exceptionList.forEach(exception::addSuppressed);
 			throw exception;
 		}
-
-		// This is required to ensure that mercury releases all of the file handles.
-		System.gc();
 	}
 }

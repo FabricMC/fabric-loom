@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,34 +22,50 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.util.fmj;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.gradle.api.tasks.SourceSet;
 
-public final class ModUtils {
-	private ModUtils() {
+import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
+
+/**
+ * A mod may be a zip, directory or Gradle {@link SourceSet}
+ * This abstraction allows easily reading a contained file from the mod.
+ */
+public interface FabricModJsonSource {
+	byte[] read(String path) throws IOException;
+
+	record ZipSource(Path zipPath) implements FabricModJsonSource {
+		@Override
+		public byte[] read(String path) throws IOException {
+			return ZipUtils.unpack(zipPath, path);
+		}
 	}
 
-	public static boolean isMod(File file) {
-		return isMod(file.toPath());
+	record DirectorySource(Path directoryPath) implements FabricModJsonSource {
+		@Override
+		public byte[] read(String path) throws IOException {
+			return Files.readAllBytes(directoryPath.resolve(path));
+		}
 	}
 
-	public static boolean isMod(Path input) {
-		return ZipUtils.contains(input, "fabric.mod.json");
-	}
+	record SourceSetSource(SourceSet... sourceSets) implements FabricModJsonSource {
+		@Override
+		public byte[] read(String path) throws IOException {
+			final File file = SourceSetHelper.findFirstFileInResource(path, sourceSets);
 
-	@Nullable
-	public static JsonObject getFabricModJson(Path path) {
-		try {
-			return ZipUtils.unpackGsonNullable(path, "fabric.mod.json", JsonObject.class);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to extract fabric.mod.json from " + path, e);
+			if (file == null) {
+				throw new FileNotFoundException("Could not find: " + path);
+			}
+
+			return Files.readAllBytes(file.toPath());
 		}
 	}
 }

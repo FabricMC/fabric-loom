@@ -34,9 +34,10 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrClass;
 
@@ -55,24 +56,24 @@ public record SignatureFixerApplyVisitor(Map<String, String> signatureFixes) imp
 		};
 	}
 
-	public static Map<String, String> getRemappedSignatures(boolean toIntermediary, MappingsProviderImpl mappingsProvider, Project project, String targetNamespace) throws IOException {
-		if (mappingsProvider.getSignatureFixes() == null) {
+	public static Map<String, String> getRemappedSignatures(boolean toIntermediary, MappingConfiguration mappingConfiguration, Project project, SharedServiceManager serviceManager, String targetNamespace) throws IOException {
+		if (mappingConfiguration.getSignatureFixes() == null) {
 			// No fixes
 			return Collections.emptyMap();
 		}
 
 		if (toIntermediary) {
 			// No need to remap, as these are already intermediary
-			return mappingsProvider.getSignatureFixes();
+			return mappingConfiguration.getSignatureFixes();
 		}
 
 		// Remap the sig fixes from intermediary to the target namespace
 		final Map<String, String> remapped = new HashMap<>();
-		final TinyRemapper sigTinyRemapper = TinyRemapperHelper.getTinyRemapper(project, MappingsNamespace.INTERMEDIARY.toString(), targetNamespace);
+		final TinyRemapper sigTinyRemapper = TinyRemapperHelper.getTinyRemapper(project, serviceManager, MappingsNamespace.INTERMEDIARY.toString(), targetNamespace);
 		final Remapper sigAsmRemapper = sigTinyRemapper.getEnvironment().getRemapper();
 
 		// Remap the class names and the signatures using a new tiny remapper instance.
-		for (Map.Entry<String, String> entry : mappingsProvider.getSignatureFixes().entrySet()) {
+		for (Map.Entry<String, String> entry : mappingConfiguration.getSignatureFixes().entrySet()) {
 			remapped.put(
 					sigAsmRemapper.map(entry.getKey()),
 					sigAsmRemapper.mapSignature(entry.getValue(), false)

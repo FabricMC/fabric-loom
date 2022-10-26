@@ -38,9 +38,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
@@ -58,18 +56,15 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 
-public class MappingsProviderImpl implements MappingsProvider, SharedService {
-	private static final Logger LOGGER = LoggerFactory.getLogger(MappingsProviderImpl.class);
+public class MappingConfiguration {
+	private static final Logger LOGGER = LoggerFactory.getLogger(MappingConfiguration.class);
 
-	private Supplier<MemoryMappingTree> mappingTree;
 	public final String mappingsIdentifier;
 
 	private final Path mappingsWorkingDir;
@@ -84,9 +79,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
 
-	private final Supplier<IntermediateMappingsService> intermediaryService;
-
-	private MappingsProviderImpl(String mappingsIdentifier, Path mappingsWorkingDir, Supplier<IntermediateMappingsService> intermediaryService) {
+	private MappingConfiguration(String mappingsIdentifier, Path mappingsWorkingDir) {
 		this.mappingsIdentifier = mappingsIdentifier;
 
 		this.mappingsWorkingDir = mappingsWorkingDir;
@@ -94,22 +87,9 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		this.tinyMappings = mappingsWorkingDir.resolve("mappings.tiny");
 		this.tinyMappingsJar = mappingsWorkingDir.resolve("mappings.jar");
 		this.unpickDefinitions = mappingsWorkingDir.resolve("mappings.unpick");
-
-		this.intermediaryService = intermediaryService;
 	}
 
-	public static synchronized MappingsProviderImpl getInstance(Project project, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
-		return SharedServiceManager.get(project).getOrCreateService("MappingsProvider:%s:%s".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()), () -> {
-			Supplier<IntermediateMappingsService> intermediaryService = Suppliers.memoize(() -> IntermediateMappingsService.getInstance(project, minecraftProvider));
-			return create(dependency, minecraftProvider, intermediaryService);
-		});
-	}
-
-	public MemoryMappingTree getMappings() throws IOException {
-		return Objects.requireNonNull(mappingTree, "Cannot get mappings before they have been read").get();
-	}
-
-	private static MappingsProviderImpl create(DependencyInfo dependency, MinecraftProvider minecraftProvider, Supplier<IntermediateMappingsService> intermediaryService) {
+	public static MappingConfiguration create(Project project, SharedServiceManager serviceManager, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
 		final String version = dependency.getResolvedVersion();
 		final Path inputJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve mappings: " + dependency)).toPath();
 		final String mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
@@ -124,10 +104,10 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		final String mappingsIdentifier = createMappingsIdentifier(mappingsName, version, getMappingsClassifier(dependency, jarInfo.v2()), minecraftProvider.minecraftVersion());
 		final Path workingDir = minecraftProvider.dir(mappingsIdentifier).toPath();
 
-		var mappingProvider = new MappingsProviderImpl(mappingsIdentifier, workingDir, intermediaryService);
+		var mappingProvider = new MappingConfiguration(mappingsIdentifier, workingDir);
 
 		try {
-			mappingProvider.setup(minecraftProvider, inputJar);
+			mappingProvider.setup(project, serviceManager, minecraftProvider, inputJar);
 		} catch (IOException e) {
 			cleanWorkingDirectory(workingDir);
 			throw new UncheckedIOException("Failed to setup mappings: " + dependency.getDepString(), e);
@@ -136,13 +116,17 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		return mappingProvider;
 	}
 
-	private void setup(MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
+	public TinyMappingsService getMappingsService(SharedServiceManager serviceManager) {
+		return TinyMappingsService.create(serviceManager, Objects.requireNonNull(tinyMappings));
+	}
+
+	private void setup(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
 		if (minecraftProvider.refreshDeps()) {
 			cleanWorkingDirectory(mappingsWorkingDir);
 		}
 
 		if (Files.notExists(tinyMappings) || minecraftProvider.refreshDeps()) {
-			storeMappings(minecraftProvider, inputJar);
+			storeMappings(project, serviceManager, minecraftProvider, inputJar);
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(inputJar, (ClassLoader) null)) {
 				extractExtras(fileSystem);
@@ -153,8 +137,6 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 			Files.deleteIfExists(tinyMappingsJar);
 			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
 		}
-
-		mappingTree = Suppliers.memoize(this::readMappings);
 	}
 
 	public void applyToProject(Project project, DependencyInfo dependency) {
@@ -182,7 +164,7 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		return isV2 ? "-v2" : "";
 	}
 
-	private void storeMappings(MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
+	private void storeMappings(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
 		LOGGER.info(":extracting " + inputJar.getFileName());
 
 		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(inputJar)) {
@@ -192,7 +174,9 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 
 		if (areMappingsV2(baseTinyMappings)) {
 			// These are unmerged v2 mappings
-			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, intermediaryService.get());
+			IntermediateMappingsService intermediateMappingsService = IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider);
+
+			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, intermediateMappingsService);
 		} else {
 			final List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
 
@@ -204,16 +188,6 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 			Files.deleteIfExists(tinyMappings);
 			LOGGER.info(":populating field names");
 			suggestFieldNames(minecraftJars.get(0), baseTinyMappings, tinyMappings);
-		}
-	}
-
-	private MemoryMappingTree readMappings() {
-		try {
-			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingReader.read(tinyMappings, mappingTree);
-			return mappingTree;
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read mappings", e);
 		}
 	}
 
@@ -326,14 +300,8 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 		}
 	}
 
-	@Override
 	public Path mappingsWorkingDir() {
 		return mappingsWorkingDir;
-	}
-
-	@Override
-	public File intermediaryTinyFile() {
-		return intermediaryService.get().getIntermediaryTiny().toFile();
 	}
 
 	private static String createMappingsIdentifier(String mappingsName, String version, String classifier, String minecraftVersion) {
@@ -364,10 +332,5 @@ public class MappingsProviderImpl implements MappingsProvider, SharedService {
 	}
 
 	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
-	}
-
-	@Override
-	public void close() throws IOException {
-		mappingTree = null;
 	}
 }

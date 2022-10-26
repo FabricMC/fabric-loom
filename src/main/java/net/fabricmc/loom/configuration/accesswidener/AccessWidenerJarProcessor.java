@@ -37,6 +37,7 @@ import org.gradle.api.Project;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ZipUtils;
@@ -44,15 +45,13 @@ import net.fabricmc.loom.util.ZipUtils;
 public class AccessWidenerJarProcessor implements JarProcessor {
 	// Filename used to store hash of input access widener in processed jar file
 	private static final String HASH_FILENAME = "aw.sha256";
-	// The mod's own access widener file
-	private byte[] modAccessWidener;
 	private final AccessWidener accessWidener = new AccessWidener();
 	private final Project project;
 	// This is a SHA256 hash across the mod's and all transitive AWs
 	private byte[] inputHash;
 
-	public AccessWidenerJarProcessor(Project project) {
-		this.project = project;
+	public AccessWidenerJarProcessor(ConfigContext configContext) {
+		this.project = configContext.project();
 	}
 
 	@Override
@@ -66,6 +65,9 @@ public class AccessWidenerJarProcessor implements JarProcessor {
 		Path awPath = extension.getAccessWidenerPath().get().getAsFile().toPath();
 
 		// Read our own mod's access widener, used later for producing a version remapped to intermediary
+		// The mod's own access widener file
+		byte[] modAccessWidener;
+
 		try {
 			modAccessWidener = Files.readAllBytes(awPath);
 		} catch (NoSuchFileException e) {

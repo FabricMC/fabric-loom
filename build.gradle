@@ -31,7 +31,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 
 group = 'net.fabricmc'
 archivesBaseName = project.name
-def baseVersion = '1.0'
+def baseVersion = '1.1'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -200,8 +200,11 @@ test {
 		systemProperty "fabric.loom.test.homeDir", System.getProperty("fabric.loom.test.homeDir")
 	}
 
-	retry {
-		maxRetries = 3
+
+	if (ENV.CI) {
+		retry {
+			maxRetries = 3
+		}
 	}
 }
 

@@ -48,4 +48,6 @@ public interface LoomFiles {
 	File getDevLauncherConfig();
 	File getUnpickLoggingConfigFile();
 	File getRemapClasspathFile();
+	File getGlobalMinecraftRepo();
+	File getLocalMinecraftRepo();
 }

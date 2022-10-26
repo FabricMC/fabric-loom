@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 
 // Massive hack to work around WorkerExecutor.noIsolation() doing isolation checks.
@@ -38,12 +37,10 @@ public final class UnsafeWorkQueueHelper {
 	private UnsafeWorkQueueHelper() {
 	}
 
-	public static String create(Project project, SharedService service) {
+	public static String create(SharedService service) {
 		final String uuid = UUID.randomUUID().toString();
 		SERVICE_MAP.put(uuid, service);
 
-		// Ensure we don't make a mess if things go wrong.
-		project.getGradle().buildFinished(buildResult -> SERVICE_MAP.remove(uuid));
 		return uuid;
 	}
 

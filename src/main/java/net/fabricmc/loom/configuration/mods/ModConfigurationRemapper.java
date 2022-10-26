@@ -55,9 +55,10 @@ import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 
 @SuppressWarnings("UnstableApiUsage")
 public class ModConfigurationRemapper {
@@ -65,7 +66,7 @@ public class ModConfigurationRemapper {
 	// This can happen when the dependency is a FileCollectionDependency or from a flatDir repository.
 	public static final String MISSING_GROUP = "unspecified";
 
-	public static void supplyModConfigurations(Project project, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
+	public static void supplyModConfigurations(Project project, SharedServiceManager serviceManager, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		final DependencyHandler dependencies = project.getDependencies();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
@@ -88,7 +89,7 @@ public class ModConfigurationRemapper {
 				final List<ModDependency> modDependencies = new ArrayList<>();
 
 				for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
-					if (!ModUtils.isMod(artifact.path())) {
+					if (!FabricModJsonFactory.isModJar(artifact.path())) {
 						artifact.applyToConfiguration(project, targetConfig);
 						continue;
 					}
@@ -110,7 +111,7 @@ public class ModConfigurationRemapper {
 
 				if (!toRemap.isEmpty()) {
 					try {
-						new ModProcessor(project, sourceConfig).processMods(toRemap);
+						new ModProcessor(project, sourceConfig, serviceManager).processMods(toRemap);
 					} catch (IOException e) {
 						throw new UncheckedIOException("Failed to remap mods", e);
 					}

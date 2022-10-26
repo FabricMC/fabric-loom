@@ -28,11 +28,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -40,12 +41,10 @@ import javax.xml.xpath.XPathFactory;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.internal.tasks.DefaultSourceSetOutput;
-import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
-import org.gradle.api.tasks.TaskProvider;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -62,20 +61,23 @@ public final class SourceSetHelper {
 	private SourceSetHelper() {
 	}
 
+	public static SourceSetContainer getSourceSets(Project project) {
+		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
+		return javaExtension.getSourceSets();
+	}
+
 	/**
 	 * Returns true when the provided project contains the {@link SourceSet}.
 	 */
 	public static boolean isSourceSetOfProject(SourceSet sourceSet, Project project) {
 		if (System.getProperty("fabric-loom.unit.testing") != null) return true;
 
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().stream()
+		return getSourceSets(project).stream()
 				.anyMatch(test -> test == sourceSet); // Ensure we have an identical reference
 	}
 
 	public static SourceSet getSourceSetByName(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().getByName(name);
+		return getSourceSets(project).getByName(name);
 	}
 
 	public static SourceSet getMainSourceSet(Project project) {
@@ -83,8 +85,7 @@ public final class SourceSetHelper {
 	}
 
 	public static SourceSet createSourceSet(String name, Project project) {
-		final JavaPluginExtension javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-		return javaExtension.getSourceSets().create(name);
+		return getSourceSets(project).create(name);
 	}
 
 	/**
@@ -93,8 +94,7 @@ public final class SourceSetHelper {
 	 * <p>A bit of a hack, would be nice for this to be added to the Gradle API.
 	 */
 	public static Project getSourceSetProject(SourceSet sourceSet) {
-		final DefaultSourceSetOutput sourceSetOutput = (DefaultSourceSetOutput) sourceSet.getOutput();
-		final Project project = getProjectFromSourceSetOutput(sourceSetOutput);
+		final Project project = getProjectFromSourceSetOutput(sourceSet.getOutput());
 
 		if (project == null) {
 			throw new NullPointerException("Unable to determine owning project for SourceSet: " + sourceSet.getName());
@@ -103,53 +103,11 @@ public final class SourceSetHelper {
 		return project;
 	}
 
+	@Nullable
 	private static Project getProjectFromSourceSetOutput(SourceSetOutput sourceSetOutput) {
-		final Class<? extends DefaultSourceSetOutput> clazz = DefaultSourceSetOutput.class;
-
-		try {
-			final Method getClassesContributorsMethod = clazz.getMethod("getClassesContributors");
-			final Object classesContributors = getClassesContributorsMethod.invoke(sourceSetOutput);
-
-			if (classesContributors instanceof List<?> list) {
-				// Gradle 7.7
-				return getProjectFromDirectoryContributions(list);
-			} else if (classesContributors instanceof DefaultTaskDependency taskDependency) {
-				// Pre Gradle 7.7
-				return getProjectFromTaskDependency(taskDependency);
-			} else {
-				throw new UnsupportedOperationException();
-			}
-		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	// Pre Gradle 7.7
-	private static Project getProjectFromTaskDependency(DefaultTaskDependency taskDependency) {
-		for (Object object : taskDependency.getMutableValues()) {
-			if (object instanceof Task task) {
-				return task.getProject();
-			} else if (object instanceof TaskProvider<?> provider) {
-				return provider.get().getProject();
-			}
-		}
-
-		return null;
-	}
-
-	// Gradle 7.7: https://github.com/gradle/gradle/commit/2797942dc71f0e0e186b7d0c5ba3e09eceea4507#diff-b19ce8fbc4aa4ebaeea74e39609636d65e385bce6990fd42d68581dd829f29b3L153
-	private static Project getProjectFromDirectoryContributions(List<? /*DirectoryContribution*/> classesContributions) {
-		for (Object classesContribution : classesContributions) {
-			try {
-				final Method getTask = classesContribution.getClass().getMethod("getTask");
-				final TaskProvider<?> taskProvider = (TaskProvider<?>) getTask.invoke(classesContribution);
-				return taskProvider.get().getProject();
-			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		return null;
+		Set<? extends Task> dependencies = sourceSetOutput.getBuildDependencies().getDependencies(null);
+		Iterator<? extends Task> it = dependencies.iterator();
+		return it.hasNext() ? it.next().getProject() : null;
 	}
 
 	public static List<File> getClasspath(ModSettings modSettings, Project project) {
@@ -271,5 +229,33 @@ public final class SourceSetHelper {
 		}
 
 		return Collections.singletonList(new File(binDir, reference.sourceSet().getName()));
+	}
+
+	@Nullable
+	public static File findFileInResource(SourceSet sourceSet, String path) {
+		Objects.requireNonNull(sourceSet);
+		Objects.requireNonNull(path);
+
+		try {
+			return sourceSet.getResources()
+					.matching(patternFilterable -> patternFilterable.include(path))
+					.getSingleFile();
+		} catch (IllegalStateException e) {
+			// File not found
+			return null;
+		}
+	}
+
+	@Nullable
+	public static File findFirstFileInResource(String path, SourceSet... sourceSets) {
+		for (SourceSet sourceSet : sourceSets) {
+			File file = findFileInResource(sourceSet, path);
+
+			if (file != null) {
+				return file;
+			}
+		}
+
+		return null;
 	}
 }

@@ -39,17 +39,16 @@ import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public record KotlinClasspathService(Set<URL> classpath, String version) implements KotlinClasspath, SharedService {
 	@Nullable
-	public static KotlinClasspathService getOrCreateIfRequired(Project project) {
+	public static KotlinClasspathService getOrCreateIfRequired(SharedServiceManager sharedServiceManager, Project project) {
 		if (!KotlinPluginUtils.hasKotlinPlugin(project)) {
 			return null;
 		}
 
-		return getOrCreate(project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
+		return getOrCreate(sharedServiceManager, project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
 	}
 
-	public static synchronized KotlinClasspathService getOrCreate(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+	public static synchronized KotlinClasspathService getOrCreate(SharedServiceManager sharedServiceManager, Project project, String kotlinVersion, String kotlinMetadataVersion) {
 		final String id = "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
-		final SharedServiceManager sharedServiceManager = SharedServiceManager.get(project);
 		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion, kotlinMetadataVersion));
 	}
 

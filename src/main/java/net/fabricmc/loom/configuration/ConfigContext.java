@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2022 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,15 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.build;
+package net.fabricmc.loom.configuration;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.gradle.api.Project;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import org.jetbrains.annotations.NotNull;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 
-public final class MixinRefmapHelper {
-	private MixinRefmapHelper() { }
-
-	private static final String FABRIC_MOD_JSON = "fabric.mod.json";
-
-	@NotNull
-	public static Collection<String> getMixinConfigurationFiles(JsonObject fabricModJson) {
-		JsonArray mixins = fabricModJson.getAsJsonArray("mixins");
-
-		if (mixins == null) {
-			return Collections.emptyList();
-		}
-
-		return StreamSupport.stream(mixins.spliterator(), false)
-				.map(e -> {
-					if (e instanceof JsonPrimitive str) {
-						return str.getAsString();
-					} else if (e instanceof JsonObject obj) {
-						return obj.get("config").getAsString();
-					} else {
-						throw new RuntimeException("Incorrect fabric.mod.json format");
-					}
-				}).collect(Collectors.toSet());
-	}
+public interface ConfigContext {
+	Project project();
+	SharedServiceManager serviceManager();
+	LoomGradleExtension extension();
 }

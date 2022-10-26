@@ -52,9 +52,10 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
@@ -105,10 +106,10 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		Files.createDirectories(outputDir);
 
 		File mappings = loadMappings();
-		MappingsProviderImpl mappingsProvider = extension.getMappingsProvider();
+		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
-		try {
-			MemoryMappingTree currentMappings = mappingsProvider.getMappings();
+		try (var serviceManager = new ScopedSharedServiceManager()) {
+			MemoryMappingTree currentMappings = mappingConfiguration.getMappingsService(serviceManager).getMappingTree();
 			MemoryMappingTree targetMappings = getMappings(mappings);
 			migrateMappings(project, extension, inputDir, outputDir, currentMappings, targetMappings);
 			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());

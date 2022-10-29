@@ -60,7 +60,7 @@ trait MockMavenServerTrait {
             file.parentFile.mkdirs()
 
             file.withOutputStream {
-                IOUtils.copy(ctx.bodyAsInputStream(), it)
+                IOUtils.copy(ctx.bodyInputStream(), it)
             }
         }
     }

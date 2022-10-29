@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.util
 
 import groovy.transform.Immutable
 import net.fabricmc.loom.test.LoomTestConstants
+import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.ZipUtils
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
@@ -310,5 +311,9 @@ trait GradleProjectTestTrait {
                 }
             """
         }
+
+		void enableMultiProjectOptimisation() {
+			getGradleProperties() << "\n${Constants.Properties.MULTI_PROJECT_OPTIMISATION}=true"
+		}
     }
 }

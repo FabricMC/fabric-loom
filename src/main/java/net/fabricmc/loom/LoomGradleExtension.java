@@ -108,4 +108,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	boolean refreshDeps();
 
 	void setRefreshDeps(boolean refreshDeps);
+
+	boolean multiProjectOptimisation();
 }

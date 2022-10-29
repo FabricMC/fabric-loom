@@ -70,7 +70,7 @@ dependencies {
 
 	// libraries
 	implementation ('commons-io:commons-io:2.11.0')
-	implementation ('com.google.code.gson:gson:2.9.0')
+	implementation ('com.google.code.gson:gson:2.10')
 	implementation ('com.fasterxml.jackson.core:jackson-databind:2.13.4.2')
 	implementation ('com.google.guava:guava:31.1-jre')
 	implementation ('org.ow2.asm:asm:9.4')
@@ -114,7 +114,7 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
-	testImplementation ('io.javalin:javalin:5.1.1') {
+	testImplementation ('io.javalin:javalin:5.1.2') {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
@@ -353,6 +353,6 @@ class PrintActionsTestName extends DefaultTask {
 	@TaskAction
 	def run() {
 		def sanitised = testName.replace('*', '_')
-		println "::set-output name=test::$sanitised"
+		file(ENV.GITHUB_OUTPUT) << "test=$sanitised"
 	}
 }

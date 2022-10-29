@@ -90,7 +90,7 @@ jobs:
           TEST_WARNING_MODE: fail
         id: test
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ failure() }}
         with:
           name: ${{ steps.test.outputs.test }} (${{ matrix.java }}) Results (Windows)
@@ -116,7 +116,7 @@ jobs:
 
       - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace --warning-mode fail
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ failure() }}
         with:
           name: Reproducible Build ${{ matrix.os }} (${{ matrix.java }}) Results

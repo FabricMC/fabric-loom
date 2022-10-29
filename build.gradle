@@ -353,6 +353,6 @@ class PrintActionsTestName extends DefaultTask {
 	@TaskAction
 	def run() {
 		def sanitised = testName.replace('*', '_')
-		file(System.getenv().GITHUB_OUTPUT) << "test=$sanitised"
+		new File(System.getenv().GITHUB_OUTPUT) << "\ntest=$sanitised"
 	}
 }

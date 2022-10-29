@@ -57,7 +57,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	public void provide(boolean applyDependencies) throws Exception {
 		parentMinecraftProvider.provide(false);
 
-		boolean requiresProcessing = parentMinecraftProvider.getMinecraftJarPaths().stream()
+		boolean requiresProcessing = parentMinecraftProvider.getMinecraftJars().stream()
+				.map(this::getProcessedPath)
 				.anyMatch(jarProcessorManager::requiresProcessingJar);
 
 		if (requiresProcessing) {
@@ -76,7 +77,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	private void processJars() throws IOException {
 		for (MinecraftJar minecraftJar : parentMinecraftProvider.getMinecraftJars()) {
-			final MinecraftJar outputJar = getProcessedPath(minecraftJar);
+			final MinecraftJar outputJar = getProcessedJar(minecraftJar);
 			deleteSimilarJars(outputJar.getPath());
 
 			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());
@@ -139,7 +140,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	@Override
 	public List<MinecraftJar> getMinecraftJars() {
 		return getParentMinecraftProvider().getMinecraftJars().stream()
-				.map(this::getProcessedPath)
+				.map(this::getProcessedJar)
 				.toList();
 	}
 
@@ -147,9 +148,13 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		return parentMinecraftProvider;
 	}
 
-	public MinecraftJar getProcessedPath(MinecraftJar minecraftJar) {
-		final Path path = getMavenHelper(minecraftJar.getName()).getOutputFile(null);
-		return minecraftJar.forPath(path);
+	private Path getProcessedPath(MinecraftJar minecraftJar) {
+		final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());
+		return mavenHelper.getOutputFile(null);
+	}
+
+	public MinecraftJar getProcessedJar(MinecraftJar minecraftJar) {
+		return minecraftJar.forPath(getProcessedPath(minecraftJar));
 	}
 
 	public static final class MergedImpl extends ProcessedNamedMinecraftProvider<MergedMinecraftProvider, NamedMinecraftProvider.MergedImpl> implements Merged {
@@ -159,7 +164,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 		@Override
 		public MinecraftJar getMergedJar() {
-			return getProcessedPath(getParentMinecraftProvider().getMergedJar());
+			return getProcessedJar(getParentMinecraftProvider().getMergedJar());
 		}
 	}
 
@@ -170,12 +175,12 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 		@Override
 		public MinecraftJar getCommonJar() {
-			return getProcessedPath(getParentMinecraftProvider().getCommonJar());
+			return getProcessedJar(getParentMinecraftProvider().getCommonJar());
 		}
 
 		@Override
 		public MinecraftJar getClientOnlyJar() {
-			return getProcessedPath(getParentMinecraftProvider().getClientOnlyJar());
+			return getProcessedJar(getParentMinecraftProvider().getClientOnlyJar());
 		}
 	}
 
@@ -197,7 +202,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 		@Override
 		public MinecraftJar getEnvOnlyJar() {
-			return getProcessedPath(getParentMinecraftProvider().getEnvOnlyJar());
+			return getProcessedJar(getParentMinecraftProvider().getEnvOnlyJar());
 		}
 
 		@Override

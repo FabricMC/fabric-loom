@@ -37,7 +37,6 @@ trait MockMavenServerTrait {
         println "Maven server path: ${testMavenDir.absolutePath}"
 
         server = Javalin.create { config ->
-            config.enableDevLogging()
         }.start(mavenServerPort)
 
         /**

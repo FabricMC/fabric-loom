@@ -34,7 +34,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements GradleProjectTestTrait {
-	static final String MAPPINGS = "21w13a/net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
+	static final String MAPPINGS = "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
 
 	def "unpick decompile"() {
 		setup:

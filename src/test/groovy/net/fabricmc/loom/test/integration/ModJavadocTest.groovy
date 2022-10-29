@@ -56,7 +56,7 @@ class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname) {
-		File sourcesJar = gradle.getGeneratedLocalSources("1.17.1/net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2")
+		File sourcesJar = gradle.getGeneratedLocalSources("1.17.1-net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2")
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 }

@@ -33,7 +33,6 @@ abstract class DownloadTest extends Specification {
 
 	@Shared
 	Javalin server = Javalin.create { config ->
-		config.enableDevLogging()
 	}.start(9081)
 
 	def cleanupSpec() {

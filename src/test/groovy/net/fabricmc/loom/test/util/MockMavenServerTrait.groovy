@@ -37,7 +37,6 @@ trait MockMavenServerTrait {
         println "Maven server path: ${testMavenDir.absolutePath}"
 
         server = Javalin.create { config ->
-            config.enableDevLogging()
         }.start(mavenServerPort)
 
         /**
@@ -61,7 +60,7 @@ trait MockMavenServerTrait {
             file.parentFile.mkdirs()
 
             file.withOutputStream {
-                IOUtils.copy(ctx.bodyAsInputStream(), it)
+                IOUtils.copy(ctx.bodyInputStream(), it)
             }
         }
     }

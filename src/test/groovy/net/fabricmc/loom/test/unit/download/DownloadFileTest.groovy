@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.test.unit.download
 
-import io.javalin.http.HttpCode
+import io.javalin.http.HttpStatus
 import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
@@ -175,7 +175,7 @@ class DownloadFileTest extends DownloadTest {
 
 				if (clientEtag == etag) {
 					// Etag matches, no need to send the data.
-					it.status(HttpCode.NOT_MODIFIED)
+					it.status(HttpStatus.NOT_MODIFIED)
 					return
 				}
 

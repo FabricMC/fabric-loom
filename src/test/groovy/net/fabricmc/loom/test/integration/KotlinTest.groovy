@@ -39,7 +39,7 @@ class KotlinTest extends Specification implements GradleProjectTestTrait {
 			def gradle = gradleProject(project: "kotlin", version: version)
 			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
 				.withMod(gradle.getOutputFile("fabric-example-mod-0.0.1.jar"))
-				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.7.3+kotlin.1.6.20.jar")
+				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.8.5+kotlin.1.7.20.jar")
 
 		when:
 			def result = gradle.run(task: "build")

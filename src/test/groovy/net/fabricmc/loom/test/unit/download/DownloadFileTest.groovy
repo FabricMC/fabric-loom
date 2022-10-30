@@ -45,7 +45,7 @@ class DownloadFileTest extends DownloadTest {
 			def output = new File(File.createTempDir(), "file.txt").toPath()
 			def linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
 			Files.createSymbolicLink(linkedtmp, output.getParent())
-			def symlink = Paths.get(linkedtmp, "file.txt")
+			def symlink = Paths.get(linkedtmp.toString(), "file.txt")
 
 		when:
 			def result = Download.create("$PATH/symlinkFile").downloadPath(symlink)

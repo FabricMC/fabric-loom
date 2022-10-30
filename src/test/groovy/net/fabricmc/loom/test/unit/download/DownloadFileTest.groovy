@@ -42,10 +42,10 @@ class DownloadFileTest extends DownloadTest {
 			server.get("/symlinkFile") {
 				it.result("Hello World")
 			}
-			Files.deleteIfExists(Paths.get(".", "faketemp"))
 			def output = new File(File.createTempDir(), "file.txt").toPath()
-			Files.createSymbolicLink(Paths.get(".", "faketemp"), output.getParent())
-			def symlink = Paths.get(".", "faketemp", "file.txt")
+			linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
+			Files.createSymbolicLink(linkedtmp, output.getParent())
+			def symlink = Paths.get(linkedtmp, "file.txt")
 
 		when:
 			def result = Download.create("$PATH/symlinkFile").downloadPath(symlink)

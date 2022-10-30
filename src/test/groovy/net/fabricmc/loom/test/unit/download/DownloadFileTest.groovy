@@ -43,7 +43,7 @@ class DownloadFileTest extends DownloadTest {
 				it.result("Hello World")
 			}
 			def output = new File(File.createTempDir(), "file.txt").toPath()
-			linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
+			def linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
 			Files.createSymbolicLink(linkedtmp, output.getParent())
 			def symlink = Paths.get(linkedtmp, "file.txt")
 

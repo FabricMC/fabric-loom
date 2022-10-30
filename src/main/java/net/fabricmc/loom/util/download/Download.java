@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.util.download;
 
-import static com.google.common.io.files.Files.createParentDirs;
+import static com.google.common.io.Files.createParentDirs;
 
 import java.io.IOException;
 import java.io.InputStream;

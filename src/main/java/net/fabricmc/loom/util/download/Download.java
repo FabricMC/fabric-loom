@@ -162,7 +162,7 @@ public class Download {
 		}
 
 		try {
-			createParentDirs(output.getParent().toFile());
+			createParentDirs(output.toFile());
 			Files.deleteIfExists(output);
 		} catch (IOException e) {
 			throw error(e, "Failed to prepare path for download");

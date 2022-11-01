@@ -56,6 +56,7 @@ import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -230,6 +231,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		};
 	}
 
+	@ApiStatus.Internal
 	@Internal
 	protected LoomGradleExtension getLoomExtension() {
 		return LoomGradleExtension.get(getProject());

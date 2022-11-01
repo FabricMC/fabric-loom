@@ -62,6 +62,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	private static final Pattern MSG_VALUE_PATTERN = Pattern.compile("^(note|warning|error|disabled)$");
 
 	protected final Project project;
+	private final LoomGradleExtension loomExtension;
 	protected final MixinExtension mixinExtension;
 	protected final Map<SourceSet, T> invokerTasks;
 	private final Collection<Configuration> apConfigurations;
@@ -70,7 +71,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 										Collection<Configuration> apConfigurations,
 										Map<SourceSet, T> invokerTasks) {
 		this.project = project;
-		this.mixinExtension = LoomGradleExtension.get(project).getMixin();
+		this.loomExtension = LoomGradleExtension.get(project);
+		this.mixinExtension = loomExtension.getMixin();
 		this.apConfigurations = apConfigurations;
 		this.invokerTasks = invokerTasks;
 	}
@@ -111,8 +113,10 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 				args.put("MSG_" + key, value);
 			});
 
-			// Ensure that all of the mixin mappings have been generated before we create the mixin mappings.
-			runBeforePrepare(project, task);
+			if (loomExtension.multiProjectOptimisation()) {
+				// Ensure that all of the mixin mappings have been generated before we create the mixin mappings.
+				runBeforePrepare(project, task);
+			}
 
 			project.getLogger().debug("Outputting refmap to dir: " + getRefmapDestinationDir(task) + " for compile task: " + task);
 			args.forEach((k, v) -> passArgument(task, k, v));

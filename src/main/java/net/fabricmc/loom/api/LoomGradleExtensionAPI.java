@@ -85,6 +85,14 @@ public interface LoomGradleExtensionAPI {
 
 	NamedDomainObjectContainer<RunConfigSettings> getRunConfigs();
 
+	/**
+	 * {@return the value of {@link #getRunConfigs}}
+	 * This is an alias for it that matches {@link #runs}.
+	 */
+	default NamedDomainObjectContainer<RunConfigSettings> getRuns() {
+		return getRunConfigs();
+	}
+
 	void mixin(Action<MixinExtensionAPI> action);
 
 	/**

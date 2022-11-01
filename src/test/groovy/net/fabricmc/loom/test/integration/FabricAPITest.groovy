@@ -49,6 +49,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 					patch: "fabric_api"
 			)
 
+			gradle.enableMultiProjectOptimisation()
+
 			// Set the version to something constant
 			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
@@ -61,6 +63,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			def serverResult = server.run()
 		then:
 			result.task(":build").outcome == SUCCESS
+			result.task(":prepareRemapJar").outcome == SUCCESS
 
 			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/9.0.17/fabric-biome-api-v1-9.0.17.jar").exists()
 			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/9.0.17/fabric-biome-api-v1-9.0.17-sources.jar").exists()

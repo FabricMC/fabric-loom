@@ -36,6 +36,7 @@ import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
@@ -48,8 +49,10 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -68,6 +71,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
 	private InstallerData installerData;
 	private boolean refreshDeps;
+	private Provider<Boolean> multiProjectOptimisation;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
@@ -87,6 +91,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		});
 
 		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
+		multiProjectOptimisation = GradleUtils.getBooleanPropertyProvider(project, Constants.Properties.MULTI_PROJECT_OPTIMISATION);
 
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
@@ -235,6 +240,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void setRefreshDeps(boolean refreshDeps) {
 		this.refreshDeps = refreshDeps;
+	}
+
+	@Override
+	public boolean multiProjectOptimisation() {
+		return multiProjectOptimisation.getOrElse(false);
 	}
 
 	@Override

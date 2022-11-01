@@ -137,4 +137,10 @@ public class Constants {
 		public static final String INJECTED_INTERFACE = "loom:injected_interfaces";
 		public static final String PROVIDED_JAVADOC = "loom:provided_javadoc";
 	}
+
+	public static final class Properties {
+		public static final String MULTI_PROJECT_OPTIMISATION = "fabric.loom.multiProjectOptimisation";
+		public static final String DONT_REMAP = "fabric.loom.dontRemap";
+		public static final String DISABLE_REMAPPED_VARIANTS = "fabric.loom.disableRemappedVariants";
+	}
 }

@@ -73,7 +73,7 @@ public class TinyRemapperService implements SharedService {
 			joiner.add("kotlin-" + kotlinClasspathService.version());
 		}
 
-		if (remapJarTask.getRemapperIsolation().get()) {
+		if (remapJarTask.getRemapperIsolation().get() || !extension.multiProjectOptimisation()) {
 			joiner.add(project.getPath());
 		}
 

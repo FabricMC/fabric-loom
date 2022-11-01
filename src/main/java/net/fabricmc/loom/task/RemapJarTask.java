@@ -27,6 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -106,7 +107,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 
-		setupPreparationTask();
+		if (getLoomExtension().multiProjectOptimisation()) {
+			setupPreparationTask();
+		}
 	}
 
 	private void setupPreparationTask() {
@@ -134,6 +137,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(tinyRemapperService.get()));
 			params.getRemapClasspath().from(getClasspath());
+			params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
 
 			final boolean mixinAp = getUseMixinAP().get();
 			params.getUseMixinExtension().set(!mixinAp);
@@ -181,6 +185,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		ConfigurableFileCollection getRemapClasspath();
 
 		Property<Boolean> getUseMixinExtension();
+		Property<Boolean> getMultiProjectOptimisation();
 
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
@@ -203,6 +208,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			try {
 				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
 
+				if (!getParameters().getMultiProjectOptimisation().get()) {
+					prepare();
+				}
+
 				tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
 
 				remap();
@@ -217,6 +226,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				modifyJarManifest();
 				rewriteJar();
 
+				if (!getParameters().getMultiProjectOptimisation().get()) {
+					tinyRemapperService.close();
+				}
+
 				LOGGER.debug("Finished remapping {}", inputFile);
 			} catch (Exception e) {
 				try {
@@ -227,6 +240,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
 			}
+		}
+
+		private void prepare() {
+			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
+			PrepareJarRemapTask.prepare(tinyRemapperService, inputFile);
 		}
 
 		private void remap() throws IOException {

@@ -39,7 +39,6 @@ import org.gradle.workers.WorkerExecutor;
 
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
  * The prepare remap task runs before all other jar remap tasks, should be used to setup tiny remapper.
@@ -97,10 +96,12 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 
 		@Override
 		public void execute() {
-			final TinyRemapper tinyRemapper = tinyRemapperService.getTinyRemapperForInputs();
 			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
-
-			tinyRemapper.readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
+			prepare(tinyRemapperService, inputFile);
 		}
+	}
+
+	static void prepare(TinyRemapperService tinyRemapperService, Path inputFile) {
+		tinyRemapperService.getTinyRemapperForInputs().readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
 	}
 }

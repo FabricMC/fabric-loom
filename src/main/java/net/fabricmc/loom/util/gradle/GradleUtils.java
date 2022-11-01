@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.provider.Provider;
 
 public final class GradleUtils {
 	private GradleUtils() {
@@ -51,5 +52,19 @@ public final class GradleUtils {
 				consumer.accept(project);
 			}
 		});
+	}
+
+	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {
+		return project.getProviders().gradleProperty(key).map(string -> {
+			try {
+				return Boolean.parseBoolean(string);
+			} catch (final IllegalArgumentException ex) {
+				return false;
+			}
+		});
+	}
+
+	public static boolean getBooleanProperty(Project project, String key) {
+		return getBooleanPropertyProvider(project, key).getOrElse(false);
 	}
 }

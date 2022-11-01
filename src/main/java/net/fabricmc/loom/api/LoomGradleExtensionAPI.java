@@ -80,7 +80,7 @@ public interface LoomGradleExtensionAPI {
 
 	/**
 	 * {@return the value of {@link #getRunConfigs}}
-	 * This is an alias to match {@link #runs}.
+	 * This is an alias for it that matches {@link #runs}.
 	 */
 	default NamedDomainObjectContainer<RunConfigSettings> getRuns() {
 		return getRunConfigs();

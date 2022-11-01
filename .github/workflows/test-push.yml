@@ -61,7 +61,7 @@ jobs:
           TEST_WARNING_MODE: fail
         id: test
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ failure() }}
         with:
           name: ${{ steps.test.outputs.test }} Results

@@ -13,12 +13,6 @@ plugins {
 	id "org.gradle.test-retry" version "1.4.1"
 }
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
-
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
 }
@@ -134,6 +128,13 @@ jar {
 	}
 
 	from configurations.bootstrap.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 17
 }
 
 java {

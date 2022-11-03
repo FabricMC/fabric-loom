@@ -39,9 +39,9 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData) {
-	private static final String FABRIC_MOD_JSON_PATH = "fabric.mod.json";
 	private static final String INSTALLER_PATH = "fabric-installer.json";
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	private static final String MANIFEST_REMAP_KEY = "Fabric-Loom-Remap";
@@ -52,11 +52,8 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 		InstallerData installerData = null;
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
-			final Path fabricModJsonPath = fs.getPath(FABRIC_MOD_JSON_PATH);
+			isFabricMod = FabricModJsonFactory.containsMod(fs);
 			final Path manifestPath = fs.getPath(MANIFEST_PATH);
-			final Path installerPath = fs.getPath(INSTALLER_PATH);
-
-			isFabricMod = Files.exists(fabricModJsonPath);
 
 			if (Files.exists(manifestPath)) {
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
@@ -68,6 +65,8 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 					remapRequirements = Boolean.parseBoolean(value) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
 				}
 			}
+
+			final Path installerPath = fs.getPath(INSTALLER_PATH);
 
 			if (isFabricMod && Files.exists(installerPath)) {
 				final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(installerPath, StandardCharsets.UTF_8), JsonObject.class);

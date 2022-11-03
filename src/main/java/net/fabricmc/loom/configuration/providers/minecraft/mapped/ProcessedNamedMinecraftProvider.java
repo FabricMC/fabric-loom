@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import org.gradle.api.Project;
@@ -119,11 +120,11 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		final Project project = getProject();
 
 		if (project.getRootProject() == project) {
-			return "minecraft-%s-project-root".formatted(name);
+			return "minecraft-%s-project-root".formatted(name).toLowerCase(Locale.ROOT);
 		}
 
 		final String projectPath = project.getPath().replace(':', '@');
-		return "minecraft-%s-project-%s".formatted(name, projectPath);
+		return "minecraft-%s-project-%s".formatted(name, projectPath).toLowerCase(Locale.ROOT);
 	}
 
 	@Override

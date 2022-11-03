@@ -30,13 +30,30 @@ import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
-
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
+import java.nio.file.Paths
 import java.time.Duration
 import java.time.Instant
 
 class DownloadFileTest extends DownloadTest {
+	def "Directory: Symlink"() {
+		setup:
+			server.get("/symlinkFile") {
+				it.result("Hello World")
+			}
+			def output = new File(File.createTempDir(), "file.txt").toPath()
+			def linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
+			Files.createSymbolicLink(linkedtmp, output.getParent())
+			def symlink = Paths.get(linkedtmp.toString(), "file.txt")
+
+		when:
+			def result = Download.create("$PATH/symlinkFile").downloadPath(symlink)
+
+		then:
+			Files.readString(symlink) == "Hello World"
+	}
+
 	def "File: Simple"() {
 		setup:
 			server.get("/simpleFile") {

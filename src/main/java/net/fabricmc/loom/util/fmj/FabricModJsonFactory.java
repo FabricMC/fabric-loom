@@ -41,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
@@ -123,5 +124,9 @@ public final class FabricModJsonFactory {
 
 	public static boolean isModJar(Path input) {
 		return ZipUtils.contains(input, FABRIC_MOD_JSON);
+	}
+
+	public static boolean containsMod(FileSystemUtil.Delegate fs) {
+		return Files.exists(fs.getPath(FABRIC_MOD_JSON));
 	}
 }

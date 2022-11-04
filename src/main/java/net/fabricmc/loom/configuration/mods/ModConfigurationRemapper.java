@@ -57,7 +57,6 @@ import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -89,7 +88,24 @@ public class ModConfigurationRemapper {
 				final List<ModDependency> modDependencies = new ArrayList<>();
 
 				for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
-					if (!FabricModJsonFactory.isModJar(artifact.path())) {
+					final ArtifactMetadata artifactMetadata;
+
+					try {
+						artifactMetadata = ArtifactMetadata.create(artifact);
+					} catch (IOException e) {
+						throw new UncheckedIOException("Failed to read metadata from" + artifact.path(), e);
+					}
+
+					if (artifactMetadata.installerData() != null) {
+						if (extension.getInstallerData() != null) {
+							project.getLogger().info("Found another installer JSON in ({}), ignoring", artifact.path());
+						} else {
+							project.getLogger().info("Applying installer data from {}", artifact.path());
+							artifactMetadata.installerData().applyToProject(project);
+						}
+					}
+
+					if (!artifactMetadata.shouldRemap()) {
 						artifact.applyToConfiguration(project, targetConfig);
 						continue;
 					}

@@ -49,7 +49,7 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 
         def timeStart = new Date()
 
-        def result = gradle.run(tasks: ["clean", "build"], args: ["--parallel", "-x", "check", "-x", "test", "-x", ":fabric-data-generation-api-v1:runDatagen", "-x", "javadoc"])
+        def result = gradle.run(tasks: ["clean"], args: [])
 
         def timeStop = new Date()
         TimeDuration duration = TimeCategory.minus(timeStop, timeStart)

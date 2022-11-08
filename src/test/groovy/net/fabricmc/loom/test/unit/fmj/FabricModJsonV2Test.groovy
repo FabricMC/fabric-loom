@@ -75,13 +75,22 @@ class FabricModJsonV2Test extends Specification {
 
 	static JsonObject JSON_OBJECT = new Gson().fromJson(JSON, JsonObject.class)
 
-	def "version"() {
+	def "metadata version"() {
 		given:
 			def mockSource = Mock(FabricModJsonSource)
 		when:
 			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.version == 2
+			fmj.metadataVersion == 2
+	}
+
+	def "mod version"() {
+		given:
+			def mockSource = Mock(FabricModJsonSource)
+		when:
+			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		then:
+			fmj.modVersion == "1.0.0"
 	}
 
 	def "id"() {

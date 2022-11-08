@@ -34,16 +34,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.Nullable;
 
-public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJsonV1, FabricModJsonV2 {
+public abstract class FabricModJson {
 	protected final JsonObject jsonObject;
 	private final FabricModJsonSource source;
 
-	protected FabricModJson(JsonObject jsonObject, FabricModJsonSource source) {
+	FabricModJson(JsonObject jsonObject, FabricModJsonSource source) {
 		this.jsonObject = Objects.requireNonNull(jsonObject);
 		this.source = Objects.requireNonNull(source);
 	}
 
-	public abstract int getVersion();
+	public abstract int getMetadataVersion();
+
+	public abstract String getModVersion();
 
 	public String getId() {
 		return readString(jsonObject, "id");
@@ -56,7 +58,26 @@ public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJso
 
 	public abstract Map<String, ModEnvironment> getClassTweakers();
 
-	public final FabricModJsonSource getSource() {
+	public FabricModJsonSource getSource() {
 		return source;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+
+		FabricModJson that = (FabricModJson) o;
+		return getModVersion().equals(that.getModVersion()) && getId().equals(that.getId());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getId(), getModVersion());
 	}
 }

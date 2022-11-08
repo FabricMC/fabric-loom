@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util.fmj;
 
+import static net.fabricmc.loom.util.fmj.FabricModJsonUtils.readString;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +47,13 @@ public final class FabricModJsonV2 extends FabricModJson {
 	}
 
 	@Override
-	public int getVersion() {
+	public int getMetadataVersion() {
 		return 2;
+	}
+
+	@Override
+	public String getModVersion() {
+		return readString(jsonObject, "version");
 	}
 
 	@Override

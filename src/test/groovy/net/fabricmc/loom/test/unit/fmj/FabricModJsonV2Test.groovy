@@ -99,7 +99,7 @@ class FabricModJsonV2Test extends Specification {
 		when:
 			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.mixinConfigurations == ["test.client.mixins.json", "test.server.mixins.json", "test.mixins.json"]
+			new ArrayList<>(fmj.mixinConfigurations).sort() == ["test.client.mixins.json", "test.server.mixins.json", "test.mixins.json"].sort()
 	}
 
 	def "injected interfaces"() {
@@ -113,30 +113,16 @@ class FabricModJsonV2Test extends Specification {
 			jsonObject.has("net/minecraft/class_123")
 	}
 
-	def "universal class tweakers"() {
+	def "class tweakers"() {
 		given:
 			def mockSource = Mock(FabricModJsonSource)
 		when:
 			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.getClassTweakers(ModEnvironment.UNIVERSAL) == ["client.ct", "server.ct", "universal.ct"]
-	}
-
-	def "client class tweakers"() {
-		given:
-			def mockSource = Mock(FabricModJsonSource)
-		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
-		then:
-			fmj.getClassTweakers(ModEnvironment.CLIENT) == ["client.ct", "universal.ct"]
-	}
-
-	def "server class tweakers"() {
-		given:
-			def mockSource = Mock(FabricModJsonSource)
-		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
-		then:
-			fmj.getClassTweakers(ModEnvironment.SERVER) == ["server.ct", "universal.ct"]
+			fmj.getClassTweakers() == [
+				"client.ct": ModEnvironment.CLIENT,
+				"server.ct": ModEnvironment.SERVER,
+				"universal.ct": ModEnvironment.UNIVERSAL
+			]
 	}
 }

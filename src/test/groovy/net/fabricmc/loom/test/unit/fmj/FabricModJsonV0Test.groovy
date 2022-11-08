@@ -29,7 +29,6 @@ import com.google.gson.JsonObject
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory
 import net.fabricmc.loom.util.fmj.FabricModJsonSource
-import net.fabricmc.loom.util.fmj.ModEnvironment
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
@@ -100,6 +99,6 @@ class FabricModJsonV0Test extends Specification {
 		when:
 			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.getClassTweakers(ModEnvironment.UNIVERSAL) == []
+			fmj.getClassTweakers() == [:]
 	}
 }

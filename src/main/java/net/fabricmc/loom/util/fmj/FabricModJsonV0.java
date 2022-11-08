@@ -27,6 +27,7 @@ package net.fabricmc.loom.util.fmj;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -83,7 +84,7 @@ public final class FabricModJsonV0 extends FabricModJson {
 	}
 
 	@Override
-	public List<String> getClassTweakers(ModEnvironment modEnvironment) {
-		return Collections.emptyList();
+	public Map<String, ModEnvironment> getClassTweakers() {
+		return Collections.emptyMap();
 	}
 }

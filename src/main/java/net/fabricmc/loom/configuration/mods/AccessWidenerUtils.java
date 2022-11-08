@@ -36,7 +36,6 @@ import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
-import net.fabricmc.loom.util.fmj.ModEnvironment;
 
 public class AccessWidenerUtils {
 	/**
@@ -59,7 +58,7 @@ public class AccessWidenerUtils {
 
 	public static AccessWidenerData readAccessWidenerData(Path inputJar) throws IOException {
 		final FabricModJson fabricModJson = FabricModJsonFactory.createFromZip(inputJar);
-		final List<String> classTweakers = fabricModJson.getClassTweakers(ModEnvironment.UNIVERSAL);
+		final List<String> classTweakers = List.copyOf(fabricModJson.getClassTweakers().keySet());
 
 		if (classTweakers.isEmpty()) {
 			return null;

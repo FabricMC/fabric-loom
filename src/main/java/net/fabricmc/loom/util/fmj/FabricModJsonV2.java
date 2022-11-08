@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.util.fmj;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -34,6 +35,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+
+import net.fabricmc.loom.util.Pair;
 
 @ApiStatus.Experimental
 public final class FabricModJsonV2 extends FabricModJson {
@@ -58,34 +61,34 @@ public final class FabricModJsonV2 extends FabricModJson {
 			return Collections.emptyList();
 		}
 
-		return getConditionalConfigs(jsonObject.get("mixins"), ModEnvironment.UNIVERSAL);
+		return List.copyOf(getConditionalConfigs(jsonObject.get("mixins")).keySet());
 	}
 
 	@Override
-	public List<String> getClassTweakers(ModEnvironment modEnvironment) {
+	public Map<String, ModEnvironment> getClassTweakers() {
 		if (!jsonObject.has("classTweakers")) {
-			return Collections.emptyList();
+			return Collections.emptyMap();
 		}
 
-		return getConditionalConfigs(jsonObject.get("classTweakers"), modEnvironment);
+		return getConditionalConfigs(jsonObject.get("classTweakers"));
 	}
 
-	private List<String> getConditionalConfigs(JsonElement jsonElement, ModEnvironment modEnvironment) {
-		final List<String> values = new ArrayList<>();
+	private Map<String, ModEnvironment> getConditionalConfigs(JsonElement jsonElement) {
+		final Map<String, ModEnvironment> values = new HashMap<>();
 
 		if (jsonElement instanceof JsonArray jsonArray) {
 			for (JsonElement arrayElement : jsonArray) {
-				final String value = readConditionalConfig(arrayElement, modEnvironment);
+				final Pair<String, ModEnvironment> value = readConditionalConfig(arrayElement);
 
 				if (value != null) {
-					values.add(value);
+					values.put(value.left(), value.right());
 				}
 			}
 		} else if (jsonElement instanceof JsonPrimitive jsonPrimitive && jsonPrimitive.isString()) {
-			final String value = readConditionalConfig(jsonPrimitive, modEnvironment);
+			final Pair<String, ModEnvironment> value = readConditionalConfig(jsonPrimitive);
 
 			if (value != null) {
-				values.add(value);
+				values.put(value.left(), value.right());
 			}
 		} else {
 			throw new FabricModJsonUtils.ParseException("Must be a string or array of strings");
@@ -95,26 +98,21 @@ public final class FabricModJsonV2 extends FabricModJson {
 	}
 
 	@Nullable
-	private String readConditionalConfig(JsonElement jsonElement, ModEnvironment modEnvironment) {
+	private Pair<String, ModEnvironment> readConditionalConfig(JsonElement jsonElement) {
 		if (jsonElement instanceof JsonPrimitive jsonPrimitive && jsonPrimitive.isString()) {
-			return jsonElement.getAsString();
+			return new Pair<>(jsonElement.getAsString(), ModEnvironment.UNIVERSAL);
 		} else if (jsonElement instanceof JsonObject jsonObject) {
 			final String config = FabricModJsonUtils.readString(jsonObject, "config");
-
-			if (!validForEnvironment(jsonObject, modEnvironment)) {
-				return null;
-			}
-
-			return config;
+			return new Pair<>(config, getEnvironment(jsonObject));
 		} else {
 			throw new FabricModJsonUtils.ParseException("Must be a string or an object");
 		}
 	}
 
-	private boolean validForEnvironment(JsonObject jsonObject, ModEnvironment modEnvironment) {
+	private ModEnvironment getEnvironment(JsonObject jsonObject) {
 		if (!jsonObject.has("environment")) {
 			// Default enabled for all envs.
-			return true;
+			return ModEnvironment.UNIVERSAL;
 		}
 
 		if (!(jsonObject.get("environment") instanceof JsonPrimitive jsonPrimitive) || !jsonPrimitive.isString()) {
@@ -124,9 +122,9 @@ public final class FabricModJsonV2 extends FabricModJson {
 		final String environment = jsonPrimitive.getAsString();
 
 		return switch (environment) {
-		case "*" -> true;
-		case "client" -> modEnvironment.isClient();
-		case "server" -> modEnvironment.isServer();
+		case "*" -> ModEnvironment.UNIVERSAL;
+		case "client" -> ModEnvironment.CLIENT;
+		case "server" -> ModEnvironment.SERVER;
 		default -> throw new FabricModJsonUtils.ParseException("Invalid environment type: " + environment);
 		};
 	}

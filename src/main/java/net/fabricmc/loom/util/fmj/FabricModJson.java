@@ -27,6 +27,7 @@ package net.fabricmc.loom.util.fmj;
 import static net.fabricmc.loom.util.fmj.FabricModJsonUtils.readString;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.gson.JsonElement;
@@ -53,7 +54,7 @@ public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJso
 
 	public abstract List<String> getMixinConfigurations();
 
-	public abstract List<String> getClassTweakers(ModEnvironment modEnvironment);
+	public abstract Map<String, ModEnvironment> getClassTweakers();
 
 	public final FabricModJsonSource getSource() {
 		return source;

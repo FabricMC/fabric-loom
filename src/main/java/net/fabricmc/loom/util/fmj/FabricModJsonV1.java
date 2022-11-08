@@ -28,6 +28,7 @@ import static net.fabricmc.loom.util.fmj.FabricModJsonUtils.readString;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -91,11 +92,11 @@ public final class FabricModJsonV1 extends FabricModJson {
 	}
 
 	@Override
-	public List<String> getClassTweakers(ModEnvironment modEnvironment) {
+	public Map<String, ModEnvironment> getClassTweakers() {
 		if (!jsonObject.has("accessWidener")) {
-			return Collections.emptyList();
+			return Collections.emptyMap();
 		}
 
-		return List.of(readString(jsonObject, "accessWidener"));
+		return Map.of(readString(jsonObject, "accessWidener"), ModEnvironment.UNIVERSAL);
 	}
 }

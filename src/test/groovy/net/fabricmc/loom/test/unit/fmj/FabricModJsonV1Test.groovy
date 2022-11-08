@@ -105,6 +105,6 @@ class FabricModJsonV1Test extends Specification {
 		when:
 			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.getClassTweakers(ModEnvironment.SERVER) == ["modid.accesswidener"]
+			fmj.getClassTweakers() == ["modid.accesswidener": ModEnvironment.UNIVERSAL]
 	}
 }

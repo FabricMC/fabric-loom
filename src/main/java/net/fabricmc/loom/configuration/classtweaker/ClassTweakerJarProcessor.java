@@ -94,9 +94,10 @@ public abstract class ClassTweakerJarProcessor implements MinecraftJarProcessor<
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
+		assert !spec.classTweakers.isEmpty();
+
 		final List<ClassTweakerEntry> classTweakers = spec.getSupportedClassTweakers(context);
 		final ClassTweaker classTweaker = classTweakerFactory.readEntries(classTweakers);
-
-		// TODO apply to jar
+		classTweakerFactory.transformJar(jar, classTweaker);
 	}
 }

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.classtweaker;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import net.fabricmc.classtweaker.api.ClassTweaker;
@@ -38,4 +39,6 @@ public interface ClassTweakerFactory {
 	void read(ClassTweakerVisitor visitor, byte[] data, String modId);
 
 	ClassTweaker readEntries(List<ClassTweakerEntry> entries) throws IOException;
+
+	void transformJar(Path jar, ClassTweaker classTweaker) throws IOException;
 }

@@ -24,7 +24,9 @@
 
 package net.fabricmc.loom.test.unit.classtweaker
 
+import net.fabricmc.loom.api.processor.ProcessorContext
 import net.fabricmc.loom.api.processor.SpecContext
+import net.fabricmc.loom.configuration.classtweaker.ClassTweakerEntry
 import net.fabricmc.loom.configuration.classtweaker.ClassTweakerFactory
 import net.fabricmc.loom.configuration.classtweaker.ClassTweakerJarProcessor
 import net.fabricmc.loom.util.fmj.FabricModJson
@@ -97,5 +99,68 @@ class ClassTweakerJarProcessorTest extends Specification {
 
 			spec.classTweakers()[1].path() == "remote.classtweaker"
 			spec.classTweakers()[1].environment() == ModEnvironment.CLIENT
+	}
+
+	def "process: merged jar"() {
+		given:
+			def context = Mock(ProcessorContext)
+			context.isMerged() >> true
+
+			def mod = Mock(FabricModJson)
+
+			def spec = new ClassTweakerJarProcessor.Spec([
+			    new ClassTweakerEntry(mod, "mod.classtweaker", ModEnvironment.UNIVERSAL, false)
+			])
+
+		when:
+			processor.processJar(null, spec, context)
+
+		then:
+			1 * factory.readEntries { it.size() == 1 && it[0].path == "mod.classtweaker" }
+			1 * factory.transformJar(_, _)
+	}
+
+	def "process: client jar"() {
+		given:
+			def context = Mock(ProcessorContext)
+			context.isMerged() >> false
+			context.includesServer() >> false
+			context.includesClient() >> true
+
+			def mod = Mock(FabricModJson)
+
+			def spec = new ClassTweakerJarProcessor.Spec([
+				new ClassTweakerEntry(mod, "client.classtweaker", ModEnvironment.CLIENT, false),
+				new ClassTweakerEntry(mod, "server.classtweaker", ModEnvironment.SERVER, false)
+			])
+
+		when:
+			processor.processJar(null, spec, context)
+
+		then:
+			1 * factory.readEntries { it.size() == 1 && it[0].path == "client.classtweaker" }
+			1 * factory.transformJar(_, _)
+	}
+
+	def "process: server jar"() {
+		given:
+			def context = Mock(ProcessorContext)
+			context.isMerged() >> false
+			context.includesServer() >> true
+			context.includesClient() >> false
+
+			def mod = Mock(FabricModJson)
+
+			def spec = new ClassTweakerJarProcessor.Spec([
+				new ClassTweakerEntry(mod, "modid.classtweaker", ModEnvironment.UNIVERSAL, false),
+				new ClassTweakerEntry(mod, "server.classtweaker", ModEnvironment.SERVER, false)
+			])
+
+		when:
+			processor.processJar(null, spec, context)
+
+		then:
+			1 * factory.readEntries { it.size() == 2 && it[0].path == "modid.classtweaker" && it[1].path == "server.classtweaker" }
+			1 * factory.transformJar(_, _)
 	}
 }

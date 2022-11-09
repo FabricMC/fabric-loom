@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.classtweaker;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
@@ -62,5 +63,10 @@ final class ClassTweakerFactoryImpl implements ClassTweakerFactory {
 		}
 
 		return classTweaker;
+	}
+
+	@Override
+	public void transformJar(Path jar, ClassTweaker classTweaker) throws IOException {
+		new ClassTweakerJarTransformer(classTweaker).transform(jar);
 	}
 }

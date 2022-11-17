@@ -36,6 +36,7 @@ import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 final class ClassTweakerFactoryImpl implements ClassTweakerFactory {
 	@Override
 	public int readVersion(byte[] data) {
+		Objects.requireNonNull(data);
 		return ClassTweakerReader.readVersion(data);
 	}
 
@@ -55,7 +56,7 @@ final class ClassTweakerFactoryImpl implements ClassTweakerFactory {
 		for (ClassTweakerEntry entry : entries) {
 			ClassTweakerVisitor visitor = classTweaker;
 
-			if (entry.local()) {
+			if (!entry.local()) {
 				visitor = ClassTweakerVisitor.transitiveOnly(visitor);
 			}
 

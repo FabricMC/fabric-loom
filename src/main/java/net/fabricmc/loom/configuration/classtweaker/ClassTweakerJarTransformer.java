@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -41,9 +42,14 @@ import net.fabricmc.loom.util.FileSystemUtil;
 public record ClassTweakerJarTransformer(ClassTweaker classTweaker) {
 	public void transform(Path jar) throws IOException {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar, false)) {
-			for (String target : classTweaker.getTargets()) {
-				transformClass(fs, target);
-			}
+			transform(fs);
+		}
+	}
+
+	@VisibleForTesting
+	public void transform(FileSystemUtil.Delegate fs) throws IOException {
+		for (String target : classTweaker.getTargets()) {
+			transformClass(fs, target);
 		}
 	}
 

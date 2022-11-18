@@ -45,6 +45,7 @@ classTweaker\tv1\tsomenamespace
 accessible\tmethod\t$testClass\thello\t()V
 extend-enum\t$testEnum\tADDED\t(Ljava/lang/String;ILjava/lang/String;)V
 \toverride\thello\tnet/fabricmc/classtweaker/StaticClass\thello\t(I)V
+\tparams\t"Hello world!"
 """.trim()
 			def classTweaker = createClassTweaker(input)
 

@@ -66,4 +66,19 @@ public class MirrorUtil {
 
 		return Constants.FABRIC_REPOSITORY;
 	}
+
+	public static String getMojangHostMapping(ExtensionAware aware) {
+		if (aware.getExtensions().getExtraProperties().has("mojang_host_mapping")) {
+			return String.valueOf(aware.getExtensions().getExtraProperties().get("mojang_host_mapping"));
+		}
+
+		return null;
+	}
+
+	public static String applyMojangHostMapping(String content, ExtensionAware aware) {
+		String mapping = MirrorUtil.getMojangHostMapping(aware);
+		return mapping != null
+				? content.replaceAll("(piston-meta|piston-data|launchermeta)\\.mojang\\.com", mapping)
+				: content;
+	}
 }

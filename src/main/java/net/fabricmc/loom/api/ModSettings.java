@@ -54,7 +54,7 @@ public abstract class ModSettings implements Named {
 	}
 
 	/**
-	 * Add {@link SourceSet}'s output directories  from the current project to be grouped with the named mod.
+	 * Add {@link SourceSet}'s output directories from the current project to be grouped with the named mod.
 	 */
 	public void sourceSet(SourceSet sourceSet) {
 		Project project = getProject();
@@ -72,10 +72,28 @@ public abstract class ModSettings implements Named {
 	}
 
 	/**
-	 * Add {@link SourceSet}'s output directories from supplied project to be grouped with the named mod.
+	 * Add {@link SourceSet}'s output directories from the current project to be grouped with the named mod.
+	 *
+	 * @param name the name of the source set
+	 */
+	public void sourceSet(String name) {
+		sourceSet(name, getProject());
+	}
+
+	/**
+	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
 	 */
 	public void sourceSet(SourceSet sourceSet, Project project) {
 		getModSourceSets().add(new SourceSetReference(sourceSet, project));
+	}
+
+	/**
+	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
+	 *
+	 * @param name the name of the source set
+	 */
+	public void sourceSet(String name, Project project) {
+		sourceSet(SourceSetHelper.getSourceSetByName(name, project), project);
 	}
 
 	/**

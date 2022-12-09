@@ -84,18 +84,25 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 	protected abstract File getRefmapDestinationDir(T task);
 
-	protected final String getRefmapDestination(T task, String refmapName) throws IOException {
-		return new File(getRefmapDestinationDir(task), refmapName).getCanonicalPath();
+	protected final File getRefmapDestination(T task, String refmapName) throws IOException {
+		return new File(getRefmapDestinationDir(task), refmapName);
 	}
 
 	private void passMixinArguments(T task, SourceSet sourceSet) {
 		try {
 			LoomGradleExtension loom = LoomGradleExtension.get(project);
 			String refmapName = Objects.requireNonNull(MixinExtension.getMixinInformationContainer(sourceSet)).refmapNameProvider().get();
+
+			final File mixinMappings = MixinMappingsService.getMixinMappingFile(project, sourceSet);
+			final File remapFile = getRefmapDestination(task, refmapName);
+
+			task.getOutputs().file(mixinMappings).withPropertyName("mixin-ap-" + sourceSet.getName()).optional();
+			task.getOutputs().file(remapFile).withPropertyName("mixin-refmap-" + sourceSet.getName()).optional();
+
 			Map<String, String> args = new HashMap<>() {{
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.toFile().getCanonicalPath());
-					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, MixinMappingsService.getMixinMappingFile(project, sourceSet).getCanonicalPath());
-					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
+					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, mixinMappings.getCanonicalPath());
+					put(Constants.MixinArguments.OUT_REFMAP_FILE, remapFile.getCanonicalPath());
 					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:" + loom.getMixin().getRefmapTargetNamespace().get());
 					put(Constants.MixinArguments.QUIET, "true");
 				}};

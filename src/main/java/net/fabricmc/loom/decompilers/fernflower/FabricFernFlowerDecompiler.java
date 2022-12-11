@@ -61,6 +61,11 @@ public final class FabricFernFlowerDecompiler implements LoomDecompiler {
 		}
 
 		ff.addSource(compiledJar.toFile());
-		ff.decompileContext();
+
+		try {
+			ff.decompileContext();
+		} finally {
+			ff.clearContext();
+		}
 	}
 }

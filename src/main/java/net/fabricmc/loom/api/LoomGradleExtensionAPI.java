@@ -114,7 +114,7 @@ public interface LoomGradleExtensionAPI {
 	}
 
 	default List<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
-		return getRemapConfigurations().stream().filter(element -> element.getOnCompileClasspath().get()).toList();
+		return getRemapConfigurations().stream().filter(element -> element.getOnRuntimeClasspath().get()).toList();
 	}
 
 	@ApiStatus.Experimental

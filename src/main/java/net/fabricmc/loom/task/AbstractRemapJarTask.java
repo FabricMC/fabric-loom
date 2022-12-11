@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,6 +100,9 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Input
 	public abstract Property<Boolean> getIncludesClientOnlyClasses();
 
+	@Input
+	public abstract ListProperty<String> getAdditionalClientOnlyEntries();
+
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
 	@Inject
@@ -128,7 +132,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 			params.getJarManifestService().set(jarManifestServiceProvider);
 
 			if (getIncludesClientOnlyClasses().get()) {
-				final List<String> clientOnlyEntries = getClientOnlyEntries();
+				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries());
+				clientOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
 			}

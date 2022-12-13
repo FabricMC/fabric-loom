@@ -147,7 +147,6 @@ public abstract class AbstractRemapJarTask extends Jar {
 		});
 	}
 
-	@Internal
 	protected abstract List<String> getClientOnlyEntries(SourceSet sourceSet);
 
 	public interface AbstractRemapParams extends WorkParameters {

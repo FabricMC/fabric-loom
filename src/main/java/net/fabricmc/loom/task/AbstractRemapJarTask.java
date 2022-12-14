@@ -51,6 +51,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.build.event.BuildEventsListenerRegistry;
 import org.gradle.jvm.tasks.Jar;
@@ -106,6 +107,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	public abstract ListProperty<String> getAdditionalClientOnlyEntries();
 
 	@Input
+	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
 	private final Provider<JarManifestService> jarManifestServiceProvider;

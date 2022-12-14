@@ -88,7 +88,14 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public RemapJarTask() {
 		super();
 
-		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		// Lazy provider because the configuration is not yet registered at this point
+		getClasspath().from(getProject().provider(() -> {
+			String sourceSetName = MinecraftSourceSets.get(getProject()).getCombinedSourceSetName();
+			// Use copy to avoid inherited configuration (Minecraft libraries)
+			return getProject().getConfigurations().getByName(sourceSetName).copy();
+		}));
+		getClasspath().from(getProject().getConfigurations().getByName("modCompileClasspath"));
+
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);

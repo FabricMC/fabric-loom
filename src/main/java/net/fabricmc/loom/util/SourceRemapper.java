@@ -31,13 +31,17 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.slf4j.Logger;
@@ -175,6 +179,7 @@ public class SourceRemapper {
 
 		Mercury mercury = extension.getOrCreateSrcMercuryCache(toNamed ? 1 : 0, () -> {
 			Mercury m = createMercuryWithClassPath(project, toNamed);
+			m.setSourceCompatibilityFromRelease(getJavaCompileRelease(project));
 
 			for (File file : extension.getUnmappedModCollection()) {
 				Path path = file.toPath();
@@ -209,6 +214,30 @@ public class SourceRemapper {
 		return mercury;
 	}
 
+	public static int getJavaCompileRelease(Project project) {
+		AtomicInteger release = new AtomicInteger(-1);
+
+		project.getTasks().withType(JavaCompile.class, javaCompile -> {
+			Property<Integer> releaseProperty = javaCompile.getOptions().getRelease();
+
+			if (!releaseProperty.isPresent()) {
+				return;
+			}
+
+			int compileRelease = releaseProperty.get();
+			release.set(Math.max(release.get(), compileRelease));
+		});
+
+		final int i = release.get();
+
+		if (i < 0) {
+			// Unable to find the release used to compile with, default to the current version
+			return Integer.parseInt(JavaVersion.current().getMajorVersion());
+		}
+
+		return i;
+	}
+
 	public static void copyNonJavaFiles(Path from, Path to, Logger logger, Path source) throws IOException {
 		Files.walk(from).forEach(path -> {
 			Path targetPath = to.resolve(from.relativize(path).toString());
@@ -226,7 +255,6 @@ public class SourceRemapper {
 	public static Mercury createMercuryWithClassPath(Project project, boolean toNamed) {
 		Mercury m = new Mercury();
 		m.setGracefulClasspathChecks(true);
-		m.setSourceCompatibility(Constants.MERCURY_SOURCE_VERSION);
 
 		final List<Path> classPath = new ArrayList<>();
 

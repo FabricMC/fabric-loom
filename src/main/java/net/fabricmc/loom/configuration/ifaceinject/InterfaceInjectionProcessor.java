@@ -252,7 +252,10 @@ public class InterfaceInjectionProcessor implements JarProcessor, GenerateSource
 
 	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
 		for (InjectedInterface injectedInterface : injectedInterfaces) {
-			String iiComment = "Interface {@link %s} injected by mod %s".formatted(injectedInterface.ifaceName.substring(injectedInterface.ifaceName.lastIndexOf("/") + 1).replace("$", "."), injectedInterface.modId);
+			String javadocIFaceName = injectedInterface.ifaceName.contains("$")
+				? injectedInterface.ifaceName.replace("/", ".").replace("$", ".")
+				: injectedInterface.ifaceName.substring(injectedInterface.ifaceName.lastIndexOf("/") + 1);
+			String iiComment = "Interface {@link %s} injected by mod %s".formatted(javadocIFaceName, injectedInterface.modId);
 
 			if (comment == null || !comment.contains(iiComment)) {
 				if (comment == null) {

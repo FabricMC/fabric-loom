@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
@@ -58,22 +57,24 @@ public final class SourceRemapperService implements SharedService {
 		final String from = task.getSourceNamespace().get();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final String id = extension.getMappingConfiguration().getBuildServiceName("sourceremapper", from, to);
+		final int javaCompileRelease = SourceRemapper.getJavaCompileRelease(project);
 
 		return serviceManager.getOrCreateService(id, () ->
-				new SourceRemapperService(MappingsService.createDefault(project, serviceManager, from, to), task.getClasspath()
-			));
+				new SourceRemapperService(MappingsService.createDefault(project, serviceManager, from, to), task.getClasspath(), javaCompileRelease));
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceRemapperService.class);
 
 	private final MappingsService mappingsService;
 	private final ConfigurableFileCollection classpath;
+	private final int javaCompileRelease;
 
 	private final Supplier<Mercury> mercury = Suppliers.memoize(this::createMercury);
 
-	private SourceRemapperService(MappingsService mappingsService, ConfigurableFileCollection classpath) {
+	private SourceRemapperService(MappingsService mappingsService, ConfigurableFileCollection classpath, int javaCompileRelease) {
 		this.mappingsService = mappingsService;
 		this.classpath = classpath;
+		this.javaCompileRelease = javaCompileRelease;
 	}
 
 	public void remapSourcesJar(Path source, Path destination) throws IOException {
@@ -122,7 +123,7 @@ public final class SourceRemapperService implements SharedService {
 	private Mercury createMercury() {
 		var mercury = new Mercury();
 		mercury.setGracefulClasspathChecks(true);
-		mercury.setSourceCompatibility(Constants.MERCURY_SOURCE_VERSION);
+		mercury.setSourceCompatibilityFromRelease(javaCompileRelease);
 
 		try {
 			mercury.getProcessors().add(MercuryRemapper.create(getMappings()));

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,8 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -47,38 +48,34 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@TaskAction
 	public void run() throws IOException {
-		final MinecraftVersionMeta versionInfo = getExtension().getMinecraftProvider().getVersionInfo();
-		File assetsDirectory = new File(getExtension().getFiles().getUserCache(), "assets");
-
-		if (versionInfo.assets().equals("legacy")) {
-			assetsDirectory = new File(assetsDirectory, "/legacy/" + versionInfo.id());
-		}
+		final LoomGradleExtension extension = getExtension();
+		final MinecraftProvider minecraftProvider = extension.getMinecraftProvider();
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
-				.property("fabric.remapClasspathFile", getExtension().getFiles().getRemapClasspathFile().getAbsolutePath())
+				.property("fabric.remapClasspathFile", extension.getFiles().getRemapClasspathFile().getAbsolutePath())
 				.property("log4j.configurationFile", getAllLog4JConfigFiles())
 				.property("log4j2.formatMsgNoLookups", "true")
 
 				.argument("client", "--assetIndex")
-				.argument("client", getExtension().getMinecraftProvider().getVersionInfo().assetIndex().fabricId(getExtension().getMinecraftProvider().minecraftVersion()))
+				.argument("client", minecraftProvider.getAssetIndex())
 				.argument("client", "--assetsDir")
-				.argument("client", assetsDirectory.getAbsolutePath());
+				.argument("client", minecraftProvider.getAssetsDirectory().getAbsolutePath());
 
-		if (versionInfo.hasNativesToExtract()) {
-			String nativesPath = getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath();
+		if (minecraftProvider.getVersionInfo().hasNativesToExtract()) {
+			String nativesPath = extension.getFiles().getNativesDirectory(getProject()).getAbsolutePath();
 
 			launchConfig
 					.property("client", "java.library.path", nativesPath)
 					.property("client", "org.lwjgl.librarypath", nativesPath);
 		}
 
-		if (getExtension().areEnvironmentSourceSetsSplit()) {
+		if (extension.areEnvironmentSourceSetsSplit()) {
 			launchConfig.property("client", "fabric.gameJarPath.client", getGameJarPath("client"));
 			launchConfig.property("fabric.gameJarPath", getGameJarPath("common"));
 		}
 
-		if (!getExtension().getMods().isEmpty()) {
+		if (!extension.getMods().isEmpty()) {
 			launchConfig.property("fabric.classPathGroups", getClassPathGroups());
 		}
 
@@ -92,7 +89,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 
-		FileUtils.writeStringToFile(getExtension().getFiles().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
+		FileUtils.writeStringToFile(extension.getFiles().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 	}
 
 	private String getAllLog4JConfigFiles() {

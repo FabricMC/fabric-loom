@@ -70,7 +70,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 
 			if (isFabricMod && Files.exists(installerPath)) {
 				final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(installerPath, StandardCharsets.UTF_8), JsonObject.class);
-				installerData = new InstallerData(artifact.version(), jsonObject);
+				installerData = new InstallerData(artifact, jsonObject);
 			}
 		}
 

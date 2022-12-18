@@ -98,7 +98,7 @@ dependencies {
 	implementation ('net.fabricmc:cfr:0.1.1')
 
 	// source code remapping
-	implementation ('net.fabricmc:mercury:0.2.6')
+	implementation ('net.fabricmc:mercury:0.3.0')
 
 	// Kotlin
 	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.2') {

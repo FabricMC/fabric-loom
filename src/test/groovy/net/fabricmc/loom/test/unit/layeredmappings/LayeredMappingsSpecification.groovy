@@ -41,7 +41,6 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.logging.Logger
 import spock.lang.Specification
 
@@ -124,12 +123,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
             throw new UnsupportedOperationException("TODO")
         }
 
-		@Override
-		Path resolveDependency(MinimalExternalModuleDependency dependency) {
-			throw new UnsupportedOperationException("TODO")
-		}
-
-		@Override
+        @Override
         Path resolveMavenDependency(String mavenNotation) {
             assert mavenFiles.containsKey(mavenNotation)
             return mavenFiles.get(mavenNotation).toPath()

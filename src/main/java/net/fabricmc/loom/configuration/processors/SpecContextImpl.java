@@ -46,6 +46,7 @@ import org.gradle.api.tasks.SourceSet;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -78,9 +79,11 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 			}
 		}
 
-		// Add all the dependent projects
-		for (Project dependentProject : getDependentProjects(project).toList()) {
-			mods.addAll(getModsInProject(dependentProject));
+		if (!GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
+			// Add all the dependent projects
+			for (Project dependentProject : getDependentProjects(project).toList()) {
+				mods.addAll(getModsInProject(dependentProject));
+			}
 		}
 
 		return sorted(mods);

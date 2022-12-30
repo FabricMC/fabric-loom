@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import net.minecraft.block.BlockState;
 import techreborn.blocks.cable.CableShapeUtil;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.block.Blocks;
 
 public class ExampleMod implements ModInitializer {
 	@Override
@@ -18,6 +19,9 @@ public class ExampleMod implements ModInitializer {
 			// Just here to make sure it compiles as named, not to test it runs
 			BlockState state = null;
 			VoxelShape shape = new CableShapeUtil(null).getShape(state);
+
+			// Interface is injected by another project that we are depending on.
+			Blocks.AIR.newMethodThatDidNotExist();
 		}
 	}
 }

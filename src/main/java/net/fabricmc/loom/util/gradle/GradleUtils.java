@@ -48,10 +48,14 @@ public final class GradleUtils {
 
 	public static void allLoomProjects(Gradle gradle, Consumer<Project> consumer) {
 		gradle.allprojects(project -> {
-			if (project.getPluginManager().hasPlugin("fabric-loom")) {
+			if (isLoomProject(project)) {
 				consumer.accept(project);
 			}
 		});
+	}
+
+	public static boolean isLoomProject(Project project) {
+		return project.getPluginManager().hasPlugin("fabric-loom");
 	}
 
 	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {

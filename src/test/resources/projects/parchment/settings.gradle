@@ -1,0 +1,7 @@
+dependencyResolutionManagement {
+	versionCatalogs {
+		libs {
+			library("parchment", "org.parchmentmc.data:parchment-1.16.5:2021.10.10@zip")
+		}
+	}
+}

@@ -220,15 +220,15 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 				// The client only sources to the combined sources jar.
 				jar.from(clientOnlySourceSet.getAllSource());
 			});
+
+			project.getTasks().withType(AbstractRemapJarTask.class, task -> {
+				// Set the default client only source set name
+				task.getClientOnlySourceSetName().convention(CLIENT_ONLY_SOURCE_SET_NAME);
+			});
 		}
 
 		@Override
 		public void afterEvaluate(Project project) {
-		}
-
-		public static SourceSet getClientSourceSet(Project project) {
-			Preconditions.checkArgument(LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit(), "Cannot get client only sourceset as project is not split");
-			return SourceSetHelper.getSourceSetByName(CLIENT_ONLY_SOURCE_SET_NAME, project);
 		}
 	}
 }

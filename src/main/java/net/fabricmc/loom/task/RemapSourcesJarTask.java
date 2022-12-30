@@ -38,7 +38,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.service.SourceRemapperService;
 import net.fabricmc.loom.util.service.BuildSharedServiceManager;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
@@ -62,9 +61,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	@Override
-	protected List<String> getClientOnlyEntries() {
-		final SourceSet clientSourceSet = MinecraftSourceSets.Split.getClientSourceSet(getProject());
-
+	protected List<String> getClientOnlyEntries(SourceSet clientSourceSet) {
 		return clientSourceSet.getAllSource().getFiles().stream()
 				.map(relativePath(getRootPaths(clientSourceSet.getAllSource().getSrcDirs())))
 				.toList();

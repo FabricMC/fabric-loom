@@ -64,7 +64,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
@@ -321,9 +320,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	}
 
 	@Override
-	protected List<String> getClientOnlyEntries() {
-		final SourceSet clientSourceSet = MinecraftSourceSets.Split.getClientSourceSet(getProject());
-
+	protected List<String> getClientOnlyEntries(SourceSet clientSourceSet) {
 		final ConfigurableFileCollection output = getProject().getObjects().fileCollection();
 		output.from(clientSourceSet.getOutput().getClassesDirs());
 		output.from(clientSourceSet.getOutput().getResourcesDir());

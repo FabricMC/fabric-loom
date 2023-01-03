@@ -119,7 +119,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 		}
 
 		AccessWidenerTransformer transformer = new AccessWidenerTransformer(accessWidener);
-		transformer.apply(jar.toFile());
+		transformer.apply(jar);
 	}
 
 	@Override

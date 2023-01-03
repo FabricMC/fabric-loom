@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,9 +55,9 @@ final class AccessWidenerTransformer {
 	/**
 	 * Apply the rules from an access-widener to the given jar or zip file.
 	 */
-	void apply(File jarFile) {
+	void apply(Path jarFile) {
 		try {
-			ZipUtils.transform(jarFile.toPath(), getTransformers(accessWidener.getTargets()));
+			ZipUtils.transform(jarFile, getTransformers(accessWidener.getTargets()));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to apply access wideners to %s".formatted(jarFile), e);
 		}

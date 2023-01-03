@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.gradle.api.resources.TextResource;
+import org.gradle.api.resources.TextResourceFactory;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.util.ZipUtils;
@@ -42,10 +44,17 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
 public interface FabricModJsonSource {
 	byte[] read(String path) throws IOException;
 
+	TextResource getTextResource(TextResourceFactory resourceFactory, String path) throws IOException;
+
 	record ZipSource(Path zipPath) implements FabricModJsonSource {
 		@Override
 		public byte[] read(String path) throws IOException {
 			return ZipUtils.unpack(zipPath, path);
+		}
+
+		@Override
+		public TextResource getTextResource(TextResourceFactory resourceFactory, String path) {
+			return resourceFactory.fromArchiveEntry(zipPath.toFile(), path);
 		}
 	}
 
@@ -54,18 +63,32 @@ public interface FabricModJsonSource {
 		public byte[] read(String path) throws IOException {
 			return Files.readAllBytes(directoryPath.resolve(path));
 		}
+
+		@Override
+		public TextResource getTextResource(TextResourceFactory resourceFactory, String path) {
+			return resourceFactory.fromFile(directoryPath.resolve(path).toFile());
+		}
 	}
 
 	record SourceSetSource(SourceSet... sourceSets) implements FabricModJsonSource {
 		@Override
 		public byte[] read(String path) throws IOException {
+			return Files.readAllBytes(findFile(path).toPath());
+		}
+
+		@Override
+		public TextResource getTextResource(TextResourceFactory resourceFactory, String path) throws IOException {
+			return resourceFactory.fromFile(findFile(path));
+		}
+
+		private File findFile(String path) throws IOException {
 			final File file = SourceSetHelper.findFirstFileInResource(path, sourceSets);
 
 			if (file == null) {
 				throw new FileNotFoundException("Could not find: " + path);
 			}
 
-			return Files.readAllBytes(file.toPath());
+			return file;
 		}
 	}
 }

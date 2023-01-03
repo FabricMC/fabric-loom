@@ -31,10 +31,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.gradle.api.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
@@ -43,11 +44,11 @@ import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 
 final class AccessWidenerTransformer {
-	private final Logger logger;
+	private static final Logger LOGGER = LoggerFactory.getLogger(AccessWidenerTransformer.class);
+
 	private final AccessWidener accessWidener;
 
-	AccessWidenerTransformer(Logger logger, AccessWidener accessWidener) {
-		this.logger = logger;
+	AccessWidenerTransformer(AccessWidener accessWidener) {
 		this.accessWidener = accessWidener;
 	}
 
@@ -74,7 +75,7 @@ final class AccessWidenerTransformer {
 			ClassWriter writer = new ClassWriter(0);
 			ClassVisitor classVisitor = AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
 
-			logger.info("Applying access widener to " + className);
+			LOGGER.debug("Applying access widener to " + className);
 
 			reader.accept(classVisitor, 0);
 			return writer.toByteArray();

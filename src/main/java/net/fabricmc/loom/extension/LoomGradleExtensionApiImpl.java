@@ -143,10 +143,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		// Add main source set by default
 		interfaceInjection(interfaceInjection -> {
-			final SourceSet main = SourceSetHelper.getMainSourceSet(project);
-			interfaceInjection.getInterfaceInjectionSourceSets().add(main);
-
-			interfaceInjection.getInterfaceInjectionSourceSets().finalizeValueOnRead();
 			interfaceInjection.getEnableDependencyInterfaceInjection().convention(true).finalizeValueOnRead();
 		});
 	}
@@ -158,6 +154,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
+		deprecationHelper.removedInLoom2_0("accessWidenerPath");
 		return accessWidener;
 	}
 

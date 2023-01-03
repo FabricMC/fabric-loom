@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,6 +57,10 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Internal
 	DeprecationHelper getDeprecationHelper();
 
+	/**
+	 * No longer required, the access wideners are read from the fabric.mod.json file.
+	 */
+	@Deprecated(forRemoval = true)
 	RegularFileProperty getAccessWidenerPath();
 
 	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,21 +24,21 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.tasks.InputFile;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.SkipWhenEmpty;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.accesswidener.AccessWidenerFormatException;
@@ -46,13 +46,14 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrEnvironment;
 
 public abstract class ValidateAccessWidenerTask extends DefaultTask {
-	@SkipWhenEmpty
-	@InputFile
-	public abstract RegularFileProperty getAccessWidener();
+	@Nested
+	public abstract ListProperty<TextResource> getAccessWideners();
 
 	@InputFiles
 	public abstract ConfigurableFileCollection getTargetJars();
@@ -61,15 +62,39 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	public ValidateAccessWidenerTask() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
-		getAccessWidener().convention(extension.getAccessWidenerPath()).finalizeValueOnRead();
+		getAccessWideners().convention(getDefaultResources());
 		getTargetJars().from(extension.getMinecraftJarsCollection(MappingsNamespace.NAMED));
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
 	}
 
+	private Provider<List<TextResource>> getDefaultResources() {
+		return getProject().provider(() -> {
+			var resources = new ArrayList<TextResource>();
+
+			for (FabricModJson fabricModJson : FabricModJsonHelpers.getModsInProject(getProject())) {
+				Set<String> classTweakers = fabricModJson.getClassTweakers().keySet();
+
+				for (String classTweaker : classTweakers) {
+					var resource = fabricModJson.getSource().getTextResource(getProject().getResources().getText(), classTweaker);
+					resources.add(resource);
+				}
+			}
+
+			return resources;
+		});
+	}
+
 	@TaskAction
 	public void run() {
+		final List<TextResource> accessWideners = getAccessWideners().get();
+
+		if (accessWideners.isEmpty()) {
+			return;
+		}
+
+		// TODO run async
 		final TinyRemapper tinyRemapper = TinyRemapper.newRemapper().build();
 
 		for (File file : getTargetJars().getFiles()) {
@@ -79,15 +104,13 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 		final AccessWidenerValidator validator = new AccessWidenerValidator(tinyRemapper.getEnvironment());
 		final AccessWidenerReader accessWidenerReader = new AccessWidenerReader(validator);
 
-		try (BufferedReader reader = Files.newBufferedReader(getAccessWidener().get().getAsFile().toPath(), StandardCharsets.UTF_8)) {
-			accessWidenerReader.read(reader, "named");
-		} catch (AccessWidenerFormatException e) {
-			getProject().getLogger().error("Failed to validate access-widener file {} on line {}: {}", getAccessWidener().get().getAsFile().getName(), e.getLineNumber(), e.getMessage());
-			throw e;
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read access widener", e);
-		} finally {
-			tinyRemapper.finish();
+		for (TextResource textResource : accessWideners) {
+			try {
+				accessWidenerReader.read(textResource.asString().getBytes(StandardCharsets.UTF_8), "named");
+			} catch (AccessWidenerFormatException e) {
+				getProject().getLogger().error("Failed to validate access-widener on line {}: {}", e.getLineNumber(), e.getMessage());
+				throw e;
+			}
 		}
 	}
 

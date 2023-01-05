@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util.service;
 
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public final class SharedServiceManager {
 	private static final Map<Gradle, SharedServiceManager> SERVICE_FACTORY_MAP = new ConcurrentHashMap<>();
 	private final Gradle gradle;
 
-	private final Map<String, SharedService> sharedServiceMap = new ConcurrentHashMap<>();
+	private final Map<String, SoftReference<SharedService>> sharedServiceMap = new ConcurrentHashMap<>();
 
 	private boolean shutdown = false;
 
@@ -67,11 +68,12 @@ public final class SharedServiceManager {
 			}
 
 			//noinspection unchecked
-			S sharedService = (S) sharedServiceMap.get(id);
+			SoftReference<S> sharedServiceSoftRef = (SoftReference<S>) sharedServiceMap.get(id);
+			S sharedService = sharedServiceSoftRef != null ? sharedServiceSoftRef.get() : null;
 
 			if (sharedService == null) {
 				sharedService = function.get();
-				sharedServiceMap.put(id, sharedService);
+				sharedServiceMap.put(id, new SoftReference<>(sharedService));
 			}
 
 			return sharedService;
@@ -87,7 +89,9 @@ public final class SharedServiceManager {
 
 		final List<IOException> exceptionList = new ArrayList<>();
 
-		for (SharedService sharedService : sharedServiceMap.values()) {
+		for (SoftReference<SharedService> sharedServiceRef : sharedServiceMap.values()) {
+			SharedService sharedService = sharedServiceRef.get();
+			if (sharedService == null) continue;
 			try {
 				sharedService.close();
 			} catch (IOException e) {

@@ -51,7 +51,8 @@ public class KaptApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 		super(
 				project,
 				AnnotationProcessorInvoker.getApConfigurations(project, KaptApInvoker::getKaptConfigurationName),
-				getInvokerTasks(project));
+				getInvokerTasks(project),
+				"Kotlin");
 
 		try {
 			dummyRefmapDirectory = Files.createTempDirectory("temp_refmap").toFile();

@@ -64,15 +64,17 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	protected final Project project;
 	protected final MixinExtension mixinExtension;
 	protected final Map<SourceSet, T> invokerTasks;
+	private final String name;
 	private final Collection<Configuration> apConfigurations;
 
 	protected AnnotationProcessorInvoker(Project project,
-										Collection<Configuration> apConfigurations,
-										Map<SourceSet, T> invokerTasks) {
+											Collection<Configuration> apConfigurations,
+											Map<SourceSet, T> invokerTasks, String name) {
 		this.project = project;
 		this.mixinExtension = LoomGradleExtension.get(project).getMixin();
 		this.apConfigurations = apConfigurations;
 		this.invokerTasks = invokerTasks;
+		this.name = name;
 	}
 
 	protected static Collection<Configuration> getApConfigurations(Project project, Function<SourceSet, String> getApConfigNameFunc) {
@@ -95,7 +97,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 			final File mixinMappings = MixinMappingsService.getMixinMappingFile(project, sourceSet);
 
-			task.getOutputs().file(mixinMappings).withPropertyName("mixin-ap-" + sourceSet.getName()).optional();
+			task.getOutputs().file(mixinMappings).withPropertyName("mixin-ap-" + sourceSet.getName() + "-" + name).optional();
 
 			Map<String, String> args = new HashMap<>() {{
 					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingsProvider().tinyMappings.toFile().getCanonicalPath());

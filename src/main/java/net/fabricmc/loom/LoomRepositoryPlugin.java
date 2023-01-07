@@ -37,6 +37,7 @@ import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.PluginAware;
 import org.jetbrains.annotations.NotNull;
 
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.util.MirrorUtil;
 
@@ -54,10 +55,24 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			}
 
 			declareRepositories(project.getRepositories(), LoomFiles.create(project), project);
+			project.afterEvaluate(this::declareDevLoginRepoAfterEval);
 		} else if (target instanceof Gradle) {
 			return;
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
+		}
+	}
+
+	private void declareDevLoginRepoAfterEval(Project project) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.getRunConfigs().stream().anyMatch(RunConfigSettings::isAuthenticated)) {
+			// Add covers1624 repo for DevLogin runtime dependency
+			project.getRepositories().maven(repo -> {
+				repo.setName("Covers1624");
+				repo.setUrl("https://maven.covers1624.net");
+				repo.mavenContent(content -> content.includeGroup("net.covers1624"));
+			});
 		}
 	}
 
@@ -104,13 +119,6 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.setUrl(files.getRootProjectPersistentCache());
 			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
-		});
-
-		// Add covers1624 repo for DevLogin runtime dependency
-		repositories.maven(repo -> {
-			repo.setName("Covers1624");
-			repo.setUrl("https://maven.covers1624.net");
-			repo.mavenContent(content -> content.includeGroup("net.covers1624"));
 		});
 	}
 

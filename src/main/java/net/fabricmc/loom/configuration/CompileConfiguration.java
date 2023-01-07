@@ -48,6 +48,7 @@ import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerJarProcessor;
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
@@ -117,8 +118,12 @@ public final class CompileConfiguration {
 		project.getDependencies().add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 		project.getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 
-		// Add DevLogin to runtimeClasspath configuration
-		project.getDependencies().add(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Dependencies.DEV_LOGIN + Constants.Dependencies.Versions.DEV_LOGIN);
+		project.afterEvaluate(prj -> {
+			if (extension.getRunConfigs().stream().anyMatch(RunConfigSettings::isAuthenticated)) {
+				// Add DevLogin to runtimeClasspath configuration
+				prj.getDependencies().add(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Dependencies.DEV_LOGIN + Constants.Dependencies.Versions.DEV_LOGIN);
+			}
+		});
 	}
 
 	public static void configureCompile(Project project) {

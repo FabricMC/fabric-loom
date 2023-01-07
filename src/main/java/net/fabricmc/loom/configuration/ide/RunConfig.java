@@ -183,25 +183,28 @@ public class RunConfig {
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
 		runConfig.projectName = project.getName();
 
-		if(settings.isAuthenticated()) {
-			var oldMain = runConfig.mainClass;
+		if (settings.isAuthenticated()) {
+			String oldMain = runConfig.mainClass;
 			runConfig.mainClass = "net.covers1624.devlogin.DevLogin";
-			var addArg = true;
+			boolean addArg = true;
 
 			// DevLogin uses `--launch_target <main>` to invoke the original main class
 			// if param exists for what ever reason, swap out its current value to what it should be
 			// if it doesnt exist, add it
-			for(var i = 0; i < runConfig.programArgs.size(); i++) {
-				if(runConfig.programArgs.get(i).equalsIgnoreCase("--launch_target")) {
-					if(i + 1 < runConfig.programArgs.size()) runConfig.programArgs.set(i, oldMain);
-					else runConfig.programArgs.add(oldMain);
+			for (int i = 0; i < runConfig.programArgs.size(); i++) {
+				if (runConfig.programArgs.get(i).equalsIgnoreCase("--launch_target")) {
+					if (i + 1 < runConfig.programArgs.size()) {
+						runConfig.programArgs.set(i, oldMain);
+					} else {
+						runConfig.programArgs.add(oldMain);
+					}
 
 					addArg = false;
 					break;
 				}
 			}
 
-			if(addArg) {
+			if (addArg) {
 				runConfig.programArgs.add("--launch_target");
 				runConfig.programArgs.add(oldMain);
 			}

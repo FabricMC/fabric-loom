@@ -97,8 +97,8 @@ public final class RunConfigSettings implements Named {
 	private boolean ideConfigGenerated;
 	/**
 	 * When true will use <a href="https://github.com/covers1624/DevLogin#devlogin">DevLogin</a> and attempt to authenticate against Mojang account servers.
-	 * <p>
-	 * Only affective for client configs
+	 *
+	 * <p>Only affective for client configs
 	 */
 	private boolean authenticated = false;
 

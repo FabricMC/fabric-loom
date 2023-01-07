@@ -116,6 +116,9 @@ public final class CompileConfiguration {
 		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);
 		project.getDependencies().add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 		project.getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
+
+		// Add DevLogin to runtimeClasspath configuration
+		project.getDependencies().add(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Dependencies.DEV_LOGIN + Constants.Dependencies.Versions.DEV_LOGIN);
 	}
 
 	public static void configureCompile(Project project) {

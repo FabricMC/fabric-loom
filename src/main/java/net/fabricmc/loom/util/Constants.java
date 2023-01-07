@@ -85,6 +85,7 @@ public class Constants {
 		public static final String TERMINAL_CONSOLE_APPENDER = "net.minecrell:terminalconsoleappender:";
 		public static final String JETBRAINS_ANNOTATIONS = "org.jetbrains:annotations:";
 		public static final String NATIVE_SUPPORT = "net.fabricmc:fabric-loom-native-support:";
+		public static final String DEV_LOGIN = "net.covers1624:DevLogin:";
 
 		private Dependencies() {
 		}
@@ -98,6 +99,7 @@ public class Constants {
 			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
 			public static final String JETBRAINS_ANNOTATIONS = "23.0.0";
 			public static final String NATIVE_SUPPORT_VERSION = "1.0.1";
+			public static final String DEV_LOGIN = "0.1.0.2";
 
 			private Versions() {
 			}

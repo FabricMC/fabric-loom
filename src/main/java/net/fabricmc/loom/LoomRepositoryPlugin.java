@@ -105,6 +105,13 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.patternLayout(layout -> layout.artifact("[revision]/[artifact](-[classifier])(.[ext])"));
 			repo.metadataSources(IvyArtifactRepository.MetadataSources::artifact);
 		});
+
+		// Add covers1624 repo for DevLogin runtime dependency
+		repositories.maven(repo -> {
+			repo.setName("Covers1624");
+			repo.setUrl("https://maven.covers1624.net");
+			repo.mavenContent(content -> content.includeGroup("net.covers1624"));
+		});
 	}
 
 	public static void setupForLegacyVersions(Project project) {

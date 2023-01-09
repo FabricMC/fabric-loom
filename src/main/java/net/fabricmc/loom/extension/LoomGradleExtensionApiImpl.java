@@ -154,7 +154,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
-		deprecationHelper.removedInLoom2_0("accessWidenerPath");
 		return accessWidener;
 	}
 

@@ -25,22 +25,31 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.ModEnvironment;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public interface AccessWidenerEntry {
-	ModEnvironment environment();
+public record LocalAccessWidenerEntry(Path path) implements AccessWidenerEntry {
+	@Override
+	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+		var reader = new AccessWidenerReader(visitor);
+		reader.read(Files.readAllBytes(path));
+	}
 
-	/**
-	 * @return The mod id to be used in {@link TransitiveAccessWidenerMappingsProcessor} or null when this entry does not contain transitive entries.
-	 */
-	@Nullable
-	String mappingId();
+	@Override
+	public ModEnvironment environment() {
+		return ModEnvironment.UNIVERSAL;
+	}
 
-	void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+	@Override
+	public @Nullable String mappingId() {
+		return null;
+	}
 }

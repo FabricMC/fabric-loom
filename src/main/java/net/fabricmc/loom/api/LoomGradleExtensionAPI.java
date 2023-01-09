@@ -57,10 +57,6 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Internal
 	DeprecationHelper getDeprecationHelper();
 
-	/**
-	 * No longer required, the access wideners are read from the fabric.mod.json file.
-	 */
-	@Deprecated(forRemoval = true)
 	RegularFileProperty getAccessWidenerPath();
 
 	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();

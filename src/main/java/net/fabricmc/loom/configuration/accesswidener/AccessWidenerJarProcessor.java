@@ -32,6 +32,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.gradle.api.file.RegularFileProperty;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.accesswidener.AccessWidener;
@@ -46,25 +47,36 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWidenerJarProcessor.Spec> {
 	private final String name;
-	private final boolean transitive;
+	private final boolean includeTransitive;
+	private final RegularFileProperty localAccessWidenerProperty;
 
 	@Inject
-	public AccessWidenerJarProcessor(String name, boolean transitive) {
+	public AccessWidenerJarProcessor(String name, boolean includeTransitive, RegularFileProperty localAccessWidenerProperty) {
 		this.name = name;
-		this.transitive = transitive;
+		this.includeTransitive = includeTransitive;
+		this.localAccessWidenerProperty = localAccessWidenerProperty;
 	}
 
 	@Override
 	public @Nullable AccessWidenerJarProcessor.Spec buildSpec(SpecContext context) {
 		List<AccessWidenerEntry> accessWideners = new ArrayList<>();
 
-		for (FabricModJson fabricModJson : context.localMods()) {
-			accessWideners.addAll(AccessWidenerEntry.readAll(fabricModJson, false));
+		if (localAccessWidenerProperty.isPresent()) {
+			// Add the access widener specified in the extension
+			accessWideners.add(new LocalAccessWidenerEntry(localAccessWidenerProperty.get().getAsFile().toPath()));
 		}
 
-		if (transitive) {
+		/* Uncomment to read all access wideners from local mods.
+
+		for (FabricModJson fabricModJson : context.localMods()) {
+			accessWideners.addAll(ModAccessWidenerEntry.readAll(fabricModJson, false));
+		}
+
+		 */
+
+		if (includeTransitive) {
 			for (FabricModJson fabricModJson : context.modDependencies()) {
-				accessWideners.addAll(AccessWidenerEntry.readAll(fabricModJson, true));
+				accessWideners.addAll(ModAccessWidenerEntry.readAll(fabricModJson, true));
 			}
 		}
 

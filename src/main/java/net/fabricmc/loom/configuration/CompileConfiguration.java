@@ -34,8 +34,10 @@ import java.util.function.Consumer;
 
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
+import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
@@ -66,6 +68,8 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.loom.util.service.SharedServiceManager;
+
+import org.jetbrains.annotations.Nullable;
 
 public final class CompileConfiguration {
 	private CompileConfiguration() {
@@ -221,7 +225,7 @@ public final class CompileConfiguration {
 		final LoomGradleExtension extension = configContext.extension();
 
 		final boolean enableTransitiveAccessWideners = extension.getEnableTransitiveAccessWideners().get();
-		extension.addMinecraftJarProcessor(AccessWidenerJarProcessor.class, "fabric-loom:access-widener", enableTransitiveAccessWideners);
+		extension.addMinecraftJarProcessor(AccessWidenerJarProcessor.class, "fabric-loom:access-widener", enableTransitiveAccessWideners, extension.getAccessWidenerPath());
 
 		if (extension.getEnableModProvidedJavadoc().get()) {
 			extension.addMinecraftJarProcessor(ModJavadocProcessor.class, "fabric-loom:mod-javadoc");

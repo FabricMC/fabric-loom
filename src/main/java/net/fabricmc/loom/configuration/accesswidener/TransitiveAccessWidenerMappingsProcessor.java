@@ -50,7 +50,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 	@Override
 	public boolean transform(MemoryMappingTree mappings, AccessWidenerJarProcessor.Spec spec, MappingProcessorContext context) {
 		final List<AccessWidenerEntry> accessWideners = spec.accessWideners().stream()
-				.filter(AccessWidenerEntry::transitiveOnly)
+				.filter(entry -> entry.mappingId() != null)
 				.toList();
 
 		if (accessWideners.isEmpty()) {
@@ -63,7 +63,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 
 		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry accessWidener : accessWideners) {
-				var visitor = new MappingCommentVisitor(accessWidener.mod().getId(), mappings);
+				var visitor = new MappingCommentVisitor(accessWidener.mappingId(), mappings);
 				accessWidener.read(visitor, remapper);
 			}
 		} catch (IOException e) {

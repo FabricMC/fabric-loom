@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,25 +24,34 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.accesswidener.TransitiveOnlyFilter;
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.api.processor.MappingProcessorContext;
+import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record TransitiveAccessWidenerMappingsProcessor(Project project) implements GenerateSourcesTask.MappingsProcessor {
+public final class TransitiveAccessWidenerMappingsProcessor implements MinecraftJarProcessor.MappingsProcessor<AccessWidenerJarProcessor.Spec> {
+	public static final TransitiveAccessWidenerMappingsProcessor INSTANCE = new TransitiveAccessWidenerMappingsProcessor();
+
+	private TransitiveAccessWidenerMappingsProcessor() {
+	}
+
 	@Override
-	public boolean transform(MemoryMappingTree mappings) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		List<AccessWidenerFile> accessWideners = extension.getTransitiveAccessWideners();
+	public boolean transform(MemoryMappingTree mappings, AccessWidenerJarProcessor.Spec spec, MappingProcessorContext context) {
+		final List<AccessWidenerEntry> accessWideners = spec.accessWideners().stream()
+				.filter(entry -> entry.mappingId() != null)
+				.toList();
 
 		if (accessWideners.isEmpty()) {
 			return false;
@@ -52,22 +61,27 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
 		}
 
-		for (AccessWidenerFile accessWidener : accessWideners) {
-			MappingCommentVisitor mappingCommentVisitor = new MappingCommentVisitor(accessWidener.modId(), mappings, project.getLogger());
-			AccessWidenerReader accessWidenerReader = new AccessWidenerReader(new TransitiveOnlyFilter(mappingCommentVisitor));
-			accessWidenerReader.read(accessWidener.content());
+		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+			for (AccessWidenerEntry accessWidener : accessWideners) {
+				var visitor = new MappingCommentVisitor(accessWidener.mappingId(), mappings);
+				accessWidener.read(visitor, remapper);
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to transform access widener mappings", e);
 		}
 
 		return true;
 	}
 
-	private record MappingCommentVisitor(String modId, MemoryMappingTree mappingTree, Logger logger) implements AccessWidenerVisitor {
+	private record MappingCommentVisitor(String modId, MemoryMappingTree mappingTree) implements AccessWidenerVisitor {
+		private static final Logger LOGGER = LoggerFactory.getLogger(MappingCommentVisitor.class);
+
 		@Override
 		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(name);
 
 			if (classMapping == null) {
-				logger.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
+				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
 				return;
 			}
 
@@ -82,14 +96,14 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
 
 			if (classMapping == null) {
-				logger.info("Failed to find class ({}) to mark access widened by mod ({})", owner, modId());
+				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", owner, modId());
 				return;
 			}
 
 			MappingTree.MethodMapping methodMapping = classMapping.getMethod(name, descriptor);
 
 			if (methodMapping == null) {
-				logger.info("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
+				LOGGER.info("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
 				return;
 			}
 
@@ -104,14 +118,14 @@ public record TransitiveAccessWidenerMappingsProcessor(Project project) implemen
 			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
 
 			if (classMapping == null) {
-				logger.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
+				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
 				return;
 			}
 
 			MappingTree.FieldMapping fieldMapping = classMapping.getField(name, descriptor);
 
 			if (fieldMapping == null) {
-				logger.info("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
+				LOGGER.info("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
 				return;
 			}
 

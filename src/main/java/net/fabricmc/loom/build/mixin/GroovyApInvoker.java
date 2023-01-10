@@ -42,7 +42,8 @@ public class GroovyApInvoker extends AnnotationProcessorInvoker<GroovyCompile> {
 		super(
 				project,
 				ImmutableList.of(),
-				getInvokerTasks(project));
+				getInvokerTasks(project),
+				AnnotationProcessorInvoker.GROOVY);
 	}
 
 	private static Map<SourceSet, GroovyCompile> getInvokerTasks(Project project) {

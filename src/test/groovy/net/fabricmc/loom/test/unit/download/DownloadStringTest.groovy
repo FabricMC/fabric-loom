@@ -109,4 +109,11 @@ class DownloadStringTest extends DownloadTest {
 		then:
 			result == "Hello World!"
 	}
+
+	def "String: Insecure protocol"() {
+		when:
+			def result = Download.create("http://fabricmc.net").downloadString()
+		then:
+			thrown IllegalArgumentException
+	}
 }

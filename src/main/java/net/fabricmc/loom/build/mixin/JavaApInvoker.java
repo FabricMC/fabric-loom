@@ -41,7 +41,8 @@ public class JavaApInvoker extends AnnotationProcessorInvoker<JavaCompile> {
 		super(
 				project,
 				AnnotationProcessorInvoker.getApConfigurations(project, SourceSet::getAnnotationProcessorConfigurationName),
-				getInvokerTasks(project));
+				getInvokerTasks(project),
+				AnnotationProcessorInvoker.JAVA);
 	}
 
 	private static Map<SourceSet, JavaCompile> getInvokerTasks(Project project) {

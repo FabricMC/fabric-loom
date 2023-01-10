@@ -123,7 +123,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 		public String name;
 		public String request = "launch";
 		public String cwd;
-		public String console = "internalConsole";
+		public String console = "integratedTerminal";
 		public boolean stopOnEntry = false;
 		public String mainClass;
 		public String vmArgs;

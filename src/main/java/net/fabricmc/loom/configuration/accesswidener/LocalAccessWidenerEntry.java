@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022-2023 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.processor;
+package net.fabricmc.loom.configuration.accesswidener;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.jetbrains.annotations.Nullable;
+
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.loom.util.fmj.ModEnvironment;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public interface ProcessorContext {
-	MinecraftJarConfiguration getJarConfiguration();
+public record LocalAccessWidenerEntry(Path path) implements AccessWidenerEntry {
+	@Override
+	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+		var reader = new AccessWidenerReader(visitor);
+		reader.read(Files.readAllBytes(path));
+	}
 
-	boolean isMerged();
+	@Override
+	public ModEnvironment environment() {
+		return ModEnvironment.UNIVERSAL;
+	}
 
-	boolean includesClient();
-
-	boolean includesServer();
-
-	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
-
-	MemoryMappingTree getMappings();
+	@Override
+	public @Nullable String mappingId() {
+		return null;
+	}
 }

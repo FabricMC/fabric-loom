@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,52 +24,39 @@
 
 package net.fabricmc.loom.util.fmj;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-/**
- * A mod may be a zip, directory or Gradle {@link SourceSet}
- * This abstraction allows easily reading a contained file from the mod.
- */
-public interface FabricModJsonSource {
-	byte[] read(String path) throws IOException;
+public class FabricModJsonHelpers {
+	// Returns a list of Mods found in the provided project's main or client sourcesets
+	public static List<FabricModJson> getModsInProject(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		var sourceSets = new ArrayList<SourceSet>();
+		sourceSets.add(SourceSetHelper.getMainSourceSet(project));
 
-	record ZipSource(Path zipPath) implements FabricModJsonSource {
-		@Override
-		public byte[] read(String path) throws IOException {
-			return ZipUtils.unpack(zipPath, path);
-		}
-	}
-
-	record DirectorySource(Path directoryPath) implements FabricModJsonSource {
-		@Override
-		public byte[] read(String path) throws IOException {
-			return Files.readAllBytes(directoryPath.resolve(path));
-		}
-	}
-
-	record SourceSetSource(SourceSet... sourceSets) implements FabricModJsonSource {
-		@Override
-		public byte[] read(String path) throws IOException {
-			return Files.readAllBytes(findFile(path).toPath());
+		if (extension.areEnvironmentSourceSetsSplit()) {
+			sourceSets.add(SourceSetHelper.getSourceSetByName("client", project));
 		}
 
-		private File findFile(String path) throws IOException {
-			final File file = SourceSetHelper.findFirstFileInResource(path, sourceSets);
+		try {
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(sourceSets.toArray(SourceSet[]::new));
 
-			if (file == null) {
-				throw new FileNotFoundException("Could not find: " + path);
+			if (fabricModJson != null) {
+				return List.of(fabricModJson);
 			}
-
-			return file;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
+
+		return Collections.emptyList();
 	}
 }

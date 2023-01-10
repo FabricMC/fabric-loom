@@ -28,12 +28,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar minecraftJar) implements ProcessorContext {
@@ -71,5 +73,11 @@ public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar min
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to create tiny remapper", e);
 		}
+	}
+
+	@Override
+	public MemoryMappingTree getMappings() {
+		LoomGradleExtension extension = LoomGradleExtension.get(configContext().project());
+		return extension.getMappingConfiguration().getMappingsService(configContext().serviceManager()).getMappingTree();
 	}
 }

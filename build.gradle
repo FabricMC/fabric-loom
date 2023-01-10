@@ -194,6 +194,7 @@ jacocoTestReport {
 
 test {
 	maxHeapSize = "2560m"
+	jvmArgs "-XX:+HeapDumpOnOutOfMemoryError"
 	useJUnitPlatform()
 
 	// Forward system prop onto tests.

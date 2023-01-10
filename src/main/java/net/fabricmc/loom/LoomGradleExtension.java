@@ -26,10 +26,7 @@ package net.fabricmc.loom;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -53,10 +50,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	LoomFiles getFiles();
-
-	MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory);
-
-	Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory);
 
 	ConfigurableFileCollection getUnmappedModCollection();
 

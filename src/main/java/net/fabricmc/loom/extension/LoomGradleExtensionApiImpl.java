@@ -141,12 +141,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
-		// Add main source set by default
+		// Enable dep iface injection by default
 		interfaceInjection(interfaceInjection -> {
-			final SourceSet main = SourceSetHelper.getMainSourceSet(project);
-			interfaceInjection.getInterfaceInjectionSourceSets().add(main);
-
-			interfaceInjection.getInterfaceInjectionSourceSets().finalizeValueOnRead();
 			interfaceInjection.getEnableDependencyInterfaceInjection().convention(true).finalizeValueOnRead();
 		});
 	}

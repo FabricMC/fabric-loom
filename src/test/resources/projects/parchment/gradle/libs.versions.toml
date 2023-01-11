@@ -1,0 +1,9 @@
+[versions]
+minecraft = "1.16.5"
+fabricLoader = "0.11.3"
+parchment = "2021.10.10"
+
+[libraries]
+minecraft = { module = "com.mojang:minecraft", version.ref = "minecraft" }
+fabricLoader = { module = "net.fabricmc:fabric-loader", version.ref = "fabricLoader" }
+parchment = { module = "org.parchmentmc.data:parchment-1.16.5", version.ref = "parchment" }

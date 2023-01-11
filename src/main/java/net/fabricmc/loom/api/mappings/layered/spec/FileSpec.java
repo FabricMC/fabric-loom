@@ -78,6 +78,8 @@ public interface FileSpec {
 			}
 
 			return createFromMavenDependency(s.toString());
+		} else if (o instanceof MinimalExternalModuleDependency d) {
+			return createFromMinimalExternalModuleDependency(d);
 		} else if (o instanceof Dependency d) {
 			return createFromDependency(d);
 		} else if (o instanceof Provider<?> p) {
@@ -92,8 +94,6 @@ public interface FileSpec {
 			return createFromUrl(url);
 		} else if (o instanceof FileSpec s) {
 			return s;
-		} else if (o instanceof MinimalExternalModuleDependency d) {
-			return createFromMinimalExternalModuleDependency(d);
 		}
 
 		throw new UnsupportedOperationException("Cannot create FileSpec from object of type:" + o.getClass().getCanonicalName());

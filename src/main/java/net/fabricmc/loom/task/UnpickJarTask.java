@@ -69,6 +69,7 @@ public abstract class UnpickJarTask extends JavaExec {
 
 		getConstantJar().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MAPPING_CONSTANTS));
 		getUnpickClasspath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
+		getUnpickClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED));
 	}
 
 	@Override

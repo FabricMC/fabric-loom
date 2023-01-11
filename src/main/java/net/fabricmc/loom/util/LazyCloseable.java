@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022-2023 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,37 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.processor;
+package net.fabricmc.loom.util;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.tinyremapper.TinyRemapper;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public interface ProcessorContext {
-	MinecraftJarConfiguration getJarConfiguration();
+// Not thread safe
+public class LazyCloseable<T> implements Closeable {
+	private final Supplier<T> valueSupplier;
+	private final Consumer<T> closeConsumer;
+	private T value;
 
-	boolean isMerged();
+	public LazyCloseable(Supplier<T> valueSupplier, Consumer<T> closeConsumer) {
+		this.valueSupplier = valueSupplier;
+		this.closeConsumer = closeConsumer;
+	}
 
-	boolean includesClient();
+	public T get() {
+		if (value == null) {
+			value = valueSupplier.get();
+		}
 
-	boolean includesServer();
+		return value;
+	}
 
-	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
+	@Override
+	public void close() throws IOException {
+		if (value != null) {
+			closeConsumer.accept(value);
+			value = null;
+		}
+	}
 }

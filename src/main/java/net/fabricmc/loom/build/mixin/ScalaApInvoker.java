@@ -43,7 +43,8 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 				project,
 				// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
 				ImmutableList.of(),
-				getInvokerTasks(project));
+				getInvokerTasks(project),
+				AnnotationProcessorInvoker.SCALA);
 	}
 
 	private static Map<SourceSet, ScalaCompile> getInvokerTasks(Project project) {

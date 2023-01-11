@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,16 @@ public interface DeprecationHelper {
 		toBeRemovedIn(currentName, newName, "Loom 2.0");
 	}
 
+	default void removedInLoom2_0(String currentName) {
+		toBeRemovedIn(currentName, "Loom 2.0");
+	}
+
 	default void toBeRemovedIn(String currentName, String newName, String removalVersion) {
 		warn("The '%s' property has been deprecated, and has been replaced with '%s'. This is scheduled to be removed in %s.".formatted(currentName, newName, removalVersion));
+	}
+
+	default void toBeRemovedIn(String currentName, String removalVersion) {
+		warn("The '%s' property has been deprecated, and can be removed. This is scheduled to be removed in %s.".formatted(currentName, removalVersion));
 	}
 
 	Project getProject();

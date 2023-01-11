@@ -59,13 +59,17 @@ public interface FabricModJsonSource {
 	record SourceSetSource(SourceSet... sourceSets) implements FabricModJsonSource {
 		@Override
 		public byte[] read(String path) throws IOException {
+			return Files.readAllBytes(findFile(path).toPath());
+		}
+
+		private File findFile(String path) throws IOException {
 			final File file = SourceSetHelper.findFirstFileInResource(path, sourceSets);
 
 			if (file == null) {
 				throw new FileNotFoundException("Could not find: " + path);
 			}
 
-			return Files.readAllBytes(file.toPath());
+			return file;
 		}
 	}
 }

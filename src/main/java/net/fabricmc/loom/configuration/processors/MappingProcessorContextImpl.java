@@ -25,34 +25,12 @@
 package net.fabricmc.loom.configuration.processors;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.api.processor.ProcessorContext;
+import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.configuration.ConfigContext;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar minecraftJar) implements ProcessorContext {
-	@Override
-	public MinecraftJarConfiguration getJarConfiguration() {
-		return configContext.extension().getMinecraftJarConfiguration().get();
-	}
-
-	@Override
-	public boolean isMerged() {
-		return minecraftJar.isMerged();
-	}
-
-	@Override
-	public boolean includesClient() {
-		return minecraftJar.includesClient();
-	}
-
-	@Override
-	public boolean includesServer() {
-		return minecraftJar.includesServer();
-	}
-
+public record MappingProcessorContextImpl(ConfigContext configContext) implements MappingProcessorContext {
 	@Override
 	public LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to) {
 		return ContextImplHelper.createRemapper(configContext, from, to);

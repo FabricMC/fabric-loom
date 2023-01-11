@@ -45,6 +45,7 @@ public class DownloadBuilder {
 	private Duration maxAge = Duration.ZERO;
 	private DownloadProgressListener progressListener = DownloadProgressListener.NONE;
 	private int maxRetries = 3;
+	private boolean allowInsecureProtocol = false;
 
 	private DownloadBuilder(URI url) {
 		this.url = url;
@@ -94,7 +95,16 @@ public class DownloadBuilder {
 		return maxAge(ONE_DAY);
 	}
 
+	public DownloadBuilder allowInsecureProtocol() {
+		this.allowInsecureProtocol = true;
+		return this;
+	}
+
 	private Download build() {
+		if (!allowInsecureProtocol && !isSecureUrl(url)) {
+			throw new IllegalArgumentException("Cannot create download for url (%s) with insecure protocol".formatted(url.toString()));
+		}
+
 		return new Download(this.url, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
 	}
 
@@ -143,6 +153,16 @@ public class DownloadBuilder {
 		}
 
 		throw new IllegalStateException();
+	}
+
+	// See comment on org.gradle.util.internal.GUtil.isSecureUrl
+	private static boolean isSecureUrl(URI url) {
+		if ("127.0.0.1".equals(url.getHost())) {
+			return true;
+		}
+
+		final String scheme = url.getScheme();
+		return !"http".equalsIgnoreCase(scheme);
 	}
 
 	@FunctionalInterface

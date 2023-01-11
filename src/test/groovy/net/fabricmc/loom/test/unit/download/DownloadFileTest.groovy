@@ -339,6 +339,15 @@ class DownloadFileTest extends DownloadTest {
 			Files.readAllBytes(output) == data
 	}
 
+	def "File: Insecure protocol"() {
+		setup:
+			def output = new File(File.createTempDir(), "file").toPath()
+		when:
+			def result = Download.create("http://fabricmc.net").downloadPath(output)
+		then:
+			thrown IllegalArgumentException
+	}
+
 	// Known
 	def "Download Mojang Mappings"() {
 		setup:

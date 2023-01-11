@@ -56,7 +56,6 @@ import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
@@ -99,17 +98,15 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
-		// Remap from intermediary->named
-		final TinyRemapper tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED);
-		final Remapper remapper = tinyRemapper.getEnvironment().getRemapper();
 		final List<InjectedInterface> remappedInjectedInterfaces;
 
-		try {
+		// Remap from intermediary->named
+		try (var tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+			final Remapper remapper = tinyRemapper.get().getEnvironment().getRemapper();
+
 			remappedInjectedInterfaces = spec.injectedInterfaces().stream()
 					.map(injectedInterface -> remap(injectedInterface, remapper))
 					.toList();
-		} finally {
-			tinyRemapper.finish();
 		}
 
 		try {

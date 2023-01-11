@@ -64,8 +64,8 @@ import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.api.processor.MappingProcessorContext;
-import net.fabricmc.loom.configuration.accesswidener.TransitiveAccessWidenerMappingsProcessor;
+import net.fabricmc.loom.configuration.ConfigContextImpl;
+import net.fabricmc.loom.configuration.processors.MappingProcessorContextImpl;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
@@ -77,6 +77,7 @@ import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 import net.fabricmc.loom.util.gradle.WorkerDaemonClientsManagerHelper;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.Tiny2Writer;
@@ -330,14 +331,15 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		final List<MappingsProcessor> mappingsProcessors = new ArrayList<>();
 
-		if (getExtension().getEnableTransitiveAccessWideners().get()) {
-			mappingsProcessors.add(new TransitiveAccessWidenerMappingsProcessor(getProject()));
-		}
-
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
 		if (minecraftJarProcessorManager != null) {
-			mappingsProcessors.add(mappings -> minecraftJarProcessorManager.processMappings(mappings, new MappingProcessorContextImpl()));
+			mappingsProcessors.add(mappings -> {
+				try (var serviceManager = new ScopedSharedServiceManager()) {
+					final var configContext = new ConfigContextImpl(getProject(), serviceManager, getExtension());
+					return minecraftJarProcessorManager.processMappings(mappings, new MappingProcessorContextImpl(configContext));
+				}
+			});
 		}
 
 		if (mappingsProcessors.isEmpty()) {
@@ -387,8 +389,5 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private static class MappingProcessorContextImpl implements MappingProcessorContext {
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,44 +22,33 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.mappings.layered;
+package net.fabricmc.loom.configuration.providers.mappings.utils;
 
 import java.nio.file.Path;
-import java.util.function.Supplier;
+import java.util.Objects;
 
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.MinimalExternalModuleDependency;
-import org.gradle.api.logging.Logger;
-import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.util.download.DownloadBuilder;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 
-@ApiStatus.Experimental /* Very Experimental and not cleanly separated from the impl atm */
-public interface MappingContext {
-	Path resolveDependency(Dependency dependency);
-
-	Path resolveDependency(MinimalExternalModuleDependency dependency);
-
-	Path resolveMavenDependency(String mavenNotation);
-
-	Supplier<MemoryMappingTree> intermediaryTree();
-
-	MinecraftProvider minecraftProvider();
-
-	default String minecraftVersion() {
-		return minecraftProvider().minecraftVersion();
+public record MinimalExternalModuleDependencyFileSpec(MinimalExternalModuleDependency dependency) implements FileSpec {
+	@Override
+	public Path get(MappingContext context) {
+		return context.resolveDependency(dependency);
 	}
 
-	/**
-	 * Creates a temporary working dir to be used to store working files.
-	 */
-	Path workingDirectory(String name);
+	@Override
+	public int hashCode() {
+		return Objects.hash(dependency.getModule().getGroup(), dependency.getModule().getName(), dependency.getVersionConstraint());
+	}
 
-	Logger getLogger();
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof MinimalExternalModuleDependencyFileSpec other) {
+			return other.dependency().equals(this.dependency());
+		}
 
-	DownloadBuilder download(String url);
-
-	boolean refreshDeps();
+		return false;
+	}
 }

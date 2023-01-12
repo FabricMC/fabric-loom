@@ -44,8 +44,13 @@ public final class FabricModJsonV1 extends FabricModJson {
 	}
 
 	@Override
-	public int getVersion() {
+	public int getMetadataVersion() {
 		return 1;
+	}
+
+	@Override
+	public String getModVersion() {
+		return readString(jsonObject, "version");
 	}
 
 	@Override

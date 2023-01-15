@@ -112,9 +112,10 @@ public class ModConfigurationRemapper {
 		}
 
 		final boolean refreshDeps = LoomGradleExtension.get(project).refreshDeps();
+
 		final List<ModDependency> toRemap = modDependencies.stream()
-			.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))
-			.toList();
+				.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))
+				.toList();
 
 		if (!toRemap.isEmpty()) {
 			try {

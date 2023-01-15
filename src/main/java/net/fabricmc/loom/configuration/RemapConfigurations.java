@@ -38,6 +38,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RemapConfigurations {
@@ -97,6 +98,18 @@ public final class RemapConfigurations {
 		runtimeClasspathConfiguration.extendsFrom(runtimeOnlyConfiguration, implementationConfiguration);
 		copyAttributes(configurations, sourceSet.getRuntimeClasspathConfigurationName(), runtimeClasspathConfiguration);
 
+		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+
+		if (sourceSet.getName().equals(mainSourceSet.getName())) {
+			final Configuration localRuntimeConfiguration = configurations.maybeCreate(
+					ConfigurationOption.name(sourceSet, Constants.Configurations.LOCAL_RUNTIME));
+			localRuntimeConfiguration.setVisible(false);
+			localRuntimeConfiguration.setCanBeConsumed(false);
+			localRuntimeConfiguration.setCanBeResolved(false);
+			localRuntimeConfiguration.setDescription("Local runtime dependencies for " + sourceSetName + ".");
+			runtimeClasspathConfiguration.extendsFrom(localRuntimeConfiguration);
+		}
+
 		final Configuration mappedRuntimeClasspathConfiguration = configurations.maybeCreate(
 				ConfigurationOption.name(sourceSet, sourceSet.getRuntimeClasspathConfigurationName() + "Mapped"));
 		mappedRuntimeClasspathConfiguration.setVisible(false);
@@ -108,8 +121,6 @@ public final class RemapConfigurations {
 
 		configurations.named(sourceSet.getRuntimeClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedRuntimeClasspathConfiguration));
 		configurations.named(sourceSet.getCompileClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedCompileClasspathConfiguration));
-
-		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
 
 		if (sourceSet.getName().equals(mainSourceSet.getName()) || sourceSet.getName().equals("client")) {
 			final Configuration apiConfiguration = configurations.maybeCreate(

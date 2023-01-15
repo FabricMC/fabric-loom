@@ -274,6 +274,7 @@ public class SourceRemapper {
 				for (File inputFile : entry.getCompileClasspathConfiguration().get().getFiles()) {
 					classPath.add(inputFile.toPath());
 				}
+
 				for (File inputFile : entry.getRuntimeClasspathConfiguration().get().getFiles()) {
 					classPath.add(inputFile.toPath());
 				}

@@ -110,6 +110,7 @@ public final class RemapConfigurations {
 		configurations.named(sourceSet.getCompileClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedCompileClasspathConfiguration));
 
 		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+
 		if (sourceSet.getName().equals(mainSourceSet.getName()) || sourceSet.getName().equals("client")) {
 			final Configuration apiConfiguration = configurations.maybeCreate(
 					ConfigurationOption.name(sourceSet, sourceSet.getApiConfigurationName()));
@@ -145,6 +146,7 @@ public final class RemapConfigurations {
 
 	private static void copyAttributes(final ConfigurationContainer configurations, final String from, final Configuration to) {
 		final AttributeContainer fromAttr = configurations.getByName(from).getAttributes();
+
 		for (final Attribute<?> key : fromAttr.keySet()) {
 			to.getAttributes().attribute((Attribute) key, fromAttr.getAttribute(key));
 		}

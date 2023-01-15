@@ -121,6 +121,7 @@ public final class SplitModDependency extends ModDependency {
 
 	private void createModGroup(Path commonJar, Path clientJar) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
 		try {
 			extension.getMods().register(String.format("%s-%s-%s", getRemappedGroup(), name, version), modSettings ->
 					modSettings.getModFiles().from(
@@ -129,6 +130,7 @@ public final class SplitModDependency extends ModDependency {
 					)
 			);
 		} catch (final InvalidUserDataException ignoreAlreadyExists) {
+			// ignore
 		}
 	}
 

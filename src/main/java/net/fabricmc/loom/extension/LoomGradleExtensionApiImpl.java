@@ -357,7 +357,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		configurationSettings.getSourceSet().convention(SourceSetHelper.getMainSourceSet(getProject()));
 
 		action.execute(configurationSettings);
-		RemapConfigurations.applyToProject(getProject(), configurationSettings);
 		remapConfigurations.add(configurationSettings);
 
 		return configurationSettings;
@@ -365,7 +364,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void createRemapConfigurations(SourceSet sourceSet) {
-		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
+		RemapConfigurations.defineConfigurationsForSourceSet(sourceSet, this.getProject());
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

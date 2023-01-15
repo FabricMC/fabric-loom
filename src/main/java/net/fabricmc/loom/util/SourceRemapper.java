@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -256,7 +257,7 @@ public class SourceRemapper {
 		Mercury m = new Mercury();
 		m.setGracefulClasspathChecks(true);
 
-		final List<Path> classPath = new ArrayList<>();
+		final Set<Path> classPath = new HashSet<>();
 
 		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
 			classPath.add(file.toPath());
@@ -270,7 +271,10 @@ public class SourceRemapper {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 			for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
-				for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
+				for (File inputFile : entry.getCompileClasspathConfiguration().get().getFiles()) {
+					classPath.add(inputFile.toPath());
+				}
+				for (File inputFile : entry.getRuntimeClasspathConfiguration().get().getFiles()) {
 					classPath.add(inputFile.toPath());
 				}
 			}

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
@@ -120,12 +121,15 @@ public final class SplitModDependency extends ModDependency {
 
 	private void createModGroup(Path commonJar, Path clientJar) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getMods().register(String.format("%s-%s-%s", getRemappedGroup(), name, version), modSettings ->
-				modSettings.getModFiles().from(
-					commonJar.toFile(),
-					clientJar.toFile()
-				)
-		);
+		try {
+			extension.getMods().register(String.format("%s-%s-%s", getRemappedGroup(), name, version), modSettings ->
+					modSettings.getModFiles().from(
+							commonJar.toFile(),
+							clientJar.toFile()
+					)
+			);
+		} catch (final InvalidUserDataException ignoreAlreadyExists) {
+		}
 	}
 
 	public LocalMavenHelper getCommonMaven() {

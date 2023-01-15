@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -39,7 +40,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
-import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
@@ -55,9 +55,8 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 
 		getRemapClasspath().from(configurations.named(Constants.Configurations.LOADER_DEPENDENCIES));
-		getExtension().getRuntimeRemapConfigurations().stream()
-				.map(RemapConfigurationSettings::getName)
-				.map(configurations::named)
+		getExtension().getRemapConfigurations().stream()
+				.flatMap(s -> Stream.of(s.getCompileClasspathConfiguration(), s.getRuntimeClasspathConfiguration()))
 				.forEach(getRemapClasspath()::from);
 
 		getRemapClasspathFile().set(getExtension().getFiles().getRemapClasspathFile());

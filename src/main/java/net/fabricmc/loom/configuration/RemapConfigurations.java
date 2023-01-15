@@ -24,47 +24,129 @@
 
 package net.fabricmc.loom.configuration;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
-import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RemapConfigurations {
-	private static final List<ConfigurationOption> OPTIONS = List.of(
-			new ConfigurationOption(mainOnly(SourceSet::getApiConfigurationName), true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME),
-			new ConfigurationOption(SourceSet::getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
-			new ConfigurationOption(SourceSet::getCompileOnlyConfigurationName, true, false, RemapConfigurationSettings.PublishingMode.NONE),
-			new ConfigurationOption(mainOnly(SourceSet::getCompileOnlyApiConfigurationName), true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY),
-			new ConfigurationOption(SourceSet::getRuntimeOnlyConfigurationName, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
-			new ConfigurationOption(mainOnly(Constants.Configurations.LOCAL_RUNTIME), false, true, RemapConfigurationSettings.PublishingMode.NONE)
-	);
-
 	private RemapConfigurations() {
 	}
 
-	public static void setupForSourceSet(Project project, SourceSet sourceSet) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	public static void defineConfigurationsForSourceSet(
+			final SourceSet sourceSet,
+			final Project project
+	) {
+		final String sourceSetName = sourceSet.toString();
+		final ConfigurationContainer configurations = project.getConfigurations();
 
-		for (ConfigurationOption option : getValidOptions(sourceSet)) {
-			extension.addRemapConfiguration(option.name(sourceSet), configure(
-					sourceSet,
-					option.targetName(sourceSet),
-					option.compileClasspath(),
-					option.runtimeClasspath(),
-					option.publishingMode()
-			));
+		final Configuration implementationConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getImplementationConfigurationName()));
+		implementationConfiguration.setVisible(false);
+		implementationConfiguration.setDescription("Implementation only mod dependencies for " + sourceSetName + ".");
+		implementationConfiguration.setCanBeConsumed(false);
+		implementationConfiguration.setCanBeResolved(false);
+
+		final Configuration compileOnlyConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getCompileOnlyConfigurationName()));
+		compileOnlyConfiguration.setVisible(false);
+		compileOnlyConfiguration.setCanBeConsumed(false);
+		compileOnlyConfiguration.setCanBeResolved(false);
+		compileOnlyConfiguration.setDescription("Compile only mod dependencies for " + sourceSetName + ".");
+
+		final Configuration compileClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getCompileClasspathConfigurationName()));
+		compileClasspathConfiguration.setVisible(false);
+		compileClasspathConfiguration.extendsFrom(compileOnlyConfiguration, implementationConfiguration);
+		compileClasspathConfiguration.setDescription("Compile mod classpath for " + sourceSetName + ".");
+		compileClasspathConfiguration.setCanBeConsumed(false);
+		copyAttributes(configurations, sourceSet.getCompileClasspathConfigurationName(), compileClasspathConfiguration);
+
+		final Configuration mappedCompileClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getCompileClasspathConfigurationName() + "Mapped"));
+		mappedCompileClasspathConfiguration.setVisible(false);
+		mappedCompileClasspathConfiguration.setDescription("Mapped compile mod classpath for " + sourceSetName + ".");
+		mappedCompileClasspathConfiguration.setCanBeConsumed(false);
+		mappedCompileClasspathConfiguration.setTransitive(false);
+		copyAttributes(configurations, sourceSet.getCompileClasspathConfigurationName(), mappedCompileClasspathConfiguration);
+
+		final Configuration runtimeOnlyConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getRuntimeOnlyConfigurationName()));
+		runtimeOnlyConfiguration.setVisible(false);
+		runtimeOnlyConfiguration.setCanBeConsumed(false);
+		runtimeOnlyConfiguration.setCanBeResolved(false);
+		runtimeOnlyConfiguration.setDescription("Runtime only mod dependencies for " + sourceSetName + ".");
+
+		final Configuration runtimeClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getRuntimeClasspathConfigurationName()));
+		runtimeClasspathConfiguration.setVisible(false);
+		runtimeClasspathConfiguration.setCanBeConsumed(false);
+		runtimeClasspathConfiguration.setCanBeResolved(true);
+		runtimeClasspathConfiguration.setDescription("Runtime mod classpath of " + sourceSetName + ".");
+		runtimeClasspathConfiguration.extendsFrom(runtimeOnlyConfiguration, implementationConfiguration);
+		copyAttributes(configurations, sourceSet.getRuntimeClasspathConfigurationName(), runtimeClasspathConfiguration);
+
+		final Configuration mappedRuntimeClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(sourceSet, sourceSet.getRuntimeClasspathConfigurationName() + "Mapped"));
+		mappedRuntimeClasspathConfiguration.setVisible(false);
+		mappedRuntimeClasspathConfiguration.setCanBeConsumed(false);
+		mappedRuntimeClasspathConfiguration.setCanBeResolved(true);
+		mappedRuntimeClasspathConfiguration.setDescription("Mapped runtime mod classpath of " + sourceSetName + ".");
+		mappedRuntimeClasspathConfiguration.setTransitive(false);
+		copyAttributes(configurations, sourceSet.getRuntimeClasspathConfigurationName(), mappedRuntimeClasspathConfiguration);
+
+		configurations.named(sourceSet.getRuntimeClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedRuntimeClasspathConfiguration));
+		configurations.named(sourceSet.getCompileClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedCompileClasspathConfiguration));
+
+		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+		if (sourceSet.getName().equals(mainSourceSet.getName()) || sourceSet.getName().equals("client")) {
+			final Configuration apiConfiguration = configurations.maybeCreate(
+					ConfigurationOption.name(sourceSet, sourceSet.getApiConfigurationName()));
+			apiConfiguration.setVisible(false);
+			apiConfiguration.setDescription("API mod dependencies for " + sourceSetName + ".");
+			apiConfiguration.setCanBeConsumed(false);
+			apiConfiguration.setCanBeResolved(false);
+			implementationConfiguration.extendsFrom(apiConfiguration);
+
+			final Configuration compileOnlyApiConfiguration = configurations.maybeCreate(
+					ConfigurationOption.name(sourceSet, sourceSet.getCompileOnlyApiConfigurationName()));
+			compileOnlyApiConfiguration.setVisible(false);
+			compileOnlyApiConfiguration.setCanBeConsumed(false);
+			compileOnlyApiConfiguration.setCanBeResolved(false);
+			compileOnlyApiConfiguration.setDescription("Compile only API mod dependencies for " + sourceSetName + ".");
+			compileOnlyConfiguration.extendsFrom(compileOnlyApiConfiguration);
+
+			final Configuration apiElementsConfiguration = configurations.getByName(mainSourceSet.getApiElementsConfigurationName());
+			apiElementsConfiguration.extendsFrom(apiConfiguration, compileOnlyApiConfiguration);
+
+			final Configuration runtimeElementsConfiguration = configurations.getByName(mainSourceSet.getRuntimeElementsConfigurationName());
+			runtimeElementsConfiguration.extendsFrom(runtimeOnlyConfiguration, implementationConfiguration);
+		}
+
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		extension.addRemapConfiguration(sourceSet.getName(), config -> {
+			config.getCompileClasspathConfiguration().set(compileClasspathConfiguration);
+			config.getRuntimeClasspathConfiguration().set(runtimeClasspathConfiguration);
+			config.getMappedCompileClasspathConfiguration().set(mappedCompileClasspathConfiguration);
+			config.getMappedRuntimeClasspathConfiguration().set(mappedRuntimeClasspathConfiguration);
+		});
+	}
+
+	private static void copyAttributes(final ConfigurationContainer configurations, final String from, final Configuration to) {
+		final AttributeContainer fromAttr = configurations.getByName(from).getAttributes();
+		for (final Attribute<?> key : fromAttr.keySet()) {
+			to.getAttributes().attribute((Attribute) key, fromAttr.getAttribute(key));
 		}
 	}
 
@@ -72,100 +154,34 @@ public final class RemapConfigurations {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		extension.createRemapConfigurations(clientSourceSet);
 
-		final NamedDomainObjectList<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
+		final NamedDomainObjectList<RemapConfigurationSettings> remapConfigurations = extension.getRemapConfigurations();
 		SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+		final ConfigurationContainer configurations = project.getConfigurations();
 
-		// Apply the client target names to the main configurations
-		for (ConfigurationOption option : getValidOptions(mainSourceSet)) {
-			configurations.getByName(option.name(mainSourceSet), settings -> {
-				String name = option.targetName(clientSourceSet);
+		final Configuration mappedClientCompileClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(mainSourceSet, mainSourceSet.getCompileClasspathConfigurationName() + "ClientMapped"));
+		mappedClientCompileClasspathConfiguration.setVisible(false);
+		mappedClientCompileClasspathConfiguration.setDescription("Mapped compile client mod classpath for " + mainSourceSet + ".");
+		mappedClientCompileClasspathConfiguration.setCanBeConsumed(false);
+		mappedClientCompileClasspathConfiguration.setTransitive(false);
+		copyAttributes(configurations, mainSourceSet.getCompileClasspathConfigurationName(), mappedClientCompileClasspathConfiguration);
 
-				if (name == null) {
-					return;
-				}
+		final Configuration mappedClientRuntimeClasspathConfiguration = configurations.maybeCreate(
+				ConfigurationOption.name(mainSourceSet, mainSourceSet.getRuntimeClasspathConfigurationName() + "ClientMapped"));
+		mappedClientRuntimeClasspathConfiguration.setVisible(false);
+		mappedClientRuntimeClasspathConfiguration.setCanBeConsumed(false);
+		mappedClientRuntimeClasspathConfiguration.setCanBeResolved(true);
+		mappedClientRuntimeClasspathConfiguration.setDescription("Mapped runtime client mod classpath of " + mainSourceSet + ".");
+		mappedClientRuntimeClasspathConfiguration.setTransitive(false);
+		copyAttributes(configurations, mainSourceSet.getRuntimeClasspathConfigurationName(), mappedClientRuntimeClasspathConfiguration);
 
-				settings.getClientSourceConfigurationName().set(name);
-				createClientMappedConfiguration(project, settings, clientSourceSet);
-			});
-		}
-	}
+		configurations.named(clientSourceSet.getRuntimeClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedClientRuntimeClasspathConfiguration));
+		configurations.named(clientSourceSet.getCompileClasspathConfigurationName()).configure(config -> config.extendsFrom(mappedClientCompileClasspathConfiguration));
 
-	private static void createClientMappedConfiguration(Project project, RemapConfigurationSettings settings, SourceSet clientSourceSet) {
-		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getClientRemappedConfigurationName().get());
-		// Don't get transitive deps of already remapped mods
-		remappedConfiguration.setTransitive(false);
-
-		if (settings.getOnCompileClasspath().get()) {
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
-
-			extendsFrom(clientSourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
-		}
-
-		if (settings.getOnRuntimeClasspath().get()) {
-			extendsFrom(clientSourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
-		}
-	}
-
-	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
-		final SourceSet sourceSet = settings.getSourceSet().get();
-		final boolean isMainSourceSet = sourceSet.getName().equals("main");
-		// No point bothering to make it lazily, gradle realises configurations right away.
-		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
-		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getRemappedConfigurationName());
-		final Configuration configuration = project.getConfigurations().create(settings.getName());
-		configuration.setTransitive(true);
-		// Don't get transitive deps of already remapped mods
-		remappedConfiguration.setTransitive(false);
-
-		if (settings.getOnCompileClasspath().get()) {
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
-			extendsFrom(sourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
-
-			if (isMainSourceSet) {
-				extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
-			}
-		}
-
-		if (settings.getOnRuntimeClasspath().get()) {
-			extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
-
-			if (isMainSourceSet) {
-				extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
-			}
-		}
-
-		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
-			extendsFrom(outgoingConfigurationName, configuration, project);
-		}
-	}
-
-	private static Action<RemapConfigurationSettings> configure(SourceSet sourceSet, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
-		return configuration -> {
-			configuration.getSourceSet().convention(sourceSet);
-			configuration.getTargetConfigurationName().convention(targetConfiguration);
-			configuration.getOnCompileClasspath().convention(compileClasspath);
-			configuration.getOnRuntimeClasspath().convention(runtimeClasspath);
-			configuration.getPublishingMode().convention(publishingMode);
-		};
-	}
-
-	private static void extendsFrom(String name, Configuration configuration, Project project) {
-		project.getConfigurations().named(name).configure(namedConfiguration -> {
-			namedConfiguration.extendsFrom(configuration);
+		remapConfigurations.named(mainSourceSet.getName()).configure(config -> {
+			config.getMappedClientCompileClasspathConfiguration().set(mappedClientCompileClasspathConfiguration);
+			config.getMappedClientRuntimeClasspathConfiguration().set(mappedClientRuntimeClasspathConfiguration);
 		});
-	}
-
-	private static Function<SourceSet, String> mainOnly(Function<SourceSet, String> function) {
-		return sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? function.apply(sourceSet) : null;
-	}
-
-	private static Function<SourceSet, String> mainOnly(String name) {
-		return mainOnly(sourceSet -> name);
-	}
-
-	private static List<ConfigurationOption> getValidOptions(SourceSet sourceSet) {
-		return OPTIONS.stream().filter(option -> option.validFor(sourceSet)).toList();
 	}
 
 	private static String capitalise(String str) {
@@ -176,10 +192,6 @@ public final class RemapConfigurations {
 	public record ConfigurationOption(Function<SourceSet, String> targetNameFunc, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
 		String targetName(SourceSet sourceSet) {
 			return targetNameFunc.apply(sourceSet);
-		}
-
-		boolean validFor(SourceSet sourceSet) {
-			return targetName(sourceSet) != null;
 		}
 
 		public String name(SourceSet sourceSet) {
@@ -193,6 +205,10 @@ public final class RemapConfigurations {
 				targetName = targetName.substring(sourceSet.getName().length());
 			}
 
+			return name(sourceSet, targetName);
+		}
+
+		public static String name(SourceSet sourceSet, String targetName) {
 			final StringBuilder builder = new StringBuilder();
 			builder.append("mod");
 

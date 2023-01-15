@@ -125,7 +125,7 @@ public class ModProcessor {
 		final Map<ModDependency, Pair<byte[], String>> accessWidenerMap = new HashMap<>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
-			for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
+			for (File inputFile : entry.getCompileClasspathConfiguration().get().getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().toFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 

@@ -25,7 +25,6 @@
 package net.fabricmc.loom.api;
 
 import java.io.File;
-import java.util.List;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -108,14 +107,6 @@ public interface LoomGradleExtensionAPI {
 	RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action);
 
 	void createRemapConfigurations(SourceSet sourceSet);
-
-	default List<RemapConfigurationSettings> getCompileRemapConfigurations() {
-		return getRemapConfigurations().stream().filter(element -> element.getOnCompileClasspath().get()).toList();
-	}
-
-	default List<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
-		return getRemapConfigurations().stream().filter(element -> element.getOnRuntimeClasspath().get()).toList();
-	}
 
 	@ApiStatus.Experimental
 	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.

@@ -44,7 +44,6 @@ import org.gradle.api.artifacts.result.ArtifactResult;
 import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +53,6 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -66,88 +64,74 @@ public class ModConfigurationRemapper {
 	public static final String MISSING_GROUP = "unspecified";
 
 	public static void supplyModConfigurations(Project project, SharedServiceManager serviceManager, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
-		final DependencyHandler dependencies = project.getDependencies();
-
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
-			entry.getRemappedConfiguration().configure(remappedConfig -> {
-				/*
-				sourceConfig - The source configuration where the intermediary named artifacts come from. i.e "modApi"
-				remappedConfig - an intermediate configuration where the remapped artifacts go
-				targetConfig - extends from the remappedConfig, such as "api"
-				 */
-				final Configuration sourceConfig = entry.getSourceConfiguration().get();
-				final Configuration targetConfig = entry.getTargetConfiguration().get();
-				final boolean hasClientTarget = entry.getClientSourceConfigurationName().isPresent();
+			supply(project, serviceManager, extension, mappingsSuffix, sourceRemapper, entry.getCompileClasspathConfiguration().get(), entry.getMappedCompileClasspathConfiguration().get(), entry.getMappedClientCompileClasspathConfiguration().getOrElse(null));
+			supply(project, serviceManager, extension, mappingsSuffix, sourceRemapper, entry.getRuntimeClasspathConfiguration().get(), entry.getMappedRuntimeClasspathConfiguration().get(), entry.getMappedClientRuntimeClasspathConfiguration().getOrElse(null));
+		}
+	}
 
-				Configuration clientRemappedConfig = null;
+	private static void supply(
+			final Project project,
+			final SharedServiceManager serviceManager,
+			final LoomGradleExtension extension,
+			final String mappingsSuffix,
+			final SourceRemapper sourceRemapper,
+			final Configuration source,
+			final Configuration mapped,
+			final @Nullable Configuration clientMapped
+	) {
+		final DependencyHandler dependencies = project.getDependencies();
+		final List<ModDependency> modDependencies = new ArrayList<>();
 
-				if (hasClientTarget) {
-					clientRemappedConfig = entry.getClientRemappedConfiguration().get();
+		for (ArtifactRef artifact : resolveArtifacts(project, source)) {
+			final ArtifactMetadata artifactMetadata;
+
+			try {
+				artifactMetadata = ArtifactMetadata.create(artifact);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read metadata from" + artifact.path(), e);
+			}
+
+			if (artifactMetadata.installerData() != null) {
+				if (extension.getInstallerData() != null) {
+					project.getLogger().info("Found another installer JSON in ({}), ignoring", artifact.path());
+				} else {
+					project.getLogger().info("Applying installer data from {}", artifact.path());
+					artifactMetadata.installerData().applyToProject(project);
 				}
+			}
 
-				final List<ModDependency> modDependencies = new ArrayList<>();
+			if (!artifactMetadata.shouldRemap()) {
+				artifact.applyToConfiguration(project, mapped);
+				continue;
+			}
 
-				for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
-					final ArtifactMetadata artifactMetadata;
+			final ModDependency modDependency = ModDependencyFactory.create(artifact, mapped, clientMapped, mappingsSuffix, project);
+			scheduleSourcesRemapping(project, sourceRemapper, modDependency);
+			modDependencies.add(modDependency);
+		}
 
-					try {
-						artifactMetadata = ArtifactMetadata.create(artifact);
-					} catch (IOException e) {
-						throw new UncheckedIOException("Failed to read metadata from" + artifact.path(), e);
-					}
+		final boolean refreshDeps = LoomGradleExtension.get(project).refreshDeps();
+		final List<ModDependency> toRemap = modDependencies.stream()
+			.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))
+			.toList();
 
-					if (artifactMetadata.installerData() != null) {
-						if (extension.getInstallerData() != null) {
-							project.getLogger().info("Found another installer JSON in ({}), ignoring", artifact.path());
-						} else {
-							project.getLogger().info("Applying installer data from {}", artifact.path());
-							artifactMetadata.installerData().applyToProject(project);
-						}
-					}
+		if (!toRemap.isEmpty()) {
+			try {
+				new ModProcessor(project, source, serviceManager).processMods(toRemap);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to remap mods", e);
+			}
+		}
 
-					if (!artifactMetadata.shouldRemap()) {
-						artifact.applyToConfiguration(project, targetConfig);
-						continue;
-					}
+		// Add all of the remapped mods onto the config
+		for (ModDependency info : modDependencies) {
+			info.applyToProject(project);
+			createConstraints(info.getInputArtifact(), mapped, source, dependencies);
 
-					final ModDependency modDependency = ModDependencyFactory.create(artifact, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
-					scheduleSourcesRemapping(project, sourceRemapper, modDependency);
-					modDependencies.add(modDependency);
-				}
-
-				if (modDependencies.isEmpty()) {
-					// Nothing else to do
-					return;
-				}
-
-				final boolean refreshDeps = LoomGradleExtension.get(project).refreshDeps();
-				final List<ModDependency> toRemap = modDependencies.stream()
-						.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))
-						.toList();
-
-				if (!toRemap.isEmpty()) {
-					try {
-						new ModProcessor(project, sourceConfig, serviceManager).processMods(toRemap);
-					} catch (IOException e) {
-						throw new UncheckedIOException("Failed to remap mods", e);
-					}
-				}
-
-				// Add all of the remapped mods onto the config
-				for (ModDependency info : modDependencies) {
-					info.applyToProject(project);
-					createConstraints(info.getInputArtifact(), targetConfig, sourceConfig, dependencies);
-
-					if (clientRemappedConfig != null) {
-						createConstraints(info.getInputArtifact(), entry.getClientTargetConfiguration().get(), sourceConfig, dependencies);
-					}
-				}
-
-				// Export to other projects
-				if (entry.getTargetConfigurationName().get().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
-					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
-				}
-			});
+			if (clientMapped != null) {
+				createConstraints(info.getInputArtifact(), clientMapped, source, dependencies);
+			}
 		}
 	}
 

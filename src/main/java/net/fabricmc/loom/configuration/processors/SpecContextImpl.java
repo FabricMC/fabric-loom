@@ -25,14 +25,13 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
@@ -65,7 +64,8 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 		var mods = new ArrayList<FabricModJson>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
-			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
+			final Set<File> artifacts = new HashSet<>(entry.getCompileClasspathConfiguration().get().resolve());
+			artifacts.addAll(entry.getRuntimeClasspathConfiguration().get().resolve());
 
 			for (File artifact : artifacts) {
 				final FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(artifact.toPath());
@@ -108,17 +108,12 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
 	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final Function<RemapConfigurationSettings, Stream<Path>> resolve = settings ->
-				settings.getSourceConfiguration().get().resolve().stream()
-						.map(File::toPath);
 
-		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
-				.flatMap(resolve)
-				.toList();
-
-		return extension.getCompileRemapConfigurations().stream()
-				.flatMap(resolve)
-				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
+		return extension.getRemapConfigurations().stream()
+				.flatMap(s -> Stream.of(s.getCompileClasspathConfiguration(), s.getRuntimeClasspathConfiguration()))
+				.flatMap(c -> c.get().resolve().stream())
+				.map(File::toPath)
+				.distinct()
 				.map(FabricModJsonFactory::createFromZipOptional)
 				.filter(Optional::isPresent)
 				.map(Optional::get)

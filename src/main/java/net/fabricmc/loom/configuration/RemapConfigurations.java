@@ -183,6 +183,14 @@ public final class RemapConfigurations {
 		final Configuration configuration = project.getConfigurations().create(settings.getName());
 		configuration.setTransitive(true);
 
+		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
+			extendsFrom(outgoingConfigurationName, configuration, project);
+		}
+	}
+
+	public static void setupCollectorConfigurations(Project project, RemapConfigurationSettings settings) {
+		final Configuration configuration = project.getConfigurations().getByName(settings.getName());
+
 		if (settings.getOnCompileClasspath().get()) {
 			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, false, false);
 			extendsFrom(collector.getName(), configuration, project);
@@ -193,10 +201,6 @@ public final class RemapConfigurations {
 			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, true, false);
 			extendsFrom(collector.getName(), configuration, project);
 			getOrCreateCollectorConfiguration(project, settings, true, true);
-		}
-
-		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
-			extendsFrom(outgoingConfigurationName, configuration, project);
 		}
 	}
 

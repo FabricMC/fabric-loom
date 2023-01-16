@@ -92,8 +92,8 @@ public class ModConfigurationRemapper {
 				final Configuration targetCollector = RemapConfigurations.getOrCreateCollectorConfiguration(project, entry, runtime, true);
 
 				if (entry.getClientSourceConfigurationName().isPresent()) {
-					// Don't use collectors for source since they can contain other configurations.
-					// Instead, we copy the source configuration with the desired usage type.
+					// Don't use collectors for the source config since they can contain other configurations.
+					// Instead, we copy it with the desired usage type.
 					final Configuration sourceCopy = entry.getSourceConfiguration().get().copy();
 					final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 					sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
@@ -104,6 +104,7 @@ public class ModConfigurationRemapper {
 					configsToRemap.put(sourceCopy, targetCollector);
 					clientConfigsToRemap.put(sourceCopy, clientTargetCollector);
 				} else {
+					RemapConfigurations.setupCollectorConfigurations(project, entry);
 					final Configuration sourceCollector = RemapConfigurations.getOrCreateCollectorConfiguration(project, entry, runtime, false);
 					configsToRemap.put(sourceCollector, targetCollector);
 				}

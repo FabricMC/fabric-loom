@@ -161,6 +161,12 @@ public class Download {
 			eTag = readEtag(output);
 		}
 
+		try {
+			createParentDirs(output.toFile());
+		} catch (IOException e) {
+			throw error(e, "Failed to create parent directories");
+		}
+
 		final HttpRequest httpRequest = eTag
 				.map(this::getETagRequest)
 				.orElseGet(this::getRequest);
@@ -180,10 +186,9 @@ public class Download {
 
 		if (success) {
 			try {
-				createParentDirs(output.toFile());
 				Files.deleteIfExists(output);
 			} catch (IOException e) {
-				throw error(e, "Failed to prepare path for download");
+				throw error(e, "Failed to delete existing file");
 			}
 
 			final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));

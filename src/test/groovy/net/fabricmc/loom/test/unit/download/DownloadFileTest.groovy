@@ -60,7 +60,7 @@ class DownloadFileTest extends DownloadTest {
 				it.result("Hello World")
 			}
 
-			def output = new File(File.createTempDir(), "file.txt").toPath()
+			def output = new File(File.createTempDir(), "subdir/file.txt").toPath()
 
 		when:
 			def result = Download.create("$PATH/simpleFile").downloadPath(output)

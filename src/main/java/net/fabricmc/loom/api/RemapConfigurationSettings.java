@@ -128,46 +128,8 @@ public abstract class RemapConfigurationSettings implements Named {
 
 	@ApiStatus.Internal
 	@Internal
-	public final Provider<String> getClientRemappedConfigurationName() {
-		return getClientSourceConfigurationName().map(s -> s + "Mapped");
-	}
-
-	@ApiStatus.Internal
-	@Internal
 	public final NamedDomainObjectProvider<Configuration> getSourceConfiguration() {
 		return getConfigurationByName(getName());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final NamedDomainObjectProvider<Configuration> getRemappedConfiguration() {
-		return getConfigurationByName(getRemappedConfigurationName());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final NamedDomainObjectProvider<Configuration> getTargetConfiguration() {
-		return getConfigurationByName(getTargetConfigurationName().get());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final Provider<Configuration> getClientTargetConfiguration() {
-		return getProject().provider(() -> {
-			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
-			Preconditions.checkArgument(split, "Cannot get client target configuration when project is not split");
-			return getConfigurationByName(getClientSourceConfigurationName().get()).get();
-		});
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final Provider<Configuration> getClientRemappedConfiguration() {
-		return getProject().provider(() -> {
-			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
-			Preconditions.checkArgument(split, "Cannot get client remapped configuration when project is not split");
-			return getConfigurationByName(getClientRemappedConfigurationName().get()).get();
-		});
 	}
 
 	@Internal

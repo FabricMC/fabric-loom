@@ -32,6 +32,8 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -39,6 +41,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Strings;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RemapConfigurations {
@@ -91,48 +94,105 @@ public final class RemapConfigurations {
 	}
 
 	private static void createClientMappedConfiguration(Project project, RemapConfigurationSettings settings, SourceSet clientSourceSet) {
-		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getClientRemappedConfigurationName().get());
-		// Don't get transitive deps of already remapped mods
-		remappedConfiguration.setTransitive(false);
-
 		if (settings.getOnCompileClasspath().get()) {
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
-
-			extendsFrom(clientSourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
+			getOrCreateCollectorConfiguration(project, clientSourceSet, false, true);
 		}
 
 		if (settings.getOnRuntimeClasspath().get()) {
-			extendsFrom(clientSourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
+			getOrCreateCollectorConfiguration(project, clientSourceSet, true, true);
 		}
 	}
 
-	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
-		final SourceSet sourceSet = settings.getSourceSet().get();
-		final boolean isMainSourceSet = sourceSet.getName().equals("main");
-		// No point bothering to make it lazily, gradle realises configurations right away.
-		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
-		final Configuration remappedConfiguration = project.getConfigurations().create(settings.getRemappedConfigurationName());
-		final Configuration configuration = project.getConfigurations().create(settings.getName());
-		configuration.setTransitive(true);
-		// Don't get transitive deps of already remapped mods
-		remappedConfiguration.setTransitive(false);
+	/**
+	 * Gets or creates the collector configuration for a {@link RemapConfigurationSettings} instance.
+	 * The collector configuration receives all compile-time or runtime mod dependency files.
+	 *
+	 * @param project  the project
+	 * @param settings the remap configuration settings
+	 * @param runtime  if {@code true}, returns the runtime configuration;
+	 *                 if {@code false}, returns the compile-time one
+	 * @param remapped if {@code true}, returns the remapping target configuration;
+	 *                 if {@code false}, returns the configuration for the source files
+	 * @return the collector configuration
+	 */
+	public static Configuration getOrCreateCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime, boolean remapped) {
+		return getOrCreateCollectorConfiguration(project, settings.getSourceSet().get(), runtime, remapped);
+	}
 
-		if (settings.getOnCompileClasspath().get()) {
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
-			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, remappedConfiguration, project);
-			extendsFrom(sourceSet.getCompileClasspathConfigurationName(), remappedConfiguration, project);
+	/**
+	 * Gets or creates the collector configuration for a {@link RemapConfigurationSettings} instance.
+	 * The collector configuration receives all compile-time or runtime mod dependency files.
+	 *
+	 * @param project   the project
+	 * @param sourceSet the source set to apply the collector config to, should generally match {@link RemapConfigurationSettings#getSourceSet()}
+	 * @param runtime   if {@code true}, returns the runtime configuration;
+	 *                  if {@code false}, returns the compile-time one
+	 * @param remapped  if {@code true}, returns the remapping target configuration;
+	 *                  if {@code false}, returns the configuration for the source files
+	 * @return the collector configuration
+	 */
+	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime, boolean remapped) {
+		final String configurationName = "mod" +
+				(runtime ? "Runtime" : "Compile") +
+				"Classpath" +
+				Strings.capitalize(sourceSet.getName()) +
+				(remapped ? "Mapped" : "");
+		final ConfigurationContainer configurations = project.getConfigurations();
+		Configuration configuration = configurations.findByName(configurationName);
 
-			if (isMainSourceSet) {
-				extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
+		if (configuration == null) {
+			configuration = configurations.create(configurationName);
+
+			// Don't get transitive deps of already remapped mods
+			configuration.setTransitive(!remapped);
+
+			// Set usage roles to fetch the correct artifacts.
+			final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+
+			if (remapped) {
+				final boolean isMainSourceSet = sourceSet.getName().equals("main");
+
+				if (runtime) {
+					extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), configuration, project);
+
+					if (isMainSourceSet) {
+						extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, configuration, project);
+					}
+				} else {
+					extendsFrom(sourceSet.getCompileClasspathConfigurationName(), configuration, project);
+					extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration, project);
+
+					if (isMainSourceSet) {
+						extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, configuration, project);
+					}
+				}
+			} else {
+				if (!runtime) {
+					extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
+				}
 			}
 		}
 
-		if (settings.getOnRuntimeClasspath().get()) {
-			extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), remappedConfiguration, project);
+		return configuration;
+	}
 
-			if (isMainSourceSet) {
-				extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, remappedConfiguration, project);
-			}
+	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
+		// No point bothering to make it lazily, gradle realises configurations right away.
+		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
+		final Configuration configuration = project.getConfigurations().create(settings.getName());
+		configuration.setTransitive(true);
+
+		if (settings.getOnCompileClasspath().get()) {
+			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, false, false);
+			extendsFrom(collector.getName(), configuration, project);
+			getOrCreateCollectorConfiguration(project, settings, false, true);
+		}
+
+		if (settings.getOnRuntimeClasspath().get()) {
+			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, true, false);
+			extendsFrom(collector.getName(), configuration, project);
+			getOrCreateCollectorConfiguration(project, settings, true, true);
 		}
 
 		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {

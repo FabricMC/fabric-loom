@@ -126,7 +126,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		private static final String MINECRAFT_CLIENT_ONLY_NAMED = "minecraftClientOnlyNamed";
 		private static final String MINECRAFT_COMBINED_NAMED = "minecraftCombinedNamed";
 
-		private static final String CLIENT_ONLY_SOURCE_SET_NAME = "client";
+		public static final String CLIENT_ONLY_SOURCE_SET_NAME = "client";
 
 		private static final Split INSTANCE = new Split();
 

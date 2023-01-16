@@ -88,55 +88,40 @@ public final class RemapConfigurations {
 				}
 
 				settings.getClientSourceConfigurationName().set(name);
-				createClientMappedConfiguration(project, settings, clientSourceSet);
 			});
 		}
 	}
 
-	private static void createClientMappedConfiguration(Project project, RemapConfigurationSettings settings, SourceSet clientSourceSet) {
-		if (settings.getOnCompileClasspath().get()) {
-			getOrCreateCollectorConfiguration(project, clientSourceSet, false, true);
-		}
-
-		if (settings.getOnRuntimeClasspath().get()) {
-			getOrCreateCollectorConfiguration(project, clientSourceSet, true, true);
-		}
-	}
-
 	/**
-	 * Gets or creates the collector configuration for a {@link RemapConfigurationSettings} instance.
-	 * The collector configuration receives all compile-time or runtime mod dependency files.
+	 * Gets or creates the collector configuration for a {@link SourceSet}.
+	 * The collector configuration receives all compile-time or runtime remapped mod dependency files.
 	 *
 	 * @param project  the project
 	 * @param settings the remap configuration settings
 	 * @param runtime  if {@code true}, returns the runtime configuration;
 	 *                 if {@code false}, returns the compile-time one
-	 * @param remapped if {@code true}, returns the remapping target configuration;
-	 *                 if {@code false}, returns the configuration for the source files
 	 * @return the collector configuration
 	 */
-	public static Configuration getOrCreateCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime, boolean remapped) {
-		return getOrCreateCollectorConfiguration(project, settings.getSourceSet().get(), runtime, remapped);
+	public static Configuration getOrCreateCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime) {
+		return getOrCreateCollectorConfiguration(project, settings.getSourceSet().get(), runtime);
 	}
 
 	/**
 	 * Gets or creates the collector configuration for a {@link RemapConfigurationSettings} instance.
-	 * The collector configuration receives all compile-time or runtime mod dependency files.
+	 * The collector configuration receives all compile-time or runtime remapped mod dependency files.
 	 *
 	 * @param project   the project
 	 * @param sourceSet the source set to apply the collector config to, should generally match {@link RemapConfigurationSettings#getSourceSet()}
 	 * @param runtime   if {@code true}, returns the runtime configuration;
 	 *                  if {@code false}, returns the compile-time one
-	 * @param remapped  if {@code true}, returns the remapping target configuration;
-	 *                  if {@code false}, returns the configuration for the source files
 	 * @return the collector configuration
 	 */
-	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime, boolean remapped) {
+	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
 		final String configurationName = "mod"
 				+ (runtime ? "Runtime" : "Compile")
 				+ "Classpath"
 				+ Strings.capitalize(sourceSet.getName())
-				+ (remapped ? "Mapped" : "");
+				+ "Mapped";
 		final ConfigurationContainer configurations = project.getConfigurations();
 		Configuration configuration = configurations.findByName(configurationName);
 
@@ -144,32 +129,26 @@ public final class RemapConfigurations {
 			configuration = configurations.create(configurationName);
 
 			// Don't get transitive deps of already remapped mods
-			configuration.setTransitive(!remapped);
+			configuration.setTransitive(false);
 
 			// Set usage roles to fetch the correct artifacts.
 			final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 
-			if (remapped) {
-				final boolean isMainSourceSet = sourceSet.getName().equals("main");
+			final boolean isMainSourceSet = sourceSet.getName().equals("main");
 
-				if (runtime) {
-					extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), configuration, project);
+			if (runtime) {
+				extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), configuration, project);
 
-					if (isMainSourceSet) {
-						extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, configuration, project);
-					}
-				} else {
-					extendsFrom(sourceSet.getCompileClasspathConfigurationName(), configuration, project);
-					extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration, project);
-
-					if (isMainSourceSet) {
-						extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, configuration, project);
-					}
+				if (isMainSourceSet) {
+					extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, configuration, project);
 				}
 			} else {
-				if (!runtime) {
-					extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
+				extendsFrom(sourceSet.getCompileClasspathConfigurationName(), configuration, project);
+				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration, project);
+
+				if (isMainSourceSet) {
+					extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, configuration, project);
 				}
 			}
 		}
@@ -183,24 +162,12 @@ public final class RemapConfigurations {
 		final Configuration configuration = project.getConfigurations().create(settings.getName());
 		configuration.setTransitive(true);
 
+		if (settings.getOnCompileClasspath().get()) {
+			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
+		}
+
 		for (String outgoingConfigurationName : settings.getPublishingMode().get().outgoingConfigurations()) {
 			extendsFrom(outgoingConfigurationName, configuration, project);
-		}
-	}
-
-	public static void setupCollectorConfigurations(Project project, RemapConfigurationSettings settings) {
-		final Configuration configuration = project.getConfigurations().getByName(settings.getName());
-
-		if (settings.getOnCompileClasspath().get()) {
-			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, false, false);
-			extendsFrom(collector.getName(), configuration, project);
-			getOrCreateCollectorConfiguration(project, settings, false, true);
-		}
-
-		if (settings.getOnRuntimeClasspath().get()) {
-			final Configuration collector = getOrCreateCollectorConfiguration(project, settings, true, false);
-			extendsFrom(collector.getName(), configuration, project);
-			getOrCreateCollectorConfiguration(project, settings, true, true);
 		}
 	}
 

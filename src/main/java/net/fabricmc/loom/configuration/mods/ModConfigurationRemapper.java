@@ -89,24 +89,17 @@ public class ModConfigurationRemapper {
 			envToEnabled.forEach((runtime, enabled) -> {
 				if (!enabled) return;
 
-				final Configuration targetCollector = RemapConfigurations.getOrCreateCollectorConfiguration(project, entry, runtime, true);
+				final Configuration target = RemapConfigurations.getOrCreateCollectorConfiguration(project, entry, runtime);
+				// We copy the source with the desired usage type to get only the runtime or api jars, not both.
+				final Configuration sourceCopy = entry.getSourceConfiguration().get().copy();
+				final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+				sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				configsToRemap.put(sourceCopy, target);
 
 				if (entry.getClientSourceConfigurationName().isPresent()) {
-					// Don't use collectors for the source config since they can contain other configurations.
-					// Instead, we copy it with the desired usage type.
-					final Configuration sourceCopy = entry.getSourceConfiguration().get().copy();
-					final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
-					sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-
 					final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, project);
-					final Configuration clientTargetCollector = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime, true);
-
-					configsToRemap.put(sourceCopy, targetCollector);
-					clientConfigsToRemap.put(sourceCopy, clientTargetCollector);
-				} else {
-					RemapConfigurations.setupCollectorConfigurations(project, entry);
-					final Configuration sourceCollector = RemapConfigurations.getOrCreateCollectorConfiguration(project, entry, runtime, false);
-					configsToRemap.put(sourceCollector, targetCollector);
+					final Configuration clientTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime);
+					clientConfigsToRemap.put(sourceCopy, clientTarget);
 				}
 
 				// Export to other projects.

@@ -42,12 +42,19 @@ class KotlinTest extends Specification implements GradleProjectTestTrait {
 				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.8.7+kotlin.1.7.22.jar")
 
 		when:
-			def result = gradle.run(task: "build")
+			def result = gradle.run(tasks: ["build", "publishToMavenLocal"])
 			def serverResult = server.run()
 
 		then:
 			result.task(":build").outcome == SUCCESS
 			serverResult.successful()
+
+			// Check POM file to see that it doesn't contain transitive deps of FLK.
+			// See https://github.com/FabricMC/fabric-loom/issues/572.
+			result.task(":publishToMavenLocal").outcome == SUCCESS
+			def pom = new File(gradle.projectDir, "build/publications/mavenKotlin/pom-default.xml").text
+			// FLK depends on kotlin-reflect unlike our test project.
+			pom.contains('kotlin-reflect') == false
 
 		where:
 			version << STANDARD_TEST_VERSIONS

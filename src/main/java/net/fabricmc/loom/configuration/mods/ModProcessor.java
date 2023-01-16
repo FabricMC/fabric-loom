@@ -36,10 +36,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.attributes.Usage;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
@@ -63,6 +66,8 @@ public class ModProcessor {
 	private static final String fromM = MappingsNamespace.INTERMEDIARY.toString();
 	private static final String toM = MappingsNamespace.NAMED.toString();
 
+	private static final Pattern COPY_CONFIGURATION_PATTERN = Pattern.compile("^(.+)Copy[0-9]*$");
+
 	private final Project project;
 	private final Configuration sourceConfiguration;
 	private final SharedServiceManager serviceManager;
@@ -75,11 +80,34 @@ public class ModProcessor {
 
 	public void processMods(List<ModDependency> remapList) throws IOException {
 		try {
-			project.getLogger().lifecycle(":remapping {} mods from {}", remapList.size(), sourceConfiguration.getName());
+			project.getLogger().lifecycle(":remapping {} mods from {}", remapList.size(), describeConfiguration(sourceConfiguration));
 			remapJars(remapList);
 		} catch (Exception e) {
 			throw new RuntimeException(String.format(Locale.ENGLISH, "Failed to remap %d mods", remapList.size()), e);
 		}
+	}
+
+	private String describeConfiguration(Configuration configuration) {
+		String description = configuration.getName();
+		final Matcher copyMatcher = COPY_CONFIGURATION_PATTERN.matcher(description);
+
+		// If we find a copy suffix, remove it.
+		if (copyMatcher.matches()) {
+			final String realName = copyMatcher.group(1);
+
+			// It's only a copy if we find a non-copy version.
+			if (project.getConfigurations().findByName(realName) != null) {
+				description = realName;
+			}
+		}
+
+		final Usage usage = configuration.getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
+
+		if (usage != null) {
+			description += " (" + usage.getName() + ")";
+		}
+
+		return description;
 	}
 
 	private void stripNestedJars(Path path) {

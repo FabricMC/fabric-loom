@@ -87,6 +87,9 @@ public class ModProcessor {
 		}
 	}
 
+	// Creates a human-readable descriptive string for the configuration.
+	// This consists primarily of the name with any copy suffixes stripped
+	// (they're not informative), and the usage attribute if present.
 	private String describeConfiguration(Configuration configuration) {
 		String description = configuration.getName();
 		final Matcher copyMatcher = COPY_CONFIGURATION_PATTERN.matcher(description);
@@ -101,6 +104,7 @@ public class ModProcessor {
 			}
 		}
 
+		// Add the usage if present, e.g. "modImplementation (java-api)"
 		final Usage usage = configuration.getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
 
 		if (usage != null) {

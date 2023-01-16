@@ -116,6 +116,9 @@ public final class RemapConfigurations {
 	 *                  if {@code false}, returns the compile-time one
 	 * @return the collector configuration
 	 */
+	// Note: this method is generally called on demand, so these configurations
+	// won't exist at buildscript evaluation time. There's no need for them anyway
+	// since they're internals.
 	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
 		final String configurationName = "mod"
 				+ (runtime ? "Runtime" : "Compile")
@@ -131,10 +134,13 @@ public final class RemapConfigurations {
 			// Don't get transitive deps of already remapped mods
 			configuration.setTransitive(false);
 
-			// Set usage roles to fetch the correct artifacts.
+			// Set the usage attribute to fetch the correct artifacts.
+			// Note: Even though most deps are resolved via copies of mod* configurations,
+			// non-remapped mods that get added straight to these collectors will need the attribute.
 			final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 
+			// The main classpath also applies to the test source set like with normal dependencies.
 			final boolean isMainSourceSet = sourceSet.getName().equals("main");
 
 			if (runtime) {

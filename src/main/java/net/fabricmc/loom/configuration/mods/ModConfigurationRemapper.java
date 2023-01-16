@@ -77,6 +77,7 @@ public class ModConfigurationRemapper {
 		// The configurations where the source and remapped artifacts go.
 		// key: source, value: target
 		final Map<Configuration, Configuration> configsToRemap = new HashMap<>();
+		// Client remapped dep collectors for split source sets. Same keys and values.
 		final Map<Configuration, Configuration> clientConfigsToRemap = new HashMap<>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
@@ -96,6 +97,8 @@ public class ModConfigurationRemapper {
 				sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 				configsToRemap.put(sourceCopy, target);
 
+				// If our remap configuration entry targets the client source set as well,
+				// let's set up a collector for it too.
 				if (entry.getClientSourceConfigurationName().isPresent()) {
 					final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, project);
 					final Configuration clientTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime);

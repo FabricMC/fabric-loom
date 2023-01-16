@@ -132,11 +132,11 @@ public final class RemapConfigurations {
 	 * @return the collector configuration
 	 */
 	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime, boolean remapped) {
-		final String configurationName = "mod" +
-				(runtime ? "Runtime" : "Compile") +
-				"Classpath" +
-				Strings.capitalize(sourceSet.getName()) +
-				(remapped ? "Mapped" : "");
+		final String configurationName = "mod"
+				+ (runtime ? "Runtime" : "Compile")
+				+ "Classpath"
+				+ Strings.capitalize(sourceSet.getName())
+				+ (remapped ? "Mapped" : "");
 		final ConfigurationContainer configurations = project.getConfigurations();
 		Configuration configuration = configurations.findByName(configurationName);
 

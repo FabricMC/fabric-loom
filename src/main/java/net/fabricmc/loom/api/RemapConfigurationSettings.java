@@ -55,6 +55,7 @@ public abstract class RemapConfigurationSettings implements Named {
 		getOnCompileClasspath().finalizeValueOnRead();
 		getOnRuntimeClasspath().finalizeValueOnRead();
 		getPublishingMode().convention(PublishingMode.NONE).finalizeValueOnRead();
+		getApplyDependencyTransforms().convention(defaultDependencyTransforms()).finalizeValueOnRead();
 	}
 
 	@Override
@@ -95,6 +96,11 @@ public abstract class RemapConfigurationSettings implements Named {
 	 */
 	public abstract Property<PublishingMode> getPublishingMode();
 
+	/**
+	 * @return true when dependencies should be evaluated for minecraft jar transforms such as transitive Access Wideners or Injected interfaces.
+	 */
+	public abstract Property<Boolean> getApplyDependencyTransforms();
+
 	public enum PublishingMode {
 		NONE,
 		COMPILE_ONLY(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME),
@@ -130,5 +136,9 @@ public abstract class RemapConfigurationSettings implements Named {
 	@Internal
 	private NamedDomainObjectProvider<Configuration> getConfigurationByName(String name) {
 		return getProject().getConfigurations().named(name);
+	}
+
+	private Provider<Boolean> defaultDependencyTransforms() {
+		return getSourceSet().map(sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) || sourceSet.getName().equals("client"));
 	}
 }

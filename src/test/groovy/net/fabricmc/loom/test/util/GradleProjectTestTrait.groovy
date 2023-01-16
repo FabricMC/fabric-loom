@@ -37,22 +37,13 @@ trait GradleProjectTestTrait {
     @Lazy
     @Shared
     private static File sharedProjectDir = File.createTempDir()
-    @Lazy
-    @Shared
-    private static File sharedGradleHomeDir = File.createTempDir()
+    private static File gradleHomeDir = new File(LoomTestConstants.TEST_DIR, "integration/gradle_home")
 
     GradleProject gradleProject(Map options) {
         String gradleVersion = options.version as String ?: LoomTestConstants.DEFAULT_GRADLE
         String warningMode = options.warningMode as String ?: "fail"
         File projectDir = options.projectDir as File ?: options.sharedFiles ? sharedProjectDir : File.createTempDir()
-        File gradleHomeDir = options.gradleHomeDir as File ?: options.sharedFiles ? sharedGradleHomeDir : File.createTempDir()
-
-		// Useful for faster local testing.
-		def homeDirOverride = System.getProperty("fabric.loom.test.homeDir")
-
-		if (homeDirOverride) {
-			gradleHomeDir = new File(homeDirOverride)
-		}
+        File gradleHomeDir = gradleHomeDir
 
         setupProject(options, projectDir)
 

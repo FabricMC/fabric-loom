@@ -29,10 +29,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -60,8 +57,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
-	private final MappingSet[] srcMappingCache = new MappingSet[2];
-	private final Mercury[] srcMercuryCache = new Mercury[2];
 	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
 
 	private LoomDependencyManager dependencyManager;
@@ -165,16 +160,6 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 				getProject().files(getMinecraftJars(mappingsNamespace).stream().map(Path::toFile).toList())
 			)
 		);
-	}
-
-	@Override
-	public MappingSet getOrCreateSrcMappingCache(int id, Supplier<MappingSet> factory) {
-		return srcMappingCache[id] != null ? srcMappingCache[id] : (srcMappingCache[id] = factory.get());
-	}
-
-	@Override
-	public Mercury getOrCreateSrcMercuryCache(int id, Supplier<Mercury> factory) {
-		return srcMercuryCache[id] != null ? srcMercuryCache[id] : (srcMercuryCache[id] = factory.get());
 	}
 
 	@Override

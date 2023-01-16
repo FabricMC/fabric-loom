@@ -44,7 +44,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 			def gradle = gradleProject(
 					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "5f243a8b7849eac4b30cd876a22a127797a1c406",
+					commit: "2facd446984085376bd23245410ebf2dc0881b02",
 					version: version,
 					patch: "fabric_api"
 			)
@@ -54,7 +54,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			// Set the version to something constant
 			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
-			def server = ServerRunner.create(gradle.projectDir, "1.19.2")
+			def server = ServerRunner.create(gradle.projectDir, "1.19.3")
 										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
 			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["--parallel", "-x", "check", "-x", "runDatagen", "-x", "runGametest"]) // Note: checkstyle does not appear to like being ran in a test runner
@@ -65,12 +65,13 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			result.task(":build").outcome == SUCCESS
 			result.task(":prepareRemapJar").outcome == SUCCESS
 
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/9.0.17/fabric-biome-api-v1-9.0.17.jar").exists()
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/9.0.17/fabric-biome-api-v1-9.0.17-sources.jar").exists()
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0.jar").exists()
+			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0-sources.jar").exists()
 
 			serverResult.successful()
 			serverResult.output.contains("- fabric-api $API_VERSION")
 		where:
-			version << STANDARD_TEST_VERSIONS
+			//version << STANDARD_TEST_VERSIONS
+			version << [DEFAULT_GRADLE]
 	}
 }

@@ -111,7 +111,6 @@ dependencies {
 	testImplementation ('io.javalin:javalin:5.1.2') {
 		exclude group: 'org.jetbrains.kotlin'
 	}
-	testImplementation 'net.fabricmc:fabric-installer:0.9.0'
 	testImplementation 'org.mockito:mockito-core:4.8.0'
 
 	compileOnly 'org.jetbrains:annotations:23.0.0'
@@ -194,6 +193,7 @@ jacocoTestReport {
 
 test {
 	maxHeapSize = "2560m"
+	jvmArgs "-XX:+HeapDumpOnOutOfMemoryError"
 	useJUnitPlatform()
 
 	// Forward system prop onto tests.
@@ -216,14 +216,6 @@ import org.w3c.dom.Node
 
 publishing {
 	publications {
-		plugin(MavenPublication) { publication ->
-			groupId project.group
-			artifactId project.archivesBaseName
-			version project.version
-
-			from components.java
-		}
-
 		// Also publish a snapshot so people can use the latest version if they wish
 		snapshot(MavenPublication) { publication ->
 			groupId project.group

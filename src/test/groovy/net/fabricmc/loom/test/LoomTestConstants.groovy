@@ -27,13 +27,19 @@ package net.fabricmc.loom.test
 import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
-    private final static String NIGHTLY_VERSION = "8.1-20221229234322+0000"
+    private final static String NIGHTLY_VERSION = "8.1-20230109232704+0000"
     private final static boolean NIGHTLY_EXISTS = nightlyExists(NIGHTLY_VERSION)
 
+	// Test against the version of Gradle being used to build loom
     public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
+	// Test against Gradle 8
+	public final static String GRADLE_8 = "8.0-rc-1"
     // Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
     public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? NIGHTLY_VERSION : DEFAULT_GRADLE
-    public final static String[] STANDARD_TEST_VERSIONS = NIGHTLY_EXISTS ? [DEFAULT_GRADLE, PRE_RELEASE_GRADLE] : [DEFAULT_GRADLE]
+	// Randomly sorted to ensure that all versions can run with a clean gradle home.
+    public final static String[] STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [DEFAULT_GRADLE, GRADLE_8, PRE_RELEASE_GRADLE] : [DEFAULT_GRADLE, GRADLE_8]).shuffled().toArray()
+
+	public static final File TEST_DIR = new File("./.gradle/test-files")
 
     /**
      * Nightly gradle versions get removed after a certain amount of time, lets check to see if its still online before running the tests.

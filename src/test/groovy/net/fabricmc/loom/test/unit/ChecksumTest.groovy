@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022-2023 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,28 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.processor;
+package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.loom.util.Checksum
+import org.gradle.api.Project
+import spock.lang.Specification
 
-public interface ProcessorContext {
-	MinecraftJarConfiguration getJarConfiguration();
+class ChecksumTest extends Specification {
+	def "project hash"() {
+		given:
+			def project = Mock(Project)
+			project.getPath() >> path
+			project.getProjectDir() >> new File(dir)
 
-	boolean isMerged();
+		when:
+			def hash = Checksum.projectHash(project)
 
-	boolean includesClient();
+		then:
+			hash == expected
 
-	boolean includesServer();
-
-	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
-
-	MemoryMappingTree getMappings();
+		where:
+			path   | dir                                          | expected
+			":"    | "C://mod"                                    | "2f55736572732f6d"
+			":sub" | "/Users/test/Documents/modding/fabric-loom"  | "2f55736572732f74"
+	}
 }

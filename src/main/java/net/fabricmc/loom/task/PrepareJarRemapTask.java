@@ -57,14 +57,12 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 		getOutputs().upToDateWhen((o) -> false);
 
 		getProject().getGradle().allprojects(project -> {
-			project.getTasks().configureEach(task -> {
-				if (task instanceof PrepareJarRemapTask otherTask) {
-					if (otherTask == this) return;
+			project.getTasks().withType(PrepareJarRemapTask.class, otherTask -> {
+				if (otherTask == this) return;
 
-					// Ensure that all other prepare tasks inputs have completed
-					dependsOn(otherTask.getInputs());
-					mustRunAfter(otherTask.getInputs());
-				}
+				// Ensure that all other prepare tasks inputs have completed
+				dependsOn(otherTask.getInputs());
+				mustRunAfter(otherTask.getInputs());
 			});
 		});
 	}
@@ -102,6 +100,6 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 	}
 
 	static void prepare(TinyRemapperService tinyRemapperService, Path inputFile) {
-		tinyRemapperService.getTinyRemapperForInputs().readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
+		tinyRemapperService.getTinyRemapperForInputs().readInputs(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
 	}
 }

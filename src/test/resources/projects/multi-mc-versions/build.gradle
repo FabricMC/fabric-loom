@@ -1,0 +1,56 @@
+import groovy.json.JsonSlurper
+
+plugins {
+	id "java"
+	id 'fabric-loom' apply false
+}
+
+allprojects {
+	group = project.maven_group
+	version = project.mod_version
+}
+
+ext {
+	yarnMeta = new JsonSlurper().parse(new URL("https://meta.fabricmc.net/v2/versions/yarn"))
+}
+
+def getMappingVersion(String mcVersion) {
+	return rootProject.yarnMeta.find { it.gameVersion == mcVersion }.version
+}
+
+subprojects {
+	apply plugin: "fabric-loom"
+
+	archivesBaseName = rootProject.name + "-" + project.name
+
+	def minecraft_version = project.name.substring(7)
+	def yarn_mappings = getMappingVersion(minecraft_version)
+
+	dependencies {
+		// To change the versions see the gradle.properties files
+		minecraft "com.mojang:minecraft:$minecraft_version"
+		mappings "net.fabricmc:yarn:$yarn_mappings:v2"
+		modImplementation "net.fabricmc:fabric-loader:$loader_version"
+	}
+
+	jar {
+		archiveClassifier.set "dev"
+	}
+
+	// Just use the source from the root project
+	compileJava {
+		source(sourceSets.main.java.srcDirs)
+	}
+
+	processResources {
+		from(rootProject.sourceSets.main.resources)
+		inputs.property 'version', project.version
+
+		filesMatching("fabric.mod.json") {
+			expand 'version': project.version, 'minecraft_version': minecraft_version, 'loader_version': project.loader_version
+		}
+	}
+}
+
+compileJava.enabled = false
+processResources.enabled = false

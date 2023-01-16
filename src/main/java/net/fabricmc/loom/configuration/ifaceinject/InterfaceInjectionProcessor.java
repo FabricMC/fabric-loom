@@ -32,6 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -43,7 +44,6 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +56,7 @@ import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
@@ -98,16 +99,13 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
-		final List<InjectedInterface> remappedInjectedInterfaces;
-
 		// Remap from intermediary->named
-		try (var tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
-			final Remapper remapper = tinyRemapper.get().getEnvironment().getRemapper();
-
-			remappedInjectedInterfaces = spec.injectedInterfaces().stream()
-					.map(injectedInterface -> remap(injectedInterface, remapper))
-					.toList();
-		}
+		final MemoryMappingTree mappings = context.getMappings();
+		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
+		final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
+				.map(injectedInterface -> remap(injectedInterface, s -> mappings.mapClassName(s, intermediaryIndex, namedIndex)))
+				.toList();
 
 		try {
 			ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
@@ -116,11 +114,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		}
 	}
 
-	private InjectedInterface remap(InjectedInterface in, Remapper remapper) {
+	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper) {
 		return new InjectedInterface(
 				in.modId(),
-				remapper.map(in.className()),
-				remapper.map(in.ifaceName())
+				remapper.apply(in.className()),
+				remapper.apply(in.ifaceName())
 		);
 	}
 

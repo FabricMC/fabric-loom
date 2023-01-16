@@ -113,10 +113,12 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 						.map(File::toPath);
 
 		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
+				.filter(settings -> settings.getApplyDependencyTransforms().get())
 				.flatMap(resolve)
 				.toList();
 
 		return extension.getCompileRemapConfigurations().stream()
+				.filter(settings -> settings.getApplyDependencyTransforms().get())
 				.flatMap(resolve)
 				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
 				.map(FabricModJsonFactory::createFromZipOptional)

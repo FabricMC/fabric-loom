@@ -272,7 +272,7 @@ public final class CompileConfiguration {
 	private static Path getLockFile(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
-		final String pathHash = Checksum.toHex(project.getProjectDir().getAbsolutePath().getBytes(StandardCharsets.UTF_8)).substring(0, 16);
+		final String pathHash = Checksum.projectHash(project);
 		return cacheDirectory.resolve("." + pathHash + ".lock");
 	}
 

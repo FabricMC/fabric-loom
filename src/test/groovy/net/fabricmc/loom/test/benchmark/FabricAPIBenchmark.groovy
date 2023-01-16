@@ -37,19 +37,21 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 class FabricAPIBenchmark implements GradleProjectTestTrait {
     def run(File dir) {
         def gradle = gradleProject(
-                version: LoomTestConstants.PRE_RELEASE_GRADLE,
+                version: LoomTestConstants.DEFAULT_GRADLE,
                 projectDir: new File(dir, "project"),
                 gradleHomeDir: new File(dir, "gradlehome"),
                 allowExistingRepo: true,
 
                 repo: "https://github.com/FabricMC/fabric.git",
-                commit: "5f243a8b7849eac4b30cd876a22a127797a1c406",
+                commit: "2facd446984085376bd23245410ebf2dc0881b02",
                 patch: "fabric_api"
         )
 
+		gradle.enableMultiProjectOptimisation()
+
         def timeStart = new Date()
 
-        def result = gradle.run(tasks: ["clean"], args: [])
+        def result = gradle.run(tasks: ["clean", "build", "-x", "test", "-x", "check", "-x", ":fabric-data-generation-api-v1:runDatagen"], args: [])
 
         def timeStop = new Date()
         TimeDuration duration = TimeCategory.minus(timeStop, timeStart)

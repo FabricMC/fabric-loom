@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022-2023 FabricMC
+ * Copyright (c) 2016-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.processor;
+package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import spock.lang.Specification
+import spock.lang.Unroll
 
-public interface ProcessorContext {
-	MinecraftJarConfiguration getJarConfiguration();
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-	boolean isMerged();
+class MultiMcVersionTest extends Specification implements GradleProjectTestTrait {
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+			def gradle = gradleProject(project: "multi-mc-versions", version: version)
 
-	boolean includesClient();
+		when:
+			def result = gradle.run(tasks: "build")
 
-	boolean includesServer();
+		then:
+			def versions = [
+					'fabric-1.14.4',
+					'fabric-1.15', 'fabric-1.15.2',
+					'fabric-1.16', 'fabric-1.16.5',
+					'fabric-1.17', 'fabric-1.17.1',
+					'fabric-1.18', 'fabric-1.18.2',
+					'fabric-1.19', 'fabric-1.19.3'
+			]
 
-	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
+			result.task(":build").outcome == SUCCESS
+			versions.forEach {
+				result.task(":$it:build").outcome == SUCCESS
+			}
 
-	MemoryMappingTree getMappings();
+		where:
+			version << STANDARD_TEST_VERSIONS
+	}
 }

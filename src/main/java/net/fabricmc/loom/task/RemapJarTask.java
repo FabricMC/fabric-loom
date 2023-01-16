@@ -33,13 +33,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Suppliers;
 import com.google.gson.JsonObject;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -90,13 +88,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public abstract Property<Boolean> getUseMixinAP();
 
 	private final Provider<BuildSharedServiceManager> serviceManagerProvider;
-	private final Supplier<TinyRemapperService> tinyRemapperService;
 
 	@Inject
 	public RemapJarTask() {
 		super();
 		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
-		tinyRemapperService = Suppliers.memoize(() -> TinyRemapperService.getOrCreate(serviceManagerProvider.get().get(), this));
 
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
@@ -134,7 +130,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getNestedJars().from(getNestedJars());
 			}
 
-			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(tinyRemapperService.get()));
+			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
 			params.getRemapClasspath().from(getClasspath());
 			params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
 
@@ -337,6 +333,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 	@Internal
 	public TinyRemapperService getTinyRemapperService() {
-		return tinyRemapperService.get();
+		return TinyRemapperService.getOrCreate(serviceManagerProvider.get().get(), this);
 	}
 }

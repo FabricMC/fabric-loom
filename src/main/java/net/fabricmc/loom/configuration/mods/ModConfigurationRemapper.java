@@ -178,6 +178,8 @@ public class ModConfigurationRemapper {
 
 			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
 			final boolean refreshDeps = LoomGradleExtension.get(project).refreshDeps();
+			// TODO: With the same artifacts being considered multiple times for their different
+			//   usage attributes, this should probably not process them multiple times even with refreshDeps.
 			final List<ModDependency> toRemap = modDependencies.stream()
 					.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))
 					.toList();

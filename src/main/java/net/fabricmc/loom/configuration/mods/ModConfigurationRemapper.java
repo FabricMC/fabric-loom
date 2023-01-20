@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -76,7 +77,7 @@ public class ModConfigurationRemapper {
 		final DependencyHandler dependencies = project.getDependencies();
 		// The configurations where the source and remapped artifacts go.
 		// key: source, value: target
-		final Map<Configuration, Configuration> configsToRemap = new HashMap<>();
+		final Map<Configuration, Configuration> configsToRemap = new LinkedHashMap<>();
 		// Client remapped dep collectors for split source sets. Same keys and values.
 		final Map<Configuration, Configuration> clientConfigsToRemap = new HashMap<>();
 

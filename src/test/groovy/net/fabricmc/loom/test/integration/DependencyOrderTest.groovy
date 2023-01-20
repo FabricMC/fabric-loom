@@ -31,7 +31,7 @@ import spock.lang.Unroll
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class InstallerDataTest extends Specification implements GradleProjectTestTrait {
+class DependencyOrderTest extends Specification implements GradleProjectTestTrait {
     // Regression test for a bug introduced in 1.1 development where
     // if Fabric Loader is resolved after another mod dependency,
     // Gradle will crash because loaderLibraries has been resolved before

@@ -120,6 +120,11 @@ public class ModConfigurationRemapper {
 			}
 		}
 
+		// Round 1: Discovery
+		// Go through all the configs to find artifacts to remap and
+		// the installer data. The installer data has to be added before
+		// any mods are remapped since remapping needs the dependencies provided by that data.
+		final Map<Configuration, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
 			/*
 			sourceConfig - The source configuration where the intermediary named artifacts come from. i.e "modApi"
@@ -158,11 +163,20 @@ public class ModConfigurationRemapper {
 				modDependencies.add(modDependency);
 			}
 
+			dependenciesBySourceConfig.put(sourceConfig, modDependencies);
+		});
+
+		// Round 2: Remapping
+		// Remap all discovered artifacts.
+		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
+			final List<ModDependency> modDependencies = dependenciesBySourceConfig.get(sourceConfig);
+
 			if (modDependencies.isEmpty()) {
 				// Nothing else to do
 				return;
 			}
 
+			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
 			final boolean refreshDeps = LoomGradleExtension.get(project).refreshDeps();
 			final List<ModDependency> toRemap = modDependencies.stream()
 					.filter(dependency -> refreshDeps || dependency.isCacheInvalid(project, null))

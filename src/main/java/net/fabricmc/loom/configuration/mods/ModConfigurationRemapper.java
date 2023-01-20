@@ -106,18 +106,18 @@ public class ModConfigurationRemapper {
 					final Configuration clientTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime);
 					clientConfigsToRemap.put(sourceCopy, clientTarget);
 				}
-
-				// Export to other projects.
-				if (entry.getTargetConfigurationName().get().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
-					// Note: legacy (pre-1.1) behavior is kept for this remapping since
-					// we don't have a modApiElements/modRuntimeElements kind of configuration.
-					// TODO: Expose API/runtime usage attributes for namedElements to make it work like normal project dependencies.
-					final Configuration remappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfigurationName());
-					remappedConfig.setTransitive(false);
-					project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
-					configsToRemap.put(entry.getSourceConfiguration().get(), remappedConfig);
-				}
 			});
+
+			// Export to other projects.
+			if (entry.getTargetConfigurationName().get().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
+				// Note: legacy (pre-1.1) behavior is kept for this remapping since
+				// we don't have a modApiElements/modRuntimeElements kind of configuration.
+				// TODO: Expose API/runtime usage attributes for namedElements to make it work like normal project dependencies.
+				final Configuration remappedConfig = project.getConfigurations().maybeCreate(entry.getRemappedConfigurationName());
+				remappedConfig.setTransitive(false);
+				project.getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS).extendsFrom(remappedConfig);
+				configsToRemap.put(entry.getSourceConfiguration().get(), remappedConfig);
+			}
 		}
 
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {

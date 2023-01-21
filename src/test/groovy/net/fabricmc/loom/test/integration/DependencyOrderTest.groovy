@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,38 +25,34 @@
 package net.fabricmc.loom.test.integration
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
 import spock.lang.Specification
 import spock.lang.Unroll
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class KotlinTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "kotlin build (gradle #version)"() {
-		setup:
-			def gradle = gradleProject(project: "kotlin", version: version)
-			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
-				.withMod(gradle.getOutputFile("fabric-example-mod-0.0.1.jar"))
-				.downloadMod(ServerRunner.FABRIC_LANG_KOTLIN, "fabric-language-kotlin-1.8.7+kotlin.1.7.22.jar")
-
-		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"])
-			def serverResult = server.run()
-
-		then:
-			result.task(":build").outcome == SUCCESS
-			serverResult.successful()
-
-			// Check POM file to see that it doesn't contain transitive deps of FLK.
-			// See https://github.com/FabricMC/fabric-loom/issues/572.
-			result.task(":publishToMavenLocal").outcome == SUCCESS
-			def pom = new File(gradle.projectDir, "build/publications/mavenKotlin/pom-default.xml").text
-			// FLK depends on kotlin-reflect unlike our test project.
-			pom.contains('kotlin-reflect') == false
-
-		where:
-			version << STANDARD_TEST_VERSIONS
-	}
+class DependencyOrderTest extends Specification implements GradleProjectTestTrait {
+    // Regression test for a bug introduced in 1.1 development where
+    // if Fabric Loader is resolved after another mod dependency,
+    // Gradle will crash because loaderLibraries has been resolved before
+    // Loader's dependencies have been added to it.
+    @Unroll
+    def "build with loader as the second dependency (gradle #version)"() {
+        setup:
+            def gradle = gradleProject(project: "minimalBase", version: version)
+            gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:1.19.3'
+                mappings 'net.fabricmc:yarn:1.19.3+build.5:v2'
+                modApi 'net.fabricmc.fabric-api:fabric-api:0.73.0+1.19.3'
+                modImplementation 'net.fabricmc:fabric-loader:0.14.13'
+            }
+            """.stripIndent()
+        when:
+            def result = gradle.run(task: "build")
+        then:
+            result.task(":build").outcome == SUCCESS
+        where:
+            version << STANDARD_TEST_VERSIONS
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Named;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
@@ -40,9 +39,6 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 
 /**
  * A {@link Named} object for configuring "proxy" configurations that remap artifacts.
@@ -134,46 +130,8 @@ public abstract class RemapConfigurationSettings implements Named {
 
 	@ApiStatus.Internal
 	@Internal
-	public final Provider<String> getClientRemappedConfigurationName() {
-		return getClientSourceConfigurationName().map(s -> s + "Mapped");
-	}
-
-	@ApiStatus.Internal
-	@Internal
 	public final NamedDomainObjectProvider<Configuration> getSourceConfiguration() {
 		return getConfigurationByName(getName());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final NamedDomainObjectProvider<Configuration> getRemappedConfiguration() {
-		return getConfigurationByName(getRemappedConfigurationName());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final NamedDomainObjectProvider<Configuration> getTargetConfiguration() {
-		return getConfigurationByName(getTargetConfigurationName().get());
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final Provider<Configuration> getClientTargetConfiguration() {
-		return getProject().provider(() -> {
-			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
-			Preconditions.checkArgument(split, "Cannot get client target configuration when project is not split");
-			return getConfigurationByName(getClientSourceConfigurationName().get()).get();
-		});
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	public final Provider<Configuration> getClientRemappedConfiguration() {
-		return getProject().provider(() -> {
-			boolean split = LoomGradleExtension.get(getProject()).getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SPLIT;
-			Preconditions.checkArgument(split, "Cannot get client remapped configuration when project is not split");
-			return getConfigurationByName(getClientRemappedConfigurationName().get()).get();
-		});
 	}
 
 	@Internal

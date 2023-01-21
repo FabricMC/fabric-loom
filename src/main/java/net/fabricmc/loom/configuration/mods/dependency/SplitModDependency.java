@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.configuration.mods.JarSplitter;
 
@@ -120,11 +121,10 @@ public final class SplitModDependency extends ModDependency {
 
 	private void createModGroup(Path commonJar, Path clientJar) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		extension.getMods().register(String.format("%s-%s-%s", getRemappedGroup(), name, version), modSettings ->
-				modSettings.getModFiles().from(
-					commonJar.toFile(),
-					clientJar.toFile()
-				)
+		final ModSettings modSettings = extension.getMods().maybeCreate(String.format("%s-%s-%s", getRemappedGroup(), name, version));
+		modSettings.getModFiles().from(
+				commonJar.toFile(),
+				clientJar.toFile()
 		);
 	}
 

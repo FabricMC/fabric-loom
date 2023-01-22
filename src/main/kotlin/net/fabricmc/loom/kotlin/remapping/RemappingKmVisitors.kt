@@ -124,7 +124,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             id: Int,
-            variance: KmVariance
+            variance: KmVariance,
         ): KmTypeParameterVisitor {
             return RemappingKmTypeParameterVisitor(super.visitTypeParameter(flags, name, id, variance))
         }
@@ -197,7 +197,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             id: Int,
-            variance: KmVariance
+            variance: KmVariance,
         ): KmTypeParameterVisitor {
             return RemappingKmTypeParameterVisitor(super.visitTypeParameter(flags, name, id, variance))
         }
@@ -254,7 +254,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             id: Int,
-            variance: KmVariance
+            variance: KmVariance,
         ): KmTypeParameterVisitor {
             return RemappingKmTypeParameterVisitor(super.visitTypeParameter(flags, name, id, variance))
         }
@@ -265,7 +265,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             jvmFlags: Flags,
             fieldSignature: JvmFieldSignature?,
             getterSignature: JvmMethodSignature?,
-            setterSignature: JvmMethodSignature?
+            setterSignature: JvmMethodSignature?,
         ) {
             super.visit(jvmFlags, remapJvmFieldSignature(fieldSignature), remapJvmMethodSignature(getterSignature), remapJvmMethodSignature(setterSignature))
         }
@@ -314,7 +314,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             id: Int,
-            variance: KmVariance
+            variance: KmVariance,
         ): KmTypeParameterVisitor {
             return RemappingKmTypeParameterVisitor(super.visitTypeParameter(flags, name, id, variance))
         }
@@ -347,7 +347,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             getterFlags: Flags,
-            setterFlags: Flags
+            setterFlags: Flags,
         ): KmPropertyVisitor {
             return RemappingKmPropertyVisitor(super.visitLocalDelegatedProperty(flags, name, getterFlags, setterFlags))
         }
@@ -382,7 +382,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             getterFlags: Flags,
-            setterFlags: Flags
+            setterFlags: Flags,
         ): KmPropertyVisitor {
             return RemappingKmPropertyVisitor(super.visitProperty(flags, name, getterFlags, setterFlags))
         }
@@ -397,7 +397,7 @@ class RemappingKmVisitors(private val remapper: Remapper) {
             flags: Flags,
             name: String,
             getterFlags: Flags,
-            setterFlags: Flags
+            setterFlags: Flags,
         ): KmPropertyVisitor {
             return RemappingKmPropertyVisitor(super.visitLocalDelegatedProperty(flags, name, getterFlags, setterFlags))
         }

@@ -44,7 +44,7 @@ class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: 
         name: String?,
         signature: String?,
         superName: String?,
-        interfaces: Array<out String>?
+        interfaces: Array<out String>?,
     ) {
         this.className = name
         super.visit(version, access, name, signature, superName, interfaces)

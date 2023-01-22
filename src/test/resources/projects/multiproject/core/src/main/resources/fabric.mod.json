@@ -34,5 +34,6 @@
     "loom:injected_interfaces": {
       "net/minecraft/class_2248": ["net/fabricmc/core/InjectedInterface"]
     }
-  }
+  },
+  "accessWidener" : "core.accesswidener"
 }

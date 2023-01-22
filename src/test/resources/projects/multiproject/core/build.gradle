@@ -1,5 +1,9 @@
 archivesBaseName = "core"
 
+loom {
+	accessWidenerPath = file("src/main/resources/core.accesswidener")
+}
+
 dependencies {
 	// An example api dep to be used by the other sub project.
 	modApi "TechReborn:TechReborn-1.16:3.8.4+build.236"

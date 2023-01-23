@@ -34,10 +34,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.processor.MappingProcessorContext;
@@ -49,6 +52,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class MinecraftJarProcessorManager {
 	private static final String CACHE_VALUE_FILE_PATH = "META-INF/Loom-Jar-Processor-Cache";
+	private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftJarProcessorManager.class);
 
 	private final List<ProcessorEntry<?>> jarProcessors;
 
@@ -73,14 +77,17 @@ public final class MinecraftJarProcessorManager {
 		List<ProcessorEntry<?>> entries = new ArrayList<>();
 
 		for (MinecraftJarProcessor<?> processor : processors) {
+			LOGGER.debug("Building processor spec for {}", processor.getName());
 			MinecraftJarProcessor.Spec spec = processor.buildSpec(context);
 
 			if (spec != null) {
+				LOGGER.debug("Adding processor entry for {}", processor.getName());
 				entries.add(new ProcessorEntry<>(processor, spec));
 			}
 		}
 
 		if (entries.isEmpty()) {
+			LOGGER.debug("No processor entries");
 			return null;
 		}
 
@@ -94,10 +101,23 @@ public final class MinecraftJarProcessorManager {
 				.collect(Collectors.joining("::"));
 	}
 
+	private String getDebugString() {
+		final StringJoiner sj = new StringJoiner("\n");
+
+		for (ProcessorEntry<?> jarProcessor : jarProcessors) {
+			sj.add(jarProcessor.name() + ":");
+			sj.add("\tHash: " + jarProcessor.hashCode());
+			sj.add("\tStr: " + jarProcessor.toString());
+		}
+
+		return sj.toString();
+	}
+
 	public boolean requiresProcessingJar(Path jar) {
 		Objects.requireNonNull(jar);
 
 		if (Files.notExists(jar)) {
+			LOGGER.debug("{} does not exist, generating", jar);
 			return true;
 		}
 
@@ -110,11 +130,23 @@ public final class MinecraftJarProcessorManager {
 		}
 
 		if (existingCache == null) {
+			LOGGER.info("{} does not contain a processor cache value, regenerating", jar);
 			return true;
 		}
 
 		final String existingCacheValue = new String(existingCache, StandardCharsets.UTF_8);
-		return !existingCacheValue.equals(getCacheValue());
+		final String expectedCacheValue = getCacheValue();
+		final boolean matches = existingCacheValue.equals(expectedCacheValue);
+
+		if (!matches) {
+			LOGGER.info("{} has an invalid cache, got {} expected {}", jar, existingCacheValue, expectedCacheValue);
+
+			if (LOGGER.isInfoEnabled()) {
+				LOGGER.info("Expected state: {}", getDebugString());
+			}
+		}
+
+		return !matches;
 	}
 
 	public void processJar(Path jar, ProcessorContext context) throws IOException {

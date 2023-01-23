@@ -24,10 +24,13 @@
 
 package net.fabricmc.loom.configuration.accesswidener;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -62,8 +65,14 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 		List<AccessWidenerEntry> accessWideners = new ArrayList<>();
 
 		if (localAccessWidenerProperty.isPresent()) {
+			Path path = localAccessWidenerProperty.get().getAsFile().toPath();
+
+			if (Files.notExists(path)) {
+				throw new UncheckedIOException(new FileNotFoundException("Could not find access widener file at {%s}".formatted(path)));
+			}
+
 			// Add the access widener specified in the extension
-			accessWideners.add(new LocalAccessWidenerEntry(localAccessWidenerProperty.get().getAsFile().toPath()));
+			accessWideners.add(LocalAccessWidenerEntry.create(path));
 		}
 
 		/* Uncomment to read all access wideners from local mods.
@@ -84,7 +93,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 			return null;
 		}
 
-		return new Spec(Collections.unmodifiableList(accessWideners));
+		return new Spec(accessWideners.stream().sorted(Comparator.comparing(AccessWidenerEntry::getSortKey)).toList());
 	}
 
 	@Override

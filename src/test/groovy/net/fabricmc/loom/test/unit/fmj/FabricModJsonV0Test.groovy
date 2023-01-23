@@ -101,4 +101,13 @@ class FabricModJsonV0Test extends Specification {
 		then:
 			fmj.getClassTweakers() == [:]
 	}
+
+	def "hash code"() {
+		given:
+			def mockSource = Mock(FabricModJsonSource)
+		when:
+			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		then:
+			fmj.hashCode() == 930565976
+	}
 }

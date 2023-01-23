@@ -125,4 +125,13 @@ class FabricModJsonV2Test extends Specification {
 				"universal.ct": ModEnvironment.UNIVERSAL
 			]
 	}
+
+	def "hash code"() {
+		given:
+			def mockSource = Mock(FabricModJsonSource)
+		when:
+			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		then:
+			fmj.hashCode() == 930565978
+	}
 }

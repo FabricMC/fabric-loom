@@ -62,6 +62,11 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 	}
 
 	@Override
+	public String getSortKey() {
+		return mod.getId() + ":" + path;
+	}
+
+	@Override
 	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
 		if (transitiveOnly) {
 			// Filter for only transitive rules

@@ -33,8 +33,9 @@ import java.util.Objects;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
-public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJsonV1, FabricModJsonV2 {
+public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJsonV1, FabricModJsonV2, FabricModJson.Mockable {
 	protected final JsonObject jsonObject;
 	private final FabricModJsonSource source;
 
@@ -58,5 +59,23 @@ public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJso
 
 	public final FabricModJsonSource getSource() {
 		return source;
+	}
+
+	@Override
+	public final String toString() {
+		return getClass().getName() + "[id=%s, version=%s, classTweakers=%s]".formatted(getId(), getVersion(), getClassTweakers());
+	}
+
+	@Override
+	public final int hashCode() {
+		return Objects.hash(getId(), getVersion());
+	}
+
+	@VisibleForTesting
+	public abstract non-sealed class Mockable extends FabricModJson {
+		private Mockable() {
+			super(null, null);
+			throw new AssertionError();
+		}
 	}
 }

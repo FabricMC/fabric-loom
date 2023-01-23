@@ -26,16 +26,12 @@ package net.fabricmc.loom.test.unit
 
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata
 import net.fabricmc.loom.configuration.mods.ArtifactRef
-import net.fabricmc.loom.util.FileSystemUtil
 import spock.lang.Specification
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.jar.Attributes
-import java.util.jar.Manifest
 
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RemapRequirements.*
+import static net.fabricmc.loom.test.util.ZipTestUtils.*
 
 class ArtifactMetadataTest extends Specification {
 	def "is fabric mod"() {
@@ -110,31 +106,5 @@ class ArtifactMetadataTest extends Specification {
 
 	private static ArtifactRef createArtifact(Path zip) {
 		return new ArtifactRef.FileArtifactRef(zip, "net.fabric", "loom-test", "1.0")
-	}
-
-	private static Path createZip(Map<String, String> entries) {
-		def file = Files.createTempFile("loom-test", ".zip")
-		Files.delete(file)
-
-		FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->
-			entries.forEach { path, value ->
-				def fsPath = zip.getPath(path)
-				def fsPathParent = fsPath.getParent()
-				if (fsPathParent != null) Files.createDirectories(fsPathParent)
-				Files.writeString(fsPath, value, StandardCharsets.UTF_8)
-			}
-		}
-
-		return file
-	}
-
-	private String manifest(String key, String value) {
-		def manifest = new Manifest()
-		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
-		manifest.getMainAttributes().putValue(key, value)
-
-		def out = new ByteArrayOutputStream()
-		manifest.write(out)
-		return out.toString(StandardCharsets.UTF_8)
 	}
 }

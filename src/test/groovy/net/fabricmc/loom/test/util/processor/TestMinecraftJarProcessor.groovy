@@ -22,27 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.accesswidener;
+package net.fabricmc.loom.test.util.processor
 
-import java.io.IOException;
+import groovy.transform.Immutable
+import net.fabricmc.loom.api.processor.MinecraftJarProcessor
+import net.fabricmc.loom.api.processor.ProcessorContext
+import net.fabricmc.loom.api.processor.SpecContext
 
-import org.jetbrains.annotations.Nullable;
+import java.nio.file.Path
 
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.loom.util.fmj.ModEnvironment;
-import net.fabricmc.tinyremapper.TinyRemapper;
+@Immutable
+class TestMinecraftJarProcessor implements MinecraftJarProcessor<Spec> {
+    String input
 
-public interface AccessWidenerEntry {
-	ModEnvironment environment();
+    final String name = "TestProcessor"
 
-	/**
-	 * @return The mod id to be used in {@link TransitiveAccessWidenerMappingsProcessor} or null when this entry does not contain transitive entries.
-	 */
-	@Nullable
-	String mappingId();
+    @Override
+    Spec buildSpec(SpecContext context) {
+        if (input == null) {
+            return null
+        }
 
-	String getSortKey();
+        return new Spec(input)
+    }
 
-	void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+    @Immutable
+    class Spec implements MinecraftJarProcessor.Spec {
+        String input
+    }
+
+    @Override
+    void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
+    }
 }

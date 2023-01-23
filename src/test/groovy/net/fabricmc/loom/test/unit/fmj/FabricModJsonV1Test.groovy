@@ -107,4 +107,13 @@ class FabricModJsonV1Test extends Specification {
 		then:
 			fmj.getClassTweakers() == ["modid.accesswidener": ModEnvironment.UNIVERSAL]
 	}
+
+	def "hash code"() {
+		given:
+			def mockSource = Mock(FabricModJsonSource)
+		when:
+			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		then:
+			fmj.hashCode() == 930565977
+	}
 }

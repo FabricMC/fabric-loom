@@ -22,27 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.accesswidener;
+package net.fabricmc.loom.test.util
 
-import java.io.IOException;
+import net.fabricmc.loom.util.FileSystemUtil
 
-import org.jetbrains.annotations.Nullable;
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.jar.Attributes
+import java.util.jar.Manifest
 
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.loom.util.fmj.ModEnvironment;
-import net.fabricmc.tinyremapper.TinyRemapper;
+class ZipTestUtils {
+    static Path createZip(Map<String, String> entries) {
+        def file = Files.createTempFile("loom-test", ".zip")
+        Files.delete(file)
 
-public interface AccessWidenerEntry {
-	ModEnvironment environment();
+        FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->
+            entries.forEach { path, value ->
+                def fsPath = zip.getPath(path)
+                def fsPathParent = fsPath.getParent()
+                if (fsPathParent != null) Files.createDirectories(fsPathParent)
+                Files.writeString(fsPath, value, StandardCharsets.UTF_8)
+            }
+        }
 
-	/**
-	 * @return The mod id to be used in {@link TransitiveAccessWidenerMappingsProcessor} or null when this entry does not contain transitive entries.
-	 */
-	@Nullable
-	String mappingId();
+        return file
+    }
 
-	String getSortKey();
+    static String manifest(String key, String value) {
+        def manifest = new Manifest()
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
+        manifest.getMainAttributes().putValue(key, value)
 
-	void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+        def out = new ByteArrayOutputStream()
+        manifest.write(out)
+        return out.toString(StandardCharsets.UTF_8)
+    }
 }

@@ -24,17 +24,21 @@
 
 package net.fabricmc.loom.util.fmj;
 
-public enum ModEnvironment {
-	UNIVERSAL(true, true),
-	CLIENT(true, false),
-	SERVER(false, true);
+import java.util.Objects;
+
+public final class ModEnvironment {
+	public static final ModEnvironment UNIVERSAL = new ModEnvironment(true, true, "universal");
+	public static final ModEnvironment CLIENT = new ModEnvironment(true, false, "client");
+	public static final ModEnvironment SERVER = new ModEnvironment(false, true, "server");
 
 	private final boolean client;
 	private final boolean server;
+	private final String name;
 
-	ModEnvironment(boolean client, boolean server) {
+	private ModEnvironment(boolean client, boolean server, String name) {
 		this.client = client;
 		this.server = server;
+		this.name = name;
 	}
 
 	public boolean isClient() {
@@ -43,5 +47,18 @@ public enum ModEnvironment {
 
 	public boolean isServer() {
 		return server;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ModEnvironment that = (ModEnvironment) o;
+		return name.equals(that.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name);
 	}
 }

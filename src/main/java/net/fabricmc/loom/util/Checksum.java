@@ -62,7 +62,7 @@ public class Checksum {
 			HashCode hash = Files.asByteSource(file).hash(Hashing.sha256());
 			return hash.asBytes();
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to get file hash");
+			throw new UncheckedIOException("Failed to get file hash", e);
 		}
 	}
 

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -32,11 +33,20 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.ModEnvironment;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record LocalAccessWidenerEntry(Path path) implements AccessWidenerEntry {
+public record LocalAccessWidenerEntry(Path path, String hash) implements AccessWidenerEntry {
+	public static LocalAccessWidenerEntry create(Path path) {
+		try {
+			return new LocalAccessWidenerEntry(path, Checksum.sha1Hex(path));
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create LocalAccessWidenerEntry", e);
+		}
+	}
+
 	@Override
 	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
 		var reader = new AccessWidenerReader(visitor);
@@ -51,5 +61,15 @@ public record LocalAccessWidenerEntry(Path path) implements AccessWidenerEntry {
 	@Override
 	public @Nullable String mappingId() {
 		return null;
+	}
+
+	@Override
+	public String getSortKey() {
+		return "local";
+	}
+
+	@Override
+	public int hashCode() {
+		return hash.hashCode();
 	}
 }

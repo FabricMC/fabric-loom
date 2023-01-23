@@ -22,27 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.accesswidener;
+package net.fabricmc.loom.test.unit.processor
 
-import java.io.IOException;
+import net.fabricmc.loom.configuration.accesswidener.ModAccessWidenerEntry
+import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.ModEnvironment
+import spock.lang.Specification
 
-import org.jetbrains.annotations.Nullable;
+class ModAccessWidenerEntryTest extends Specification {
+    def "read local mod"() {
+        given:
+            def mod = Mock(FabricModJson.Mockable)
+            mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+            mod.hashCode() >> 0
 
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.loom.util.LazyCloseable;
-import net.fabricmc.loom.util.fmj.ModEnvironment;
-import net.fabricmc.tinyremapper.TinyRemapper;
+        when:
+            def entries = ModAccessWidenerEntry.readAll(mod, true)
+        then:
+            entries.size() == 1
+            def entry = entries[0]
 
-public interface AccessWidenerEntry {
-	ModEnvironment environment();
-
-	/**
-	 * @return The mod id to be used in {@link TransitiveAccessWidenerMappingsProcessor} or null when this entry does not contain transitive entries.
-	 */
-	@Nullable
-	String mappingId();
-
-	String getSortKey();
-
-	void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+            entry.path() == "test.accesswidener"
+            entry.environment() == ModEnvironment.UNIVERSAL
+            entry.transitiveOnly()
+            entry.hashCode() == -1218981396
+    }
 }

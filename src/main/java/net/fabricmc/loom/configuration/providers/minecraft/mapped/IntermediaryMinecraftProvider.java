@@ -29,6 +29,7 @@ import java.util.List;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
@@ -79,7 +80,11 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
-			if (remappedJars.outputJar().equals(getClientOnlyJar())) {
+			final MinecraftJar outputJar = remappedJars.outputJar();
+			assert !outputJar.isMerged();
+
+			if (outputJar.includesClient()) {
+				assert !outputJar.includesServer();
 				tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
 			}
 		}

@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -125,7 +126,7 @@ public class IdeaConfiguration {
 		final MinecraftJarConfiguration configuration = extension.getMinecraftJarConfiguration().get();
 
 		if (configuration == MinecraftJarConfiguration.SPLIT) {
-			if (notation.contains("minecraft-clientOnly")) {
+			if (notation.toLowerCase(Locale.ROOT).contains("minecraft-clientonly")) {
 				return "genClientOnlySources";
 			}
 

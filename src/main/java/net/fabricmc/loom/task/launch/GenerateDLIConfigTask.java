@@ -50,7 +50,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		final MinecraftVersionMeta versionInfo = getExtension().getMinecraftProvider().getVersionInfo();
 		File assetsDirectory = new File(getExtension().getFiles().getUserCache(), "assets");
 
-		if (versionInfo.assets().equals("legacy")) {
+		if (versionInfo.assets() != null && versionInfo.assets().equals("legacy")) {
 			assetsDirectory = new File(assetsDirectory, "/legacy/" + versionInfo.id());
 		}
 

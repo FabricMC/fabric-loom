@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -108,23 +109,29 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
 	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final Function<RemapConfigurationSettings, Stream<Path>> resolve = settings ->
-				settings.getSourceConfiguration().get().resolve().stream()
-						.map(File::toPath);
-
 		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
-				.flatMap(resolve)
+				.flatMap(resolveArtifacts(project, true))
 				.toList();
 
 		return extension.getCompileRemapConfigurations().stream()
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
-				.flatMap(resolve)
+				.flatMap(resolveArtifacts(project, false))
 				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
 				.map(FabricModJsonFactory::createFromZipOptional)
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.sorted(Comparator.comparing(FabricModJson::getId));
+	}
+
+	private static Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(Project project, boolean runtime) {
+		final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+
+		return settings -> {
+			final Configuration configuration = settings.getSourceConfiguration().get().copy();
+			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+			return configuration.resolve().stream().map(File::toPath);
+		};
 	}
 
 	// Returns a list of Loom Projects found in both the runtime and compile classpath

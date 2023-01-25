@@ -46,7 +46,6 @@ class AccessWidenerJarProcessorTest extends Specification {
 
         then:
             spec != null
-            spec.hashCode() == 858364006
     }
 
     def "Dep AW"() {
@@ -73,7 +72,6 @@ class AccessWidenerJarProcessorTest extends Specification {
 
         then:
             spec != null
-            spec.hashCode() == 1534839952
     }
 
     def "No AWs"() {

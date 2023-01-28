@@ -128,7 +128,7 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 		final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 
 		return settings -> {
-			final Configuration configuration = settings.getSourceConfiguration().get().copy();
+			final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
 			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 			return configuration.resolve().stream().map(File::toPath);
 		};

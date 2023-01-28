@@ -33,9 +33,10 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
+import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.util.Constants;
 
-public record InstallerData(String version, JsonObject installerJson) {
+public record InstallerData(ArtifactRef artifact, JsonObject installerJson) {
 	public void applyToProject(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
@@ -75,5 +76,18 @@ public record InstallerData(String version, JsonObject installerJson) {
 				}
 			}
 		});
+	}
+
+	public String mainClass(Environment environment) {
+		return null;
+	}
+
+	public String version() {
+		return artifact.version();
+	}
+
+	public enum Environment {
+		CLIENT,
+		SERVER
 	}
 }

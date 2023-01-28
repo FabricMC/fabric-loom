@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2022 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -257,6 +257,20 @@ public abstract class MinecraftProvider {
 
 	public MinecraftVersionMeta getVersionInfo() {
 		return versionInfo;
+	}
+
+	public String getAssetIndex() {
+		return getVersionInfo().assetIndex().fabricId(minecraftVersion());
+	}
+
+	public File getAssetsDirectory() {
+		File assetsDirectory = new File(getExtension().getFiles().getUserCache(), "assets");
+
+		if (versionInfo.assets().equals("legacy")) {
+			assetsDirectory = new File(assetsDirectory, "/legacy/" + versionInfo.id());
+		}
+
+		return assetsDirectory;
 	}
 
 	@Nullable

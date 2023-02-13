@@ -73,8 +73,10 @@ public class Download {
 	private final boolean offline;
 	private final Duration maxAge;
 	private final DownloadProgressListener progressListener;
+	private final HttpClient.Version httpVersion;
+	private final int downloadAttempt;
 
-	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener) {
+	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
 		this.url = url;
 		this.expectedHash = expectedHash;
 		this.useEtag = useEtag;
@@ -82,6 +84,8 @@ public class Download {
 		this.offline = offline;
 		this.maxAge = maxAge;
 		this.progressListener = progressListener;
+		this.httpVersion = httpVersion;
+		this.downloadAttempt = downloadAttempt;
 	}
 
 	private HttpClient getHttpClient() throws DownloadException {
@@ -97,12 +101,14 @@ public class Download {
 
 	private HttpRequest getRequest() {
 		return HttpRequest.newBuilder(url)
+				.version(httpVersion)
 				.GET()
 				.build();
 	}
 
 	private HttpRequest getETagRequest(String etag) {
 		return HttpRequest.newBuilder(url)
+				.version(httpVersion)
 				.GET()
 				.header("If-None-Match", etag)
 				.build();
@@ -261,7 +267,7 @@ public class Download {
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {
-		if (getAndResetLock(output)) {
+		if (getAndResetLock(output) & downloadAttempt == 0) {
 			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
 			return true;
 		}

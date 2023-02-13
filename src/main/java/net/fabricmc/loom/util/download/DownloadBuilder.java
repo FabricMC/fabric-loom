@@ -27,6 +27,7 @@ package net.fabricmc.loom.util.download;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +47,7 @@ public class DownloadBuilder {
 	private DownloadProgressListener progressListener = DownloadProgressListener.NONE;
 	private int maxRetries = 3;
 	private boolean allowInsecureProtocol = false;
+	private HttpClient.Version httpVersion = HttpClient.Version.HTTP_2;
 
 	private DownloadBuilder(URI url) {
 		this.url = url;
@@ -100,12 +102,17 @@ public class DownloadBuilder {
 		return this;
 	}
 
-	private Download build() {
+	public DownloadBuilder httpVersion(HttpClient.Version httpVersion) {
+		this.httpVersion = httpVersion;
+		return this;
+	}
+
+	private Download build(int downloadAttempt) {
 		if (!allowInsecureProtocol && !isSecureUrl(url)) {
 			throw new IllegalArgumentException("Cannot create download for url (%s) with insecure protocol".formatted(url.toString()));
 		}
 
-		return new Download(this.url, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener);
+		return new Download(this.url, this.expectedHash, this.useEtag, this.forceDownload, this.offline, maxAge, progressListener, httpVersion, downloadAttempt);
 	}
 
 	public void downloadPathAsync(Path path, DownloadExecutor executor) {
@@ -113,19 +120,19 @@ public class DownloadBuilder {
 	}
 
 	public void downloadPath(Path path) throws DownloadException {
-		withRetries(() -> {
-			build().downloadPath(path);
+		withRetries((download) -> {
+			download.downloadPath(path);
 			return null;
 		});
 	}
 
 	public String downloadString() throws DownloadException {
-		return withRetries(() -> build().downloadString());
+		return withRetries(Download::downloadString);
 	}
 
 	public String downloadString(Path cache) throws DownloadException {
-		return withRetries(() -> {
-			build().downloadPath(cache);
+		return withRetries((download) -> {
+			download.downloadPath(cache);
 
 			try {
 				return Files.readString(cache, StandardCharsets.UTF_8);
@@ -141,10 +148,15 @@ public class DownloadBuilder {
 		});
 	}
 
-	private <T> T withRetries(DownloadSupplier<T> supplier) throws DownloadException {
+	private <T> T withRetries(DownloadFunction<T> supplier) throws DownloadException {
 		for (int i = 1; i <= maxRetries; i++) {
 			try {
-				return supplier.get();
+				if (i == maxRetries) {
+					// Last ditch attempt, try over HTTP 1.1
+					httpVersion(HttpClient.Version.HTTP_1_1);
+				}
+
+				return supplier.get(build(i));
 			} catch (DownloadException e) {
 				if (i == maxRetries) {
 					throw new DownloadException(String.format(Locale.ENGLISH, "Failed download after %d attempts", maxRetries), e);
@@ -166,7 +178,7 @@ public class DownloadBuilder {
 	}
 
 	@FunctionalInterface
-	private interface DownloadSupplier<T> {
-		T get() throws DownloadException;
+	private interface DownloadFunction<T> {
+		T get(Download download) throws DownloadException;
 	}
 }

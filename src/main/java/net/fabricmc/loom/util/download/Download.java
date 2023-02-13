@@ -267,7 +267,7 @@ public class Download {
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {
-		if (getAndResetLock(output) & downloadAttempt == 0) {
+		if (getAndResetLock(output) & downloadAttempt == 1) {
 			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
 			return true;
 		}

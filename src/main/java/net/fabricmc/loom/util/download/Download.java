@@ -222,7 +222,7 @@ public final class Download {
 					final long actualLength = Files.size(output);
 
 					if (actualLength != length) {
-						throw new IOException("Unexpected file length of %d bytes, expected %d bytes".formatted(actualLength, length));
+						throw error("Unexpected file length of %d bytes, expected %d bytes".formatted(actualLength, length));
 					}
 				} catch (IOException e) {
 					throw error(e);

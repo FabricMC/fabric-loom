@@ -142,4 +142,9 @@ public abstract class RemapConfigurationSettings implements Named {
 	private Provider<Boolean> defaultDependencyTransforms() {
 		return getSourceSet().map(sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) || sourceSet.getName().equals("client"));
 	}
+
+	@Override
+	public String toString() {
+		return "RemapConfigurationSettings '" + getName() + "'";
+	}
 }

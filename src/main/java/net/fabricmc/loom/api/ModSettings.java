@@ -122,4 +122,9 @@ public abstract class ModSettings implements Named {
 
 	@Inject
 	public abstract Project getProject();
+
+	@Override
+	public String toString() {
+		return "ModSettings '" + getName() + "'";
+	}
 }

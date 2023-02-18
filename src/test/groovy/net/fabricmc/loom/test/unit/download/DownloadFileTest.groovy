@@ -30,13 +30,16 @@ import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
+import spock.lang.IgnoreIf
+
 import java.nio.file.Files
-import java.nio.file.attribute.FileTime
 import java.nio.file.Paths
+import java.nio.file.attribute.FileTime
 import java.time.Duration
 import java.time.Instant
 
 class DownloadFileTest extends DownloadTest {
+	@IgnoreIf({ os.windows }) // Requires admin on windows.
 	def "Directory: Symlink"() {
 		setup:
 			server.get("/symlinkFile") {

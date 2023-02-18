@@ -42,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.util.AttributeHelper;
 import net.fabricmc.loom.util.Checksum;
 
-public class Download {
+public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
 
@@ -73,8 +74,10 @@ public class Download {
 	private final boolean offline;
 	private final Duration maxAge;
 	private final DownloadProgressListener progressListener;
+	private final HttpClient.Version httpVersion;
+	private final int downloadAttempt;
 
-	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener) {
+	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
 		this.url = url;
 		this.expectedHash = expectedHash;
 		this.useEtag = useEtag;
@@ -82,6 +85,8 @@ public class Download {
 		this.offline = offline;
 		this.maxAge = maxAge;
 		this.progressListener = progressListener;
+		this.httpVersion = httpVersion;
+		this.downloadAttempt = downloadAttempt;
 	}
 
 	private HttpClient getHttpClient() throws DownloadException {
@@ -97,12 +102,14 @@ public class Download {
 
 	private HttpRequest getRequest() {
 		return HttpRequest.newBuilder(url)
+				.version(httpVersion)
 				.GET()
 				.build();
 	}
 
 	private HttpRequest getETagRequest(String etag) {
 		return HttpRequest.newBuilder(url)
+				.version(httpVersion)
 				.GET()
 				.header("If-None-Match", etag)
 				.build();
@@ -148,7 +155,7 @@ public class Download {
 			doDownload(output);
 		} catch (Throwable throwable) {
 			tryCleanup(output);
-			throw error(throwable, "Failed to download (%s) to (%s)", url, output);
+			throw error(throwable, "Failed to download file from (%s) to (%s)", url, output);
 		} finally {
 			progressListener.onEnd();
 		}
@@ -194,7 +201,7 @@ public class Download {
 			final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
 			AtomicLong totalBytes = new AtomicLong(0);
 
-			try (OutputStream outputStream = Files.newOutputStream(output)) {
+			try (OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE_NEW)) {
 				copyWithCallback(decodeOutput(response), outputStream, value -> {
 					if (length < 0) {
 						return;
@@ -203,12 +210,26 @@ public class Download {
 					progressListener.onProgress(totalBytes.addAndGet(value), length);
 				});
 			} catch (IOException e) {
-				tryCleanup(output);
 				throw error(e, "Failed to decode and write download output");
 			}
+
+			if (Files.notExists(output)) {
+				throw error("No file was downloaded");
+			}
+
+			if (length > 0) {
+				try {
+					final long actualLength = Files.size(output);
+
+					if (actualLength != length) {
+						throw error("Unexpected file length of %d bytes, expected %d bytes".formatted(actualLength, length));
+					}
+				} catch (IOException e) {
+					throw error(e);
+				}
+			}
 		} else {
-			tryCleanup(output);
-			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+			throw error("HTTP request returned unsuccessful status (%d)", statusCode);
 		}
 
 		if (useEtag) {
@@ -261,7 +282,7 @@ public class Download {
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {
-		if (getAndResetLock(output)) {
+		if (getAndResetLock(output) & downloadAttempt == 1) {
 			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
 			return true;
 		}

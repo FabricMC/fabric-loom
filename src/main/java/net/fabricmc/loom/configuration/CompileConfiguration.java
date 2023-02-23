@@ -161,6 +161,8 @@ public final class CompileConfiguration {
 			}
 
 			configureDecompileTasks(configContext);
+
+			JUnitConfiguration.setup(project);
 		});
 
 		finalizedBy(project, "idea", "genIdeaWorkspace");

@@ -100,17 +100,18 @@ public final class Download {
 				.build();
 	}
 
-	private HttpRequest getRequest() {
+	private HttpRequest.Builder builder() {
 		return HttpRequest.newBuilder(url)
 				.version(httpVersion)
-				.GET()
-				.build();
+				.GET();
+	}
+
+	private HttpRequest getRequest() {
+		return builder().build();
 	}
 
 	private HttpRequest getETagRequest(String etag) {
-		return HttpRequest.newBuilder(url)
-				.version(httpVersion)
-				.GET()
+		return builder()
 				.header("If-None-Match", etag)
 				.build();
 	}
@@ -184,7 +185,7 @@ public final class Download {
 		getAndResetLock(output);
 
 		final int statusCode = response.statusCode();
-		boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
+		final boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
 
 		if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
 			// Success, etag matched.

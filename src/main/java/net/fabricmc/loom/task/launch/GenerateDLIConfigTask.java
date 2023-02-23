@@ -36,9 +36,11 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.tasks.TaskAction;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
@@ -57,7 +59,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
 				.property("fabric.remapClasspathFile", getExtension().getFiles().getRemapClasspathFile().getAbsolutePath())
-				.property("log4j.configurationFile", getAllLog4JConfigFiles())
+				.property("log4j.configurationFile", getAllLog4JConfigFiles(getExtension()))
 				.property("log4j2.formatMsgNoLookups", "true")
 
 				.argument("client", "--assetIndex")
@@ -74,12 +76,12 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		}
 
 		if (getExtension().areEnvironmentSourceSetsSplit()) {
-			launchConfig.property("client", "fabric.gameJarPath.client", getGameJarPath("client"));
-			launchConfig.property("fabric.gameJarPath", getGameJarPath("common"));
+			launchConfig.property("client", "fabric.gameJarPath.client", getGameJarPath(getExtension(), "client"));
+			launchConfig.property("fabric.gameJarPath", getGameJarPath(getExtension(), "common"));
 		}
 
 		if (!getExtension().getMods().isEmpty()) {
-			launchConfig.property("fabric.classPathGroups", getClassPathGroups());
+			launchConfig.property("fabric.classPathGroups", getClassPathGroups(getExtension(), getProject()));
 		}
 
 		final boolean plainConsole = getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain;
@@ -95,14 +97,14 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		FileUtils.writeStringToFile(getExtension().getFiles().getDevLauncherConfig(), launchConfig.asString(), StandardCharsets.UTF_8);
 	}
 
-	private String getAllLog4JConfigFiles() {
-		return getExtension().getLog4jConfigs().getFiles().stream()
+	public static String getAllLog4JConfigFiles(LoomGradleExtension extension) {
+		return extension.getLog4jConfigs().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.collect(Collectors.joining(","));
 	}
 
-	private String getGameJarPath(String env) {
-		MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) getExtension().getNamedMinecraftProvider();
+	public static String getGameJarPath(LoomGradleExtension extension, String env) {
+		MappedMinecraftProvider.Split split = (MappedMinecraftProvider.Split) extension.getNamedMinecraftProvider();
 
 		return switch (env) {
 		case "client" -> split.getClientOnlyJar().getPath().toAbsolutePath().toString();
@@ -114,10 +116,10 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	/**
 	 * See: https://github.com/FabricMC/fabric-loader/pull/585.
 	 */
-	private String getClassPathGroups() {
-		return getExtension().getMods().stream()
+	public static String getClassPathGroups(LoomGradleExtension extension, Project project) {
+		return extension.getMods().stream()
 				.map(modSettings ->
-						SourceSetHelper.getClasspath(modSettings, getProject()).stream()
+						SourceSetHelper.getClasspath(modSettings, project).stream()
 							.map(File::getAbsolutePath)
 							.collect(Collectors.joining(File.pathSeparator))
 				)

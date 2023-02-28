@@ -91,10 +91,13 @@ public final class CompileConfiguration {
 			if (!(dependency instanceof ModuleDependency module)) {
 				return;
 			}
+
 			final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+
 			if (category != null && (category.getName().equals(Category.REGULAR_PLATFORM) || category.getName().equals(Category.ENFORCED_PLATFORM))) {
 				return;
 			}
+
 			module.setTransitive(false);
 		})));
 		configurations.register(Constants.Configurations.MAPPING_CONSTANTS);

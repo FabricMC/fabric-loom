@@ -36,6 +36,8 @@ import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
@@ -85,7 +87,16 @@ public final class CompileConfiguration {
 		});
 		configurations.register(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
 		configurations.register(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));
-		configurations.register(Constants.Configurations.INCLUDE, configuration -> configuration.setTransitive(false)); // Dont get transitive deps
+		configurations.register(Constants.Configurations.INCLUDE, configuration -> configuration.withDependencies(dependencySet -> dependencySet.all(dependency -> {
+			if (!(dependency instanceof ModuleDependency module)) {
+				return;
+			}
+			final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+			if (category != null && (category.getName().equals(Category.REGULAR_PLATFORM) || category.getName().equals(Category.ENFORCED_PLATFORM))) {
+				return;
+			}
+			module.setTransitive(false);
+		})));
 		configurations.register(Constants.Configurations.MAPPING_CONSTANTS);
 		configurations.register(Constants.Configurations.NAMED_ELEMENTS, configuration -> {
 			configuration.setCanBeConsumed(true);

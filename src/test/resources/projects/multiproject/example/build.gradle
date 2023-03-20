@@ -1,4 +1,6 @@
-archivesBaseName = "example"
+base {
+	archivesName = "example"
+}
 
 dependencies {
 	implementation project(path: ":core", configuration: "namedElements")

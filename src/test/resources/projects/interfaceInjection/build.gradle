@@ -5,7 +5,6 @@ plugins {
 	id 'maven-publish'
 }
 
-archivesBaseName = "fabric-example-mod"
 version = "1.0.0"
 group = "com.example"
 
@@ -17,4 +16,8 @@ dependencies {
 	// I-faces will still be applied as the jar is on both configurations.
 	modCompileOnly files("dummy.jar")
 	modRuntimeOnly files("dummy.jar")
+}
+
+base {
+	archivesName = "fabric-example-mod"
 }

@@ -35,27 +35,32 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "multi-mc-versions", version: version)
+		def gradle = gradleProject(project: "multi-mc-versions", version: version)
 
 		when:
-			def result = gradle.run(tasks: "build")
+		def result = gradle.run(tasks: "build")
 
 		then:
-			def versions = [
-					'fabric-1.14.4',
-					'fabric-1.15', 'fabric-1.15.2',
-					'fabric-1.16', 'fabric-1.16.5',
-					'fabric-1.17', 'fabric-1.17.1',
-					'fabric-1.18', 'fabric-1.18.2',
-					'fabric-1.19', 'fabric-1.19.3'
-			]
+		def versions = [
+			'fabric-1.14.4',
+			'fabric-1.15',
+			'fabric-1.15.2',
+			'fabric-1.16',
+			'fabric-1.16.5',
+			'fabric-1.17',
+			'fabric-1.17.1',
+			'fabric-1.18',
+			'fabric-1.18.2',
+			'fabric-1.19',
+			'fabric-1.19.3'
+		]
 
-			result.task(":build").outcome == SUCCESS
-			versions.forEach {
-				result.task(":$it:build").outcome == SUCCESS
-			}
+		result.task(":build").outcome == SUCCESS
+		versions.forEach {
+			result.task(":$it:build").outcome == SUCCESS
+		}
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

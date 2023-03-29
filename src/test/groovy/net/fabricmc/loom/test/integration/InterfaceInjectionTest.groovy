@@ -36,16 +36,16 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 	@Unroll
 	def "interface injection (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "interfaceInjection", version: version)
-			ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+		def gradle = gradleProject(project: "interfaceInjection", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

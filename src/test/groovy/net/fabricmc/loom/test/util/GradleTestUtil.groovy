@@ -42,16 +42,16 @@ import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
 
 class GradleTestUtil {
-    static <T> Property<T> mockProperty(T value) {
-        def mock = mock(Property.class)
-        when(mock.get()).thenReturn(Objects.requireNonNull(value))
-        return mock
-    }
+	static <T> Property<T> mockProperty(T value) {
+		def mock = mock(Property.class)
+		when(mock.get()).thenReturn(Objects.requireNonNull(value))
+		return mock
+	}
 
 	static SourceSet mockSourceSet(String name) {
 		def sourceSet = new DefaultSourceSet(name, mockObjectFactory()) {
-			final ExtensionContainer extensions = null
-		}
+					final ExtensionContainer extensions = null
+				}
 		return sourceSet
 	}
 

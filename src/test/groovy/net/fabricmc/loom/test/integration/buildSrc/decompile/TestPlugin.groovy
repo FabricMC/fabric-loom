@@ -29,21 +29,21 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 class TestPlugin implements Plugin<Project> {
-    @Override
-    void apply(Project project) {
-        println("Test plugin")
-        def extension = LoomGradleExtension.get(project)
+	@Override
+	void apply(Project project) {
+		println("Test plugin")
+		def extension = LoomGradleExtension.get(project)
 
-        def preDecompileTask = project.tasks.register("preDecompile", PreDecompileTask.class) {
-            outputFile = project.file("output.txt")
-        }
+		def preDecompileTask = project.tasks.register("preDecompile", PreDecompileTask.class) {
+			outputFile = project.file("output.txt")
+		}
 
-        extension.decompilerOptions.register("custom") {
-            decompilerClassName.set(CustomDecompiler.class.name)
+		extension.decompilerOptions.register("custom") {
+			decompilerClassName.set(CustomDecompiler.class.name)
 
-            // BuiltBy shouldn't be required, but for some reason it is? Any ideas?
-            classpath.from(preDecompileTask)
-            classpath.builtBy(preDecompileTask)
-        }
-    }
+			// BuiltBy shouldn't be required, but for some reason it is? Any ideas?
+			classpath.from(preDecompileTask)
+			classpath.builtBy(preDecompileTask)
+		}
+	}
 }

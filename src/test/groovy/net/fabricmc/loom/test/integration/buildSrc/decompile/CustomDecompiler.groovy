@@ -30,8 +30,8 @@ import net.fabricmc.loom.api.decompilers.LoomDecompiler
 import java.nio.file.Path
 
 class CustomDecompiler implements LoomDecompiler {
-    @Override
-    void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-        println("Running custom decompiler")
-    }
+	@Override
+	void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
+		println("Running custom decompiler")
+	}
 }

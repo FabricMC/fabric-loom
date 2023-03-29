@@ -37,53 +37,53 @@ class JarSplitterTest extends Specification {
 
 	def "analyse: split"() {
 		given:
-			def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
+		def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
 		when:
-			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		def target = new JarSplitter(inputJar.toPath()).analyseTarget()
 		then:
-			target == JarSplitter.Target.SPLIT
+		target == JarSplitter.Target.SPLIT
 	}
 
 	def "analyse: client"() {
 		given:
-			def inputJar = downloadJarIfNotExists(CLIENT_INPUT_JAR_URL, "client.jar")
+		def inputJar = downloadJarIfNotExists(CLIENT_INPUT_JAR_URL, "client.jar")
 		when:
-			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		def target = new JarSplitter(inputJar.toPath()).analyseTarget()
 		then:
-			target == JarSplitter.Target.CLIENT_ONLY
+		target == JarSplitter.Target.CLIENT_ONLY
 	}
 
 	def "analyse: common"() {
 		given:
-			def inputJar = downloadJarIfNotExists(COMMON_INPUT_JAR_URL, "common.jar")
+		def inputJar = downloadJarIfNotExists(COMMON_INPUT_JAR_URL, "common.jar")
 		when:
-			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		def target = new JarSplitter(inputJar.toPath()).analyseTarget()
 		then:
-			target == JarSplitter.Target.COMMON_ONLY
+		target == JarSplitter.Target.COMMON_ONLY
 	}
 
 	def "analyse: normal"() {
 		given:
-			def inputJar = downloadJarIfNotExists(NORMAL_INPUT_JAR_URL, "normal.jar")
+		def inputJar = downloadJarIfNotExists(NORMAL_INPUT_JAR_URL, "normal.jar")
 		when:
-			def target = new JarSplitter(inputJar.toPath()).analyseTarget()
+		def target = new JarSplitter(inputJar.toPath()).analyseTarget()
 		then:
-			target == null
+		target == null
 	}
 
 	def "split jar"() {
 		given:
-			def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
-			def commonOutputJar = getFile("common-out.jar")
-			def clientOutputJar = getFile("client-out.jar")
+		def inputJar = downloadJarIfNotExists(SPLIT_INPUT_JAR_URL, "split.jar")
+		def commonOutputJar = getFile("common-out.jar")
+		def clientOutputJar = getFile("client-out.jar")
 
-			def jarSplitter = new JarSplitter(inputJar.toPath())
+		def jarSplitter = new JarSplitter(inputJar.toPath())
 		when:
-			jarSplitter.split(commonOutputJar.toPath(), clientOutputJar.toPath())
+		jarSplitter.split(commonOutputJar.toPath(), clientOutputJar.toPath())
 
 		then:
-			commonOutputJar.exists()
-			clientOutputJar.exists()
+		commonOutputJar.exists()
+		clientOutputJar.exists()
 	}
 
 	File downloadJarIfNotExists(String url, String name) {

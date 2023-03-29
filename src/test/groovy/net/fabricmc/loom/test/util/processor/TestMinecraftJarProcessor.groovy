@@ -33,25 +33,25 @@ import java.nio.file.Path
 
 @Immutable
 class TestMinecraftJarProcessor implements MinecraftJarProcessor<Spec> {
-    String input
+	String input
 
-    final String name = "TestProcessor"
+	final String name = "TestProcessor"
 
-    @Override
-    Spec buildSpec(SpecContext context) {
-        if (input == null) {
-            return null
-        }
+	@Override
+	Spec buildSpec(SpecContext context) {
+		if (input == null) {
+			return null
+		}
 
-        return new Spec(input)
-    }
+		return new Spec(input)
+	}
 
-    @Immutable
-    class Spec implements MinecraftJarProcessor.Spec {
-        String input
-    }
+	@Immutable
+	class Spec implements MinecraftJarProcessor.Spec {
+		String input
+	}
 
-    @Override
-    void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
-    }
+	@Override
+	void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
+	}
 }

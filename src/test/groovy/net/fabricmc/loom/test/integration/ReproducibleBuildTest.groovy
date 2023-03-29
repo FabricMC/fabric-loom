@@ -41,21 +41,27 @@ class ReproducibleBuildTest extends Specification implements GradleProjectTestTr
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "reproducible", version: version)
+		def gradle = gradleProject(project: "reproducible", version: version)
 
 		when:
-			setProperty('loom.test.reproducible', 'true')
-			def result = gradle.run(task: "build")
+		setProperty('loom.test.reproducible', 'true')
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
-			generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0.jar")) == modHash
-			generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0-sources.jar")) in sourceHash // Done for different line endings.
+		result.task(":build").outcome == SUCCESS
+		generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0.jar")) == modHash
+		generateMD5(gradle.getOutputFile("fabric-example-mod-1.0.0-sources.jar")) in sourceHash // Done for different line endings.
 
 		where:
-			version              | modHash                               | sourceHash
-			DEFAULT_GRADLE      | "ed3306ef60f434c55048cba8de5dab95"    | ["0d9eec9248d93eb6ec4a1cd4d927e609", "436bf54ef015576b0a338d55d9a0bb82"]
-			PRE_RELEASE_GRADLE  | "ed3306ef60f434c55048cba8de5dab95"    | ["0d9eec9248d93eb6ec4a1cd4d927e609", "436bf54ef015576b0a338d55d9a0bb82"]
+		version              | modHash                               | sourceHash
+		DEFAULT_GRADLE      | "ed3306ef60f434c55048cba8de5dab95"    | [
+			"0d9eec9248d93eb6ec4a1cd4d927e609",
+			"436bf54ef015576b0a338d55d9a0bb82"
+		]
+		PRE_RELEASE_GRADLE  | "ed3306ef60f434c55048cba8de5dab95"    | [
+			"0d9eec9248d93eb6ec4a1cd4d927e609",
+			"436bf54ef015576b0a338d55d9a0bb82"
+		]
 	}
 
 	String generateMD5(File file) {

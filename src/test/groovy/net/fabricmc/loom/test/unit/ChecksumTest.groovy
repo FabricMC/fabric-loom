@@ -31,19 +31,19 @@ import spock.lang.Specification
 class ChecksumTest extends Specification {
 	def "project hash"() {
 		given:
-			def project = Mock(Project)
-			project.getPath() >> path
-			project.getProjectDir() >> new File(dir)
+		def project = Mock(Project)
+		project.getPath() >> path
+		project.getProjectDir() >> new File(dir)
 
 		when:
-			def hash = Checksum.projectHash(project)
+		def hash = Checksum.projectHash(project)
 
 		then:
-			!hash.empty
+		!hash.empty
 
 		where:
-			path   | dir
-			":"    | "C://mod"
-			":sub" | "/Users/test/Documents/modding/fabric-loom"
+		path   | dir
+		":"    | "C://mod"
+		":sub" | "/Users/test/Documents/modding/fabric-loom"
 	}
 }

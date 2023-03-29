@@ -35,15 +35,15 @@ class LocalFileDependencyTest extends Specification implements GradleProjectTest
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "localFileDependency", version: version)
+		def gradle = gradleProject(project: "localFileDependency", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

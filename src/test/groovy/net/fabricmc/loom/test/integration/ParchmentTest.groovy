@@ -35,15 +35,15 @@ class ParchmentTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "parchment #version"() {
 		setup:
-			def gradle = gradleProject(project: "parchment", version: version)
+		def gradle = gradleProject(project: "parchment", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

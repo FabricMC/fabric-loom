@@ -33,38 +33,38 @@ import spock.lang.Specification
 import static net.fabricmc.loom.test.util.ZipTestUtils.createZip
 
 class MinecraftJarProcessorManagerTest extends Specification {
-    def "Does not require re-processing"() {
-        given:
-            def specContext = Mock(SpecContext)
-            def processorContext = Mock(ProcessorContext)
+	def "Does not require re-processing"() {
+		given:
+		def specContext = Mock(SpecContext)
+		def processorContext = Mock(ProcessorContext)
 
-            def processor1 = new TestMinecraftJarProcessor(input: "Test1")
-            def processor2 = new TestMinecraftJarProcessor(input: "Test2")
-            def manager = MinecraftJarProcessorManager.create([processor1, processor2], specContext)
+		def processor1 = new TestMinecraftJarProcessor(input: "Test1")
+		def processor2 = new TestMinecraftJarProcessor(input: "Test2")
+		def manager = MinecraftJarProcessorManager.create([processor1, processor2], specContext)
 
-        when:
-            def jar = createZip(["fabric.mod.json": "{}"])
-            manager.processJar(jar, processorContext)
+		when:
+		def jar = createZip(["fabric.mod.json": "{}"])
+		manager.processJar(jar, processorContext)
 
-        then:
-            !manager.requiresProcessingJar(jar)
-    }
+		then:
+		!manager.requiresProcessingJar(jar)
+	}
 
-    def "Requires re-processing"() {
-        given:
-            def specContext = Mock(SpecContext)
-            def processorContext = Mock(ProcessorContext)
+	def "Requires re-processing"() {
+		given:
+		def specContext = Mock(SpecContext)
+		def processorContext = Mock(ProcessorContext)
 
-            def processor1 = new TestMinecraftJarProcessor(input: "Test1")
-            def processor2 = new TestMinecraftJarProcessor(input: "Test2")
-            def manager1 = MinecraftJarProcessorManager.create([processor1], specContext)
-            def manager2 = MinecraftJarProcessorManager.create([processor1, processor2], specContext)
+		def processor1 = new TestMinecraftJarProcessor(input: "Test1")
+		def processor2 = new TestMinecraftJarProcessor(input: "Test2")
+		def manager1 = MinecraftJarProcessorManager.create([processor1], specContext)
+		def manager2 = MinecraftJarProcessorManager.create([processor1, processor2], specContext)
 
-        when:
-            def jar = createZip(["fabric.mod.json": "{}"])
-            manager1.processJar(jar, processorContext)
+		when:
+		def jar = createZip(["fabric.mod.json": "{}"])
+		manager1.processJar(jar, processorContext)
 
-        then:
-            manager2.requiresProcessingJar(jar)
-    }
+		then:
+		manager2.requiresProcessingJar(jar)
+	}
 }

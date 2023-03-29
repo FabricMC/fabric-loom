@@ -32,15 +32,15 @@ import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class DependencyOrderTest extends Specification implements GradleProjectTestTrait {
-    // Regression test for a bug introduced in 1.1 development where
-    // if Fabric Loader is resolved after another mod dependency,
-    // Gradle will crash because loaderLibraries has been resolved before
-    // Loader's dependencies have been added to it.
-    @Unroll
-    def "build with loader as the second dependency (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
-            gradle.buildGradle << """
+	// Regression test for a bug introduced in 1.1 development where
+	// if Fabric Loader is resolved after another mod dependency,
+	// Gradle will crash because loaderLibraries has been resolved before
+	// Loader's dependencies have been added to it.
+	@Unroll
+	def "build with loader as the second dependency (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
             dependencies {
                 minecraft 'com.mojang:minecraft:1.19.3'
                 mappings 'net.fabricmc:yarn:1.19.3+build.5:v2'
@@ -48,11 +48,11 @@ class DependencyOrderTest extends Specification implements GradleProjectTestTrai
                 modImplementation 'net.fabricmc:fabric-loader:0.14.13'
             }
             """.stripIndent()
-        when:
-            def result = gradle.run(task: "build")
-        then:
-            result.task(":build").outcome == SUCCESS
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		when:
+		def result = gradle.run(task: "build")
+		then:
+		result.task(":build").outcome == SUCCESS
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

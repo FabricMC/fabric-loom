@@ -148,6 +148,7 @@ spotless {
 
 	groovy {
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+		greclipse()
 	}
 
 	kotlin {

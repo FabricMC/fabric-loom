@@ -31,23 +31,23 @@ import org.gradle.api.tasks.SourceSet
 import spock.lang.Specification
 
 class RemapConfigurationsTest extends Specification {
-	private static final RemapConfigurations.ConfigurationOption IMPLEMENTATION_OPTION = new RemapConfigurations.ConfigurationOption(SourceSet::getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY)
+	private static final RemapConfigurations.ConfigurationOption IMPLEMENTATION_OPTION = new RemapConfigurations.ConfigurationOption(SourceSet.&getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY)
 
 	def "testmod impl name"() {
 		given:
-			def sourceSet = GradleTestUtil.mockSourceSet("testmod")
+		def sourceSet = GradleTestUtil.mockSourceSet("testmod")
 		when:
-			def name = IMPLEMENTATION_OPTION.name(sourceSet)
+		def name = IMPLEMENTATION_OPTION.name(sourceSet)
 		then:
-			name == "modTestmodImplementation"
+		name == "modTestmodImplementation"
 	}
 
 	def "main impl name"() {
 		given:
-			def sourceSet = GradleTestUtil.mockSourceSet("main")
+		def sourceSet = GradleTestUtil.mockSourceSet("main")
 		when:
-			def name = IMPLEMENTATION_OPTION.name(sourceSet)
+		def name = IMPLEMENTATION_OPTION.name(sourceSet)
 		then:
-			name == "modImplementation"
+		name == "modImplementation"
 	}
 }

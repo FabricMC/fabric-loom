@@ -39,58 +39,58 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 	@Unroll
 	def "read Yarn mappings from #setupType.displayName"() {
 		setup:
-			intermediaryUrl = INTERMEDIARY_1_17_URL
-			mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
-			setupType.setup.delegate = this
-			def mappingFile = setupType.setup.call()
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		setupType.setup.delegate = this
+		def mappingFile = setupType.setup.call()
 		when:
-			def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingFile))
-			setupType.mappingsSpec.accept(builder)
-			def mappings = getLayeredMappings(
-					new IntermediaryMappingsSpec(),
-					builder.build()
-			)
+		def builder = FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingFile))
+		setupType.mappingsSpec.accept(builder)
+		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				builder.build()
+				)
 		then:
-			mappings.srcNamespace == "named"
-			mappings.dstNamespaces == ["intermediary", "official"]
-			mappings.classes.size() == 6111
-			mappings.classes[0].srcName == "net/minecraft/block/FenceBlock"
-			mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
-			mappings.classes[0].fields[0].srcName == "cullingShapes"
-			mappings.classes[0].fields[0].getDstName(0) == "field_11066"
-			mappings.classes[0].methods[0].srcName == "canConnectToFence"
-			mappings.classes[0].methods[0].getDstName(0) == "method_26375"
-			mappings.classes[0].methods[0].args[0].srcName == "state"
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 6111
+		mappings.classes[0].srcName == "net/minecraft/block/FenceBlock"
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+		mappings.classes[0].fields[0].srcName == "cullingShapes"
+		mappings.classes[0].fields[0].getDstName(0) == "field_11066"
+		mappings.classes[0].methods[0].srcName == "canConnectToFence"
+		mappings.classes[0].methods[0].getDstName(0) == "method_26375"
+		mappings.classes[0].methods[0].args[0].srcName == "state"
 		where:
-			setupType << YarnSetupType.values()
+		setupType << YarnSetupType.values()
 	}
 
 	// Also tests the custom fallback namespace and source namespace functionality
 	def "read Mojang mappings from proguard"() {
 		setup:
-			intermediaryUrl = INTERMEDIARY_1_17_URL
-			mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
-			def mappingsDownload = VERSION_META_1_17.download('client_mappings')
-			def mappingsFile = new File(tempDir, 'mappings.txt')
-			Download.create(mappingsDownload.url())
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		def mappingsDownload = VERSION_META_1_17.download('client_mappings')
+		def mappingsFile = new File(tempDir, 'mappings.txt')
+		Download.create(mappingsDownload.url())
 				.downloadPath(mappingsFile.toPath())
 		when:
-			def mappings = getLayeredMappings(
-					new IntermediaryMappingsSpec(),
-					FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingsFile))
-							.fallbackNamespaces('named', 'official')
-							.mergeNamespace(MappingsNamespace.OFFICIAL)
-							.build()
-			)
-			def tiny = getTiny(mappings)
+		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				FileMappingsSpecBuilderImpl.builder(FileSpec.create(mappingsFile))
+				.fallbackNamespaces('named', 'official')
+				.mergeNamespace(MappingsNamespace.OFFICIAL)
+				.build()
+				)
+		def tiny = getTiny(mappings)
 		then:
-			mappings.srcNamespace == "named"
-			mappings.dstNamespaces == ["intermediary", "official"]
-			mappings.classes.size() == 6113
-			mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
-			mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
-			mappings.classes[0].methods[0].args.size() == 0 // No Args
-			tiny.contains('this$0')
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 6113
+		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+		mappings.classes[0].methods[0].args.size() == 0 // No Args
+		tiny.contains('this$0')
 	}
 
 	enum YarnSetupType {

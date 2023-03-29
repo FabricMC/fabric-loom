@@ -34,17 +34,17 @@ import static org.mockito.Mockito.spy
 import static org.mockito.Mockito.when
 
 class LoomMocks {
-    static IntermediaryMappingsProvider intermediaryMappingsProviderMock(String minecraftVersion, String intermediaryUrl) {
-        def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
-        def intermediaryUrlProperty = GradleTestUtil.mockProperty(intermediaryUrl)
-        def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
+	static IntermediaryMappingsProvider intermediaryMappingsProviderMock(String minecraftVersion, String intermediaryUrl) {
+		def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
+		def intermediaryUrlProperty = GradleTestUtil.mockProperty(intermediaryUrl)
+		def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
 
-        Objects.requireNonNull(minecraftVersionProperty.get())
+		Objects.requireNonNull(minecraftVersionProperty.get())
 
-        def mock = spy(IntermediaryMappingsProvider.class)
-        when(mock.getMinecraftVersion()).thenReturn(minecraftVersionProperty)
-        when(mock.getIntermediaryUrl()).thenReturn(intermediaryUrlProperty)
-        when(mock.getDownloader()).thenReturn(downloaderProperty)
-        return mock
-    }
+		def mock = spy(IntermediaryMappingsProvider.class)
+		when(mock.getMinecraftVersion()).thenReturn(minecraftVersionProperty)
+		when(mock.getIntermediaryUrl()).thenReturn(intermediaryUrlProperty)
+		when(mock.getDownloader()).thenReturn(downloaderProperty)
+		return mock
+	}
 }

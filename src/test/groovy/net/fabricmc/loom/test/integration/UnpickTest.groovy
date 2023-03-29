@@ -38,29 +38,29 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 
 	def "unpick decompile"() {
 		setup:
-			def gradle = gradleProject(project: "unpick", version: version)
+		def gradle = gradleProject(project: "unpick", version: version)
 
 		when:
-			def result = gradle.run(task: "genSources")
+		def result = gradle.run(task: "genSources")
 		then:
-			result.task(":genSources").outcome == SUCCESS
-			getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+		result.task(":genSources").outcome == SUCCESS
+		getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	def "unpick build"() {
 		setup:
-			def gradle = gradleProject(project: "unpick", version: version)
+		def gradle = gradleProject(project: "unpick", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {

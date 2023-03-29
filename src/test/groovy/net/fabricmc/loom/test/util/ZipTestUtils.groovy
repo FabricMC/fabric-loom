@@ -49,16 +49,16 @@ class ZipTestUtils {
         return file
     }
 
-	static String manifest(String key, String value) {
-		return manifest(Map.of(key, value))
-	}
+    static String manifest(String key, String value) {
+        return manifest(Map.of(key, value))
+    }
 
     static String manifest(Map<String, String> entries) {
         def manifest = new Manifest()
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
-		entries.entrySet().forEach { entry ->
-			manifest.getMainAttributes().putValue(entry.key, entry.value)
-		}
+        entries.entrySet().forEach { entry ->
+            manifest.getMainAttributes().putValue(entry.key, entry.value)
+        }
 
         def out = new ByteArrayOutputStream()
         manifest.write(out)

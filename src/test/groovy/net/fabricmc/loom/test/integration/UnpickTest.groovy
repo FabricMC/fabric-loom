@@ -24,11 +24,12 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.util.ZipUtils
+import java.nio.charset.StandardCharsets
+
 import spock.lang.Specification
 
-import java.nio.charset.StandardCharsets
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS

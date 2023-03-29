@@ -24,10 +24,11 @@
 
 package net.fabricmc.loom.test.util
 
-import groovy.transform.Immutable
-import net.fabricmc.loom.util.download.Download
-
 import java.util.concurrent.TimeUnit
+
+import groovy.transform.Immutable
+
+import net.fabricmc.loom.util.download.Download
 
 class ServerRunner {
 	static final String LOADER_VERSION = "0.14.12"

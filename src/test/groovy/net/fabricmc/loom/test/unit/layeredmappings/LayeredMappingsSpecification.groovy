@@ -24,6 +24,15 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import java.nio.file.Path
+import java.util.function.Supplier
+import java.util.zip.ZipFile
+
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.MinimalExternalModuleDependency
+import org.gradle.api.logging.Logger
+import spock.lang.Specification
+
 import net.fabricmc.loom.api.mappings.layered.MappingContext
 import net.fabricmc.loom.api.mappings.layered.MappingLayer
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
@@ -40,14 +49,6 @@ import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
 import net.fabricmc.mappingio.tree.MemoryMappingTree
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
-import org.gradle.api.logging.Logger
-import spock.lang.Specification
-
-import java.nio.file.Path
-import java.util.function.Supplier
-import java.util.zip.ZipFile
 
 abstract class LayeredMappingsSpecification extends Specification implements LayeredMappingsTestConstants {
 	Logger mockLogger = Mock(Logger)

@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.configuration.ide.RunConfig
-import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
+import java.nio.charset.StandardCharsets
+
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
-import java.nio.charset.StandardCharsets
+import net.fabricmc.loom.configuration.ide.RunConfig
+import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
 
 class IdeaClasspathModificationsTest extends Specification {
 

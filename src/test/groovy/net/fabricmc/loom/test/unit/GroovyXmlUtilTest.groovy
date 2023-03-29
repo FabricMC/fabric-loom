@@ -25,8 +25,9 @@
 package net.fabricmc.loom.test.unit
 
 import groovy.xml.QName
-import net.fabricmc.loom.util.GroovyXmlUtil
 import spock.lang.Specification
+
+import net.fabricmc.loom.util.GroovyXmlUtil
 
 class GroovyXmlUtilTest extends Specification {
 	def "getOrCreateNode finds existing node"() {

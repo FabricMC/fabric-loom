@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS

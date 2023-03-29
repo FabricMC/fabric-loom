@@ -26,11 +26,12 @@ package net.fabricmc.loom.test.unit.fmj
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.intellij.lang.annotations.Language
+import spock.lang.Specification
+
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory
 import net.fabricmc.loom.util.fmj.FabricModJsonSource
-import org.intellij.lang.annotations.Language
-import spock.lang.Specification
 
 class FabricModJsonV0Test extends Specification {
 	// I think this is the old v0 format ¯\_(ツ)_/¯

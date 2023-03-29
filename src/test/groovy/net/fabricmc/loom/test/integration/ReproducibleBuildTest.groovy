@@ -27,13 +27,14 @@ package net.fabricmc.loom.test.integration
 import com.google.common.hash.HashCode
 import com.google.common.hash.Hashing
 import com.google.common.io.Files
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+
 import static java.lang.System.setProperty
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ReproducibleBuildTest extends Specification implements GradleProjectTestTrait {

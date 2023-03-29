@@ -147,6 +147,7 @@ spotless {
 	}
 
 	groovy {
+		importOrder('java', 'javax', '', 'net.fabricmc', '\\#')
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
 		greclipse()
 	}

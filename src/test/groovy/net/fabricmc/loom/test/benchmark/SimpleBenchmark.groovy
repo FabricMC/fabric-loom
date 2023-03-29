@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.benchmark
 
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
+
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 

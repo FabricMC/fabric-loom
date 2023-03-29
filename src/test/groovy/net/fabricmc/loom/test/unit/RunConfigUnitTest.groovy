@@ -24,8 +24,9 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.configuration.ide.RunConfig
 import spock.lang.Specification
+
+import net.fabricmc.loom.configuration.ide.RunConfig
 
 class RunConfigUnitTest extends Specification {
 	def "escape arguments"() {

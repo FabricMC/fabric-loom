@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit.download
 
 import io.javalin.http.HttpStatus
+
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 

@@ -24,16 +24,17 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
+import java.util.concurrent.TimeUnit
+
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
 
-import java.util.concurrent.TimeUnit
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static net.fabricmc.loom.test.LoomTestConstants.*
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 20, unit = TimeUnit.MINUTES)
 class SimpleProjectTest extends Specification implements GradleProjectTestTrait {

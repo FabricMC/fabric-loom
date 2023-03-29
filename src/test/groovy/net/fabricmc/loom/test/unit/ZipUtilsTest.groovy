@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.Pair
-import net.fabricmc.loom.util.ZipUtils
-import spock.lang.Specification
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+
+import spock.lang.Specification
+
+import net.fabricmc.loom.util.Pair
+import net.fabricmc.loom.util.ZipUtils
 
 class ZipUtilsTest extends Specification {
 	def "pack"() {

@@ -25,13 +25,14 @@
 package net.fabricmc.loom.test.util
 
 import groovy.transform.Immutable
-import net.fabricmc.loom.test.LoomTestConstants
-import net.fabricmc.loom.util.Constants
-import net.fabricmc.loom.util.ZipUtils
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Shared
+
+import net.fabricmc.loom.test.LoomTestConstants
+import net.fabricmc.loom.util.Constants
+import net.fabricmc.loom.util.ZipUtils
 
 trait GradleProjectTestTrait {
 	@Lazy

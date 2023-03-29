@@ -24,11 +24,12 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import spock.lang.Specification
+
 import net.fabricmc.loom.api.processor.ProcessorContext
 import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager
 import net.fabricmc.loom.test.util.processor.TestMinecraftJarProcessor
-import spock.lang.Specification
 
 import static net.fabricmc.loom.test.util.ZipTestUtils.createZip
 

@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.test.util
 
-import net.fabricmc.loom.LoomGradleExtension
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -36,6 +35,8 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
 import org.jetbrains.annotations.Nullable
+
+import net.fabricmc.loom.LoomGradleExtension
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.mock

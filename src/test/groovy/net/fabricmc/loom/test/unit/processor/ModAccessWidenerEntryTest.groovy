@@ -24,10 +24,11 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import spock.lang.Specification
+
 import net.fabricmc.loom.configuration.accesswidener.ModAccessWidenerEntry
 import net.fabricmc.loom.util.fmj.FabricModJson
 import net.fabricmc.loom.util.fmj.ModEnvironment
-import spock.lang.Specification
 
 class ModAccessWidenerEntryTest extends Specification {
 	def "read local mod"() {

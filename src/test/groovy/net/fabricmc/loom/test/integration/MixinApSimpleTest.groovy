@@ -24,12 +24,12 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import java.util.jar.JarFile
 
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.util.jar.JarFile
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS

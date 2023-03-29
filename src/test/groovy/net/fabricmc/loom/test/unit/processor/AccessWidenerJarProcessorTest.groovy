@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import spock.lang.Specification
+
 import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.fmj.FabricModJson
 import net.fabricmc.loom.util.fmj.ModEnvironment
-import spock.lang.Specification
 
 class AccessWidenerJarProcessorTest extends Specification {
 	def "Local AW"() {

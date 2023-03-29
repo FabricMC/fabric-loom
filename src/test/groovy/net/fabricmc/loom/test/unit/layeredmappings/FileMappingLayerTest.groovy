@@ -24,16 +24,17 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import java.nio.file.Path
+import java.util.function.Consumer
+
+import spock.lang.Unroll
+
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
 import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.util.ZipUtils
 import net.fabricmc.loom.util.download.Download
-import spock.lang.Unroll
-
-import java.nio.file.Path
-import java.util.function.Consumer
 
 class FileMappingLayerTest extends LayeredMappingsSpecification {
 	@Unroll

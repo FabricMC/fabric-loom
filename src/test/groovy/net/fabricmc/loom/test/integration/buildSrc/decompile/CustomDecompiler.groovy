@@ -24,10 +24,10 @@
 
 package net.fabricmc.loom.test.integration.buildSrc.decompile
 
+import java.nio.file.Path
+
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata
 import net.fabricmc.loom.api.decompilers.LoomDecompiler
-
-import java.nio.file.Path
 
 class CustomDecompiler implements LoomDecompiler {
 	@Override

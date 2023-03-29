@@ -24,10 +24,11 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.task.ValidateMixinNameTask
 import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.gen.Accessor
 import spock.lang.Specification
+
+import net.fabricmc.loom.task.ValidateMixinNameTask
 
 class ValidateMixinNameTest extends Specification {
 	def "TestMixin"() {

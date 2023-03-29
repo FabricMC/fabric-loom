@@ -24,15 +24,16 @@
 
 package net.fabricmc.loom.test.unit.kotlin
 
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.tree.ClassNode
+import spock.lang.Specification
+
 import net.fabricmc.loom.util.kotlin.KotlinClasspath
 import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader
 import net.fabricmc.tinyremapper.api.TrClass
 import net.fabricmc.tinyremapper.api.TrEnvironment
 import net.fabricmc.tinyremapper.api.TrRemapper
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.ClassNode
-import spock.lang.Specification
 
 class KotlinRemapperClassloaderTest extends Specification {
 	private static String KOTLIN_VERSION = "1.6.10"

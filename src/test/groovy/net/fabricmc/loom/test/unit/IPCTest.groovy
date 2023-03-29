@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.ipc.IPCClient
-import net.fabricmc.loom.util.ipc.IPCServer
+import java.nio.file.Files
+import java.util.function.Consumer
+
 import spock.lang.Specification
 import spock.lang.Timeout
 
-import java.nio.file.Files
-import java.util.function.Consumer
+import net.fabricmc.loom.util.ipc.IPCClient
+import net.fabricmc.loom.util.ipc.IPCServer
 
 @Timeout(20)
 class IPCTest extends Specification {

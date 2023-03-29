@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.Checksum
 import org.gradle.api.Project
 import spock.lang.Specification
+
+import net.fabricmc.loom.util.Checksum
 
 class ChecksumTest extends Specification {
 	def "project hash"() {

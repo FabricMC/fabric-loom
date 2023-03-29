@@ -24,13 +24,13 @@
 
 package net.fabricmc.loom.test.util
 
-import net.fabricmc.loom.util.FileSystemUtil
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.jar.Attributes
 import java.util.jar.Manifest
+
+import net.fabricmc.loom.util.FileSystemUtil
 
 class ZipTestUtils {
 	static Path createZip(Map<String, String> entries) {

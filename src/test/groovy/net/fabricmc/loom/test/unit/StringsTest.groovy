@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.Strings
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.util.Strings
 
 class StringsTest extends Specification {
 	@Unroll

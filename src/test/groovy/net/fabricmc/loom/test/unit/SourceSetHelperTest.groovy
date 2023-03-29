@@ -24,14 +24,15 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.gradle.SourceSetHelper
-import net.fabricmc.loom.util.gradle.SourceSetReference
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.environment.RestoreSystemProperties
+
+import net.fabricmc.loom.util.gradle.SourceSetHelper
+import net.fabricmc.loom.util.gradle.SourceSetReference
 
 class SourceSetHelperTest extends Specification {
 	@Shared

@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration.buildSrc.decompile
 
-import net.fabricmc.loom.LoomGradleExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+
+import net.fabricmc.loom.LoomGradleExtension
 
 class TestPlugin implements Plugin<Project> {
 	@Override

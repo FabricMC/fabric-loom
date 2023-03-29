@@ -24,8 +24,9 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.configuration.mods.JarSplitter
 import spock.lang.Specification
+
+import net.fabricmc.loom.configuration.mods.JarSplitter
 
 class JarSplitterTest extends Specification {
 	public static final String SPLIT_INPUT_JAR_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-lifecycle-events-v1/2.1.0%2B33fbc738a9/fabric-lifecycle-events-v1-2.1.0%2B33fbc738a9.jar"

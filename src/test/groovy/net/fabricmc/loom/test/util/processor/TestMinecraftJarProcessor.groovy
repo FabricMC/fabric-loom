@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.test.util.processor
 
+import java.nio.file.Path
+
 import groovy.transform.Immutable
+
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor
 import net.fabricmc.loom.api.processor.ProcessorContext
 import net.fabricmc.loom.api.processor.SpecContext
-
-import java.nio.file.Path
 
 @Immutable
 class TestMinecraftJarProcessor implements MinecraftJarProcessor<Spec> {

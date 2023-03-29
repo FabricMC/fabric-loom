@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.test.unit
 
+import java.util.function.Function
+
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.download.Download
-
-import java.util.function.Function
 
 import static org.mockito.Mockito.spy
 import static org.mockito.Mockito.when

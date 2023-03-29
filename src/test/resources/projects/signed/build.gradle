@@ -37,12 +37,12 @@ publishing {
 		}
 	}
 
-    repositories {
+	repositories {
 		maven {
 			url "http://localhost:${System.getProperty("loom.test.mavenPort")}/"
 			allowInsecureProtocol = true
 		}
-    }
+	}
 }
 
 signing {

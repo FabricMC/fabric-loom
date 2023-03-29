@@ -151,6 +151,11 @@ spotless {
 		greclipse()
 	}
 
+	groovyGradle {
+		target 'src/**/*.gradle', '*.gradle'
+		greclipse()
+	}
+
 	kotlin {
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
 		targetExclude("**/build.gradle.kts")
@@ -291,7 +296,7 @@ task writeActionsTestMatrix() {
 				// Disabled for CI, as it fails too much.
 				if (className.endsWith("DecompileTest")) return
 
-				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
+					testMatrix.add("net.fabricmc.loom.test.integration.${className}")
 			}
 		}
 
@@ -319,9 +324,9 @@ task downloadGradleSources() {
 	doLast {
 		// Awful hack to find the gradle api location
 		def gradleApiFile = project.configurations.detachedConfiguration(dependencies.gradleApi()).files.stream()
-			.filter {
-				it.name.startsWith("gradle-api")
-			}.findFirst().orElseThrow()
+				.filter {
+					it.name.startsWith("gradle-api")
+				}.findFirst().orElseThrow()
 
 		def gradleApiSources = new File(gradleApiFile.absolutePath.replace(".jar", "-sources.jar"))
 		def url = "https://services.gradle.org/distributions/gradle-${GradleVersion.current().getVersion()}-src.zip"

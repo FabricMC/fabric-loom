@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -38,11 +39,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +83,8 @@ public class MappingConfiguration {
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
 
-	private MappingConfiguration(String mappingsIdentifier, Path mappingsWorkingDir) {
+	@VisibleForTesting
+	public MappingConfiguration(String mappingsIdentifier, Path mappingsWorkingDir) {
 		this.mappingsIdentifier = mappingsIdentifier;
 
 		this.mappingsWorkingDir = mappingsWorkingDir;
@@ -133,9 +138,32 @@ public class MappingConfiguration {
 			}
 		}
 
+		generateMappingsJar(project, serviceManager, minecraftProvider);
+	}
+
+	@VisibleForTesting
+	public void generateMappingsJar(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider) throws IOException {
 		if (Files.notExists(tinyMappingsJar) || minecraftProvider.refreshDeps()) {
 			Files.deleteIfExists(tinyMappingsJar);
 			ZipUtils.add(tinyMappingsJar, "mappings/mappings.tiny", Files.readAllBytes(tinyMappings));
+
+			final IntermediateMappingsService intermediateMappingsService = IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider);
+			Map<String, String> metadata = intermediateMappingsService.getMetadata();
+
+			if (metadata.isEmpty()) {
+				return;
+			}
+
+			Manifest manifest = new Manifest();
+			Attributes mainAttributes = manifest.getMainAttributes();
+
+			for (Map.Entry<String, String> entry : metadata.entrySet()) {
+				mainAttributes.putValue(entry.getKey(), entry.getValue());
+			}
+
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			manifest.write(out);
+			ZipUtils.add(tinyMappingsJar, "META-INF/MANIFEST.MF", out.toString(StandardCharsets.UTF_8));
 		}
 	}
 

@@ -26,6 +26,8 @@ package net.fabricmc.loom.api.mappings.intermediate;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.gradle.api.Named;
@@ -49,4 +51,14 @@ public abstract class IntermediateMappingsProvider implements Named {
 	 * @throws IOException
 	 */
 	public abstract void provide(Path tinyMappings) throws IOException;
+
+	/**
+	 * Return metadata associated with the provided mappings. The metadata will be written the to the mapping jars manifest.
+	 *
+	 * @return A map of metadata, may be empty
+	 * @throws IOException on error
+	 */
+	public Map<String, String> getMetadata() throws IOException {
+		return Collections.emptyMap();
+	}
 }

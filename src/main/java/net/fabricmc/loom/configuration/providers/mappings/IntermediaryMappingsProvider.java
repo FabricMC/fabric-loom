@@ -24,9 +24,16 @@
 
 package net.fabricmc.loom.configuration.providers.mappings;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import com.google.common.net.UrlEscapers;
 import org.gradle.api.provider.Property;
@@ -35,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
+import net.fabricmc.loom.util.ZipUtils;
 
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider {
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsProvider.class);
@@ -49,6 +57,37 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 			return;
 		}
 
+		final Path intermediaryJarPath = getIntermediaryPath();
+
+		Files.deleteIfExists(tinyMappings);
+		MappingConfiguration.extractMappings(intermediaryJarPath, tinyMappings);
+	}
+
+	@Override
+	public Map<String, String> getMetadata() throws IOException {
+		Path intermediaryJarPath = getIntermediaryPath();
+
+		byte[] manifestBytes = ZipUtils.unpackNullable(intermediaryJarPath, "META-INF/MANIFEST.MF");
+
+		if (manifestBytes == null) {
+			return Collections.emptyMap();
+		}
+
+		Map<String, String> metadata = new HashMap<>();
+
+		try (InputStream is = new ByteArrayInputStream(manifestBytes)) {
+			final Manifest manifest = new Manifest(is);
+			final Attributes mainAttributes = manifest.getMainAttributes();
+
+			for (Object key : mainAttributes.keySet()) {
+				metadata.put(key.toString(), mainAttributes.getValue(key.toString()));
+			}
+		}
+
+		return metadata;
+	}
+
+	private Path getIntermediaryPath() throws IOException {
 		// Download and extract intermediary
 		final Path intermediaryJarPath = Files.createTempFile(getName(), ".jar");
 		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
@@ -56,14 +95,13 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 		LOGGER.info("Downloading intermediary from {}", url);
 
-		Files.deleteIfExists(tinyMappings);
 		Files.deleteIfExists(intermediaryJarPath);
 
 		getDownloader().get().apply(url)
 				.defaultCache()
 				.downloadPath(intermediaryJarPath);
 
-		MappingConfiguration.extractMappings(intermediaryJarPath, tinyMappings);
+		return intermediaryJarPath;
 	}
 
 	@Override

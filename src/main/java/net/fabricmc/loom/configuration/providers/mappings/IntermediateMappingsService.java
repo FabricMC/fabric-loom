@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -50,10 +51,12 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class IntermediateMappingsService implements SharedService {
 	private final Path intermediaryTiny;
+	private final Map<String, String> metadata;
 	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
 
-	private IntermediateMappingsService(Path intermediaryTiny) {
+	private IntermediateMappingsService(Path intermediaryTiny, Map<String, String> metadata) {
 		this.intermediaryTiny = intermediaryTiny;
+		this.metadata = metadata;
 	}
 
 	public static synchronized IntermediateMappingsService getInstance(SharedServiceManager sharedServiceManager, Project project, MinecraftProvider minecraftProvider) {
@@ -67,9 +70,11 @@ public final class IntermediateMappingsService implements SharedService {
 	@VisibleForTesting
 	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider) {
 		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
+		final Map<String, String> metadata;
 
 		try {
 			intermediateMappingsProvider.provide(intermediaryTiny);
+			metadata = intermediateMappingsProvider.getMetadata();
 		} catch (IOException e) {
 			try {
 				Files.deleteIfExists(intermediaryTiny);
@@ -80,7 +85,7 @@ public final class IntermediateMappingsService implements SharedService {
 			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
 		}
 
-		return new IntermediateMappingsService(intermediaryTiny);
+		return new IntermediateMappingsService(intermediaryTiny, Collections.unmodifiableMap(metadata));
 	}
 
 	private MemoryMappingTree createMemoryMappingTree() {
@@ -105,5 +110,9 @@ public final class IntermediateMappingsService implements SharedService {
 
 	public Path getIntermediaryTiny() {
 		return Objects.requireNonNull(intermediaryTiny, "Intermediary mappings have not been setup");
+	}
+
+	public Map<String, String> getMetadata() {
+		return metadata;
 	}
 }

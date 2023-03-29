@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit
+package net.fabricmc.loom.test.unit.configuration
 
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider
 import net.fabricmc.loom.test.util.GradleTestUtil
-import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.test.util.ZipTestUtils
+import net.fabricmc.loom.util.ZipUtils
+import net.fabricmc.loom.util.download.DownloadBuilder
+import org.gradle.api.provider.Property
 
+import java.nio.file.Path
 import java.util.function.Function
 
-import static org.mockito.Mockito.spy
-import static org.mockito.Mockito.when
+class MockIntermediaryMappingsProvider extends IntermediaryMappingsProvider {
+	private static String INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.19.4/intermediary-1.19.4-v2.jar"
 
-class LoomMocks {
-    static IntermediaryMappingsProvider intermediaryMappingsProviderMock(String minecraftVersion, String intermediaryUrl, Map<String, String> metadata = [:]) {
-        def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
-        def intermediaryUrlProperty = GradleTestUtil.mockProperty(intermediaryUrl)
-        def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
+	final DownloadBuilder downloadBuilder
 
-        Objects.requireNonNull(minecraftVersionProperty.get())
+	MockIntermediaryMappingsProvider(DownloadBuilder downloadBuilder) {
+		this.downloadBuilder = downloadBuilder
+	}
 
-        def mock = spy(IntermediaryMappingsProvider.class)
-        when(mock.getMinecraftVersion()).thenReturn(minecraftVersionProperty)
-        when(mock.getIntermediaryUrl()).thenReturn(intermediaryUrlProperty)
-        when(mock.getDownloader()).thenReturn(downloaderProperty)
-		when(mock.getMetadata()).thenReturn(metadata)
-        return mock
-    }
+	Property<String> minecraftVersion = GradleTestUtil.mockProperty("1.19.4")
+	Property<Boolean> refreshDeps = GradleTestUtil.mockProperty(false)
+	Property<String> intermediaryUrl = GradleTestUtil.mockProperty(INTERMEDIARY_URL)
+	Property<Function<String, DownloadBuilder>> downloader = GradleTestUtil.mockProperty(download())
+
+	private Function<String, DownloadBuilder> download() {
+		return {
+			downloadBuilder
+		}
+	}
+
+	static void writeIntermediaryJar(Path path, Map<String, String> metadata = [:]) {
+		ZipUtils.add(path, "mappings/mappings.tiny", "tiny\t2\t0\tofficial\tintermediary")
+		ZipUtils.add(path, "META-INF/MANIFEST.MF", ZipTestUtils.manifest(metadata))
+	}
 }
+

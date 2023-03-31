@@ -25,95 +25,96 @@
 package net.fabricmc.loom.test.unit.download
 
 import io.javalin.http.HttpStatus
+
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 
 class DownloadStringTest extends DownloadTest {
 	def "String: Download"() {
 		setup:
-			server.get("/downloadString") {
-				it.result("Hello World!")
-			}
+		server.get("/downloadString") {
+			it.result("Hello World!")
+		}
 
 		when:
-			def result = Download.create("$PATH/downloadString").downloadString()
+		def result = Download.create("$PATH/downloadString").downloadString()
 
 		then:
-			result == "Hello World!"
+		result == "Hello World!"
 	}
 
 	def "String: Not found"() {
 		setup:
-			server.get("/stringNotFound") {
-				it.status(404)
-			}
+		server.get("/stringNotFound") {
+			it.status(404)
+		}
 
 		when:
-			def result = Download.create("$PATH/stringNotFound")
+		def result = Download.create("$PATH/stringNotFound")
 				.maxRetries(3) // Ensure we still error as expected when retrying
 				.downloadString()
 
 		then:
-			thrown DownloadException
+		thrown DownloadException
 	}
 
 	def "String: Redirect"() {
 		setup:
-			server.get("/redirectString2") {
-				it.result("Hello World!")
-			}
-			server.get("/redirectString") {
-				it.redirect("$PATH/redirectString2")
-			}
+		server.get("/redirectString2") {
+			it.result("Hello World!")
+		}
+		server.get("/redirectString") {
+			it.redirect("$PATH/redirectString2")
+		}
 
 		when:
-			def result = Download.create("$PATH/redirectString").downloadString()
+		def result = Download.create("$PATH/redirectString").downloadString()
 
 		then:
-			result == "Hello World!"
+		result == "Hello World!"
 	}
 
 	def "String: Retries"() {
 		setup:
-			int requests = 0
-			server.get("/retryString") {
-				requests ++
+		int requests = 0
+		server.get("/retryString") {
+			requests ++
 
-				if (requests < 3) {
-					it.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					return
-				}
-
-				it.result("Hello World " + requests)
+			if (requests < 3) {
+				it.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				return
 			}
 
+			it.result("Hello World " + requests)
+		}
+
 		when:
-			def result = Download.create("$PATH/retryString")
+		def result = Download.create("$PATH/retryString")
 				.maxRetries(3)
 				.downloadString()
 
 		then:
-			result == "Hello World 3"
+		result == "Hello World 3"
 	}
 
 	def "String: File cache"() {
 		setup:
-			server.get("/downloadString2") {
-				it.result("Hello World!")
-			}
+		server.get("/downloadString2") {
+			it.result("Hello World!")
+		}
 
 		when:
-			def output = new File(File.createTempDir(), "file.txt").toPath()
-			def result = Download.create("$PATH/downloadString2").downloadString(output)
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def result = Download.create("$PATH/downloadString2").downloadString(output)
 
 		then:
-			result == "Hello World!"
+		result == "Hello World!"
 	}
 
 	def "String: Insecure protocol"() {
 		when:
-			def result = Download.create("http://fabricmc.net").downloadString()
+		def result = Download.create("http://fabricmc.net").downloadString()
 		then:
-			thrown IllegalArgumentException
+		thrown IllegalArgumentException
 	}
 }

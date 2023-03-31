@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -35,41 +36,41 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "#decompiler gradle #version"() {
 		setup:
-			def gradle = gradleProject(project: "decompile", version: version)
+		def gradle = gradleProject(project: "decompile", version: version)
 
 		when:
-			def result = gradle.run(task: task)
+		def result = gradle.run(task: task)
 
 		then:
-			result.task(":${task}").outcome == SUCCESS
+		result.task(":${task}").outcome == SUCCESS
 
 		where:
-			decompiler 		| task								| version
-			'fernflower'	| "genSourcesWithFernFlower"		| PRE_RELEASE_GRADLE
-			'cfr' 			| "genSourcesWithCfr"				| PRE_RELEASE_GRADLE
+		decompiler 		| task								| version
+		'fernflower'	| "genSourcesWithFernFlower"		| PRE_RELEASE_GRADLE
+		'cfr' 			| "genSourcesWithCfr"				| PRE_RELEASE_GRADLE
 	}
 
 	@Unroll
 	def "custom decompiler (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: version)
-			gradle.buildSrc("decompile")
-			gradle.buildGradle << '''
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildSrc("decompile")
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
                 }
             '''
 		when:
-			def result = gradle.run(task: "genSourcesWithCustom")
+		def result = gradle.run(task: "genSourcesWithCustom")
 
 		then:
-			result.task(":genSourcesWithCustom").outcome == SUCCESS
-			result.task(":preDecompile").outcome == SUCCESS
-			result.output.contains("Writing test file")
-			result.output.contains("Running custom decompiler")
+		result.task(":genSourcesWithCustom").outcome == SUCCESS
+		result.task(":preDecompile").outcome == SUCCESS
+		result.output.contains("Writing test file")
+		result.output.contains("Running custom decompiler")
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

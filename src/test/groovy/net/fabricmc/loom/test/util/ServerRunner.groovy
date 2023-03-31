@@ -24,178 +24,179 @@
 
 package net.fabricmc.loom.test.util
 
-import groovy.transform.Immutable
-import net.fabricmc.loom.util.download.Download
-
 import java.util.concurrent.TimeUnit
 
+import groovy.transform.Immutable
+
+import net.fabricmc.loom.util.download.Download
+
 class ServerRunner {
-    static final String LOADER_VERSION = "0.14.12"
+	static final String LOADER_VERSION = "0.14.12"
 	static final String INSTALLER_VERSION = "0.11.1"
-    static final Map<String, String> FABRIC_API_URLS = [
-            "1.16.5": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.16/fabric-api-0.37.1+1.16.jar",
-            "1.17.1": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.17/fabric-api-0.37.1+1.17.jar"
-    ]
-    static final String FABRIC_LANG_KOTLIN = "https://maven.fabricmc.net/net/fabricmc/fabric-language-kotlin/1.8.5%2Bkotlin.1.7.20/fabric-language-kotlin-1.8.5%2Bkotlin.1.7.20.jar"
+	static final Map<String, String> FABRIC_API_URLS = [
+		"1.16.5": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.16/fabric-api-0.37.1+1.16.jar",
+		"1.17.1": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.17/fabric-api-0.37.1+1.17.jar"
+	]
+	static final String FABRIC_LANG_KOTLIN = "https://maven.fabricmc.net/net/fabricmc/fabric-language-kotlin/1.8.5%2Bkotlin.1.7.20/fabric-language-kotlin-1.8.5%2Bkotlin.1.7.20.jar"
 
-    final File serverDir
-    final String minecraftVersion
+	final File serverDir
+	final String minecraftVersion
 
-    final List<File> mods = []
+	final List<File> mods = []
 
-    private ServerRunner(File serverDir, String minecraftVersion) {
-        this.serverDir = serverDir
-        this.minecraftVersion = minecraftVersion
+	private ServerRunner(File serverDir, String minecraftVersion) {
+		this.serverDir = serverDir
+		this.minecraftVersion = minecraftVersion
 
-        this.serverDir.mkdirs()
-    }
+		this.serverDir.mkdirs()
+	}
 
-    static ServerRunner create(File testProjectDir, String minecraftVersion) {
-        return new ServerRunner(new File(testProjectDir, "server"), minecraftVersion)
-    }
+	static ServerRunner create(File testProjectDir, String minecraftVersion) {
+		return new ServerRunner(new File(testProjectDir, "server"), minecraftVersion)
+	}
 
-    def install() {
+	def install() {
 		def url = "https://meta.fabricmc.net/v2/versions/loader/${minecraftVersion}/${LOADER_VERSION}/${INSTALLER_VERSION}/server/jar"
 		Download.create(url)
-			.downloadPath(serverDir.toPath().resolve("fabric-server-launch.jar"))
+				.downloadPath(serverDir.toPath().resolve("fabric-server-launch.jar"))
 
-        def eulaFile = new File(serverDir, "eula.txt")
-        eulaFile << "eula=true"
+		def eulaFile = new File(serverDir, "eula.txt")
+		eulaFile << "eula=true"
 
-        def serverPropsFile = new File(serverDir, "server.properties")
-        serverPropsFile << "level-type=FLAT" // Generates the world faster
-    }
+		def serverPropsFile = new File(serverDir, "server.properties")
+		serverPropsFile << "level-type=FLAT" // Generates the world faster
+	}
 
-    ServerRunner withMod(File file) {
-        mods << file
-        return this
-    }
+	ServerRunner withMod(File file) {
+		mods << file
+		return this
+	}
 
-    ServerRunner downloadMod(String url, String filename) {
-        File modFile = new File(serverDir, "downloadedMods/" + filename)
-        modFile.parentFile.mkdirs()
+	ServerRunner downloadMod(String url, String filename) {
+		File modFile = new File(serverDir, "downloadedMods/" + filename)
+		modFile.parentFile.mkdirs()
 
-        println("Downloading " + url)
-        modFile.bytes = new URL(url).bytes
+		println("Downloading " + url)
+		modFile.bytes = new URL(url).bytes
 
-        return withMod(modFile)
-    }
+		return withMod(modFile)
+	}
 
-    ServerRunner withFabricApi() {
-        if (!FABRIC_API_URLS[minecraftVersion]) {
-            throw new UnsupportedOperationException("No Fabric api url for " + minecraftVersion)
-        }
+	ServerRunner withFabricApi() {
+		if (!FABRIC_API_URLS[minecraftVersion]) {
+			throw new UnsupportedOperationException("No Fabric api url for " + minecraftVersion)
+		}
 
-        return downloadMod(FABRIC_API_URLS[minecraftVersion], "fabricapi.jar")
-    }
+		return downloadMod(FABRIC_API_URLS[minecraftVersion], "fabricapi.jar")
+	}
 
-    ServerRunResult run() {
-        install()
+	ServerRunResult run() {
+		install()
 
-        // Copy the mods here so we can
-        mods.each {
-            if (!it.exists()) {
-                throw new FileNotFoundException(it.absolutePath)
-            }
+		// Copy the mods here so we can
+		mods.each {
+			if (!it.exists()) {
+				throw new FileNotFoundException(it.absolutePath)
+			}
 
-            File modFile = new File(serverDir, "mods/" + it.name)
-            modFile.parentFile.mkdirs()
-            modFile.bytes = it.bytes
-        }
+			File modFile = new File(serverDir, "mods/" + it.name)
+			modFile.parentFile.mkdirs()
+			modFile.bytes = it.bytes
+		}
 
-        String javaExecutablePath = ProcessHandle.current()
-                .info()
-                .command()
-                .orElseThrow()
+		String javaExecutablePath = ProcessHandle.current()
+				.info()
+				.command()
+				.orElseThrow()
 
-        var builder = new ProcessBuilder()
-        builder.directory(serverDir)
-        builder.command(javaExecutablePath, "-Xmx1G", "-jar", "fabric-server-launch.jar", "nogui")
+		var builder = new ProcessBuilder()
+		builder.directory(serverDir)
+		builder.command(javaExecutablePath, "-Xmx1G", "-jar", "fabric-server-launch.jar", "nogui")
 
-        Process process = builder.start()
-        def out = new StringBuffer()
-        def isStopping = false
+		Process process = builder.start()
+		def out = new StringBuffer()
+		def isStopping = false
 
-        process.consumeProcessOutput(
-                new ForwardingAppendable([System.out, out], {
-                    if (!isStopping && out.contains("Done ") && out.contains("For help, type \"help\"")) {
-                        isStopping = true
+		process.consumeProcessOutput(
+				new ForwardingAppendable([System.out, out], {
+					if (!isStopping && out.contains("Done ") && out.contains("For help, type \"help\"")) {
+						isStopping = true
 
-                        Thread.start {
-                            println("Stopping server in 5 seconds")
-                            sleep(5000)
+						Thread.start {
+							println("Stopping server in 5 seconds")
+							sleep(5000)
 
-                            println("Sending stop command")
-                            process.outputStream.withCloseable {
-                                it.write("stop\n".bytes)
-                            }
-                        }
-                    }
-                }),
-                new ForwardingAppendable([System.err, out])
-        )
+							println("Sending stop command")
+							process.outputStream.withCloseable {
+								it.write("stop\n".bytes)
+							}
+						}
+					}
+				}),
+				new ForwardingAppendable([System.err, out])
+				)
 
-        addShutdownHook {
-            if (process.alive) {
-                process.destroy()
-            }
-        }
+		addShutdownHook {
+			if (process.alive) {
+				process.destroy()
+			}
+		}
 
-        assert process.waitFor(10, TimeUnit.MINUTES)
-        int exitCode = process.exitValue()
+		assert process.waitFor(10, TimeUnit.MINUTES)
+		int exitCode = process.exitValue()
 
-        println("Sever closed with exit code: " + exitCode)
+		println("Sever closed with exit code: " + exitCode)
 
-        return new ServerRunResult(exitCode, out.toString())
-    }
+		return new ServerRunResult(exitCode, out.toString())
+	}
 
-    @Immutable
-    class ServerRunResult {
-        int exitCode
-        String output
+	@Immutable
+	class ServerRunResult {
+		int exitCode
+		String output
 
-        boolean successful() {
-            return exitCode == 0 && output.contains("Done ")
-        }
-    }
+		boolean successful() {
+			return exitCode == 0 && output.contains("Done ")
+		}
+	}
 
-    private class ForwardingAppendable implements Appendable {
-        final List<Appendable> appendables
-        final Closure onAppended
+	private class ForwardingAppendable implements Appendable {
+		final List<Appendable> appendables
+		final Closure onAppended
 
-        ForwardingAppendable(List<Appendable> appendables, Closure onAppended = {}) {
-            this.appendables = appendables
-            this.onAppended = onAppended
-        }
+		ForwardingAppendable(List<Appendable> appendables, Closure onAppended = {}) {
+			this.appendables = appendables
+			this.onAppended = onAppended
+		}
 
-        @Override
-        Appendable append(CharSequence csq) throws IOException {
-            appendables.each {
-                it.append(csq)
-            }
+		@Override
+		Appendable append(CharSequence csq) throws IOException {
+			appendables.each {
+				it.append(csq)
+			}
 
-            onAppended.run()
-            return this
-        }
+			onAppended.run()
+			return this
+		}
 
-        @Override
-        Appendable append(CharSequence csq, int start, int end) throws IOException {
-            appendables.each {
-                it.append(csq, start, end)
-            }
+		@Override
+		Appendable append(CharSequence csq, int start, int end) throws IOException {
+			appendables.each {
+				it.append(csq, start, end)
+			}
 
-            onAppended.run()
-            return this
-        }
+			onAppended.run()
+			return this
+		}
 
-        @Override
-        Appendable append(char c) throws IOException {
-            appendables.each {
-                it.append(c)
-            }
+		@Override
+		Appendable append(char c) throws IOException {
+			appendables.each {
+				it.append(c)
+			}
 
-            onAppended.run()
-            return this
-        }
-    }
+			onAppended.run()
+			return this
+		}
+	}
 }

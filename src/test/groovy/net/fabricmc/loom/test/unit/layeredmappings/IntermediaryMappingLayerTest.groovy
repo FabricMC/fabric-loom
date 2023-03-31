@@ -27,17 +27,17 @@ package net.fabricmc.loom.test.unit.layeredmappings
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 
 class IntermediaryMappingLayerTest extends LayeredMappingsSpecification {
-    def "Read intermediary mappings" () {
-        setup:
-            intermediaryUrl = INTERMEDIARY_1_17_URL
-        when:
-            def mappings = getSingleMapping(new IntermediaryMappingsSpec())
-            def tiny = getTiny(mappings)
-        then:
-            mappings.srcNamespace == "official"
-            mappings.dstNamespaces == ["intermediary", "named"]
-            mappings.classes.size() == 6107
-            mappings.getClass("abc").getDstName(0) == "net/minecraft/class_3191"
-            mappings.getClass("abc").getDstName(1) == "net/minecraft/class_3191"
-    }
+	def "Read intermediary mappings" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		when:
+		def mappings = getSingleMapping(new IntermediaryMappingsSpec())
+		def tiny = getTiny(mappings)
+		then:
+		mappings.srcNamespace == "official"
+		mappings.dstNamespaces == ["intermediary", "named"]
+		mappings.classes.size() == 6107
+		mappings.getClass("abc").getDstName(0) == "net/minecraft/class_3191"
+		mappings.getClass("abc").getDstName(1) == "net/minecraft/class_3191"
+	}
 }

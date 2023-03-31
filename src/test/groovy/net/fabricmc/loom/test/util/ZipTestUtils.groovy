@@ -24,38 +24,38 @@
 
 package net.fabricmc.loom.test.util
 
-import net.fabricmc.loom.util.FileSystemUtil
-
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.jar.Attributes
 import java.util.jar.Manifest
 
+import net.fabricmc.loom.util.FileSystemUtil
+
 class ZipTestUtils {
-    static Path createZip(Map<String, String> entries) {
-        def file = Files.createTempFile("loom-test", ".zip")
-        Files.delete(file)
+	static Path createZip(Map<String, String> entries) {
+		def file = Files.createTempFile("loom-test", ".zip")
+		Files.delete(file)
 
-        FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->
-            entries.forEach { path, value ->
-                def fsPath = zip.getPath(path)
-                def fsPathParent = fsPath.getParent()
-                if (fsPathParent != null) Files.createDirectories(fsPathParent)
-                Files.writeString(fsPath, value, StandardCharsets.UTF_8)
-            }
-        }
+		FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->
+			entries.forEach { path, value ->
+				def fsPath = zip.getPath(path)
+				def fsPathParent = fsPath.getParent()
+				if (fsPathParent != null) Files.createDirectories(fsPathParent)
+				Files.writeString(fsPath, value, StandardCharsets.UTF_8)
+			}
+		}
 
-        return file
-    }
+		return file
+	}
 
-    static String manifest(String key, String value) {
-        def manifest = new Manifest()
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
-        manifest.getMainAttributes().putValue(key, value)
+	static String manifest(String key, String value) {
+		def manifest = new Manifest()
+		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
+		manifest.getMainAttributes().putValue(key, value)
 
-        def out = new ByteArrayOutputStream()
-        manifest.write(out)
-        return out.toString(StandardCharsets.UTF_8)
-    }
+		def out = new ByteArrayOutputStream()
+		manifest.write(out)
+		return out.toString(StandardCharsets.UTF_8)
+	}
 }

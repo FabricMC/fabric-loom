@@ -24,78 +24,79 @@
 
 package net.fabricmc.loom.test.unit.kotlin
 
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.tree.ClassNode
+import spock.lang.Specification
+
 import net.fabricmc.loom.util.kotlin.KotlinClasspath
 import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader
 import net.fabricmc.tinyremapper.api.TrClass
 import net.fabricmc.tinyremapper.api.TrEnvironment
 import net.fabricmc.tinyremapper.api.TrRemapper
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.ClassNode
-import spock.lang.Specification
 
 class KotlinRemapperClassloaderTest extends Specification {
-    private static String KOTLIN_VERSION = "1.6.10"
-    private static String KOTLIN_METADATA_VERSION = KotlinPluginUtils.kotlinMetadataVersion
-    private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
-    private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-metadata-jvm/${KOTLIN_METADATA_VERSION}/kotlinx-metadata-jvm-${KOTLIN_METADATA_VERSION}.jar"
+	private static String KOTLIN_VERSION = "1.6.10"
+	private static String KOTLIN_METADATA_VERSION = KotlinPluginUtils.kotlinMetadataVersion
+	private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
+	private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-metadata-jvm/${KOTLIN_METADATA_VERSION}/kotlinx-metadata-jvm-${KOTLIN_METADATA_VERSION}.jar"
 
-    def "Test Kotlin Remapper Classloader"() {
-        given:
-            def classLoader = KotlinRemapperClassloader.create(new TestKotlinClasspath())
-            def mockTrClass = Mock(TrClass)
-            def mockEnv = Mock(TrEnvironment)
-            def mockRemapper = Mock(TrRemapper)
+	def "Test Kotlin Remapper Classloader"() {
+		given:
+		def classLoader = KotlinRemapperClassloader.create(new TestKotlinClasspath())
+		def mockTrClass = Mock(TrClass)
+		def mockEnv = Mock(TrEnvironment)
+		def mockRemapper = Mock(TrRemapper)
 
-            mockRemapper.map(_) >> { args -> args[0] }
-            mockRemapper.mapMethodDesc(_) >> { args -> args[0] }
+		mockRemapper.map(_) >> { args -> args[0] }
+		mockRemapper.mapMethodDesc(_) >> { args -> args[0] }
 
-            mockEnv.remapper >> mockRemapper
-            mockTrClass.environment >> mockEnv
+		mockEnv.remapper >> mockRemapper
+		mockTrClass.environment >> mockEnv
 
-            def classReader = new ClassReader(getClassBytes("TestExtensionKt"))
+		def classReader = new ClassReader(getClassBytes("TestExtensionKt"))
 
-        when:
-            def extension = classLoader.tinyRemapperExtension
-            def visitor = extension.insertApplyVisitor(mockTrClass, new ClassNode())
+		when:
+		def extension = classLoader.tinyRemapperExtension
+		def visitor = extension.insertApplyVisitor(mockTrClass, new ClassNode())
 
-            classReader.accept(visitor, 0)
+		classReader.accept(visitor, 0)
 
-        then:
-            extension != null
-            visitor != null
+		then:
+		extension != null
+		visitor != null
 
-            // Ensure that the visitor is using the kotlin version specified on the classpath.
-            visitor.runtimeKotlinVersion == KOTLIN_VERSION
-    }
+		// Ensure that the visitor is using the kotlin version specified on the classpath.
+		visitor.runtimeKotlinVersion == KOTLIN_VERSION
+	}
 
-    private class TestKotlinClasspath implements KotlinClasspath {
-        @Override
-        String version() {
-            return KOTLIN_VERSION
-        }
+	private class TestKotlinClasspath implements KotlinClasspath {
+		@Override
+		String version() {
+			return KOTLIN_VERSION
+		}
 
-        @Override
-        Set<URL> classpath() {
-            def kotlin = downloadFile(KOTLIN_URL, "kotlin-stdlib.jar")
-            def metadata = downloadFile(KOTLIN_METADATA_URL, "kotlin-metadata.jar")
+		@Override
+		Set<URL> classpath() {
+			def kotlin = downloadFile(KOTLIN_URL, "kotlin-stdlib.jar")
+			def metadata = downloadFile(KOTLIN_METADATA_URL, "kotlin-metadata.jar")
 
-            return Set.of(
-                kotlin.toURI().toURL(),
-                metadata.toURI().toURL()
-            )
-        }
-    }
+			return Set.of(
+					kotlin.toURI().toURL(),
+					metadata.toURI().toURL()
+					)
+		}
+	}
 
-    File tempDir = File.createTempDir()
-    File downloadFile(String url, String name) {
-        File dst = new File(tempDir, name)
-        dst.parentFile.mkdirs()
-        dst << new URL(url).newInputStream()
-        return dst
-    }
+	File tempDir = File.createTempDir()
+	File downloadFile(String url, String name) {
+		File dst = new File(tempDir, name)
+		dst.parentFile.mkdirs()
+		dst << new URL(url).newInputStream()
+		return dst
+	}
 
-    def getClassBytes(String name) {
-        return new File("src/test/resources/classes/${name}.class").bytes
-    }
+	def getClassBytes(String name) {
+		return new File("src/test/resources/classes/${name}.class").bytes
+	}
 }

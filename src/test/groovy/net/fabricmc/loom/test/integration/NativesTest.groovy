@@ -24,73 +24,74 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE
 
 class NativesTest extends Specification implements GradleProjectTestTrait  {
-    @Unroll
-    def "Default natives for 1.18 (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "Default natives for 1.18 (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-            gradle.buildGradle << '''
+		gradle.buildGradle << '''
                     dependencies {
                         minecraft "com.mojang:minecraft:1.18"
                         mappings loom.officialMojangMappings()
                     }
                 '''
 
-        when:
-            // Run the task twice to ensure its up to date
-            def result = gradle.run(task: "extractNatives")
-            def result2 = gradle.run(task: "extractNatives")
+		when:
+		// Run the task twice to ensure its up to date
+		def result = gradle.run(task: "extractNatives")
+		def result2 = gradle.run(task: "extractNatives")
 
-        then:
-            result.task(":extractNatives").outcome == SUCCESS
-            result2.task(":extractNatives").outcome == UP_TO_DATE
+		then:
+		result.task(":extractNatives").outcome == SUCCESS
+		result2.task(":extractNatives").outcome == UP_TO_DATE
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-    @RestoreSystemProperties
-    @Unroll
-    def "Overridden natives for 1.18 (gradle #version)"() {
-        setup:
-            System.setProperty('loom.test.lwjgloverride', "true")
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@RestoreSystemProperties
+	@Unroll
+	def "Overridden natives for 1.18 (gradle #version)"() {
+		setup:
+		System.setProperty('loom.test.lwjgloverride', "true")
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-            gradle.buildGradle << '''
+		gradle.buildGradle << '''
                     dependencies {
                         minecraft "com.mojang:minecraft:1.18"
                         mappings loom.officialMojangMappings()
                     }
                 '''
 
-        when:
-            // Run the task twice to ensure its up to date
-            def result = gradle.run(task: "extractNatives")
+		when:
+		// Run the task twice to ensure its up to date
+		def result = gradle.run(task: "extractNatives")
 
-        then:
-            result.task(":extractNatives").outcome == SUCCESS
+		then:
+		result.task(":extractNatives").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-    @RestoreSystemProperties
-    @Unroll
-    def "1.19 classpath natives (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@RestoreSystemProperties
+	@Unroll
+	def "1.19 classpath natives (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-            gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 loom {
                     noIntermediateMappings()
                 }
@@ -103,14 +104,14 @@ class NativesTest extends Specification implements GradleProjectTestTrait  {
                 }
                 '''
 
-        when:
-            // Run the task twice to ensure its up to date
-            def result = gradle.run(task: "build")
+		when:
+		// Run the task twice to ensure its up to date
+		def result = gradle.run(task: "build")
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

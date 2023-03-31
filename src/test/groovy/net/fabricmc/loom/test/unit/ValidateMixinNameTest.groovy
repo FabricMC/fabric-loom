@@ -24,47 +24,48 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.task.ValidateMixinNameTask
 import org.spongepowered.asm.mixin.Mixin
 import org.spongepowered.asm.mixin.gen.Accessor
 import spock.lang.Specification
 
+import net.fabricmc.loom.task.ValidateMixinNameTask
+
 class ValidateMixinNameTest extends Specification {
 	def "TestMixin"() {
 		when:
-			def mixin = getMixin(TestMixin.class)
+		def mixin = getMixin(TestMixin.class)
 		then:
-			mixin.className() == "net/fabricmc/loom/test/unit/TestMixin"
-			mixin.target().internalName == "net/fabricmc/loom/test/unit/Test"
-			mixin.expectedClassName() == "TestMixin"
-			!mixin.accessor()
+		mixin.className() == "net/fabricmc/loom/test/unit/TestMixin"
+		mixin.target().internalName == "net/fabricmc/loom/test/unit/Test"
+		mixin.expectedClassName() == "TestMixin"
+		!mixin.accessor()
 	}
 
 	def "TestInnerMixin"() {
 		when:
-			def mixin = getMixin(TestInnerMixin.class)
+		def mixin = getMixin(TestInnerMixin.class)
 		then:
-			mixin.className() == "net/fabricmc/loom/test/unit/TestInnerMixin"
-			mixin.target().internalName == "net/fabricmc/loom/test/unit/Test\$Inner"
-			mixin.expectedClassName() == "TestInnerMixin"
-			!mixin.accessor()
+		mixin.className() == "net/fabricmc/loom/test/unit/TestInnerMixin"
+		mixin.target().internalName == "net/fabricmc/loom/test/unit/Test\$Inner"
+		mixin.expectedClassName() == "TestInnerMixin"
+		!mixin.accessor()
 	}
 
 	def "TestAccessor"() {
 		when:
-			def mixin = getMixin(TestAccessor.class)
+		def mixin = getMixin(TestAccessor.class)
 		then:
-			mixin.className() == "net/fabricmc/loom/test/unit/TestAccessor"
-			mixin.target().internalName == "net/fabricmc/loom/test/unit/Test"
-			mixin.expectedClassName() == "TestAccessor"
-			mixin.accessor()
+		mixin.className() == "net/fabricmc/loom/test/unit/TestAccessor"
+		mixin.target().internalName == "net/fabricmc/loom/test/unit/Test"
+		mixin.expectedClassName() == "TestAccessor"
+		mixin.accessor()
 	}
 
 	def "TestManyTargetsMixin"() {
 		when:
-			def mixin = getMixin(TestManyTargetsMixin.class)
+		def mixin = getMixin(TestManyTargetsMixin.class)
 		then:
-			mixin == null
+		mixin == null
 	}
 
 	static ValidateMixinNameTask.Mixin getMixin(Class<?> clazz) {

@@ -24,19 +24,20 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class CustomManifestTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "customManifest (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
-            gradle.buildGradle << '''
+	@Unroll
+	def "customManifest (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
                 loom {
                     customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
                 }
@@ -47,13 +48,13 @@ class CustomManifestTest extends Specification implements GradleProjectTestTrait
                     modImplementation "net.fabricmc:fabric-loader:0.11.6"
                 }
             '''
-        when:
-            def result = gradle.run(task: "build")
+		when:
+		def result = gradle.run(task: "build")
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

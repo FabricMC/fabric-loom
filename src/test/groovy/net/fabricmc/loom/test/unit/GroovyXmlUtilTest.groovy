@@ -25,50 +25,51 @@
 package net.fabricmc.loom.test.unit
 
 import groovy.xml.QName
-import net.fabricmc.loom.util.GroovyXmlUtil
 import spock.lang.Specification
 
+import net.fabricmc.loom.util.GroovyXmlUtil
+
 class GroovyXmlUtilTest extends Specification {
-    def "getOrCreateNode finds existing node"() {
-        when:
-            def xmlTree = new XmlParser().parseText(text)
-            def existingNode = xmlTree[innerName]
-            def actualNode = GroovyXmlUtil.getOrCreateNode(xmlTree, innerName)
+	def "getOrCreateNode finds existing node"() {
+		when:
+		def xmlTree = new XmlParser().parseText(text)
+		def existingNode = xmlTree[innerName]
+		def actualNode = GroovyXmlUtil.getOrCreateNode(xmlTree, innerName)
 
-        then:
-            existingNode.text() == actualNode.text()
+		then:
+		existingNode.text() == actualNode.text()
 
-        where:
-            innerName          | text
-            "bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
-            "dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
-    }
+		where:
+		innerName          | text
+		"bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
+		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
+	}
 
-    def "getOrCreateNode creates a node if needed"() {
-        when:
-            def xmlTree = new XmlParser().parseText(text)
-            def actualNode = GroovyXmlUtil.getOrCreateNode(xmlTree, innerName)
+	def "getOrCreateNode creates a node if needed"() {
+		when:
+		def xmlTree = new XmlParser().parseText(text)
+		def actualNode = GroovyXmlUtil.getOrCreateNode(xmlTree, innerName)
 
-        then:
-            xmlTree[QName.valueOf(actualNode.name().toString())] != null
+		then:
+		xmlTree[QName.valueOf(actualNode.name().toString())] != null
 
-        where:
-            innerName          | text
-            "bar"              | "<foo></foo>"
-            "dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"></project>"
-    }
+		where:
+		innerName          | text
+		"bar"              | "<foo></foo>"
+		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"></project>"
+	}
 
-    def "getNode finds existing node"() {
-        when:
-            def xmlTree = new XmlParser().parseText(text)
-            def actualNode = GroovyXmlUtil.getNode(xmlTree, innerName)
+	def "getNode finds existing node"() {
+		when:
+		def xmlTree = new XmlParser().parseText(text)
+		def actualNode = GroovyXmlUtil.getNode(xmlTree, innerName)
 
-        then:
-            actualNode.isPresent()
+		then:
+		actualNode.isPresent()
 
-        where:
-            innerName          | text
-            "bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
-            "dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
-    }
+		where:
+		innerName          | text
+		"bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
+		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
+	}
 }

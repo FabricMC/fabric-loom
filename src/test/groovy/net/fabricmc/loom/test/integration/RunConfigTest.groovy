@@ -24,10 +24,11 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -37,34 +38,34 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "Run config #task"() {
 		setup:
-			def gradle = gradleProject(project: "runconfigs", sharedFiles: true)
+		def gradle = gradleProject(project: "runconfigs", sharedFiles: true)
 
 		when:
-			def result = gradle.run(task: task)
+		def result = gradle.run(task: task)
 
 		then:
-			result.task(":${task}").outcome == SUCCESS
-			result.output.contains("This contains a space")
+		result.task(":${task}").outcome == SUCCESS
+		result.output.contains("This contains a space")
 
 		where:
-			task                | _
-			'runClient'         | _
-			'runServer'         | _
-			'runTestmodClient'  | _
-			'runTestmodServer'  | _
-			'runAutoTestServer' | _
+		task                | _
+		'runClient'         | _
+		'runServer'         | _
+		'runTestmodClient'  | _
+		'runTestmodServer'  | _
+		'runAutoTestServer' | _
 	}
 
 	@RestoreSystemProperties
 	@Unroll
 	def "idea auto configuration (gradle #version)"() {
 		setup:
-			System.setProperty("idea.sync.active", "true")
-			def gradle = gradleProject(project: "minimalBase", version: version)
+		System.setProperty("idea.sync.active", "true")
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-			new File(gradle.projectDir, ".idea").mkdirs()
+		new File(gradle.projectDir, ".idea").mkdirs()
 
-			gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
@@ -73,13 +74,13 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
 		when:
-			// Dont run with any tasks, the idea sync task should be invoked automatically due to the system prop
-			def result = gradle.run(tasks: [])
+		// Dont run with any tasks, the idea sync task should be invoked automatically due to the system prop
+		def result = gradle.run(tasks: [])
 
 		then:
-			result.task(":ideaSyncTask").outcome == SUCCESS
+		result.task(":ideaSyncTask").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

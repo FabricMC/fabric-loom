@@ -24,38 +24,38 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import java.util.jar.JarFile
 
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.util.jar.JarFile
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MixinApSimpleTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "build (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "mixinApSimple", version: version)
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "mixinApSimple", version: version)
 
-        when:
-            def result = gradle.run(task: "build")
+		when:
+		def result = gradle.run(task: "build")
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-            // verify the ref-map name is correctly generated
-            def main = new JarFile(new File(gradle.projectDir, "build/devlibs/fabric-example-mod-1.0.0-dev.jar").absoluteFile)
-            main.getEntry("main-refmap0000.json") != null
-            def mixin = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin.jar").absoluteFile)
-            mixin.getEntry("default-refmap0000.json") != null
-            def mixin1 = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin1.jar").absoluteFile)
-            mixin1.getEntry("main-refmap0000.json") == null
-            mixin1.getEntry("default-refmap0000.json") == null
+		// verify the ref-map name is correctly generated
+		def main = new JarFile(new File(gradle.projectDir, "build/devlibs/fabric-example-mod-1.0.0-dev.jar").absoluteFile)
+		main.getEntry("main-refmap0000.json") != null
+		def mixin = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin.jar").absoluteFile)
+		mixin.getEntry("default-refmap0000.json") != null
+		def mixin1 = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin1.jar").absoluteFile)
+		mixin1.getEntry("main-refmap0000.json") == null
+		mixin1.getEntry("default-refmap0000.json") == null
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

@@ -24,11 +24,12 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.configuration.mods.ArtifactMetadata
-import net.fabricmc.loom.configuration.mods.ArtifactRef
+import java.nio.file.Path
+
 import spock.lang.Specification
 
-import java.nio.file.Path
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata
+import net.fabricmc.loom.configuration.mods.ArtifactRef
 
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RemapRequirements.*
 import static net.fabricmc.loom.test.util.ZipTestUtils.*
@@ -36,68 +37,68 @@ import static net.fabricmc.loom.test.util.ZipTestUtils.*
 class ArtifactMetadataTest extends Specification {
 	def "is fabric mod"() {
 		given:
-			def zip = createZip(entries)
+		def zip = createZip(entries)
 		when:
-			def metadata = createMetadata(zip)
+		def metadata = createMetadata(zip)
 		then:
-			isMod == metadata.isFabricMod()
+		isMod == metadata.isFabricMod()
 		where:
-			isMod 		| entries
-			false       | ["hello.json": "{}"] 		// None Mod jar
-			true        | ["fabric.mod.json": "{}"] // Fabric mod
+		isMod 		| entries
+		false       | ["hello.json": "{}"] 		// None Mod jar
+		true        | ["fabric.mod.json": "{}"] // Fabric mod
 	}
 
 	def "remap requirements"() {
 		given:
-			def zip = createZip(entries)
+		def zip = createZip(entries)
 		when:
-			def metadata = createMetadata(zip)
+		def metadata = createMetadata(zip)
 		then:
-			requirements == metadata.remapRequirements()
+		requirements == metadata.remapRequirements()
 		where:
-			requirements | entries
-			DEFAULT      | ["fabric.mod.json": "{}"] 										// Default
-			OPT_OUT      | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // opt-out
-			OPT_IN       | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// opt-in
+		requirements | entries
+		DEFAULT      | ["fabric.mod.json": "{}"] 										// Default
+		OPT_OUT      | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // opt-out
+		OPT_IN       | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// opt-in
 	}
 
 	def "Should Remap" () {
 		given:
-			def zip = createZip(entries)
+		def zip = createZip(entries)
 		when:
-			def metadata = createMetadata(zip)
-			def result = metadata.shouldRemap()
+		def metadata = createMetadata(zip)
+		def result = metadata.shouldRemap()
 		then:
-			result == shouldRemap
+		result == shouldRemap
 		where:
-			shouldRemap | entries
-			false       | ["hello.json": "{}"] 												// None Mod jar
-			true        | ["fabric.mod.json": "{}"] 										// Fabric mod
-			false       | ["fabric.mod.json": "{}",
-						   "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] 	// Fabric mod opt-out
-			true        | ["fabric.mod.json": "{}",
-						   "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// Fabric mod opt-in
-			false       | ["hello.json": "{}",
-						   "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")]	// None opt-out
-			true        | ["hello.json": "{}",
-						   "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// None opt-int
-			false        | ["hello.json": "{}",
-					   		"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "broken")]// Invalid format
-			false        | ["hello.json": "{}",
-							"META-INF/MANIFEST.MF": manifest("Something", "Hello")]			// Invalid format
+		shouldRemap | entries
+		false       | ["hello.json": "{}"] 												// None Mod jar
+		true        | ["fabric.mod.json": "{}"] 										// Fabric mod
+		false       | ["fabric.mod.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] 	// Fabric mod opt-out
+		true        | ["fabric.mod.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// Fabric mod opt-in
+		false       | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")]	// None opt-out
+		true        | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// None opt-int
+		false        | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "broken")]// Invalid format
+		false        | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Something", "Hello")]			// Invalid format
 	}
 
 	def "Installer data"() {
 		given:
-			def zip = createZip(entries)
+		def zip = createZip(entries)
 		when:
-			def metadata = createMetadata(zip)
+		def metadata = createMetadata(zip)
 		then:
-			isLoader == (metadata.installerData() != null)
+		isLoader == (metadata.installerData() != null)
 		where:
-			isLoader   | entries
-			true       | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
-			false      | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
+		isLoader   | entries
+		true       | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
+		false      | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
 	}
 
 	private static ArtifactMetadata createMetadata(Path zip) {

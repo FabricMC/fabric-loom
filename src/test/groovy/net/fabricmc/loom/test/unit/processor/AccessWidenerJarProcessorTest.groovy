@@ -24,67 +24,65 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import spock.lang.Specification
+
 import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.fmj.FabricModJson
 import net.fabricmc.loom.util.fmj.ModEnvironment
-import spock.lang.Specification
 
 class AccessWidenerJarProcessorTest extends Specification {
-    def "Local AW"() {
-        given:
-            def specContext = Mock(SpecContext)
-            def file = new File("src/test/resources/accesswidener/AccessWidenerJarProcessorTest.accesswidener")
-            def localAccessWidenerProperty = GradleTestUtil.mockRegularFileProperty(file)
+	def "Local AW"() {
+		given:
+		def specContext = Mock(SpecContext)
+		def file = new File("src/test/resources/accesswidener/AccessWidenerJarProcessorTest.accesswidener")
+		def localAccessWidenerProperty = GradleTestUtil.mockRegularFileProperty(file)
 
-            def processor = new AccessWidenerJarProcessor("AccessWidener", true, localAccessWidenerProperty)
-            specContext.modDependencies() >> []
+		def processor = new AccessWidenerJarProcessor("AccessWidener", true, localAccessWidenerProperty)
+		specContext.modDependencies() >> []
 
-        when:
-            def spec = processor.buildSpec(specContext)
+		when:
+		def spec = processor.buildSpec(specContext)
 
-        then:
-            spec != null
-    }
+		then:
+		spec != null
+	}
 
-    def "Dep AW"() {
-        given:
-            def specContext = Mock(SpecContext)
+	def "Dep AW"() {
+		given:
+		def specContext = Mock(SpecContext)
 
-            def mod1 = Mock(FabricModJson.Mockable)
-            mod1.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
-            mod1.getId() >> "modid1"
+		def mod1 = Mock(FabricModJson.Mockable)
+		mod1.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod1.getId() >> "modid1"
 
-            def mod2 = Mock(FabricModJson.Mockable)
-            mod2.getClassTweakers() >> ["test2.accesswidener": ModEnvironment.UNIVERSAL]
-            mod2.getId() >> "modid2"
+		def mod2 = Mock(FabricModJson.Mockable)
+		mod2.getClassTweakers() >> ["test2.accesswidener": ModEnvironment.UNIVERSAL]
+		mod2.getId() >> "modid2"
 
-            specContext.modDependencies() >> [
-                mod1,
-                mod2
-            ].shuffled()
+		specContext.modDependencies() >> [mod1, mod2].shuffled()
 
-        def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
+		def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
 
-        when:
-            def spec = processor.buildSpec(specContext)
+		when:
+		def spec = processor.buildSpec(specContext)
 
-        then:
-            spec != null
-    }
+		then:
+		spec != null
+	}
 
-    def "No AWs"() {
-        given:
-            def specContext = Mock(SpecContext)
-            specContext.modDependencies() >> []
+	def "No AWs"() {
+		given:
+		def specContext = Mock(SpecContext)
+		specContext.modDependencies() >> []
 
-            def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
+		def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
 
-        when:
-            def spec = processor.buildSpec(specContext)
+		when:
+		def spec = processor.buildSpec(specContext)
 
-        then:
-            spec == null
-    }
+		then:
+		spec == null
+	}
 }

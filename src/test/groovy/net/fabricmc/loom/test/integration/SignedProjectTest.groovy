@@ -24,15 +24,16 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.MockMavenServerTrait
 import spock.lang.Specification
 import spock.lang.Stepwise
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.MockMavenServerTrait
+
 import static java.lang.System.setProperty
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 /**
@@ -44,17 +45,17 @@ class SignedProjectTest extends Specification implements MockMavenServerTrait, G
 	@RestoreSystemProperties
 	def "sign and publish lib #version"() {
 		setup:
-			setProperty('loom.test.secretKey', PRIVATE_KEY)
-			def gradle = gradleProject(project: "signed", version: version)
+		setProperty('loom.test.secretKey', PRIVATE_KEY)
+		def gradle = gradleProject(project: "signed", version: version)
 
 		when:
 		def result = gradle.run(task: "publish")
 
 		then:
-			result.task(":publish").outcome == SUCCESS
+		result.task(":publish").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	static final String PRIVATE_KEY = """

@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -36,9 +37,9 @@ class SignatureFixesTest extends Specification implements GradleProjectTestTrait
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-			gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18-pre1"
                     mappings "net.fabricmc:yarn:1.18-pre1+build.14:v2"
@@ -46,12 +47,12 @@ class SignatureFixesTest extends Specification implements GradleProjectTestTrait
             '''
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

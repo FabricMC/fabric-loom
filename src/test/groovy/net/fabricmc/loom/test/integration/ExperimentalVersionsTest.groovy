@@ -24,20 +24,21 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ExperimentalVersionsTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "experimental versions (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "experimental versions (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-            gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
                     mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
@@ -45,13 +46,13 @@ class ExperimentalVersionsTest extends Specification implements GradleProjectTes
                 }
             '''
 
-        when:
-            def result = gradle.run(task: "build")
+		when:
+		def result = gradle.run(task: "build")
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

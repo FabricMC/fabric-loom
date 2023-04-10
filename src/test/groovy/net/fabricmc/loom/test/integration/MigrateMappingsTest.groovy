@@ -24,27 +24,32 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MigrateMappingsTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "Migrate mappings (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "java16", version: version)
+	@Unroll
+	def "Migrate mappings (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "java16", version: version)
 
-        when:
-            def result = gradle.run(tasks: ["migrateMappings", "--mappings", "21w38a+build.10"])
+		when:
+		def result = gradle.run(tasks: [
+			"migrateMappings",
+			"--mappings",
+			"21w38a+build.10"
+		])
 
-        then:
-            result.task(":migrateMappings").outcome == SUCCESS
-            // TODO check it actually did something
+		then:
+		result.task(":migrateMappings").outcome == SUCCESS
+		// TODO check it actually did something
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

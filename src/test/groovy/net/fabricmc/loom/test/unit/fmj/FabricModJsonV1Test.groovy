@@ -26,12 +26,13 @@ package net.fabricmc.loom.test.unit.fmj
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import org.intellij.lang.annotations.Language
+import spock.lang.Specification
+
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory
 import net.fabricmc.loom.util.fmj.FabricModJsonSource
 import net.fabricmc.loom.util.fmj.ModEnvironment
-import org.intellij.lang.annotations.Language
-import spock.lang.Specification
 
 class FabricModJsonV1Test extends Specification {
 	@Language("json")
@@ -63,57 +64,60 @@ class FabricModJsonV1Test extends Specification {
 
 	def "version"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.version == 1
+		fmj.version == 1
 	}
 
 	def "id"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.id == "example-mod-id"
+		fmj.id == "example-mod-id"
 	}
 
 	def "mixins"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.mixinConfigurations == ["test.client.mixins.json", "test.mixins.json"]
+		fmj.mixinConfigurations == [
+			"test.client.mixins.json",
+			"test.mixins.json"
+		]
 	}
 
 	def "injected interfaces"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
-			def jsonObject = fmj.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def jsonObject = fmj.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE)
 		then:
-			jsonObject instanceof JsonObject
-			jsonObject.has("net/minecraft/class_123")
+		jsonObject instanceof JsonObject
+		jsonObject.has("net/minecraft/class_123")
 	}
 
 	def "access widener"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.getClassTweakers() == ["modid.accesswidener": ModEnvironment.UNIVERSAL]
+		fmj.getClassTweakers() == ["modid.accesswidener": ModEnvironment.UNIVERSAL]
 	}
 
 	def "hash code"() {
 		given:
-			def mockSource = Mock(FabricModJsonSource)
+		def mockSource = Mock(FabricModJsonSource)
 		when:
-			def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
+		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
-			fmj.hashCode() == 930565977
+		fmj.hashCode() == 930565977
 	}
 }

@@ -24,47 +24,48 @@
 
 package net.fabricmc.loom.test.unit
 
+import spock.lang.Specification
+
 import net.fabricmc.loom.configuration.providers.BundleMetadata
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarSplitter
 import net.fabricmc.loom.test.util.GradleTestUtil
-import spock.lang.Specification
 
 class MinecraftJarSplitterTest extends Specification {
-    public static final String CLIENT_JAR_URL = "https://launcher.mojang.com/v1/objects/7e46fb47609401970e2818989fa584fd467cd036/client.jar"
-    public static final String SERVER_BUNDLE_JAR_URL = "https://launcher.mojang.com/v1/objects/125e5adf40c659fd3bce3e66e67a16bb49ecc1b9/server.jar"
+	public static final String CLIENT_JAR_URL = "https://launcher.mojang.com/v1/objects/7e46fb47609401970e2818989fa584fd467cd036/client.jar"
+	public static final String SERVER_BUNDLE_JAR_URL = "https://launcher.mojang.com/v1/objects/125e5adf40c659fd3bce3e66e67a16bb49ecc1b9/server.jar"
 
-    public static final File mcJarDir = File.createTempDir()
+	public static final File mcJarDir = File.createTempDir()
 
-    def "split jars"() {
-        given:
-            def clientJar = downloadJarIfNotExists(CLIENT_JAR_URL, "client.jar")
-            def serverBundleJar = downloadJarIfNotExists(SERVER_BUNDLE_JAR_URL, "server_bundle.jar")
-            def serverJar = new File(mcJarDir, "server.jar")
+	def "split jars"() {
+		given:
+		def clientJar = downloadJarIfNotExists(CLIENT_JAR_URL, "client.jar")
+		def serverBundleJar = downloadJarIfNotExists(SERVER_BUNDLE_JAR_URL, "server_bundle.jar")
+		def serverJar = new File(mcJarDir, "server.jar")
 
-            def clientOnlyJar = new File(mcJarDir, "client_only.jar")
-            def commonJar = new File(mcJarDir, "common.jar")
-        when:
-            def serverBundleMetadata = BundleMetadata.fromJar(serverBundleJar.toPath())
-            serverBundleMetadata.versions().find().unpackEntry(serverBundleJar.toPath(), serverJar.toPath(), GradleTestUtil.mockProject())
+		def clientOnlyJar = new File(mcJarDir, "client_only.jar")
+		def commonJar = new File(mcJarDir, "common.jar")
+		when:
+		def serverBundleMetadata = BundleMetadata.fromJar(serverBundleJar.toPath())
+		serverBundleMetadata.versions().find().unpackEntry(serverBundleJar.toPath(), serverJar.toPath(), GradleTestUtil.mockProject())
 
-            clientOnlyJar.delete()
-            commonJar.delete()
+		clientOnlyJar.delete()
+		commonJar.delete()
 
-            new MinecraftJarSplitter(clientJar.toPath(), serverJar.toPath()).withCloseable {
-                it.split(clientOnlyJar.toPath(), commonJar.toPath())
-            }
-        then:
-            serverBundleMetadata.versions().size() == 1
-    }
+		new MinecraftJarSplitter(clientJar.toPath(), serverJar.toPath()).withCloseable {
+			it.split(clientOnlyJar.toPath(), commonJar.toPath())
+		}
+		then:
+		serverBundleMetadata.versions().size() == 1
+	}
 
-    File downloadJarIfNotExists(String url, String name) {
-        File dst = new File(mcJarDir, name)
+	File downloadJarIfNotExists(String url, String name) {
+		File dst = new File(mcJarDir, name)
 
-        if (!dst.exists()) {
-            dst.parentFile.mkdirs()
-            dst << new URL(url).newInputStream()
-        }
+		if (!dst.exists()) {
+			dst.parentFile.mkdirs()
+			dst << new URL(url).newInputStream()
+		}
 
-        return dst
-    }
+		return dst
+	}
 }

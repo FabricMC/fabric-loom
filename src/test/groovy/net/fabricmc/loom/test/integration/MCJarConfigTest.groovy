@@ -24,20 +24,21 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "server only (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "server only (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-            gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 loom {
                     serverOnlyMinecraftJar()
                 }
@@ -49,22 +50,22 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 
-        when:
-            def result = gradle.run(tasks: ["build", "ideaSyncTask"])
+		when:
+		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-    @Unroll
-    def "client only (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "client only (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-        gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 loom {
                     clientOnlyMinecraftJar()
                 }
@@ -76,22 +77,22 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 
-        when:
-            def result = gradle.run(tasks: ["build", "ideaSyncTask"])
+		when:
+		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-    @Unroll
-    def "split (gradle #version)"() {
-        setup:
-        def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "split (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-        gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 loom {
                     splitMinecraftJar()
                 }
@@ -103,22 +104,22 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 
-        when:
-        def result = gradle.run(tasks: ["build", "ideaSyncTask"])
+		when:
+		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
-        then:
-        result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-        version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-    @Unroll
-    def "split env (gradle #version)"() {
-        setup:
-        def gradle = gradleProject(project: "minimalBase", version: version)
+	@Unroll
+	def "split env (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-        gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 loom {
                     splitEnvironmentSourceSets()
                 }
@@ -130,13 +131,13 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 
-        when:
-        def result = gradle.run(tasks: ["build", "ideaSyncTask"])
+		when:
+		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
 
-        then:
-        result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-        version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

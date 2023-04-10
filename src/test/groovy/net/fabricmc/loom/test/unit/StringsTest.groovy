@@ -24,24 +24,25 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.Strings
 import spock.lang.Specification
 import spock.lang.Unroll
 
-class StringsTest extends Specification {
-    @Unroll
-    def "capitalize '#input'"() {
-        when:
-            def result = Strings.capitalize(input)
-        then:
-            result == expected
+import net.fabricmc.loom.util.Strings
 
-        where:
-            input | expected
-            '' | ''
-            ' \n ' | ' \n '
-            'world' | 'World'
-            'helloWorld' | 'HelloWorld'
-            '\u00E4mp\u00E4ri' | '\u00C4mp\u00E4ri'
-    }
+class StringsTest extends Specification {
+	@Unroll
+	def "capitalize '#input'"() {
+		when:
+		def result = Strings.capitalize(input)
+		then:
+		result == expected
+
+		where:
+		input | expected
+		'' | ''
+		' \n ' | ' \n '
+		'world' | 'World'
+		'helloWorld' | 'HelloWorld'
+		'\u00E4mp\u00E4ri' | '\u00C4mp\u00E4ri'
+	}
 }

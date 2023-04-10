@@ -1,15 +1,15 @@
 pluginManagement {
-    plugins {
-        id 'fabric-loom'
-    }
+	plugins {
+		id 'fabric-loom'
+	}
 }
 
 plugins {
-    id 'fabric-loom'
+	id 'fabric-loom'
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+	repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
 }
 
 include 'basic'

@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -35,15 +36,15 @@ class Java16ProjectTest extends Specification implements GradleProjectTestTrait 
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "java16", version: version)
+		def gradle = gradleProject(project: "java16", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

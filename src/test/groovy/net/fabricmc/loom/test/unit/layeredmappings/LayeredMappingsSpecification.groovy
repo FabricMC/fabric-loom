@@ -24,6 +24,15 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import java.nio.file.Path
+import java.util.function.Supplier
+import java.util.zip.ZipFile
+
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.MinimalExternalModuleDependency
+import org.gradle.api.logging.Logger
+import spock.lang.Specification
+
 import net.fabricmc.loom.api.mappings.layered.MappingContext
 import net.fabricmc.loom.api.mappings.layered.MappingLayer
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
@@ -40,89 +49,81 @@ import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.Tiny2Writer
 import net.fabricmc.mappingio.tree.MemoryMappingTree
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
-import org.gradle.api.logging.Logger
-import spock.lang.Specification
-
-import java.nio.file.Path
-import java.util.function.Supplier
-import java.util.zip.ZipFile
 
 abstract class LayeredMappingsSpecification extends Specification implements LayeredMappingsTestConstants {
-    Logger mockLogger = Mock(Logger)
-    MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)
-    String intermediaryUrl
-    MappingContext mappingContext = new TestMappingContext()
+	Logger mockLogger = Mock(Logger)
+	MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)
+	String intermediaryUrl
+	MappingContext mappingContext = new TestMappingContext()
 
-    File tempDir = File.createTempDir()
+	File tempDir = File.createTempDir()
 
-    Map<String, File> mavenFiles = [:]
+	Map<String, File> mavenFiles = [:]
 
-    def withMavenFile(String mavenNotation, File file) {
-        mavenFiles.put(mavenNotation, file)
-    }
+	def withMavenFile(String mavenNotation, File file) {
+		mavenFiles.put(mavenNotation, file)
+	}
 
-    File downloadFile(String url, String name) {
-        File dst = new File(tempDir, name)
-        dst.parentFile.mkdirs()
-        dst << new URL(url).newInputStream()
-        return dst
-    }
+	File downloadFile(String url, String name) {
+		File dst = new File(tempDir, name)
+		dst.parentFile.mkdirs()
+		dst << new URL(url).newInputStream()
+		return dst
+	}
 
-    File extractFileFromZip(File zipFile, String name) {
-        File dst = new File(tempDir, name)
-        dst.parentFile.mkdirs()
+	File extractFileFromZip(File zipFile, String name) {
+		File dst = new File(tempDir, name)
+		dst.parentFile.mkdirs()
 
-        new ZipFile(zipFile).withCloseable {
-            dst << it.getInputStream(it.getEntry(name))
-        }
-        return dst
-    }
+		new ZipFile(zipFile).withCloseable {
+			dst << it.getInputStream(it.getEntry(name))
+		}
+		return dst
+	}
 
-    MemoryMappingTree getSingleMapping(MappingsSpec<? extends MappingLayer> spec) {
-        MemoryMappingTree mappingTree = new MemoryMappingTree()
-        spec.createLayer(mappingContext).visit(mappingTree)
-        return mappingTree
-    }
+	MemoryMappingTree getSingleMapping(MappingsSpec<? extends MappingLayer> spec) {
+		MemoryMappingTree mappingTree = new MemoryMappingTree()
+		spec.createLayer(mappingContext).visit(mappingTree)
+		return mappingTree
+	}
 
-    MemoryMappingTree getLayeredMappings(MappingsSpec<? extends MappingLayer>... specs) {
-        LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
-        LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
-        return processor.getMappings(processor.resolveLayers(mappingContext))
-    }
+	MemoryMappingTree getLayeredMappings(MappingsSpec<? extends MappingLayer>... specs) {
+		LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
+		LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
+		return processor.getMappings(processor.resolveLayers(mappingContext))
+	}
 
-    UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
-        LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
-        LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
-        return processor.getUnpickData(processor.resolveLayers(mappingContext))
-    }
+	UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
+		LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
+		LayeredMappingsProcessor processor = new LayeredMappingsProcessor(spec)
+		return processor.getUnpickData(processor.resolveLayers(mappingContext))
+	}
 
-    String getTiny(MemoryMappingTree mappingTree) {
-        def sw = new StringWriter()
-        mappingTree.accept(new Tiny2Writer(sw, false))
-        return sw.toString()
-    }
+	String getTiny(MemoryMappingTree mappingTree) {
+		def sw = new StringWriter()
+		mappingTree.accept(new Tiny2Writer(sw, false))
+		return sw.toString()
+	}
 
-    MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
-        def reorderedMappings = new MemoryMappingTree()
-        def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.toString()))
-        def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true)
-        mappingTree.accept(nsSwitch)
-        return reorderedMappings
-    }
+	MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
+		def reorderedMappings = new MemoryMappingTree()
+		def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.toString()))
+		def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true)
+		mappingTree.accept(nsSwitch)
+		return reorderedMappings
+	}
 
-    def setup() {
-        mockMinecraftProvider.file(_) >> { args ->
-            return new File(tempDir, args[0])
-        }
-    }
+	def setup() {
+		mockMinecraftProvider.file(_) >> { args ->
+			return new File(tempDir, args[0])
+		}
+	}
 
-    class TestMappingContext implements MappingContext {
-        @Override
-        Path resolveDependency(Dependency dependency) {
-            throw new UnsupportedOperationException("TODO")
-        }
+	class TestMappingContext implements MappingContext {
+		@Override
+		Path resolveDependency(Dependency dependency) {
+			throw new UnsupportedOperationException("TODO")
+		}
 
 		@Override
 		Path resolveDependency(MinimalExternalModuleDependency dependency) {
@@ -130,32 +131,32 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		}
 
 		@Override
-        Path resolveMavenDependency(String mavenNotation) {
-            assert mavenFiles.containsKey(mavenNotation)
-            return mavenFiles.get(mavenNotation).toPath()
-        }
+		Path resolveMavenDependency(String mavenNotation) {
+			assert mavenFiles.containsKey(mavenNotation)
+			return mavenFiles.get(mavenNotation).toPath()
+		}
 
-        @Override
-        Supplier<MemoryMappingTree> intermediaryTree() {
-            return {
-                IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider()).memoryMappingTree
-            }
-        }
+		@Override
+		Supplier<MemoryMappingTree> intermediaryTree() {
+			return {
+				IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider()).memoryMappingTree
+			}
+		}
 
-        @Override
-        MinecraftProvider minecraftProvider() {
-            return mockMinecraftProvider
-        }
+		@Override
+		MinecraftProvider minecraftProvider() {
+			return mockMinecraftProvider
+		}
 
-        @Override
-        Path workingDirectory(String name) {
-            return new File(tempDir, name).toPath()
-        }
+		@Override
+		Path workingDirectory(String name) {
+			return new File(tempDir, name).toPath()
+		}
 
-        @Override
-        Logger getLogger() {
-            return mockLogger
-        }
+		@Override
+		Logger getLogger() {
+			return mockLogger
+		}
 
 		@Override
 		DownloadBuilder download(String url) {

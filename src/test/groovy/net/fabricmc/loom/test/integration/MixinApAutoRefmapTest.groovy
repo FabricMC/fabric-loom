@@ -41,6 +41,12 @@ class MixinApAutoRefmapTest extends Specification implements GradleProjectTestTr
 		setup:
 		def gradle = gradleProject(project: "mixinApAutoRefmap", version: version)
 
+		if (!version.startsWith("7")) {
+			// Update the shadow plugin on Gradle 8
+			// TODO Gradle 8, move to the test build.gradle.
+			gradle.buildGradle.text = gradle.buildGradle.text.replace("'7.0.0'", "'8.1.1'")
+		}
+
 		when:
 		def result = gradle.run(task: "build")
 

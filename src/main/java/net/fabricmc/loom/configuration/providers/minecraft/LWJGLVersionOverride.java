@@ -24,24 +24,17 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import static net.fabricmc.loom.util.OperatingSystem.LINUX;
-import static net.fabricmc.loom.util.OperatingSystem.MAC_OS;
-import static net.fabricmc.loom.util.OperatingSystem.WINDOWS;
-
 import java.util.List;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.util.Architecture;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.Platform;
 
 public class LWJGLVersionOverride {
 	public static final String LWJGL_VERSION = "3.3.1";
-	@Nullable
-	public static final String NATIVE_CLASSIFIER = getNativesClassifier();
 
 	public static final List<String> DEPENDENCIES = List.of(
 			"org.lwjgl:lwjgl:" + LWJGL_VERSION,
@@ -52,7 +45,6 @@ public class LWJGLVersionOverride {
 			"org.lwjgl:lwjgl-stb:" + LWJGL_VERSION,
 			"org.lwjgl:lwjgl-tinyfd:" + LWJGL_VERSION
 	);
-	public static final List<String> NATIVES = DEPENDENCIES.stream().map(s -> s + ":" + NATIVE_CLASSIFIER).toList();
 
 	public static final List<String> MACOS_DEPENDENCIES = List.of(
 			"ca.weblite:java-objc-bridge:1.1"
@@ -60,11 +52,17 @@ public class LWJGLVersionOverride {
 	// Same for now, as java-objc-bridge includes the natives in the main jar.
 	public static final List<String> MACOS_NATIVES = MACOS_DEPENDENCIES;
 
+	private final Platform platform;
+
+	public LWJGLVersionOverride(Platform platform) {
+		this.platform = platform;
+	}
+
 	/**
 	 * Update lwjgl by default when running on arm and a supported configuration.
 	 */
-	public static boolean overrideByDefault(MinecraftVersionMeta versionMeta) {
-		if (NATIVE_CLASSIFIER == null || !Architecture.CURRENT.isArm()) {
+	public boolean overrideByDefault(MinecraftVersionMeta versionMeta) {
+		if (getNativesClassifier() == null || !platform.getArchitecture().isArm()) {
 			return false;
 		}
 
@@ -73,19 +71,23 @@ public class LWJGLVersionOverride {
 
 		boolean hasExistingNatives = versionMeta.libraries().stream()
 				.filter(library -> library.name().startsWith("org.lwjgl:lwjgl"))
-				.anyMatch(MinecraftVersionMeta.Library::hasNativesForOS);
+				.anyMatch(library -> library.hasNativesForOS(platform));
 
 		// Is LWJGL 3, and doesn't have any existing compatible LWGL natives.
 		return supportedLwjglVersion && !hasExistingNatives;
 	}
 
-	public static boolean forceOverride(Project project) {
+	public boolean forceOverride(Project project) {
 		return project.getProperties().get("fabric.loom.override-lwjgl") != null;
 	}
 
-	public static void applyOverrides(Project project, boolean isMacOS) {
-		DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
-		NATIVES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, s));
+	public void applyOverrides(Project project, boolean isMacOS) {
+		final String nativeClassifier = getNativesClassifier();
+
+		for (String dependency : DEPENDENCIES) {
+			project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, dependency);
+			project.getDependencies().add(Constants.Configurations.MINECRAFT_NATIVES, dependency + ":" + nativeClassifier);
+		}
 
 		if (isMacOS) {
 			MACOS_DEPENDENCIES.forEach(s -> project.getDependencies().add(Constants.Configurations.MINECRAFT_DEPENDENCIES, s));
@@ -99,8 +101,8 @@ public class LWJGLVersionOverride {
 	}
 
 	@Nullable
-	private static String getNativesClassifier() {
-		return switch (OperatingSystem.CURRENT_OS) {
+	private String getNativesClassifier() {
+		return switch (platform.getOperatingSystem()) {
 		case WINDOWS -> getWindowsClassifier();
 		case MAC_OS -> getMacOSClassifier();
 		case LINUX -> getLinuxClassifier();
@@ -108,9 +110,9 @@ public class LWJGLVersionOverride {
 		};
 	}
 
-	private static String getWindowsClassifier() {
-		if (Architecture.CURRENT.is64Bit()) {
-			if (Architecture.CURRENT.isArm()) {
+	private String getWindowsClassifier() {
+		if (platform.getArchitecture().is64Bit()) {
+			if (platform.getArchitecture().isArm()) {
 				// Arm 64 bit
 				return "natives-windows-arm64";
 			}
@@ -123,8 +125,8 @@ public class LWJGLVersionOverride {
 		return "natives-windows-x86";
 	}
 
-	private static String getMacOSClassifier() {
-		if (Architecture.CURRENT.isArm()) {
+	private String getMacOSClassifier() {
+		if (platform.getArchitecture().isArm()) {
 			// Apple silicone arm
 			return "natives-macos-arm64";
 		}
@@ -133,9 +135,9 @@ public class LWJGLVersionOverride {
 		return "natives-macos";
 	}
 
-	private static String getLinuxClassifier() {
-		if (Architecture.CURRENT.isArm()) {
-			return Architecture.CURRENT.is64Bit() ? "natives-linux-arm64" : "natives-linux-arm32";
+	private String getLinuxClassifier() {
+		if (platform.getArchitecture().isArm()) {
+			return platform.getArchitecture().is64Bit() ? "natives-linux-arm64" : "natives-linux-arm32";
 		}
 
 		return "natives-linux";

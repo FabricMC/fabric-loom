@@ -34,13 +34,11 @@ import org.gradle.api.artifacts.ModuleDependency;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.util.Architecture;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.Platform;
 
 public class MinecraftLibraryProvider {
 	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-(\\k<version>)-)(?<classifier>.*).jar$");
-	private static final boolean IS_MACOS = OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS);
 
 	private final Project project;
 	private final MinecraftVersionMeta versionInfo;
@@ -48,6 +46,8 @@ public class MinecraftLibraryProvider {
 	private final boolean runtimeOnlyLog4j;
 	private final boolean provideClient;
 	private final boolean provideServer;
+	private final Platform platform = Platform.CURRENT;
+	private final LWJGLVersionOverride lwjglVersionOverride = new LWJGLVersionOverride(platform);
 
 	public MinecraftLibraryProvider(MinecraftProvider minecraftProvider, Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -76,7 +76,7 @@ public class MinecraftLibraryProvider {
 		if (provideClient) {
 			// Modern 1.19 version put the natives on the classpath.
 			final boolean hasNativesToExtract = versionInfo.hasNativesToExtract();
-			final boolean overrideLWJGL = hasNativesToExtract && (LWJGLVersionOverride.overrideByDefault(versionInfo) || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride"));
+			final boolean overrideLWJGL = hasNativesToExtract && (lwjglVersionOverride.overrideByDefault(versionInfo) || lwjglVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride"));
 
 			if (overrideLWJGL) {
 				project.getLogger().warn("Loom is upgrading Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
@@ -90,7 +90,7 @@ public class MinecraftLibraryProvider {
 			provideClientLibraries(overrideLWJGL, hasNativesToExtract);
 
 			if (overrideLWJGL) {
-				LWJGLVersionOverride.applyOverrides(project, IS_MACOS);
+				lwjglVersionOverride.applyOverrides(project, platform.getOperatingSystem().isMacOS());
 			}
 		}
 
@@ -100,11 +100,11 @@ public class MinecraftLibraryProvider {
 	}
 
 	private void provideClientLibraries(boolean overrideLWJGL, boolean hasNativesToExtract) {
-		final boolean isArm = Architecture.CURRENT.isArm();
-		final boolean classpathArmNatives = !hasNativesToExtract && isArm && !IS_MACOS;
+		final boolean isArm = platform.getArchitecture().isArm();
+		final boolean classpathArmNatives = !hasNativesToExtract && isArm && !platform.getOperatingSystem().isMacOS();
 
 		if (classpathArmNatives) {
-			LoomRepositoryPlugin.forceLWJGLFromMavenCentral(project);
+			LoomRepositoryPlugin.forceLWJGLFromMavenCentral(project.getRepositories());
 		}
 
 		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
@@ -113,12 +113,12 @@ public class MinecraftLibraryProvider {
 				continue;
 			}
 
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
+			if (library.isValidForOS(platform) && !library.hasNatives() && library.artifact() != null) {
 				final String name = library.name();
 
 				if ("org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20130708-debug3".equals(name) || "org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20131017".equals(name)) {
 					// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
-					LoomRepositoryPlugin.setupForLegacyVersions(project);
+					LoomRepositoryPlugin.setupForLegacyVersions(project.getRepositories());
 				}
 
 				if (name.startsWith("org.ow2.asm:asm-all")) {
@@ -141,8 +141,8 @@ public class MinecraftLibraryProvider {
 				addDependency(Constants.Configurations.MINECRAFT_DEPENDENCIES, name);
 			}
 
-			if (library.hasNativesForOS()) {
-				provideNativesForLibrary(library, overrideLWJGL, IS_MACOS);
+			if (library.hasNativesForOS(platform)) {
+				provideNativesForLibrary(library, overrideLWJGL, platform.getOperatingSystem().isMacOS());
 			}
 		}
 	}
@@ -162,7 +162,7 @@ public class MinecraftLibraryProvider {
 	}
 
 	private void provideNativesForLibrary(MinecraftVersionMeta.Library library, boolean overrideLWJGL, boolean isMacOS) {
-		MinecraftVersionMeta.Download nativeDownload = library.classifierForOS();
+		MinecraftVersionMeta.Download nativeDownload = library.classifierForOS(platform);
 
 		if (nativeDownload == null) {
 			return;

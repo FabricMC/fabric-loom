@@ -57,7 +57,12 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		if (upgradeMacOSArm()) {
+		if (platform.getOperatingSystem().isMacOS()) {
+			if (context.supportsArm64MacOS()) {
+				// This version already supports arm64 macOS, nothing to do.
+				return ApplicationResult.DONT_APPLY;
+			}
+
 			// Must upgrade natives to support macos ARM
 			return ApplicationResult.MUST_APPLY;
 		}
@@ -67,15 +72,21 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		// Windows or Linux arm is not supported on any version of Minecraft
+		// Must add arm 64 to Windows and Linux for versions that use classpath natives.
 		return ApplicationResult.MUST_APPLY;
 	}
 
 	@Override
 	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			if (library.is(LWJGL_GROUP) && ("natives-windows".equals(library.classifier()) || "natives-linux".equals(library.classifier()))) {
+			if (library.is(LWJGL_GROUP) && library.target() == Library.Target.NATIVES && (library.classifier() != null && library.classifier().startsWith("natives-"))) {
+				// Add the arm64 natives.
 				dependencyConsumer.accept(library.withClassifier(library.classifier() + "-arm64"));
+
+				if (!context.hasClasspathNatives()) {
+					// Remove the none arm64 natives when extracting.
+					return false;
+				}
 			}
 
 			return true;
@@ -85,9 +96,5 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 	@Override
 	public void applyRepositories(RepositoryHandler repositories) {
 		LoomRepositoryPlugin.forceLWJGLFromMavenCentral(repositories);
-	}
-
-	private boolean upgradeMacOSArm() {
-		return platform.getOperatingSystem().isMacOS() && !context.supportsArm64MacOS() && !context.hasClasspathNatives();
 	}
 }

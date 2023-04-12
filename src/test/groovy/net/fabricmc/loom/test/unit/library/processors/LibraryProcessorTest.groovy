@@ -35,10 +35,10 @@ import org.gradle.api.JavaVersion
 import spock.lang.Specification
 
 abstract class LibraryProcessorTest extends Specification {
-    def getLibs(String id, Platform platform) {
+    def getLibs(String id, Platform platform, JavaVersion javaVersion = JavaVersion.VERSION_17) {
         def meta = MinecraftTestUtils.getVersionMeta(id)
         def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, platform)
-        def context = new LibraryContext(meta, JavaVersion.VERSION_17)
+        def context = new LibraryContext(meta, javaVersion)
         return [libraries, context]
     }
 

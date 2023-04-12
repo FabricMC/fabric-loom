@@ -30,6 +30,7 @@ class MinecraftLibraryHelperTest extends Specification {
 
         then:
         libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
+        libraries.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
     }
 
     def "dont find macos natives"() {

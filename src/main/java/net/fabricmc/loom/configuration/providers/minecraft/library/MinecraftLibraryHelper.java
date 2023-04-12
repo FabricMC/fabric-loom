@@ -23,7 +23,14 @@ public class MinecraftLibraryHelper {
 				continue;
 			}
 
-			libraries.add(Library.fromMaven(library.name(), Library.Target.COMPILE));
+			Library mavenLib = Library.fromMaven(library.name(), Library.Target.COMPILE);
+
+			// Versions that have the natives on the classpath, attempt to target them as natives.
+			if (mavenLib.classifier() != null && mavenLib.classifier().startsWith("natives-")) {
+				mavenLib = mavenLib.withTarget(Library.Target.NATIVES);
+			}
+
+			libraries.add(mavenLib);
 
 			if (library.hasNativesForOS(platform)) {
 				final MinecraftVersionMeta.Download download = library.classifierForOS(platform);

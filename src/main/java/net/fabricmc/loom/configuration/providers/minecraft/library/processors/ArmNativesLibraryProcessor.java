@@ -30,15 +30,17 @@ import java.util.function.Predicate;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 
 import net.fabricmc.loom.LoomRepositoryPlugin;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 /**
- * A processor to add support for ARM64 Linux and Windows.
+ * A processor to add support for ARM64.
  */
 public class ArmNativesLibraryProcessor extends LibraryProcessor {
+	private static final String LWJGL_GROUP = "org.lwjgl";
+
 	public ArmNativesLibraryProcessor(Platform platform, LibraryContext context) {
 		super(platform, context);
 	}
@@ -55,13 +57,13 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		if (!context.hasClasspathNatives()) {
-			// Only supports versions that have the natives on the classpath.
-			return ApplicationResult.DONT_APPLY;
+		if (upgradeMacOSArm()) {
+			// Must upgrade natives to support macos ARM
+			return ApplicationResult.MUST_APPLY;
 		}
 
-		if (platform.getOperatingSystem().isMacOS()) {
-			// MacOS natives on older Minecraft versions are handled elsewhere? // TODO where !?
+		if (!context.hasClasspathNatives()) {
+			// Only support updating linux and windows versions that have the natives on the classpath.
 			return ApplicationResult.DONT_APPLY;
 		}
 
@@ -70,13 +72,10 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			final String name = library.name();
-
-			if (name.startsWith("org.lwjgl:")
-					&& (name.endsWith("natives-windows") || name.endsWith("natives-linux"))) {
-				dependencyConsumer.accept(new Dependency(name + "-arm64", Dependency.Target.NATIVES));
+			if (library.is(LWJGL_GROUP) && ("natives-windows".equals(library.classifier()) || "natives-linux".equals(library.classifier()))) {
+				dependencyConsumer.accept(library.withClassifier(library.classifier() + "-arm64"));
 			}
 
 			return true;
@@ -86,5 +85,9 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 	@Override
 	public void applyRepositories(RepositoryHandler repositories) {
 		LoomRepositoryPlugin.forceLWJGLFromMavenCentral(repositories);
+	}
+
+	private boolean upgradeMacOSArm() {
+		return platform.getOperatingSystem().isMacOS() && !context.supportsArm64MacOS() && !context.hasClasspathNatives();
 	}
 }

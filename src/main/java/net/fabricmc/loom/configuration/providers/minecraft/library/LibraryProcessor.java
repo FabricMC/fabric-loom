@@ -30,11 +30,10 @@ import java.util.function.Predicate;
 
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Platform;
 
 public abstract class LibraryProcessor {
-	protected static final Predicate<MinecraftVersionMeta.Library> ALLOW_ALL = library -> true;
+	protected static final Predicate<Library> ALLOW_ALL = library -> true;
 
 	protected final Platform platform;
 	protected final LibraryContext context;
@@ -46,7 +45,7 @@ public abstract class LibraryProcessor {
 
 	public abstract ApplicationResult getApplicationResult();
 
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return ALLOW_ALL;
 	}
 
@@ -66,13 +65,5 @@ public abstract class LibraryProcessor {
 		 * This processor is incompatible with the current platform and should not be applied on the current platform.
 		 */
 		DONT_APPLY
-	}
-
-	public record Dependency(String name, Target target) {
-		public enum Target {
-			RUNTIME,
-			NATIVES,
-			LOCAL_MOD
-		}
 	}
 }

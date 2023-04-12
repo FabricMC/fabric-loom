@@ -27,9 +27,9 @@ package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
@@ -58,11 +58,11 @@ public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			if (library.name().startsWith(OBJC_BRIDGE_PREFIX)) {
+			if (library.is(OBJC_BRIDGE_PREFIX)) {
 				// Add the updated library on the runtime classpath.
-				dependencyConsumer.accept(new Dependency(OBJC_BRIDGE_NAME, Dependency.Target.RUNTIME));
+				dependencyConsumer.accept(Library.fromMaven(OBJC_BRIDGE_NAME, Library.Target.RUNTIME));
 			}
 
 			// TODO skip over adding the extracted native?

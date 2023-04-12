@@ -29,8 +29,8 @@ import java.util.List;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 
 import net.fabricmc.loom.LoomRepositoryPlugin;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 /**

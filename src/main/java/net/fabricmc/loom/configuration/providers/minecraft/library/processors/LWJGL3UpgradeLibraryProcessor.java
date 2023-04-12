@@ -30,12 +30,13 @@ import java.util.function.Predicate;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 
 import net.fabricmc.loom.LoomRepositoryPlugin;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
+	private static final String LWJGL_GROUP = "org.lwjgl";
 	private static final String LWJGL_VERSION = "3.3.2";
 
 	public LWJGL3UpgradeLibraryProcessor(Platform platform, LibraryContext context) {
@@ -64,15 +65,13 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			if (library.name().startsWith("org.lwjgl:lwjgl")) {
-				final String[] split = library.name().split(":");
-				assert split.length == 3;
-
-				// TODO I dont think the legacy natives are handled correctly here.
-				var target = library.hasNatives() ? Dependency.Target.NATIVES : Dependency.Target.RUNTIME;
-				dependencyConsumer.accept(new Dependency("%s:%s:%s".formatted(split[0], split[1], LWJGL_VERSION), target));
+			if (library.is(LWJGL_GROUP) && library.name().startsWith("lwjgl")) {
+				// Replace the natives with the new version, none natives become runtime only
+				final Library.Target target = library.target() == Library.Target.NATIVES ? Library.Target.NATIVES : Library.Target.RUNTIME;
+				final Library upgradedLibrary = library.withVersion(LWJGL_VERSION).withTarget(target);
+				dependencyConsumer.accept(upgradedLibrary);
 			}
 
 			return true;

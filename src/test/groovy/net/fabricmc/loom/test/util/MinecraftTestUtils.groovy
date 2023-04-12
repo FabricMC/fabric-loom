@@ -33,6 +33,8 @@ import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 
+import java.time.Duration
+
 class MinecraftTestUtils {
 	private static final File TEST_DIR = new File(LoomTestConstants.TEST_DIR, "minecraft")
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -48,7 +50,7 @@ class MinecraftTestUtils {
 
 	static String download(String url, String name) {
 		Download.create(url)
-				.defaultCache()
+				.maxAge(Duration.ofDays(31))
 				.downloadString(new File(TEST_DIR, name).toPath())
 	}
 }

@@ -24,12 +24,15 @@
 
 package net.fabricmc.loom.test.unit.library
 
-import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
+import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
 import net.fabricmc.loom.test.util.MinecraftTestUtils
 import net.fabricmc.loom.test.util.PlatformTestUtils
 import net.fabricmc.loom.util.Platform
+import org.gradle.api.JavaVersion
+import spock.lang.Specification
 
 class LibraryProcessorManagerTest extends Specification {
 	def "Windows x64"() {
@@ -37,7 +40,7 @@ class LibraryProcessorManagerTest extends Specification {
 		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, false)
 		def libraryProcessor = new LibraryProcessorManager(platform)
 		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
+		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
 
 		def result = libraryProcessor.processLibraries(meta, context)
 
@@ -58,7 +61,7 @@ class LibraryProcessorManagerTest extends Specification {
 		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, false)
 		def libraryProcessor = new LibraryProcessorManager(platform)
 		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
+		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
 
 		def result = libraryProcessor.processLibraries(meta, context)
 
@@ -79,7 +82,7 @@ class LibraryProcessorManagerTest extends Specification {
 		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.MAC_OS, false)
 		def libraryProcessor = new LibraryProcessorManager(platform)
 		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
+		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
 
 		def result = libraryProcessor.processLibraries(meta, context)
 
@@ -100,7 +103,7 @@ class LibraryProcessorManagerTest extends Specification {
 		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, true)
 		def libraryProcessor = new LibraryProcessorManager(platform)
 		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
+		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
 
 		def result = libraryProcessor.processLibraries(meta, context)
 
@@ -121,7 +124,7 @@ class LibraryProcessorManagerTest extends Specification {
 		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, true)
 		def libraryProcessor = new LibraryProcessorManager(platform)
 		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
+		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
 
 		def result = libraryProcessor.processLibraries(meta, context)
 
@@ -139,12 +142,9 @@ class LibraryProcessorManagerTest extends Specification {
 
 	def "MacOS arm64"() {
 		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.MAC_OS, true)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new TestLibraryContext(meta, false)
-
-		def result = libraryProcessor.processLibraries(meta, context)
+		def platform = PlatformTestUtils.MAC_OS_ARM64
+		def (libraries, context) = getLibraries(id, platform)
+		def result = new LibraryProcessorManager(platform).processLibraries(libraries, context)
 
 		then:
 		result.dependencies().size() == dependencies
@@ -156,5 +156,11 @@ class LibraryProcessorManagerTest extends Specification {
 		"1.18.2" | 17
 		"1.16.5" | 17
 		"1.4.7"  | 0
+	}
+
+	private static def getLibraries(String id, Platform platform) {
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, platform)
+		return [libraries, new LibraryContext(meta, JavaVersion.VERSION_17)]
 	}
 }

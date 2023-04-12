@@ -27,16 +27,16 @@ package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 /**
  * Never depend on the legacy "asm-all".
  */
 public class LegacyASMLibraryProcessor extends LibraryProcessor {
-	private static final String LEGACY_ASM_PREFIX = "org.ow2.asm:asm-all";
+	private static final String LEGACY_ASM = "org.ow2.asm:asm-all";
 
 	public LegacyASMLibraryProcessor(Platform platform, LibraryContext context) {
 		super(platform, context);
@@ -49,7 +49,7 @@ public class LegacyASMLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		return library -> !library.name().startsWith(LEGACY_ASM_PREFIX);
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
+		return library -> !library.is(LEGACY_ASM);
 	}
 }

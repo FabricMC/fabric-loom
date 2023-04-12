@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ArmNativesLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL2MavenLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL3UpgradeLibraryProcessor;
@@ -41,7 +40,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Ru
 import net.fabricmc.loom.util.Platform;
 
 public class LibraryProcessorManager {
-	private static final List<LibraryProcessorFactory> LIBRARY_PROCESSORS = List.of(
+	private static final List<LibraryProcessorFactory<?>> LIBRARY_PROCESSORS = List.of(
 			ArmNativesLibraryProcessor::new,
 			LegacyASMLibraryProcessor::new,
 			LoomNativeSupportLibraryProcessor::new,
@@ -57,10 +56,10 @@ public class LibraryProcessorManager {
 		this.platform = platform;
 	}
 
-	public List<LibraryProcessor> getProcessors(LibraryContext context) {
+	private List<LibraryProcessor> getProcessors(LibraryContext context) {
 		var processors = new ArrayList<LibraryProcessor>();
 
-		for (LibraryProcessorFactory factory : LIBRARY_PROCESSORS) {
+		for (LibraryProcessorFactory<?> factory : LIBRARY_PROCESSORS) {
 			final LibraryProcessor processor = factory.apply(platform, context);
 			final LibraryProcessor.ApplicationResult applicationResult = processor.getApplicationResult();
 
@@ -81,29 +80,21 @@ public class LibraryProcessorManager {
 		return Collections.unmodifiableList(processors);
 	}
 
-	public LibraryResult processLibraries(MinecraftVersionMeta versionMeta, LibraryContext libraryContext) {
+	public List<Library> processLibraries(List<Library> libraries, LibraryContext libraryContext) {
 		final List<LibraryProcessor> processors = getProcessors(libraryContext);
 
 		if (processors.isEmpty()) {
-			return new LibraryResult(versionMeta.libraries(), Collections.emptyList());
+			return libraries;
 		}
 
-		var dependencies = new ArrayList<LibraryProcessor.Dependency>();
+		var list = new ArrayList<Library>();
 		final var libraryPredicate = processors.stream()
-				.map(processor -> processor.apply(dependencies::add))
+				.map(processor -> processor.apply(list::add))
 				.reduce(LibraryProcessor.ALLOW_ALL, Predicate::and);
-		var libraries = versionMeta.libraries().stream()
-				.filter(library -> library.isValidForOS(platform))
-				.filter(libraryPredicate).toList();
-		return new LibraryResult(libraries, Collections.unmodifiableList(dependencies));
+		list.addAll(libraries.stream().filter(libraryPredicate).toList());
+		return Collections.unmodifiableList(list);
 	}
 
-	interface LibraryProcessorFactory extends BiFunction<Platform, LibraryContext, LibraryProcessor> {
+	public interface LibraryProcessorFactory<T extends LibraryProcessor> extends BiFunction<Platform, LibraryContext, T> {
 	}
-
-	/**
-	 * @param libraries The processed Minecraft libraries
-	 * @param dependencies Additional deps added by processors
-	 */
-	record LibraryResult(List<MinecraftVersionMeta.Library> libraries, List<LibraryProcessor.Dependency> dependencies) { }
 }

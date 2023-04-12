@@ -27,9 +27,9 @@ package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 public class RuntimeLog4jLibraryProcessor extends LibraryProcessor {
@@ -45,10 +45,10 @@ public class RuntimeLog4jLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			if (library.name().startsWith(LOG4J_GROUP)) {
-				dependencyConsumer.accept(new Dependency(library.name(), Dependency.Target.RUNTIME));
+			if (library.is(LOG4J_GROUP)) {
+				dependencyConsumer.accept(library.withTarget(Library.Target.RUNTIME));
 				return false;
 			}
 

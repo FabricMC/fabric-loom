@@ -26,22 +26,65 @@ package net.fabricmc.loom.test.unit.library
 
 import spock.lang.Specification
 
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContextImpl
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
 import net.fabricmc.loom.test.util.MinecraftTestUtils
 
 class LibraryContextTest extends Specification {
-	def "supportsArm64MacOS"() {
+	def "Supports ARM64 macOS"() {
 		when:
-		def context = new LibraryContextImpl(MinecraftTestUtils.getVersionMeta(id))
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
 
 		then:
 		context.supportsArm64MacOS() == supported
 
 		where:
-		id | supported
-		"1.19.4" | true
-		"1.18.2" | false
-		"1.16.5" | false
-		"1.4.7" | false
+		id       || supported
+		"1.19.4" || true
+		"1.18.2" || false
+		"1.16.5" || false
+		"1.4.7"  || false
+	}
+
+	def "Uses LWJGL 3"() {
+		when:
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
+
+		then:
+		context.usesLWJGL3() == lwjgl3
+
+		where:
+		id       || lwjgl3
+		"1.19.4" || true
+		"1.18.2" || true
+		"1.16.5" || true
+		"1.12.2" || false
+		"1.8.9"  || false
+		"1.4.7"  || false
+	}
+
+	def "Has classpath natives"() {
+		when:
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
+
+		then:
+		context.hasClasspathNatives() == hasClasspathNatives
+
+		where:
+		id       || hasClasspathNatives
+		"1.19.4" || true
+		"1.18.2" || false
+		"1.16.5" || false
+		"1.12.2" || false
+		"1.8.9"  || false
+		"1.4.7"  || false
+	}
+
+	def "Has library"() {
+		when:
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta("1.19.4"), javaVersion)
+
+		then:
+		context.hasLibrary("commons-io:commons-io:2.11.0")
+		!context.hasLibrary("net.fabricmc:fabric-loader")
 	}
 }

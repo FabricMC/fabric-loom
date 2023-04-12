@@ -24,34 +24,62 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.library;
 
-public interface LibraryContext {
+import org.gradle.api.JavaVersion;
+
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+
+public final class LibraryContext {
+	private final MinecraftVersionMeta versionMeta;
+	private final JavaVersion javaVersion;
+
+	public LibraryContext(MinecraftVersionMeta versionMeta, JavaVersion javaVersion) {
+		this.versionMeta = versionMeta;
+		this.javaVersion = javaVersion;
+	}
+
 	/**
 	 * @return True when the Minecraft libraries support ARM64 MacOS
 	 */
-	boolean supportsArm64MacOS();
+	public boolean supportsArm64MacOS() {
+		return versionMeta.libraries().stream()
+				.anyMatch(library -> library.name().startsWith("org.lwjgl:lwjgl:3") && library.name().endsWith(":natives-macos-arm64"));
+	}
 
 	/**
 	 * @return True when the Minecraft libraries support Java 19 or later
 	 */
-	boolean supportsJava19OrLater();
+	public boolean supportsJava19OrLater() {
+		// TODO check for any library with LWJGL 3.3.2 or later, currently not present in any mc version
+		return false;
+	}
 
 	/**
 	 * @return True when using LWJGL 3
 	 */
-	boolean usesLWJGL3();
+	public boolean usesLWJGL3() {
+		return versionMeta.libraries().stream()
+				.anyMatch(library -> library.name().startsWith("org.lwjgl:lwjgl:3"));
+	}
 
 	/**
 	 * @return True when the Minecraft natives are on the classpath, as opposed to being extracted
 	 */
-	boolean hasClasspathNatives();
+	public boolean hasClasspathNatives() {
+		return !versionMeta.hasNativesToExtract();
+	}
 
 	/**
 	 * @return True when there is an exact match for this library
 	 */
-	boolean hasLibrary(String name);
+	public boolean hasLibrary(String name) {
+		return versionMeta.libraries().stream()
+				.anyMatch(library -> library.name().equals(name));
+	}
 
 	/**
 	 * @return True when the current Java version is 19 or later
 	 */
-	boolean isJava19OrLater();
+	public boolean isJava19OrLater() {
+		return javaVersion.isCompatibleWith(JavaVersion.VERSION_19);
+	}
 }

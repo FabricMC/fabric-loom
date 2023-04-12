@@ -27,7 +27,7 @@ package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
 import net.fabricmc.loom.util.Constants;
@@ -55,8 +55,8 @@ public class LoomNativeSupportLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		dependencyConsumer.accept(new Dependency(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION, Dependency.Target.LOCAL_MOD));
+	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
+		dependencyConsumer.accept(Library.fromMaven(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION, Library.Target.LOCAL_MOD));
 		return ALLOW_ALL;
 	}
 }

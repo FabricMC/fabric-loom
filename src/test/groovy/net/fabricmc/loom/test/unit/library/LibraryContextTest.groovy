@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.library
 
+import org.gradle.api.JavaVersion
 import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
@@ -32,7 +33,7 @@ import net.fabricmc.loom.test.util.MinecraftTestUtils
 class LibraryContextTest extends Specification {
 	def "Supports ARM64 macOS"() {
 		when:
-		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), JavaVersion.VERSION_17)
 
 		then:
 		context.supportsArm64MacOS() == supported
@@ -47,7 +48,7 @@ class LibraryContextTest extends Specification {
 
 	def "Uses LWJGL 3"() {
 		when:
-		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), JavaVersion.VERSION_17)
 
 		then:
 		context.usesLWJGL3() == lwjgl3
@@ -64,7 +65,7 @@ class LibraryContextTest extends Specification {
 
 	def "Has classpath natives"() {
 		when:
-		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), javaVersion)
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), JavaVersion.VERSION_17)
 
 		then:
 		context.hasClasspathNatives() == hasClasspathNatives
@@ -81,10 +82,24 @@ class LibraryContextTest extends Specification {
 
 	def "Has library"() {
 		when:
-		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta("1.19.4"), javaVersion)
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta("1.19.4"), JavaVersion.VERSION_17)
 
 		then:
 		context.hasLibrary("commons-io:commons-io:2.11.0")
 		!context.hasLibrary("net.fabricmc:fabric-loader")
+	}
+
+	def "Is runtime Java 19 or later"() {
+		when:
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta("1.19.4"), javaVersion)
+
+		then:
+		context.isJava19OrLater() == isJava19OrLater
+
+		where:
+		javaVersion       	   || isJava19OrLater
+		JavaVersion.VERSION_17 || false
+		JavaVersion.VERSION_19 || true
+		JavaVersion.VERSION_20 || true
 	}
 }

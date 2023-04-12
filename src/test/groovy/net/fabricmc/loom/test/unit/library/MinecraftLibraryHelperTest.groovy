@@ -1,5 +1,6 @@
 package net.fabricmc.loom.test.unit.library
 
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
 import net.fabricmc.loom.test.util.MinecraftTestUtils
 import net.fabricmc.loom.test.util.PlatformTestUtils
@@ -20,5 +21,23 @@ class MinecraftLibraryHelperTest extends Specification {
         where:
         platform << PlatformTestUtils.ALL * VERSIONS.size()
         id << VERSIONS * PlatformTestUtils.ALL.size()
+    }
+
+    def "find macos natives"() {
+        when:
+        def meta = MinecraftTestUtils.getVersionMeta("1.18.2")
+        def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, PlatformTestUtils.MAC_OS_X64)
+
+        then:
+        libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
+    }
+
+    def "dont find macos natives"() {
+        when:
+        def meta = MinecraftTestUtils.getVersionMeta("1.18.2")
+        def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, PlatformTestUtils.WINDOWS_X64)
+
+        then:
+        libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
     }
 }

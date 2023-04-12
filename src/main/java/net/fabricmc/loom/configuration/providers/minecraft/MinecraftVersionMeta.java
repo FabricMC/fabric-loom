@@ -108,8 +108,13 @@ public record MinecraftVersionMeta(
 		public Download classifierForOS(Platform platform) {
 			String classifier = natives.get(OS_NAMES.get(platform.getOperatingSystem()));
 
-			if (platform.getArchitecture().isArm()) {
-				classifier += "-arm64";
+			if (platform.getArchitecture().isArm() && platform.getArchitecture().is64Bit()) {
+				// Default to the arm64 natives, if not found fallback.
+				final Download armNative = downloads().classifier(classifier + "-arm64");
+
+				if (armNative != null) {
+					return armNative;
+				}
 			}
 
 			return downloads().classifier(classifier);

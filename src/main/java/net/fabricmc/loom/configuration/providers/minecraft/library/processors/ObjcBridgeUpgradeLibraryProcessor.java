@@ -48,8 +48,8 @@ public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		if (!platform.getOperatingSystem().isMacOS()) {
-			// Only supported on macOS
+		if (!(platform.getOperatingSystem().isMacOS() && platform.getArchitecture().isArm())) {
+			// Only supported on arm64 macOS
 			return ApplicationResult.DONT_APPLY;
 		}
 
@@ -59,13 +59,14 @@ public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
 
 	@Override
 	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
+		// Add the updated library on the runtime classpath.
+		dependencyConsumer.accept(Library.fromMaven(OBJC_BRIDGE_NAME, Library.Target.RUNTIME));
+
 		return library -> {
 			if (library.is(OBJC_BRIDGE_PREFIX)) {
-				// Add the updated library on the runtime classpath.
-				dependencyConsumer.accept(Library.fromMaven(OBJC_BRIDGE_NAME, Library.Target.RUNTIME));
+				// Remove the natives, as they are included in the dep library we added to the runtime classpath above.
+				return library.target() != Library.Target.NATIVES;
 			}
-
-			// TODO skip over adding the extracted native?
 
 			return true;
 		};

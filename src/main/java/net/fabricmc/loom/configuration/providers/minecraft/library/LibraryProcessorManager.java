@@ -81,8 +81,10 @@ public class LibraryProcessorManager {
 	}
 
 	public List<Library> processLibraries(List<Library> libraries, LibraryContext libraryContext) {
-		final List<LibraryProcessor> processors = getProcessors(libraryContext);
+		return processLibraries(getProcessors(libraryContext), libraries);
+	}
 
+	public static List<Library> processLibraries(List<LibraryProcessor> processors, List<Library> libraries) {
 		if (processors.isEmpty()) {
 			return libraries;
 		}

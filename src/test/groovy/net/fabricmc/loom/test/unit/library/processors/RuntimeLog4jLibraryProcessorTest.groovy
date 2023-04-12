@@ -24,22 +24,23 @@
 
 package net.fabricmc.loom.test.unit.library.processors
 
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
-import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LegacyASMLibraryProcessor
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
-class LegacyASMLibraryProcessorTest extends LibraryProcessorTest {
-    def "Removes legacy asm-all"() {
+class RuntimeLog4jLibraryProcessorTest extends LibraryProcessorTest {
+    def "Make log4j runtime"() {
         when:
-        def (original, context) = getLibs("1.4.7", PlatformTestUtils.MAC_OS_X64)
-        def processor = new LegacyASMLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+        def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64)
+        def processor = new RuntimeLog4jLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
         def processed = LibraryProcessorManager.processLibraries([processor], original)
 
         then:
-        processor.applicationResult == LibraryProcessor.ApplicationResult.MUST_APPLY
+        processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
 
-        hasLibrary("org.ow2.asm:asm-all", original)
-        !hasLibrary("org.ow2.asm:asm-all", processed)
+        findLibrary("org.apache.logging.log4j", original).target() == Library.Target.COMPILE
+        findLibrary("org.apache.logging.log4j", processed).target() == Library.Target.RUNTIME
     }
 }

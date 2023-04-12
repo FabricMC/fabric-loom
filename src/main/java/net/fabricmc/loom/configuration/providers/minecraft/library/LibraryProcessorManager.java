@@ -89,9 +89,12 @@ public class LibraryProcessorManager {
 		}
 
 		var dependencies = new ArrayList<LibraryProcessor.Dependency>();
-		final var libraryPredicate = processors.stream().map(processor -> processor.apply(dependencies::add))
+		final var libraryPredicate = processors.stream()
+				.map(processor -> processor.apply(dependencies::add))
 				.reduce(LibraryProcessor.ALLOW_ALL, Predicate::and);
-		var libraries = versionMeta.libraries().stream().filter(libraryPredicate).toList();
+		var libraries = versionMeta.libraries().stream()
+				.filter(library -> library.isValidForOS(platform))
+				.filter(libraryPredicate).toList();
 		return new LibraryResult(libraries, Collections.unmodifiableList(dependencies));
 	}
 

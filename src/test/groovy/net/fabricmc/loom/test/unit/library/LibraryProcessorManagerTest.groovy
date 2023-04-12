@@ -42,14 +42,119 @@ class LibraryProcessorManagerTest extends Specification {
 		def result = libraryProcessor.processLibraries(meta, context)
 
 		then:
-		result.dependencies().size() == 0
+		result.dependencies().size() == dependencies
 		result.libraries().size() > 0
 
 		where:
-		id       | _
-		"1.19.4" | _
-		"1.18.2" | _
-		"1.16.5" | _
-		"1.4.7"  | _
+		id       | dependencies
+		"1.19.4" | 0
+		"1.18.2" | 0
+		"1.16.5" | 0
+		"1.4.7"  | 0
+	}
+
+	def "Linux x64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, false)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
+
+		def result = libraryProcessor.processLibraries(meta, context)
+
+		then:
+		result.dependencies().size() == dependencies
+		result.libraries().size() > 0
+
+		where:
+		id       | dependencies
+		"1.19.4" | 0
+		"1.18.2" | 0
+		"1.16.5" | 0
+		"1.4.7"  | 0
+	}
+
+	def "MacOS x64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.MAC_OS, false)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
+
+		def result = libraryProcessor.processLibraries(meta, context)
+
+		then:
+		result.dependencies().size() == dependencies
+		result.libraries().size() > 0
+
+		where:
+		id       | dependencies
+		"1.19.4" | 0
+		"1.18.2" | 17 // Arm64 support is added
+		"1.16.5" | 17 // Arm64 support is added
+		"1.4.7"  | 0
+	}
+
+	def "Windows arm64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, true)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
+
+		def result = libraryProcessor.processLibraries(meta, context)
+
+		then:
+		result.dependencies().size() == dependencies
+		result.libraries().size() > 0
+
+		where:
+		id       | dependencies
+		"1.19.4" | 7 // Arm64 support is added
+		"1.18.2" | 0
+		"1.16.5" | 0
+		"1.4.7"  | 0
+	}
+
+	def "Linux arm64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, true)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
+
+		def result = libraryProcessor.processLibraries(meta, context)
+
+		then:
+		result.dependencies().size() == dependencies
+		result.libraries().size() > 0
+
+		where:
+		id       | dependencies
+		"1.19.4" | 7
+		"1.18.2" | 0
+		"1.16.5" | 0
+		"1.4.7"  | 0
+	}
+
+	def "MacOS arm64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.MAC_OS, true)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
+
+		def result = libraryProcessor.processLibraries(meta, context)
+
+		then:
+		result.dependencies().size() == dependencies
+		result.libraries().size() > 0
+
+		where:
+		id       | dependencies
+		"1.19.4" | 0
+		"1.18.2" | 17
+		"1.16.5" | 17
+		"1.4.7"  | 0
 	}
 }

@@ -30,8 +30,8 @@ import net.fabricmc.loom.util.Platform
 
 @Immutable
 class PlatformTestUtils implements Platform  {
-	static Platform platform(OperatingSystem operatingSystem, boolean isArm = false) {
-		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: true, isArm: isArm), supportsUnixDomainSockets: true)
+	static Platform platform(OperatingSystem operatingSystem, boolean isArm = false, boolean is64Bit = true) {
+		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: is64Bit, isArm: isArm), supportsUnixDomainSockets: true)
 	}
 
 	OperatingSystem operatingSystem

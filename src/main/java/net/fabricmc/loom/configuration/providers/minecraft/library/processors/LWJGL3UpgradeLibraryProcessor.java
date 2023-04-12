@@ -36,6 +36,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProces
 import net.fabricmc.loom.util.Platform;
 
 public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
+	private static final String LWJGL_VERSION = "3.3.2";
+
 	public LWJGL3UpgradeLibraryProcessor(Platform platform, LibraryContext context) {
 		super(platform, context);
 	}
@@ -52,7 +54,7 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.MUST_APPLY;
 		}
 
-		if (platform.getOperatingSystem().isMacOS() && !context.supportsArm64MacOS()) {
+		if (upgradeMacOSArm()) {
 			// Update LWJGL when ARM64 macOS is not supported
 			return ApplicationResult.MUST_APPLY;
 		}
@@ -63,16 +65,27 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 
 	@Override
 	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		return new Predicate<MinecraftVersionMeta.Library>() {
-			@Override
-			public boolean test(MinecraftVersionMeta.Library library) {
-				throw new RuntimeException("TODO!");
+		return library -> {
+			if (library.name().startsWith("org.lwjgl:lwjgl")) {
+				final String[] split = library.name().split(":");
+				assert split.length == 3;
+
+				// TODO I dont think the legacy natives are handled correctly here.
+				var target = library.hasNatives() ? Dependency.Target.NATIVES : Dependency.Target.RUNTIME;
+				dependencyConsumer.accept(new Dependency("%s:%s:%s".formatted(split[0], split[1], LWJGL_VERSION), target));
 			}
+
+			return true;
 		};
 	}
 
 	@Override
 	public void applyRepositories(RepositoryHandler repositories) {
 		LoomRepositoryPlugin.forceLWJGLFromMavenCentral(repositories);
+	}
+
+	// Add support for macOS
+	private boolean upgradeMacOSArm() {
+		return platform.getOperatingSystem().isMacOS() && !context.supportsArm64MacOS() && !context.hasClasspathNatives();
 	}
 }

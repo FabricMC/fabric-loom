@@ -22,37 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
+package net.fabricmc.loom.test.util
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import groovy.transform.Immutable
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
-import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.Platform
 
-public class RuntimeLog4jLibraryProcessor extends LibraryProcessor {
-	private static final String LOG4J_GROUP = "org.apache.logging.log4j";
-
-	public RuntimeLog4jLibraryProcessor(Platform platform, LibraryContext context) {
-		super(platform, context);
+@Immutable
+class PlatformTestUtils implements Platform  {
+	static Platform platform(OperatingSystem operatingSystem, boolean isArm = false) {
+		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: true, isArm: isArm), supportsUnixDomainSockets: true)
 	}
 
+	OperatingSystem operatingSystem
+	TestArchitecture architecture
+	boolean supportsUnixDomainSockets
+
 	@Override
-	public ApplicationResult getApplicationResult() {
-		return ApplicationResult.CAN_APPLY;
+	boolean supportsUnixDomainSockets() {
+		supportsUnixDomainSockets
 	}
 
-	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		return library -> {
-			if (library.name().startsWith(LOG4J_GROUP)) {
-				dependencyConsumer.accept(new Dependency(library.name(), Dependency.Target.RUNTIME));
-				return false;
-			}
+	@Immutable
+	static class TestArchitecture implements Architecture {
+		boolean is64Bit
+		boolean isArm
 
-			return true;
-		};
+		@Override
+		boolean is64Bit() {
+			is64Bit
+		}
+
+		@Override
+		boolean isArm() {
+			isArm
+		}
 	}
 }

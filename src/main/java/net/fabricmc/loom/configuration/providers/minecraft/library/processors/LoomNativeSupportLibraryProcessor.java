@@ -55,8 +55,8 @@ public class LoomNativeSupportLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
-		libraryConsumer.accept(new Dependency(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION, Dependency.Target.LOCAL_MOD));
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
+		dependencyConsumer.accept(new Dependency(Constants.Dependencies.NATIVE_SUPPORT + Constants.Dependencies.Versions.NATIVE_SUPPORT_VERSION, Dependency.Target.LOCAL_MOD));
 		return ALLOW_ALL;
 	}
 }

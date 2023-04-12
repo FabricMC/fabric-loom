@@ -70,13 +70,13 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
 		return library -> {
 			final String name = library.name();
 
 			if (name.startsWith("org.lwjgl:")
 					&& (name.endsWith("natives-windows") || name.endsWith("natives-linux"))) {
-				libraryConsumer.accept(new Dependency(name + "-arm64", Dependency.Target.CLASSPATH_NATIVES));
+				dependencyConsumer.accept(new Dependency(name + "-arm64", Dependency.Target.NATIVES));
 			}
 
 			return true;

@@ -58,11 +58,11 @@ public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
 		return library -> {
 			if (library.name().startsWith(OBJC_BRIDGE_PREFIX)) {
 				// Add the updated library on the runtime classpath.
-				libraryConsumer.accept(new Dependency(OBJC_BRIDGE_NAME, Dependency.Target.RUNTIME));
+				dependencyConsumer.accept(new Dependency(OBJC_BRIDGE_NAME, Dependency.Target.RUNTIME));
 			}
 
 			// TODO skip over adding the extracted native?

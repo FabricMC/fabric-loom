@@ -28,7 +28,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ArmNativesLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL2MavenLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL3UpgradeLibraryProcessor;
@@ -79,6 +81,26 @@ public class LibraryProcessorManager {
 		return Collections.unmodifiableList(processors);
 	}
 
+	public LibraryResult processLibraries(MinecraftVersionMeta versionMeta, LibraryContext libraryContext) {
+		final List<LibraryProcessor> processors = getProcessors(libraryContext);
+
+		if (processors.isEmpty()) {
+			return new LibraryResult(versionMeta.libraries(), Collections.emptyList());
+		}
+
+		var dependencies = new ArrayList<LibraryProcessor.Dependency>();
+		final var libraryPredicate = processors.stream().map(processor -> processor.apply(dependencies::add))
+				.reduce(LibraryProcessor.ALLOW_ALL, Predicate::and);
+		var libraries = versionMeta.libraries().stream().filter(libraryPredicate).toList();
+		return new LibraryResult(libraries, Collections.unmodifiableList(dependencies));
+	}
+
 	interface LibraryProcessorFactory extends BiFunction<Platform, LibraryContext, LibraryProcessor> {
 	}
+
+	/**
+	 * @param libraries The processed Minecraft libraries
+	 * @param dependencies Additional deps added by processors
+	 */
+	record LibraryResult(List<MinecraftVersionMeta.Library> libraries, List<LibraryProcessor.Dependency> dependencies) { }
 }

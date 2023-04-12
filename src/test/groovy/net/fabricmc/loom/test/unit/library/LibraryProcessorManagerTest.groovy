@@ -22,37 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
+package net.fabricmc.loom.test.unit.library
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import spock.lang.Specification
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
-import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
+import net.fabricmc.loom.test.util.MinecraftTestUtils
+import net.fabricmc.loom.test.util.PlatformTestUtils
+import net.fabricmc.loom.util.Platform
 
-public class RuntimeLog4jLibraryProcessor extends LibraryProcessor {
-	private static final String LOG4J_GROUP = "org.apache.logging.log4j";
+class LibraryProcessorManagerTest extends Specification {
+	def "Windows x64"() {
+		when:
+		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, false)
+		def libraryProcessor = new LibraryProcessorManager(platform)
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def context = new TestLibraryContext(meta, false)
 
-	public RuntimeLog4jLibraryProcessor(Platform platform, LibraryContext context) {
-		super(platform, context);
-	}
+		def result = libraryProcessor.processLibraries(meta, context)
 
-	@Override
-	public ApplicationResult getApplicationResult() {
-		return ApplicationResult.CAN_APPLY;
-	}
+		then:
+		result.dependencies().size() == 0
+		result.libraries().size() > 0
 
-	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		return library -> {
-			if (library.name().startsWith(LOG4J_GROUP)) {
-				dependencyConsumer.accept(new Dependency(library.name(), Dependency.Target.RUNTIME));
-				return false;
-			}
-
-			return true;
-		};
+		where:
+		id       | _
+		"1.19.4" | _
+		"1.18.2" | _
+		"1.16.5" | _
+		"1.4.7"  | _
 	}
 }

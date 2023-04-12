@@ -46,7 +46,7 @@ public abstract class LibraryProcessor {
 
 	public abstract ApplicationResult getApplicationResult();
 
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
 		return ALLOW_ALL;
 	}
 
@@ -71,8 +71,7 @@ public abstract class LibraryProcessor {
 	public record Dependency(String name, Target target) {
 		public enum Target {
 			RUNTIME,
-			CLASSPATH_NATIVES,
-			NATIVES_DIRECTORY,
+			NATIVES,
 			LOCAL_MOD
 		}
 	}

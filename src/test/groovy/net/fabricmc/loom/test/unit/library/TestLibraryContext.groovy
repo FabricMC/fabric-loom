@@ -22,37 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.library.processors;
+package net.fabricmc.loom.test.unit.library
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContextImpl
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
-import net.fabricmc.loom.util.Platform;
+class TestLibraryContext extends LibraryContextImpl {
+	final boolean isJava19OrLater
 
-public class RuntimeLog4jLibraryProcessor extends LibraryProcessor {
-	private static final String LOG4J_GROUP = "org.apache.logging.log4j";
-
-	public RuntimeLog4jLibraryProcessor(Platform platform, LibraryContext context) {
-		super(platform, context);
+	TestLibraryContext(MinecraftVersionMeta versionMeta, boolean isJava19OrLater) {
+		super(versionMeta)
+		this.isJava19OrLater = isJava19OrLater
 	}
 
 	@Override
-	public ApplicationResult getApplicationResult() {
-		return ApplicationResult.CAN_APPLY;
-	}
-
-	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
-		return library -> {
-			if (library.name().startsWith(LOG4J_GROUP)) {
-				dependencyConsumer.accept(new Dependency(library.name(), Dependency.Target.RUNTIME));
-				return false;
-			}
-
-			return true;
-		};
+	boolean isJava19OrLater() {
+		isJava19OrLater
 	}
 }

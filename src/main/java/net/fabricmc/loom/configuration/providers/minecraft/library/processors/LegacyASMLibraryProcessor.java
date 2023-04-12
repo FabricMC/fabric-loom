@@ -49,7 +49,7 @@ public class LegacyASMLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
 		return library -> !library.name().startsWith(LEGACY_ASM_PREFIX);
 	}
 }

@@ -52,7 +52,7 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.MUST_APPLY;
 		}
 
-		if (!context.supportsArm64MacOS()) {
+		if (platform.getOperatingSystem().isMacOS() && !context.supportsArm64MacOS()) {
 			// Update LWJGL when ARM64 macOS is not supported
 			return ApplicationResult.MUST_APPLY;
 		}
@@ -62,7 +62,7 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 	}
 
 	@Override
-	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> libraryConsumer) {
+	public Predicate<MinecraftVersionMeta.Library> apply(Consumer<Dependency> dependencyConsumer) {
 		return new Predicate<MinecraftVersionMeta.Library>() {
 			@Override
 			public boolean test(MinecraftVersionMeta.Library library) {

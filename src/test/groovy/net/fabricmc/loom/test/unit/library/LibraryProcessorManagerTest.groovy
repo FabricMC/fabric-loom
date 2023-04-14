@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.library
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.test.unit.library.processors.LibraryProcessorTest
+import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class LibraryProcessorManagerTest extends LibraryProcessorTest {
@@ -35,7 +36,7 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		when:
 		def platform = PlatformTestUtils.MAC_OS_ARM64
 		def (original, context) = getLibs("1.18.2", platform)
-		def processed = new LibraryProcessorManager(platform).processLibraries(original, context)
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler()).processLibraries(original, context)
 
 		then:
 		// Test to make sure that we compile against the original version
@@ -58,7 +59,7 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		when:
 		def platform = PlatformTestUtils.MAC_OS_X64
 		def (original, context) = getLibs("1.18.2", platform)
-		def processed = new LibraryProcessorManager(platform).processLibraries(original, context)
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler()).processLibraries(original, context)
 
 		then:
 		// Test to make sure that we compile against the original version

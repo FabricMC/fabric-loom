@@ -26,7 +26,6 @@ package net.fabricmc.loom.test.unit.library.processors
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LoomNativeSupportLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -71,7 +70,7 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.18.2", PlatformTestUtils.MAC_OS_X64)
 		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test to ensure that we added the mod

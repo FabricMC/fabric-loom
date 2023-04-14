@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.jetbrains.annotations.VisibleForTesting;
+
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ArmNativesLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL2MavenLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL3UpgradeLibraryProcessor;
@@ -51,9 +54,11 @@ public class LibraryProcessorManager {
 	);
 
 	private final Platform platform;
+	private final RepositoryHandler repositories;
 
-	public LibraryProcessorManager(Platform platform) {
+	public LibraryProcessorManager(Platform platform, RepositoryHandler repositories) {
 		this.platform = platform;
+		this.repositories = repositories;
 	}
 
 	private List<LibraryProcessor> getProcessors(LibraryContext context) {
@@ -80,15 +85,18 @@ public class LibraryProcessorManager {
 		return Collections.unmodifiableList(processors);
 	}
 
-	public List<Library> processLibraries(List<Library> libraries, LibraryContext libraryContext) {
-		return processLibraries(getProcessors(libraryContext), libraries);
-	}
+	public List<Library> processLibraries(List<Library> librariesIn, LibraryContext libraryContext) {
+		final List<LibraryProcessor> processors = getProcessors(libraryContext);
 
-	public static List<Library> processLibraries(List<LibraryProcessor> processors, List<Library> librariesIn) {
 		if (processors.isEmpty()) {
 			return librariesIn;
 		}
 
+		return processLibraries(processors, librariesIn);
+	}
+
+	@VisibleForTesting
+	public List<Library> processLibraries(List<LibraryProcessor> processors, List<Library> librariesIn) {
 		var libraries = new ArrayList<>(librariesIn);
 
 		for (LibraryProcessor processor : processors) {
@@ -100,6 +108,8 @@ public class LibraryProcessorManager {
 					processedLibraries.add(library);
 				}
 			}
+
+			processor.applyRepositories(repositories);
 
 			libraries = processedLibraries;
 		}

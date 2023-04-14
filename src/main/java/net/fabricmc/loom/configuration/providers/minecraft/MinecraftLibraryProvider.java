@@ -42,13 +42,16 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
 public class MinecraftLibraryProvider {
+	private static final Platform platform = Platform.CURRENT;
+
 	private final Project project;
 	private final MinecraftProvider minecraftProvider;
-	private final Platform platform = Platform.CURRENT;
+	private final LibraryProcessorManager processorManager;
 
 	public MinecraftLibraryProvider(MinecraftProvider minecraftProvider, Project project) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
+		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories());
 	}
 
 	public void provide() {
@@ -93,7 +96,7 @@ public class MinecraftLibraryProvider {
 
 	private List<Library> processLibraries(List<Library> libraries) {
 		final LibraryContext libraryContext = new LibraryContext(minecraftProvider.getVersionInfo(), JavaVersion.current());
-		return new LibraryProcessorManager(platform).processLibraries(libraries, libraryContext);
+		return processorManager.processLibraries(libraries, libraryContext);
 	}
 
 	private void applyClientLibrary(Library library) {

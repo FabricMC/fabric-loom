@@ -25,7 +25,6 @@
 package net.fabricmc.loom.test.unit.library.processors
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LegacyASMLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -34,7 +33,7 @@ class LegacyASMLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.4.7", PlatformTestUtils.MAC_OS_X64)
 		def processor = new LegacyASMLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		processor.applicationResult == LibraryProcessor.ApplicationResult.MUST_APPLY

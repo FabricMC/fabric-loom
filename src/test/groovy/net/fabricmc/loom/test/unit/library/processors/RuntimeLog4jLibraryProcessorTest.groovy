@@ -26,7 +26,6 @@ package net.fabricmc.loom.test.unit.library.processors
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -35,7 +34,7 @@ class RuntimeLog4jLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64)
 		def processor = new RuntimeLog4jLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY

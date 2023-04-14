@@ -121,6 +121,11 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 	}
 
 	public static void forceLWJGLFromMavenCentral(RepositoryHandler repositories) {
+		if (repositories.findByName("MavenCentralLWJGL") != null) {
+			// Already applied.
+			return;
+		}
+
 		// Force LWJGL from central, as it contains all the platform natives.
 		MavenArtifactRepository central = repositories.maven(repo -> {
 			repo.setName("MavenCentralLWJGL");

@@ -117,6 +117,9 @@ public record MinecraftVersionMeta(
 				}
 			}
 
+			// Used in the twitch library in 1.7.10
+			classifier = classifier.replace("${arch}", platform.getArchitecture().is64Bit() ? "64" : "32");
+
 			return downloads().classifier(classifier);
 		}
 

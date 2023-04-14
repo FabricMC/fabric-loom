@@ -29,7 +29,9 @@ import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
+import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.MinecraftTestUtils
 import net.fabricmc.loom.util.Platform
 
@@ -47,5 +49,10 @@ abstract class LibraryProcessorTest extends Specification {
 
 	Library findLibrary(String name, List<Library> libraries) {
 		libraries.find { it.is(name) }
+	}
+
+	LibraryProcessorManager mockLibraryProcessorManager() {
+		def libraryProcessorManager = new LibraryProcessorManager(null, GradleTestUtil.mockRepositoryHandler())
+		return libraryProcessorManager
 	}
 }

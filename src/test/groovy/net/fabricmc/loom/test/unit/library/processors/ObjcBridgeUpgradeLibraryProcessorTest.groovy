@@ -26,7 +26,6 @@ package net.fabricmc.loom.test.unit.library.processors
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ObjcBridgeUpgradeLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -70,7 +69,7 @@ class ObjcBridgeUpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
 		def processor = new ObjcBridgeUpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test that we always compile against the original version

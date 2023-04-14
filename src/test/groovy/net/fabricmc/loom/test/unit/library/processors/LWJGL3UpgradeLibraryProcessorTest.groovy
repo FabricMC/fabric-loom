@@ -28,7 +28,6 @@ import org.gradle.api.JavaVersion
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LWJGL3UpgradeLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -89,7 +88,7 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64, JavaVersion.VERSION_20)
 		def processor = new LWJGL3UpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test to make sure that we compile against the original version
@@ -107,7 +106,7 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.18.2", PlatformTestUtils.MAC_OS_X64, JavaVersion.VERSION_20)
 		def processor = new LWJGL3UpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test to make sure that we compile against the original version

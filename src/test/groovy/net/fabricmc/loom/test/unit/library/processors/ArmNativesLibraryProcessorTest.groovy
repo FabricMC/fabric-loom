@@ -26,7 +26,6 @@ package net.fabricmc.loom.test.unit.library.processors
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ArmNativesLibraryProcessor
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
@@ -99,7 +98,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
 		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test that the natives are replaced when upgrading on macos
@@ -122,7 +121,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_ARM64)
 		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test that the arm64 natives are added alongside the existing ones
@@ -139,7 +138,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		when:
 		def (original, context) = getLibs("1.19.4", PlatformTestUtils.LINUX_ARM64)
 		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.LINUX_ARM64, context)
-		def processed = LibraryProcessorManager.processLibraries([processor], original)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
 		then:
 		// Test that the arm64 natives are added alongside the existing ones

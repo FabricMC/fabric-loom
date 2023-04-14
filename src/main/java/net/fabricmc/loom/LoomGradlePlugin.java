@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -74,9 +74,11 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, LoomFiles.create(project));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
-		CompileConfiguration.setupConfigurations(project);
+		final CompileConfiguration compileConfiguration = new CompileConfiguration(project);
+
+		compileConfiguration.setupConfigurations();
 		IdeConfiguration.setup(project);
-		CompileConfiguration.configureCompile(project);
+		compileConfiguration.configureCompile();
 		MavenPublication.configure(project);
 		LoomTasks.registerTasks(project);
 		DecompilerConfiguration.setup(project);

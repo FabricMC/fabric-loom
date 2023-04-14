@@ -129,7 +129,7 @@ public class ModProcessor {
 	private void remapJars(List<ModDependency> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
-		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()
+		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()

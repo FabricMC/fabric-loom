@@ -78,7 +78,7 @@ public class MinecraftLibraryProvider {
 
 		// After Minecraft 1.19-pre1 the natives should be on the runtime classpath.
 		if (!minecraftProvider.getVersionInfo().hasNativesToExtract()) {
-			project.getConfigurations().named(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES)));
+			project.getConfigurations().named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES)));
 		}
 	}
 
@@ -102,10 +102,10 @@ public class MinecraftLibraryProvider {
 	private void applyClientLibrary(Library library) {
 		switch (library.target()) {
 		case COMPILE -> {
-			addLibrary(Constants.Configurations.MINECRAFT_DEPENDENCIES, library);
+			addLibrary(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, library);
 		}
 		case RUNTIME -> {
-			addLibrary(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library);
+			addLibrary(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, library);
 		}
 		case NATIVES -> {
 			addLibrary(Constants.Configurations.MINECRAFT_NATIVES, library);
@@ -121,11 +121,10 @@ public class MinecraftLibraryProvider {
 	private void applyServerLibrary(Library library) {
 		switch (library.target()) {
 		case COMPILE -> {
-			addLibrary(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library);
+			addLibrary(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, library);
 		}
 		case RUNTIME -> {
-			// TODO should there be a MINECRAFT_SERVER_RUNTIME_DEPENDENCIES?
-			addLibrary(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library);
+			addLibrary(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, library);
 		}
 		default -> throw new IllegalStateException("Target not supported for server library");
 		}

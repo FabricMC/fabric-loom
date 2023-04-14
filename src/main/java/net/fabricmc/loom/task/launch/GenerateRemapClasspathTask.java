@@ -54,7 +54,7 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 	public GenerateRemapClasspathTask() {
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 
-		getRemapClasspath().from(configurations.named(Constants.Configurations.LOADER_DEPENDENCIES));
+		getRemapClasspath().from(configurations.named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 		getExtension().getRuntimeRemapConfigurations().stream()
 				.map(RemapConfigurationSettings::getName)
 				.map(configurations::named)

@@ -94,8 +94,8 @@ public final class TinyRemapperHelper {
 		return builder.build();
 	}
 
-	public static Path[] getMinecraftDependencies(Project project) {
-		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
+	public static Path[] getMinecraftCompileLibraries(Project project) {
+		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
 				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 

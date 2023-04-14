@@ -169,7 +169,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				params.getIPCPath().set(ipcServer.getPath().toFile());
 			}
 
-			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES));
+			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 		});
 
 		try {

@@ -84,17 +84,27 @@ public class LibraryProcessorManager {
 		return processLibraries(getProcessors(libraryContext), libraries);
 	}
 
-	public static List<Library> processLibraries(List<LibraryProcessor> processors, List<Library> libraries) {
+	public static List<Library> processLibraries(List<LibraryProcessor> processors, List<Library> librariesIn) {
 		if (processors.isEmpty()) {
-			return libraries;
+			return librariesIn;
 		}
 
-		var list = new ArrayList<Library>();
-		final var libraryPredicate = processors.stream()
-				.map(processor -> processor.apply(list::add))
-				.reduce(LibraryProcessor.ALLOW_ALL, Predicate::and);
-		list.addAll(libraries.stream().filter(libraryPredicate).toList());
-		return Collections.unmodifiableList(list);
+		var libraries = new ArrayList<>(librariesIn);
+
+		for (LibraryProcessor processor : processors) {
+			var processedLibraries = new ArrayList<Library>();
+			final Predicate<Library> predicate = processor.apply(processedLibraries::add);
+
+			for (Library library : libraries) {
+				if (predicate.test(library)) {
+					processedLibraries.add(library);
+				}
+			}
+
+			libraries = processedLibraries;
+		}
+
+		return Collections.unmodifiableList(libraries);
 	}
 
 	public interface LibraryProcessorFactory<T extends LibraryProcessor> extends BiFunction<Platform, LibraryContext, T> {

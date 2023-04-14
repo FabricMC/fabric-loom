@@ -24,143 +24,55 @@
 
 package net.fabricmc.loom.test.unit.library
 
-
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
-import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
-import net.fabricmc.loom.test.util.MinecraftTestUtils
+import net.fabricmc.loom.test.unit.library.processors.LibraryProcessorTest
 import net.fabricmc.loom.test.util.PlatformTestUtils
-import net.fabricmc.loom.util.Platform
-import org.gradle.api.JavaVersion
-import spock.lang.Specification
 
-class LibraryProcessorManagerTest extends Specification {
-	def "Windows x64"() {
-		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, false)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
-
-		def result = libraryProcessor.processLibraries(meta, context)
-
-		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
-
-		where:
-		id       | dependencies
-		"1.19.4" | 0
-		"1.18.2" | 0
-		"1.16.5" | 0
-		"1.4.7"  | 0
-	}
-
-	def "Linux x64"() {
-		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, false)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
-
-		def result = libraryProcessor.processLibraries(meta, context)
-
-		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
-
-		where:
-		id       | dependencies
-		"1.19.4" | 0
-		"1.18.2" | 0
-		"1.16.5" | 0
-		"1.4.7"  | 0
-	}
-
-	def "MacOS x64"() {
-		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.MAC_OS, false)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
-
-		def result = libraryProcessor.processLibraries(meta, context)
-
-		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
-
-		where:
-		id       | dependencies
-		"1.19.4" | 0
-		"1.18.2" | 17 // Arm64 support is added
-		"1.16.5" | 17 // Arm64 support is added
-		"1.4.7"  | 0
-	}
-
-	def "Windows arm64"() {
-		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.WINDOWS, true)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
-
-		def result = libraryProcessor.processLibraries(meta, context)
-
-		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
-
-		where:
-		id       | dependencies
-		"1.19.4" | 7 // Arm64 support is added
-		"1.18.2" | 0
-		"1.16.5" | 0
-		"1.4.7"  | 0
-	}
-
-	def "Linux arm64"() {
-		when:
-		def platform = PlatformTestUtils.platform(Platform.OperatingSystem.LINUX, true)
-		def libraryProcessor = new LibraryProcessorManager(platform)
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def context = new LibraryContext(meta, JavaVersion.VERSION_17)
-
-		def result = libraryProcessor.processLibraries(meta, context)
-
-		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
-
-		where:
-		id       | dependencies
-		"1.19.4" | 7
-		"1.18.2" | 0
-		"1.16.5" | 0
-		"1.4.7"  | 0
-	}
-
-	def "MacOS arm64"() {
+class LibraryProcessorManagerTest extends LibraryProcessorTest {
+	// A test to ensure that we can add macOS ARM64 support on an unsupported version
+	def "macOS arm64"() {
 		when:
 		def platform = PlatformTestUtils.MAC_OS_ARM64
-		def (libraries, context) = getLibraries(id, platform)
-		def result = new LibraryProcessorManager(platform).processLibraries(libraries, context)
+		def (original, context) = getLibs("1.18.2", platform)
+		def processed = new LibraryProcessorManager(platform).processLibraries(original, context)
 
 		then:
-		result.dependencies().size() == dependencies
-		result.libraries().size() > 0
+		// Test to make sure that we compile against the original version
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		// And at runtime we have the new version.
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.2"
 
-		where:
-		id       | dependencies
-		"1.19.4" | 0
-		"1.18.2" | 17
-		"1.16.5" | 17
-		"1.4.7"  | 0
+		// Test to make sure that the natives were upgraded.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.2"
+
+		// Test to make sure that the natives were replaced.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos-arm64"
 	}
 
-	private static def getLibraries(String id, Platform platform) {
-		def meta = MinecraftTestUtils.getVersionMeta(id)
-		def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, platform)
-		return [libraries, new LibraryContext(meta, JavaVersion.VERSION_17)]
+	// Test to make sure that we dont upgrade LWJGL on an x64 mac
+	def "macOS x64"() {
+		when:
+		def platform = PlatformTestUtils.MAC_OS_X64
+		def (original, context) = getLibs("1.18.2", platform)
+		def processed = new LibraryProcessorManager(platform).processLibraries(original, context)
+
+		then:
+		// Test to make sure that we compile against the original version
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		// Make sure that there isn't a runtime library
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME } == null
+
+		// Test to make sure that the natives were not upgraded.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
+
+		// Test to make sure that the natives were not replaced.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
 	}
 }

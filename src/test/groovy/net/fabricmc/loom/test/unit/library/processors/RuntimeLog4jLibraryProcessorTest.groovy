@@ -31,16 +31,16 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Ru
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class RuntimeLog4jLibraryProcessorTest extends LibraryProcessorTest {
-    def "Make log4j runtime"() {
-        when:
-        def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64)
-        def processor = new RuntimeLog4jLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Make log4j runtime"() {
+		when:
+		def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64)
+		def processor = new RuntimeLog4jLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
+		then:
+		processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
 
-        findLibrary("org.apache.logging.log4j", original).target() == Library.Target.COMPILE
-        findLibrary("org.apache.logging.log4j", processed).target() == Library.Target.RUNTIME
-    }
+		findLibrary("org.apache.logging.log4j", original).target() == Library.Target.COMPILE
+		findLibrary("org.apache.logging.log4j", processed).target() == Library.Target.RUNTIME
+	}
 }

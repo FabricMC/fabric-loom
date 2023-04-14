@@ -36,7 +36,14 @@ class PlatformTestUtils implements Platform  {
 	public static final Platform LINUX_ARM64 = platform(OperatingSystem.LINUX, true)
 	public static final Platform MAC_OS_X64 = platform(OperatingSystem.MAC_OS, false)
 	public static final Platform MAC_OS_ARM64 = platform(OperatingSystem.MAC_OS, true)
-	public static final List<Platform> ALL = [WINDOWS_X64, WINDOWS_ARM64, LINUX_X64, LINUX_ARM64, MAC_OS_X64, MAC_OS_ARM64]
+	public static final List<Platform> ALL = [
+		WINDOWS_X64,
+		WINDOWS_ARM64,
+		LINUX_X64,
+		LINUX_ARM64,
+		MAC_OS_X64,
+		MAC_OS_ARM64
+	]
 
 	private static Platform platform(OperatingSystem operatingSystem, boolean isArm = false, boolean is64Bit = true) {
 		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: is64Bit, isArm: isArm), supportsUnixDomainSockets: true)

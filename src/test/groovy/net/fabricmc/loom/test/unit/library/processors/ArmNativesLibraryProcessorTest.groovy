@@ -31,124 +31,124 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Ar
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
-    def "Apply when adding macOS ARM64 support"() {
-        when:
-        def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-        then:
-        processor.applicationResult == result
+	def "Apply when adding macOS ARM64 support"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        id       || result
-        "1.19.4" || LibraryProcessor.ApplicationResult.DONT_APPLY
-        "1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
-    }
+		where:
+		id       || result
+		"1.19.4" || LibraryProcessor.ApplicationResult.DONT_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
 
-    def "Apply to Windows arm64"() {
-        when:
-        def (_, context) = getLibs(id, PlatformTestUtils.WINDOWS_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
-        then:
-        processor.applicationResult == result
+	def "Apply to Windows arm64"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.WINDOWS_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        id       || result
-        "1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
-        "1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
-    }
+		where:
+		id       || result
+		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
 
-    def "Apply to Linux arm64"() {
-        when:
-        def (_, context) = getLibs(id, PlatformTestUtils.LINUX_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.LINUX_ARM64, context)
-        then:
-        processor.applicationResult == result
+	def "Apply to Linux arm64"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.LINUX_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.LINUX_ARM64, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        id       || result
-        "1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
-        "1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
-    }
+		where:
+		id       || result
+		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
 
-    def "Never apply on none arm64 platforms"() {
-        when:
-        def (_, context) = getLibs(id, platform)
-        def processor = new ArmNativesLibraryProcessor(platform, context)
-        then:
-        processor.applicationResult == LibraryProcessor.ApplicationResult.DONT_APPLY
+	def "Never apply on none arm64 platforms"() {
+		when:
+		def (_, context) = getLibs(id, platform)
+		def processor = new ArmNativesLibraryProcessor(platform, context)
+		then:
+		processor.applicationResult == LibraryProcessor.ApplicationResult.DONT_APPLY
 
-        where:
-        id       | platform
-        "1.19.4" | PlatformTestUtils.MAC_OS_X64
-        "1.18.2" | PlatformTestUtils.WINDOWS_X64
-        "1.17.1" | PlatformTestUtils.MAC_OS_X64
-        "1.16.5" | PlatformTestUtils.MAC_OS_X64
-        "1.15.2" | PlatformTestUtils.LINUX_X64
-        "1.14.4" | PlatformTestUtils.MAC_OS_X64
-        "1.12.2" | PlatformTestUtils.WINDOWS_X64
-    }
+		where:
+		id       | platform
+		"1.19.4" | PlatformTestUtils.MAC_OS_X64
+		"1.18.2" | PlatformTestUtils.WINDOWS_X64
+		"1.17.1" | PlatformTestUtils.MAC_OS_X64
+		"1.16.5" | PlatformTestUtils.MAC_OS_X64
+		"1.15.2" | PlatformTestUtils.LINUX_X64
+		"1.14.4" | PlatformTestUtils.MAC_OS_X64
+		"1.12.2" | PlatformTestUtils.WINDOWS_X64
+	}
 
-    def "Add macOS arm64 natives"() {
-        when:
-        def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Add macOS arm64 natives"() {
+		when:
+		def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        // Test that the natives are replaced when upgrading on macos
-        def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        originalNatives.every { it.classifier() == "natives-macos"}
+		then:
+		// Test that the natives are replaced when upgrading on macos
+		def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		originalNatives.every { it.classifier() == "natives-macos" }
 
-        def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        processedNatives.every { it.classifier() == "natives-macos-arm64"}
+		def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		processedNatives.every { it.classifier() == "natives-macos-arm64" }
 
-        where:
-        id       | _
-        "1.18.2" | _
-        "1.17.1" | _
-        "1.16.5" | _
-        "1.15.2" | _
-        "1.14.4" | _
-    }
+		where:
+		id       | _
+		"1.18.2" | _
+		"1.17.1" | _
+		"1.16.5" | _
+		"1.15.2" | _
+		"1.14.4" | _
+	}
 
-    def "Add windows arm64 natives"() {
-        when:
-        def (original, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Add windows arm64 natives"() {
+		when:
+		def (original, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        // Test that the arm64 natives are added alongside the existing ones
-        def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        originalNatives.count { it.classifier() == "natives-windows-arm64"} == 0
-        originalNatives.count { it.classifier() == "natives-windows"} > 0
+		then:
+		// Test that the arm64 natives are added alongside the existing ones
+		def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		originalNatives.count { it.classifier() == "natives-windows-arm64" } == 0
+		originalNatives.count { it.classifier() == "natives-windows" } > 0
 
-        def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        processedNatives.count { it.classifier() == "natives-windows-arm64"} > 0
-        processedNatives.count { it.classifier() == "natives-windows"} > 0
-    }
+		def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		processedNatives.count { it.classifier() == "natives-windows-arm64" } > 0
+		processedNatives.count { it.classifier() == "natives-windows" } > 0
+	}
 
-    def "Add linux arm64 natives"() {
-        when:
-        def (original, context) = getLibs("1.19.4", PlatformTestUtils.LINUX_ARM64)
-        def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.LINUX_ARM64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Add linux arm64 natives"() {
+		when:
+		def (original, context) = getLibs("1.19.4", PlatformTestUtils.LINUX_ARM64)
+		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.LINUX_ARM64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        // Test that the arm64 natives are added alongside the existing ones
-        def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        originalNatives.count { it.classifier() == "natives-linux-arm64"} == 0
-        originalNatives.count { it.classifier() == "natives-linux"} > 0
+		then:
+		// Test that the arm64 natives are added alongside the existing ones
+		def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		originalNatives.count { it.classifier() == "natives-linux-arm64" } == 0
+		originalNatives.count { it.classifier() == "natives-linux" } > 0
 
-        def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-        processedNatives.count { it.classifier() == "natives-linux-arm64"} > 0
-        processedNatives.count { it.classifier() == "natives-linux"} > 0
-    }
+		def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		processedNatives.count { it.classifier() == "natives-linux-arm64" } > 0
+		processedNatives.count { it.classifier() == "natives-linux" } > 0
+	}
 }

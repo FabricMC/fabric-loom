@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.util
 
+import java.time.Duration
+
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 
@@ -32,8 +34,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
-
-import java.time.Duration
 
 class MinecraftTestUtils {
 	private static final File TEST_DIR = new File(LoomTestConstants.TEST_DIR, "minecraft")

@@ -54,7 +54,7 @@ public class Constants {
 		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
 		public static final String MINECRAFT_RUNTIME_DEPENDENCIES = "minecraftRuntimeOnlyLibraries";
 		/**
-		 * Not used on Minecraft 1.19-pre1 or later. Natives are all loaded from the classpath.
+		 * Before Minecraft 1.19-pre1 this contains libraries that need to be extracted otherwise this goes on the runtime classpath.
 		 */
 		public static final String MINECRAFT_NATIVES = "minecraftNatives";
 		public static final String MAPPINGS = "mappings";

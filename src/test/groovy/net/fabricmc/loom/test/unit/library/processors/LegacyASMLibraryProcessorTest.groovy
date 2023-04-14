@@ -30,16 +30,16 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Le
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class LegacyASMLibraryProcessorTest extends LibraryProcessorTest {
-    def "Removes legacy asm-all"() {
-        when:
-        def (original, context) = getLibs("1.4.7", PlatformTestUtils.MAC_OS_X64)
-        def processor = new LegacyASMLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Removes legacy asm-all"() {
+		when:
+		def (original, context) = getLibs("1.4.7", PlatformTestUtils.MAC_OS_X64)
+		def processor = new LegacyASMLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        processor.applicationResult == LibraryProcessor.ApplicationResult.MUST_APPLY
+		then:
+		processor.applicationResult == LibraryProcessor.ApplicationResult.MUST_APPLY
 
-        hasLibrary("org.ow2.asm:asm-all", original)
-        !hasLibrary("org.ow2.asm:asm-all", processed)
-    }
+		hasLibrary("org.ow2.asm:asm-all", original)
+		!hasLibrary("org.ow2.asm:asm-all", processed)
+	}
 }

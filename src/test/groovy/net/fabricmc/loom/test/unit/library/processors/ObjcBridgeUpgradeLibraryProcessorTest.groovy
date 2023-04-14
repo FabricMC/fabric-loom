@@ -31,65 +31,65 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Ob
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class ObjcBridgeUpgradeLibraryProcessorTest extends LibraryProcessorTest {
-    def "Only apply to arm64 macOS"() {
-        when:
-        def (_, context) = getLibs("1.18.2", platform)
-        def processor = new ObjcBridgeUpgradeLibraryProcessor(platform, context)
-        then:
-        processor.applicationResult == result
+	def "Only apply to arm64 macOS"() {
+		when:
+		def (_, context) = getLibs("1.18.2", platform)
+		def processor = new ObjcBridgeUpgradeLibraryProcessor(platform, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        platform                        || result
-        PlatformTestUtils.MAC_OS_ARM64  || LibraryProcessor.ApplicationResult.MUST_APPLY
-        PlatformTestUtils.MAC_OS_X64    || LibraryProcessor.ApplicationResult.DONT_APPLY
-        PlatformTestUtils.LINUX_ARM64   || LibraryProcessor.ApplicationResult.DONT_APPLY
-        PlatformTestUtils.LINUX_X64     || LibraryProcessor.ApplicationResult.DONT_APPLY
-        PlatformTestUtils.WINDOWS_ARM64 || LibraryProcessor.ApplicationResult.DONT_APPLY
-        PlatformTestUtils.WINDOWS_X64   || LibraryProcessor.ApplicationResult.DONT_APPLY
-    }
+		where:
+		platform                        || result
+		PlatformTestUtils.MAC_OS_ARM64  || LibraryProcessor.ApplicationResult.MUST_APPLY
+		PlatformTestUtils.MAC_OS_X64    || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.LINUX_ARM64   || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.LINUX_X64     || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.WINDOWS_ARM64 || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.WINDOWS_X64   || LibraryProcessor.ApplicationResult.DONT_APPLY
+	}
 
-    def "only apply to unsupported versions"() {
-        when:
-        def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
-        def processor = new ObjcBridgeUpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-        then:
-        processor.applicationResult == result
+	def "only apply to unsupported versions"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
+		def processor = new ObjcBridgeUpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        id       || result
-        "1.19.2" || LibraryProcessor.ApplicationResult.DONT_APPLY
-        "1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // None LWJGL 3
-    }
+		where:
+		id       || result
+		"1.19.2" || LibraryProcessor.ApplicationResult.DONT_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // None LWJGL 3
+	}
 
-    def "Upgrade objc bridge"() {
-        when:
-        def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
-        def processor = new ObjcBridgeUpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Upgrade objc bridge"() {
+		when:
+		def (original, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
+		def processor = new ObjcBridgeUpgradeLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        // Test that we always compile against the original version
-        original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
-        processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
+		then:
+		// Test that we always compile against the original version
+		original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
+		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
 
-        // Test that we use 1.1 at runtime
-        processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.RUNTIME }.version() == "1.1"
+		// Test that we use 1.1 at runtime
+		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.RUNTIME }.version() == "1.1"
 
-        // Test that we removed the natives, as they are included in the jar on the runtime classpath
-        original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
-        processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
+		// Test that we removed the natives, as they are included in the jar on the runtime classpath
+		original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
+		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
 
-        where:
-        id       | _
-        "1.18.2" | _
-        "1.17.1" | _
-        "1.16.5" | _
-        "1.15.2" | _
-        "1.14.4" | _
-    }
+		where:
+		id       | _
+		"1.18.2" | _
+		"1.17.1" | _
+		"1.16.5" | _
+		"1.15.2" | _
+		"1.14.4" | _
+	}
 }

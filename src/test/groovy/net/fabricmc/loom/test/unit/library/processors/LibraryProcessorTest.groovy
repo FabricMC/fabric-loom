@@ -24,29 +24,28 @@
 
 package net.fabricmc.loom.test.unit.library.processors
 
-import net.fabricmc.loom.configuration.providers.minecraft.library.Library
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
-import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
-
-import net.fabricmc.loom.test.util.MinecraftTestUtils
-import net.fabricmc.loom.util.Platform
 import org.gradle.api.JavaVersion
 import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
+import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper
+import net.fabricmc.loom.test.util.MinecraftTestUtils
+import net.fabricmc.loom.util.Platform
+
 abstract class LibraryProcessorTest extends Specification {
-    def getLibs(String id, Platform platform, JavaVersion javaVersion = JavaVersion.VERSION_17) {
-        def meta = MinecraftTestUtils.getVersionMeta(id)
-        def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, platform)
-        def context = new LibraryContext(meta, javaVersion)
-        return [libraries, context]
-    }
+	def getLibs(String id, Platform platform, JavaVersion javaVersion = JavaVersion.VERSION_17) {
+		def meta = MinecraftTestUtils.getVersionMeta(id)
+		def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, platform)
+		def context = new LibraryContext(meta, javaVersion)
+		return [libraries, context]
+	}
 
-    boolean hasLibrary(String name, List<Library> libraries) {
-        libraries.any { it.is(name)}
-    }
+	boolean hasLibrary(String name, List<Library> libraries) {
+		libraries.any { it.is(name) }
+	}
 
-    Library findLibrary(String name, List<Library> libraries) {
-        libraries.find {it.is(name)}
-    }
+	Library findLibrary(String name, List<Library> libraries) {
+		libraries.find { it.is(name) }
+	}
 }

@@ -31,51 +31,51 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Lo
 import net.fabricmc.loom.test.util.PlatformTestUtils
 
 class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
-    def "Apply when adding macOS ARM64 support"() {
-        when:
-        def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
-        def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
-        then:
-        processor.applicationResult == result
+	def "Apply when adding macOS ARM64 support"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.MAC_OS_ARM64)
+		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_ARM64, context)
+		then:
+		processor.applicationResult == result
 
-        where:
-        id       || result
-        "1.19.4" || LibraryProcessor.ApplicationResult.CAN_APPLY
-        "1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
-        "1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
-    }
+		where:
+		id       || result
+		"1.19.4" || LibraryProcessor.ApplicationResult.CAN_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.16.5" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
 
-    def "Can apply on other platforms"() {
-        when:
-        def (_, context) = getLibs(id, platform)
-        def processor = new LoomNativeSupportLibraryProcessor(platform, context)
-        then:
-        processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
+	def "Can apply on other platforms"() {
+		when:
+		def (_, context) = getLibs(id, platform)
+		def processor = new LoomNativeSupportLibraryProcessor(platform, context)
+		then:
+		processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
 
-        where:
-        id       | platform
-        "1.19.4" | PlatformTestUtils.MAC_OS_ARM64
-        "1.18.2" | PlatformTestUtils.WINDOWS_X64
-        "1.17.1" | PlatformTestUtils.MAC_OS_X64
-        "1.16.5" | PlatformTestUtils.WINDOWS_ARM64
-        "1.15.2" | PlatformTestUtils.LINUX_X64
-        "1.14.4" | PlatformTestUtils.MAC_OS_X64
-        "1.19.4" | PlatformTestUtils.WINDOWS_X64
-    }
+		where:
+		id       | platform
+		"1.19.4" | PlatformTestUtils.MAC_OS_ARM64
+		"1.18.2" | PlatformTestUtils.WINDOWS_X64
+		"1.17.1" | PlatformTestUtils.MAC_OS_X64
+		"1.16.5" | PlatformTestUtils.WINDOWS_ARM64
+		"1.15.2" | PlatformTestUtils.LINUX_X64
+		"1.14.4" | PlatformTestUtils.MAC_OS_X64
+		"1.19.4" | PlatformTestUtils.WINDOWS_X64
+	}
 
-    def "Add native support mod"() {
-        when:
-        def (original, context) = getLibs("1.18.2", PlatformTestUtils.MAC_OS_X64)
-        def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
-        def processed = LibraryProcessorManager.processLibraries([processor], original)
+	def "Add native support mod"() {
+		when:
+		def (original, context) = getLibs("1.18.2", PlatformTestUtils.MAC_OS_X64)
+		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		def processed = LibraryProcessorManager.processLibraries([processor], original)
 
-        then:
-        // Test to ensure that we added the mod
-        original.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } == null
-        processed.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } != null
-    }
+		then:
+		// Test to ensure that we added the mod
+		original.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } == null
+		processed.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } != null
+	}
 }

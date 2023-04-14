@@ -83,6 +83,7 @@ public final class CompileConfiguration {
 			configuration.extendsFrom(serverDeps.get());
 			configuration.setTransitive(false);
 		});
+		configurations.register(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
 		configurations.register(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
 		configurations.register(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));
 		configurations.register(Constants.Configurations.INCLUDE, configuration -> configuration.setTransitive(false)); // Dont get transitive deps

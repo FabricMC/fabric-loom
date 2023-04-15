@@ -26,6 +26,7 @@ package net.fabricmc.loom.task.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.Cleaner;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -91,9 +92,11 @@ public class TinyRemapperService implements SharedService {
 		return service;
 	}
 
-	private TinyRemapper tinyRemapper;
-	@Nullable
-	private KotlinRemapperClassloader kotlinRemapperClassloader;
+	// Using cleaner here to ensure tinyRemapper.finish() and kotlinRemapperClassloader.close() are called after soft reference is cleared
+	private static final Cleaner CLEANER = Cleaner.create();
+
+	private final TinyRemapper tinyRemapper;
+	private final Cleaner.Cleanable cleanable;
 	private final Map<String, InputTag> inputTagMap = new HashMap<>();
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
@@ -110,12 +113,14 @@ public class TinyRemapperService implements SharedService {
 			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
 		}
 
+		KotlinRemapperClassloader kotlinRemapperClassloader = null;
 		if (kotlinClasspath != null) {
 			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspath);
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
 		tinyRemapper = builder.build();
+		cleanable = CLEANER.register(this, new CleanState(tinyRemapper, kotlinRemapperClassloader));
 	}
 
 	public synchronized InputTag getOrCreateTag(Path file) {
@@ -159,13 +164,20 @@ public class TinyRemapperService implements SharedService {
 
 	@Override
 	public void close() throws IOException {
-		if (tinyRemapper != null) {
-			tinyRemapper.finish();
-			tinyRemapper = null;
-		}
+		cleanable.clean();
+	}
 
-		if (kotlinRemapperClassloader != null) {
-			kotlinRemapperClassloader.close();
+	private record CleanState(TinyRemapper tinyRemapper, @Nullable KotlinRemapperClassloader kotlinRemapperClassloader) implements Runnable {
+		@Override
+		public void run() {
+			tinyRemapper.finish();
+			if (kotlinRemapperClassloader != null) {
+				try {
+					kotlinRemapperClassloader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 }

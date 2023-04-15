@@ -82,7 +82,9 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		when:
 		def platform = PlatformTestUtils.WINDOWS_X64
 		def (original, context) = getLibs("1.19.2", platform)
-		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), [RuntimeLog4jLibraryProcessor.class.simpleName]).processLibraries(original, context)
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), [
+			RuntimeLog4jLibraryProcessor.class.simpleName
+		]).processLibraries(original, context)
 
 		then:
 		original.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE } != null

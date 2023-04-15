@@ -46,8 +46,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
@@ -76,23 +76,22 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
-	@InputFiles
-	public abstract ConfigurableFileCollection getNestedJars();
-
 	@Input
 	public abstract Property<Boolean> getAddNestedDependencies();
 
 	private Supplier<TinyRemapperService> tinyRemapperService = Suppliers.memoize(() -> TinyRemapperService.getOrCreate(this));
+	private final Provider<ConfigurableFileCollection> nestedJars;
 
 	@Inject
 	public RemapJarTask() {
 		super();
 
+		dependsOn(getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE));
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
-		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
+		nestedJars = new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration);
 
 		setupPreparationTask();
 	}
@@ -119,7 +118,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		submitWork(RemapAction.class, params -> {
 			if (getAddNestedDependencies().get()) {
-				params.getNestedJars().from(getNestedJars());
+				params.getNestedJars().from(nestedJars);
 			}
 
 			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getProject(), tinyRemapperService.get()));

@@ -28,31 +28,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.Locale;
-import java.util.Set;
 
-import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedConfiguration;
-import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.ModUtils;
 import net.fabricmc.loom.util.ZipUtils;
 
@@ -66,79 +56,25 @@ public final class IncludedJarFactory {
 	public Provider<ConfigurableFileCollection> getNestedJars(final Configuration configuration) {
 		return project.provider(() -> {
 			final ConfigurableFileCollection files = project.files();
-			final Set<String> visited = Sets.newHashSet();
-
-			files.from(getProjectDeps(configuration, visited));
-			files.from(getFileDeps(configuration, visited));
+			files.from(getFileDeps(configuration));
 			files.builtBy(configuration.getBuildDependencies());
 			return files;
 		});
 	}
 
-	private ConfigurableFileCollection getFileDeps(Configuration configuration, Set<String> visited) {
+	private ConfigurableFileCollection getFileDeps(Configuration configuration) {
 		final ConfigurableFileCollection files = project.files();
 
-		final ResolvedConfiguration resolvedConfiguration = configuration.getResolvedConfiguration();
-		final Set<ResolvedDependency> dependencies = resolvedConfiguration.getFirstLevelModuleDependencies();
-
-		for (ResolvedDependency dependency : dependencies) {
-			if (!visited.add(dependency.getModuleGroup() + ":" + dependency.getModuleName() + ":" + dependency.getModuleVersion())) {
-				continue;
-			}
-
-			for (ResolvedArtifact artifact : dependency.getModuleArtifacts()) {
-				Metadata metadata = new Metadata(
-						dependency.getModuleGroup(),
-						dependency.getModuleName(),
-						dependency.getModuleVersion(),
-						artifact.getClassifier()
-				);
-
-				files.from(project.provider(() -> getNestableJar(artifact.getFile(), metadata)));
-			}
+		for (ResolvedArtifact resolvedArtifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
+			ModuleVersionIdentifier id = resolvedArtifact.getModuleVersion().getId();
+			Metadata metadata = new Metadata(
+					id.getGroup(),
+					id.getName(),
+					id.getVersion(),
+					resolvedArtifact.getClassifier()
+			);
+			files.from(project.provider(() -> getNestableJar(resolvedArtifact.getFile(), metadata)));
 		}
-
-		return files;
-	}
-
-	private ConfigurableFileCollection getProjectDeps(Configuration configuration, Set<String> visited) {
-		final ConfigurableFileCollection files = project.files();
-
-		for (Dependency dependency : configuration.getDependencies()) {
-			if (dependency instanceof ProjectDependency projectDependency) {
-				if (!visited.add(dependency.getGroup() + ":" + dependency.getName() + ":" + dependency.getVersion())) {
-					continue;
-				}
-
-				// Get the outputs of the project
-				final Project dependentProject = projectDependency.getDependencyProject();
-
-				Collection<Task> remapJarTasks = dependentProject.getTasksByName(RemapTaskConfiguration.REMAP_JAR_TASK_NAME, false);
-				Collection<Task> jarTasks = dependentProject.getTasksByName(JavaPlugin.JAR_TASK_NAME, false);
-
-				if (remapJarTasks.isEmpty() && jarTasks.isEmpty()) {
-					throw new UnsupportedOperationException("%s does not have a remapJar or jar task, cannot nest it".formatted(dependentProject.getName()));
-				}
-
-				for (Task task : remapJarTasks.isEmpty() ? jarTasks : remapJarTasks) {
-					if (task instanceof AbstractArchiveTask archiveTask) {
-						final Metadata metadata = new Metadata(
-								projectDependency.getGroup(),
-								projectDependency.getName(),
-								projectDependency.getVersion(),
-								archiveTask.getArchiveClassifier().getOrNull()
-						);
-
-						Provider<File> provider = archiveTask.getArchiveFile().map(regularFile -> getNestableJar(regularFile.getAsFile(), metadata));
-						files.from(provider);
-						files.builtBy(task);
-					} else {
-						throw new UnsupportedOperationException("Cannot nest none AbstractArchiveTask task: " + task.getName());
-					}
-				}
-			}
-		}
-
 		return files;
 	}
 

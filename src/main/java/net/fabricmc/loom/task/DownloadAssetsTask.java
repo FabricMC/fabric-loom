@@ -118,7 +118,8 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 		final MinecraftVersionMeta.AssetIndex assetIndex = getAssetIndexMeta();
 		final File indexFile = new File(getAssetsDirectory().get().getAsFile(), "indexes" + File.separator + assetIndex.fabricId(minecraftProvider.minecraftVersion()) + ".json");
 
-		final String json = extension.download(assetIndex.url())
+		final String url = MirrorUtil.applyMojangHostMapping(assetIndex.url(), getProject());
+		final String json = extension.download(url)
 				.sha1(assetIndex.sha1())
 				.downloadString(indexFile.toPath());
 

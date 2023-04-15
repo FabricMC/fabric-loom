@@ -124,7 +124,10 @@ public abstract class MinecraftProvider {
 				.defaultCache()
 				.downloadString(versionManifestJson.toPath());
 
-		final ManifestVersion mcManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(versionManifest, ManifestVersion.class);
+		final ManifestVersion mcManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(
+				MirrorUtil.applyMojangHostMapping(versionManifest, getProject()),
+				ManifestVersion.class
+		);
 		ManifestVersion.Versions version = null;
 
 		if (getExtension().getCustomMinecraftManifest().isPresent()) {
@@ -185,7 +188,7 @@ public abstract class MinecraftProvider {
 				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
 				final MinecraftVersionMeta.Download client = versionInfo.download("client");
-				getExtension().download(client.url())
+				getExtension().download(MirrorUtil.applyMojangHostMapping(client.url(), getProject()))
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
 						.downloadPathAsync(minecraftClientJar.toPath(), executor);
@@ -193,7 +196,7 @@ public abstract class MinecraftProvider {
 
 			if (provideServer()) {
 				final MinecraftVersionMeta.Download server = versionInfo.download("server");
-				getExtension().download(server.url())
+				getExtension().download(MirrorUtil.applyMojangHostMapping(server.url(), getProject()))
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
 						.downloadPathAsync(minecraftServerJar.toPath(), executor);

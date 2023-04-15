@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.fabricmc.loom.util.Platform;
 
 @SuppressWarnings("unused")
@@ -105,8 +107,13 @@ public record MinecraftVersionMeta(
 			return isValidForOS(platform);
 		}
 
+		@Nullable
 		public Download classifierForOS(Platform platform) {
 			String classifier = natives.get(OS_NAMES.get(platform.getOperatingSystem()));
+
+			if (classifier == null) {
+				return null;
+			}
 
 			if (platform.getArchitecture().isArm() && platform.getArchitecture().is64Bit()) {
 				// Default to the arm64 natives, if not found fallback.
@@ -133,6 +140,7 @@ public record MinecraftVersionMeta(
 	}
 
 	public record Downloads(Download artifact, Map<String, Download> classifiers) {
+		@Nullable
 		public Download classifier(String os) {
 			return classifiers.get(os);
 		}

@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.gradle.api.JavaVersion;
@@ -31,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
@@ -38,6 +42,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper;
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
@@ -51,7 +56,26 @@ public class MinecraftLibraryProvider {
 	public MinecraftLibraryProvider(MinecraftProvider minecraftProvider, Project project) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
-		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories());
+		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories(), getEnabledProcessors());
+	}
+
+	private List<String> getEnabledProcessors() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		var enabledProcessors = new ArrayList<String>();
+
+		if (extension.getRuntimeOnlyLog4j().get()) {
+			enabledProcessors.add(RuntimeLog4jLibraryProcessor.class.getSimpleName());
+		}
+
+		final Provider<String> libraryProcessorsProperty = project.getProviders().gradleProperty(Constants.Properties.LIBRARY_PROCESSORS);
+
+		if (libraryProcessorsProperty.isPresent()) {
+			String[] split = libraryProcessorsProperty.get().split(":");
+			enabledProcessors.addAll(Arrays.asList(split));
+		}
+
+		return Collections.unmodifiableList(enabledProcessors);
 	}
 
 	public void provide() {

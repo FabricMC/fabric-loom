@@ -55,10 +55,16 @@ public class LibraryProcessorManager {
 
 	private final Platform platform;
 	private final RepositoryHandler repositories;
+	private final List<String> enabledProcessors;
 
-	public LibraryProcessorManager(Platform platform, RepositoryHandler repositories) {
+	public LibraryProcessorManager(Platform platform, RepositoryHandler repositories, List<String> enabledProcessors) {
 		this.platform = platform;
 		this.repositories = repositories;
+		this.enabledProcessors = enabledProcessors;
+	}
+
+	public LibraryProcessorManager(Platform platform, RepositoryHandler repositories) {
+		this(platform, repositories, Collections.emptyList());
 	}
 
 	private List<LibraryProcessor> getProcessors(LibraryContext context) {
@@ -73,8 +79,7 @@ public class LibraryProcessorManager {
 				processors.add(processor);
 			}
 			case CAN_APPLY -> {
-				// TODO check gradle property to enable
-				if (false) {
+				if (enabledProcessors.contains(processor.getClass().getSimpleName())) {
 					processors.add(processor);
 				}
 			}

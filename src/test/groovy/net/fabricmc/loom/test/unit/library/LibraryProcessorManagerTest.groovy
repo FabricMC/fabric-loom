@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit.library
 
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor
 import net.fabricmc.loom.test.unit.library.processors.LibraryProcessorTest
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.PlatformTestUtils
@@ -75,5 +76,18 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		// Test to make sure that the natives were not replaced.
 		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
 		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
+	}
+
+	def "runtime log4j"() {
+		when:
+		def platform = PlatformTestUtils.WINDOWS_X64
+		def (original, context) = getLibs("1.19.2", platform)
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), [RuntimeLog4jLibraryProcessor.class.simpleName]).processLibraries(original, context)
+
+		then:
+		original.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE } != null
+
+		processed.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.RUNTIME } != null
+		processed.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE } == null
 	}
 }

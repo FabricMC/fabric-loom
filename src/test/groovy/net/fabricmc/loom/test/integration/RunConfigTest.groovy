@@ -35,7 +35,13 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test runs a mod that exits on mod init
 class RunConfigTest extends Specification implements GradleProjectTestTrait {
-	private static List<String> tasks = ["runClient", "runServer", "runTestmodClient", "runTestmodServer", "runAutoTestServer"]
+	private static List<String> tasks = [
+		"runClient",
+		"runServer",
+		"runTestmodClient",
+		"runTestmodServer",
+		"runAutoTestServer"
+	]
 	@Unroll
 	def "Run config #task (gradle #version)"() {
 		setup:

@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.configuration;
 
+import static net.fabricmc.loom.util.Constants.Configurations;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.gradle.api.NamedDomainObjectProvider;
@@ -68,60 +69,83 @@ import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public final class CompileConfiguration {
-	private CompileConfiguration() {
+	private final Project project;
+	private final ConfigurationContainer configurations;
+
+	public CompileConfiguration(Project project) {
+		this.project = project;
+		this.configurations = project.getConfigurations();
 	}
 
-	public static void setupConfigurations(Project project) {
-		final ConfigurationContainer configurations = project.getConfigurations();
+	public void setupConfigurations() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		configurations.register(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration -> configuration.setTransitive(true));
-		configurations.register(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration -> configuration.setTransitive(false));
-		NamedDomainObjectProvider<Configuration> serverDeps = configurations.register(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
-		configurations.register(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, configuration -> configuration.setTransitive(false));
-		configurations.register(Constants.Configurations.MINECRAFT_DEPENDENCIES, configuration -> {
-			configuration.extendsFrom(serverDeps.get());
-			configuration.setTransitive(false);
+		configurations.register(Configurations.MOD_COMPILE_CLASSPATH);
+		createNonTransitive(Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
+
+		// Set up the Minecraft compile configurations.
+		var minecraftClientCompile = createNonTransitive(Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES);
+		var minecraftServerCompile = createNonTransitive(Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES);
+		var minecraftCompile = createNonTransitive(Configurations.MINECRAFT_COMPILE_LIBRARIES);
+		minecraftCompile.configure(configuration -> {
+			configuration.extendsFrom(minecraftClientCompile.get());
+			configuration.extendsFrom(minecraftServerCompile.get());
 		});
-		configurations.register(Constants.Configurations.LOADER_DEPENDENCIES, configuration -> configuration.setTransitive(false));
-		configurations.register(Constants.Configurations.MINECRAFT, configuration -> configuration.setTransitive(false));
-		configurations.register(Constants.Configurations.INCLUDE, configuration -> configuration.setTransitive(false)); // Dont get transitive deps
-		configurations.register(Constants.Configurations.MAPPING_CONSTANTS);
-		configurations.register(Constants.Configurations.NAMED_ELEMENTS, configuration -> {
+
+		// Set up the minecraft runtime configurations, this extends from the compile configurations.
+		var minecraftClientRuntime = createNonTransitive(Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
+		var minecraftServerRuntime = createNonTransitive(Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
+
+		// Runtime extends from compile
+		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
+		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile.get()));
+
+		createNonTransitive(Configurations.MINECRAFT_RUNTIME_LIBRARIES).configure(minecraftRuntime -> {
+			minecraftRuntime.extendsFrom(minecraftClientRuntime.get());
+			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
+		});
+
+		createNonTransitive(Configurations.MINECRAFT_NATIVES);
+		createNonTransitive(Configurations.LOADER_DEPENDENCIES);
+
+		createNonTransitive(Configurations.MINECRAFT);
+		createNonTransitive(Configurations.INCLUDE);
+		createNonTransitive(Configurations.MAPPING_CONSTANTS);
+
+		configurations.register(Configurations.NAMED_ELEMENTS, configuration -> {
 			configuration.setCanBeConsumed(true);
 			configuration.setCanBeResolved(false);
 			configuration.extendsFrom(configurations.getByName(JavaPlugin.API_CONFIGURATION_NAME));
 		});
 
-		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS, project);
+		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Configurations.MAPPING_CONSTANTS);
 
-		configurations.register(Constants.Configurations.MAPPINGS);
-		configurations.register(Constants.Configurations.MAPPINGS_FINAL);
-		configurations.register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		configurations.register(Constants.Configurations.UNPICK_CLASSPATH);
-		configurations.register(Constants.Configurations.LOCAL_RUNTIME);
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME, project);
+		configurations.register(Configurations.MAPPINGS);
+		configurations.register(Configurations.MAPPINGS_FINAL);
+		configurations.register(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
+		configurations.register(Configurations.UNPICK_CLASSPATH);
+		configurations.register(Configurations.LOCAL_RUNTIME);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.LOCAL_RUNTIME);
 
 		extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(project));
 
-		extendsFrom(Constants.Configurations.LOADER_DEPENDENCIES, Constants.Configurations.MINECRAFT_DEPENDENCIES, project);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MAPPINGS_FINAL);
+		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MAPPINGS_FINAL);
 
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
-		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL, project);
-
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
-		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, project);
-
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, project);
+		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MINECRAFT_RUNTIME_LIBRARIES);
 
 		// Add the dev time dependencies
-		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);
-		project.getDependencies().add(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);
+		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);
+		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);
 		project.getDependencies().add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 		project.getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 	}
 
-	public static void configureCompile(Project project) {
+	private NamedDomainObjectProvider<Configuration> createNonTransitive(String name) {
+		return configurations.register(name, configuration -> configuration.setTransitive(false));
+	}
+
+	public void configureCompile() {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		project.getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
@@ -136,7 +160,7 @@ public final class CompileConfiguration {
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
 
-			if (getAndLock(project)) {
+			if (getAndLock()) {
 				project.getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
 				extension.setRefreshDeps(true);
 			}
@@ -151,24 +175,24 @@ public final class CompileConfiguration {
 			extension.setDependencyManager(dependencyManager);
 			dependencyManager.handleDependencies(project, serviceManager);
 
-			releaseLock(project);
+			releaseLock();
 			extension.setRefreshDeps(previousRefreshDeps);
 
 			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
 
 			if (mixin.getUseLegacyMixinAp().get()) {
-				setupMixinAp(project, mixin);
+				setupMixinAp(mixin);
 			}
 
 			configureDecompileTasks(configContext);
 		});
 
-		finalizedBy(project, "idea", "genIdeaWorkspace");
-		finalizedBy(project, "eclipse", "genEclipseRuns");
-		finalizedBy(project, "cleanEclipse", "cleanEclipseRuns");
+		finalizedBy("idea", "genIdeaWorkspace");
+		finalizedBy("eclipse", "genEclipseRuns");
+		finalizedBy("cleanEclipse", "cleanEclipseRuns");
 
 		// Add the "dev" jar to the "namedElements" configuration
-		project.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.NAMED_ELEMENTS, project.getTasks().named("jar")));
+		project.artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, project.getTasks().named("jar")));
 
 		// Ensure that the encoding is set to UTF-8, no matter what the system default is
 		// this fixes some edge cases with special characters not displaying correctly
@@ -183,7 +207,7 @@ public final class CompileConfiguration {
 	}
 
 	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
-	private static synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
+	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
@@ -193,7 +217,7 @@ public final class CompileConfiguration {
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
-		final DependencyInfo mappingsDep = DependencyInfo.create(project, Constants.Configurations.MAPPINGS);
+		final DependencyInfo mappingsDep = DependencyInfo.create(project, Configurations.MAPPINGS);
 		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(project, configContext.serviceManager(), mappingsDep, minecraftProvider);
 		extension.setMappingConfiguration(mappingConfiguration);
 		mappingConfiguration.applyToProject(project, mappingsDep);
@@ -217,7 +241,7 @@ public final class CompileConfiguration {
 		namedMinecraftProvider.provide(true);
 	}
 
-	private static void registerGameProcessors(ConfigContext configContext) {
+	private void registerGameProcessors(ConfigContext configContext) {
 		final LoomGradleExtension extension = configContext.extension();
 
 		final boolean enableTransitiveAccessWideners = extension.getEnableTransitiveAccessWideners().get();
@@ -234,7 +258,7 @@ public final class CompileConfiguration {
 		}
 	}
 
-	private static void setupMixinAp(Project project, MixinExtension mixin) {
+	private void setupMixinAp(MixinExtension mixin) {
 		mixin.init();
 
 		// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
@@ -262,22 +286,22 @@ public final class CompileConfiguration {
 		}
 	}
 
-	private static void configureDecompileTasks(ConfigContext configContext) {
+	private void configureDecompileTasks(ConfigContext configContext) {
 		final LoomGradleExtension extension = configContext.extension();
 
 		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
 				.apply(configContext, extension.getNamedMinecraftProvider()).afterEvaluation();
 	}
 
-	private static Path getLockFile(Project project) {
+	private Path getLockFile() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
 		final String pathHash = Checksum.projectHash(project);
 		return cacheDirectory.resolve("." + pathHash + ".lock");
 	}
 
-	private static boolean getAndLock(Project project) {
-		final Path lock = getLockFile(project);
+	private boolean getAndLock() {
+		final Path lock = getLockFile();
 
 		if (Files.exists(lock)) {
 			return true;
@@ -292,8 +316,8 @@ public final class CompileConfiguration {
 		return false;
 	}
 
-	private static void releaseLock(Project project) {
-		final Path lock = getLockFile(project);
+	private void releaseLock() {
+		final Path lock = getLockFile();
 
 		if (!Files.exists(lock)) {
 			return;
@@ -315,17 +339,11 @@ public final class CompileConfiguration {
 		}
 	}
 
-	public static void extendsFrom(List<String> parents, String b, Project project) {
-		for (String parent : parents) {
-			extendsFrom(parent, b, project);
-		}
-	}
-
-	public static void extendsFrom(String a, String b, Project project) {
+	public void extendsFrom(String a, String b) {
 		project.getConfigurations().getByName(a, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(b)));
 	}
 
-	private static void finalizedBy(Project project, String a, String b) {
+	private void finalizedBy(String a, String b) {
 		project.getTasks().named(a).configure(task -> task.finalizedBy(project.getTasks().named(b)));
 	}
 

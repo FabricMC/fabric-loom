@@ -1,7 +1,7 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision 5cda40cfe1ddb507dd509c89117b0801a6ab79d9)
-+++ b/build.gradle	(date 1659386544411)
-@@ -33,17 +33,7 @@
+--- a/build.gradle	(revision 01af69c8709f00b6c1aaf10c3f528fed93a29cfd)
++++ b/build.gradle	(date 1681671870023)
+@@ -34,17 +34,7 @@
  		throw new NullPointerException("Could not find version for " + project.name)
  	}
 
@@ -20,3 +20,30 @@ diff --git a/build.gradle b/build.gradle
  }
 
  def getBranch() {
+@@ -410,7 +400,7 @@
+ 	productionRuntime {
+ 		extendsFrom configurations.minecraftLibraries
+ 		extendsFrom configurations.loaderLibraries
+-		extendsFrom configurations.minecraftRuntimeOnlyLibraries
++		extendsFrom configurations.minecraftRuntimeLibraries
+ 	}
+ 	productionRuntimeServer
+ }
+@@ -422,8 +412,6 @@
+ 	productionRuntimeServer "net.fabricmc:fabric-installer:${project.installer_version}:server"
+ }
+
+-import net.fabricmc.loom.util.OperatingSystem
+-
+ // This is very far beyond loom's API if you copy this, you're on your own.
+ task runProductionAutoTestClient(type: JavaExec, dependsOn: [remapJar, remapTestmodJar]) {
+ 	classpath.from configurations.productionRuntime
+@@ -444,7 +432,7 @@
+ 			"--gameDir", workingDir.absolutePath
+ 		)
+
+-		if (OperatingSystem.CURRENT_OS == OperatingSystem.MAC_OS) {
++		if (false) {
+ 			jvmArgs(
+ 				"-XstartOnFirstThread"
+ 			)

@@ -109,9 +109,9 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		});
 	}
 
-	public static void setupForLegacyVersions(Project project) {
+	public static void setupForLegacyVersions(RepositoryHandler repositories) {
 		// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
-		project.getRepositories().named("Mojang", MavenArtifactRepository.class, repo -> {
+		repositories.named("Mojang", MavenArtifactRepository.class, repo -> {
 			repo.metadataSources(sources -> {
 				// Only use the maven artifact and not the pom or gradle metadata.
 				sources.artifact();
@@ -120,9 +120,14 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		});
 	}
 
-	public static void forceLWJGLFromMavenCentral(Project project) {
+	public static void forceLWJGLFromMavenCentral(RepositoryHandler repositories) {
+		if (repositories.findByName("MavenCentralLWJGL") != null) {
+			// Already applied.
+			return;
+		}
+
 		// Force LWJGL from central, as it contains all the platform natives.
-		MavenArtifactRepository central = project.getRepositories().maven(repo -> {
+		MavenArtifactRepository central = repositories.maven(repo -> {
 			repo.setName("MavenCentralLWJGL");
 			repo.setUrl(ArtifactRepositoryContainer.MAVEN_CENTRAL_URL);
 			repo.content(content -> {
@@ -130,7 +135,7 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			});
 		});
 
-		project.getRepositories().exclusiveContent(repository -> {
+		repositories.exclusiveContent(repository -> {
 			repository.forRepositories(central);
 			repository.filter(filter -> {
 				filter.includeGroup("org.lwjgl");

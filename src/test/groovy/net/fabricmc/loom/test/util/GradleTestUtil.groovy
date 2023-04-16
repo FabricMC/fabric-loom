@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.util
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.file.SourceDirectorySet
@@ -113,6 +114,11 @@ class GradleTestUtil {
 		def mock = mock(RegularFileProperty.class)
 		when(mock.get()).thenReturn(regularFile)
 		when(mock.isPresent()).thenReturn(true)
+		return mock
+	}
+
+	static RepositoryHandler mockRepositoryHandler() {
+		def mock = mock(RepositoryHandler.class)
 		return mock
 	}
 }

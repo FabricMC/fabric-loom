@@ -63,7 +63,6 @@ import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.OperatingSystem;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -275,7 +274,7 @@ public class ModConfigurationRemapper {
 	}
 
 	private static void scheduleSourcesRemapping(Project project, SourceRemapper sourceRemapper, ModDependency dependency) {
-		if (OperatingSystem.isCIBuild()) {
+		if (isCIBuild()) {
 			return;
 		}
 
@@ -300,5 +299,16 @@ public class ModConfigurationRemapper {
 
 	public static String replaceIfNullOrEmpty(@Nullable String s, Supplier<String> fallback) {
 		return s == null || s.isEmpty() ? fallback.get() : s;
+	}
+
+	private static boolean isCIBuild() {
+		final String loomProperty = System.getProperty("fabric.loom.ci");
+
+		if (loomProperty != null) {
+			return loomProperty.equalsIgnoreCase("true");
+		}
+
+		// CI seems to be set by most popular CI services
+		return System.getenv("CI") != null;
 	}
 }

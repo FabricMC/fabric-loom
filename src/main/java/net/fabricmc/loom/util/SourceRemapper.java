@@ -249,7 +249,7 @@ public class SourceRemapper {
 
 		final List<Path> classPath = new ArrayList<>();
 
-		for (File file : project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getFiles()) {
+		for (File file : project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()) {
 			classPath.add(file.toPath());
 		}
 

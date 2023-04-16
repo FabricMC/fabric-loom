@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2022 FabricMC
+ * Copyright (c) 2018-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,74 +24,70 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.util.Architecture;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
+import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper;
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.Platform;
 
 public class MinecraftLibraryProvider {
-	private static final Pattern NATIVES_PATTERN = Pattern.compile("^(?<group>.*)/(.*?)/(?<version>.*)/((?<name>.*?)-(\\k<version>)-)(?<classifier>.*).jar$");
-	private static final boolean IS_MACOS = OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS);
+	private static final Platform platform = Platform.CURRENT;
 
 	private final Project project;
-	private final MinecraftVersionMeta versionInfo;
-	private final BundleMetadata serverBundleMetadata;
-	private final boolean runtimeOnlyLog4j;
-	private final boolean provideClient;
-	private final boolean provideServer;
+	private final MinecraftProvider minecraftProvider;
+	private final LibraryProcessorManager processorManager;
 
 	public MinecraftLibraryProvider(MinecraftProvider minecraftProvider, Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
-
 		this.project = project;
-		this.versionInfo = minecraftProvider.getVersionInfo();
-		this.serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
-		this.runtimeOnlyLog4j = extension.getRuntimeOnlyLog4j().get();
-		this.provideClient = jarConfiguration.getSupportedEnvironments().contains("client");
-		this.provideServer = jarConfiguration.getSupportedEnvironments().contains("server");
-		assert provideClient || provideServer;
+		this.minecraftProvider = minecraftProvider;
+		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories(), getEnabledProcessors());
 	}
 
-	private void addDependency(String configuration, Object dependency) {
-		Dependency created = project.getDependencies().add(configuration, dependency);
+	private List<String> getEnabledProcessors() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		// The launcher doesn't download transitive deps, so neither will we.
-		// This will also prevent a LaunchWrapper library dependency from pulling in outdated ASM jars.
-		if (created instanceof ModuleDependency md) {
-			md.setTransitive(false);
+		var enabledProcessors = new ArrayList<String>();
+
+		if (extension.getRuntimeOnlyLog4j().get()) {
+			enabledProcessors.add(RuntimeLog4jLibraryProcessor.class.getSimpleName());
 		}
+
+		final Provider<String> libraryProcessorsProperty = project.getProviders().gradleProperty(Constants.Properties.LIBRARY_PROCESSORS);
+
+		if (libraryProcessorsProperty.isPresent()) {
+			String[] split = libraryProcessorsProperty.get().split(":");
+			enabledProcessors.addAll(Arrays.asList(split));
+		}
+
+		return Collections.unmodifiableList(enabledProcessors);
 	}
 
 	public void provide() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
+
+		final boolean provideClient = jarConfiguration.getSupportedEnvironments().contains("client");
+		final boolean provideServer = jarConfiguration.getSupportedEnvironments().contains("server");
+		assert provideClient || provideServer;
+
 		if (provideClient) {
-			// Modern 1.19 version put the natives on the classpath.
-			final boolean hasNativesToExtract = versionInfo.hasNativesToExtract();
-			final boolean overrideLWJGL = hasNativesToExtract && (LWJGLVersionOverride.overrideByDefault(versionInfo) || LWJGLVersionOverride.forceOverride(project) || Boolean.getBoolean("loom.test.lwjgloverride"));
-
-			if (overrideLWJGL) {
-				project.getLogger().warn("Loom is upgrading Minecraft's LWJGL version to {}", LWJGLVersionOverride.LWJGL_VERSION);
-			}
-
-			if (hasNativesToExtract) {
-				// Create a configuration for
-				project.getConfigurations().register(Constants.Configurations.MINECRAFT_NATIVES, configuration -> configuration.setTransitive(false));
-			}
-
-			provideClientLibraries(overrideLWJGL, hasNativesToExtract);
-
-			if (overrideLWJGL) {
-				LWJGLVersionOverride.applyOverrides(project, IS_MACOS);
-			}
+			provideClientLibraries();
 		}
 
 		if (provideServer) {
@@ -99,96 +95,76 @@ public class MinecraftLibraryProvider {
 		}
 	}
 
-	private void provideClientLibraries(boolean overrideLWJGL, boolean hasNativesToExtract) {
-		final boolean isArm = Architecture.CURRENT.isArm();
-		final boolean classpathArmNatives = !hasNativesToExtract && isArm && !IS_MACOS;
+	private void provideClientLibraries() {
+		final List<Library> libraries = MinecraftLibraryHelper.getLibrariesForPlatform(minecraftProvider.getVersionInfo(), platform);
+		final List<Library> processLibraries = processLibraries(libraries);
+		processLibraries.forEach(this::applyClientLibrary);
 
-		if (classpathArmNatives) {
-			LoomRepositoryPlugin.forceLWJGLFromMavenCentral(project);
-		}
-
-		for (MinecraftVersionMeta.Library library : versionInfo.libraries()) {
-			if (overrideLWJGL && library.name().startsWith("org.lwjgl")) {
-				// Skip over Minecraft's LWJGL version, will will replace this with a newer version later.
-				continue;
-			}
-
-			if (library.isValidForOS() && !library.hasNatives() && library.artifact() != null) {
-				final String name = library.name();
-
-				if ("org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20130708-debug3".equals(name) || "org.lwjgl.lwjgl:lwjgl:2.9.1-nightly-20131017".equals(name)) {
-					// 1.4.7 contains an LWJGL version with an invalid maven pom, set the metadata sources to not use the pom for this version.
-					LoomRepositoryPlugin.setupForLegacyVersions(project);
-				}
-
-				if (name.startsWith("org.ow2.asm:asm-all")) {
-					// Don't want asm-all, use the modern split version.
-					continue;
-				}
-
-				if (runtimeOnlyLog4j && name.startsWith("org.apache.logging.log4j")) {
-					// Make log4j a runtime only dep to force slf4j.
-					addDependency(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, name);
-					continue;
-				}
-
-				if (classpathArmNatives && name.startsWith("org.lwjgl:")
-						&& (name.endsWith("natives-windows") || name.endsWith("natives-linux"))) {
-					// Add windows and Linux arm64 natives for modern classpath native MC versions.
-					addDependency(Constants.Configurations.MINECRAFT_DEPENDENCIES, name + "-arm64");
-				}
-
-				addDependency(Constants.Configurations.MINECRAFT_DEPENDENCIES, name);
-			}
-
-			if (library.hasNativesForOS()) {
-				provideNativesForLibrary(library, overrideLWJGL, IS_MACOS);
-			}
+		// After Minecraft 1.19-pre1 the natives should be on the runtime classpath.
+		if (!minecraftProvider.getVersionInfo().hasNativesToExtract()) {
+			project.getConfigurations().named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES)));
 		}
 	}
 
 	private void provideServerLibraries() {
-		if (serverBundleMetadata != null) {
-			for (BundleMetadata.Entry library : serverBundleMetadata.libraries()) {
-				if (runtimeOnlyLog4j && library.name().startsWith("org.apache.logging.log4j")) {
-					// Make log4j a runtime only dep to force slf4j.
-					addDependency(Constants.Configurations.MINECRAFT_RUNTIME_DEPENDENCIES, library.name());
-					continue;
-				}
+		final BundleMetadata serverBundleMetadata = minecraftProvider.getServerBundleMetadata();
 
-				addDependency(Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES, library.name());
-			}
+		if (serverBundleMetadata == null) {
+			return;
+		}
+
+		final List<Library> libraries = MinecraftLibraryHelper.getServerLibraries(serverBundleMetadata);
+		final List<Library> processLibraries = processLibraries(libraries);
+		processLibraries.forEach(this::applyServerLibrary);
+	}
+
+	private List<Library> processLibraries(List<Library> libraries) {
+		final LibraryContext libraryContext = new LibraryContext(minecraftProvider.getVersionInfo(), JavaVersion.current());
+		return processorManager.processLibraries(libraries, libraryContext);
+	}
+
+	private void applyClientLibrary(Library library) {
+		switch (library.target()) {
+		case COMPILE -> {
+			addLibrary(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, library);
+		}
+		case RUNTIME -> {
+			addLibrary(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, library);
+		}
+		case NATIVES -> {
+			addLibrary(Constants.Configurations.MINECRAFT_NATIVES, library);
+		}
+		case LOCAL_MOD -> {
+			ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(library.mavenNotation());
+			dependency.setTransitive(false);
+			project.getDependencies().add("modLocalRuntime", dependency);
+		}
 		}
 	}
 
-	private void provideNativesForLibrary(MinecraftVersionMeta.Library library, boolean overrideLWJGL, boolean isMacOS) {
-		MinecraftVersionMeta.Download nativeDownload = library.classifierForOS();
-
-		if (nativeDownload == null) {
-			return;
+	private void applyServerLibrary(Library library) {
+		switch (library.target()) {
+		case COMPILE -> {
+			addLibrary(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, library);
 		}
-
-		final String path = nativeDownload.path();
-		final Matcher matcher = NATIVES_PATTERN.matcher(path);
-
-		if (!matcher.find()) {
-			project.getLogger().warn("Failed to match regex for natives path : " + path);
-			return;
+		case RUNTIME -> {
+			addLibrary(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, library);
 		}
-
-		final String group = matcher.group("group").replace("/", ".");
-		final String name = matcher.group("name");
-		final String version = matcher.group("version");
-		final String classifier = matcher.group("classifier");
-
-		final String dependencyNotation = "%s:%s:%s:%s".formatted(group, name, version, classifier);
-
-		if (overrideLWJGL && isMacOS && "java-objc-bridge".equals(name)) {
-			// Mojang split out the natives into their own jar, skip over Mojang's jar and use the official jar later on.
-			return;
+		default -> throw new IllegalStateException("Target not supported for server library");
 		}
+	}
 
-		project.getLogger().debug("Add native dependency '{}'", dependencyNotation);
-		addDependency(Constants.Configurations.MINECRAFT_NATIVES, dependencyNotation);
+	private void addLibrary(String configuration, Library library) {
+		addDependency(configuration, library.mavenNotation());
+	}
+
+	private void addDependency(String configuration, Object dependency) {
+		final Dependency created = project.getDependencies().add(configuration, dependency);
+
+		// The launcher doesn't download transitive deps, so neither will we.
+		// This will also prevent a LaunchWrapper library dependency from pulling in outdated ASM jars.
+		if (created instanceof ModuleDependency md) {
+			md.setTransitive(false);
+		}
 	}
 }

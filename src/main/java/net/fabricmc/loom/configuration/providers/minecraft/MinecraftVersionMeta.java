@@ -29,8 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import net.fabricmc.loom.util.Architecture;
-import net.fabricmc.loom.util.OperatingSystem;
+import org.jetbrains.annotations.Nullable;
+
+import net.fabricmc.loom.util.Platform;
 
 @SuppressWarnings("unused")
 public record MinecraftVersionMeta(
@@ -48,6 +49,12 @@ public record MinecraftVersionMeta(
 		String time,
 		String type
 ) {
+	private static Map<Platform.OperatingSystem, String> OS_NAMES = Map.of(
+			Platform.OperatingSystem.WINDOWS, "windows",
+			Platform.OperatingSystem.MAC_OS, "osx",
+			Platform.OperatingSystem.LINUX, "linux"
+	);
+
 	public Download download(String key) {
 		return downloads().get(key);
 	}
@@ -67,7 +74,7 @@ public record MinecraftVersionMeta(
 	}
 
 	public record Library(Downloads downloads, String name, Map<String, String> natives, List<Rule> rules, Object extract) {
-		public boolean isValidForOS() {
+		public boolean isValidForOS(Platform platform) {
 			if (rules == null) {
 				// No rules allow everything.
 				return true;
@@ -76,7 +83,7 @@ public record MinecraftVersionMeta(
 			boolean valid = false;
 
 			for (Rule rule : this.rules) {
-				if (rule.appliesToOS()) {
+				if (rule.appliesToOS(platform)) {
 					valid = rule.isAllowed();
 				}
 			}
@@ -88,24 +95,37 @@ public record MinecraftVersionMeta(
 			return this.natives != null;
 		}
 
-		public boolean hasNativesForOS() {
+		public boolean hasNativesForOS(Platform platform) {
 			if (!hasNatives()) {
 				return false;
 			}
 
-			if (classifierForOS() == null) {
+			if (classifierForOS(platform) == null) {
 				return false;
 			}
 
-			return isValidForOS();
+			return isValidForOS(platform);
 		}
 
-		public Download classifierForOS() {
-			String classifier = natives.get(OperatingSystem.CURRENT_OS);
+		@Nullable
+		public Download classifierForOS(Platform platform) {
+			String classifier = natives.get(OS_NAMES.get(platform.getOperatingSystem()));
 
-			if (Architecture.CURRENT.isArm()) {
-				classifier += "-arm64";
+			if (classifier == null) {
+				return null;
 			}
+
+			if (platform.getArchitecture().isArm() && platform.getArchitecture().is64Bit()) {
+				// Default to the arm64 natives, if not found fallback.
+				final Download armNative = downloads().classifier(classifier + "-arm64");
+
+				if (armNative != null) {
+					return armNative;
+				}
+			}
+
+			// Used in the twitch library in 1.7.10
+			classifier = classifier.replace("${arch}", platform.getArchitecture().is64Bit() ? "64" : "32");
 
 			return downloads().classifier(classifier);
 		}
@@ -120,14 +140,15 @@ public record MinecraftVersionMeta(
 	}
 
 	public record Downloads(Download artifact, Map<String, Download> classifiers) {
+		@Nullable
 		public Download classifier(String os) {
 			return classifiers.get(os);
 		}
 	}
 
 	public record Rule(String action, OS os) {
-		public boolean appliesToOS() {
-			return os() == null || os().isValidForOS();
+		public boolean appliesToOS(Platform platform) {
+			return os() == null || os().isValidForOS(platform);
 		}
 
 		public boolean isAllowed() {
@@ -136,8 +157,8 @@ public record MinecraftVersionMeta(
 	}
 
 	public record OS(String name) {
-		public boolean isValidForOS() {
-			return name() == null || name().equalsIgnoreCase(OperatingSystem.CURRENT_OS);
+		public boolean isValidForOS(Platform platform) {
+			return name() == null || name().equalsIgnoreCase(OS_NAMES.get(platform.getOperatingSystem()));
 		}
 	}
 

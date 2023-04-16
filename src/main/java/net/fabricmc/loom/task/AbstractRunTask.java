@@ -59,6 +59,8 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
+
+		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 	}
 
 	private boolean canUseArgFile() {
@@ -93,9 +95,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		super.setWorkingDir(dir);
 	}
 
-	@Override
-	public List<String> getJvmArgs() {
-		final List<String> superArgs = super.getJvmArgs();
+	private List<String> getGameJvmArgs() {
 		final List<String> args = new ArrayList<>();
 
 		if (canUseArgFile()) {
@@ -111,10 +111,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to create classpath file", e);
 			}
-		}
-
-		if (superArgs != null) {
-			args.addAll(superArgs);
 		}
 
 		args.addAll(config.vmArgs);

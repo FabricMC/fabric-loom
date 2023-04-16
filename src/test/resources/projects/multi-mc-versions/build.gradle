@@ -21,7 +21,9 @@ def getMappingVersion(String mcVersion) {
 subprojects {
 	apply plugin: "fabric-loom"
 
-	archivesBaseName = rootProject.name + "-" + project.name
+	base {
+		archivesName = rootProject.name + "-" + project.name
+	}
 
 	def minecraft_version = project.name.substring(7)
 	def yarn_mappings = getMappingVersion(minecraft_version)

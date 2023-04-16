@@ -64,5 +64,7 @@ dependencies {
 	include fabricApi.module("fabric-api-base", "0.31.0+1.16")
 }
 
-archivesBaseName = "multiproject"
+base {
+	archivesName = "multiproject"
+}
 version = "1.0.0"

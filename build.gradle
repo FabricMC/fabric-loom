@@ -293,11 +293,7 @@ task writeActionsTestMatrix() {
 				}
 
 				def className = it.name.replace(".groovy", "")
-
-				// Disabled for CI, as it fails too much.
-				if (className.endsWith("DecompileTest")) return
-
-					testMatrix.add("net.fabricmc.loom.test.integration.${className}")
+				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
 			}
 		}
 

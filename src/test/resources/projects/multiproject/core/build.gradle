@@ -1,4 +1,6 @@
-archivesBaseName = "core"
+base {
+	archivesName = "core"
+}
 
 loom {
 	accessWidenerPath = file("src/main/resources/core.accesswidener")

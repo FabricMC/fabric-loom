@@ -272,7 +272,7 @@ trait GradleProjectTestTrait {
             '''
 
 			// Patch the new plugin into the end of the plugins block
-			def matcher = buildGradle.text =~ /(?s)plugins \{(?<ids>.*)}/
+			def matcher = buildGradle.text =~ /(?s)plugins \{(?<ids>.*?)}/
 			assert matcher.find()
 			def ids = matcher.group("ids")
 
@@ -283,7 +283,7 @@ trait GradleProjectTestTrait {
                 }
             """
 
-			buildGradle.text = buildGradle.text.replaceAll("(?s)(plugins \\{.*})", pluginBlock)
+			buildGradle.text = buildGradle.text.replaceAll("(?s)(plugins \\{.*?})", pluginBlock)
 
 			def sourceSrc = new File("src/test/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)
 			def targetSrc = new File(buildSrcDir, "src/main/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)

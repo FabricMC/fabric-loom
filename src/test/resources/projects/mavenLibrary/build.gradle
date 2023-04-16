@@ -3,11 +3,8 @@ plugins {
 	id 'maven-publish'
 }
 
-archivesBaseName = "fabric-example-lib"
 version = System.getProperty("loom.test.version")
 group = "com.example"
-
-println archivesBaseName
 
 dependencies {
 	minecraft "com.mojang:minecraft:1.16.5"
@@ -15,6 +12,10 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:0.11.2"
 	modCompileOnlyApi fabricApi.module('fabric-biome-api-v1', '0.42.0+1.16')
 	modRuntimeOnly fabricApi.module('fabric-command-api-v1', '0.42.0+1.16')
+}
+
+base {
+	archivesName = "fabric-example-lib"
 }
 
 processResources {

@@ -35,7 +35,7 @@ class LoomTestConstants {
 	// Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
 	public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? NIGHTLY_VERSION : DEFAULT_GRADLE
 	// Randomly sorted to ensure that all versions can run with a clean gradle home.
-	public final static String[] STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
+	public final static List<String> STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
 		DEFAULT_GRADLE,
 		PRE_RELEASE_GRADLE
 	] : [DEFAULT_GRADLE]).shuffled().toArray()

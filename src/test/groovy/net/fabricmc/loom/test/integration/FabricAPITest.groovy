@@ -45,7 +45,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "2facd446984085376bd23245410ebf2dc0881b02",
+				commit: "01af69c8709f00b6c1aaf10c3f528fed93a29cfd",
 				version: version,
 				patch: "fabric_api"
 				)
@@ -77,8 +77,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		result.task(":build").outcome == SUCCESS
 		result.task(":prepareRemapJar").outcome == SUCCESS
 
-		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0.jar").exists()
-		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0-sources.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.6/fabric-biome-api-v1-13.0.6.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.6/fabric-biome-api-v1-13.0.6-sources.jar").exists()
 
 		serverResult.successful()
 		serverResult.output.contains("- fabric-api $API_VERSION")

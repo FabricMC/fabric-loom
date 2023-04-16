@@ -31,7 +31,7 @@ import groovy.transform.Immutable
 import net.fabricmc.loom.util.download.Download
 
 class ServerRunner {
-	static final String LOADER_VERSION = "0.14.12"
+	static final String LOADER_VERSION = "0.14.19"
 	static final String INSTALLER_VERSION = "0.11.1"
 	static final Map<String, String> FABRIC_API_URLS = [
 		"1.16.5": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.16/fabric-api-0.37.1+1.16.jar",

@@ -66,6 +66,11 @@ jobs:
         with:
           name: ${{ steps.test.outputs.test }} Results
           path: build/reports/
+      - uses: actions/upload-artifact@v3
+        if: ${{ failure() }}
+        with:
+          name: ${{ steps.test.outputs.test }} Heap Dump
+          path: "*.hprof"
 
   run_tests_windows:
     needs: prepare_test_matrix
@@ -95,6 +100,11 @@ jobs:
         with:
           name: ${{ steps.test.outputs.test }} (${{ matrix.java }}) Results (Windows)
           path: build/reports/
+      - uses: actions/upload-artifact@v3
+        if: ${{ failure() }}
+        with:
+          name: ${{ steps.test.outputs.test }} Heap Dump (Windows)
+          path: "*.hprof"
 
   # Special case this test to run across all os's
   reproducible_build_test:

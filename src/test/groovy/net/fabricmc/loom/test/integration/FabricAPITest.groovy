@@ -55,7 +55,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		// Set the version to something constant
 		gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
-		def server = ServerRunner.create(gradle.projectDir, "1.19.3")
+		def server = ServerRunner.create(gradle.projectDir, "1.19.4")
 				.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
 		def result = gradle.run(tasks: [

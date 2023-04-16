@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.library;
 
+import java.util.Arrays;
+
 import org.gradle.api.JavaVersion;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
@@ -49,8 +51,36 @@ public final class LibraryContext {
 	 * @return True when the Minecraft libraries support Java 19 or later
 	 */
 	public boolean supportsJava19OrLater() {
-		// TODO check for any library with LWJGL 3.3.2 or later, currently not present in any mc version
-		return false;
+		return versionMeta.libraries().stream().filter(library -> library.name().startsWith("org.lwjgl:lwjgl:")).anyMatch(library -> {
+			final String[] split = library.name().split(":");
+
+			if (split.length != 3) {
+				return false;
+			}
+
+			final String version = split[2];
+
+			final int[] versionSplit = Arrays.stream(version.split("\\."))
+					.mapToInt(Integer::parseInt)
+					.toArray();
+
+			// LWJGL 4 or newer
+			if (versionSplit[0] > 3) {
+				return true;
+			}
+
+			// LWJGL 3.4 or newer
+			if (versionSplit[0] == 3 && versionSplit[1] > 3) {
+				return true;
+			}
+
+			// LWJGL 3.3.2 or newer
+			if (versionSplit[0] == 3 && versionSplit[1] == 3 && versionSplit[2] >= 2) {
+				return true;
+			}
+
+			return false;
+		});
 	}
 
 	/**

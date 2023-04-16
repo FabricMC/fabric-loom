@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.library
 import org.gradle.api.JavaVersion
 import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
 import net.fabricmc.loom.test.util.MinecraftTestUtils
 
@@ -101,5 +102,33 @@ class LibraryContextTest extends Specification {
 		JavaVersion.VERSION_17 || false
 		JavaVersion.VERSION_19 || true
 		JavaVersion.VERSION_20 || true
+	}
+
+	def "Supports Java 19 or later"() {
+		when:
+		def metaJson = """
+				{
+				  "libraries": [
+					{
+					  "name": "org.lwjgl:lwjgl:${lwjglVersion}"
+					}
+				  ]
+				}"""
+		def context = new LibraryContext(MinecraftTestUtils.OBJECT_MAPPER.readValue(metaJson, MinecraftVersionMeta.class), JavaVersion.VERSION_17)
+
+		then:
+		context.supportsJava19OrLater() == supportsJava19OrLater
+
+		where:
+		lwjglVersion || supportsJava19OrLater
+		"2.1.2"      || false
+		"3.0.0"      || false
+		"3.0.5"      || false
+		"3.1.5"      || false
+		"3.3.1"      || false
+		"3.3.2"      || true
+		"3.3.3"      || true
+		"3.4.0"      || true
+		"4.0.0"      || true
 	}
 }

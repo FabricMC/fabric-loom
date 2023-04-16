@@ -37,7 +37,7 @@ import net.fabricmc.loom.util.download.Download
 
 class MinecraftTestUtils {
 	private static final File TEST_DIR = new File(LoomTestConstants.TEST_DIR, "minecraft")
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
 	static MinecraftVersionMeta getVersionMeta(String id) {
 		def versionManifest = download(Constants.VERSION_MANIFESTS, "version_manifest.json")

@@ -80,37 +80,37 @@ public final class CompileConfiguration {
 	public void setupConfigurations() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		createTransitive(Configurations.MOD_COMPILE_CLASSPATH);
-		createNoneTransitive(Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
+		configurations.register(Configurations.MOD_COMPILE_CLASSPATH);
+		createNonTransitive(Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
 
 		// Set up the Minecraft compile configurations.
-		var minecraftClientCompile = createNoneTransitive(Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES);
-		var minecraftServerCompile = createNoneTransitive(Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES);
-		var minecraftCompile = createNoneTransitive(Configurations.MINECRAFT_COMPILE_LIBRARIES);
+		var minecraftClientCompile = createNonTransitive(Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES);
+		var minecraftServerCompile = createNonTransitive(Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES);
+		var minecraftCompile = createNonTransitive(Configurations.MINECRAFT_COMPILE_LIBRARIES);
 		minecraftCompile.configure(configuration -> {
 			configuration.extendsFrom(minecraftClientCompile.get());
 			configuration.extendsFrom(minecraftServerCompile.get());
 		});
 
 		// Set up the minecraft runtime configurations, this extends from the compile configurations.
-		var minecraftClientRuntime = createNoneTransitive(Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
-		var minecraftServerRuntime = createNoneTransitive(Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
+		var minecraftClientRuntime = createNonTransitive(Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
+		var minecraftServerRuntime = createNonTransitive(Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
 
 		// Runtime extends from compile
 		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
 		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile.get()));
 
-		createNoneTransitive(Configurations.MINECRAFT_RUNTIME_LIBRARIES).configure(minecraftRuntime -> {
+		createNonTransitive(Configurations.MINECRAFT_RUNTIME_LIBRARIES).configure(minecraftRuntime -> {
 			minecraftRuntime.extendsFrom(minecraftClientRuntime.get());
 			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
 		});
 
-		createNoneTransitive(Configurations.MINECRAFT_NATIVES);
-		createNoneTransitive(Configurations.LOADER_DEPENDENCIES);
+		createNonTransitive(Configurations.MINECRAFT_NATIVES);
+		createNonTransitive(Configurations.LOADER_DEPENDENCIES);
 
-		createNoneTransitive(Configurations.MINECRAFT);
-		createNoneTransitive(Configurations.INCLUDE);
-		createNoneTransitive(Configurations.MAPPING_CONSTANTS);
+		createNonTransitive(Configurations.MINECRAFT);
+		createNonTransitive(Configurations.INCLUDE);
+		createNonTransitive(Configurations.MAPPING_CONSTANTS);
 
 		configurations.register(Configurations.NAMED_ELEMENTS, configuration -> {
 			configuration.setCanBeConsumed(true);
@@ -141,12 +141,8 @@ public final class CompileConfiguration {
 		project.getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 	}
 
-	private NamedDomainObjectProvider<Configuration> createNoneTransitive(String name) {
+	private NamedDomainObjectProvider<Configuration> createNonTransitive(String name) {
 		return configurations.register(name, configuration -> configuration.setTransitive(false));
-	}
-
-	private NamedDomainObjectProvider<Configuration> createTransitive(String name) {
-		return configurations.register(name, configuration -> configuration.setTransitive(true));
 	}
 
 	public void configureCompile() {

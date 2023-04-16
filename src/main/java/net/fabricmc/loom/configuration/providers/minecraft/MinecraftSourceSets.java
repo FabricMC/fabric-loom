@@ -24,13 +24,12 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import static net.fabricmc.loom.configuration.CompileConfiguration.extendsFrom;
-
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
@@ -48,11 +47,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	public abstract void applyDependencies(BiConsumer<String, String> consumer, List<String> targets);
 
-	public abstract String getCombinedSourceSetName();
-
 	public abstract String getSourceSetForEnv(String env);
 
-	protected abstract List<String> getAllSourceSetNames();
+	protected abstract List<ConfigurationName> getConfigurations();
 
 	public void evaluateSplit(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -63,33 +60,51 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	public abstract void afterEvaluate(Project project);
 
-	protected void createSourceSets(Project project) {
-		for (String name : getAllSourceSetNames()) {
-			project.getConfigurations().register(name, configuration -> configuration.setTransitive(false));
+	protected void createConfigurations(Project project) {
+		final ConfigurationContainer configurations = project.getConfigurations();
 
-			// All the configurations extend the loader deps.
-			extendsFrom(name, Constants.Configurations.LOADER_DEPENDENCIES, project);
+		for (ConfigurationName configurationName : getConfigurations()) {
+			configurations.register(configurationName.runtime(), configuration -> {
+				configuration.setTransitive(false);
+				configuration.extendsFrom(configurations.getByName(configurationName.mcLibsRuntimeName()));
+				configuration.extendsFrom(configurations.getByName(Constants.Configurations.LOADER_DEPENDENCIES));
+				configuration.extendsFrom(configurations.getByName(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES));
+			});
+
+			configurations.register(configurationName.compile(), configuration -> {
+				configuration.setTransitive(false);
+				configuration.extendsFrom(configurations.getByName(configurationName.mcLibsCompileName()));
+				configuration.extendsFrom(configurations.getByName(Constants.Configurations.LOADER_DEPENDENCIES));
+			});
 		}
+	}
+
+	protected void extendsFrom(Project project, String name, String extendsFrom) {
+		final ConfigurationContainer configurations = project.getConfigurations();
+
+		configurations.named(name, configuration -> {
+			configuration.extendsFrom(configurations.getByName(extendsFrom));
+		});
 	}
 
 	/**
 	 * Used when we have a single source set, either with split or merged jars.
 	 */
 	public static final class Single extends MinecraftSourceSets {
-		private static final String MINECRAFT_NAMED = "minecraftNamed";
+		private static final ConfigurationName MINECRAFT_NAMED = new ConfigurationName(
+				"minecraftNamed",
+				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
+		);
 
 		private static final Single INSTANCE = new Single();
 
 		@Override
 		public void applyDependencies(BiConsumer<String, String> consumer, List<String> targets) {
 			for (String target : targets) {
-				consumer.accept(MINECRAFT_NAMED, target);
+				consumer.accept(MINECRAFT_NAMED.compile(), target);
+				consumer.accept(MINECRAFT_NAMED.runtime(), target);
 			}
-		}
-
-		@Override
-		public String getCombinedSourceSetName() {
-			return MINECRAFT_NAMED;
 		}
 
 		@Override
@@ -98,23 +113,19 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		@Override
-		protected List<String> getAllSourceSetNames() {
+		protected List<ConfigurationName> getConfigurations() {
 			return List.of(MINECRAFT_NAMED);
 		}
 
 		@Override
 		public void afterEvaluate(Project project) {
 			// This is done in afterEvaluate as we need to be sure that split source sets was not enabled.
-			createSourceSets(project);
+			createConfigurations(project);
 
-			// Default compile and runtime sourcesets.
-			extendsFrom(List.of(
-					JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
-					JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME,
-					JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME,
-					JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME),
-					MINECRAFT_NAMED, project
-			);
+			extendsFrom(project, JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.compile());
+			extendsFrom(project, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.runtime());
+			extendsFrom(project, JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.compile());
+			extendsFrom(project, JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.runtime());
 		}
 	}
 
@@ -122,9 +133,17 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 	 * Used when we have a split client/common source set and split jars.
 	 */
 	public static final class Split extends MinecraftSourceSets {
-		private static final String MINECRAFT_COMMON_NAMED = "minecraftCommonNamed";
-		private static final String MINECRAFT_CLIENT_ONLY_NAMED = "minecraftClientOnlyNamed";
-		private static final String MINECRAFT_COMBINED_NAMED = "minecraftCombinedNamed";
+		private static final ConfigurationName MINECRAFT_COMMON_NAMED = new ConfigurationName(
+				"minecraftCommonNamed",
+				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
+		);
+		// Depends on the Minecraft client libraries.
+		private static final ConfigurationName MINECRAFT_CLIENT_ONLY_NAMED = new ConfigurationName(
+				"minecraftClientOnlyNamed",
+				Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES
+		);
 
 		public static final String CLIENT_ONLY_SOURCE_SET_NAME = "client";
 
@@ -136,13 +155,10 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			Preconditions.checkArgument(targets.contains("common"));
 			Preconditions.checkArgument(targets.contains("clientOnly"));
 
-			consumer.accept(MINECRAFT_COMMON_NAMED, "common");
-			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED, "clientOnly");
-		}
-
-		@Override
-		public String getCombinedSourceSetName() {
-			return MINECRAFT_COMBINED_NAMED;
+			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), "common");
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), "clientOnly");
+			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), "common");
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), "clientOnly");
 		}
 
 		@Override
@@ -151,37 +167,29 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		@Override
-		protected List<String> getAllSourceSetNames() {
-			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_COMBINED_NAMED);
+		protected List<ConfigurationName> getConfigurations() {
+			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_CLIENT_ONLY_NAMED);
 		}
 
 		// Called during evaluation, when the loom extension method is called.
 		private void evaluate(Project project) {
-			final LoomGradleExtension extension = LoomGradleExtension.get(project);
-			createSourceSets(project);
-
-			// Combined extends from the 2 environments.
-			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_COMMON_NAMED, project);
-			extendsFrom(MINECRAFT_COMBINED_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, project);
+			createConfigurations(project);
+			final ConfigurationContainer configurations = project.getConfigurations();
 
 			// Register our new client only source set, main becomes common only, with their respective jars.
-			SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
-			SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
+			final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+			final SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
 
-			extendsFrom(List.of(
-					mainSourceSet.getCompileClasspathConfigurationName(),
-					mainSourceSet.getRuntimeClasspathConfigurationName()
-				), MINECRAFT_COMMON_NAMED, project
-			);
+			// Add Minecraft to the main and client source sets.
+			extendsFrom(project, mainSourceSet.getCompileClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.compile());
+			extendsFrom(project, mainSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
+			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.compile());
+			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.runtime());
 
-			extendsFrom(List.of(
-					clientOnlySourceSet.getCompileClasspathConfigurationName(),
-					clientOnlySourceSet.getRuntimeClasspathConfigurationName()
-				), MINECRAFT_CLIENT_ONLY_NAMED, project
-			);
+			// Client source set depends on common.
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
 
-			// Client depends on common.
-			extendsFrom(MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_COMMON_NAMED, project);
 			clientOnlySourceSet.setCompileClasspath(
 					clientOnlySourceSet.getCompileClasspath()
 							.plus(mainSourceSet.getCompileClasspath())
@@ -229,6 +237,16 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		public void afterEvaluate(Project project) {
+		}
+	}
+
+	private record ConfigurationName(String baseName, String mcLibsCompileName, String mcLibsRuntimeName) {
+		private String runtime() {
+			return baseName + "Runtime";
+		}
+
+		private String compile() {
+			return baseName + "Compile";
 		}
 	}
 }

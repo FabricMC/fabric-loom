@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.test.unit.library.processors
 
-public record Architecture(String name) {
-	public static final Architecture CURRENT = new Architecture(System.getProperty("os.arch"));
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor
+import net.fabricmc.loom.test.util.PlatformTestUtils
 
-	public boolean is64Bit() {
-		return name.contains("64") || name.startsWith("armv8");
-	}
+class RuntimeLog4jLibraryProcessorTest extends LibraryProcessorTest {
+	def "Make log4j runtime"() {
+		when:
+		def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64)
+		def processor = new RuntimeLog4jLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
 
-	public boolean isArm() {
-		return name.startsWith("arm") || name.startsWith("aarch64");
+		then:
+		processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
+
+		findLibrary("org.apache.logging.log4j", original).target() == Library.Target.COMPILE
+		findLibrary("org.apache.logging.log4j", processed).target() == Library.Target.RUNTIME
 	}
 }

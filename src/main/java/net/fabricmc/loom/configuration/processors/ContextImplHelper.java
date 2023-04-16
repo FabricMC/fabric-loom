@@ -42,7 +42,7 @@ public final class ContextImplHelper {
 		return new LazyCloseable<>(() -> {
 			try {
 				TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext.project(), configContext.serviceManager(), from.toString(), to.toString());
-				tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftDependencies(configContext.project()));
+				tinyRemapper.readClassPath(TinyRemapperHelper.getMinecraftCompileLibraries(configContext.project()));
 
 				for (Path minecraftJar : configContext.extension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
 					tinyRemapper.readClassPath(minecraftJar);

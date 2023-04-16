@@ -101,12 +101,10 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
 
-			if (!excludedLibraryPaths.isEmpty()) {
-				try {
-					setClasspathModifications(runConfigs.toPath(), excludedLibraryPaths);
-				} catch (Exception e) {
-					getProject().getLogger().error("Failed to modify run configuration xml", e);
-				}
+			try {
+				setClasspathModifications(runConfigs.toPath(), excludedLibraryPaths);
+			} catch (Exception e) {
+				getProject().getLogger().error("Failed to modify run configuration xml", e);
 			}
 		}
 	}

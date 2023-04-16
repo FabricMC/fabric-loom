@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,42 +29,52 @@ import java.io.UncheckedIOException;
 import java.net.StandardProtocolFamily;
 import java.nio.channels.ServerSocketChannel;
 
-public class OperatingSystem {
-	public static final String WINDOWS = "windows";
-	public static final String MAC_OS = "osx";
-	public static final String LINUX = "linux";
+final class CurrentPlatform implements Platform {
+	static final Platform INSTANCE = new CurrentPlatform();
 
-	public static final String CURRENT_OS = getOS();
+	private final OperatingSystem operatingSystem;
+	private final Architecture architecture;
+	private final boolean supportsUnixDomainSockets;
 
-	private static String getOS() {
-		String osName = System.getProperty("os.name").toLowerCase();
+	private CurrentPlatform() {
+		this.operatingSystem = getCurrentOperatingSystem();
+		this.architecture = getCurrentArchitecture();
+		this.supportsUnixDomainSockets = isUnixDomainSocketsSupported();
+	}
+
+	private static OperatingSystem getCurrentOperatingSystem() {
+		final String osName = System.getProperty("os.name").toLowerCase();
 
 		if (osName.contains("win")) {
-			return WINDOWS;
+			return OperatingSystem.WINDOWS;
 		} else if (osName.contains("mac")) {
-			return MAC_OS;
+			return OperatingSystem.MAC_OS;
 		} else {
-			return LINUX;
+			// Or unknown
+			return OperatingSystem.LINUX;
 		}
 	}
 
-	public static boolean is64Bit() {
-		return System.getProperty("sun.arch.data.model").contains("64");
-	}
+	private static Architecture getCurrentArchitecture() {
+		final String arch = System.getProperty("os.arch");
+		final boolean is64Bit = arch.contains("64") || arch.startsWith("armv8");
+		final boolean isArm = arch.startsWith("arm") || arch.startsWith("aarch64");
 
-	public static boolean isCIBuild() {
-		String loomProperty = System.getProperty("fabric.loom.ci");
+		return new Architecture() {
+			@Override
+			public boolean is64Bit() {
+				return is64Bit;
+			}
 
-		if (loomProperty != null) {
-			return loomProperty.equalsIgnoreCase("true");
-		}
-
-		// CI seems to be set by most popular CI services
-		return System.getenv("CI") != null;
+			@Override
+			public boolean isArm() {
+				return isArm;
+			}
+		};
 	}
 
 	// Requires Unix, or Windows 10 17063 or later. See: https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/
-	public static boolean isUnixDomainSocketsSupported() {
+	private static boolean isUnixDomainSocketsSupported() {
 		try (ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX)) {
 			return true;
 		} catch (UnsupportedOperationException e) {
@@ -72,5 +82,20 @@ public class OperatingSystem {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	@Override
+	public OperatingSystem getOperatingSystem() {
+		return operatingSystem;
+	}
+
+	@Override
+	public Architecture getArchitecture() {
+		return architecture;
+	}
+
+	@Override
+	public boolean supportsUnixDomainSockets() {
+		return supportsUnixDomainSockets;
 	}
 }

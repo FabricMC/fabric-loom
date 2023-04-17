@@ -26,8 +26,24 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import kotlinx.metadata.*
-import kotlinx.metadata.internal.extensions.*
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmConstructor
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmPackage
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmType
+import kotlinx.metadata.KmTypeAlias
+import kotlinx.metadata.KmTypeParameter
+import kotlinx.metadata.KmValueParameter
+import kotlinx.metadata.internal.extensions.KmClassExtension
+import kotlinx.metadata.internal.extensions.KmConstructorExtension
+import kotlinx.metadata.internal.extensions.KmFunctionExtension
+import kotlinx.metadata.internal.extensions.KmPackageExtension
+import kotlinx.metadata.internal.extensions.KmPropertyExtension
+import kotlinx.metadata.internal.extensions.KmTypeAliasExtension
+import kotlinx.metadata.internal.extensions.KmTypeExtension
+import kotlinx.metadata.internal.extensions.KmTypeParameterExtension
+import kotlinx.metadata.internal.extensions.KmValueParameterExtension
 import java.lang.reflect.Field
 import kotlin.reflect.KClass
 
@@ -41,39 +57,39 @@ val KM_TYPE_PARAMETER_EXTENSIONS = getField(KmTypeParameter::class)
 val KM_VALUE_PARAMETER_EXTENSIONS = getField(KmValueParameter::class)
 val KM_CONSTRUCTOR_EXTENSIONS = getField(KmConstructor::class)
 
-fun KmClass.getExtensions() : MutableList<KmClassExtension> {
+fun KmClass.getExtensions(): MutableList<KmClassExtension> {
     return KM_CLASS_EXTENSIONS.get(this) as MutableList<KmClassExtension>
 }
 
-fun KmPackage.getExtensions() : MutableList<KmPackageExtension> {
+fun KmPackage.getExtensions(): MutableList<KmPackageExtension> {
     return KM_PACKAGE_EXTENSIONS.get(this) as MutableList<KmPackageExtension>
 }
 
-fun KmType.getExtensions() : MutableList<KmTypeExtension> {
+fun KmType.getExtensions(): MutableList<KmTypeExtension> {
     return KM_TYPE_EXTENSIONS.get(this) as MutableList<KmTypeExtension>
 }
 
-fun KmFunction.getExtensions() : MutableList<KmFunctionExtension> {
+fun KmFunction.getExtensions(): MutableList<KmFunctionExtension> {
     return KM_FUNCTION_EXTENSIONS.get(this) as MutableList<KmFunctionExtension>
 }
 
-fun KmProperty.getExtensions() : MutableList<KmPropertyExtension> {
+fun KmProperty.getExtensions(): MutableList<KmPropertyExtension> {
     return KM_PROPERTY_EXTENSIONS.get(this) as MutableList<KmPropertyExtension>
 }
 
-fun KmTypeAlias.getExtensions() : MutableList<KmTypeAliasExtension> {
+fun KmTypeAlias.getExtensions(): MutableList<KmTypeAliasExtension> {
     return KM_TYPE_ALIAS_EXTENSIONS.get(this) as MutableList<KmTypeAliasExtension>
 }
 
-fun KmTypeParameter.getExtensions() : MutableList<KmTypeParameterExtension> {
+fun KmTypeParameter.getExtensions(): MutableList<KmTypeParameterExtension> {
     return KM_TYPE_PARAMETER_EXTENSIONS.get(this) as MutableList<KmTypeParameterExtension>
 }
 
-fun KmValueParameter.getExtensions() : MutableList<KmValueParameterExtension> {
+fun KmValueParameter.getExtensions(): MutableList<KmValueParameterExtension> {
     return KM_VALUE_PARAMETER_EXTENSIONS.get(this) as MutableList<KmValueParameterExtension>
 }
 
-fun KmConstructor.getExtensions() : MutableList<KmConstructorExtension> {
+fun KmConstructor.getExtensions(): MutableList<KmConstructorExtension> {
     return KM_CONSTRUCTOR_EXTENSIONS.get(this) as MutableList<KmConstructorExtension>
 }
 

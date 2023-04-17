@@ -24,8 +24,31 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import kotlinx.metadata.*
-import kotlinx.metadata.internal.extensions.*
+import kotlinx.metadata.ClassName
+import kotlinx.metadata.ExperimentalContextReceivers
+import kotlinx.metadata.KmAnnotation
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmClassifier
+import kotlinx.metadata.KmConstructor
+import kotlinx.metadata.KmFlexibleTypeUpperBound
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmLambda
+import kotlinx.metadata.KmPackage
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmType
+import kotlinx.metadata.KmTypeAlias
+import kotlinx.metadata.KmTypeParameter
+import kotlinx.metadata.KmTypeProjection
+import kotlinx.metadata.KmValueParameter
+import kotlinx.metadata.internal.extensions.KmClassExtension
+import kotlinx.metadata.internal.extensions.KmConstructorExtension
+import kotlinx.metadata.internal.extensions.KmFunctionExtension
+import kotlinx.metadata.internal.extensions.KmPackageExtension
+import kotlinx.metadata.internal.extensions.KmPropertyExtension
+import kotlinx.metadata.internal.extensions.KmTypeAliasExtension
+import kotlinx.metadata.internal.extensions.KmTypeExtension
+import kotlinx.metadata.internal.extensions.KmTypeParameterExtension
+import kotlinx.metadata.internal.extensions.KmValueParameterExtension
 import kotlinx.metadata.jvm.JvmFieldSignature
 import kotlinx.metadata.jvm.JvmMethodSignature
 import org.objectweb.asm.commons.Remapper

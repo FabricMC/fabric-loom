@@ -9,8 +9,8 @@ plugins {
 	id 'jacoco'
 	id 'codenarc'
 	id "org.jetbrains.kotlin.jvm" version "1.8.0" // Must match the version included with gradle.
-	id "com.diffplug.spotless" version "6.13.0"
-	id "org.gradle.test-retry" version "1.5.1"
+	id "com.diffplug.spotless" version "6.18.0"
+	id "org.gradle.test-retry" version "1.5.2"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -65,13 +65,13 @@ dependencies {
 	// libraries
 	implementation ('commons-io:commons-io:2.11.0')
 	implementation ('com.google.code.gson:gson:2.10.1')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.14.1')
+	implementation ('com.fasterxml.jackson.core:jackson-databind:2.14.2')
 	implementation ('com.google.guava:guava:31.1-jre')
-	implementation ('org.ow2.asm:asm:9.4')
-	implementation ('org.ow2.asm:asm-analysis:9.4')
-	implementation ('org.ow2.asm:asm-commons:9.4')
-	implementation ('org.ow2.asm:asm-tree:9.4')
-	implementation ('org.ow2.asm:asm-util:9.4')
+	implementation ('org.ow2.asm:asm:9.5')
+	implementation ('org.ow2.asm:asm-analysis:9.5')
+	implementation ('org.ow2.asm:asm-commons:9.5')
+	implementation ('org.ow2.asm:asm-tree:9.5')
+	implementation ('org.ow2.asm:asm-util:9.5')
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.6.2') {
@@ -95,7 +95,7 @@ dependencies {
 	implementation ('net.fabricmc:mercury:0.3.0')
 
 	// Kotlin
-	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0') {
+	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.0') {
 		transitive = false
 	}
 
@@ -108,13 +108,13 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
-	testImplementation ('io.javalin:javalin:5.3.1') {
+	testImplementation ('io.javalin:javalin:5.4.2') {
 		exclude group: 'org.jetbrains.kotlin'
 	}
-	testImplementation 'org.mockito:mockito-core:5.0.0'
+	testImplementation 'org.mockito:mockito-core:5.2.0'
 
-	compileOnly 'org.jetbrains:annotations:24.0.0'
-	testCompileOnly 'org.jetbrains:annotations:24.0.0'
+	compileOnly 'org.jetbrains:annotations:24.0.1'
+	testCompileOnly 'org.jetbrains:annotations:24.0.1'
 
 	testCompileOnly ('net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5') {
 		transitive = false

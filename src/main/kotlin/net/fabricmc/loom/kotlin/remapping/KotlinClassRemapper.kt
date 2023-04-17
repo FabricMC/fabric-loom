@@ -49,8 +49,10 @@ import kotlinx.metadata.internal.extensions.KmTypeAliasExtension
 import kotlinx.metadata.internal.extensions.KmTypeExtension
 import kotlinx.metadata.internal.extensions.KmTypeParameterExtension
 import kotlinx.metadata.internal.extensions.KmValueParameterExtension
+import kotlinx.metadata.isLocal
 import kotlinx.metadata.jvm.JvmFieldSignature
 import kotlinx.metadata.jvm.JvmMethodSignature
+import kotlinx.metadata.jvm.jvmInternalName
 import org.objectweb.asm.commons.Remapper
 
 @OptIn(ExperimentalContextReceivers::class)
@@ -84,7 +86,14 @@ class KotlinClassRemapper(private val remapper: Remapper) {
     }
 
     private fun remap(name: ClassName): ClassName {
-        return remapper.map(name)
+        val local = name.isLocal
+        val remapped = remapper.map(name.jvmInternalName).replace('$', '.')
+
+        if (local) {
+            return ".$remapped"
+        }
+
+        return remapped
     }
 
     private fun remap(type: KmType): KmType {

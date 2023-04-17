@@ -25,6 +25,7 @@
 package net.fabricmc.loom.kotlin.remapping
 
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.Metadata
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.Remapper
@@ -122,7 +123,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(private val remapper: Remapp
             }
         }
 
-        return Metadata(kind!!, metadataVersion!!, intArrayOf(0, 0, 0) /* TODO!? */, data1!!, data2!!, extraString!!, packageName!!, extraInt!!)
+        return Metadata(kind, metadataVersion, data1, data2, extraString, packageName, extraInt)
     }
 
     private fun writeClassHeader(header: Metadata) {

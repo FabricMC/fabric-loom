@@ -80,6 +80,7 @@ public class ModConfigurationRemapper {
 		final Map<Configuration, Configuration> configsToRemap = new LinkedHashMap<>();
 		// Client remapped dep collectors for split source sets. Same keys and values.
 		final Map<Configuration, Configuration> clientConfigsToRemap = new HashMap<>();
+		final Map<Configuration, String> configAnnotationProcessorMap = new HashMap<>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
 			// key: true if runtime, false if compile
@@ -97,6 +98,10 @@ public class ModConfigurationRemapper {
 				final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 				sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 				configsToRemap.put(sourceCopy, target);
+
+				if (!runtime) {
+					configAnnotationProcessorMap.put(sourceCopy, entry.getSourceSet().get().getAnnotationProcessorConfigurationName());
+				}
 
 				// If our remap configuration entry targets the client source set as well,
 				// let's set up a collector for it too.
@@ -157,11 +162,11 @@ public class ModConfigurationRemapper {
 
 					// If the artifact is an annotation processor, and is not from a runtime configuration add it to the annotation processor classpath.
 					if (artifactMetadata.isAnnotationProcessor()) {
-						final Usage usage = sourceConfig.getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
+						final String annotationProcessorConfigurationName = configAnnotationProcessorMap.get(sourceConfig);
 
-						if (usage != null && usage.getName().equals(Usage.JAVA_API)) {
-							project.getLogger().info("Applying annotation processor {}", artifact.path());
-							artifact.applyToConfiguration(project, project.getConfigurations().getByName(Constants.Configurations.MOD_ANNOTATION_PROCESSORS));
+						if (annotationProcessorConfigurationName != null) {
+							project.getLogger().info("Applying annotation processor {} to {}", artifact.path(), annotationProcessorConfigurationName);
+							artifact.applyToConfiguration(project, project.getConfigurations().getByName(annotationProcessorConfigurationName));
 						}
 					}
 

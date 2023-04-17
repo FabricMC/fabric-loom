@@ -126,8 +126,6 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(project, JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.runtime());
 			extendsFrom(project, JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.compile());
 			extendsFrom(project, JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, MINECRAFT_NAMED.runtime());
-
-			extendsFrom(project, JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME, Constants.Configurations.MOD_ANNOTATION_PROCESSORS);
 		}
 	}
 
@@ -187,10 +185,6 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(project, mainSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
 			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.compile());
 			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.runtime());
-
-			// Add mod annotation processors
-			extendsFrom(project, mainSourceSet.getAnnotationProcessorConfigurationName(), Constants.Configurations.MOD_ANNOTATION_PROCESSORS);
-			extendsFrom(project, clientOnlySourceSet.getAnnotationProcessorConfigurationName(), Constants.Configurations.MOD_ANNOTATION_PROCESSORS);
 
 			// Client source set depends on common.
 			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());

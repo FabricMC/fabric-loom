@@ -79,7 +79,6 @@ public class Constants {
 		 */
 		public static final String LOCAL_RUNTIME = "localRuntime";
 		public static final String NAMED_ELEMENTS = "namedElements";
-		public static final String MOD_ANNOTATION_PROCESSORS = "modAnnotationProcessors";
 
 		private Configurations() {
 		}

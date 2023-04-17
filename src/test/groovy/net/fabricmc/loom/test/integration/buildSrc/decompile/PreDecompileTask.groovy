@@ -30,12 +30,12 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 abstract class PreDecompileTask extends DefaultTask {
-    @OutputFile
-    abstract RegularFileProperty getOutputFile()
+	@OutputFile
+	abstract RegularFileProperty getOutputFile()
 
-    @TaskAction
-    def run() {
-        println("Writing test file")
-        getOutputFile().asFile.get().text = "Test"
-    }
+	@TaskAction
+	def run() {
+		println("Writing test file")
+		getOutputFile().asFile.get().text = "Test"
+	}
 }

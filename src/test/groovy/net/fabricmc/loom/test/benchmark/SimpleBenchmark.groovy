@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.benchmark
 
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
+
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
@@ -37,18 +38,18 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
  */
 @Singleton
 class SimpleBenchmark implements GradleProjectTestTrait {
-    def run(File dir) {
-        // Forces loom to refresh files
-        System.setProperty("loom.refresh", "true")
+	def run(File dir) {
+		// Forces loom to refresh files
+		System.setProperty("loom.refresh", "true")
 
-        def gradle = gradleProject(
-                project: "minimalBase",
-                version: LoomTestConstants.PRE_RELEASE_GRADLE,
-                projectDir: new File(dir, "project"),
-                gradleHomeDir: new File(dir, "gradlehome")
-        )
+		def gradle = gradleProject(
+				project: "minimalBase",
+				version: LoomTestConstants.PRE_RELEASE_GRADLE,
+				projectDir: new File(dir, "project"),
+				gradleHomeDir: new File(dir, "gradlehome")
+				)
 
-        gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.17:v2"
@@ -56,20 +57,20 @@ class SimpleBenchmark implements GradleProjectTestTrait {
                 }
             '''
 
-        def timeStart = new Date()
+		def timeStart = new Date()
 
-        def result = gradle.run(tasks: ["clean", "build"])
+		def result = gradle.run(tasks: ["clean", "build"])
 
-        def timeStop = new Date()
-        TimeDuration duration = TimeCategory.minus(timeStop, timeStart)
-        println(duration)
+		def timeStop = new Date()
+		TimeDuration duration = TimeCategory.minus(timeStop, timeStart)
+		println(duration)
 
-        assert result.task(":build").outcome == SUCCESS
+		assert result.task(":build").outcome == SUCCESS
 
-        System.exit(0)
-    }
+		System.exit(0)
+	}
 
-    static void main(String[] args) {
-        getInstance().run(new File(args[0]))
-    }
+	static void main(String[] args) {
+		getInstance().run(new File(args[0]))
+	}
 }

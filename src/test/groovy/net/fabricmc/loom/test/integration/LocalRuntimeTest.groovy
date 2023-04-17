@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -35,19 +36,22 @@ class LocalRuntimeTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "localRuntime", version: version)
+		def gradle = gradleProject(project: "localRuntime", version: version)
 
 		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"])
+		def result = gradle.run(tasks: [
+			"build",
+			"publishToMavenLocal"
+		])
 
 		then:
-			result.task(":build").outcome == SUCCESS
-			def pomFile = new File(gradle.getProjectDir(), "build/publications/mavenJava/pom-default.xml")
-			def pom = pomFile.text
-			!pom.contains("fabric-api")
-			!pom.contains("enigma")
+		result.task(":build").outcome == SUCCESS
+		def pomFile = new File(gradle.getProjectDir(), "build/publications/mavenJava/pom-default.xml")
+		def pom = pomFile.text
+		!pom.contains("fabric-api")
+		!pom.contains("enigma")
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

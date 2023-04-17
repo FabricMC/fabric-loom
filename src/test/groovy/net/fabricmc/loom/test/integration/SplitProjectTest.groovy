@@ -24,26 +24,27 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class SplitProjectTest extends Specification implements GradleProjectTestTrait {
-    @Unroll
-    def "build (gradle #version)"() {
-        setup:
-            def gradle = gradleProject(project: "splitSources", version: version)
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "splitSources", version: version)
 
-        when:
-            def result = gradle.run(tasks: ["build", "generateDLIConfig"])
+		when:
+		def result = gradle.run(tasks: ["build", "generateDLIConfig"])
 
-        then:
-            result.task(":build").outcome == SUCCESS
+		then:
+		result.task(":build").outcome == SUCCESS
 
-        where:
-            version << STANDARD_TEST_VERSIONS
-    }
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

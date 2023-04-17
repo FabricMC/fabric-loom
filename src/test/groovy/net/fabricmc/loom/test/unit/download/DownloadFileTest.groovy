@@ -24,209 +24,210 @@
 
 package net.fabricmc.loom.test.unit.download
 
-import io.javalin.http.HttpStatus
-import net.fabricmc.loom.util.Checksum
-import net.fabricmc.loom.util.download.Download
-import net.fabricmc.loom.util.download.DownloadException
-import net.fabricmc.loom.util.download.DownloadExecutor
-import net.fabricmc.loom.util.download.DownloadProgressListener
-import spock.lang.IgnoreIf
-
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
 import java.time.Duration
 import java.time.Instant
 
+import io.javalin.http.HttpStatus
+import spock.lang.IgnoreIf
+
+import net.fabricmc.loom.util.Checksum
+import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadException
+import net.fabricmc.loom.util.download.DownloadExecutor
+import net.fabricmc.loom.util.download.DownloadProgressListener
+
 class DownloadFileTest extends DownloadTest {
 	@IgnoreIf({ os.windows }) // Requires admin on windows.
 	def "Directory: Symlink"() {
 		setup:
-			server.get("/symlinkFile") {
-				it.result("Hello World")
-			}
-			def output = new File(File.createTempDir(), "file.txt").toPath()
-			def linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
-			Files.createSymbolicLink(linkedtmp, output.getParent())
-			def symlink = Paths.get(linkedtmp.toString(), "file.txt")
+		server.get("/symlinkFile") {
+			it.result("Hello World")
+		}
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def linkedtmp = new File(File.createTempDir(), "linkedtmp").toPath()
+		Files.createSymbolicLink(linkedtmp, output.getParent())
+		def symlink = Paths.get(linkedtmp.toString(), "file.txt")
 
 		when:
-			def result = Download.create("$PATH/symlinkFile").downloadPath(symlink)
+		def result = Download.create("$PATH/symlinkFile").downloadPath(symlink)
 
 		then:
-			Files.readString(symlink) == "Hello World"
+		Files.readString(symlink) == "Hello World"
 	}
 
 	def "File: Simple"() {
 		setup:
-			server.get("/simpleFile") {
-				it.result("Hello World")
-			}
+		server.get("/simpleFile") {
+			it.result("Hello World")
+		}
 
-			def output = new File(File.createTempDir(), "subdir/file.txt").toPath()
+		def output = new File(File.createTempDir(), "subdir/file.txt").toPath()
 
 		when:
-			def result = Download.create("$PATH/simpleFile").downloadPath(output)
+		def result = Download.create("$PATH/simpleFile").downloadPath(output)
 
 		then:
-			Files.readString(output) == "Hello World"
+		Files.readString(output) == "Hello World"
 	}
 
 	def "File: Not found"() {
 		setup:
-			server.get("/fileNotfound") {
-				it.status(404)
-			}
+		server.get("/fileNotfound") {
+			it.status(404)
+		}
 
-			def output = new File(File.createTempDir(), "file.txt").toPath()
+		def output = new File(File.createTempDir(), "file.txt").toPath()
 
 		when:
-			def result = Download.create("$PATH/stringNotFound").downloadPath(output)
+		def result = Download.create("$PATH/stringNotFound").downloadPath(output)
 
 		then:
-			thrown DownloadException
+		thrown DownloadException
 	}
 
 	def "Cache: Sha1"() {
 		setup:
-			int requestCount = 0
+		int requestCount = 0
 
-			server.get("/sha1.txt") {
-				it.result("Hello World")
-				requestCount ++
-			}
+		server.get("/sha1.txt") {
+			it.result("Hello World")
+			requestCount ++
+		}
 
-			def output = new File(File.createTempDir(), "file.txt").toPath()
+		def output = new File(File.createTempDir(), "file.txt").toPath()
 
 		when:
-			for (i in 0..<2) {
-				Download.create("$PATH/sha1.txt")
+		for (i in 0..<2) {
+			Download.create("$PATH/sha1.txt")
 					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
 					.downloadPath(output)
-			}
+		}
 
 		then:
-			requestCount == 1
+		requestCount == 1
 	}
 
 	def "Invalid Sha1"() {
 		setup:
-			server.get("/sha1.invalid") {
-				it.result("Hello World")
-			}
+		server.get("/sha1.invalid") {
+			it.result("Hello World")
+		}
 
-			def output = new File(File.createTempDir(), "file.txt").toPath()
+		def output = new File(File.createTempDir(), "file.txt").toPath()
 
 		when:
-			Download.create("$PATH/sha1.invalid")
+		Download.create("$PATH/sha1.invalid")
 				.sha1("d139cccf047a749691416ce385d3f168c1e28309")
 				.downloadPath(output)
 
 		then:
-			// Ensure the file we downloaded with the wrong hash was deleted
-			Files.notExists(output)
-			thrown DownloadException
+		// Ensure the file we downloaded with the wrong hash was deleted
+		Files.notExists(output)
+		thrown DownloadException
 	}
 
 	def "Offline"() {
 		setup:
-			int requestCount = 0
+		int requestCount = 0
 
-			server.get("/offline.txt") {
-				it.result("Hello World")
-				requestCount ++
-			}
+		server.get("/offline.txt") {
+			it.result("Hello World")
+			requestCount ++
+		}
 
-			def output = new File(File.createTempDir(), "offline.txt").toPath()
+		def output = new File(File.createTempDir(), "offline.txt").toPath()
 
 		when:
-			Download.create("$PATH/offline.txt")
+		Download.create("$PATH/offline.txt")
 				.downloadPath(output)
 
-			Download.create("$PATH/offline.txt")
+		Download.create("$PATH/offline.txt")
 				.offline()
 				.downloadPath(output)
 
 		then:
-			requestCount == 1
+		requestCount == 1
 	}
 
 	def "Max Age"() {
 		setup:
-			int requestCount = 0
+		int requestCount = 0
 
-			server.get("/maxage.txt") {
-				it.result("Hello World")
-				requestCount ++
-			}
+		server.get("/maxage.txt") {
+			it.result("Hello World")
+			requestCount ++
+		}
 
-			def output = new File(File.createTempDir(), "maxage.txt").toPath()
+		def output = new File(File.createTempDir(), "maxage.txt").toPath()
 
 		when:
-			Download.create("$PATH/maxage.txt")
+		Download.create("$PATH/maxage.txt")
 				.maxAge(Duration.ofDays(1))
 				.downloadPath(output)
 
-			Download.create("$PATH/maxage.txt")
+		Download.create("$PATH/maxage.txt")
 				.maxAge(Duration.ofDays(1))
 				.downloadPath(output)
 
-			def twoDaysAgo = Instant.now() - Duration.ofDays(2)
-			Files.setLastModifiedTime(output, FileTime.from(twoDaysAgo))
+		def twoDaysAgo = Instant.now() - Duration.ofDays(2)
+		Files.setLastModifiedTime(output, FileTime.from(twoDaysAgo))
 
-			Download.create("$PATH/maxage.txt")
+		Download.create("$PATH/maxage.txt")
 				.maxAge(Duration.ofDays(1))
 				.downloadPath(output)
 
 		then:
-			requestCount == 2
+		requestCount == 2
 	}
 
 	def "ETag"() {
 		setup:
-			int requestCount = 0
+		int requestCount = 0
 
-			server.get("/etag") {
-				def clientEtag = it.req.getHeader("If-None-Match")
+		server.get("/etag") {
+			def clientEtag = it.req.getHeader("If-None-Match")
 
-				def result = "Hello world"
-				def etag = result.hashCode().toString()
-				it.header("ETag", etag)
+			def result = "Hello world"
+			def etag = result.hashCode().toString()
+			it.header("ETag", etag)
 
-				if (clientEtag == etag) {
-					// Etag matches, no need to send the data.
-					it.status(HttpStatus.NOT_MODIFIED)
-					return
-				}
-
-				it.result(result)
-				requestCount ++
+			if (clientEtag == etag) {
+				// Etag matches, no need to send the data.
+				it.status(HttpStatus.NOT_MODIFIED)
+				return
 			}
+
+			it.result(result)
+			requestCount ++
+		}
 
 		def output = new File(File.createTempDir(), "etag.txt").toPath()
 
 		when:
-			for (i in 0..<3) {
-				Download.create("$PATH/etag")
+		for (i in 0..<3) {
+			Download.create("$PATH/etag")
 					.etag(true)
 					.downloadPath(output)
-			}
+		}
 
 		then:
-			requestCount == 1
+		requestCount == 1
 	}
 
 	def "Progress: File"() {
 		setup:
-			server.get("/progressFile") {
-				it.result("Hello World")
-			}
+		server.get("/progressFile") {
+			it.result("Hello World")
+		}
 
-			def output = new File(File.createTempDir(), "file.txt").toPath()
-			def started, ended = false
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def started, ended = false
 
 		when:
-			Download.create("$PATH/progressFile")
+		Download.create("$PATH/progressFile")
 				.progress(new DownloadProgressListener() {
 					@Override
 					void onStart() {
@@ -245,20 +246,20 @@ class DownloadFileTest extends DownloadTest {
 				.downloadPath(output)
 
 		then:
-			started
-			ended
+		started
+		ended
 	}
 
 	def "Progress: String"() {
 		setup:
-			server.get("/progressString") {
-				it.result("Hello World")
-			}
+		server.get("/progressString") {
+			it.result("Hello World")
+		}
 
-			def started, ended = false
+		def started, ended = false
 
 		when:
-			Download.create("$PATH/progressFile")
+		Download.create("$PATH/progressFile")
 				.progress(new DownloadProgressListener() {
 					@Override
 					void onStart() {
@@ -277,90 +278,90 @@ class DownloadFileTest extends DownloadTest {
 				.downloadString()
 
 		then:
-			started
-			ended
+		started
+		ended
 	}
 
 	def "File: Async"() {
 		setup:
-			server.get("/async1") {
-				it.result("Hello World")
-			}
+		server.get("/async1") {
+			it.result("Hello World")
+		}
 
-			def dir = File.createTempDir().toPath()
+		def dir = File.createTempDir().toPath()
 
 		when:
-			new DownloadExecutor(2).withCloseable {
-				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("1.txt"), it)
-				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("2.txt"), it)
-				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("3.txt"), it)
-				Download.create("$PATH/async1").downloadPathAsync(dir.resolve("4.txt"), it)
-			}
+		new DownloadExecutor(2).withCloseable {
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("1.txt"), it)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("2.txt"), it)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("3.txt"), it)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("4.txt"), it)
+		}
 
 		then:
-			Files.readString(dir.resolve("4.txt")) == "Hello World"
+		Files.readString(dir.resolve("4.txt")) == "Hello World"
 	}
 
 	def "File: Async Error"() {
 		setup:
-			server.get("/async2") {
-				it.result("Hello World")
-			}
+		server.get("/async2") {
+			it.result("Hello World")
+		}
 
-			def dir = File.createTempDir().toPath()
+		def dir = File.createTempDir().toPath()
 
 		when:
-			new DownloadExecutor(2).withCloseable {
-				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("1.txt"), it)
-				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("2.txt"), it)
-				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("3.txt"), it)
-				Download.create("$PATH/async2").downloadPathAsync(dir.resolve("4.txt"), it)
+		new DownloadExecutor(2).withCloseable {
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("1.txt"), it)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("2.txt"), it)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("3.txt"), it)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("4.txt"), it)
 
-				Download.create("$PATH/asyncError").downloadPathAsync(dir.resolve("5.txt"), it)
-				Download.create("$PATH/asyncError2").downloadPathAsync(dir.resolve("6.txt"), it)
-			}
+			Download.create("$PATH/asyncError").downloadPathAsync(dir.resolve("5.txt"), it)
+			Download.create("$PATH/asyncError2").downloadPathAsync(dir.resolve("6.txt"), it)
+		}
 
 		then:
-			thrown DownloadException
+		thrown DownloadException
 	}
 
 	def "File: Large"() {
 		setup:
-			byte[] data = new byte[1024 * 1024 * 10] // 10MB
-			new Random().nextBytes(data)
+		byte[] data = new byte[1024 * 1024 * 10] // 10MB
+		new Random().nextBytes(data)
 
-			server.get("/largeFile") {
-				it.result(data)
-			}
+		server.get("/largeFile") {
+			it.result(data)
+		}
 
-			def output = new File(File.createTempDir(), "file").toPath()
+		def output = new File(File.createTempDir(), "file").toPath()
 
 		when:
-			def result = Download.create("$PATH/largeFile").downloadPath(output)
+		def result = Download.create("$PATH/largeFile").downloadPath(output)
 
 		then:
-			Files.readAllBytes(output) == data
+		Files.readAllBytes(output) == data
 	}
 
 	def "File: Insecure protocol"() {
 		setup:
-			def output = new File(File.createTempDir(), "file").toPath()
+		def output = new File(File.createTempDir(), "file").toPath()
 		when:
-			def result = Download.create("http://fabricmc.net").downloadPath(output)
+		def result = Download.create("http://fabricmc.net").downloadPath(output)
 		then:
-			thrown IllegalArgumentException
+		thrown IllegalArgumentException
 	}
 
 	// Known
 	def "Download Mojang Mappings"() {
 		setup:
-			def file = File.createTempDir().toPath().resolve("client.txt")
+		def file = File.createTempDir().toPath().resolve("client.txt")
 		when:
-			Download.create("https://piston-data.mojang.com/v1/objects/8e8c9be5dc27802caba47053d4fdea328f7f89bd/client.txt")
-					.sha1("8e8c9be5dc27802caba47053d4fdea328f7f89bd")
-					.downloadPath(file)
+		Download.create("https://piston-data.mojang.com/v1/objects/8e8c9be5dc27802caba47053d4fdea328f7f89bd/client.txt")
+				.sha1("8e8c9be5dc27802caba47053d4fdea328f7f89bd")
+				.downloadPath(file)
 
 		then:
-			Checksum.sha1Hex(file) == "8e8c9be5dc27802caba47053d4fdea328f7f89bd"
+		Checksum.sha1Hex(file) == "8e8c9be5dc27802caba47053d4fdea328f7f89bd"
 	}
 }

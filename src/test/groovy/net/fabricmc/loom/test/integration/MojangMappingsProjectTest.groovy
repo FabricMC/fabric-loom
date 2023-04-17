@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -35,26 +36,26 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "mojangMappings", version: version)
+		def gradle = gradleProject(project: "mojangMappings", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
-			def dependenciesResult = gradle.run(task: "dependencies")
+		def result = gradle.run(task: "build")
+		def dependenciesResult = gradle.run(task: "dependencies")
 
 		then:
-			result.task(":build").outcome == SUCCESS
-			dependenciesResult.task(":dependencies").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
+		dependenciesResult.task(":dependencies").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	@Unroll
 	def "mojang mappings without synthetic field names (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-			gradle.buildGradle << '''
+		gradle.buildGradle << '''
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18-pre5"
                     mappings loom.layered {
@@ -66,21 +67,21 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
             '''
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	@Unroll
 	def "fail with wrong officialMojangMappings usage (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
 
-			gradle.buildGradle << '''
+		gradle.buildGradle << '''
 				dependencies {
 					minecraft "com.mojang:minecraft:1.18.2"
 					mappings loom.layered {
@@ -91,12 +92,12 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 			'''
 
 		when:
-			def result = gradle.run(task: "build", expectFailure: true)
+		def result = gradle.run(task: "build", expectFailure: true)
 
 		then:
-			result.output.contains("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`")
+		result.output.contains("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`")
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

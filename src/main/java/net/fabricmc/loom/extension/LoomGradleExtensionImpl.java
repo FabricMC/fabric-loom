@@ -85,7 +85,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
 		});
 
-		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
+		refreshDeps = manualRefreshDeps();
 		multiProjectOptimisation = GradleUtils.getBooleanPropertyProvider(project, Constants.Properties.MULTI_PROJECT_OPTIMISATION);
 
 		if (refreshDeps) {
@@ -210,11 +210,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			builder.offline();
 		}
 
-		if (refreshDeps()) {
+		if (manualRefreshDeps()) {
 			builder.forceDownload();
 		}
 
 		return builder;
+	}
+
+	private boolean manualRefreshDeps() {
+		return project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
 	}
 
 	@Override

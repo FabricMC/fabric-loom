@@ -240,7 +240,7 @@ public class MappingConfiguration {
 	}
 
 	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input), JsonObject.class);
+		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input, StandardCharsets.UTF_8), JsonObject.class);
 
 		if (!jsonObject.has("version") || jsonObject.get("version").getAsInt() != 1) {
 			throw new UnsupportedOperationException("Unsupported unpick version");

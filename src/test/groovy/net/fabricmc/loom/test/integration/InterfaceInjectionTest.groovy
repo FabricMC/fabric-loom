@@ -24,10 +24,11 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.util.ZipUtils
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -36,16 +37,16 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 	@Unroll
 	def "interface injection (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "interfaceInjection", version: version)
-			ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+		def gradle = gradleProject(project: "interfaceInjection", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 }

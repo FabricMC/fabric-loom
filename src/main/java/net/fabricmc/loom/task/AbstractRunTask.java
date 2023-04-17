@@ -38,17 +38,22 @@ import java.util.stream.Collectors;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private final RunConfig config;
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
+
+	// TODO remove when updating loom to Gradle 8.1
+	private static final boolean setJvmArgsProperty = GradleUtils.JavaExecSpec_getJvmArguments != null;
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
@@ -59,6 +64,18 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
+
+		// TODO replace with a direct call when updating loom to Gradle 8.1
+		if (setJvmArgsProperty) {
+			try {
+				assert GradleUtils.JavaExecSpec_getJvmArguments != null;
+				//noinspection unchecked
+				ListProperty<String> jvmArguments = (ListProperty<String>) GradleUtils.JavaExecSpec_getJvmArguments.invoke(this);
+				jvmArguments.addAll(getProject().provider(this::getGameJvmArgs));
+			} catch (Throwable e) {
+				throw new RuntimeException("Failed to set jvm args", e);
+			}
+		}
 	}
 
 	private boolean canUseArgFile() {
@@ -94,8 +111,25 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	@Override
+	// TODO remove when updating loom to Gradle 8.1
 	public List<String> getJvmArgs() {
 		final List<String> superArgs = super.getJvmArgs();
+
+		if (setJvmArgsProperty) {
+			// Don't do anything here when on Gradle 8.1
+			return superArgs;
+		}
+
+		final List<String> args = new ArrayList<>(getGameJvmArgs());
+
+		if (superArgs != null) {
+			args.addAll(superArgs);
+		}
+
+		return args;
+	}
+
+	private List<String> getGameJvmArgs() {
 		final List<String> args = new ArrayList<>();
 
 		if (canUseArgFile()) {
@@ -111,10 +145,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to create classpath file", e);
 			}
-		}
-
-		if (superArgs != null) {
-			args.addAll(superArgs);
 		}
 
 		args.addAll(config.vmArgs);

@@ -30,49 +30,49 @@ import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsS
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpec
 
 class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
-    def "Read parchment mappings" () {
-        setup:
-            intermediaryUrl = INTERMEDIARY_1_16_5_URL
-            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
-        when:
-            withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
-            def mappings = getLayeredMappings(
-                    new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec(true),
-                    new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), false)
-            )
-            def tiny = getTiny(mappings)
-            def reorderedMappings = reorder(mappings)
-        then:
-            mappings.srcNamespace == "named"
-            mappings.dstNamespaces == ["intermediary", "official"]
-            mappings.classes.size() == 5747
-            mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
-            mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
-            mappings.classes[0].methods[0].args[0].srcName.hashCode() == -1008297992
-            reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
-    }
+	def "Read parchment mappings" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_16_5_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
+		when:
+		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
+		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				new MojangMappingsSpec(true),
+				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), false)
+				)
+		def tiny = getTiny(mappings)
+		def reorderedMappings = reorder(mappings)
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 5747
+		mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
+		mappings.classes[0].methods[0].args[0].srcName.hashCode() == -1008297992
+		reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
+	}
 
-    def "Read parchment mappings remove prefix" () {
-        setup:
-            intermediaryUrl = INTERMEDIARY_1_16_5_URL
-            mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
-        when:
-            withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
-            def mappings = getLayeredMappings(
-                    new IntermediaryMappingsSpec(),
-                    new MojangMappingsSpec(true),
-                    new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), true)
-            )
-            def tiny = getTiny(mappings)
-            def reorderedMappings = reorder(mappings)
-        then:
-            mappings.srcNamespace == "named"
-            mappings.dstNamespaces == ["intermediary", "official"]
-            mappings.classes.size() == 5747
-            mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
-            mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
-            mappings.classes[0].methods[0].args[0].srcName.hashCode() == 109757064
-            reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
-    }
+	def "Read parchment mappings remove prefix" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_16_5_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
+		when:
+		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
+		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				new MojangMappingsSpec(true),
+				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), true)
+				)
+		def tiny = getTiny(mappings)
+		def reorderedMappings = reorder(mappings)
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 5747
+		mappings.classes[0].srcName.hashCode() == -1112444138 // MojMap name, just check the hash
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
+		mappings.classes[0].methods[0].args[0].srcName.hashCode() == 109757064
+		reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
+	}
 }

@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
+import java.util.concurrent.TimeUnit
+
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
 
-import java.util.concurrent.TimeUnit
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -42,36 +43,47 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "build and run (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(
-					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "2facd446984085376bd23245410ebf2dc0881b02",
-					version: version,
-					patch: "fabric_api"
-			)
+		def gradle = gradleProject(
+				repo: "https://github.com/FabricMC/fabric.git",
+				commit: "2facd446984085376bd23245410ebf2dc0881b02",
+				version: version,
+				patch: "fabric_api"
+				)
 
-			gradle.enableMultiProjectOptimisation()
+		gradle.enableMultiProjectOptimisation()
 
-			// Set the version to something constant
-			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+		// Set the version to something constant
+		gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
-			def server = ServerRunner.create(gradle.projectDir, "1.19.3")
-										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
+		def server = ServerRunner.create(gradle.projectDir, "1.19.3")
+				.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["--parallel", "-x", "check", "-x", "runDatagen", "-x", "runGametest"]) // Note: checkstyle does not appear to like being ran in a test runner
-			gradle.printOutputFiles()
+		def result = gradle.run(tasks: [
+			"build",
+			"publishToMavenLocal"
+		], args: [
+			"--parallel",
+			"-x",
+			"check",
+			"-x",
+			"runDatagen",
+			"-x",
+			"runGametest"
+		]) // Note: checkstyle does not appear to like being ran in a test runner
+		gradle.printOutputFiles()
 
-			def serverResult = server.run()
+		def serverResult = server.run()
 		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":prepareRemapJar").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
+		result.task(":prepareRemapJar").outcome == SUCCESS
 
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0.jar").exists()
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0-sources.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0-sources.jar").exists()
 
-			serverResult.successful()
-			serverResult.output.contains("- fabric-api $API_VERSION")
+		serverResult.successful()
+		serverResult.output.contains("- fabric-api $API_VERSION")
 		where:
-			//version << STANDARD_TEST_VERSIONS
-			version << [DEFAULT_GRADLE]
+		//version << STANDARD_TEST_VERSIONS
+		version << [DEFAULT_GRADLE]
 	}
 }

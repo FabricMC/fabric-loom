@@ -24,53 +24,54 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
+import java.util.concurrent.TimeUnit
+
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
 
-import java.util.concurrent.TimeUnit
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
 
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static net.fabricmc.loom.test.LoomTestConstants.*
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 20, unit = TimeUnit.MINUTES)
 class SimpleProjectTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "build and run (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "simple", version: version)
+		def gradle = gradleProject(project: "simple", version: version)
 
-			def server = ServerRunner.create(gradle.projectDir, "1.16.5")
-										.withMod(gradle.getOutputFile("fabric-example-mod-1.0.0.jar"))
-										.withFabricApi()
+		def server = ServerRunner.create(gradle.projectDir, "1.16.5")
+				.withMod(gradle.getOutputFile("fabric-example-mod-1.0.0.jar"))
+				.withFabricApi()
 		when:
-			def result = gradle.run(task: "build")
-			def serverResult = server.run()
+		def result = gradle.run(task: "build")
+		def serverResult = server.run()
 		then:
-			result.task(":build").outcome == SUCCESS
-			gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
-			gradle.getOutputZipEntry("fabric-example-mod-1.0.0-sources.jar", "net/fabricmc/example/mixin/ExampleMixin.java").contains("class_442") // Very basic test to ensure sources got remapped
+		result.task(":build").outcome == SUCCESS
+		gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+		gradle.getOutputZipEntry("fabric-example-mod-1.0.0-sources.jar", "net/fabricmc/example/mixin/ExampleMixin.java").contains("class_442") // Very basic test to ensure sources got remapped
 
-			serverResult.successful()
-			serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
+		serverResult.successful()
+		serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	@Unroll
 	def "#ide config generation"() {
 		setup:
-			def gradle = gradleProject(project: "simple", sharedFiles: true)
+		def gradle = gradleProject(project: "simple", sharedFiles: true)
 		when:
-			def result = gradle.run(task: ide)
+		def result = gradle.run(task: ide)
 		then:
-			result.task(":${ide}").outcome == SUCCESS
+		result.task(":${ide}").outcome == SUCCESS
 		where:
-			ide 		| _
-			'idea' 		| _
-			'eclipse'	| _
-			'vscode'	| _
+		ide 		| _
+		'idea' 		| _
+		'eclipse'	| _
+		'vscode'	| _
 	}
 }

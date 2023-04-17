@@ -194,7 +194,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		return getWorkerExecutor().processIsolation(spec -> {
 			spec.forkOptions(forkOptions -> {
-				forkOptions.setMinHeapSize("512m");
+				forkOptions.setMinHeapSize(String.format(Locale.ENGLISH, "%dm", Math.min(512, decompilerOptions.getMemory().get())));
 				forkOptions.setMaxHeapSize(String.format(Locale.ENGLISH, "%dm", decompilerOptions.getMemory().get()));
 				forkOptions.systemProperty(WorkerDaemonClientsManagerHelper.MARKER_PROP, jvmMarkerValue);
 			});

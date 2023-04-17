@@ -134,6 +134,11 @@ public final class CompileConfiguration {
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MINECRAFT_RUNTIME_LIBRARIES);
 
+		configurations.register(Configurations.MOD_ANNOTATION_PROCESSORS, configuration -> {
+			configuration.setCanBeConsumed(true);
+			configuration.setCanBeResolved(false);
+		});
+
 		// Add the dev time dependencies
 		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);
 		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);

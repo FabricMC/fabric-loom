@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Fabric-Loom-Remap: false
+Fabric-Loom-Annotation-Processor: true

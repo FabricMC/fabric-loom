@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,15 +41,17 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
-public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData) {
+public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, boolean isAnnotationProcessor) {
 	private static final String INSTALLER_PATH = "fabric-installer.json";
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	private static final String MANIFEST_REMAP_KEY = "Fabric-Loom-Remap";
+	private static final String MANIFEST_ANNOTATION_PROCESSOR_KEY = "Fabric-Loom-Annotation-Processor";
 
 	public static ArtifactMetadata create(ArtifactRef artifact) throws IOException {
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
+		boolean isAnnotationProcessor = false;
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
 			isFabricMod = FabricModJsonFactory.containsMod(fs);
@@ -58,11 +60,17 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			if (Files.exists(manifestPath)) {
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
 				final Attributes mainAttributes = manifest.getMainAttributes();
-				final String value = mainAttributes.getValue(MANIFEST_REMAP_KEY);
+				final String remapValue = mainAttributes.getValue(MANIFEST_REMAP_KEY);
+				final String annotationProcessorValue = mainAttributes.getValue(MANIFEST_ANNOTATION_PROCESSOR_KEY);
 
-				if (value != null) {
+				if (remapValue != null) {
 					// Support opting into and out of remapping with "Fabric-Loom-Remap" manifest entry
-					remapRequirements = Boolean.parseBoolean(value) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+					remapRequirements = Boolean.parseBoolean(remapValue) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+				}
+
+				if (annotationProcessorValue != null) {
+					// Allow mods to add themselves onto the annotation processor classpath.
+					isAnnotationProcessor = Boolean.parseBoolean(annotationProcessorValue);
 				}
 			}
 
@@ -74,7 +82,11 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			}
 		}
 
-		return new ArtifactMetadata(isFabricMod, remapRequirements, installerData);
+		if (remapRequirements != RemapRequirements.OPT_OUT && isAnnotationProcessor) {
+			throw new UnsupportedOperationException("Annotation processor artifact (%s) must opt out of remapping with the (%s) manifest key.".formatted(artifact.name(), MANIFEST_REMAP_KEY));
+		}
+
+		return new ArtifactMetadata(isFabricMod, remapRequirements, installerData, isAnnotationProcessor);
 	}
 
 	public boolean shouldRemap() {

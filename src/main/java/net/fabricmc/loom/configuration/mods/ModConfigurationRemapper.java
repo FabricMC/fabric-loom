@@ -154,6 +154,17 @@ public class ModConfigurationRemapper {
 					// Note: not applying to any type of vanilla Gradle target config like
 					// api or implementation to fix https://github.com/FabricMC/fabric-loom/issues/572.
 					artifact.applyToConfiguration(project, remappedConfig);
+
+					// If the artifact is an annotation processor, and is not from a runtime configuration add it to the annotation processor classpath.
+					if (artifactMetadata.isAnnotationProcessor()) {
+						final Usage usage = sourceConfig.getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
+
+						if (usage != null && usage.getName().equals(Usage.JAVA_API)) {
+							project.getLogger().info("Applying annotation processor {}", artifact.path());
+							artifact.applyToConfiguration(project, project.getConfigurations().getByName(Constants.Configurations.MOD_ANNOTATION_PROCESSORS));
+						}
+					}
+
 					continue;
 				}
 

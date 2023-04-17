@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -99,6 +99,16 @@ class ArtifactMetadataTest extends Specification {
 		isLoader   | entries
 		true       | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
 		false      | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
+	}
+
+	def "Annotation processor"() {
+		given:
+		def zip = createZip(["META-INF/MANIFEST.MF": manifest(["Fabric-Loom-Remap": "false", "Fabric-Loom-Annotation-Processor": "true"])])
+		when:
+		def metadata = createMetadata(zip)
+		then:
+		metadata.annotationProcessor
+		metadata.remapRequirements() == OPT_OUT
 	}
 
 	private static ArtifactMetadata createMetadata(Path zip) {

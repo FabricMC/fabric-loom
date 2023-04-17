@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -79,6 +79,7 @@ public class Constants {
 		 */
 		public static final String LOCAL_RUNTIME = "localRuntime";
 		public static final String NAMED_ELEMENTS = "namedElements";
+		public static final String MOD_ANNOTATION_PROCESSORS = "modAnnotationProcessors";
 
 		private Configurations() {
 		}

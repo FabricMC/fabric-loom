@@ -32,16 +32,13 @@ class LoomTestConstants {
 
 	// Test against the version of Gradle being used to build loom
 	public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
-	// Test against Gradle 8
-	public final static String GRADLE_8 = "8.1"
 	// Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
 	public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? NIGHTLY_VERSION : DEFAULT_GRADLE
 	// Randomly sorted to ensure that all versions can run with a clean gradle home.
-	public final static String[] STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
+	public final static List<String> STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
 		DEFAULT_GRADLE,
-		GRADLE_8,
 		PRE_RELEASE_GRADLE
-	] : [DEFAULT_GRADLE, GRADLE_8]).shuffled().toArray()
+	] : [DEFAULT_GRADLE]).shuffled().toArray()
 
 	public static final File TEST_DIR = new File("./.gradle/test-files")
 

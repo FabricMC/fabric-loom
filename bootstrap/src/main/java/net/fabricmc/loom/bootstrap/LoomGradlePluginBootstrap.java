@@ -14,7 +14,7 @@ import org.gradle.util.GradleVersion;
  */
 @SuppressWarnings("unused")
 public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
-	private static final int MIN_SUPPORTED_MAJOR_GRADLE_VERSION = 7;
+	private static final String MIN_SUPPORTED_GRADLE_VERSION = "8.1";
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 17;
 	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2021;
 
@@ -40,7 +40,7 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 		List<String> errors = new ArrayList<>();
 
 		if (!isValidGradleRuntime()) {
-			errors.add(String.format("You are using an outdated version of Gradle (%s). Gradle %d or higher is required.", GradleVersion.current().getVersion(), MIN_SUPPORTED_MAJOR_GRADLE_VERSION));
+			errors.add(String.format("You are using an outdated version of Gradle (%s). Gradle %s or higher is required.", GradleVersion.current().getVersion(), MIN_SUPPORTED_GRADLE_VERSION));
 		}
 
 		if (!isValidJavaRuntime()) {
@@ -73,7 +73,7 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	}
 
 	private static boolean isValidGradleRuntime() {
-		return getMajorGradleVersion() >= MIN_SUPPORTED_MAJOR_GRADLE_VERSION;
+		return GradleVersion.current().compareTo(GradleVersion.version(MIN_SUPPORTED_GRADLE_VERSION)) >= 0;
 	}
 
 	private static boolean isValidIdeaRuntime() {
@@ -85,11 +85,6 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 
 		int ideaYear = Integer.parseInt(version.substring(0, version.indexOf(".")));
 		return ideaYear >= MIN_SUPPORTED_MAJOR_IDEA_VERSION;
-	}
-
-	private static int getMajorGradleVersion() {
-		String version = GradleVersion.current().getVersion();
-		return Integer.parseInt(version.substring(0, version.indexOf(".")));
 	}
 
 	BootstrappedPlugin getActivePlugin() {

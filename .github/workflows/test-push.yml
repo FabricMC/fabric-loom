@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [7.5.1-jdk17]
+        version: [8.1.0-jdk17]
     runs-on: ubuntu-22.04
     container:
       image: gradle:${{ matrix.version }}
@@ -27,7 +27,7 @@ jobs:
 
     runs-on: ubuntu-22.04
     container:
-      image: gradle:7.5.1-jdk17
+      image: gradle:8.1.0-jdk17
       options: --user root
 
     steps:
@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [7.5.1-jdk17]
+        version: [8.1.0-jdk17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-22.04
@@ -113,7 +113,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 17, 18 ]
+        java: [ 17, 20 ]
         os: [ windows-2022, ubuntu-22.04, macos-12 ]
 
     runs-on: ${{ matrix.os }}

@@ -35,10 +35,17 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test runs a mod that exits on mod init
 class RunConfigTest extends Specification implements GradleProjectTestTrait {
+	private static List<String> tasks = [
+		"runClient",
+		"runServer",
+		"runTestmodClient",
+		"runTestmodServer",
+		"runAutoTestServer"
+	]
 	@Unroll
-	def "Run config #task"() {
+	def "Run config #task (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "runconfigs", sharedFiles: true)
+		def gradle = gradleProject(project: "runconfigs", sharedFiles: true, version: version)
 
 		when:
 		def result = gradle.run(task: task)
@@ -48,12 +55,8 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		result.output.contains("This contains a space")
 
 		where:
-		task                | _
-		'runClient'         | _
-		'runServer'         | _
-		'runTestmodClient'  | _
-		'runTestmodServer'  | _
-		'runAutoTestServer' | _
+		version << STANDARD_TEST_VERSIONS * tasks.size()
+		task << tasks * STANDARD_TEST_VERSIONS.size()
 	}
 
 	@RestoreSystemProperties

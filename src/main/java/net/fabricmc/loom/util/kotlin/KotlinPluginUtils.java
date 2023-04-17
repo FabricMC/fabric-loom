@@ -55,6 +55,6 @@ public class KotlinPluginUtils {
 	}
 
 	public static String getKotlinMetadataVersion() {
-		return KotlinClassMetadata.class.getPackage().getImplementationVersion();
+		return KotlinClassMetadata.class.getPackage().getImplementationVersion().split("-")[0];
 	}
 }

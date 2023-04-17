@@ -57,7 +57,7 @@ class ZipTestUtils {
 		def manifest = new Manifest()
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
 
-		entries.forEach {key, value ->
+		entries.forEach { key, value ->
 			manifest.getMainAttributes().putValue(key, value)
 		}
 

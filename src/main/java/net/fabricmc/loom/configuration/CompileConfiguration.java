@@ -33,13 +33,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-import org.gradle.api.NamedDomainObjectProvider;
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -61,107 +61,37 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMi
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
-public final class CompileConfiguration {
-	private final Project project;
-	private final ConfigurationContainer configurations;
+public abstract class CompileConfiguration implements Runnable {
+	@Inject
+	protected abstract Project getProject();
 
-	public CompileConfiguration(Project project) {
-		this.project = project;
-		this.configurations = project.getConfigurations();
-	}
+	@Inject
+	protected abstract TaskContainer getTasks();
 
-	public void setupConfigurations() {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	@Override
+	public void run() {
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
-		configurations.register(Configurations.MOD_COMPILE_CLASSPATH);
-		createNonTransitive(Configurations.MOD_COMPILE_CLASSPATH_MAPPED);
-
-		// Set up the Minecraft compile configurations.
-		var minecraftClientCompile = createNonTransitive(Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES);
-		var minecraftServerCompile = createNonTransitive(Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES);
-		var minecraftCompile = createNonTransitive(Configurations.MINECRAFT_COMPILE_LIBRARIES);
-		minecraftCompile.configure(configuration -> {
-			configuration.extendsFrom(minecraftClientCompile.get());
-			configuration.extendsFrom(minecraftServerCompile.get());
-		});
-
-		// Set up the minecraft runtime configurations, this extends from the compile configurations.
-		var minecraftClientRuntime = createNonTransitive(Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
-		var minecraftServerRuntime = createNonTransitive(Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
-
-		// Runtime extends from compile
-		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
-		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile.get()));
-
-		createNonTransitive(Configurations.MINECRAFT_RUNTIME_LIBRARIES).configure(minecraftRuntime -> {
-			minecraftRuntime.extendsFrom(minecraftClientRuntime.get());
-			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
-		});
-
-		createNonTransitive(Configurations.MINECRAFT_NATIVES);
-		createNonTransitive(Configurations.LOADER_DEPENDENCIES);
-
-		createNonTransitive(Configurations.MINECRAFT);
-		createNonTransitive(Configurations.INCLUDE);
-		createNonTransitive(Configurations.MAPPING_CONSTANTS);
-
-		configurations.register(Configurations.NAMED_ELEMENTS, configuration -> {
-			configuration.setCanBeConsumed(true);
-			configuration.setCanBeResolved(false);
-			configuration.extendsFrom(configurations.getByName(JavaPlugin.API_CONFIGURATION_NAME));
-		});
-
-		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Configurations.MAPPING_CONSTANTS);
-
-		configurations.register(Configurations.MAPPINGS);
-		configurations.register(Configurations.MAPPINGS_FINAL);
-		configurations.register(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES);
-		configurations.register(Configurations.UNPICK_CLASSPATH);
-		configurations.register(Configurations.LOCAL_RUNTIME);
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.LOCAL_RUNTIME);
-
-		extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(project));
-
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MAPPINGS_FINAL);
-		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MAPPINGS_FINAL);
-
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Configurations.MINECRAFT_RUNTIME_LIBRARIES);
-
-		// Add the dev time dependencies
-		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.DEV_LAUNCH_INJECTOR + Constants.Dependencies.Versions.DEV_LAUNCH_INJECTOR);
-		project.getDependencies().add(Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Constants.Dependencies.TERMINAL_CONSOLE_APPENDER + Constants.Dependencies.Versions.TERMINAL_CONSOLE_APPENDER);
-		project.getDependencies().add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
-		project.getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
-	}
-
-	private NamedDomainObjectProvider<Configuration> createNonTransitive(String name) {
-		return configurations.register(name, configuration -> configuration.setTransitive(false));
-	}
-
-	public void configureCompile() {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		project.getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
-			final SourceSet main = SourceSetHelper.getMainSourceSet(project);
+		getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
+			final SourceSet main = SourceSetHelper.getMainSourceSet(getProject());
 			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
 		});
 
-		afterEvaluationWithService(project, (serviceManager) -> {
-			final ConfigContext configContext = new ConfigContextImpl(project, serviceManager, extension);
+		afterEvaluationWithService((serviceManager) -> {
+			final ConfigContext configContext = new ConfigContextImpl(getProject(), serviceManager, extension);
 
-			MinecraftSourceSets.get(project).afterEvaluate(project);
+			MinecraftSourceSets.get(getProject()).afterEvaluate(getProject());
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
 
 			if (getAndLock()) {
-				project.getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
+				getProject().getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
 				extension.setRefreshDeps(true);
 			}
 
@@ -173,12 +103,12 @@ public final class CompileConfiguration {
 
 			LoomDependencyManager dependencyManager = new LoomDependencyManager();
 			extension.setDependencyManager(dependencyManager);
-			dependencyManager.handleDependencies(project, serviceManager);
+			dependencyManager.handleDependencies(getProject(), serviceManager);
 
 			releaseLock();
 			extension.setRefreshDeps(previousRefreshDeps);
 
-			MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
+			MixinExtension mixin = LoomGradleExtension.get(getProject()).getMixin();
 
 			if (mixin.getUseLegacyMixinAp().get()) {
 				setupMixinAp(mixin);
@@ -192,42 +122,42 @@ public final class CompileConfiguration {
 		finalizedBy("cleanEclipse", "cleanEclipseRuns");
 
 		// Add the "dev" jar to the "namedElements" configuration
-		project.artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, project.getTasks().named("jar")));
+		getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));
 
 		// Ensure that the encoding is set to UTF-8, no matter what the system default is
 		// this fixes some edge cases with special characters not displaying correctly
 		// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-		project.getTasks().withType(AbstractCopyTask.class).configureEach(abstractCopyTask -> abstractCopyTask.setFilteringCharset(StandardCharsets.UTF_8.name()));
-		project.getTasks().withType(JavaCompile.class).configureEach(javaCompile -> javaCompile.getOptions().setEncoding(StandardCharsets.UTF_8.name()));
+		getTasks().withType(AbstractCopyTask.class).configureEach(abstractCopyTask -> abstractCopyTask.setFilteringCharset(StandardCharsets.UTF_8.name()));
+		getTasks().withType(JavaCompile.class).configureEach(javaCompile -> javaCompile.getOptions().setEncoding(StandardCharsets.UTF_8.name()));
 
-		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+		if (getProject().getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
 			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
 			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
 		}
 	}
 
-	// This is not thread safe across projects synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
+	// This is not thread safe across getProject()s synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
 	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
 		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
-		// Provide the vanilla mc jars -- TODO share across projects.
+		// Provide the vanilla mc jars -- TODO share across getProject()s.
 		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
-		final DependencyInfo mappingsDep = DependencyInfo.create(project, Configurations.MAPPINGS);
-		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(project, configContext.serviceManager(), mappingsDep, minecraftProvider);
+		final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
+		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceManager(), mappingsDep, minecraftProvider);
 		extension.setMappingConfiguration(mappingConfiguration);
-		mappingConfiguration.applyToProject(project, mappingsDep);
+		mappingConfiguration.applyToProject(getProject(), mappingsDep);
 
 		// Provide the remapped mc jars
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
 
 		registerGameProcessors(configContext);
-		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(project);
+		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
@@ -266,23 +196,23 @@ public final class CompileConfiguration {
 		System.setProperty("log4j.shutdownHookEnabled", "false");
 		System.setProperty("log4j.skipJansi", "true");
 
-		project.getLogger().info("Configuring compiler arguments for Java");
+		getProject().getLogger().info("Configuring compiler arguments for Java");
 
-		new JavaApInvoker(project).configureMixin();
+		new JavaApInvoker(getProject()).configureMixin();
 
-		if (project.getPluginManager().hasPlugin("scala")) {
-			project.getLogger().info("Configuring compiler arguments for Scala");
-			new ScalaApInvoker(project).configureMixin();
+		if (getProject().getPluginManager().hasPlugin("scala")) {
+			getProject().getLogger().info("Configuring compiler arguments for Scala");
+			new ScalaApInvoker(getProject()).configureMixin();
 		}
 
-		if (project.getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-			project.getLogger().info("Configuring compiler arguments for Kapt plugin");
-			new KaptApInvoker(project).configureMixin();
+		if (getProject().getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
+			getProject().getLogger().info("Configuring compiler arguments for Kapt plugin");
+			new KaptApInvoker(getProject()).configureMixin();
 		}
 
-		if (project.getPluginManager().hasPlugin("groovy")) {
-			project.getLogger().info("Configuring compiler arguments for Groovy");
-			new GroovyApInvoker(project).configureMixin();
+		if (getProject().getPluginManager().hasPlugin("groovy")) {
+			getProject().getLogger().info("Configuring compiler arguments for Groovy");
+			new GroovyApInvoker(getProject()).configureMixin();
 		}
 	}
 
@@ -294,9 +224,9 @@ public final class CompileConfiguration {
 	}
 
 	private Path getLockFile() {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
-		final String pathHash = Checksum.projectHash(project);
+		final String pathHash = Checksum.projectHash(getProject());
 		return cacheDirectory.resolve("." + pathHash + ".lock");
 	}
 
@@ -310,7 +240,7 @@ public final class CompileConfiguration {
 		try {
 			Files.createFile(lock);
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to acquire project configuration lock", e);
+			throw new UncheckedIOException("Failed to acquire getProject() configuration lock", e);
 		}
 
 		return false;
@@ -332,23 +262,19 @@ public final class CompileConfiguration {
 				Files.move(lock, del);
 				Files.delete(del);
 			} catch (IOException e2) {
-				var exception = new UncheckedIOException("Failed to release project configuration lock", e2);
+				var exception = new UncheckedIOException("Failed to release getProject() configuration lock", e2);
 				exception.addSuppressed(e1);
 				throw exception;
 			}
 		}
 	}
 
-	public void extendsFrom(String a, String b) {
-		project.getConfigurations().getByName(a, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(b)));
-	}
-
 	private void finalizedBy(String a, String b) {
-		project.getTasks().named(a).configure(task -> task.finalizedBy(project.getTasks().named(b)));
+		getTasks().named(a).configure(task -> task.finalizedBy(getTasks().named(b)));
 	}
 
-	private static void afterEvaluationWithService(Project project, Consumer<SharedServiceManager> consumer) {
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
+	private void afterEvaluationWithService(Consumer<SharedServiceManager> consumer) {
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
 			try (var serviceManager = new ScopedSharedServiceManager()) {
 				consumer.accept(serviceManager);
 			}

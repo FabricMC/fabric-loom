@@ -76,7 +76,7 @@ public abstract class LoomConfigurations implements Runnable {
 			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
 		});
 
-		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Type.CONSUMABLE);
+		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Type.DEFAULT);
 		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Type.CONSUMABLE);
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Type.CONSUMABLE);

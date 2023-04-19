@@ -81,7 +81,7 @@ public abstract class LoomConfigurations implements Runnable {
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Type.CONSUMABLE);
 		registerNonTransitive(Constants.Configurations.INCLUDE, Type.DEFAULT);
-		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Type.CONSUMABLE);
+		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Type.DEFAULT);
 
 		register(Constants.Configurations.NAMED_ELEMENTS, Type.CONSUMABLE).configure(configuration -> {
 			configuration.extendsFrom(getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));

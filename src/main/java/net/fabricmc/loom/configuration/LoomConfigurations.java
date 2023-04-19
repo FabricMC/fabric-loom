@@ -55,8 +55,8 @@ public abstract class LoomConfigurations implements Runnable {
 		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Type.CONSUMABLE);
 
 		// Set up the Minecraft compile configurations.
-		var minecraftClientCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, Type.CONSUMABLE);
-		var minecraftServerCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, Type.CONSUMABLE);
+		var minecraftClientCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, Type.DEFAULT);
+		var minecraftServerCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, Type.DEFAULT);
 		var minecraftCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES, Type.RESOLVABLE);
 		minecraftCompile.configure(configuration -> {
 			configuration.extendsFrom(minecraftClientCompile.get());
@@ -64,8 +64,8 @@ public abstract class LoomConfigurations implements Runnable {
 		});
 
 		// Set up the minecraft runtime configurations, this extends from the compile configurations.
-		var minecraftClientRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, Type.CONSUMABLE);
-		var minecraftServerRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, Type.CONSUMABLE);
+		var minecraftClientRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, Type.DEFAULT);
+		var minecraftServerRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, Type.DEFAULT);
 
 		// Runtime extends from compile
 		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
@@ -92,7 +92,7 @@ public abstract class LoomConfigurations implements Runnable {
 		register(Constants.Configurations.MAPPINGS, Type.DEFAULT);
 		register(Constants.Configurations.MAPPINGS_FINAL, Type.DEFAULT);
 		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Type.CONSUMABLE);
-		register(Constants.Configurations.UNPICK_CLASSPATH, Type.CONSUMABLE);
+		register(Constants.Configurations.UNPICK_CLASSPATH, Type.DEFAULT);
 		register(Constants.Configurations.LOCAL_RUNTIME, Type.CONSUMABLE);
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME);
 

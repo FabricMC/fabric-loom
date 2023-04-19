@@ -52,7 +52,7 @@ public abstract class LoomConfigurations implements Runnable {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		register(Constants.Configurations.MOD_COMPILE_CLASSPATH, Type.CONSUMABLE);
-		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Type.CONSUMABLE);
+		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Type.DEFAULT);
 
 		// Set up the Minecraft compile configurations.
 		var minecraftClientCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, Type.DEFAULT);

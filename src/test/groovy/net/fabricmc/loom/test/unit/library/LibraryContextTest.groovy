@@ -30,6 +30,7 @@ import spock.lang.Specification
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
 import net.fabricmc.loom.test.util.MinecraftTestUtils
+import net.fabricmc.loom.util.Platform
 
 class LibraryContextTest extends Specification {
 	def "Supports ARM64 macOS"() {
@@ -37,11 +38,27 @@ class LibraryContextTest extends Specification {
 		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), JavaVersion.VERSION_17)
 
 		then:
-		context.supportsArm64MacOS() == supported
+		context.supportsArm64(Platform.OperatingSystem.MAC_OS) == supported
 
 		where:
 		id       || supported
 		"1.19.4" || true
+		"1.18.2" || false
+		"1.16.5" || false
+		"1.4.7"  || false
+	}
+
+	def "Supports ARM64 windows"() {
+		when:
+		def context = new LibraryContext(MinecraftTestUtils.getVersionMeta(id), JavaVersion.VERSION_17)
+
+		then:
+		context.supportsArm64(Platform.OperatingSystem.WINDOWS) == supported
+
+		where:
+		id       || supported
+		"23w16a" || true
+		"1.19.4" || false
 		"1.18.2" || false
 		"1.16.5" || false
 		"1.4.7"  || false

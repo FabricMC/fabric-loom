@@ -85,6 +85,6 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 
 	// Add support for macOS
 	private boolean upgradeMacOSArm() {
-		return platform.getOperatingSystem().isMacOS() && platform.getArchitecture().isArm() && !context.supportsArm64MacOS() && !context.hasClasspathNatives();
+		return platform.getOperatingSystem().isMacOS() && platform.getArchitecture().isArm() && !context.supportsArm64(Platform.OperatingSystem.MAC_OS) && !context.hasClasspathNatives();
 	}
 }

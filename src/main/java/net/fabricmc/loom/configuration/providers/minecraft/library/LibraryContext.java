@@ -29,6 +29,7 @@ import java.util.Arrays;
 import org.gradle.api.JavaVersion;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.util.Platform;
 
 public final class LibraryContext {
 	private final MinecraftVersionMeta versionMeta;
@@ -42,9 +43,15 @@ public final class LibraryContext {
 	/**
 	 * @return True when the Minecraft libraries support ARM64 MacOS
 	 */
-	public boolean supportsArm64MacOS() {
+	public boolean supportsArm64(Platform.OperatingSystem operatingSystem) {
+		final String osName = switch (operatingSystem) {
+		case MAC_OS -> "macos";
+		case WINDOWS -> "windows";
+		case LINUX -> "linux";
+		};
+
 		return versionMeta.libraries().stream()
-				.anyMatch(library -> library.name().startsWith("org.lwjgl:lwjgl:3") && library.name().endsWith(":natives-macos-arm64"));
+				.anyMatch(library -> library.name().startsWith("org.lwjgl:lwjgl:3") && library.name().endsWith(":natives-%s-arm64".formatted(osName)));
 	}
 
 	/**

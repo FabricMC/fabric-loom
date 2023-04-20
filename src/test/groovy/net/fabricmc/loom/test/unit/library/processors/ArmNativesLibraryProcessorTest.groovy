@@ -57,6 +57,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 
 		where:
 		id       || result
+		"23w16a" || LibraryProcessor.ApplicationResult.DONT_APPLY // Supports ARM64 Windows
 		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
 		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3

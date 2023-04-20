@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -38,6 +39,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.bootstrap.BootstrappedPlugin;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.FabricApiExtension;
+import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.ide.idea.IdeaConfiguration;
@@ -45,12 +47,27 @@ import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
+import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.LibraryLocationLogger;
 
 public class LoomGradlePlugin implements BootstrappedPlugin {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
+
+	/**
+	 * An ordered list of setup job classes.
+	 */
+	private static final List<Class<? extends Runnable>> SETUP_JOBS = List.of(
+			LoomConfigurations.class,
+			CompileConfiguration.class,
+			MavenPublication.class,
+			RemapTaskConfiguration.class,
+			LoomTasks.class,
+			DecompilerConfiguration.class,
+			IdeaConfiguration.class,
+			IdeConfiguration.class
+	);
 
 	@Override
 	public void apply(PluginAware target) {
@@ -74,14 +91,8 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 		project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, LoomFiles.create(project));
 		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
 
-		final CompileConfiguration compileConfiguration = new CompileConfiguration(project);
-
-		compileConfiguration.setupConfigurations();
-		IdeConfiguration.setup(project);
-		compileConfiguration.configureCompile();
-		MavenPublication.configure(project);
-		LoomTasks.registerTasks(project);
-		DecompilerConfiguration.setup(project);
-		IdeaConfiguration.setup(project);
+		for (Class<? extends Runnable> jobClass : SETUP_JOBS) {
+			project.getObjects().newInstance(jobClass).run();
+		}
 	}
 }

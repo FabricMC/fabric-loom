@@ -26,9 +26,13 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.dsl.ArtifactHandler;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.TaskContainer;
@@ -41,55 +45,66 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public class RemapTaskConfiguration {
+public abstract class RemapTaskConfiguration implements Runnable {
 	public static final String REMAP_JAR_TASK_NAME = "remapJar";
 	public static final String REMAP_SOURCES_JAR_TASK_NAME = "remapSourcesJar";
 
-	public static void setupRemap(Project project) {
-		final TaskContainer tasks = project.getTasks();
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	@Inject
+	protected abstract Project getProject();
 
-		if (GradleUtils.getBooleanProperty(project, Constants.Properties.DONT_REMAP)) {
-			extension.getUnmappedModCollection().from(project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
+	@Inject
+	protected abstract TaskContainer getTasks();
+
+	@Inject
+	protected abstract ArtifactHandler getArtifacts();
+
+	@Inject
+	protected abstract ConfigurationContainer getConfigurations();
+
+	public void run() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)) {
+			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
 			return;
 		}
 
 		// Register the default remap jar task - must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
-		RemapJarTask remapJarTask = tasks.create(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
-			final AbstractArchiveTask jarTask = tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
+		RemapJarTask remapJarTask = getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
+			final AbstractArchiveTask jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
 
 			// Basic task setup
 			task.dependsOn(jarTask);
 			task.setDescription("Remaps the built project jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
-			project.getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
-			project.getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+			getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
+			getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.getArchiveFile());
-			task.dependsOn(tasks.named(JavaPlugin.JAR_TASK_NAME));
-			task.getIncludesClientOnlyClasses().set(project.provider(extension::areEnvironmentSourceSetsSplit));
+			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
+			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		});
 
 		// Configure the default jar task
-		tasks.named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
+		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
 			task.getArchiveClassifier().convention("dev");
-			task.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
+			task.getDestinationDirectory().set(new File(getProject().getBuildDir(), "devlibs"));
 		});
 
-		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTask));
+		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTask));
 
-		trySetupSourceRemapping(project);
+		trySetupSourceRemapping();
 
-		if (GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
+		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
 			return;
 		}
 
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
 			// Remove -dev jars from the default jar task
 			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
-				Configuration configuration = project.getConfigurations().getByName(configurationName);
-				final Jar jarTask = (Jar) project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+				Configuration configuration = getConfigurations().getByName(configurationName);
+				final Jar jarTask = (Jar) getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
 				configuration.getArtifacts().removeIf(artifact -> {
 					// if the artifact is built by the jar task, and has the same output path.
 					return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath()) && artifact.getBuildDependencies().getDependencies(null).contains(jarTask);
@@ -98,60 +113,59 @@ public class RemapTaskConfiguration {
 		});
 	}
 
-	private static void trySetupSourceRemapping(Project project) {
-		final TaskContainer tasks = project.getTasks();
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(project).getSourcesJarTaskName();
+	private void trySetupSourceRemapping() {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(getProject()).getSourcesJarTaskName();
 
-		TaskProvider<RemapSourcesJarTask> remapSourcesTask = tasks.register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
+		TaskProvider<RemapSourcesJarTask> remapSourcesTask = getTasks().register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
-			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
+			final Task sourcesTask = getTasks().findByName(sourcesJarTaskName);
 
 			if (sourcesTask == null) {
-				project.getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
+				getProject().getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
 				task.setEnabled(false);
 				return;
 			}
 
 			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
-				project.getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
+				getProject().getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
 				task.setEnabled(false);
 				return;
 			}
 
 			sourcesJarTask.getArchiveClassifier().convention("dev-sources");
-			sourcesJarTask.getDestinationDirectory().set(new File(project.getBuildDir(), "devlibs"));
+			sourcesJarTask.getDestinationDirectory().set(new File(getProject().getBuildDir(), "devlibs"));
 			task.getArchiveClassifier().convention("sources");
 
 			task.dependsOn(sourcesJarTask);
 			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
-			task.getIncludesClientOnlyClasses().set(project.provider(extension::areEnvironmentSourceSetsSplit));
+			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		});
 
-		tasks.named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
+		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
 
-		if (GradleUtils.getBooleanProperty(project, "fabric.loom.disableRemappedVariants")) {
+		if (GradleUtils.getBooleanProperty(getProject(), "fabric.loom.disableRemappedVariants")) {
 			return;
 		}
 
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
-			final Task sourcesTask = project.getTasks().findByName(sourcesJarTaskName);
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
+			final Task sourcesTask = getTasks().findByName(sourcesJarTaskName);
 
 			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
 				return;
 			}
 
-			if (project.getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
-				project.getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask);
+			if (getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
+				getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask);
 
 				// Remove the dev sources artifact
-				Configuration configuration = project.getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
+				Configuration configuration = getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
 				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
 			} else {
 				// Sources jar may not have been created with withSourcesJar
-				project.getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
+				getProject().getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");
 			}
 		});
 	}

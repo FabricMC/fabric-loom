@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import javax.inject.Inject;
+
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -41,55 +43,55 @@ import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
-public final class LoomTasks {
-	private LoomTasks() {
-	}
+public abstract class LoomTasks implements Runnable {
+	@Inject
+	protected abstract Project getProject();
 
-	public static void registerTasks(Project project) {
-		TaskContainer tasks = project.getTasks();
+	@Inject
+	protected abstract TaskContainer getTasks();
 
-		tasks.register("migrateMappings", MigrateMappingsTask.class, t -> {
+	@Override
+	public void run() {
+		getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
 			t.getOutputs().upToDateWhen(o -> false);
 		});
-
-		RemapTaskConfiguration.setupRemap(project);
-		tasks.register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
+		getTasks().register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");
 
 			// Must allow these IDE files to be generated first
-			t.mustRunAfter(tasks.named("eclipse"));
-			t.mustRunAfter(tasks.named("idea"));
+			t.mustRunAfter(getTasks().named("eclipse"));
+			t.mustRunAfter(getTasks().named("idea"));
 		});
-		tasks.register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
+		getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
 			t.setDescription("Generate the log4j config file");
 		});
-		tasks.register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
+		getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
 			t.setDescription("Generate the remap classpath file");
 		});
 
-		tasks.register("configureLaunch", task -> {
-			task.dependsOn(tasks.named("generateDLIConfig"));
-			task.dependsOn(tasks.named("generateLog4jConfig"));
-			task.dependsOn(tasks.named("generateRemapClasspath"));
+		getTasks().register("configureLaunch", task -> {
+			task.dependsOn(getTasks().named("generateDLIConfig"));
+			task.dependsOn(getTasks().named("generateLog4jConfig"));
+			task.dependsOn(getTasks().named("generateRemapClasspath"));
 
 			task.setDescription("Setup the required files to launch Minecraft");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 		});
 
-		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = tasks.register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
+		TaskProvider<ValidateAccessWidenerTask> validateAccessWidener = getTasks().register("validateAccessWidener", ValidateAccessWidenerTask.class, t -> {
 			t.setDescription("Validate all the rules in the access widener against the Minecraft jar");
 			t.setGroup("verification");
 		});
 
-		tasks.named("check").configure(task -> task.dependsOn(validateAccessWidener));
+		getTasks().named("check").configure(task -> task.dependsOn(validateAccessWidener));
 
-		registerIDETasks(tasks);
-		registerRunTasks(tasks, project);
+		registerIDETasks();
+		registerRunTasks();
 
 		// Must be done in afterEvaluate to allow time for the build script to configure the jar config.
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(project);
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
+			LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
 				// Server only, nothing more to do.
@@ -103,37 +105,37 @@ public final class LoomTasks {
 				return;
 			}
 
-			registerClientSetupTasks(project.getTasks(), versionInfo.hasNativesToExtract());
+			registerClientSetupTasks(getTasks(), versionInfo.hasNativesToExtract());
 		});
 	}
 
-	private static void registerIDETasks(TaskContainer tasks) {
-		tasks.register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
+	private void registerIDETasks() {
+		getTasks().register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
 			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
-			t.dependsOn("idea", getIDELaunchConfigureTaskName(t.getProject()));
+			t.dependsOn("idea", getIDELaunchConfigureTaskName(getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
-		tasks.register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
+		getTasks().register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
-			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
+			t.dependsOn(getIDELaunchConfigureTaskName(getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
-		tasks.register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
+		getTasks().register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
 			t.setDescription("Removes Eclipse run configurations for this project.");
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 
-		tasks.register("vscode", GenVsCodeProjectTask.class, t -> {
+		getTasks().register("vscode", GenVsCodeProjectTask.class, t -> {
 			t.setDescription("Generates VSCode launch configurations.");
-			t.dependsOn(getIDELaunchConfigureTaskName(t.getProject()));
+			t.dependsOn(getIDELaunchConfigureTaskName(getProject()));
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 	}
 
-	private static void registerRunTasks(TaskContainer tasks, Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private void registerRunTasks() {
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
 
@@ -141,7 +143,7 @@ public final class LoomTasks {
 			String configName = config.getName();
 			String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 
-			tasks.register(taskName, RunGameTask.class, config).configure(t -> {
+			getTasks().register(taskName, RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
 				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
@@ -151,7 +153,7 @@ public final class LoomTasks {
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
 
 		// Remove the client or server run config when not required. Done by name to not remove any possible custom run configs
-		GradleUtils.afterSuccessfulEvaluation(project, () -> {
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
 			String taskName = switch (extension.getMinecraftJarConfiguration().get()) {
 			case SERVER_ONLY -> "client";
 			case CLIENT_ONLY -> "server";

@@ -24,17 +24,20 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
 import org.gradle.plugins.ide.idea.model.IdeaModel;
 
-public final class IdeConfiguration {
-	private IdeConfiguration() {
-	}
+public abstract class IdeConfiguration implements Runnable {
+	@Inject
+	protected abstract Project getProject();
 
-	public static void setup(Project project) {
-		IdeaModel ideaModel = (IdeaModel) project.getExtensions().getByName("idea");
+	@Override
+	public void run() {
+		IdeaModel ideaModel = (IdeaModel) getProject().getExtensions().getByName("idea");
 
-		ideaModel.getModule().getExcludeDirs().addAll(project.files(".gradle", "build", ".idea", "out").getFiles());
+		ideaModel.getModule().getExcludeDirs().addAll(getProject().files(".gradle", "build", ".idea", "out").getFiles());
 		ideaModel.getModule().setDownloadJavadoc(true);
 		ideaModel.getModule().setDownloadSources(true);
 		ideaModel.getModule().setInheritOutputDirs(true);

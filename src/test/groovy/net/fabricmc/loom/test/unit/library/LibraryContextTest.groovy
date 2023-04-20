@@ -24,13 +24,13 @@
 
 package net.fabricmc.loom.test.unit.library
 
-import net.fabricmc.loom.util.Platform
 import org.gradle.api.JavaVersion
 import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext
 import net.fabricmc.loom.test.util.MinecraftTestUtils
+import net.fabricmc.loom.util.Platform
 
 class LibraryContextTest extends Specification {
 	def "Supports ARM64 macOS"() {

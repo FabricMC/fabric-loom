@@ -57,13 +57,13 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		if (platform.getOperatingSystem().isMacOS()) {
-			if (context.supportsArm64MacOS()) {
-				// This version already supports arm64 macOS, nothing to do.
-				return ApplicationResult.DONT_APPLY;
-			}
+		if (context.supportsArm64(platform.getOperatingSystem())) {
+			// This version already supports arm64, nothing to do.
+			return ApplicationResult.DONT_APPLY;
+		}
 
-			// Must upgrade natives to support macos ARM
+		if (platform.getOperatingSystem().isMacOS()) {
+			// Must upgrade natives to support macos ARM, even if not using classpath natives.
 			return ApplicationResult.MUST_APPLY;
 		}
 
@@ -78,8 +78,14 @@ public class ArmNativesLibraryProcessor extends LibraryProcessor {
 
 	@Override
 	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
+		final String osName = switch (platform.getOperatingSystem()) {
+		case MAC_OS -> "macos";
+		case WINDOWS -> "windows";
+		case LINUX -> "linux";
+		};
+
 		return library -> {
-			if (library.is(LWJGL_GROUP) && library.target() == Library.Target.NATIVES && (library.classifier() != null && library.classifier().startsWith("natives-"))) {
+			if (library.is(LWJGL_GROUP) && library.target() == Library.Target.NATIVES && (library.classifier() != null && library.classifier().equals("natives-" + osName))) {
 				// Add the arm64 natives.
 				dependencyConsumer.accept(library.withClassifier(library.classifier() + "-arm64"));
 

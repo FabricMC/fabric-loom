@@ -54,7 +54,7 @@ public class ObjcBridgeUpgradeLibraryProcessor extends LibraryProcessor {
 		}
 
 		// Apply when Arm64 macOS is unsupported by Minecraft
-		return context.supportsArm64MacOS() ? ApplicationResult.DONT_APPLY : ApplicationResult.MUST_APPLY;
+		return context.supportsArm64(Platform.OperatingSystem.MAC_OS) ? ApplicationResult.DONT_APPLY : ApplicationResult.MUST_APPLY;
 	}
 
 	@Override

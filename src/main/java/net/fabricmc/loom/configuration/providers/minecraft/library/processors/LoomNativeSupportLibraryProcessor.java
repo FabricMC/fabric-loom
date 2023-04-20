@@ -45,7 +45,7 @@ public class LoomNativeSupportLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.DONT_APPLY;
 		}
 
-		if (platform.getOperatingSystem().isMacOS() && platform.getArchitecture().isArm() && !context.supportsArm64MacOS()) {
+		if (platform.getOperatingSystem().isMacOS() && platform.getArchitecture().isArm() && !context.supportsArm64(Platform.OperatingSystem.MAC_OS)) {
 			// Add the loom native support mod when adding ARM64 macOS support
 			return ApplicationResult.MUST_APPLY;
 		}

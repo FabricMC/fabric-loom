@@ -71,6 +71,7 @@ import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.service.BuildSharedServiceManager;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -113,13 +114,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		dependsOn(prepareJarTask);
 		mustRunAfter(prepareJarTask);
 
-		getProject().getGradle().allprojects(project -> {
-			project.getTasks().configureEach(task -> {
-				if (task instanceof PrepareJarRemapTask otherTask) {
-					// Ensure that all remap jars run after all prepare tasks
-					mustRunAfter(otherTask);
-				}
-			});
+		GradleUtils.allLoomProjects(getProject().getGradle(), project -> {
+			// Ensure that all remap jars run after all prepare tasks
+			project.getTasks().withType(PrepareJarRemapTask.class, this::mustRunAfter);
 		});
 	}
 

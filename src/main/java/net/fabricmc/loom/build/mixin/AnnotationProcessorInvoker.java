@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.PrepareJarRemapTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
  * Normally javac invokes annotation processors, but when the scala or kapt plugin are installed they will want to invoke
@@ -157,9 +158,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 	}
 
 	private void runBeforePrepare(Project project, Task compileTask) {
-		project.getGradle().allprojects(otherProject -> {
-			otherProject.getTasks().withType(PrepareJarRemapTask.class, prepareRemapTask -> prepareRemapTask.mustRunAfter(compileTask));
-		});
+		GradleUtils.allLoomProjects(project.getGradle(), otherProject -> otherProject.getTasks().withType(PrepareJarRemapTask.class, prepareRemapTask -> prepareRemapTask.mustRunAfter(compileTask)));
 	}
 
 	private static void checkPattern(String input, Pattern pattern) {

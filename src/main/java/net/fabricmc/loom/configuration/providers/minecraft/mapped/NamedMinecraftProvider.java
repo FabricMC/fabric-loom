@@ -33,7 +33,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> {
@@ -84,9 +83,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 		@Override
 		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
-			if (remappedJars.outputJar().equals(getClientOnlyJar())) {
-				tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
-			}
+			configureSplitRemapper(remappedJars, tinyRemapperBuilder);
 		}
 
 		@Override

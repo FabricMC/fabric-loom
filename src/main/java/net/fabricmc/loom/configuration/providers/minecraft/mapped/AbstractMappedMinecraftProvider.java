@@ -46,6 +46,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVisitor;
 import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -194,6 +195,17 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+	}
+
+	// Configure the remapper to add the client @Environment annotation to all classes in the client jar.
+	public static void configureSplitRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+		final MinecraftJar outputJar = remappedJars.outputJar();
+		assert !outputJar.isMerged();
+
+		if (outputJar.includesClient()) {
+			assert !outputJar.includesServer();
+			tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
+		}
 	}
 
 	private void cleanOutputs(List<RemappedJars> remappedJars) throws IOException {

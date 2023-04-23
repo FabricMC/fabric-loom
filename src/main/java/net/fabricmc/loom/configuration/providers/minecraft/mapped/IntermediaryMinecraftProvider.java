@@ -29,12 +29,10 @@ import java.util.List;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
@@ -80,13 +78,7 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
-			final MinecraftJar outputJar = remappedJars.outputJar();
-			assert !outputJar.isMerged();
-
-			if (outputJar.includesClient()) {
-				assert !outputJar.includesServer();
-				tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
-			}
+			configureSplitRemapper(remappedJars, tinyRemapperBuilder);
 		}
 	}
 

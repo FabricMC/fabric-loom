@@ -20,6 +20,11 @@ loom {
 			inherit testmodServer
 			vmArg "-Dfabric.autoTest"
 		}
+		customMain {
+			inherit server
+			name = 'Custom Main Class'
+			mainClass.set 'net.fabricmc.example.Main'
+		}
 	}
 
 	runConfigs.configureEach {

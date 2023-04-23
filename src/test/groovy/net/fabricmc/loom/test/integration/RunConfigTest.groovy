@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,6 +57,22 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS * tasks.size()
 		task << tasks * STANDARD_TEST_VERSIONS.size()
+	}
+
+	@Unroll
+	def "Custom main class (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "runconfigs", sharedFiles: true, version: version)
+
+		when:
+		def result = gradle.run(task: 'runCustomMain')
+
+		then:
+		result.task(':runCustomMain').outcome == SUCCESS
+		result.output.contains('hello custom main')
+
+		where:
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	@RestoreSystemProperties

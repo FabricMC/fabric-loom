@@ -138,10 +138,10 @@ public class RunConfig {
 		String environment = settings.getEnvironment();
 		SourceSet sourceSet = settings.getSource(project);
 
-		String defaultMain = settings.getDefaultMainClass();
+		String mainClass = settings.getMainClass().getOrNull();
 
-		if (defaultMain == null) {
-			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'defaultMainClass'");
+		if (mainClass == null) {
+			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'mainClass'");
 		}
 
 		if (configName == null) {
@@ -179,7 +179,7 @@ public class RunConfig {
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArgs());
 		runConfig.vmArgs.addAll(settings.getVmArgs());
-		runConfig.vmArgs.add("-Dfabric.dli.main=" + getMainClass(environment, extension, defaultMain));
+		runConfig.vmArgs.add("-Dfabric.dli.main=" + mainClass);
 		runConfig.environmentVariables = new HashMap<>();
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
 		runConfig.projectName = project.getName();
@@ -245,7 +245,7 @@ public class RunConfig {
 		return sb.toString();
 	}
 
-	private static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
+	static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
 		InstallerData installerData = extension.getInstallerData();
 
 		if (installerData == null) {

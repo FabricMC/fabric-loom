@@ -51,49 +51,49 @@ public abstract class LoomConfigurations implements Runnable {
 	public void run() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
-		register(Constants.Configurations.MOD_COMPILE_CLASSPATH, Type.CONSUMABLE);
-		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Type.DEFAULT);
+		register(Constants.Configurations.MOD_COMPILE_CLASSPATH, Role.RESOLVABLE);
+		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Role.RESOLVABLE);
 
 		// Set up the Minecraft compile configurations.
-		var minecraftClientCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, Type.DEFAULT);
-		var minecraftServerCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, Type.DEFAULT);
-		var minecraftCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES, Type.RESOLVABLE);
+		var minecraftClientCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES, Role.RESOLVABLE);
+		var minecraftServerCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, Role.RESOLVABLE);
+		var minecraftCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES, Role.RESOLVABLE);
 		minecraftCompile.configure(configuration -> {
 			configuration.extendsFrom(minecraftClientCompile.get());
 			configuration.extendsFrom(minecraftServerCompile.get());
 		});
 
 		// Set up the minecraft runtime configurations, this extends from the compile configurations.
-		var minecraftClientRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, Type.DEFAULT);
-		var minecraftServerRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, Type.DEFAULT);
+		var minecraftClientRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES, Role.RESOLVABLE);
+		var minecraftServerRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, Role.RESOLVABLE);
 
 		// Runtime extends from compile
 		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
 		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile.get()));
 
-		registerNonTransitive(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, Type.RESOLVABLE).configure(minecraftRuntime -> {
+		registerNonTransitive(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, Role.RESOLVABLE).configure(minecraftRuntime -> {
 			minecraftRuntime.extendsFrom(minecraftClientRuntime.get());
 			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
 		});
 
-		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Type.DEFAULT);
-		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Type.CONSUMABLE);
+		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Role.RESOLVABLE);
+		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Role.RESOLVABLE);
 
-		registerNonTransitive(Constants.Configurations.MINECRAFT, Type.CONSUMABLE);
-		registerNonTransitive(Constants.Configurations.INCLUDE, Type.DEFAULT);
-		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Type.DEFAULT);
+		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
+		registerNonTransitive(Constants.Configurations.INCLUDE, Role.RESOLVABLE);
+		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
 
-		register(Constants.Configurations.NAMED_ELEMENTS, Type.CONSUMABLE).configure(configuration -> {
+		register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {
 			configuration.extendsFrom(getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));
 		});
 
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
 
-		register(Constants.Configurations.MAPPINGS, Type.DEFAULT);
-		register(Constants.Configurations.MAPPINGS_FINAL, Type.DEFAULT);
-		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Type.CONSUMABLE);
-		register(Constants.Configurations.UNPICK_CLASSPATH, Type.DEFAULT);
-		register(Constants.Configurations.LOCAL_RUNTIME, Type.CONSUMABLE);
+		register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
+		register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
+		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Role.RESOLVABLE);
+		register(Constants.Configurations.UNPICK_CLASSPATH, Role.RESOLVABLE);
+		register(Constants.Configurations.LOCAL_RUNTIME, Role.RESOLVABLE);
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME);
 
 		extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(getProject()));
@@ -110,12 +110,12 @@ public abstract class LoomConfigurations implements Runnable {
 		getDependencies().add(JavaPlugin.TEST_COMPILE_ONLY_CONFIGURATION_NAME, Constants.Dependencies.JETBRAINS_ANNOTATIONS + Constants.Dependencies.Versions.JETBRAINS_ANNOTATIONS);
 	}
 
-	private NamedDomainObjectProvider<Configuration> register(String name, Type type) {
-		return getConfigurations().register(name, type::apply);
+	private NamedDomainObjectProvider<Configuration> register(String name, Role role) {
+		return getConfigurations().register(name, role::apply);
 	}
 
-	private NamedDomainObjectProvider<Configuration> registerNonTransitive(String name, Type type) {
-		final NamedDomainObjectProvider<Configuration> provider = register(name, type);
+	private NamedDomainObjectProvider<Configuration> registerNonTransitive(String name, Role role) {
+		final NamedDomainObjectProvider<Configuration> provider = register(name, role);
 		provider.configure(configuration -> configuration.setTransitive(false));
 		return provider;
 	}
@@ -124,15 +124,15 @@ public abstract class LoomConfigurations implements Runnable {
 		getConfigurations().getByName(a, configuration -> configuration.extendsFrom(getConfigurations().getByName(b)));
 	}
 
-	enum Type {
+	enum Role {
+		NONE(false, false),
 		CONSUMABLE(true, false),
-		RESOLVABLE(false, true),
-		DEFAULT(true, true);
+		RESOLVABLE(false, true);
 
 		private final boolean canBeConsumed;
 		private final boolean canBeResolved;
 
-		Type(boolean canBeConsumed, boolean canBeResolved) {
+		Role(boolean canBeConsumed, boolean canBeResolved) {
 			this.canBeConsumed = canBeConsumed;
 			this.canBeResolved = canBeResolved;
 		}

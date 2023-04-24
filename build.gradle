@@ -8,7 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	id "org.jetbrains.kotlin.jvm" version "1.8.0" // Must match the version included with gradle.
+	id "org.jetbrains.kotlin.jvm" version "1.8.10" // Must match the version included with gradle.
 	id "com.diffplug.spotless" version "6.18.0"
 	id "org.gradle.test-retry" version "1.5.2"
 }
@@ -100,7 +100,7 @@ dependencies {
 	}
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0') // Must match the version included with gradle.
+	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10') // Must match the version included with gradle.
 
 	// Testing
 	testImplementation(gradleTestKit())

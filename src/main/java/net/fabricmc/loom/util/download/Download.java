@@ -63,6 +63,7 @@ public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
 
+	private static HttpClient HTTP_CLIENT;
 	public static DownloadBuilder create(String url) throws URISyntaxException {
 		return DownloadBuilder.create(url);
 	}
@@ -94,10 +95,16 @@ public final class Download {
 			throw error("Unable to download %s in offline mode", this.url);
 		}
 
-		return HttpClient.newBuilder()
+		if (HTTP_CLIENT != null) {
+			return HTTP_CLIENT;
+		}
+
+		HTTP_CLIENT = HttpClient.newBuilder()
 				.followRedirects(HttpClient.Redirect.ALWAYS)
 				.proxy(ProxySelector.getDefault())
 				.build();
+
+		return HTTP_CLIENT;
 	}
 
 	private HttpRequest getRequest() {

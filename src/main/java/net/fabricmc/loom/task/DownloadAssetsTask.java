@@ -71,7 +71,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 
 		getAssetsDirectory().set(assetsDir);
 		getAssetsHash().set(versionInfo.assetIndex().sha1());
-		getDownloadThreads().convention(Runtime.getRuntime().availableProcessors());
+		getDownloadThreads().convention(Math.min(Runtime.getRuntime().availableProcessors(), 10));
 		getMinecraftVersion().set(versionInfo.id());
 		getMinecraftVersion().finalizeValue();
 

@@ -33,8 +33,8 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
 
 /**
- * Adds the constructor method <code>&lt;init&gt;</code> to the destination namespaces,
- * as long as the source name is <code>&lt;init&gt;</code> and the destination mapping is null.
+ * Adds the constructor method {@code <init>} to the destination namespaces,
+ * as long as the source name is {@code <init>} and the destination mapping is null.
  */
 public class AddConstructorMappingVisitor extends ForwardingMappingVisitor {
 	private boolean inConstructor;

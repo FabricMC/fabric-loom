@@ -51,6 +51,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
 		mappings.classes[0].methods[0].args[0].srcName.hashCode() == -1008297992
 		reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
+		reorderedMappings.getClass("net/minecraft/class_2573").getMethod("<init>", "()V") != null
 	}
 
 	def "Read parchment mappings remove prefix" () {

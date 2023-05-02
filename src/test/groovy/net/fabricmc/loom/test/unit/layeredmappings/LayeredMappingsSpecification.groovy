@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsSe
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer
+import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.loom.util.download.Download
@@ -109,7 +110,8 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		def reorderedMappings = new MemoryMappingTree()
 		def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.toString()))
 		def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true)
-		mappingTree.accept(nsSwitch)
+		def addConstructor = new AddConstructorMappingVisitor(nsSwitch)
+		mappingTree.accept(addConstructor)
 		return reorderedMappings
 	}
 

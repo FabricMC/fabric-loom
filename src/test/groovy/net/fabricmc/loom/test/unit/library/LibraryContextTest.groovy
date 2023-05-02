@@ -58,7 +58,7 @@ class LibraryContextTest extends Specification {
 		where:
 		id       || supported
 		"23w16a" || true
-		"1.19.4" || false
+		"1.19.4" || true
 		"1.18.2" || false
 		"1.16.5" || false
 		"1.4.7"  || false

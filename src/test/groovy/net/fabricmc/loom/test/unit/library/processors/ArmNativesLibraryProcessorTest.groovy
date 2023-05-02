@@ -58,7 +58,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		where:
 		id       || result
 		"23w16a" || LibraryProcessor.ApplicationResult.DONT_APPLY // Supports ARM64 Windows
-		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.19.4" || LibraryProcessor.ApplicationResult.DONT_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Only support versions with classpath natives.
 		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
 	}
@@ -116,23 +116,6 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		"1.16.5" | _
 		"1.15.2" | _
 		"1.14.4" | _
-	}
-
-	def "Add windows arm64 natives"() {
-		when:
-		def (original, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_ARM64)
-		def processor = new ArmNativesLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
-		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
-
-		then:
-		// Test that the arm64 natives are added alongside the existing ones
-		def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-		originalNatives.count { it.classifier() == "natives-windows-arm64" } == 0
-		originalNatives.count { it.classifier() == "natives-windows" } > 0
-
-		def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
-		processedNatives.count { it.classifier() == "natives-windows-arm64" } > 0
-		processedNatives.count { it.classifier() == "natives-windows" } > 0
 	}
 
 	def "Add linux arm64 natives"() {

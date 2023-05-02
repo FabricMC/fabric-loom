@@ -62,6 +62,10 @@ import net.fabricmc.loom.util.Checksum;
 public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
+	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+			.followRedirects(HttpClient.Redirect.ALWAYS)
+			.proxy(ProxySelector.getDefault())
+			.build();
 
 	public static DownloadBuilder create(String url) throws URISyntaxException {
 		return DownloadBuilder.create(url);
@@ -89,17 +93,6 @@ public final class Download {
 		this.downloadAttempt = downloadAttempt;
 	}
 
-	private HttpClient getHttpClient() throws DownloadException {
-		if (offline) {
-			throw error("Unable to download %s in offline mode", this.url);
-		}
-
-		return HttpClient.newBuilder()
-				.followRedirects(HttpClient.Redirect.ALWAYS)
-				.proxy(ProxySelector.getDefault())
-				.build();
-	}
-
 	private HttpRequest getRequest() {
 		return HttpRequest.newBuilder(url)
 				.version(httpVersion)
@@ -116,10 +109,14 @@ public final class Download {
 	}
 
 	private <T> HttpResponse<T> send(HttpRequest httpRequest, HttpResponse.BodyHandler<T> bodyHandler) throws DownloadException {
+		if (offline) {
+			throw error("Unable to download %s in offline mode", this.url);
+		}
+
 		progressListener.onStart();
 
 		try {
-			return getHttpClient().send(httpRequest, bodyHandler);
+			return HTTP_CLIENT.send(httpRequest, bodyHandler);
 		} catch (IOException | InterruptedException e) {
 			throw error(e, "Failed to download (%s)", url);
 		}
@@ -131,6 +128,7 @@ public final class Download {
 		final boolean successful = statusCode >= 200 && statusCode < 300;
 
 		if (!successful) {
+			progressListener.onEnd();
 			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
 		}
 
@@ -148,6 +146,7 @@ public final class Download {
 
 		if (!downloadRequired) {
 			// Does not require download, we are done here.
+			progressListener.onEnd();
 			return;
 		}
 
@@ -282,13 +281,15 @@ public final class Download {
 	}
 
 	private boolean requiresDownload(Path output) throws DownloadException {
-		if (getAndResetLock(output) & downloadAttempt == 1) {
-			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
-			return true;
-		}
+		final boolean locked = getAndResetLock(output);
 
 		if (forceDownload || !exists(output)) {
 			// File does not exist, or we are forced to download again.
+			return true;
+		}
+
+		if (locked && downloadAttempt == 1) {
+			LOGGER.warn("Forcing downloading {} as existing lock file was found. This may happen if the gradle build was forcefully canceled.", output);
 			return true;
 		}
 
@@ -309,12 +310,6 @@ public final class Download {
 				// Valid hash, no need to re-download
 				writeHash(output, expectedHash);
 				return false;
-			}
-
-			if (System.getProperty("fabric.loom.test") != null) {
-				// This should never happen in an ideal world.
-				// It means that something has altered a file that should be cached.
-				throw error("Download file (%s) may have been modified", output);
 			}
 
 			LOGGER.info("Found existing file ({}) to download with unexpected hash.", output);

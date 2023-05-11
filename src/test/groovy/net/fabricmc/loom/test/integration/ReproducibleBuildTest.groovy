@@ -55,13 +55,13 @@ class ReproducibleBuildTest extends Specification implements GradleProjectTestTr
 
 		where:
 		version              | modHash                               | sourceHash
-		DEFAULT_GRADLE      | "174c9b52f4bc6d489548d11b42e853cf"    | [
-			"0d9eec9248d93eb6ec4a1cd4d927e609",
-			"436bf54ef015576b0a338d55d9a0bb82"
+		DEFAULT_GRADLE      | "708a05164bfec11ff1d4e0cc29a29944"    | [
+			"fbf6e2901a229cc4b299e312207c67a8",
+			"5603176bf5924cb4943ace43d2bce36c"
 		]
-		PRE_RELEASE_GRADLE  | "174c9b52f4bc6d489548d11b42e853cf"    | [
-			"0d9eec9248d93eb6ec4a1cd4d927e609",
-			"436bf54ef015576b0a338d55d9a0bb82"
+		PRE_RELEASE_GRADLE  | "708a05164bfec11ff1d4e0cc29a29944"    | [
+			"fbf6e2901a229cc4b299e312207c67a8",
+			"5603176bf5924cb4943ace43d2bce36c"
 		]
 	}
 

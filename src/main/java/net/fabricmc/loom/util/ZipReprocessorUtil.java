@@ -54,7 +54,17 @@ public class ZipReprocessorUtil {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName)).toArray(ZipEntry[]::new);
+				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName, (e1, e2) -> {
+					if (e1.equals(e2)) {
+						return 0;
+					} else if (e1.equals("META-INF/MANIFEST.MF")) {
+						return -1;
+					} else if (e2.equals("META-INF/MANIFEST.MF")) {
+						return 1;
+					}
+
+					return 0;
+				}).thenComparing(ZipEntry::getName)).toArray(ZipEntry[]::new);
 			} else {
 				entries = zipFile.stream().toArray(ZipEntry[]::new);
 			}

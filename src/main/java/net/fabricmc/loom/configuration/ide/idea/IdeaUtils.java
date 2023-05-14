@@ -55,6 +55,6 @@ public class IdeaUtils {
 			module = project.getName() + "." + module;
 		}
 
-		return module;
+		return module.replace(' ', '_');
 	}
 }

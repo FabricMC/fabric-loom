@@ -183,7 +183,11 @@ public final class RemapConfigurations {
 			configuration.getTargetConfigurationName().convention(targetConfiguration);
 			configuration.getOnCompileClasspath().convention(compileClasspath);
 			configuration.getOnRuntimeClasspath().convention(runtimeClasspath);
-			configuration.getPublishingMode().convention(publishingMode);
+
+			// Publish only for the main source set.
+			if (SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+				configuration.getPublishingMode().convention(publishingMode);
+			}
 		};
 	}
 

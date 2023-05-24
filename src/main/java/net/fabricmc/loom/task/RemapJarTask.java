@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -43,7 +44,6 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
@@ -87,6 +87,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	public abstract Property<JsonSerializableHolder<TinyRemapperService.Spec>> getSpec();
 
+	@Input
+	public abstract Property<JsonSerializableHolder<List<RefmapData>>> getRefmapData();
+
 	@Inject
 	public RemapJarTask() {
 		super();
@@ -103,6 +106,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		getSpec().set(getProject().provider(() -> new JsonSerializableHolder<>(TinyRemapperService.create(this))));
+
+		if (getUseMixinAP().get()) {
+			getRefmapData().set(getProject().provider(this::buildRefmapDataHolder));
+		}
 	}
 
 	private void setupPreparationTask() {
@@ -137,24 +144,23 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			final boolean mixinAp = getUseMixinAP().get();
 			params.getUseMixinExtension().set(!mixinAp);
-
-			if (mixinAp) {
-				setupLegacyMixinRefmapRemapping(params);
-			}
+			params.getMixinData().set(getRefmapData());
 		});
 	}
 
-	private void setupLegacyMixinRefmapRemapping(RemapParams params) {
+	private JsonSerializableHolder<List<RefmapData>> buildRefmapDataHolder() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final MixinExtension mixinExtension = extension.getMixin();
 
 		final FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(getInputFile().getAsFile().get().toPath());
 
 		if (fabricModJson == null) {
-			return;
+			return null;
 		}
 
 		final Collection<String> allMixinConfigs = fabricModJson.getMixinConfigurations();
+
+		var list = new ArrayList<RefmapData>();
 
 		for (SourceSet sourceSet : mixinExtension.getMixinSourceSets()) {
 			MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
@@ -172,8 +178,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					.filter(allMixinConfigs::contains)
 					.toList();
 
-			params.getMixinData().add(new RemapParams.RefmapData(mixinConfigs, refmapName));
+			list.add(new RefmapData(mixinConfigs, refmapName));
 		}
+
+		return new JsonSerializableHolder<>(Collections.unmodifiableList(list));
 	}
 
 	public interface RemapParams extends AbstractRemapParams {
@@ -183,8 +191,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		Property<Boolean> getUseMixinExtension();
 		Property<Boolean> getMultiProjectOptimisation();
 
-		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
-		ListProperty<RefmapData> getMixinData();
+		Property<JsonSerializableHolder<List<RefmapData>>> getMixinData();
 
 		Property<JsonSerializableHolder<TinyRemapperService.Spec>> getTinyRemapperSpec();
 	}
@@ -299,7 +306,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			for (RemapParams.RefmapData refmapData : getParameters().getMixinData().get()) {
+			for (RefmapData refmapData : getParameters().getMixinData().get().get()) {
 				int transformed = ZipUtils.transformJson(JsonObject.class, outputFile, refmapData.mixinConfigs().stream().collect(Collectors.toMap(s -> s, s -> json -> {
 					if (!json.has("refmap")) {
 						json.addProperty("refmap", refmapData.refmapName());
@@ -326,4 +333,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				.map(relativePath(rootPaths))
 				.toList();
 	}
+
+	record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 }

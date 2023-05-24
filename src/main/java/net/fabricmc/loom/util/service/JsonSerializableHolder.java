@@ -37,6 +37,10 @@ import org.jetbrains.annotations.Nullable;
 public class JsonSerializableHolder<S> implements Serializable {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+	static {
+		OBJECT_MAPPER.activateDefaultTyping(OBJECT_MAPPER.getPolymorphicTypeValidator());
+	}
+
 	@Nullable
 	transient S spec;
 

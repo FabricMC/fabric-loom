@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.util;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public interface Cacheable {
+	@JsonIgnore
 	String getCacheKey();
 }

@@ -29,6 +29,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -49,6 +50,7 @@ public final class MappingsService implements SharedService {
 		}
 
 		@Override
+		@JsonIgnore
 		public String getCacheKey() {
 			// TODO maybe include the mapping id here?
 			return "mappingsProvider:%s:%s:%s:%s".formatted(

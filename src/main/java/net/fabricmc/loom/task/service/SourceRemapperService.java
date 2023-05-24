@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
@@ -62,6 +63,7 @@ public final class SourceRemapperService implements SharedService {
 		}
 
 		@Override
+		@JsonIgnore
 		public String getCacheKey() {
 			return "sourceremapper:%s:%s:%s".formatted(
 					mappingsSpec.getCacheKey(),

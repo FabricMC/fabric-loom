@@ -32,25 +32,31 @@ import javax.inject.Inject;
 
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.task.service.SourceRemapperService;
+import net.fabricmc.loom.util.service.JsonSerializableHolder;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 
 public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
+	@Input
+	public abstract Property<JsonSerializableHolder<SourceRemapperService.Spec>> getSpec();
+
 	@Inject
 	public RemapSourcesJarTask() {
 		super();
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getSpec().set(getProject().provider(() -> new JsonSerializableHolder<>(SourceRemapperService.create(this))));
 	}
 
 	@TaskAction
 	public void run() {
 		submitWork(RemapSourcesAction.class, params -> {
-			params.getSourcesRemapperServiceSpec().set(SourceRemapperService.create(this));
+			params.getSourcesRemapperServiceSpec().set(getSpec());
 		});
 	}
 
@@ -62,7 +68,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {
-		Property<SourceRemapperService.Spec> getSourcesRemapperServiceSpec();
+		Property<JsonSerializableHolder<SourceRemapperService.Spec>> getSourcesRemapperServiceSpec();
 	}
 
 	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
@@ -71,7 +77,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 		@Override
 		public void execute() {
 			try (var serviceManager = new ScopedSharedServiceManager()) {
-				final SourceRemapperService sourceRemapperService = serviceManager.getOrCreateService(getParameters().getSourcesRemapperServiceSpec().get());
+				final SourceRemapperService sourceRemapperService = serviceManager.getOrCreateService(getParameters().getSourcesRemapperServiceSpec().get().get());
 
 				sourceRemapperService.remapSourcesJar(inputFile, outputFile);
 

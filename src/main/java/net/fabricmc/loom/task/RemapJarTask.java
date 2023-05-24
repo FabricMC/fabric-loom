@@ -69,6 +69,7 @@ import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.service.JsonSerializableHolder;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 
@@ -82,6 +83,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	@ApiStatus.Internal
 	public abstract Property<Boolean> getUseMixinAP();
+
+	@Input
+	public abstract Property<JsonSerializableHolder<TinyRemapperService.Spec>> getSpec();
 
 	@Inject
 	public RemapJarTask() {
@@ -97,6 +101,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		if (getLoomExtension().multiProjectOptimisation()) {
 			setupPreparationTask();
 		}
+
+		getSpec().set(getProject().provider(() -> new JsonSerializableHolder<>(TinyRemapperService.create(this))));
 	}
 
 	private void setupPreparationTask() {
@@ -122,9 +128,12 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getNestedJars().from(getNestedJars());
 			}
 
-			params.getTinyRemapperSpec().set(TinyRemapperService.create(this));
+			params.getTinyRemapperSpec().set(getSpec());
 			params.getRemapClasspath().from(getClasspath());
-			params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
+
+			// TODO: fix me
+			//params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
+			params.getMultiProjectOptimisation().set(false);
 
 			final boolean mixinAp = getUseMixinAP().get();
 			params.getUseMixinExtension().set(!mixinAp);
@@ -177,7 +186,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
 
-		Property<TinyRemapperService.Spec> getTinyRemapperSpec();
+		Property<JsonSerializableHolder<TinyRemapperService.Spec>> getTinyRemapperSpec();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
@@ -186,7 +195,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		@Override
 		public void execute() {
 			try (var serviceManager = new ScopedSharedServiceManager()) {
-				final TinyRemapperService tinyRemapperService = serviceManager.getOrCreateService(getParameters().getTinyRemapperSpec().get());
+				final TinyRemapperService tinyRemapperService = serviceManager.getOrCreateService(getParameters().getTinyRemapperSpec().get().get());
 
 				try {
 					LOGGER.info("Remapping {} to {}", inputFile, outputFile);

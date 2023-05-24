@@ -166,11 +166,13 @@ public class SourceRemapper {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
-		MappingSet mappings = LorenzMappingService.create(serviceManager,
-															mappingConfiguration,
-															toNamed ? MappingsNamespace.INTERMEDIARY : MappingsNamespace.NAMED,
-															toNamed ? MappingsNamespace.NAMED : MappingsNamespace.INTERMEDIARY
-		).mappings();
+		final LorenzMappingService.Spec lorenzSpec = LorenzMappingService.create(mappingConfiguration,
+				toNamed ? MappingsNamespace.INTERMEDIARY : MappingsNamespace.NAMED,
+				toNamed ? MappingsNamespace.NAMED : MappingsNamespace.INTERMEDIARY
+		);
+
+		final LorenzMappingService lorenzservice = serviceManager.getOrCreateService(lorenzSpec);
+		final MappingSet mappings = lorenzservice.mappings();
 
 		Mercury mercury = createMercuryWithClassPath(project, toNamed);
 		mercury.setSourceCompatibilityFromRelease(getJavaCompileRelease(project));

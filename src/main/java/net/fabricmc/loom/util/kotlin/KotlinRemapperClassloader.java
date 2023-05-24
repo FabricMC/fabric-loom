@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util.kotlin;
 
+import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
@@ -68,7 +70,13 @@ public class KotlinRemapperClassloader extends URLClassLoader {
 
 		final URL[] urls = Stream.concat(
 				loomUrls,
-				classpathProvider.classpath().stream()
+				classpathProvider.classpath().stream().map(uri -> {
+					try {
+						return uri.toURL();
+					} catch (MalformedURLException e) {
+						throw new UncheckedIOException(e);
+					}
+				})
 		).toArray(URL[]::new);
 
 		return new KotlinRemapperClassloader(urls);

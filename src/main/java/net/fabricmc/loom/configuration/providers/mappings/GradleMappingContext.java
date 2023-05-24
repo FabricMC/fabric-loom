@@ -75,7 +75,7 @@ public class GradleMappingContext implements MappingContext {
 	public Supplier<MemoryMappingTree> intermediaryTree() {
 		return () -> {
 			try (var serviceManager = new ScopedSharedServiceManager()) {
-				return IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider()).getMemoryMappingTree();
+				return serviceManager.getOrCreateService(IntermediateMappingsService.getInstance(project, minecraftProvider())).getMemoryMappingTree();
 			}
 		};
 	}

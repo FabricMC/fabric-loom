@@ -45,10 +45,8 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.ApiStatus;
@@ -71,10 +69,8 @@ import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
-import net.fabricmc.loom.util.service.BuildSharedServiceManager;
-import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
-import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@InputFiles
@@ -87,13 +83,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@ApiStatus.Internal
 	public abstract Property<Boolean> getUseMixinAP();
 
-	private final Provider<BuildSharedServiceManager> serviceManagerProvider;
-
 	@Inject
 	public RemapJarTask() {
 		super();
-		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
-
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 
@@ -130,7 +122,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getNestedJars().from(getNestedJars());
 			}
 
-			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
+			params.getTinyRemapperSpec().set(TinyRemapperService.create(this));
 			params.getRemapClasspath().from(getClasspath());
 			params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
 
@@ -185,67 +177,62 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
 
-		Property<String> getTinyRemapperBuildServiceUuid();
+		Property<TinyRemapperService.Spec> getTinyRemapperSpec();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
-		private final TinyRemapperService tinyRemapperService;
-		private TinyRemapper tinyRemapper;
-
-		public RemapAction() {
-			this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
-		}
-
 		@Override
 		public void execute() {
-			try {
-				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
+			try (var serviceManager = new ScopedSharedServiceManager()) {
+				final TinyRemapperService tinyRemapperService = serviceManager.getOrCreateService(getParameters().getTinyRemapperSpec().get());
 
-				if (!getParameters().getMultiProjectOptimisation().get()) {
-					prepare();
-				}
-
-				tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
-
-				remap();
-
-				if (getParameters().getClientOnlyEntries().isPresent()) {
-					markClientOnlyClasses();
-				}
-
-				remapAccessWidener();
-				addRefmaps();
-				addNestedJars();
-				modifyJarManifest();
-				rewriteJar();
-
-				if (!getParameters().getMultiProjectOptimisation().get()) {
-					tinyRemapperService.close();
-				}
-
-				LOGGER.debug("Finished remapping {}", inputFile);
-			} catch (Exception e) {
 				try {
-					Files.deleteIfExists(outputFile);
-				} catch (IOException ex) {
-					LOGGER.error("Failed to delete output file", ex);
-				}
+					LOGGER.info("Remapping {} to {}", inputFile, outputFile);
 
-				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
+					if (!getParameters().getMultiProjectOptimisation().get()) {
+						prepare(tinyRemapperService);
+					}
+
+					remap(tinyRemapperService);
+
+					if (getParameters().getClientOnlyEntries().isPresent()) {
+						markClientOnlyClasses();
+					}
+
+					remapAccessWidener(tinyRemapperService);
+					addRefmaps();
+					addNestedJars();
+					modifyJarManifest();
+					rewriteJar();
+
+					if (!getParameters().getMultiProjectOptimisation().get()) {
+						tinyRemapperService.close();
+					}
+
+					LOGGER.debug("Finished remapping {}", inputFile);
+				} catch (Exception e) {
+					try {
+						Files.deleteIfExists(outputFile);
+					} catch (IOException ex) {
+						LOGGER.error("Failed to delete output file", ex);
+					}
+
+					throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
+				}
 			}
 		}
 
-		private void prepare() {
+		private void prepare(TinyRemapperService tinyRemapperService) {
 			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
 			PrepareJarRemapTask.prepare(tinyRemapperService, inputFile);
 		}
 
-		private void remap() throws IOException {
+		private void remap(TinyRemapperService tinyRemapperService) throws IOException {
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
-				tinyRemapper.apply(outputConsumer, tinyRemapperService.getOrCreateTag(inputFile));
+				tinyRemapperService.getTinyRemapperForRemapping().apply(outputConsumer, tinyRemapperService.getOrCreateTag(inputFile));
 			}
 		}
 
@@ -258,26 +245,26 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			ZipUtils.transform(outputFile, tranformers);
 		}
 
-		private void remapAccessWidener() throws IOException {
+		private void remapAccessWidener(TinyRemapperService tinyRemapperService) throws IOException {
 			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
 
 			if (accessWidenerFile == null) {
 				return;
 			}
 
-			byte[] remapped = remapAccessWidener(accessWidenerFile.content());
+			byte[] remapped = remapAccessWidener(tinyRemapperService, accessWidenerFile.content());
 
 			// Finally, replace the output with the remaped aw
 			ZipUtils.replace(outputFile, accessWidenerFile.path(), remapped);
 		}
 
-		private byte[] remapAccessWidener(byte[] input) {
+		private byte[] remapAccessWidener(TinyRemapperService tinyRemapperService, byte[] input) {
 			int version = AccessWidenerReader.readVersion(input);
 
 			AccessWidenerWriter writer = new AccessWidenerWriter(version);
 			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
 					writer,
-					tinyRemapper.getEnvironment().getRemapper(),
+					tinyRemapperService.getTinyRemapperForRemapping().getEnvironment().getRemapper(),
 					getParameters().getSourceNamespace().get(),
 					getParameters().getTargetNamespace().get()
 			);
@@ -329,10 +316,5 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		return output.getAsFileTree().getFiles().stream()
 				.map(relativePath(rootPaths))
 				.toList();
-	}
-
-	@Internal
-	public TinyRemapperService getTinyRemapperService() {
-		return TinyRemapperService.getOrCreate(serviceManagerProvider.get().get(), this);
 	}
 }

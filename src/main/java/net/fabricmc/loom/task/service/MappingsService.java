@@ -27,38 +27,58 @@ package net.fabricmc.loom.task.service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
 public final class MappingsService implements SharedService {
-	private record Options(Path mappingsFile, String from, String to, boolean remapLocals) { }
+	public record Spec(String mappingsFile, String from, String to, boolean remapLocals) implements LoomServiceSpec<MappingsService> {
+		@Override
+		public MappingsService create(ServiceFactory serviceFactory) {
+			return new MappingsService(Paths.get(mappingsFile), from, to, remapLocals);
+		}
 
-	public static synchronized MappingsService create(SharedServiceManager sharedServiceManager, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
-		final Options options = new Options(mappingsFile, from, to, remapLocals);
-		final String id = name + options.hashCode();
-		return sharedServiceManager.getOrCreateService(id, () -> new MappingsService(options));
+		@Override
+		public String getCacheKey() {
+			// TODO maybe include the mapping id here?
+			return "mappingsProvider:%s:%s:%s:%s".formatted(
+					mappingsFile,
+					from,
+					to,
+					remapLocals
+			);
+		}
 	}
 
-	public static MappingsService createDefault(Project project, SharedServiceManager serviceManager, String from, String to) {
+	public static MappingsService.Spec create(Path mappingsFile, String from, String to, boolean remapLocals) {
+		return new Spec(mappingsFile.toAbsolutePath().toString(), from, to, remapLocals);
+	}
+
+	public static MappingsService.Spec createDefault(Project project, String from, String to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
-
-		final String name = mappingConfiguration.getBuildServiceName("mappingsProvider", from, to);
-		return MappingsService.create(serviceManager, name, mappingConfiguration.tinyMappings, from, to, false);
+		return new Spec(mappingConfiguration.tinyMappings.toAbsolutePath().toString(), from, to, false);
 	}
 
-	private final Options options;
+	private final Path mappingsFile;
+	private final String from;
+	private final String to;
+	private final boolean remapLocals;
 
-	public MappingsService(Options options) {
-		this.options = options;
+	private MappingsService(Path mappingsFile, String from, String to, boolean remapLocals) {
+		this.mappingsFile = mappingsFile;
+		this.from = from;
+		this.to = to;
+		this.remapLocals = remapLocals;
 	}
 
 	private IMappingProvider mappingProvider = null;
@@ -68,13 +88,13 @@ public final class MappingsService implements SharedService {
 		if (mappingProvider == null) {
 			try {
 				mappingProvider = TinyRemapperHelper.create(
-						options.mappingsFile(),
-						options.from(),
-						options.to(),
-						options.remapLocals()
+						mappingsFile,
+						from,
+						to,
+						remapLocals
 				);
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + options.mappingsFile(), e);
+				throw new UncheckedIOException("Failed to read mappings from: " + mappingsFile, e);
 			}
 		}
 
@@ -86,9 +106,9 @@ public final class MappingsService implements SharedService {
 			memoryMappingTree = new MemoryMappingTree();
 
 			try {
-				MappingReader.read(options.mappingsFile(), memoryMappingTree);
+				MappingReader.read(mappingsFile, memoryMappingTree);
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + options.mappingsFile(), e);
+				throw new UncheckedIOException("Failed to read mappings from: " + mappingsFile, e);
 			}
 		}
 
@@ -96,11 +116,11 @@ public final class MappingsService implements SharedService {
 	}
 
 	public String getFromNamespace() {
-		return options.from();
+		return from;
 	}
 
 	public String getToNamespace() {
-		return options.to();
+		return to;
 	}
 
 	@Override

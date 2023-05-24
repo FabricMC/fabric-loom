@@ -32,31 +32,25 @@ import javax.inject.Inject;
 
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.task.service.SourceRemapperService;
-import net.fabricmc.loom.util.service.BuildSharedServiceManager;
-import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 
 public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
-	private final Provider<BuildSharedServiceManager> serviceManagerProvider;
-
 	@Inject
 	public RemapSourcesJarTask() {
 		super();
-		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
-
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 	}
 
 	@TaskAction
 	public void run() {
 		submitWork(RemapSourcesAction.class, params -> {
-			params.getSourcesRemapperServiceUuid().set(UnsafeWorkQueueHelper.create(SourceRemapperService.create(serviceManagerProvider.get().get(), this)));
+			params.getSourcesRemapperServiceSpec().set(SourceRemapperService.create(this));
 		});
 	}
 
@@ -68,23 +62,17 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {
-		Property<String> getSourcesRemapperServiceUuid();
+		Property<SourceRemapperService.Spec> getSourcesRemapperServiceSpec();
 	}
 
 	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapSourcesAction.class);
 
-		private final SourceRemapperService sourceRemapperService;
-
-		public RemapSourcesAction() {
-			super();
-
-			sourceRemapperService = UnsafeWorkQueueHelper.get(getParameters().getSourcesRemapperServiceUuid(), SourceRemapperService.class);
-		}
-
 		@Override
 		public void execute() {
-			try {
+			try (var serviceManager = new ScopedSharedServiceManager()) {
+				final SourceRemapperService sourceRemapperService = serviceManager.getOrCreateService(getParameters().getSourcesRemapperServiceSpec().get());
+
 				sourceRemapperService.remapSourcesJar(inputFile, outputFile);
 
 				modifyJarManifest();

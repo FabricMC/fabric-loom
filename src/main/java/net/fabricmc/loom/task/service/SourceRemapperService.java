@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
@@ -36,42 +37,58 @@ import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.Project;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.RemapSourcesJarTask;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 
 public final class SourceRemapperService implements SharedService {
-	public static synchronized SourceRemapperService create(SharedServiceManager serviceManager, RemapSourcesJarTask task) {
-		final Project project = task.getProject();
-		final String to = task.getTargetNamespace().get();
-		final String from = task.getSourceNamespace().get();
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final String id = extension.getMappingConfiguration().getBuildServiceName("sourceremapper", from, to);
-		final int javaCompileRelease = SourceRemapper.getJavaCompileRelease(project);
+	public record Spec(MappingsService.Spec mappingsSpec, Set<File> classpath, int javaCompileRelease) implements LoomServiceSpec<SourceRemapperService> {
+		@Override
+		public SourceRemapperService create(ServiceFactory serviceFactory) {
+			return new SourceRemapperService(
+					serviceFactory.getOrCreateService(mappingsSpec),
+					classpath,
+					javaCompileRelease
+			);
+		}
 
-		return serviceManager.getOrCreateService(id, () ->
-				new SourceRemapperService(MappingsService.createDefault(project, serviceManager, from, to), task.getClasspath(), javaCompileRelease));
+		@Override
+		public String getCacheKey() {
+			return "sourceremapper:%s:%s:%s".formatted(
+					mappingsSpec.getCacheKey(),
+					classpath,
+					javaCompileRelease
+			);
+		}
+	}
+
+	public static SourceRemapperService.Spec create(RemapSourcesJarTask task) {
+		final Project project = task.getProject();
+		return new SourceRemapperService.Spec(
+				MappingsService.createDefault(project, task.getSourceNamespace().get(), task.getTargetNamespace().get()),
+				task.getClasspath().getFiles(),
+				SourceRemapper.getJavaCompileRelease(project)
+		);
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceRemapperService.class);
 
 	private final MappingsService mappingsService;
-	private final ConfigurableFileCollection classpath;
+	private final Set<File> classpath;
 	private final int javaCompileRelease;
 
 	private final Supplier<Mercury> mercury = Suppliers.memoize(this::createMercury);
 
-	private SourceRemapperService(MappingsService mappingsService, ConfigurableFileCollection classpath, int javaCompileRelease) {
+	private SourceRemapperService(MappingsService mappingsService, Set<File> classpath, int javaCompileRelease) {
 		this.mappingsService = mappingsService;
 		this.classpath = classpath;
 		this.javaCompileRelease = javaCompileRelease;
@@ -131,7 +148,7 @@ public final class SourceRemapperService implements SharedService {
 			throw new UncheckedIOException("Failed to read mercury mappings", e);
 		}
 
-		for (File file : classpath.getFiles()) {
+		for (File file : classpath) {
 			if (file.exists()) {
 				mercury.getClassPath().add(file.toPath());
 			}

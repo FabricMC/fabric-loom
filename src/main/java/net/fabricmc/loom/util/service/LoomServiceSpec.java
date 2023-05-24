@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.kotlin;
+package net.fabricmc.loom.util.service;
 
-import java.net.URI;
-import java.util.Set;
+import java.io.Serializable;
 
-public interface KotlinClasspath {
-	String version();
+import net.fabricmc.loom.util.Cacheable;
 
-	Set<URI> classpath();
+public interface LoomServiceSpec<S extends SharedService> extends Serializable, Cacheable {
+	S create(ServiceFactory serviceFactory);
 }

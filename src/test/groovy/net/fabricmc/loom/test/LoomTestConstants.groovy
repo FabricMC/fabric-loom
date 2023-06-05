@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.test
 
-
 class LoomTestConstants {
 	private final static String NIGHTLY_VERSION = "8.3-20230602221039+0000"
 	private final static boolean NIGHTLY_EXISTS = nightlyExists(NIGHTLY_VERSION)

@@ -38,17 +38,24 @@ import java.util.stream.Collectors;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private final RunConfig config;
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
+
+	// Prevent Gradle from running two run tasks in parallel
+	@ServiceReference(SyncTaskBuildService.NAME)
+	abstract Property<SyncTaskBuildService> getSyncTask();
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();

@@ -37,13 +37,13 @@ import org.gradle.api.services.BuildServiceParameters;
  * }</pre>
  */
 public abstract class SyncTaskBuildService implements BuildService<SyncTaskBuildService.Params> {
-    public static final String NAME = "loomSyncTask";
+	public static final String NAME = "loomSyncTask";
 
-    public static void register(Project project) {
+	public static void register(Project project) {
 		project.getGradle().getSharedServices().registerIfAbsent(
-				NAME,
-				SyncTaskBuildService.class,
-				spec -> spec.getMaxParallelUsages().set(1)
+					NAME,
+					SyncTaskBuildService.class,
+					spec -> spec.getMaxParallelUsages().set(1)
 		);
 	}
 

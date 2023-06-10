@@ -24,21 +24,22 @@
 
 package net.fabricmc.loom.test.unit.kotlin
 
-import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
 import spock.lang.Specification
 
+import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
+
 class KotlinPluginUtilsTest extends Specification {
-    def "parseKotlinVersion"() {
-        when:
-        def parsedVersion = KotlinPluginUtils.parseKotlinVersion(version)
+	def "parseKotlinVersion"() {
+		when:
+		def parsedVersion = KotlinPluginUtils.parseKotlinVersion(version)
 
-        then:
-        parsedVersion == expected
+		then:
+		parsedVersion == expected
 
-        where:
-        version                          | expected
-        "1.7.0-RC-release-217(1.7.0-RC)" | "1.7.0-RC"
-        "1.6.21-release-334(1.6.21)"     | "1.6.21"
-        "1.9.0-Beta"                     | "1.9.0-Beta"
-    }
+		where:
+		version                          | expected
+		"1.7.0-RC-release-217(1.7.0-RC)" | "1.7.0-RC"
+		"1.6.21-release-334(1.6.21)"     | "1.6.21"
+		"1.9.0-Beta"                     | "1.9.0-Beta"
+	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,15 +24,17 @@
 
 package net.fabricmc.loom.util.kotlin;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import kotlinx.metadata.jvm.KotlinClassMetadata;
 import org.gradle.api.Project;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class KotlinPluginUtils {
 	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
-	private static final Pattern VERSION_PATTERN = Pattern.compile("\\((.*?)\\)");
+	private static final Pattern VERSION_PATTERN = Pattern.compile("\\((?<version>.*?)\\)|(?<newVersion>^[^(]*$)");
 
 	public static boolean hasKotlinPlugin(Project project) {
 		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
@@ -43,15 +45,27 @@ public class KotlinPluginUtils {
 		/*
 			1.7.0-RC-release-217(1.7.0-RC)
 			1.6.21-release-334(1.6.21)
+			1.9.0-Beta
 		 */
 		final String implVersion = kotlinPluginClass.getPackage().getImplementationVersion();
+		return parseKotlinVersion(implVersion);
+	}
+
+	@VisibleForTesting
+	public static String parseKotlinVersion(String implVersion) {
 		final Matcher matcher = VERSION_PATTERN.matcher(implVersion);
 
 		if (!matcher.find()) {
 			throw new IllegalStateException("Unable to match Kotlin version from: " + implVersion);
 		}
 
-		return matcher.group(1);
+		String version = matcher.group("version");
+
+		if (version == null) {
+			version = matcher.group("newVersion");
+		}
+
+		return Objects.requireNonNull(version);
 	}
 
 	public static String getKotlinMetadataVersion() {

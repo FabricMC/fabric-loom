@@ -8,7 +8,7 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	id "org.jetbrains.kotlin.jvm" version "1.8.0" // Must match the version included with gradle.
+	alias(libs.plugins.kotlin)
 	id "com.diffplug.spotless" version "6.18.0"
 	id "org.gradle.test-retry" version "1.5.2"
 }
@@ -32,6 +32,12 @@ if (ENV.BUILD_NUMBER) {
 	version = baseVersion + '.' + ENV.BUILD_NUMBER
 } else {
 	version = baseVersion + '.local'
+}
+
+// We must build against the version of Kotlin Gradle ships with.
+def kotlinVersion = KotlinDslVersion.current().getKotlinVersion()
+if (libs.versions.kotlin.get() != kotlinVersion) {
+	throw new IllegalStateException("Requires Kotlin version: ${kotlinVersion}")
 }
 
 repositories {
@@ -100,7 +106,7 @@ dependencies {
 	}
 
 	// Kapt integration
-	compileOnly('org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0') // Must match the version included with gradle.
+	compileOnly libs.kotlin.gradle.plugin
 
 	// Testing
 	testImplementation(gradleTestKit())
@@ -216,6 +222,7 @@ test {
 	}
 }
 
+import org.gradle.launcher.cli.KotlinDslVersion
 import org.gradle.util.GradleVersion
 import org.w3c.dom.Document
 import org.w3c.dom.Element

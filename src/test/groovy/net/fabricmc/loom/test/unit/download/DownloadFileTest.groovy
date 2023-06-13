@@ -252,7 +252,7 @@ class DownloadFileTest extends DownloadTest {
 
 	def "Progress: String"() {
 		setup:
-		server.get("/progressString") {
+		server.get("/progressFile") {
 			it.result("Hello World")
 		}
 

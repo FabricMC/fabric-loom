@@ -27,8 +27,18 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
+
 public record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
 	public static class Versions {
 		public String id, url, sha1;
+	}
+
+	@Nullable
+	public Versions getVersion(String id) {
+		return versions.stream()
+				.filter(versions -> versions.id.equalsIgnoreCase(id))
+				.findFirst()
+				.orElse(null);
 	}
 }

@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,25 +36,19 @@ import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.MirrorUtil;
-import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
 
 public abstract class MinecraftProvider {
 	private String minecraftVersion;
-
-	private MinecraftVersionMeta versionInfo;
-	private MinecraftLibraryProvider libraryProvider;
+	private MinecraftMetadataProvider metadataProvider;
 
 	private File workingDir;
-	private File minecraftJson;
 	private File minecraftClientJar;
 	// Note this will be the boostrap jar starting with 21w39a
 	private File minecraftServerJar;
@@ -63,8 +56,6 @@ public abstract class MinecraftProvider {
 	private File minecraftExtractedServerJar;
 	@Nullable
 	private BundleMetadata serverBundleMetadata;
-	private File versionManifestJson;
-	private File experimentalVersionsJson;
 
 	private final Project project;
 
@@ -86,11 +77,14 @@ public abstract class MinecraftProvider {
 
 		initFiles();
 
-		downloadMcJson();
-
-		try (FileReader reader = new FileReader(minecraftJson)) {
-			versionInfo = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, MinecraftVersionMeta.class);
-		}
+		metadataProvider = new MinecraftMetadataProvider(
+				MinecraftMetadataProvider.Options.create(
+						minecraftVersion,
+						getProject(),
+						file("minecraft-info.json").toPath()
+				),
+				getExtension()::download
+		);
 
 		downloadJars();
 
@@ -98,16 +92,13 @@ public abstract class MinecraftProvider {
 			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
 		}
 
-		libraryProvider = new MinecraftLibraryProvider(this, project);
+		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, project);
 		libraryProvider.provide();
 	}
 
 	protected void initFiles() {
 		workingDir = new File(getExtension().getFiles().getUserCache(), minecraftVersion);
 		workingDir.mkdirs();
-		minecraftJson = file("minecraft-info.json");
-		versionManifestJson = new File(getExtension().getFiles().getUserCache(), "version_manifest.json");
-		experimentalVersionsJson = new File(getExtension().getFiles().getUserCache(), "experimental_version_manifest.json");
 
 		if (provideClient()) {
 			minecraftClientJar = file("minecraft-client.jar");
@@ -119,73 +110,11 @@ public abstract class MinecraftProvider {
 		}
 	}
 
-	private void downloadMcJson() throws IOException {
-		final String versionManifestUrl = MirrorUtil.getVersionManifests(getProject());
-		final String versionManifest = getExtension().download(versionManifestUrl)
-				.defaultCache()
-				.downloadString(versionManifestJson.toPath());
-
-		final ManifestVersion mcManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(versionManifest, ManifestVersion.class);
-		ManifestVersion.Versions version = null;
-
-		if (getExtension().getCustomMinecraftManifest().isPresent()) {
-			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
-			customVersion.id = minecraftVersion;
-			customVersion.url = getExtension().getCustomMinecraftManifest().get();
-			version = customVersion;
-			getProject().getLogger().lifecycle("Using custom minecraft manifest");
-		}
-
-		if (version == null) {
-			version = mcManifest.versions().stream()
-					.filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion))
-					.findFirst().orElse(null);
-		}
-
-		if (version == null) {
-			version = findExperimentalVersion();
-		}
-
-		if (version == null) {
-			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
-		}
-
-		getProject().getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
-		final DownloadBuilder download = getExtension().download(version.url);
-
-		if (version.sha1 != null) {
-			download.sha1(version.sha1);
-		} else {
-			download.defaultCache();
-		}
-
-		download.downloadPath(minecraftJson.toPath());
-	}
-
-	// This attempts to find the version from fabric's own fallback version manifest json.
-	private ManifestVersion.Versions findExperimentalVersion() throws IOException {
-		final String expVersionManifest = getExtension().download(MirrorUtil.getExperimentalVersions(getProject()))
-				.defaultCache()
-				.downloadString(experimentalVersionsJson.toPath());
-
-		final ManifestVersion expManifest = LoomGradlePlugin.OBJECT_MAPPER.readValue(expVersionManifest, ManifestVersion.class);
-		final ManifestVersion.Versions result = expManifest.versions().stream()
-				.filter(versions -> versions.id.equalsIgnoreCase(minecraftVersion))
-				.findFirst()
-				.orElse(null);
-
-		if (result != null) {
-			getProject().getLogger().lifecycle("Using fallback experimental version {}", minecraftVersion);
-		}
-
-		return result;
-	}
-
 	private void downloadJars() throws IOException {
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
 				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
-				final MinecraftVersionMeta.Download client = versionInfo.download("client");
+				final MinecraftVersionMeta.Download client = getVersionInfo().download("client");
 				getExtension().download(client.url())
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
@@ -193,7 +122,7 @@ public abstract class MinecraftProvider {
 			}
 
 			if (provideServer()) {
-				final MinecraftVersionMeta.Download server = versionInfo.download("server");
+				final MinecraftVersionMeta.Download server = getVersionInfo().download("server");
 				getExtension().download(server.url())
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
@@ -256,7 +185,7 @@ public abstract class MinecraftProvider {
 	}
 
 	public MinecraftVersionMeta getVersionInfo() {
-		return versionInfo;
+		return Objects.requireNonNull(metadataProvider, "Metadata provider not setup").getVersionMeta();
 	}
 
 	@Nullable

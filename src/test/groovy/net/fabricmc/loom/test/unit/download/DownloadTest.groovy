@@ -25,17 +25,14 @@
 package net.fabricmc.loom.test.unit.download
 
 import io.javalin.Javalin
-import spock.lang.Shared
 import spock.lang.Specification
 
 abstract class DownloadTest extends Specification {
 	static final String PATH = "http://127.0.0.1:9081"
 
-	@Shared
-	Javalin server = Javalin.create { config ->
-	}.start(9081)
+	Javalin server = Javalin.create().start(9081)
 
-	def cleanupSpec() {
+	def cleanup() {
 		server.stop()
 	}
 }

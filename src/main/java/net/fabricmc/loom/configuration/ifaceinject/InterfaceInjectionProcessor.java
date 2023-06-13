@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,14 +175,20 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
-		for (InjectedInterface injectedInterface : injectedInterfaces) {
-			String iiComment = "Interface {@link %s} injected by mod %s".formatted(injectedInterface.ifaceName.substring(injectedInterface.ifaceName.lastIndexOf("/") + 1), injectedInterface.modId);
+		if (injectedInterfaces.isEmpty()) {
+			return comment;
+		}
 
-			if (comment == null || !comment.contains(iiComment)) {
-				if (comment == null) {
-					comment = iiComment;
+		var commentBuilder = comment == null ? new StringBuilder() : new StringBuilder(comment);
+
+		for (InjectedInterface injectedInterface : injectedInterfaces) {
+			String iiComment = "<p>Interface {@link %s} injected by mod %s</p>".formatted(injectedInterface.ifaceName().replace('/', '.').replace('$', '.'), injectedInterface.modId());
+
+			if (commentBuilder.indexOf(iiComment) == -1) {
+				if (commentBuilder.isEmpty()) {
+					commentBuilder.append(iiComment);
 				} else {
-					comment += "\n" + iiComment;
+					commentBuilder.append('\n').append(iiComment);
 				}
 			}
 		}
@@ -221,7 +229,10 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	private static class InjectingClassVisitor extends ClassVisitor {
+		private static final int INTERFACE_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE;
+
 		private final List<InjectedInterface> injectedInterfaces;
+		private final Set<String> knownInnerClasses = new HashSet<>();
 
 		InjectingClassVisitor(int asmVersion, ClassWriter writer, List<InjectedInterface> injectedInterfaces) {
 			super(asmVersion, writer);
@@ -253,6 +264,54 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 
 			super.visit(version, access, name, signature, superName, modifiedInterfaces.toArray(new String[0]));
+		}
+
+		@Override
+		public void visitInnerClass(final String name, final String outerName, final String innerName, final int access) {
+			this.knownInnerClasses.add(name);
+			super.visitInnerClass(name, outerName, innerName, access);
+		}
+
+		@Override
+		public void visitEnd() {
+			// inject any necessary inner class entries
+			// this may produce technically incorrect bytecode cuz we don't know the actual access flags for inner class entries
+			// but it's hopefully enough to quiet some IDE errors
+			for (final InjectedInterface itf : injectedInterfaces) {
+				if (this.knownInnerClasses.contains(itf.ifaceName())) {
+					continue;
+				}
+
+				int simpleNameIdx = itf.ifaceName().lastIndexOf('/');
+				final String simpleName = simpleNameIdx == -1 ? itf.ifaceName() : itf.ifaceName().substring(simpleNameIdx + 1);
+				int lastIdx = -1;
+				int dollarIdx = -1;
+
+				// Iterate through inner class entries starting from outermost to innermost
+				while ((dollarIdx = simpleName.indexOf('$', dollarIdx + 1)) != -1) {
+					if (dollarIdx - lastIdx == 1) {
+						continue;
+					}
+
+					// Emit the inner class entry from this to the last one
+					if (lastIdx != -1) {
+						final String outerName = itf.ifaceName().substring(0, simpleNameIdx + 1 + lastIdx);
+						final String innerName = simpleName.substring(lastIdx + 1, dollarIdx);
+						super.visitInnerClass(outerName + '$' + innerName, outerName, innerName, INTERFACE_ACCESS);
+					}
+
+					lastIdx = dollarIdx;
+				}
+
+				// If we have a trailer to append
+				if (lastIdx != -1 && lastIdx != simpleName.length()) {
+					final String outerName = itf.ifaceName().substring(0, simpleNameIdx + 1 + lastIdx);
+					final String innerName = simpleName.substring(lastIdx + 1);
+					super.visitInnerClass(outerName + '$' + innerName, outerName, innerName, INTERFACE_ACCESS);
+				}
+			}
+
+			super.visitEnd();
 		}
 	}
 }

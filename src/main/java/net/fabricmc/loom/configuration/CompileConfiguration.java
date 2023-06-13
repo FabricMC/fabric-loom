@@ -40,7 +40,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
-import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 
@@ -82,12 +81,6 @@ public abstract class CompileConfiguration implements Runnable {
 		getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
 			final SourceSet main = SourceSetHelper.getMainSourceSet(getProject());
 			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
-		});
-
-		// Make all outputs to be reproducible
-		getTasks().withType(AbstractArchiveTask.class).configureEach(abstractArchiveTask -> {
-			abstractArchiveTask.setReproducibleFileOrder(true);
-			abstractArchiveTask.setPreserveFileTimestamps(false);
 		});
 
 		afterEvaluationWithService((serviceManager) -> {

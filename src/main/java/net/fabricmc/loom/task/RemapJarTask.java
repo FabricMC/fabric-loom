@@ -105,6 +105,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		if (getLoomExtension().multiProjectOptimisation()) {
 			setupPreparationTask();
 		}
+
+		// Make outputs reproducible by default
+		setReproducibleFileOrder(true);
+		setPreserveFileTimestamps(false);
 	}
 
 	private void setupPreparationTask() {

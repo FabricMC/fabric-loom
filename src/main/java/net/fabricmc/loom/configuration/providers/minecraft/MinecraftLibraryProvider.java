@@ -56,7 +56,7 @@ public class MinecraftLibraryProvider {
 	public MinecraftLibraryProvider(MinecraftProvider minecraftProvider, Project project) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
-		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories(), getEnabledProcessors());
+		this.processorManager = new LibraryProcessorManager(platform, project.getRepositories(), LoomGradleExtension.get(project).getLibraryProcessors().get(), getEnabledProcessors());
 	}
 
 	private List<String> getEnabledProcessors() {

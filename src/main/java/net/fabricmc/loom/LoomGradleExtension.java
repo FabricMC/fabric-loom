@@ -30,6 +30,8 @@ import java.util.List;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -38,12 +40,14 @@ import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 
+@ApiStatus.Internal
 public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	static LoomGradleExtension get(Project project) {
 		return (LoomGradleExtension) project.getExtensions().getByName("loom");
@@ -109,4 +113,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	 * <p>You can enable it by setting the Gradle property {@code fabric.loom.multiProjectOptimisation} to {@code true}.
 	 */
 	boolean multiProjectOptimisation();
+
+	ListProperty<LibraryProcessorManager.LibraryProcessorFactory> getLibraryProcessors();
 }

@@ -45,6 +45,51 @@ public class ZipReprocessorUtil {
 
 	private ZipReprocessorUtil() { }
 
+	private static final String MANIFEST_LOCATION = "META-INF/MANIFEST.MF";
+	private static final String META_INF = "META-INF/";
+
+	// See https://docs.oracle.com/en/java/javase/20/docs/specs/jar/jar.html#signed-jar-file
+	private static boolean isSpecialFile(String zipEntryName) {
+		if (!zipEntryName.startsWith(META_INF)) {
+			return false;
+		}
+
+		String[] parts = zipEntryName.split("/");
+
+		if (parts.length != 2) {
+			return false;
+		}
+
+		return parts[1].startsWith("SIG-")
+				|| parts[1].endsWith(".SF")
+				|| parts[1].endsWith(".DSA")
+				|| parts[1].endsWith(".RSA")
+				|| parts[1].endsWith(".EC");
+	}
+
+	private static int specialOrdering(String name1, String name2) {
+		if (name1.equals(name2)) {
+			return 0;
+		} else if (name1.equals(MANIFEST_LOCATION)) {
+			return -1;
+		} else if (name2.equals(MANIFEST_LOCATION)) {
+			return 1;
+		}
+
+		boolean isName1Special = isSpecialFile(name1);
+		boolean isName2Special = isSpecialFile(name2);
+
+		if (isName1Special && isName2Special) {
+			return name1.compareTo(name2);
+		} else if (isName1Special) {
+			return -1;
+		} else if (isName2Special) {
+			return 1;
+		}
+
+		return name1.compareTo(name2);
+	}
+
 	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
 		if (!reproducibleFileOrder && preserveFileTimestamps) {
 			return;
@@ -54,7 +99,7 @@ public class ZipReprocessorUtil {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName)).toArray(ZipEntry[]::new);
+				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName, ZipReprocessorUtil::specialOrdering)).toArray(ZipEntry[]::new);
 			} else {
 				entries = zipFile.stream().toArray(ZipEntry[]::new);
 			}

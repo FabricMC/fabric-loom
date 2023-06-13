@@ -29,7 +29,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 
@@ -55,20 +58,25 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	@Override
-	public void provide(boolean applyDependencies) throws Exception {
-		parentMinecraftProvider.provide(false);
+	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+		parentMinecraftProvider.provide(context);
 
-		boolean requiresProcessing = parentMinecraftProvider.getMinecraftJars().stream()
+		boolean requiresProcessing = context.refreshOutputs() || parentMinecraftProvider.getMinecraftJars().stream()
 				.map(this::getProcessedPath)
 				.anyMatch(jarProcessorManager::requiresProcessingJar);
 
+		final Map<MinecraftJar, MinecraftJar> minecraftJarOutputMap = parentMinecraftProvider.getMinecraftJars().stream()
+				.collect(Collectors.toMap(Function.identity(), this::getProcessedJar));
+
 		if (requiresProcessing) {
-			processJars();
+			processJars(minecraftJarOutputMap);
 		}
 
-		if (applyDependencies) {
+		if (context.applyDependencies()) {
 			applyDependencies();
 		}
+
+		return List.copyOf(minecraftJarOutputMap.values());
 	}
 
 	@Override
@@ -76,9 +84,10 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		return MavenScope.LOCAL;
 	}
 
-	private void processJars() throws IOException {
-		for (MinecraftJar minecraftJar : parentMinecraftProvider.getMinecraftJars()) {
-			final MinecraftJar outputJar = getProcessedJar(minecraftJar);
+	private void processJars(Map<MinecraftJar, MinecraftJar> minecraftJarMap) throws IOException {
+		for (Map.Entry<MinecraftJar, MinecraftJar> entry : minecraftJarMap.entrySet()) {
+			final MinecraftJar minecraftJar = entry.getKey();
+			final MinecraftJar outputJar = entry.getValue();
 			deleteSimilarJars(outputJar.getPath());
 
 			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());

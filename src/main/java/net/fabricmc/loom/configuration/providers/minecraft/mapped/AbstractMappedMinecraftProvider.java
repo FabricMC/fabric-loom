@@ -70,11 +70,11 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		return Collections.emptyList();
 	}
 
-	public void provide(boolean applyDependencies) throws Exception {
+	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
 		final List<RemappedJars> remappedJars = getRemappedJars();
 		assert !remappedJars.isEmpty();
 
-		if (!areOutputsValid(remappedJars) || extension.refreshDeps()) {
+		if (!areOutputsValid(remappedJars) || context.refreshOutputs()) {
 			try {
 				remapInputs(remappedJars);
 			} catch (Throwable t) {
@@ -84,19 +84,23 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 			}
 		}
 
-		if (applyDependencies) {
+		if (context.applyDependencies()) {
 			final List<String> dependencyTargets = getDependencyTargets();
 
-			if (dependencyTargets.isEmpty()) {
-				return;
+			if (!dependencyTargets.isEmpty()) {
+				MinecraftSourceSets.get(getProject()).applyDependencies(
+						(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
+						dependencyTargets
+				);
 			}
-
-			MinecraftSourceSets.get(getProject()).applyDependencies(
-					(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
-					dependencyTargets
-			);
 		}
+
+		return remappedJars.stream()
+				.map(RemappedJars::outputJar)
+				.toList();
 	}
+
+	public record ProvideContext(boolean applyDependencies, boolean refreshOutputs) { }
 
 	@Override
 	public Path getJar(String name) {

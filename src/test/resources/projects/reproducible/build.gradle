@@ -52,12 +52,6 @@ jar {
 	}
 }
 
-// Make Jars Reproducible
-tasks.withType(AbstractArchiveTask) {
-	preserveFileTimestamps = false
-	reproducibleFileOrder = true
-}
-
 remapSourcesJar {
 	preserveFileTimestamps = false
 	reproducibleFileOrder = true

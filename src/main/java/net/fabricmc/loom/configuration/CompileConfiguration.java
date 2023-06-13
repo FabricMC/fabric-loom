@@ -154,8 +154,8 @@ public abstract class CompileConfiguration implements Runnable {
 		mappingConfiguration.applyToProject(getProject(), mappingsDep);
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
-		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(configContext, minecraftProvider);
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
+		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
 
 		registerGameProcessors(configContext);
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
@@ -165,7 +165,7 @@ public abstract class CompileConfiguration implements Runnable {
 			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, minecraftJarProcessorManager);
 		}
 
-		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps());
+		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
 
 		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
 		intermediaryMinecraftProvider.provide(provideContext);

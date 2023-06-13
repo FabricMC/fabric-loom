@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
@@ -52,7 +53,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	private final MinecraftJarProcessorManager jarProcessorManager;
 
 	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
-		super(parentMinecraftProvide.getConfigContext(), parentMinecraftProvide.getMinecraftProvider());
+		super(parentMinecraftProvide.getProject(), parentMinecraftProvide.getMinecraftProvider());
 		this.parentMinecraftProvider = parentMinecraftProvide;
 		this.jarProcessorManager = Objects.requireNonNull(jarProcessorManager);
 	}
@@ -69,7 +70,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 				.collect(Collectors.toMap(Function.identity(), this::getProcessedJar));
 
 		if (requiresProcessing) {
-			processJars(minecraftJarOutputMap);
+			processJars(minecraftJarOutputMap, context.configContext());
 		}
 
 		if (context.applyDependencies()) {
@@ -84,7 +85,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		return MavenScope.LOCAL;
 	}
 
-	private void processJars(Map<MinecraftJar, MinecraftJar> minecraftJarMap) throws IOException {
+	private void processJars(Map<MinecraftJar, MinecraftJar> minecraftJarMap, ConfigContext configContext) throws IOException {
 		for (Map.Entry<MinecraftJar, MinecraftJar> entry : minecraftJarMap.entrySet()) {
 			final MinecraftJar minecraftJar = entry.getKey();
 			final MinecraftJar outputJar = entry.getValue();

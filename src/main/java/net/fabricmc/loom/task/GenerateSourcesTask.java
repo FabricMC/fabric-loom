@@ -185,10 +185,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	// Re-run the named minecraft provider to give us a fresh jar to decompile.
 	// This prevents re-applying line maps on an existing jar.
 	private MinecraftJar rebuildInputJar() {
-		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true);
 		final List<MinecraftJar> minecraftJars;
 
-		try {
+		try (var serviceManager = new ScopedSharedServiceManager()) {
+			final var configContext = new ConfigContextImpl(getProject(), serviceManager, getExtension());
+			final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true, configContext);
 			minecraftJars = getExtension().getNamedMinecraftProvider().provide(provideContext);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to rebuild input jars", e);
@@ -228,6 +229,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		fileArgs.add(inputJar.toFile());
 		fileArgs.add(outputJar.toFile());
 		fileArgs.add(getUnpickDefinitions().get().getAsFile());
+		fileArgs.add(getUnpickConstantJar().getSingleFile());
 
 		// Classpath
 		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.NAMED)) {

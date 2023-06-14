@@ -55,6 +55,8 @@ public class AddConstructorMappingVisitor extends ForwardingMappingVisitor {
 		if ("<init>".equals(srcName)) {
 			inConstructor = true;
 			Arrays.fill(namespaceVisited, false);
+		} else {
+			inConstructor = false;
 		}
 
 		return super.visitMethod(srcName, srcDesc);
@@ -78,6 +80,6 @@ public class AddConstructorMappingVisitor extends ForwardingMappingVisitor {
 	@Override
 	public void visitDstName(MappedElementKind targetKind, int namespace, String name) throws IOException {
 		namespaceVisited[namespace] = true;
-		next.visitDstName(targetKind, namespace, name);
+		super.visitDstName(targetKind, namespace, name);
 	}
 }

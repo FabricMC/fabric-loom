@@ -100,7 +100,11 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 				.toList();
 	}
 
-	public record ProvideContext(boolean applyDependencies, boolean refreshOutputs, ConfigContext configContext) { }
+	public record ProvideContext(boolean applyDependencies, boolean refreshOutputs, ConfigContext configContext) {
+		ProvideContext withApplyDependencies(boolean applyDependencies) {
+			return new ProvideContext(applyDependencies, refreshOutputs(), configContext());
+		}
+	}
 
 	@Override
 	public Path getJar(String name) {

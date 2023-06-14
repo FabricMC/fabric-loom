@@ -95,7 +95,7 @@ dependencies {
 
 	// decompilers
 	implementation ('net.fabricmc:fabric-fernflower:2.0.0')
-	implementation ('net.fabricmc:cfr:0.2.0')
+	implementation ('net.fabricmc:cfr:0.2.1')
 
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.3.0')

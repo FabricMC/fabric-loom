@@ -60,7 +60,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
-		parentMinecraftProvider.provide(context);
+		parentMinecraftProvider.provide(context.withApplyDependencies(false));
 
 		boolean requiresProcessing = context.refreshOutputs() || parentMinecraftProvider.getMinecraftJars().stream()
 				.map(this::getProcessedPath)
@@ -93,6 +93,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());
 			final Path outputPath = mavenHelper.copyToMaven(minecraftJar.getPath(), null);
+
+			assert outputJar.getPath().equals(outputPath);
 
 			jarProcessorManager.processJar(outputPath, new ProcessorContextImpl(configContext, minecraftJar));
 		}

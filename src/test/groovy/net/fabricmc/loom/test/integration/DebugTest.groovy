@@ -24,6 +24,11 @@
 
 package net.fabricmc.loom.test.integration
 
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.concurrent.Executors
+
 import com.microsoft.java.debug.core.DebugUtility
 import com.microsoft.java.debug.core.IDebugSession
 import com.sun.jdi.Bootstrap
@@ -32,27 +37,23 @@ import groovy.transform.CompileStatic
 import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.functions.Function
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.util.ZipUtils
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.Executors
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class DebugTest extends Specification implements GradleProjectTestTrait {
-    static final String MAPPINGS = "1.20.1-net.fabricmc.yarn.1_20_1.1.20.1+build.1-v2"
+	static final String MAPPINGS = "1.20.1-net.fabricmc.yarn.1_20_1.1.20.1+build.1-v2"
 
-    @Unroll
-    def "Debug test"() {
-        setup:
-        def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-        gradle.buildGradle << '''
+	@Unroll
+	def "Debug test"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
                 loom {
                     // Just test with the server, no need to also decompile the client
                     serverOnlyMinecraftJar()
@@ -74,133 +75,133 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
                    }
                }
             '''
-        when:
-        // First generate sources
-        def genSources = gradle.run(task: "genSources")
-        genSources.task(":genSources").outcome == SUCCESS
+		when:
+		// First generate sources
+		def genSources = gradle.run(task: "genSources")
+		genSources.task(":genSources").outcome == SUCCESS
 
-        // Print out the source of the file
-        def lines = getClassSource(gradle, "net/minecraft/server/dedicated/ServerPropertiesLoader.java").lines().toList()
-        int l = 1
-        for (final def line in lines) {
-            //println(l++ + ": " + line)
-        }
+		// Print out the source of the file
+		def lines = getClassSource(gradle, "net/minecraft/server/dedicated/ServerPropertiesLoader.java").lines().toList()
+		int l = 1
+		for (final def line in lines) {
+			//println(l++ + ": " + line)
+		}
 
-        // I agree
-        def runDir = new File(gradle.projectDir, "run")
-        runDir.mkdirs()
-        def eulaFile = new File(runDir, "eula.txt")
-        eulaFile << "eula=true"
+		// I agree
+		def runDir = new File(gradle.projectDir, "run")
+		runDir.mkdirs()
+		def eulaFile = new File(runDir, "eula.txt")
+		eulaFile << "eula=true"
 
-        // Run the gradle task off thread
-        def executor = Executors.newSingleThreadExecutor()
-        def resultCF = CompletableFuture.supplyAsync({
-            gradle.run(task: "runServer")
-        }, executor)
+		// Run the gradle task off thread
+		def executor = Executors.newSingleThreadExecutor()
+		def resultCF = CompletableFuture.supplyAsync({
+			gradle.run(task: "runServer")
+		}, executor)
 
-        def debugger = new Debugger(openDebugSession())
+		def debugger = new Debugger(openDebugSession())
 
-        def breakFuture = debugger.addBreakpoint(
-                "net.minecraft.server.dedicated.ServerPropertiesLoader",
-                16
-        )
+		def breakFuture = debugger.addBreakpoint(
+				"net.minecraft.server.dedicated.ServerPropertiesLoader",
+				16
+				)
 
-        // Start running the game, the process has been suspended until this point.
-        debugger.start()
+		// Start running the game, the process has been suspended until this point.
+		debugger.start()
 
-        def breakPoint = breakFuture.get()
+		def breakPoint = breakFuture.get()
 
-        // Calls exit(0) on the process
-        debugger.close()
+		// Calls exit(0) on the process
+		debugger.close()
 
-        def result = resultCF.get()
-        executor.shutdown()
+		def result = resultCF.get()
+		executor.shutdown()
 
-        then:
-        result.task(":runServer").outcome == SUCCESS
+		then:
+		result.task(":runServer").outcome == SUCCESS
 
-        breakPoint.location().lineNumber() == 16
-    }
+		breakPoint.location().lineNumber() == 16
+	}
 
-    private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
-        File sourcesJar = gradle.getGeneratedSources(mappings, "serveronly")
-        return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
-    }
+	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
+		File sourcesJar = gradle.getGeneratedSources(mappings, "serveronly")
+		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
+	}
 
-    private static IDebugSession openDebugSession() {
-        int timeout = 5
-        int maxTimeout = 120 / timeout
+	private static IDebugSession openDebugSession() {
+		int timeout = 5
+		int maxTimeout = 120 / timeout
 
-        for (i in 0..maxTimeout) {
-            try {
-                return DebugUtility.attach(
-                        Bootstrap.virtualMachineManager(),
-                        "127.0.0.1",
-                        8050,
-                        timeout
-                )
-            } catch (ConnectException e) {
-                Thread.sleep(timeout * 1000)
-                if (i == maxTimeout) {
-                    throw e
-                }
-            }
-        }
+		for (i in 0..maxTimeout) {
+			try {
+				return DebugUtility.attach(
+						Bootstrap.virtualMachineManager(),
+						"127.0.0.1",
+						8050,
+						timeout
+						)
+			} catch (ConnectException e) {
+				Thread.sleep(timeout * 1000)
+				if (i == maxTimeout) {
+					throw e
+				}
+			}
+		}
 
-        throw new IllegalStateException()
-    }
+		throw new IllegalStateException()
+	}
 
-    @CompileStatic // Makes RxJava somewhat usable in Groovy
-    class Debugger implements AutoCloseable {
-        final IDebugSession debugSession
+	@CompileStatic // Makes RxJava somewhat usable in Groovy
+	class Debugger implements AutoCloseable {
+		final IDebugSession debugSession
 
-        Debugger(IDebugSession debugSession) {
-            this.debugSession = debugSession
-        }
+		Debugger(IDebugSession debugSession) {
+			this.debugSession = debugSession
+		}
 
-        CompletableFuture<BreakpointEvent> addBreakpoint(String className, int lineNumber) {
-            def breakpoint = debugSession.createBreakpoint(
-                    className,
-                    lineNumber,
-                    0,
-                    null,
-                    null
-            )
+		CompletableFuture<BreakpointEvent> addBreakpoint(String className, int lineNumber) {
+			def breakpoint = debugSession.createBreakpoint(
+					className,
+					lineNumber,
+					0,
+					null,
+					null
+					)
 
-            // Wait for the breakpoint to be installed
-            return breakpoint.install().thenCompose {
-                // Then compose with the first result
-                return breakpointEvents()
-                    .filter { event ->
-                        event.location().sourcePath() == className.replace(".", "/") + ".java" &&
-                        event.location().lineNumber() == lineNumber
-                    }
-                    .firstElement()
-                    .to(toCompletionStage())
-            }
-        }
+			// Wait for the breakpoint to be installed
+			return breakpoint.install().thenCompose {
+				// Then compose with the first result
+				return breakpointEvents()
+						.filter { event ->
+							event.location().sourcePath() == className.replace(".", "/") + ".java" &&
+									event.location().lineNumber() == lineNumber
+						}
+						.firstElement()
+						.to(toCompletionStage())
+			}
+		}
 
-        private static <T> Function<Maybe<T>, CompletionStage<T>> toCompletionStage() {
-            return { Maybe<T> m ->
-                CompletableFuture<T> cf = new CompletableFuture<>()
-                m.subscribe(cf.&complete, cf.&completeExceptionally, { cf.complete(null) })
-                return cf
-            }
-        }
+		private static <T> Function<Maybe<T>, CompletionStage<T>> toCompletionStage() {
+			return { Maybe<T> m ->
+				CompletableFuture<T> cf = new CompletableFuture<>()
+				m.subscribe(cf.&complete, cf.&completeExceptionally) { cf.complete(null) }
+				return cf
+			}
+		}
 
-        Observable<BreakpointEvent> breakpointEvents() {
-            return debugSession.getEventHub().breakpointEvents()
-                    .map { it.event as BreakpointEvent }
-        }
+		Observable<BreakpointEvent> breakpointEvents() {
+			return debugSession.getEventHub().breakpointEvents()
+					.map { it.event as BreakpointEvent }
+		}
 
-        void start() {
-            debugSession.start()
-        }
+		void start() {
+			debugSession.start()
+		}
 
-        @Override
-        void close() throws Exception {
-            debugSession.eventHub.close()
-            debugSession.terminate()
-        }
-    }
+		@Override
+		void close() throws Exception {
+			debugSession.eventHub.close()
+			debugSession.terminate()
+		}
+	}
 }

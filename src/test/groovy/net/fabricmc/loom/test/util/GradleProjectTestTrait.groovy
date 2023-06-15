@@ -236,8 +236,8 @@ trait GradleProjectTestTrait {
 			return ZipUtils.unpackNullable(file.toPath(), entryName) != null
 		}
 
-		File getGeneratedSources(String mappings) {
-			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged/${mappings}/minecraft-merged-${mappings}-sources.jar")
+		File getGeneratedSources(String mappings, String jarType = "merged") {
+			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}-sources.jar")
 		}
 
 		File getGeneratedLocalSources(String mappings) {

@@ -118,6 +118,7 @@ dependencies {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation 'org.mockito:mockito-core:5.2.0'
+	testImplementation 'com.microsoft.java:com.microsoft.java.debug.core:0.46.0'
 
 	compileOnly 'org.jetbrains:annotations:24.0.1'
 	testCompileOnly 'org.jetbrains:annotations:24.0.1'

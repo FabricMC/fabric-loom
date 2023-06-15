@@ -82,7 +82,7 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		when:
 		def platform = PlatformTestUtils.WINDOWS_X64
 		def (original, context) = getLibs("1.19.2", platform)
-		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), [
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), LibraryProcessorManager.DEFAULT_LIBRARY_PROCESSORS, [
 			RuntimeLog4jLibraryProcessor.class.simpleName
 		]).processLibraries(original, context)
 

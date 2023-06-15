@@ -1,11 +1,37 @@
+/*
+ * This file is part of fabric-loom, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) 2023 FabricMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package net.fabricmc.loom.test.integration
 
 import com.microsoft.java.debug.core.DebugUtility
-import com.microsoft.java.debug.core.IBreakpoint
 import com.microsoft.java.debug.core.IDebugSession
 import com.sun.jdi.Bootstrap
 import com.sun.jdi.event.BreakpointEvent
-import io.reactivex.disposables.Disposable
+import groovy.transform.CompileStatic
+import io.reactivex.Maybe
+import io.reactivex.Observable
+import io.reactivex.functions.Function
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 import spock.lang.Specification
@@ -13,6 +39,7 @@ import spock.lang.Unroll
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executors
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
@@ -36,7 +63,7 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
                     mappings "net.fabricmc:yarn:1.20.1+build.1:v2"
                     modImplementation 'net.fabricmc:fabric-loader:0.14.21'
                 }
-                
+
                 runServer {
                     debugOptions {
                        enabled = true
@@ -52,14 +79,20 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
         def genSources = gradle.run(task: "genSources")
         genSources.task(":genSources").outcome == SUCCESS
 
+        // Print out the source of the file
         def lines = getClassSource(gradle, "net/minecraft/server/dedicated/ServerPropertiesLoader.java").lines().toList()
         int l = 1
         for (final def line in lines) {
-            println(l++ + ": " + line)
+            //println(l++ + ": " + line)
         }
 
+        // I agree
+        def runDir = new File(gradle.projectDir, "run")
+        runDir.mkdirs()
+        def eulaFile = new File(runDir, "eula.txt")
+        eulaFile << "eula=true"
 
-        // Run the task off thread
+        // Run the gradle task off thread
         def executor = Executors.newSingleThreadExecutor()
         def resultCF = CompletableFuture.supplyAsync({
             gradle.run(task: "runServer")
@@ -67,21 +100,26 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 
         def debugger = new Debugger(openDebugSession())
 
-        debugger.addBreakpoint("net.minecraft.server.dedicated.ServerPropertiesLoader", 16).thenAccept {
-            println "Applied ServerPropertiesLoader breakpoint"
-        }
+        def breakFuture = debugger.addBreakpoint(
+                "net.minecraft.server.dedicated.ServerPropertiesLoader",
+                16
+        )
 
+        // Start running the game, the process has been suspended until this point.
         debugger.start()
-        // TODO wait for breakpoints
+
+        def breakPoint = breakFuture.get()
+
+        // Calls exit(0) on the process
         debugger.close()
 
-        // Block waiting for the gradle build to finish
         def result = resultCF.get()
         executor.shutdown()
 
         then:
         result.task(":runServer").outcome == SUCCESS
-        true
+
+        breakPoint.location().lineNumber() == 16
     }
 
     private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
@@ -112,21 +150,15 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
         throw new IllegalStateException()
     }
 
+    @CompileStatic // Makes RxJava somewhat usable in Groovy
     class Debugger implements AutoCloseable {
         final IDebugSession debugSession
-        final Disposable breakpointEventsSubscription
-
-        final List<BreakpointEvent> breakpointEvents = Collections.synchronizedList([])
 
         Debugger(IDebugSession debugSession) {
             this.debugSession = debugSession
-
-            breakpointEventsSubscription = debugSession.getEventHub().breakpointEvents().subscribe { debugEvent ->
-                breakpointEvents << debugEvent.event
-            }
         }
 
-        CompletableFuture<IBreakpoint> addBreakpoint(String className, int lineNumber) {
+        CompletableFuture<BreakpointEvent> addBreakpoint(String className, int lineNumber) {
             def breakpoint = debugSession.createBreakpoint(
                     className,
                     lineNumber,
@@ -134,7 +166,31 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
                     null,
                     null
             )
-            return breakpoint.install()
+
+            // Wait for the breakpoint to be installed
+            return breakpoint.install().thenCompose {
+                // Then compose with the first result
+                return breakpointEvents()
+                    .filter { event ->
+                        event.location().sourcePath() == className.replace(".", "/") + ".java" &&
+                        event.location().lineNumber() == lineNumber
+                    }
+                    .firstElement()
+                    .to(toCompletionStage())
+            }
+        }
+
+        private static <T> Function<Maybe<T>, CompletionStage<T>> toCompletionStage() {
+            return { Maybe<T> m ->
+                CompletableFuture<T> cf = new CompletableFuture<>()
+                m.subscribe(cf.&complete, cf.&completeExceptionally, { cf.complete(null) })
+                return cf
+            }
+        }
+
+        Observable<BreakpointEvent> breakpointEvents() {
+            return debugSession.getEventHub().breakpointEvents()
+                    .map { it.event as BreakpointEvent }
         }
 
         void start() {
@@ -143,8 +199,8 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 
         @Override
         void close() throws Exception {
-            breakpointEventsSubscription.dispose()
-            debugSession.detach()
+            debugSession.eventHub.close()
+            debugSession.terminate()
         }
     }
 }

@@ -193,7 +193,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 				// Then compose with the first result
 				return breakpointEvents()
 						.filter { event ->
-							event.location().sourcePath() == className.replace(".", "/") + ".java" &&
+							event.location().sourcePath().replaceAll("[\\\\/]", ".") == className + ".java" &&
 									event.location().lineNumber() == lineNumber
 						}
 						.firstElement()

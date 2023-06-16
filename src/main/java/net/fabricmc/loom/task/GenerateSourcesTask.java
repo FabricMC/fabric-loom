@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -49,10 +50,13 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.process.ExecOperations;
+import org.gradle.process.ExecResult;
 import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
@@ -68,6 +72,8 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContextImpl;
 import net.fabricmc.loom.configuration.processors.MappingProcessorContextImpl;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
+import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -90,16 +96,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private final DecompilerOptions decompilerOptions;
 
 	/**
-	 * The jar to decompile, can be the unpick jar.
+	 * The jar name to decompile, {@link MinecraftJar#getName()}.
 	 */
-	@InputFile
-	public abstract RegularFileProperty getInputJar();
-
-	/**
-	 * The jar used at runtime.
-	 */
-	@InputFile
-	public abstract RegularFileProperty getRuntimeJar();
+	@Input
+	public abstract Property<String> getInputJarName();
 
 	@InputFiles
 	public abstract ConfigurableFileCollection getClasspath();
@@ -107,8 +107,25 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@OutputFile
 	public abstract RegularFileProperty getOutputJar();
 
+	// Unpick
+	@InputFile
+	public abstract RegularFileProperty getUnpickDefinitions();
+
+	@InputFiles
+	public abstract ConfigurableFileCollection getUnpickConstantJar();
+
+	@InputFiles
+	public abstract ConfigurableFileCollection getUnpickClasspath();
+
+	@OutputFile
+	public abstract RegularFileProperty getUnpickOutputJar();
+
+	// Injects
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
+
+	@Inject
+	public abstract ExecOperations getExecOperations();
 
 	@Inject
 	public abstract WorkerDaemonClientsManager getWorkerDaemonClientsManager();
@@ -124,8 +141,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getOutputs().upToDateWhen((o) -> false);
 		getClasspath().from(decompilerOptions.getClasspath()).finalizeValueOnRead();
 		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
-
-		getOutputJar().fileProvider(getProject().provider(() -> getMappedJarFileWithSuffix("-sources.jar")));
 	}
 
 	@TaskAction
@@ -136,10 +151,20 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
+		final MinecraftJar minecraftJar = rebuildInputJar();
+		// Input jar is the jar to decompile, this may be unpicked.
+		Path inputJar = minecraftJar.getPath();
+		// Runtime jar is the jar used to run the game
+		final Path runtimeJar = inputJar;
+
+		if (getUnpickDefinitions().isPresent()) {
+			inputJar = unpickJar(inputJar);
+		}
+
 		if (!platform.supportsUnixDomainSockets()) {
 			getProject().getLogger().warn("Decompile worker logging disabled as Unix Domain Sockets is not supported on your operating system.");
 
-			doWork(null);
+			doWork(null, inputJar, runtimeJar);
 			return;
 		}
 
@@ -149,7 +174,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompilerOptions.getName(), "Decompiling minecraft sources");
 				IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
-			doWork(logReceiver);
+			doWork(logReceiver, inputJar, runtimeJar);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
 		} finally {
@@ -157,18 +182,94 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private void doWork(@Nullable IPCServer ipcServer) {
+	// Re-run the named minecraft provider to give us a fresh jar to decompile.
+	// This prevents re-applying line maps on an existing jar.
+	private MinecraftJar rebuildInputJar() {
+		final List<MinecraftJar> minecraftJars;
+
+		try (var serviceManager = new ScopedSharedServiceManager()) {
+			final var configContext = new ConfigContextImpl(getProject(), serviceManager, getExtension());
+			final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true, configContext);
+			minecraftJars = getExtension().getNamedMinecraftProvider().provide(provideContext);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to rebuild input jars", e);
+		}
+
+		for (MinecraftJar minecraftJar : minecraftJars) {
+			if (minecraftJar.getName().equals(getInputJarName().get())) {
+				return minecraftJar;
+			}
+		}
+
+		throw new IllegalStateException("Could not find minecraft jar (%s) but got (%s)".formatted(
+				getInputJarName().get(),
+				minecraftJars.stream().map(MinecraftJar::getName).collect(Collectors.joining(", ")))
+		);
+	}
+
+	private Path unpickJar(Path inputJar) {
+		final Path outputJar = getUnpickOutputJar().get().getAsFile().toPath();
+		final List<String> args = getUnpickArgs(inputJar, outputJar);
+
+		ExecResult result = getExecOperations().javaexec(spec -> {
+			spec.getMainClass().set("daomephsta.unpick.cli.Main");
+			spec.classpath(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
+			spec.args(args);
+			spec.systemProperty("java.util.logging.config.file", writeUnpickLogConfig().getAbsolutePath());
+		});
+
+		result.rethrowFailure();
+
+		return outputJar;
+	}
+
+	private List<String> getUnpickArgs(Path inputJar, Path outputJar) {
+		var fileArgs = new ArrayList<File>();
+
+		fileArgs.add(inputJar.toFile());
+		fileArgs.add(outputJar.toFile());
+		fileArgs.add(getUnpickDefinitions().get().getAsFile());
+		fileArgs.add(getUnpickConstantJar().getSingleFile());
+
+		// Classpath
+		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.NAMED)) {
+			fileArgs.add(minecraftJar.toFile());
+		}
+
+		for (File file : getUnpickClasspath()) {
+			fileArgs.add(file);
+		}
+
+		return fileArgs.stream()
+				.map(File::getAbsolutePath)
+				.toList();
+	}
+
+	private File writeUnpickLogConfig() {
+		final File unpickLoggingConfigFile = getExtension().getFiles().getUnpickLoggingConfigFile();
+
+		try (InputStream is = GenerateSourcesTask.class.getClassLoader().getResourceAsStream("unpick-logging.properties")) {
+			Files.deleteIfExists(unpickLoggingConfigFile.toPath());
+			Files.copy(Objects.requireNonNull(is), unpickLoggingConfigFile.toPath());
+		} catch (IOException e) {
+			throw new org.gradle.api.UncheckedIOException("Failed to copy unpick logging config", e);
+		}
+
+		return unpickLoggingConfigFile;
+	}
+
+	private void doWork(@Nullable IPCServer ipcServer, Path inputJar, Path runtimeJar) {
 		final String jvmMarkerValue = UUID.randomUUID().toString();
 		final WorkQueue workQueue = createWorkQueue(jvmMarkerValue);
 
 		workQueue.submit(DecompileAction.class, params -> {
 			params.getDecompilerOptions().set(decompilerOptions.toDto());
 
-			params.getInputJar().set(getInputJar());
-			params.getRuntimeJar().set(getRuntimeJar());
+			params.getInputJar().set(inputJar.toFile());
+			params.getRuntimeJar().set(runtimeJar.toFile());
 			params.getSourcesDestinationJar().set(getOutputJar());
-			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap"));
-			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar"));
+			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap", runtimeJar));
+			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar", runtimeJar));
 			params.getMappings().set(getMappings().toFile());
 
 			if (ipcServer != null) {
@@ -317,8 +418,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private File getMappedJarFileWithSuffix(String suffix) {
-		String path = getRuntimeJar().get().getAsFile().getAbsolutePath();
+	public static File getMappedJarFileWithSuffix(String suffix, Path runtimeJar) {
+		final String path = runtimeJar.toFile().getAbsolutePath();
 
 		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
 			throw new RuntimeException("Invalid mapped JAR path: " + path);

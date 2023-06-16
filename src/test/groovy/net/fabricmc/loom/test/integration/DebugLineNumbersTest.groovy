@@ -48,7 +48,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
-class DebugTest extends Specification implements GradleProjectTestTrait {
+class DebugLineNumbersTest extends Specification implements GradleProjectTestTrait {
 	static final String MAPPINGS = "1.20.1-net.fabricmc.yarn.1_20_1.1.20.1+build.1-v2"
 	static final Map<String, Integer> BREAKPOINTS = [
 		"net.minecraft.server.dedicated.ServerPropertiesLoader": 16,

@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 import com.microsoft.java.debug.core.DebugUtility
 import com.microsoft.java.debug.core.IDebugSession
@@ -38,7 +39,7 @@ import io.reactivex.Maybe
 import io.reactivex.Observable
 import io.reactivex.functions.Function
 import spock.lang.Specification
-import spock.lang.Unroll
+import spock.lang.Timeout
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
@@ -46,10 +47,15 @@ import net.fabricmc.loom.util.ZipUtils
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
+@Timeout(value = 30, unit = TimeUnit.MINUTES)
 class DebugTest extends Specification implements GradleProjectTestTrait {
 	static final String MAPPINGS = "1.20.1-net.fabricmc.yarn.1_20_1.1.20.1+build.1-v2"
+	static final Map<String, Integer> BREAKPOINTS = [
+		"net.minecraft.server.dedicated.ServerPropertiesLoader": 16,
+		"net.minecraft.server.dedicated.MinecraftDedicatedServer": 107,
+		"net.minecraft.registry.RegistryOps": 67
+	]
 
-	@Unroll
 	def "Debug test"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
@@ -90,8 +96,8 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 		// I agree
 		def runDir = new File(gradle.projectDir, "run")
 		runDir.mkdirs()
-		def eulaFile = new File(runDir, "eula.txt")
-		eulaFile << "eula=true"
+		new File(runDir, "eula.txt") << "eula=true"
+		new File(runDir, "server.properties") << ""
 
 		// Run the gradle task off thread
 		def executor = Executors.newSingleThreadExecutor()
@@ -99,20 +105,26 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 			gradle.run(task: "runServer")
 		}, executor)
 
+		Map<String, CompletableFuture<BreakpointEvent>> futures
 		def debugger = new Debugger(openDebugSession())
 
-		def breakFuture = debugger.addBreakpoint(
-				"net.minecraft.server.dedicated.ServerPropertiesLoader",
-				16
-				)
+		try {
+			futures = BREAKPOINTS.collectEntries { className, line ->
+				[(className): debugger.addBreakpoint(className, line)]
+			}
 
-		// Start running the game, the process has been suspended until this point.
-		debugger.start()
+			// Start running the game, the process has been suspended until this point.
+			debugger.start()
 
-		def breakPoint = breakFuture.get()
-
-		// Calls exit(0) on the process
-		debugger.close()
+			// Wait for all of the breakpoints
+			futures.values().forEach {
+				def result = it.get()
+				println("Breakpoint triggered: ${result.location()}")
+			}
+		} finally {
+			// Close the debugger and target process
+			debugger.close()
+		}
 
 		def result = resultCF.get()
 		executor.shutdown()
@@ -120,7 +132,9 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 		then:
 		result.task(":runServer").outcome == SUCCESS
 
-		breakPoint.location().lineNumber() == 16
+		BREAKPOINTS.forEach { className, line ->
+			futures[className].get().location().lineNumber() == line
+		}
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
@@ -157,6 +171,12 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 
 		Debugger(IDebugSession debugSession) {
 			this.debugSession = debugSession
+
+			debugSession.eventHub.events().subscribe({ }) {
+				// Manually bail out, as it seems this can be called after close()
+				it.printStackTrace()
+				System.exit(-1)
+			}
 		}
 
 		CompletableFuture<BreakpointEvent> addBreakpoint(String className, int lineNumber) {
@@ -191,7 +211,10 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 
 		Observable<BreakpointEvent> breakpointEvents() {
 			return debugSession.getEventHub().breakpointEvents()
-					.map { it.event as BreakpointEvent }
+					.map {
+						it.shouldResume = true
+						it.event as BreakpointEvent
+					}
 		}
 
 		void start() {
@@ -200,8 +223,8 @@ class DebugTest extends Specification implements GradleProjectTestTrait {
 
 		@Override
 		void close() throws Exception {
-			debugSession.eventHub.close()
 			debugSession.terminate()
+			debugSession.eventHub.close()
 		}
 	}
 }

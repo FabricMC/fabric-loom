@@ -134,7 +134,8 @@ public class ModProcessor {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
-				.renameInvalidLocals(false);
+				.renameInvalidLocals(false)
+				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));
 
 		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider {
+	public static final String NAME = "intermediary-v2";
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsProvider.class);
 
 	public abstract Property<String> getIntermediaryUrl();
@@ -68,6 +69,6 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 	@Override
 	public @NotNull String getName() {
-		return "intermediary-v2";
+		return NAME;
 	}
 }

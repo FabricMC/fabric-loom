@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
@@ -40,6 +41,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
+import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -135,13 +137,22 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	protected String getName(String name) {
-		String computedName = "minecraft-" + name;;
+		final String intermediateName = extension.getIntermediateMappingsProvider().getName();
 
-		if (getTargetNamespace() != MappingsNamespace.NAMED) {
-			computedName = getTargetNamespace().name() + "-" + name;
+		var sj = new StringJoiner("-");
+		sj.add("minecraft");
+		sj.add(name);
+
+		// Include the intermediate mapping name if it's not the default intermediary
+		if (!intermediateName.equals(IntermediaryMappingsProvider.NAME)) {
+			sj.add(intermediateName);
 		}
 
-		return computedName.toLowerCase(Locale.ROOT);
+		if (getTargetNamespace() != MappingsNamespace.NAMED) {
+			sj.add(getTargetNamespace().name());
+		}
+
+		return sj.toString().toLowerCase(Locale.ROOT);
 	}
 
 	protected String getVersion() {

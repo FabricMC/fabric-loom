@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2018-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,31 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.util.gradle;
 
-import javax.inject.Inject;
+import org.gradle.api.Project;
+import org.gradle.api.services.BuildService;
+import org.gradle.api.services.BuildServiceParameters;
 
-import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+/**
+ * Add the following snippet to task to prevent tasks running asynchronously with any other task with the same build service.
+ *
+ * <pre>{@code
+ * @ServiceReference(SyncTaskBuildService.NAME)
+ * abstract Property<SyncTaskBuildService> getSyncTask();
+ * }</pre>
+ */
+public abstract class SyncTaskBuildService implements BuildService<SyncTaskBuildService.Params> {
+	public static final String NAME = "loomSyncTask";
 
-public abstract class RunGameTask extends AbstractRunTask {
-	@Inject
-	public RunGameTask(RunConfigSettings settings) {
-		super(proj -> RunConfig.runConfig(proj, settings));
+	public static void register(Project project) {
+		project.getGradle().getSharedServices().registerIfAbsent(
+					NAME,
+					SyncTaskBuildService.class,
+					spec -> spec.getMaxParallelUsages().set(1)
+		);
+	}
 
-		// Defaults to empty, forwards stdin to mc.
-		setStandardInput(System.in);
+	public interface Params extends BuildServiceParameters {
 	}
 }

@@ -149,7 +149,7 @@ public final class IncludedJarFactory {
 		}
 
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		File tempDir = new File(extension.getFiles().getUserCache(), "temp/modprocessing");
+		File tempDir = new File(extension.getFiles().getProjectBuildCache(), "temp/modprocessing");
 
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();

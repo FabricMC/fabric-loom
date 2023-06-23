@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.test.unit.kotlin
 
-import javax.inject.Inject;
+import spock.lang.Specification
 
-import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.util.kotlin.KotlinPluginUtils
 
-public abstract class RunGameTask extends AbstractRunTask {
-	@Inject
-	public RunGameTask(RunConfigSettings settings) {
-		super(proj -> RunConfig.runConfig(proj, settings));
+class KotlinPluginUtilsTest extends Specification {
+	def "parseKotlinVersion"() {
+		when:
+		def parsedVersion = KotlinPluginUtils.parseKotlinVersion(version)
 
-		// Defaults to empty, forwards stdin to mc.
-		setStandardInput(System.in);
+		then:
+		parsedVersion == expected
+
+		where:
+		version                          | expected
+		"1.7.0-RC-release-217(1.7.0-RC)" | "1.7.0-RC"
+		"1.6.21-release-334(1.6.21)"     | "1.6.21"
+		"1.9.0-Beta"                     | "1.9.0-Beta"
 	}
 }

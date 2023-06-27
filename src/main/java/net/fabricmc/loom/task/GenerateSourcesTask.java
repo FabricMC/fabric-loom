@@ -53,6 +53,7 @@ import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.process.ExecOperations;
@@ -110,15 +111,19 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	// Unpick
 	@InputFile
+	@Optional
 	public abstract RegularFileProperty getUnpickDefinitions();
 
 	@InputFiles
+	@Optional
 	public abstract ConfigurableFileCollection getUnpickConstantJar();
 
 	@InputFiles
+	@Optional
 	public abstract ConfigurableFileCollection getUnpickClasspath();
 
 	@OutputFile
+	@Optional
 	public abstract RegularFileProperty getUnpickOutputJar();
 
 	// Injects

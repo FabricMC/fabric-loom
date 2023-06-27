@@ -49,6 +49,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
+import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -102,7 +103,8 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 
 			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
 			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
-			mappings.accept(nsSwitch);
+			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
+			mappings.accept(addConstructor);
 
 			Files.deleteIfExists(mappingsFile);
 			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));

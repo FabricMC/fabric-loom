@@ -76,6 +76,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.IOStringConsumer;
 import net.fabricmc.loom.util.Platform;
@@ -343,7 +344,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			try (IPCClient ipcClient = new IPCClient(ipcPath)) {
 				doDecompile(new ThreadedSimpleProgressLogger(ipcClient));
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to decompile", e);
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 			}
 		}
 

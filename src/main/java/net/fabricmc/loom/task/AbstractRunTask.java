@@ -27,6 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,6 +50,8 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 public abstract class AbstractRunTask extends JavaExec {
+	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
+
 	private final RunConfig config;
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
@@ -71,8 +74,18 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	private boolean canUseArgFile() {
+		if (!canPathBeASCIIEncoded()) {
+			// The gradle home or project dir contain chars that cannot be ascii encoded, thus are not supported by an arg file.
+			return false;
+		}
+
 		// @-files were added for java (not javac) in Java 9, see https://bugs.openjdk.org/browse/JDK-8027634
 		return getJavaVersion().isJava9Compatible();
+	}
+
+	private boolean canPathBeASCIIEncoded() {
+		return ASCII_ENCODER.canEncode(getProject().getProjectDir().getAbsolutePath())
+				&& ASCII_ENCODER.canEncode(getProject().getGradle().getGradleUserHomeDir().getAbsolutePath());
 	}
 
 	@Override

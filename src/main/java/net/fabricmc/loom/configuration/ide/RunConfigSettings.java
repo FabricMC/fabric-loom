@@ -225,6 +225,7 @@ public class RunConfigSettings implements Named {
 	/**
 	 * @deprecated Replace with {@link RunConfigSettings#setConfigName(String)}
 	 */
+	@Deprecated
 	public void name(String name) {
 		setConfigName(name);
 		LoomGradleExtension.get(project).getDeprecationHelper()

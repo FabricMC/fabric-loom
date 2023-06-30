@@ -115,7 +115,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 
 		this.runConfigs = project.container(RunConfigSettings.class,
-				baseName -> new RunConfigSettings(project, baseName));
+				baseName -> project.getObjects().newInstance(RunConfigSettings.class, project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
 		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
 		this.remapConfigurations = project.getObjects().namedDomainObjectList(RemapConfigurationSettings.class);

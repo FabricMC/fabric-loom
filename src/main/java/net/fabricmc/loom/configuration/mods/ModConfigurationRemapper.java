@@ -96,6 +96,7 @@ public class ModConfigurationRemapper {
 				final Configuration sourceCopy = entry.getSourceConfiguration().get().copyRecursive();
 				final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
 				sourceCopy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				sourceCopy.setCanBeConsumed(false);
 				configsToRemap.put(sourceCopy, target);
 
 				// If our remap configuration entry targets the client source set as well,

@@ -190,6 +190,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
 			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
 
+			// Client annotation processor configuration extendsFrom "annotationProcessor"
+			extendsFrom(project, clientOnlySourceSet.getAnnotationProcessorConfigurationName(), JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+
 			clientOnlySourceSet.setCompileClasspath(
 					clientOnlySourceSet.getCompileClasspath()
 							.plus(mainSourceSet.getCompileClasspath())

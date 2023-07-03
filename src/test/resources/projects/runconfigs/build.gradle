@@ -7,13 +7,13 @@ loom {
 		testmodClient {
 			client()
 			ideConfigGenerated project.rootProject == project
-			configName = "Testmod Client"
+			name = "Testmod Client"
 			source sourceSets.main
 		}
 		testmodServer {
 			server()
 			ideConfigGenerated project.rootProject == project
-			configName = "Testmod Server"
+			name = "Testmod Server"
 			source sourceSets.main
 		}
 		autoTestServer {
@@ -22,7 +22,7 @@ loom {
 		}
 		customMain {
 			inherit server
-			configName = 'Custom Main Class'
+			name = 'Custom Main Class'
 			mainClass.set 'net.fabricmc.example.Main'
 		}
 	}

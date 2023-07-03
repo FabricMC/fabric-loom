@@ -35,8 +35,16 @@ public interface DeprecationHelper {
 		toBeRemovedIn(currentName, newName, "Loom 2.0");
 	}
 
+	default void removedInLoom2_0(String currentName) {
+		toBeRemovedIn(currentName, "Loom 2.0");
+	}
+
 	default void toBeRemovedIn(String currentName, String newName, String removalVersion) {
-		warn("'%s' has been deprecated, and should be replaced with '%s'. This is scheduled to be removed in %s.".formatted(currentName, newName, removalVersion));
+		warn("The '%s' property has been deprecated, and has been replaced with '%s'. This is scheduled to be removed in %s.".formatted(currentName, newName, removalVersion));
+	}
+
+	default void toBeRemovedIn(String currentName, String removalVersion) {
+		warn("The '%s' property has been deprecated, and can be removed. This is scheduled to be removed in %s.".formatted(currentName, removalVersion));
 	}
 
 	Project getProject();

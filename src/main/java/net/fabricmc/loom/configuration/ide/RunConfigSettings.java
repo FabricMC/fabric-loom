@@ -146,14 +146,8 @@ public class RunConfigSettings implements Named {
 		return name;
 	}
 
-	/**
-	 * @deprecated Replace with {@link RunConfigSettings#setConfigName(String)}
-	 */
-	@Deprecated
 	public void setName(String name) {
 		this.configName = name;
-		LoomGradleExtension.get(project).getDeprecationHelper()
-				.replaceWithInLoom2_0("setName", "setConfigName");
 	}
 
 	public List<String> getVmArgs() {
@@ -222,14 +216,8 @@ public class RunConfigSettings implements Named {
 		setEnvironment(environment);
 	}
 
-	/**
-	 * @deprecated Replace with {@link RunConfigSettings#setConfigName(String)}
-	 */
-	@Deprecated
 	public void name(String name) {
 		setConfigName(name);
-		LoomGradleExtension.get(project).getDeprecationHelper()
-				.replaceWithInLoom2_0("name", "setConfigName");
 	}
 
 	public void defaultMainClass(String cls) {

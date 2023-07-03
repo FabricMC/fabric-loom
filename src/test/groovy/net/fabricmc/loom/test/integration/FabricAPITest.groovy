@@ -45,7 +45,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "01af69c8709f00b6c1aaf10c3f528fed93a29cfd",
+				commit: "1ac061308b9d70fa6aad5db3dcc5580cb6ac71cb",
 				version: version,
 				patch: "fabric_api"
 				)
@@ -55,7 +55,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		// Set the version to something constant
 		gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
 
-		def server = ServerRunner.create(gradle.projectDir, "1.19.4")
+		def server = ServerRunner.create(gradle.projectDir, "1.20.1")
 				.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
 		when:
 		def result = gradle.run(tasks: [
@@ -77,8 +77,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		result.task(":build").outcome == SUCCESS
 		result.task(":prepareRemapJar").outcome == SUCCESS
 
-		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.6/fabric-biome-api-v1-13.0.6.jar").exists()
-		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.6/fabric-biome-api-v1-13.0.6-sources.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.10/fabric-biome-api-v1-13.0.10.jar").exists()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/13.0.10/fabric-biome-api-v1-13.0.10-sources.jar").exists()
 
 		serverResult.successful()
 		serverResult.output.contains("- fabric-api $API_VERSION")

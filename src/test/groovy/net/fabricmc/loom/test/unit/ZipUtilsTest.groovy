@@ -29,7 +29,9 @@ import java.nio.file.Files
 
 import spock.lang.Specification
 
+import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.Pair
+import net.fabricmc.loom.util.ZipReprocessorUtil
 import net.fabricmc.loom.util.ZipUtils
 
 class ZipUtilsTest extends Specification {
@@ -149,5 +151,25 @@ class ZipUtilsTest extends Specification {
 
 		then:
 		!result
+	}
+
+	def "append zip entry"() {
+		given:
+		// Create a reproducible input zip
+		def dir = Files.createTempDirectory("loom-zip-test")
+		def zip = Files.createTempFile("loom-zip-test", ".zip")
+		def fileInside = dir.resolve("text.txt")
+		Files.writeString(fileInside, "hello world")
+		ZipUtils.pack(dir, zip)
+		ZipReprocessorUtil.reprocessZip(zip.toFile(), true, false)
+
+		when:
+		// Add an entry to it
+		ZipReprocessorUtil.appendZipEntry(zip.toFile(), "fabric.mod.json", "Some text".getBytes(StandardCharsets.UTF_8))
+
+		then:
+		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
+		ZipUtils.unpack(zip, "fabric.mod.json") == "Some text".bytes
+		Checksum.sha1Hex(zip) == "232ecda4c770bde8ba618e7a194a4f7b57928dc5"
 	}
 }

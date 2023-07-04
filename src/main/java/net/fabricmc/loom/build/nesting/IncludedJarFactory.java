@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public final class IncludedJarFactory {
@@ -163,7 +163,7 @@ public final class IncludedJarFactory {
 
 		try {
 			FileUtils.copyFile(input, tempFile);
-			ZipUtils.add(tempFile.toPath(), "fabric.mod.json", generateModForDependency(metadata).getBytes(StandardCharsets.UTF_8));
+			ZipReprocessorUtil.appendZipEntry(tempFile, "fabric.mod.json", generateModForDependency(metadata).getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to add dummy mod while including %s".formatted(input), e);
 		}

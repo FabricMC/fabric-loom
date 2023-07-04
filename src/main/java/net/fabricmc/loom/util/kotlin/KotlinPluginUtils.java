@@ -24,17 +24,16 @@
 
 package net.fabricmc.loom.util.kotlin;
 
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Properties;
 
 import kotlinx.metadata.jvm.KotlinClassMetadata;
 import org.gradle.api.Project;
-import org.jetbrains.annotations.VisibleForTesting;
 
 public class KotlinPluginUtils {
 	private static final String KOTLIN_PLUGIN_ID = "org.jetbrains.kotlin.jvm";
-	private static final Pattern VERSION_PATTERN = Pattern.compile("\\((?<version>.*?)\\)|(?<newVersion>^[^(]*$)");
 
 	public static boolean hasKotlinPlugin(Project project) {
 		return project.getPluginManager().hasPlugin(KOTLIN_PLUGIN_ID);
@@ -42,30 +41,20 @@ public class KotlinPluginUtils {
 
 	public static String getKotlinPluginVersion(Project project) {
 		final Class<?> kotlinPluginClass = project.getPlugins().getPlugin(KOTLIN_PLUGIN_ID).getClass();
-		/*
-			1.7.0-RC-release-217(1.7.0-RC)
-			1.6.21-release-334(1.6.21)
-			1.9.0-Beta
-		 */
-		final String implVersion = kotlinPluginClass.getPackage().getImplementationVersion();
-		return parseKotlinVersion(implVersion);
+		// See KotlinPluginWrapper.loadKotlinPluginVersionFromResourcesOf
+		return loadPropertyFromResources(kotlinPluginClass, "project.properties", "project.version");
 	}
 
-	@VisibleForTesting
-	public static String parseKotlinVersion(String implVersion) {
-		final Matcher matcher = VERSION_PATTERN.matcher(implVersion);
+	private static String loadPropertyFromResources(Class<?> kotlinPluginClass, String propFileName, String property) {
+		var props = new Properties();
 
-		if (!matcher.find()) {
-			throw new IllegalStateException("Unable to match Kotlin version from: " + implVersion);
+		try (InputStream is = kotlinPluginClass.getClassLoader().getResourceAsStream(propFileName)) {
+			props.load(is);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read: " + propFileName, e);
 		}
 
-		String version = matcher.group("version");
-
-		if (version == null) {
-			version = matcher.group("newVersion");
-		}
-
-		return Objects.requireNonNull(version);
+		return props.getProperty(property);
 	}
 
 	public static String getKotlinMetadataVersion() {

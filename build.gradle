@@ -101,7 +101,7 @@ dependencies {
 	implementation ('net.fabricmc:mercury:0.3.0')
 
 	// Kotlin
-	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.0') {
+	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.2') {
 		transitive = false
 	}
 

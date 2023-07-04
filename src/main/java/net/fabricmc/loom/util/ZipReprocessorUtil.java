@@ -95,44 +95,80 @@ public class ZipReprocessorUtil {
 			return;
 		}
 
-		try (ZipFile zipFile = new ZipFile(file)) {
+		try (var zipFile = new ZipFile(file)) {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream().sorted(Comparator.comparing(ZipEntry::getName, ZipReprocessorUtil::specialOrdering)).toArray(ZipEntry[]::new);
+				entries = zipFile.stream()
+						.sorted(Comparator.comparing(ZipEntry::getName, ZipReprocessorUtil::specialOrdering))
+						.toArray(ZipEntry[]::new);
 			} else {
-				entries = zipFile.stream().toArray(ZipEntry[]::new);
+				entries = zipFile.stream()
+						.toArray(ZipEntry[]::new);
 			}
 
-			ByteArrayOutputStream outZip = new ByteArrayOutputStream(zipFile.size());
+			final var outZip = new ByteArrayOutputStream(entries.length);
 
-			try (ZipOutputStream zipOutputStream = new ZipOutputStream(outZip)) {
+			try (var zipOutputStream = new ZipOutputStream(outZip)) {
 				for (ZipEntry entry : entries) {
 					ZipEntry newEntry = entry;
 
 					if (!preserveFileTimestamps) {
 						newEntry = new ZipEntry(entry.getName());
-						newEntry.setTime(CONSTANT_TIME_FOR_ZIP_ENTRIES);
-						newEntry.setLastModifiedTime(FileTime.fromMillis(CONSTANT_TIME_FOR_ZIP_ENTRIES));
-						newEntry.setLastAccessTime(FileTime.fromMillis(CONSTANT_TIME_FOR_ZIP_ENTRIES));
+						setConstantFileTime(newEntry);
 					}
 
-					zipOutputStream.putNextEntry(newEntry);
-					InputStream inputStream = zipFile.getInputStream(entry);
-					byte[] buf = new byte[1024];
-					int length;
-
-					while ((length = inputStream.read(buf)) > 0) {
-						zipOutputStream.write(buf, 0, length);
-					}
-
-					zipOutputStream.closeEntry();
+					copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
 				}
 			}
 
-			try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+			try (var fileOutputStream = new FileOutputStream(file)) {
 				outZip.writeTo(fileOutputStream);
 			}
 		}
+	}
+
+	public static void appendZipEntry(File file, String path, byte[] data) throws IOException {
+		try (var zipFile = new ZipFile(file)) {
+			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);
+
+			final var outZip = new ByteArrayOutputStream(entries.length);
+
+			try (var zipOutputStream = new ZipOutputStream(outZip)) {
+				// Copy existing entries
+				for (ZipEntry entry : entries) {
+					copyZipEntry(zipOutputStream, entry, zipFile.getInputStream(entry));
+				}
+
+				// Append the new entry
+				var entry = new ZipEntry(path);
+				setConstantFileTime(entry);
+				zipOutputStream.putNextEntry(entry);
+				zipOutputStream.write(data, 0, data.length);
+				zipOutputStream.closeEntry();
+			}
+
+			try (var fileOutputStream = new FileOutputStream(file)) {
+				outZip.writeTo(fileOutputStream);
+			}
+		}
+	}
+
+	private static void copyZipEntry(ZipOutputStream zipOutputStream, ZipEntry entry, InputStream inputStream) throws IOException {
+		zipOutputStream.putNextEntry(entry);
+		byte[] buf = new byte[1024];
+		int length;
+
+		while ((length = inputStream.read(buf)) > 0) {
+			zipOutputStream.write(buf, 0, length);
+		}
+
+		zipOutputStream.closeEntry();
+	}
+
+	private static void setConstantFileTime(ZipEntry entry) {
+		entry.setTime(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES);
+		entry.setLastModifiedTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
+		entry.setLastAccessTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
 	}
 }

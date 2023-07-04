@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -128,6 +129,11 @@ public class ZipReprocessorUtil {
 		}
 	}
 
+	/**
+	 * Appends an entry to a zip file, persevering the existing entry order and time stamps.
+	 * The new entry is added with a constant time stamp to ensure reproducibility.
+	 * This method should only be used when a reproducible output is required, use {@link ZipUtils#add(Path, String, byte[])} normally.
+	 */
 	public static void appendZipEntry(File file, String path, byte[] data) throws IOException {
 		try (var zipFile = new ZipFile(file)) {
 			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);

@@ -53,6 +53,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
 import org.gradle.build.event.BuildEventsListenerRegistry;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.workers.WorkAction;
@@ -137,6 +138,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
 
 			params.getJarManifestService().set(jarManifestServiceProvider);
+			params.getEntryCompression().set(getEntryCompression());
 
 			if (getIncludesClientOnlyClasses().get()) {
 				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries(getClientSourceSet()));
@@ -160,6 +162,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
+		Property<ZipEntryCompression> getEntryCompression();
 
 		Property<JarManifestService> getJarManifestService();
 		MapProperty<String, String> getManifestAttributes();
@@ -202,9 +205,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 		protected void rewriteJar() throws IOException {
 			final boolean isReproducibleFileOrder = getParameters().getArchiveReproducibleFileOrder().get();
 			final boolean isPreserveFileTimestamps = getParameters().getArchivePreserveFileTimestamps().get();
+			final ZipEntryCompression compression = getParameters().getEntryCompression().get();
 
-			if (isReproducibleFileOrder || !isPreserveFileTimestamps) {
-				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
+			if (isReproducibleFileOrder || !isPreserveFileTimestamps || compression != ZipEntryCompression.DEFLATED) {
+				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
 		}
 	}

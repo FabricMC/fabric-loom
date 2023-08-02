@@ -38,6 +38,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
+
 public class ZipReprocessorUtil {
 	/**
 	 * See {@link org.gradle.api.internal.file.archive.ZipCopyAction} about this.
@@ -92,6 +94,10 @@ public class ZipReprocessorUtil {
 	}
 
 	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
+		reprocessZip(file, reproducibleFileOrder, preserveFileTimestamps, ZipEntryCompression.DEFLATED);
+	}
+
+	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps, ZipEntryCompression zipEntryCompression) throws IOException {
 		if (!reproducibleFileOrder && preserveFileTimestamps) {
 			return;
 		}
@@ -111,6 +117,8 @@ public class ZipReprocessorUtil {
 			final var outZip = new ByteArrayOutputStream(entries.length);
 
 			try (var zipOutputStream = new ZipOutputStream(outZip)) {
+				zipOutputStream.setMethod(zipEntryCompressionMethod(zipEntryCompression));
+
 				for (ZipEntry entry : entries) {
 					ZipEntry newEntry = entry;
 
@@ -176,5 +184,12 @@ public class ZipReprocessorUtil {
 		entry.setTime(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES);
 		entry.setLastModifiedTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
 		entry.setLastAccessTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
+	}
+
+	private static int zipEntryCompressionMethod(ZipEntryCompression compression) {
+		return switch (compression) {
+			case STORED -> ZipOutputStream.STORED;
+			case DEFLATED -> ZipOutputStream.DEFLATED;
+		};
 	}
 }

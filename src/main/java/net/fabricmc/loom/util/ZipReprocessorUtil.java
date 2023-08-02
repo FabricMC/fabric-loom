@@ -188,8 +188,8 @@ public class ZipReprocessorUtil {
 
 	private static int zipEntryCompressionMethod(ZipEntryCompression compression) {
 		return switch (compression) {
-			case STORED -> ZipOutputStream.STORED;
-			case DEFLATED -> ZipOutputStream.DEFLATED;
+		case STORED -> ZipOutputStream.STORED;
+		case DEFLATED -> ZipOutputStream.DEFLATED;
 		};
 	}
 }

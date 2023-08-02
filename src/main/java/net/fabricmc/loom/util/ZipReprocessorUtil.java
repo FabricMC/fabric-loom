@@ -39,6 +39,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.gradle.api.tasks.bundling.ZipEntryCompression;
+import org.intellij.lang.annotations.MagicConstant;
 
 public class ZipReprocessorUtil {
 	/**
@@ -117,7 +118,7 @@ public class ZipReprocessorUtil {
 			final var outZip = new ByteArrayOutputStream(entries.length);
 
 			try (var zipOutputStream = new ZipOutputStream(outZip)) {
-				zipOutputStream.setMethod(zipEntryCompressionMethod(zipEntryCompression));
+				zipOutputStream.setMethod(zipOutputStreamCompressionMethod(zipEntryCompression));
 
 				for (ZipEntry entry : entries) {
 					ZipEntry newEntry = entry;
@@ -127,6 +128,7 @@ public class ZipReprocessorUtil {
 						setConstantFileTime(newEntry);
 					}
 
+					newEntry.setMethod(zipEntryCompressionMethod(zipEntryCompression));
 					copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
 				}
 			}
@@ -186,10 +188,19 @@ public class ZipReprocessorUtil {
 		entry.setLastAccessTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
 	}
 
-	private static int zipEntryCompressionMethod(ZipEntryCompression compression) {
+	@MagicConstant(valuesFromClass = ZipOutputStream.class)
+	private static int zipOutputStreamCompressionMethod(ZipEntryCompression compression) {
 		return switch (compression) {
 		case STORED -> ZipOutputStream.STORED;
 		case DEFLATED -> ZipOutputStream.DEFLATED;
+		};
+	}
+
+	@MagicConstant(valuesFromClass = ZipEntry.class)
+	private static int zipEntryCompressionMethod(ZipEntryCompression compression) {
+		return switch (compression) {
+		case STORED -> ZipEntry.STORED;
+		case DEFLATED -> ZipEntry.DEFLATED;
 		};
 	}
 }

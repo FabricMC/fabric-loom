@@ -33,9 +33,9 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // Basic test to just ensure it builds.
-class SignatureFixesTest extends Specification implements GradleProjectTestTrait {
+class BytecodeFixesTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #version)"() {
+	def "signature fixes (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 
@@ -43,6 +43,28 @@ class SignatureFixesTest extends Specification implements GradleProjectTestTrait
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18-pre1"
                     mappings "net.fabricmc:yarn:1.18-pre1+build.14:v2"
+                }
+            '''
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "record access fixes (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:23w31a"
+                    mappings loom.officialMojangMappings()
                 }
             '''
 

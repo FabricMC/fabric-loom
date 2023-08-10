@@ -59,10 +59,17 @@ public final class GradleUtils {
 	}
 
 	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {
-		return project.getProviders().gradleProperty(key).map(string -> {
-			try {
-				return Boolean.parseBoolean(string);
-			} catch (final IllegalArgumentException ex) {
+		// Works around https://github.com/gradle/gradle/issues/23572
+		return project.provider(() -> {
+			final Object value = project.findProperty(key);
+
+			if (value instanceof String str) {
+				try {
+					return Boolean.parseBoolean(str);
+				} catch (final IllegalArgumentException ex) {
+					return false;
+				}
+			} else {
 				return false;
 			}
 		});

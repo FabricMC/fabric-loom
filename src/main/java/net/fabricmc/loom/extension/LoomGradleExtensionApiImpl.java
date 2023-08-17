@@ -106,6 +106,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				"java/lang/runtime/ObjectMethods",
 				"org/codehaus/groovy/vmplugin/v8/IndyInterface"
 		));
+		this.knownIndyBsms.finalizeValueOnRead();
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();

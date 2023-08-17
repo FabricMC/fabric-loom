@@ -94,7 +94,7 @@ public final class MinecraftJarProcessorManager {
 		return new MinecraftJarProcessorManager(entries);
 	}
 
-	private String getCacheValue() {
+	public String getCacheValue() {
 		return jarProcessors.stream()
 				.sorted(Comparator.comparing(ProcessorEntry::name))
 				.map(ProcessorEntry::cacheValue)

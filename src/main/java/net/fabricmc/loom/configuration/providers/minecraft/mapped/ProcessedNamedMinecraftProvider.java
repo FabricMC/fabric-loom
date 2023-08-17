@@ -129,14 +129,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	protected String getName(String name) {
-		final Project project = getProject();
-
-		if (project.getRootProject() == project) {
-			return "minecraft-%s-project-root".formatted(name).toLowerCase(Locale.ROOT);
-		}
-
-		final String projectPath = project.getPath().replace(':', '@');
-		return "minecraft-%s-project-%s".formatted(name, projectPath).toLowerCase(Locale.ROOT);
+		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
+		return "minecraft-%s-project-%s".formatted(name, Integer.toHexString(jarProcessorManager.getCacheValue().hashCode()));
 	}
 
 	@Override

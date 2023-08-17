@@ -103,7 +103,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.customManifest = project.getObjects().property(String.class);
 		this.knownIndyBsms = project.getObjects().setProperty(String.class).convention(Set.of(
 				"java/lang/invoke/StringConcatFactory",
-				"java/lang/runtime/ObjectMethods"
+				"java/lang/runtime/ObjectMethods",
+				"org/codehaus/groovy/vmplugin/v8/IndyInterface"
 		));
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);

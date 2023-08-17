@@ -87,7 +87,7 @@ public class TinyRemapperService implements SharedService {
 				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), extension.getMappingConfiguration().mappingsIdentifier, from, to));
 			}
 
-			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService);
+			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension);
 		});
 
 		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).filter(Files::exists).toList());
@@ -126,8 +126,8 @@ public class TinyRemapperService implements SharedService {
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
 
-	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, @Nullable KotlinClasspath kotlinClasspath) {
-		TinyRemapper.Builder builder = TinyRemapper.newRemapper();
+	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, @Nullable KotlinClasspath kotlinClasspath, LoomGradleExtension extension) {
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper().withKnownIndyBsm(extension.getKnownIndyBsms().get());
 
 		for (IMappingProvider provider : mappings) {
 			builder.withMappings(provider);

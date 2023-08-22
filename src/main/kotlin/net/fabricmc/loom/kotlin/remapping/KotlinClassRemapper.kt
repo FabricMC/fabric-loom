@@ -49,10 +49,10 @@ import kotlinx.metadata.internal.extensions.KmTypeAliasExtension
 import kotlinx.metadata.internal.extensions.KmTypeExtension
 import kotlinx.metadata.internal.extensions.KmTypeParameterExtension
 import kotlinx.metadata.internal.extensions.KmValueParameterExtension
-import kotlinx.metadata.isLocal
+import kotlinx.metadata.isLocalClassName
 import kotlinx.metadata.jvm.JvmFieldSignature
 import kotlinx.metadata.jvm.JvmMethodSignature
-import kotlinx.metadata.jvm.jvmInternalName
+import kotlinx.metadata.jvm.toJvmInternalName
 import org.objectweb.asm.commons.Remapper
 
 @OptIn(ExperimentalContextReceivers::class)
@@ -86,8 +86,8 @@ class KotlinClassRemapper(private val remapper: Remapper) {
     }
 
     private fun remap(name: ClassName): ClassName {
-        val local = name.isLocal
-        val remapped = remapper.map(name.jvmInternalName).replace('$', '.')
+        val local = name.isLocalClassName()
+        val remapped = remapper.map(name.toJvmInternalName()).replace('$', '.')
 
         if (local) {
             return ".$remapped"
@@ -241,10 +241,10 @@ class KotlinClassRemapper(private val remapper: Remapper) {
     }
 
     private fun remap(signature: JvmMethodSignature): JvmMethodSignature {
-        return JvmMethodSignature(signature.name, remapper.mapMethodDesc(signature.desc))
+        return JvmMethodSignature(signature.name, remapper.mapMethodDesc(signature.descriptor))
     }
 
     private fun remap(signature: JvmFieldSignature): JvmFieldSignature {
-        return JvmFieldSignature(signature.name, remapper.mapDesc(signature.desc))
+        return JvmFieldSignature(signature.name, remapper.mapDesc(signature.descriptor))
     }
 }

@@ -148,7 +148,7 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 				// Add Mixin and mixin extensions (fabric-mixin-compile-extensions pulls mixin itself too)
 				project.getDependencies().add(processorConfig.getName(),
-						LoomVersions.MIXIN_COMPILE_EXTENIONS.mavenNotation());
+						LoomVersions.MIXIN_COMPILE_EXTENSIONS.mavenNotation());
 			}
 		}
 

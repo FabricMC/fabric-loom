@@ -64,7 +64,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 
 				params.getGradleVersion().set(GradleVersion.current().getVersion());
 				params.getLoomVersion().set(LoomGradlePlugin.LOOM_VERSION);
-				params.getMCEVersion().set(LoomVersions.MIXIN_COMPILE_EXTENIONS.version());
+				params.getMCEVersion().set(LoomVersions.MIXIN_COMPILE_EXTENSIONS.version());
 				params.getMinecraftVersion().set(project.provider(() -> extension.getMinecraftProvider().minecraftVersion()));
 				params.getTinyRemapperVersion().set(tinyRemapperVersion.orElse("unknown"));
 				params.getFabricLoaderVersion().set(project.provider(() -> Optional.ofNullable(extension.getInstallerData()).map(InstallerData::version).orElse("unknown")));

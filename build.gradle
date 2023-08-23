@@ -113,6 +113,7 @@ dependencies {
 		exclude module: 'groovy-all'
 	}
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation ('io.javalin:javalin:5.6.2') {
 		exclude group: 'org.jetbrains.kotlin'
 	}

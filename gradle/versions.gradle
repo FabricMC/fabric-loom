@@ -1,0 +1,70 @@
+/**
+ * Generates a java source file containing all of the version from the Gradle version catalog.
+ */
+import java.nio.file.Files
+import java.time.LocalDate
+
+def versionCatalog = extensions.getByType(VersionCatalogsExtension.class).named("libs")
+
+def task = tasks.register("generateVersions", GenerateVersions.class) {
+	versionCatalog.getLibraryAliases().forEach {
+		def lib = versionCatalog.findLibrary(it).get().get()
+		getVersions().put(it, lib.toString())
+	}
+
+	headerFile = file("HEADER")
+	outputDir = file("src/main/generated")
+}
+
+sourceSets.main.java.srcDir task
+spotlessGroovyGradle.dependsOn task // Not quite sure why this is needed, but it fixes a warning.
+
+abstract class GenerateVersions extends DefaultTask {
+	@Input
+	abstract MapProperty<String, String> getVersions()
+
+	@InputFile
+	abstract RegularFileProperty getHeaderFile()
+
+	@OutputDirectory
+	abstract DirectoryProperty getOutputDir()
+
+	@TaskAction
+	def run() {
+		def output = outputDir.get().asFile.toPath()
+		output.deleteDir()
+
+		def packagePath = output.resolve("net/fabricmc/loom/util")
+		def sourcePath = packagePath.resolve("LoomVersions.java")
+		Files.createDirectories(packagePath)
+
+		def constants = getVersions().get().collect { entry ->
+				def split = entry.value.split(":")
+				assert split.length == 3
+				"\tpublic static final LoomVersions ${toSnakeCase(entry.key)} = new LoomVersions(\"${split[0]}\", \"${split[1]}\", \"${split[2]}\");"
+		}.join("\n")
+
+		def header = headerFile.get().getAsFile().text.replace("\$YEAR", "${LocalDate.now().year}").trim()
+
+		sourcePath.write(
+"""${header}
+
+package net.fabricmc.loom.util;
+
+/**
+ * Auto generated class from ./gradle/libs.versions.toml.
+ */
+public record LoomVersions(String group, String module, String version) {
+${constants}
+
+	public String mavenNotation() {
+		return "%s:%s:%s".formatted(group, module, version);
+	}
+}
+""")
+	}
+
+	static def toSnakeCase(String input) {
+		return input.trim().replaceAll(/[^a-zA-Z0-9]+/, '_').toUpperCase()
+	}
+}

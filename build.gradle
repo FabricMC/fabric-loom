@@ -84,7 +84,7 @@ dependencies {
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.8.8')
+	implementation ('net.fabricmc:tiny-remapper:0.8.9')
 	implementation 'net.fabricmc:access-widener:2.1.0'
 	implementation 'net.fabricmc:mapping-io:0.4.2'
 
@@ -93,8 +93,8 @@ dependencies {
 	}
 
 	// decompilers
-	implementation ('net.fabricmc:fabric-fernflower:2.0.0')
-	implementation ('net.fabricmc:cfr:0.2.1')
+	compileOnly libs.fernflower
+	compileOnly libs.cfr
 
 	// source code remapping
 	implementation ('net.fabricmc:mercury:0.4.0')
@@ -120,8 +120,8 @@ dependencies {
 	testImplementation 'org.mockito:mockito-core:5.4.0'
 	testImplementation 'com.microsoft.java:com.microsoft.java.debug.core:0.48.0'
 
-	compileOnly 'org.jetbrains:annotations:24.0.1'
-	testCompileOnly 'org.jetbrains:annotations:24.0.1'
+	compileOnly libs.jetbrains.annotations
+	testCompileOnly libs.jetbrains.annotations
 
 	testCompileOnly ('net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5') {
 		transitive = false
@@ -363,3 +363,5 @@ class PrintActionsTestName extends DefaultTask {
 		new File(System.getenv().GITHUB_OUTPUT) << "\ntest=$sanitised"
 	}
 }
+
+apply from: rootProject.file('gradle/versions.gradle')

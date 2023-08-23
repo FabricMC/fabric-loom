@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2020 FabricMC
+ * Copyright (c) 2018-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,15 @@ package net.fabricmc.loom.decompilers;
 
 import javax.inject.Inject;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.util.LoomVersions;
 
 public abstract class DecompilerConfiguration implements Runnable {
 	@Inject
@@ -39,11 +42,24 @@ public abstract class DecompilerConfiguration implements Runnable {
 
 	@Override
 	public void run() {
-		registerDecompiler(getProject(), "fernFlower", FabricFernFlowerDecompiler.class);
-		registerDecompiler(getProject(), "cfr", LoomCFRDecompiler.class);
+		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
+		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
+
+		registerDecompiler(getProject(), "fernFlower", FabricFernFlowerDecompiler.class, fernflowerConfiguration);
+		registerDecompiler(getProject(), "cfr", LoomCFRDecompiler.class, cfrConfiguration);
 	}
 
-	private void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass) {
-		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> options.getDecompilerClassName().set(decompilerClass.getName()));
+	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions version) {
+		final String configurationName = name + "DecompilerClasspath";
+		NamedDomainObjectProvider<Configuration> configuration = getProject().getConfigurations().register(configurationName);
+		getProject().getDependencies().add(configurationName, version.mavenNotation());
+		return configuration;
+	}
+
+	private void registerDecompiler(Project project, String name, Class<? extends LoomDecompiler> decompilerClass, NamedDomainObjectProvider<Configuration> configuration) {
+		LoomGradleExtension.get(project).getDecompilerOptions().register(name, options -> {
+			options.getDecompilerClassName().set(decompilerClass.getName());
+			options.getClasspath().from(configuration);
+		});
 	}
 }

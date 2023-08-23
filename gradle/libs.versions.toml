@@ -2,6 +2,18 @@
 kotlin = "1.9.0"
 
 [libraries]
+# Decompilers
+fernflower = { module = "net.fabricmc:fabric-fernflower", version = "2.0.0" }
+cfr = { module = "net.fabricmc:cfr", version = "0.2.1" }
+
+# Runtime depedencies
+mixin-compile-extenions = { module = "net.fabricmc:fabric-mixin-compile-extensions", version = "0.6.0" }
+dev-launch-injector = { module = "net.fabricmc:dev-launch-injector", version = "0.2.1+build.8" }
+terminal-console-appender = { module = "net.minecrell:terminalconsoleappender", version = "1.2.0" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "24.0.1" }
+native-support = { module = "net.fabricmc:fabric-loom-native-support", version = "1.0.1" }
+
+# Misc
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]

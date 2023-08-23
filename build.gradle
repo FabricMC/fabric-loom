@@ -9,8 +9,8 @@ plugins {
 	id 'jacoco'
 	id 'codenarc'
 	alias(libs.plugins.kotlin)
-	id "com.diffplug.spotless" version "6.20.0"
-	id "org.gradle.test-retry" version "1.5.4"
+	alias(libs.plugins.spotless)
+	alias(libs.plugins.retry)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -68,39 +68,35 @@ dependencies {
 	bootstrap project(":bootstrap")
 
 	// libraries
-	implementation ('commons-io:commons-io:2.13.0')
-	implementation ('com.google.code.gson:gson:2.10.1')
-	implementation ('com.fasterxml.jackson.core:jackson-databind:2.15.2')
-	implementation ('com.google.guava:guava:32.1.2-jre')
-	implementation ('org.ow2.asm:asm:9.5')
-	implementation ('org.ow2.asm:asm-analysis:9.5')
-	implementation ('org.ow2.asm:asm-commons:9.5')
-	implementation ('org.ow2.asm:asm-tree:9.5')
-	implementation ('org.ow2.asm:asm-util:9.5')
+	implementation libs.commons.io
+	implementation libs.gson
+	implementation libs.jackson
+	implementation libs.guava
+	implementation libs.bundles.asm
 
 	// game handling utils
-	implementation ('net.fabricmc:stitch:0.6.2') {
+	implementation (libs.fabric.stitch) {
 		exclude module: 'enigma'
 	}
 
 	// tinyfile management
-	implementation ('net.fabricmc:tiny-remapper:0.8.9')
-	implementation 'net.fabricmc:access-widener:2.1.0'
-	implementation 'net.fabricmc:mapping-io:0.4.2'
+	implementation libs.fabric.tiny.remapper
+	implementation libs.fabric.access.widener
+	implementation libs.fabric.mapping.io
 
-	implementation ('net.fabricmc:lorenz-tiny:4.0.2') {
+	implementation (libs.fabric.lorenz.tiny) {
 		transitive = false
 	}
 
 	// decompilers
-	compileOnly libs.fernflower
-	compileOnly libs.cfr
+	compileOnly runtimeLibs.fernflower
+	compileOnly runtimeLibs.cfr
 
 	// source code remapping
-	implementation ('net.fabricmc:mercury:0.4.0')
+	implementation libs.fabric.mercury
 
 	// Kotlin
-	implementation('org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.7.0') {
+	implementation(libs.kotlin.metadata) {
 		transitive = false
 	}
 
@@ -109,21 +105,21 @@ dependencies {
 
 	// Testing
 	testImplementation(gradleTestKit())
-	testImplementation('org.spockframework:spock-core:2.3-groovy-3.0') {
+	testImplementation(testLibs.spock) {
 		exclude module: 'groovy-all'
 	}
-	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation ('io.javalin:javalin:5.6.2') {
+	testImplementation testLibs.junit.jupiter.engine
+	testRuntimeOnly testLibs.junit.platform.launcher
+	testImplementation (testLibs.javalin) {
 		exclude group: 'org.jetbrains.kotlin'
 	}
-	testImplementation 'org.mockito:mockito-core:5.4.0'
-	testImplementation 'com.microsoft.java:com.microsoft.java.debug.core:0.48.0'
+	testImplementation testLibs.mockito
+	testImplementation testLibs.java.debug
 
-	compileOnly libs.jetbrains.annotations
-	testCompileOnly libs.jetbrains.annotations
+	compileOnly runtimeLibs.jetbrains.annotations
+	testCompileOnly runtimeLibs.jetbrains.annotations
 
-	testCompileOnly ('net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5') {
+	testCompileOnly (testLibs.mixin) {
 		transitive = false
 	}
 }
@@ -177,11 +173,11 @@ spotless {
 
 checkstyle {
 	configFile = file('checkstyle.xml')
-	toolVersion = '10.12.2'
+	toolVersion = libs.versions.checkstyle.get()
 }
 
 codenarc {
-	toolVersion = "3.3.0"
+	toolVersion = libs.versions.codenarc.get()
 	configFile = file("codenarc.groovy")
 }
 
@@ -195,7 +191,7 @@ gradlePlugin {
 }
 
 jacoco {
-	toolVersion = "0.8.10"
+	toolVersion = libs.versions.jacoco.get()
 }
 
 // Run to get test coverage.
@@ -204,7 +200,7 @@ jacocoTestReport {
 	reports {
 		xml.required = false
 		csv.required = false
-		html.outputLocation = file("${buildDir}/jacocoHtml")
+		html.outputLocation = file("${layout.buildDirectory.get().asFile}/jacocoHtml")
 	}
 }
 

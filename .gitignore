@@ -23,4 +23,4 @@
 !/codenarc.groovy
 !/bootstrap
 
-/src/main/generated
+/src/**/generated

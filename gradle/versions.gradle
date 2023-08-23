@@ -4,24 +4,35 @@
 import java.nio.file.Files
 import java.time.LocalDate
 
-def versionCatalog = extensions.getByType(VersionCatalogsExtension.class).named("libs")
+generateVersionConstants(sourceSets.main, "runtimeLibs", "net/fabricmc/loom/util/LoomVersions")
+generateVersionConstants(sourceSets.test, "testLibs", "net/fabricmc/loom/test/LoomTestVersions")
 
-def task = tasks.register("generateVersions", GenerateVersions.class) {
-	versionCatalog.getLibraryAliases().forEach {
-		def lib = versionCatalog.findLibrary(it).get().get()
-		getVersions().put(it, lib.toString())
+def generateVersionConstants(def sourceSet, def catalogName, def sourcesName) {
+	def versionCatalog = extensions.getByType(VersionCatalogsExtension.class).named(catalogName)
+
+	def task = tasks.register("${catalogName}GenerateConstants", GenerateVersions.class) {
+		versionCatalog.getLibraryAliases().forEach {
+			def lib = versionCatalog.findLibrary(it).get().get()
+			getVersions().put(it, lib.toString())
+		}
+
+		className = sourcesName
+		headerFile = file("HEADER")
+		outputDir = file("src/${sourceSet.name}/generated")
 	}
 
-	headerFile = file("HEADER")
-	outputDir = file("src/main/generated")
+	sourceSet.java.srcDir task
+	spotlessGroovyGradle.dependsOn task // Not quite sure why this is needed, but it fixes a warning.
+	compileKotlin.dependsOn task
+	sourcesJar.dependsOn task
 }
-
-sourceSets.main.java.srcDir task
-spotlessGroovyGradle.dependsOn task // Not quite sure why this is needed, but it fixes a warning.
 
 abstract class GenerateVersions extends DefaultTask {
 	@Input
 	abstract MapProperty<String, String> getVersions()
+
+	@Input
+	abstract Property<String> getClassName()
 
 	@InputFile
 	abstract RegularFileProperty getHeaderFile()
@@ -34,27 +45,31 @@ abstract class GenerateVersions extends DefaultTask {
 		def output = outputDir.get().asFile.toPath()
 		output.deleteDir()
 
-		def packagePath = output.resolve("net/fabricmc/loom/util")
-		def sourcePath = packagePath.resolve("LoomVersions.java")
+		def className = getClassName().get()
+		def si = className.lastIndexOf("/")
+		def packageName = className.substring(0, si)
+		def packagePath = output.resolve(packageName)
+		def sourceName = className.substring(si + 1, className.length())
+		def sourcePath = packagePath.resolve(sourceName + ".java")
 		Files.createDirectories(packagePath)
 
 		def constants = getVersions().get().collect { entry ->
 				def split = entry.value.split(":")
-				assert split.length == 3
-				"\tpublic static final LoomVersions ${toSnakeCase(entry.key)} = new LoomVersions(\"${split[0]}\", \"${split[1]}\", \"${split[2]}\");"
-		}.join("\n")
+				if (split.length != 3) return ""
+				"\tpublic static final ${sourceName} ${toSnakeCase(entry.key)} = new ${sourceName}(\"${split[0]}\", \"${split[1]}\", \"${split[2]}\");"
+		}.findAll { !it.blank }.join("\n")
 
 		def header = headerFile.get().getAsFile().text.replace("\$YEAR", "${LocalDate.now().year}").trim()
 
 		sourcePath.write(
 """${header}
 
-package net.fabricmc.loom.util;
+package ${packageName.replace("/", ".")};
 
 /**
- * Auto generated class from ./gradle/libs.versions.toml.
+ * Auto generated class, do not edit.
  */
-public record LoomVersions(String group, String module, String version) {
+public record ${sourceName}(String group, String module, String version) {
 ${constants}
 
 	public String mavenNotation() {

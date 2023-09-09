@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers.fernflower;
+package net.fabricmc.loom.decompilers;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Map;
 
-import org.jetbrains.java.decompiler.util.InterpreterUtil;
+// This is an internal interface to loom, DO NOT USE this in your own plugins.
+public interface LoomInternalDecompiler {
+	void decompile(Context context);
 
-import net.fabricmc.loom.util.ZipUtils;
+	interface Context {
+		Path compiledJar();
 
-public class FernFlowerUtils {
-	public static byte[] getBytecode(String externalPath, String internalPath) throws IOException {
-		File file = new File(externalPath);
+		Path sourcesDestination();
 
-		if (internalPath == null) {
-			return InterpreterUtil.getBytes(file);
-		} else {
-			return ZipUtils.unpack(file.toPath(), internalPath);
-		}
+		Path linemapDestination();
+
+		int numberOfThreads();
+
+		Path javaDocs();
+
+		Collection<Path> libraries();
+
+		Logger logger();
+
+		Map<String, String> options();
+
+		byte[] unpackZip(Path zip, String path) throws IOException;
+	}
+
+	interface Logger {
+		void accept(String data) throws IOException;
+
+		void error(String msg);
 	}
 }

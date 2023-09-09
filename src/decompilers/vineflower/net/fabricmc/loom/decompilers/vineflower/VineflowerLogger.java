@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,31 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers.fernflower;
+package net.fabricmc.loom.decompilers.vineflower;
 
 import java.io.IOException;
 
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 
-import net.fabricmc.loom.util.IOStringConsumer;
+import net.fabricmc.loom.decompilers.LoomInternalDecompiler;
 
-public class FernflowerLogger extends IFernflowerLogger {
-	private final IOStringConsumer logger;
+public class VineflowerLogger extends IFernflowerLogger {
+	private final LoomInternalDecompiler.Logger logger;
 
-	public FernflowerLogger(IOStringConsumer logger) {
+	public VineflowerLogger(LoomInternalDecompiler.Logger logger) {
 		this.logger = logger;
 	}
 
 	@Override
 	public void writeMessage(String message, Severity severity) {
-		if (message.contains("Inconsistent inner class entries for")) return;
-		if (message.contains("Inconsistent generic signature in method")) return;
+		if (severity.ordinal() < Severity.ERROR.ordinal()) return;
+
 		System.err.println(message);
 	}
 
 	@Override
 	public void writeMessage(String message, Severity severity, Throwable t) {
+		if (severity.ordinal() < Severity.ERROR.ordinal()) return;
+
 		writeMessage(message, severity);
+		t.printStackTrace(System.err);
 	}
 
 	private void write(String data) {

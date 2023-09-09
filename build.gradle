@@ -62,6 +62,29 @@ configurations.all {
 	}
 }
 
+sourceSets {
+	commonDecompiler {
+		java {
+			srcDir("src/decompilers/common")
+		}
+	}
+	fernflower {
+		java {
+			srcDir("src/decompilers/fernflower")
+		}
+	}
+	cfr {
+		java {
+			srcDir("src/decompilers/cfr")
+		}
+	}
+	vineflower {
+		java {
+			srcDir("src/decompilers/vineflower")
+		}
+	}
+}
+
 dependencies {
 	implementation gradleApi()
 
@@ -89,8 +112,23 @@ dependencies {
 	}
 
 	// decompilers
-	compileOnly runtimeLibs.fernflower
-	compileOnly runtimeLibs.cfr
+	fernflowerCompileOnly runtimeLibs.fernflower
+	fernflowerCompileOnly libs.fabric.mapping.io
+
+	cfrCompileOnly runtimeLibs.cfr
+	cfrCompileOnly libs.fabric.mapping.io
+
+	vineflowerCompileOnly runtimeLibs.vineflower
+	vineflowerCompileOnly libs.fabric.mapping.io
+
+	fernflowerApi sourceSets.commonDecompiler.output
+	cfrApi sourceSets.commonDecompiler.output
+	vineflowerApi sourceSets.commonDecompiler.output
+
+	implementation sourceSets.commonDecompiler.output
+	implementation sourceSets.fernflower.output
+	implementation sourceSets.cfr.output
+	implementation sourceSets.vineflower.output
 
 	// source code remapping
 	implementation libs.fabric.mercury
@@ -130,6 +168,10 @@ jar {
 	}
 
 	from configurations.bootstrap.collect { it.isDirectory() ? it : zipTree(it) }
+	from sourceSets.commonDecompiler.output.classesDirs
+	from sourceSets.cfr.output.classesDirs
+	from sourceSets.fernflower.output.classesDirs
+	from sourceSets.vineflower.output.classesDirs
 }
 
 base {

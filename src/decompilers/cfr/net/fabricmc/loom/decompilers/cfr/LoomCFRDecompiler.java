@@ -45,10 +45,9 @@ import org.benf.cfr.reader.util.getopt.Options;
 import org.benf.cfr.reader.util.getopt.OptionsImpl;
 import org.benf.cfr.reader.util.output.SinkDumperFactory;
 
-import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
-import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.decompilers.LoomInternalDecompiler;
 
-public final class LoomCFRDecompiler implements LoomDecompiler {
+public final class LoomCFRDecompiler implements LoomInternalDecompiler {
 	private static final Map<String, String> DECOMPILE_OPTIONS = Map.of(
 			"renameillegalidents", "true",
 			"trackbytecodeloc", "true",
@@ -56,16 +55,18 @@ public final class LoomCFRDecompiler implements LoomDecompiler {
 	);
 
 	@Override
-	public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
+	public void decompile(LoomInternalDecompiler.Context context) {
+		Path compiledJar = context.compiledJar();
+
 		final String path = compiledJar.toAbsolutePath().toString();
 		final Map<String, String> allOptions = new HashMap<>(DECOMPILE_OPTIONS);
-		allOptions.putAll(metaData.options());
+		allOptions.putAll(context.options());
 
 		final Options options = OptionsImpl.getFactory().create(allOptions);
 
 		ClassFileSourceImpl classFileSource = new ClassFileSourceImpl(options);
 
-		for (Path library : metaData.libraries()) {
+		for (Path library : context.libraries()) {
 			classFileSource.addJarContent(library.toAbsolutePath().toString(), AnalysisType.JAR);
 		}
 
@@ -73,8 +74,8 @@ public final class LoomCFRDecompiler implements LoomDecompiler {
 
 		DCCommonState state = new DCCommonState(options, classFileSource);
 
-		if (metaData.javaDocs() != null) {
-			state = new DCCommonState(state, new CFRObfuscationMapping(metaData.javaDocs()));
+		if (context.javaDocs() != null) {
+			state = new DCCommonState(state, new CFRObfuscationMapping(context.javaDocs()));
 		}
 
 		final Manifest manifest = new Manifest();
@@ -82,8 +83,8 @@ public final class LoomCFRDecompiler implements LoomDecompiler {
 
 		Map<String, Map<Integer, Integer>> lineMap;
 
-		try (JarOutputStream outputStream = new JarOutputStream(Files.newOutputStream(sourcesDestination), manifest)) {
-			CFRSinkFactory cfrSinkFactory = new CFRSinkFactory(outputStream, metaData.logger());
+		try (JarOutputStream outputStream = new JarOutputStream(Files.newOutputStream(context.sourcesDestination()), manifest)) {
+			CFRSinkFactory cfrSinkFactory = new CFRSinkFactory(outputStream, context.logger());
 			SinkDumperFactory dumperFactory = new SinkDumperFactory(cfrSinkFactory, options);
 
 			Driver.doJar(state, path, AnalysisType.JAR, dumperFactory);
@@ -93,7 +94,7 @@ public final class LoomCFRDecompiler implements LoomDecompiler {
 			throw new UncheckedIOException("Failed to decompile", e);
 		}
 
-		writeLineMap(linemapDestination, lineMap);
+		writeLineMap(context.linemapDestination(), lineMap);
 	}
 
 	private void writeLineMap(Path output, Map<String, Map<Integer, Integer>> lineMap) {

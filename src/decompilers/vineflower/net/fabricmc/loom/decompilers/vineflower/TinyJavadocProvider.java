@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2021 FabricMC
+ * Copyright (c) 2019-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers.fernflower;
+package net.fabricmc.loom.decompilers.vineflower;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,16 +35,17 @@ import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.struct.StructField;
 import org.jetbrains.java.decompiler.struct.StructMethod;
 import org.jetbrains.java.decompiler.struct.StructRecordComponent;
-import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class TinyJavadocProvider implements IFabricJavadocProvider {
+	private static final int ACC_STATIC = 0x0008;
+	private static final int ACC_RECORD = 0x10000;
+
 	private final MappingTree mappingTree;
 
 	public TinyJavadocProvider(File tinyFile) {
@@ -93,7 +94,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 					addedParam = true;
 				}
 
-				parts.add(String.format("@param %s %s", fieldMapping.getName(MappingsNamespace.NAMED.toString()), comment));
+				parts.add(String.format("@param %s %s", fieldMapping.getName("named"), comment));
 			}
 		}
 
@@ -151,7 +152,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 						addedParam = true;
 					}
 
-					parts.add(String.format("@param %s %s", argMapping.getName(MappingsNamespace.NAMED.toString()), comment));
+					parts.add(String.format("@param %s %s", argMapping.getName("named"), comment));
 				}
 			}
 
@@ -168,7 +169,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 	private static MappingTree readMappings(File input) {
 		try (BufferedReader reader = Files.newBufferedReader(input.toPath())) {
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString());
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, "named");
 			MappingReader.read(reader, nsSwitch);
 
 			return mappingTree;
@@ -178,10 +179,10 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 	}
 
 	public static boolean isRecord(StructClass structClass) {
-		return (structClass.getAccessFlags() & Opcodes.ACC_RECORD) != 0;
+		return (structClass.getAccessFlags() & ACC_RECORD) != 0;
 	}
 
 	public static boolean isStatic(StructField structField) {
-		return (structField.getAccessFlags() & Opcodes.ACC_STATIC) != 0;
+		return (structField.getAccessFlags() & ACC_STATIC) != 0;
 	}
 }

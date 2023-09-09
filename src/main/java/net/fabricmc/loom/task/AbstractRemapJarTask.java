@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -143,6 +144,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 			if (getIncludesClientOnlyClasses().get()) {
 				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries(getClientSourceSet()));
 				clientOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
+				Collections.sort(clientOnlyEntries);
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
 			}

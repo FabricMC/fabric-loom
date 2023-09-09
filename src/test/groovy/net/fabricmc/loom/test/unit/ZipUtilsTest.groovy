@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.time.ZoneId
 
 import spock.lang.Specification
 
@@ -33,8 +34,6 @@ import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.Pair
 import net.fabricmc.loom.util.ZipReprocessorUtil
 import net.fabricmc.loom.util.ZipUtils
-
-import java.time.ZoneId
 
 class ZipUtilsTest extends Specification {
 	def "pack"() {
@@ -178,7 +177,7 @@ class ZipUtilsTest extends Specification {
 		then:
 		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
 		ZipUtils.unpack(zip, "fabric.mod.json") == "Some text".bytes
-		Checksum.sha1Hex(zip) == "232ecda4c770bde8ba618e7a194a4f7b57928dc5"
+		Checksum.sha1Hex(zip) == "1b06cc0aaa65ab2b0d423fe33431ff5bd14bf9c8"
 
 		where:
 		timezone 			| _

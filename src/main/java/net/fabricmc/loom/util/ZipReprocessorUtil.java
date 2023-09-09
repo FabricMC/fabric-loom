@@ -30,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
@@ -42,11 +41,6 @@ import org.gradle.api.tasks.bundling.ZipEntryCompression;
 import org.intellij.lang.annotations.MagicConstant;
 
 public class ZipReprocessorUtil {
-	/**
-	 * See {@link org.gradle.api.internal.file.archive.ZipCopyAction} about this.
-	 */
-	private static final long CONSTANT_TIME_FOR_ZIP_ENTRIES = new GregorianCalendar(1980, Calendar.FEBRUARY, 1, 0, 0, 0).getTimeInMillis();
-
 	private ZipReprocessorUtil() { }
 
 	private static final String MANIFEST_LOCATION = "META-INF/MANIFEST.MF";
@@ -183,9 +177,8 @@ public class ZipReprocessorUtil {
 	}
 
 	private static void setConstantFileTime(ZipEntry entry) {
-		entry.setTime(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES);
-		entry.setLastModifiedTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
-		entry.setLastAccessTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
+		// See https://github.com/openjdk/jdk/blob/master/test/jdk/java/util/zip/ZipFile/ZipEntryTimeBounds.java
+		entry.setTime(new GregorianCalendar(1980, Calendar.JANUARY, 1, 0, 0, 0).getTimeInMillis());
 	}
 
 	@MagicConstant(valuesFromClass = ZipOutputStream.class)

@@ -32,14 +32,13 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.plugins.JavaPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public record InstallerData(String version, JsonObject installerJson) {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InstallerData.class);
@@ -78,7 +77,7 @@ public record InstallerData(String version, JsonObject installerJson) {
 			modDep.setTransitive(false); // Match the launcher in not being transitive
 			loaderDepsConfig.getDependencies().add(modDep);
 
-			// Work around https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14 is fixed.
+			// Work around https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14.
 			if (!IdeaUtils.isIdeaSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
 				annotationProcessor.getDependencies().add(modDep);
 			}

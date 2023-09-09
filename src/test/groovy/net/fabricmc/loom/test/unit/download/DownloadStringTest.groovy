@@ -46,7 +46,7 @@ class DownloadStringTest extends DownloadTest {
 	def "String: Not found"() {
 		setup:
 		server.get("/stringNotFound") {
-			it.status(404)
+			it.status(HttpStatus.NOT_FOUND)
 		}
 
 		when:
@@ -55,7 +55,24 @@ class DownloadStringTest extends DownloadTest {
 				.downloadString()
 
 		then:
-		thrown DownloadException
+		def e = thrown DownloadException
+		e.statusCode == 404
+	}
+
+	def "String: Server error"() {
+		setup:
+		server.get("/stringNotFound") {
+			it.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		}
+
+		when:
+		def result = Download.create("$PATH/stringNotFound")
+				.maxRetries(3) // Ensure we still error as expected when retrying
+				.downloadString()
+
+		then:
+		def e = thrown DownloadException
+		e.statusCode == 500
 	}
 
 	def "String: Redirect"() {
@@ -95,6 +112,25 @@ class DownloadStringTest extends DownloadTest {
 
 		then:
 		result == "Hello World 3"
+	}
+
+	def "String: Retries 404"() {
+		setup:
+		int requests = 0
+		server.get("/retryString") {
+			requests ++
+			it.status(HttpStatus.NOT_FOUND)
+		}
+
+		when:
+		def result = Download.create("$PATH/retryString")
+				.maxRetries(3)
+				.downloadString()
+
+		then:
+		def e = thrown DownloadException
+		e.statusCode == 404
+		requests == 1
 	}
 
 	def "String: File cache"() {

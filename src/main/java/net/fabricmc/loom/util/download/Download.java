@@ -129,7 +129,7 @@ public final class Download {
 
 		if (!successful) {
 			progressListener.onEnd();
-			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+			throw statusError("HTTP request to (%s) returned unsuccessful status".formatted(url) + "(%d)", statusCode);
 		}
 
 		try (InputStream inputStream = decodeOutput(response)) {
@@ -228,7 +228,7 @@ public final class Download {
 				}
 			}
 		} else {
-			throw error("HTTP request returned unsuccessful status (%d)", statusCode);
+			throw statusError("HTTP request returned unsuccessful status (%d)", statusCode);
 		}
 
 		if (useEtag) {
@@ -428,6 +428,10 @@ public final class Download {
 		} catch (IOException e) {
 			throw error(e, "Failed to acquire lock on %s", lock);
 		}
+	}
+
+	private DownloadException statusError(String message, int statusCode) {
+		return new DownloadException(String.format(Locale.ENGLISH, message, statusCode), statusCode);
 	}
 
 	private DownloadException error(String message, Object... args) {

@@ -89,7 +89,7 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 
 		// Setup extensions
 		project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, LoomFiles.create(project));
-		project.getExtensions().create("fabricApi", FabricApiExtension.class, project);
+		project.getExtensions().create("fabricApi", FabricApiExtension.class);
 
 		for (Class<? extends Runnable> jobClass : SETUP_JOBS) {
 			project.getObjects().newInstance(jobClass).run();

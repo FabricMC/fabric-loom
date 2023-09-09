@@ -27,15 +27,32 @@ package net.fabricmc.loom.util.download;
 import java.io.IOException;
 
 public class DownloadException extends IOException {
+	private final int statusCode;
+
 	public DownloadException(String message) {
 		super(message);
+		statusCode = -1;
+	}
+
+	public DownloadException(String message, int statusCode) {
+		super(message);
+		this.statusCode = statusCode;
 	}
 
 	public DownloadException(String message, Throwable cause) {
 		super(message, cause);
+		statusCode = cause instanceof DownloadException downloadException ? downloadException.getStatusCode() : -1;
 	}
 
 	public DownloadException(Throwable cause) {
 		super(cause);
+		statusCode = cause instanceof DownloadException downloadException ? downloadException.getStatusCode() : -1;
+	}
+
+	/**
+	 * @return -1 when the status code is unknown.
+	 */
+	public int getStatusCode() {
+		return statusCode;
 	}
 }

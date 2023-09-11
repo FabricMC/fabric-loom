@@ -75,6 +75,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
 	public static final String MANIFEST_SPLIT_ENV_KEY = "Fabric-Loom-Split-Environment";
 	public static final String MANIFEST_CLIENT_ENTRIES_KEY = "Fabric-Loom-Client-Only-Entries";
+	public static final String MANIFEST_JAR_TYPE_KEY = "Fabric-Jar-Type";
 	public static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(MANIFEST_SPLIT_ENV_KEY);
 	public static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(MANIFEST_CLIENT_ENTRIES_KEY);
 
@@ -112,6 +113,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
+	@Input
+	@Optional
+	@ApiStatus.Internal
+	public abstract Property<String> getJarType();
+
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
 	@Inject
@@ -120,6 +126,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getRemapperIsolation().convention(false).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
+		getJarType().finalizeValueOnRead();
 
 		jarManifestServiceProvider = JarManifestService.get(getProject());
 		usesService(jarManifestServiceProvider);
@@ -147,6 +154,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 				Collections.sort(clientOnlyEntries);
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
+			}
+
+			if (getJarType().isPresent()) {
+				params.getManifestAttributes().put(MANIFEST_JAR_TYPE_KEY, getJarType().get());
 			}
 
 			action.execute(params);

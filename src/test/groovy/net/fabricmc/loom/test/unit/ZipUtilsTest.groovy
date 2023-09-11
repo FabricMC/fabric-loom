@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.time.ZoneId
 
 import spock.lang.Specification
 
@@ -155,6 +156,9 @@ class ZipUtilsTest extends Specification {
 
 	def "append zip entry"() {
 		given:
+		def currentTimezone = TimeZone.getDefault()
+		TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of(timezone)))
+
 		// Create a reproducible input zip
 		def dir = Files.createTempDirectory("loom-zip-test")
 		def zip = Files.createTempFile("loom-zip-test", ".zip")
@@ -167,9 +171,21 @@ class ZipUtilsTest extends Specification {
 		// Add an entry to it
 		ZipReprocessorUtil.appendZipEntry(zip.toFile(), "fabric.mod.json", "Some text".getBytes(StandardCharsets.UTF_8))
 
+		// Reset the timezone back
+		TimeZone.setDefault(currentTimezone)
+
 		then:
 		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
 		ZipUtils.unpack(zip, "fabric.mod.json") == "Some text".bytes
-		Checksum.sha1Hex(zip) == "232ecda4c770bde8ba618e7a194a4f7b57928dc5"
+		Checksum.sha1Hex(zip) == "1b06cc0aaa65ab2b0d423fe33431ff5bd14bf9c8"
+
+		where:
+		timezone 			| _
+		"UTC" 				| _
+		"US/Central" 		| _
+		"Europe/London" 	| _
+		"Australia/Sydney" 	| _
+		"Etc/GMT-6" 		| _
+		"Etc/GMT+9" 		| _
 	}
 }

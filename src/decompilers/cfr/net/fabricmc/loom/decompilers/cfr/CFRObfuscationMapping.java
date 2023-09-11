@@ -45,7 +45,6 @@ import org.benf.cfr.reader.mapping.NullMapping;
 import org.benf.cfr.reader.util.output.DelegatingDumper;
 import org.benf.cfr.reader.util.output.Dumper;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MappingTree;
@@ -66,7 +65,7 @@ public class CFRObfuscationMapping extends NullMapping {
 	private static MappingTree readMappings(Path input) {
 		try (BufferedReader reader = Files.newBufferedReader(input)) {
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, MappingsNamespace.NAMED.toString());
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, "named");
 			MappingReader.read(reader, nsSwitch);
 
 			return mappingTree;

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.decompilers.cfr;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -37,23 +38,18 @@ import java.util.TreeMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import com.google.common.base.Charsets;
 import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.benf.cfr.reader.api.SinkReturns;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.util.IOStringConsumer;
+import net.fabricmc.loom.decompilers.LoomInternalDecompiler;
 
 public class CFRSinkFactory implements OutputSinkFactory {
-	private static final Logger ERROR_LOGGER = LoggerFactory.getLogger(CFRSinkFactory.class);
-
 	private final JarOutputStream outputStream;
-	private final IOStringConsumer logger;
+	private final LoomInternalDecompiler.Logger logger;
 	private final Set<String> addedDirectories = new HashSet<>();
 	private final Map<String, Map<Integer, Integer>> lineMap = new TreeMap<>();
 
-	public CFRSinkFactory(JarOutputStream outputStream, IOStringConsumer logger) {
+	public CFRSinkFactory(JarOutputStream outputStream, LoomInternalDecompiler.Logger logger) {
 		this.outputStream = outputStream;
 		this.logger = logger;
 	}
@@ -72,7 +68,7 @@ public class CFRSinkFactory implements OutputSinkFactory {
 		return switch (sinkType) {
 		case JAVA -> (Sink<T>) decompiledSink();
 		case LINENUMBER -> (Sink<T>) lineNumberMappingSink();
-		case EXCEPTION -> (e) -> ERROR_LOGGER.error((String) e);
+		case EXCEPTION -> (e) -> logger.error((String) e);
 		default -> null;
 		};
 	}
@@ -83,7 +79,7 @@ public class CFRSinkFactory implements OutputSinkFactory {
 			if (!filename.isEmpty()) filename += "/";
 			filename += sinkable.getClassName() + ".java";
 
-			byte[] data = sinkable.getJava().getBytes(Charsets.UTF_8);
+			byte[] data = sinkable.getJava().getBytes(StandardCharsets.UTF_8);
 
 			writeToJar(filename, data);
 		};

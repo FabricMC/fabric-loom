@@ -24,17 +24,27 @@
 
 package net.fabricmc.loom.decompilers;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Map;
+
 import javax.inject.Inject;
 
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler;
 import net.fabricmc.loom.util.LoomVersions;
+import net.fabricmc.loom.util.ZipUtils;
 
 public abstract class DecompilerConfiguration implements Runnable {
 	@Inject
@@ -44,9 +54,11 @@ public abstract class DecompilerConfiguration implements Runnable {
 	public void run() {
 		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
 		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
+		var vineflowerConfiguration = createConfiguration("vineflower", LoomVersions.VINEFLOWER);
 
-		registerDecompiler(getProject(), "fernFlower", FabricFernFlowerDecompiler.class, fernflowerConfiguration);
-		registerDecompiler(getProject(), "cfr", LoomCFRDecompiler.class, cfrConfiguration);
+		registerDecompiler(getProject(), "fernFlower", BuiltinFernflower.class, fernflowerConfiguration);
+		registerDecompiler(getProject(), "cfr", BuiltinCfr.class, cfrConfiguration);
+		registerDecompiler(getProject(), "vineflower", BuiltinVineflower.class, vineflowerConfiguration);
 	}
 
 	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions version) {
@@ -61,5 +73,97 @@ public abstract class DecompilerConfiguration implements Runnable {
 			options.getDecompilerClassName().set(decompilerClass.getName());
 			options.getClasspath().from(configuration);
 		});
+	}
+
+	// We need to wrap the internal API with the public API.
+	// This is needed as the sourceset containing fabric's decompilers do not have access to loom classes.
+	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower {
+		private final LoomInternalDecompiler internalDecompiler;
+
+		BuiltinDecompiler(LoomInternalDecompiler internalDecompiler) {
+			this.internalDecompiler = internalDecompiler;
+		}
+
+		@Override
+		public void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
+			final Logger slf4jLogger = LoggerFactory.getLogger(internalDecompiler.getClass());
+
+			final var logger = new LoomInternalDecompiler.Logger() {
+				@Override
+				public void accept(String data) throws IOException {
+					metaData.logger().accept(data);
+				}
+
+				@Override
+				public void error(String msg) {
+					slf4jLogger.error(msg);
+				}
+			};
+
+			internalDecompiler.decompile(new LoomInternalDecompiler.Context() {
+				@Override
+				public Path compiledJar() {
+					return compiledJar;
+				}
+
+				@Override
+				public Path sourcesDestination() {
+					return sourcesDestination;
+				}
+
+				@Override
+				public Path linemapDestination() {
+					return linemapDestination;
+				}
+
+				@Override
+				public int numberOfThreads() {
+					return metaData.numberOfThreads();
+				}
+
+				@Override
+				public Path javaDocs() {
+					return metaData.javaDocs();
+				}
+
+				@Override
+				public Collection<Path> libraries() {
+					return metaData.libraries();
+				}
+
+				@Override
+				public LoomInternalDecompiler.Logger logger() {
+					return logger;
+				}
+
+				@Override
+				public Map<String, String> options() {
+					return metaData.options();
+				}
+
+				@Override
+				public byte[] unpackZip(Path zip, String path) throws IOException {
+					return ZipUtils.unpack(zip, path);
+				}
+			});
+		}
+	}
+
+	public static final class BuiltinFernflower extends BuiltinDecompiler {
+		public BuiltinFernflower() {
+			super(new FabricFernFlowerDecompiler());
+		}
+	}
+
+	public static final class BuiltinCfr extends BuiltinDecompiler {
+		public BuiltinCfr() {
+			super(new LoomCFRDecompiler());
+		}
+	}
+
+	public static final class BuiltinVineflower extends BuiltinDecompiler {
+		public BuiltinVineflower() {
+			super(new VineflowerDecompiler());
+		}
 	}
 }

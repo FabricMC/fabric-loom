@@ -8,10 +8,36 @@ plugins {
 	id 'checkstyle'
 	id 'jacoco'
 	id 'codenarc'
-	alias(libs.plugins.kotlin)
+	alias(libs.plugins.kotlin) apply false // Delay this so we can perform magic 🪄 first.
 	alias(libs.plugins.spotless)
 	alias(libs.plugins.retry)
 }
+
+/**
+ * Haha this is fun :) The Kotlin gradle plugin triggers deprecation warnings for custom configurations (https://youtrack.jetbrains.com/issue/KT-60879)
+ * We need to make DefaultConfiguration.isSpecialCaseOfChangingUsage think that our configurstion is a special case and not deprecated.
+ * We do this by setting DefaultConfiguration.roleAtCreation to LEGACY, thus isInLegacyRole will now return true.
+ *
+ * Yeah I know we can just ignore the deprecation warning, but doing so wouldn't alert us to issues when testing against pre-release Gradle versions. Also this is more fun :)
+ */
+def brokenConfigurations = [
+	"commonDecompilerRuntimeClasspath",
+	"fernflowerRuntimeClasspath",
+	"cfrRuntimeClasspath",
+	"vineflowerRuntimeClasspath"
+]
+
+configurations.configureEach {
+	if (brokenConfigurations.contains(it.name)) {
+		// For some reason Gradle stops us from using Groovy magic to do this, so lets do it the boring way.
+		def field = org.gradle.api.internal.artifacts.configurations.DefaultConfiguration.class.getDeclaredField("roleAtCreation")
+		field.setAccessible(true)
+		field.set(it, ConfigurationRoles.LEGACY)
+	}
+}
+
+// Ensure we apply the Kotlin plugin after, to allow for the above configuration to take place first
+apply plugin: libs.plugins.kotlin.get().pluginId
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
@@ -62,6 +88,29 @@ configurations.all {
 	}
 }
 
+sourceSets {
+	commonDecompiler {
+		java {
+			srcDir("src/decompilers/common")
+		}
+	}
+	fernflower {
+		java {
+			srcDir("src/decompilers/fernflower")
+		}
+	}
+	cfr {
+		java {
+			srcDir("src/decompilers/cfr")
+		}
+	}
+	vineflower {
+		java {
+			srcDir("src/decompilers/vineflower")
+		}
+	}
+}
+
 dependencies {
 	implementation gradleApi()
 
@@ -89,8 +138,23 @@ dependencies {
 	}
 
 	// decompilers
-	compileOnly runtimeLibs.fernflower
-	compileOnly runtimeLibs.cfr
+	fernflowerCompileOnly runtimeLibs.fernflower
+	fernflowerCompileOnly libs.fabric.mapping.io
+
+	cfrCompileOnly runtimeLibs.cfr
+	cfrCompileOnly libs.fabric.mapping.io
+
+	vineflowerCompileOnly runtimeLibs.vineflower
+	vineflowerCompileOnly libs.fabric.mapping.io
+
+	fernflowerApi sourceSets.commonDecompiler.output
+	cfrApi sourceSets.commonDecompiler.output
+	vineflowerApi sourceSets.commonDecompiler.output
+
+	implementation sourceSets.commonDecompiler.output
+	implementation sourceSets.fernflower.output
+	implementation sourceSets.cfr.output
+	implementation sourceSets.vineflower.output
 
 	// source code remapping
 	implementation libs.fabric.mercury
@@ -130,6 +194,10 @@ jar {
 	}
 
 	from configurations.bootstrap.collect { it.isDirectory() ? it : zipTree(it) }
+	from sourceSets.commonDecompiler.output.classesDirs
+	from sourceSets.cfr.output.classesDirs
+	from sourceSets.fernflower.output.classesDirs
+	from sourceSets.vineflower.output.classesDirs
 }
 
 base {
@@ -222,6 +290,8 @@ test {
 	}
 }
 
+
+import org.gradle.api.internal.artifacts.configurations.ConfigurationRoles
 import org.gradle.launcher.cli.KotlinDslVersion
 import org.gradle.util.GradleVersion
 import org.w3c.dom.Document

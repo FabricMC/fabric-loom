@@ -62,9 +62,11 @@ import net.fabricmc.loom.util.Checksum;
 public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
+	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.proxy(ProxySelector.getDefault())
+			.connectTimeout(TIMEOUT)
 			.build();
 
 	public static DownloadBuilder create(String url) throws URISyntaxException {
@@ -93,17 +95,20 @@ public final class Download {
 		this.downloadAttempt = downloadAttempt;
 	}
 
-	private HttpRequest getRequest() {
-		return HttpRequest.newBuilder(url)
+	private HttpRequest.Builder requestBuilder() {
+		return  HttpRequest.newBuilder(url)
+				.timeout(TIMEOUT)
 				.version(httpVersion)
-				.GET()
+				.GET();
+	}
+
+	private HttpRequest getRequest() {
+		return requestBuilder()
 				.build();
 	}
 
 	private HttpRequest getETagRequest(String etag) {
-		return HttpRequest.newBuilder(url)
-				.version(httpVersion)
-				.GET()
+		return requestBuilder()
 				.header("If-None-Match", etag)
 				.build();
 	}

@@ -96,7 +96,7 @@ public final class Download {
 	}
 
 	private HttpRequest.Builder requestBuilder() {
-		return  HttpRequest.newBuilder(url)
+		return HttpRequest.newBuilder(url)
 				.timeout(TIMEOUT)
 				.version(httpVersion)
 				.GET();

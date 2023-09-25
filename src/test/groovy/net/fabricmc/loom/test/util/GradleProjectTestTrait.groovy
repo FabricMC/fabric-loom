@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.util
 
+import groovy.io.FileType
 import groovy.transform.Immutable
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
@@ -240,8 +241,21 @@ trait GradleProjectTestTrait {
 			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}-sources.jar")
 		}
 
-		File getGeneratedLocalSources(String mappings, String hash) {
-			return new File(getProjectDir(), ".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-${hash}/${mappings}/minecraft-merged-${hash}-${mappings}-sources.jar")
+		File getGeneratedLocalSources(String mappings) {
+			File file
+			getProjectDir().traverse(type: FileType.FILES) {
+				if (it.name.startsWith("minecraft-merged-")
+						&& it.name.contains(mappings)
+						&& it.name.endsWith("-sources.jar")) {
+					file = it
+				}
+			}
+
+			if (file == null) {
+				throw new FileNotFoundException()
+			}
+
+			return file
 		}
 
 		void buildSrc(String name) {

@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -69,6 +70,15 @@ public class Checksum {
 	public static String sha1Hex(Path path) throws IOException {
 		HashCode hash = Files.asByteSource(path.toFile()).hash(Hashing.sha1());
 		return toHex(hash.asBytes());
+	}
+
+	public static String sha1Hex(byte[] input) {
+		try {
+			HashCode hash = ByteSource.wrap(input).hash(Hashing.sha1());
+			return toHex(hash.asBytes());
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to hash", e);
+		}
 	}
 
 	public static String truncatedSha256(File file) {

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
@@ -44,6 +46,7 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class MinecraftJarProcessorManager {
@@ -89,11 +92,28 @@ public final class MinecraftJarProcessorManager {
 		return new MinecraftJarProcessorManager(entries);
 	}
 
-	public String getCacheValue() {
+	private String getCacheValue() {
 		return jarProcessors.stream()
 				.sorted(Comparator.comparing(ProcessorEntry::name))
 				.map(ProcessorEntry::cacheValue)
 				.collect(Collectors.joining("::"));
+	}
+
+	private String getDebugString() {
+		final var sj = new StringJoiner("\n");
+
+		for (ProcessorEntry<?> jarProcessor : jarProcessors) {
+			sj.add(jarProcessor.name() + ":");
+			sj.add("\tHash: " + jarProcessor.hashCode());
+			sj.add("\tStr: " + jarProcessor.cacheValue());
+		}
+
+		return sj.toString();
+	}
+
+	public String getJarHash() {
+		//fabric-loom:mod-javadoc:-1289977000
+		return Checksum.sha1Hex(getCacheValue().getBytes(StandardCharsets.UTF_8)).substring(0, 10);
 	}
 
 	public boolean requiresProcessingJar(Path jar) {

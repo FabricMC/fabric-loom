@@ -240,8 +240,8 @@ trait GradleProjectTestTrait {
 			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}-sources.jar")
 		}
 
-		File getGeneratedLocalSources(String mappings) {
-			return new File(getProjectDir(), ".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-project-root/${mappings}/minecraft-merged-project-root-${mappings}-sources.jar")
+		File getGeneratedLocalSources(String mappings, String hash) {
+			return new File(getProjectDir(), ".gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-${hash}/${mappings}/minecraft-merged-${hash}-${mappings}-sources.jar")
 		}
 
 		void buildSrc(String name) {

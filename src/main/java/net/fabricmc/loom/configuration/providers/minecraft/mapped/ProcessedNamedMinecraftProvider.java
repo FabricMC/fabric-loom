@@ -127,7 +127,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	@Override
 	protected String getName(String name) {
 		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
-		return "minecraft-%s-%s".formatted(name, Integer.toHexString(jarProcessorManager.getCacheValue().hashCode()));
+		return "minecraft-%s-%s".formatted(name, jarProcessorManager.getJarHash());
 	}
 
 	@Override

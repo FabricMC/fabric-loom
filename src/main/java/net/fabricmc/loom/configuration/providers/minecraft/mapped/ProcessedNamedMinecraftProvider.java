@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.gradle.api.Project;
 
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
@@ -129,14 +126,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	protected String getName(String name) {
-		final Project project = getProject();
-
-		if (project.getRootProject() == project) {
-			return "minecraft-%s-project-root".formatted(name).toLowerCase(Locale.ROOT);
-		}
-
-		final String projectPath = project.getPath().replace(':', '@');
-		return "minecraft-%s-project-%s".formatted(name, projectPath).toLowerCase(Locale.ROOT);
+		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
+		return "minecraft-%s-%s".formatted(name, jarProcessorManager.getJarHash());
 	}
 
 	@Override

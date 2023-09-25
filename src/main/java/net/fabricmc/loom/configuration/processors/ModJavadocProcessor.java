@@ -32,7 +32,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -45,6 +47,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.MappingReader;
@@ -82,6 +85,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 			return null;
 		}
 
+		javadocs.sort(Comparator.comparing(ModJavadoc::modId));
 		return new Spec(Collections.unmodifiableList(javadocs));
 	}
 
@@ -104,7 +108,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		};
 	}
 
-	public record ModJavadoc(String modId, MemoryMappingTree mappingTree) {
+	public record ModJavadoc(String modId, MemoryMappingTree mappingTree, String mappingsHash) {
 		@Nullable
 		public static ModJavadoc create(FabricModJson fabricModJson) {
 			final String modId = fabricModJson.getId();
@@ -116,9 +120,11 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 			final String javaDocPath = customElement.getAsString();
 			final MemoryMappingTree mappings = new MemoryMappingTree();
+			final String mappingsHash;
 
 			try {
 				final byte[] data = fabricModJson.getSource().read(javaDocPath);
+				mappingsHash = Checksum.sha1Hex(data);
 
 				try (Reader reader = new InputStreamReader(new ByteArrayInputStream(data))) {
 					MappingReader.read(reader, mappings);
@@ -135,7 +141,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				throw new IllegalStateException("Javadoc provided by mod (%s) must not contain any dst names".formatted(modId));
 			}
 
-			return new ModJavadoc(modId, mappings);
+			return new ModJavadoc(modId, mappings, mappingsHash);
 		}
 
 		public void apply(MemoryMappingTree target) {
@@ -195,6 +201,17 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 			targetComment += sourceComment;
 			target.setComment(targetComment);
+		}
+
+		// Must override as not to include MemoryMappingTree
+		@Override
+		public int hashCode() {
+			return Objects.hash(modId, mappingsHash);
+		}
+
+		@Override
+		public String toString() {
+			return "ModJavadoc{modId='%s', mappingsHash='%s'}".formatted(modId, mappingsHash);
 		}
 	}
 }

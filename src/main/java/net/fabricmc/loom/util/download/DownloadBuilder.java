@@ -158,6 +158,11 @@ public class DownloadBuilder {
 
 				return supplier.get(build(i));
 			} catch (DownloadException e) {
+				if (e.getStatusCode() == 404) {
+					// Don't retry on 404's
+					throw e;
+				}
+
 				if (i == maxRetries) {
 					throw new DownloadException(String.format(Locale.ENGLISH, "Failed download after %d attempts", maxRetries), e);
 				}

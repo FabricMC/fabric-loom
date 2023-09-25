@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +54,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
 import org.gradle.build.event.BuildEventsListenerRegistry;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.workers.WorkAction;
@@ -73,6 +75,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
 	public static final String MANIFEST_SPLIT_ENV_KEY = "Fabric-Loom-Split-Environment";
 	public static final String MANIFEST_CLIENT_ENTRIES_KEY = "Fabric-Loom-Client-Only-Entries";
+	public static final String MANIFEST_JAR_TYPE_KEY = "Fabric-Jar-Type";
 	public static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(MANIFEST_SPLIT_ENV_KEY);
 	public static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(MANIFEST_CLIENT_ENTRIES_KEY);
 
@@ -110,6 +113,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
+	@Input
+	@Optional
+	@ApiStatus.Internal
+	public abstract Property<String> getJarType();
+
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
 	@Inject
@@ -118,6 +126,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getRemapperIsolation().convention(false).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
+		getJarType().finalizeValueOnRead();
 
 		jarManifestServiceProvider = JarManifestService.get(getProject());
 		usesService(jarManifestServiceProvider);
@@ -137,12 +146,18 @@ public abstract class AbstractRemapJarTask extends Jar {
 			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
 
 			params.getJarManifestService().set(jarManifestServiceProvider);
+			params.getEntryCompression().set(getEntryCompression());
 
 			if (getIncludesClientOnlyClasses().get()) {
 				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries(getClientSourceSet()));
 				clientOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
+				Collections.sort(clientOnlyEntries);
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
+			}
+
+			if (getJarType().isPresent()) {
+				params.getManifestAttributes().put(MANIFEST_JAR_TYPE_KEY, getJarType().get());
 			}
 
 			action.execute(params);
@@ -160,6 +175,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
+		Property<ZipEntryCompression> getEntryCompression();
 
 		Property<JarManifestService> getJarManifestService();
 		MapProperty<String, String> getManifestAttributes();
@@ -202,9 +218,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 		protected void rewriteJar() throws IOException {
 			final boolean isReproducibleFileOrder = getParameters().getArchiveReproducibleFileOrder().get();
 			final boolean isPreserveFileTimestamps = getParameters().getArchivePreserveFileTimestamps().get();
+			final ZipEntryCompression compression = getParameters().getEntryCompression().get();
 
-			if (isReproducibleFileOrder || !isPreserveFileTimestamps) {
-				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
+			if (isReproducibleFileOrder || !isPreserveFileTimestamps || compression != ZipEntryCompression.DEFLATED) {
+				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
 		}
 	}

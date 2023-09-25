@@ -30,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
@@ -38,12 +37,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-public class ZipReprocessorUtil {
-	/**
-	 * See {@link org.gradle.api.internal.file.archive.ZipCopyAction} about this.
-	 */
-	private static final long CONSTANT_TIME_FOR_ZIP_ENTRIES = new GregorianCalendar(1980, Calendar.FEBRUARY, 1, 0, 0, 0).getTimeInMillis();
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
+import org.intellij.lang.annotations.MagicConstant;
 
+public class ZipReprocessorUtil {
 	private ZipReprocessorUtil() { }
 
 	private static final String MANIFEST_LOCATION = "META-INF/MANIFEST.MF";
@@ -92,6 +89,10 @@ public class ZipReprocessorUtil {
 	}
 
 	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
+		reprocessZip(file, reproducibleFileOrder, preserveFileTimestamps, ZipEntryCompression.DEFLATED);
+	}
+
+	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps, ZipEntryCompression zipEntryCompression) throws IOException {
 		if (!reproducibleFileOrder && preserveFileTimestamps) {
 			return;
 		}
@@ -111,6 +112,8 @@ public class ZipReprocessorUtil {
 			final var outZip = new ByteArrayOutputStream(entries.length);
 
 			try (var zipOutputStream = new ZipOutputStream(outZip)) {
+				zipOutputStream.setMethod(zipOutputStreamCompressionMethod(zipEntryCompression));
+
 				for (ZipEntry entry : entries) {
 					ZipEntry newEntry = entry;
 
@@ -119,6 +122,7 @@ public class ZipReprocessorUtil {
 						setConstantFileTime(newEntry);
 					}
 
+					newEntry.setMethod(zipEntryCompressionMethod(zipEntryCompression));
 					copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
 				}
 			}
@@ -173,8 +177,23 @@ public class ZipReprocessorUtil {
 	}
 
 	private static void setConstantFileTime(ZipEntry entry) {
-		entry.setTime(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES);
-		entry.setLastModifiedTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
-		entry.setLastAccessTime(FileTime.fromMillis(ZipReprocessorUtil.CONSTANT_TIME_FOR_ZIP_ENTRIES));
+		// See https://github.com/openjdk/jdk/blob/master/test/jdk/java/util/zip/ZipFile/ZipEntryTimeBounds.java
+		entry.setTime(new GregorianCalendar(1980, Calendar.JANUARY, 1, 0, 0, 0).getTimeInMillis());
+	}
+
+	@MagicConstant(valuesFromClass = ZipOutputStream.class)
+	private static int zipOutputStreamCompressionMethod(ZipEntryCompression compression) {
+		return switch (compression) {
+		case STORED -> ZipOutputStream.STORED;
+		case DEFLATED -> ZipOutputStream.DEFLATED;
+		};
+	}
+
+	@MagicConstant(valuesFromClass = ZipEntry.class)
+	private static int zipEntryCompressionMethod(ZipEntryCompression compression) {
+		return switch (compression) {
+		case STORED -> ZipEntry.STORED;
+		case DEFLATED -> ZipEntry.DEFLATED;
+		};
 	}
 }

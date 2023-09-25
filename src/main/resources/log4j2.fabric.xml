@@ -4,6 +4,8 @@
 
 		<!--	System out	-->
 		<Console name="SysOut" target="SYSTEM_OUT">
+			<!-- Filter out the authentication error when starting in development -->
+			<RegexFilter regex="^Failed to verify authentication$" onMatch="DENY" onMismatch="ACCEPT"/>
 			<PatternLayout>
 				<LoggerNamePatternSelector defaultPattern="%style{[%d{HH:mm:ss}]}{blue} %highlight{[%t/%level]}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=green, TRACE=blue} %style{(%logger{1})}{cyan} %highlight{%msg%n}{FATAL=red, ERROR=red, WARN=normal, INFO=normal, DEBUG=normal, TRACE=normal}" disableAnsi="${sys:fabric.log.disableAnsi:-true}">
 					<!-- Dont show the logger name for minecraft classes-->

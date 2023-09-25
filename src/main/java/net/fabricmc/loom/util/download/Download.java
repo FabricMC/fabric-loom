@@ -62,9 +62,11 @@ import net.fabricmc.loom.util.Checksum;
 public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
+	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.proxy(ProxySelector.getDefault())
+			.connectTimeout(TIMEOUT)
 			.build();
 
 	public static DownloadBuilder create(String url) throws URISyntaxException {
@@ -93,17 +95,20 @@ public final class Download {
 		this.downloadAttempt = downloadAttempt;
 	}
 
-	private HttpRequest getRequest() {
+	private HttpRequest.Builder requestBuilder() {
 		return HttpRequest.newBuilder(url)
+				.timeout(TIMEOUT)
 				.version(httpVersion)
-				.GET()
+				.GET();
+	}
+
+	private HttpRequest getRequest() {
+		return requestBuilder()
 				.build();
 	}
 
 	private HttpRequest getETagRequest(String etag) {
-		return HttpRequest.newBuilder(url)
-				.version(httpVersion)
-				.GET()
+		return requestBuilder()
 				.header("If-None-Match", etag)
 				.build();
 	}
@@ -129,7 +134,7 @@ public final class Download {
 
 		if (!successful) {
 			progressListener.onEnd();
-			throw error("HTTP request to (%s) returned unsuccessful status (%d)", url, statusCode);
+			throw statusError("HTTP request to (%s) returned unsuccessful status".formatted(url) + "(%d)", statusCode);
 		}
 
 		try (InputStream inputStream = decodeOutput(response)) {
@@ -190,46 +195,11 @@ public final class Download {
 			return;
 		}
 
-		if (success) {
-			try {
-				Files.deleteIfExists(output);
-			} catch (IOException e) {
-				throw error(e, "Failed to delete existing file");
-			}
-
-			final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
-			AtomicLong totalBytes = new AtomicLong(0);
-
-			try (OutputStream outputStream = Files.newOutputStream(output, StandardOpenOption.CREATE_NEW)) {
-				copyWithCallback(decodeOutput(response), outputStream, value -> {
-					if (length < 0) {
-						return;
-					}
-
-					progressListener.onProgress(totalBytes.addAndGet(value), length);
-				});
-			} catch (IOException e) {
-				throw error(e, "Failed to decode and write download output");
-			}
-
-			if (Files.notExists(output)) {
-				throw error("No file was downloaded");
-			}
-
-			if (length > 0) {
-				try {
-					final long actualLength = Files.size(output);
-
-					if (actualLength != length) {
-						throw error("Unexpected file length of %d bytes, expected %d bytes".formatted(actualLength, length));
-					}
-				} catch (IOException e) {
-					throw error(e);
-				}
-			}
-		} else {
-			throw error("HTTP request returned unsuccessful status (%d)", statusCode);
+		if (!success) {
+			throw statusError("HTTP request returned unsuccessful status (%d)", statusCode);
 		}
+
+		downloadToPath(output, response);
 
 		if (useEtag) {
 			final HttpHeaders headers = response.headers();
@@ -257,6 +227,58 @@ public final class Download {
 
 			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
 			writeHash(output, expectedHash);
+		}
+	}
+
+	private void downloadToPath(Path output, HttpResponse<InputStream> response) throws DownloadException {
+		// Download the file initially to a .part file
+		final Path partFile = getPartFile(output);
+
+		try {
+			Files.deleteIfExists(output);
+			Files.deleteIfExists(partFile);
+		} catch (IOException e) {
+			throw error(e, "Failed to delete existing file");
+		}
+
+		final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
+		AtomicLong totalBytes = new AtomicLong(0);
+
+		try (OutputStream outputStream = Files.newOutputStream(partFile, StandardOpenOption.CREATE_NEW)) {
+			copyWithCallback(decodeOutput(response), outputStream, value -> {
+				if (length < 0) {
+					return;
+				}
+
+				progressListener.onProgress(totalBytes.addAndGet(value), length);
+			});
+		} catch (IOException e) {
+			throw error(e, "Failed to decode and write download output");
+		}
+
+		if (Files.notExists(partFile)) {
+			throw error("No file was downloaded");
+		}
+
+		if (length > 0) {
+			try {
+				final long actualLength = Files.size(partFile);
+
+				if (actualLength != length) {
+					throw error("Unexpected file length of %d bytes, expected %d bytes".formatted(actualLength, length));
+				}
+			} catch (IOException e) {
+				throw error(e);
+			}
+		}
+
+		try {
+			// Once the file has been fully read, create a hard link to the destination file.
+			// And then remove the temporary file, this ensures that the output file only exists in fully populated state.
+			Files.createLink(output, partFile);
+			Files.delete(partFile);
+		} catch (IOException e) {
+			throw error(e, "Failed to complete download");
 		}
 	}
 
@@ -389,6 +411,18 @@ public final class Download {
 		} catch (IOException ignored) {
 			// ignored
 		}
+
+		try {
+			Files.deleteIfExists(getLockFile(output));
+		} catch (IOException ignored) {
+			// ignored
+		}
+
+		try {
+			Files.deleteIfExists(getPartFile(output));
+		} catch (IOException ignored) {
+			// ignored
+		}
 	}
 
 	// A faster exists check
@@ -403,6 +437,10 @@ public final class Download {
 
 	private Path getLockFile(Path output) {
 		return output.resolveSibling(output.getFileName() + ".lock");
+	}
+
+	private Path getPartFile(Path output) {
+		return output.resolveSibling(output.getFileName() + ".part");
 	}
 
 	private boolean getAndResetLock(Path output) throws DownloadException {
@@ -428,6 +466,10 @@ public final class Download {
 		} catch (IOException e) {
 			throw error(e, "Failed to acquire lock on %s", lock);
 		}
+	}
+
+	private DownloadException statusError(String message, int statusCode) {
+		return new DownloadException(String.format(Locale.ENGLISH, message, statusCode), statusCode);
 	}
 
 	private DownloadException error(String message, Object... args) {

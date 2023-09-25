@@ -51,6 +51,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
 
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getJarType().set("sources");
 	}
 
 	@TaskAction

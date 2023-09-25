@@ -1,8 +1,54 @@
 [versions]
-kotlin = "1.8.10"
+kotlin = "1.9.0"
+asm = "9.5"
+commons-io = "2.13.0"
+gson = "2.10.1"
+jackson = "2.15.2"
+guava = "32.1.2-jre"
+
+stitch = "0.6.2"
+tiny-remapper = "0.8.9"
+access-widener = "2.1.0"
+mapping-io = "0.4.2"
+lorenz-tiny = "4.0.2"
+mercury = "0.4.0"
+kotlinx-metadata = "0.7.0"
+
+# Plugins
+spotless = "6.20.0"
+test-retry = "1.5.4"
+checkstyle = "10.12.2"
+codenarc = "3.3.0"
+jacoco = "0.8.10"
 
 [libraries]
+# Loom compile libraries
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-analysis = { module = "org.ow2.asm:asm-analysis", version.ref = "asm" }
+asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
+asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+jackson = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+fabric-stitch = { module = "net.fabricmc:stitch", version.ref = "stitch" }
+fabric-tiny-remapper = { module = "net.fabricmc:tiny-remapper", version.ref = "tiny-remapper" }
+fabric-access-widener = { module = "net.fabricmc:access-widener", version.ref = "access-widener" }
+fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping-io" }
+fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
+fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
+
+# Misc
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-metadata = { module = "org.jetbrains.kotlinx:kotlinx-metadata-jvm", version.ref = "kotlinx-metadata" }
 
 [plugins]
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+retry = { id = "org.gradle.test-retry", version.ref = "test-retry" }
+
+[bundles]
+asm = ["asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util"]

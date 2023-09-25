@@ -25,6 +25,7 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.util.Set;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -35,6 +36,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
 
@@ -71,6 +73,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
 	protected final Property<String> customManifest;
+	protected final SetProperty<String> knownIndyBsms;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
@@ -98,6 +101,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
 		this.customManifest = project.getObjects().property(String.class);
+		this.knownIndyBsms = project.getObjects().setProperty(String.class).convention(Set.of(
+				"java/lang/invoke/StringConcatFactory",
+				"java/lang/runtime/ObjectMethods",
+				"org/codehaus/groovy/vmplugin/v8/IndyInterface"
+		));
+		this.knownIndyBsms.finalizeValueOnRead();
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
@@ -226,6 +235,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<String> getCustomMinecraftManifest() {
 		return customManifest;
+	}
+
+	@Override
+	public SetProperty<String> getKnownIndyBsms() {
+		return knownIndyBsms;
 	}
 
 	@Override

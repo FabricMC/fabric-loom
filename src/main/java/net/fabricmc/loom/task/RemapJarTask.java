@@ -109,6 +109,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		// Make outputs reproducible by default
 		setReproducibleFileOrder(true);
 		setPreserveFileTimestamps(false);
+
+		getJarType().set("classes");
 	}
 
 	private void setupPreparationTask() {

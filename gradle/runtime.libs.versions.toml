@@ -1,0 +1,25 @@
+[versions]
+# Decompilers
+fernflower = "2.0.0"
+cfr = "0.2.1"
+vineflower = "1.9.3"
+
+# Runtime depedencies
+mixin-compile-extensions = "0.6.0"
+dev-launch-injector = "0.2.1+build.8"
+terminal-console-appender = "1.2.0"
+jetbrains-annotations = "24.0.1"
+native-support = "1.0.1"
+
+[libraries]
+# Decompilers
+fernflower = { module = "net.fabricmc:fabric-fernflower", version.ref = "fernflower" }
+cfr = { module = "net.fabricmc:cfr", version.ref = "cfr" }
+vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower" }
+
+# Runtime depedencies
+mixin-compile-extensions = { module = "net.fabricmc:fabric-mixin-compile-extensions", version.ref = "mixin-compile-extensions" }
+dev-launch-injector = { module = "net.fabricmc:dev-launch-injector", version.ref = "dev-launch-injector" }
+terminal-console-appender = { module = "net.minecrell:terminalconsoleappender", version.ref = "terminal-console-appender" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+native-support = { module = "net.fabricmc:fabric-loom-native-support", version.ref = "native-support" }

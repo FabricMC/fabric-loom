@@ -76,16 +76,33 @@ class DownloadFileTest extends DownloadTest {
 	def "File: Not found"() {
 		setup:
 		server.get("/fileNotfound") {
-			it.status(404)
+			it.status(HttpStatus.NOT_FOUND)
 		}
 
 		def output = new File(File.createTempDir(), "file.txt").toPath()
 
 		when:
-		def result = Download.create("$PATH/stringNotFound").downloadPath(output)
+		def result = Download.create("$PATH/fileNotfound").downloadPath(output)
 
 		then:
-		thrown DownloadException
+		def e = thrown DownloadException
+		e.statusCode == 404
+	}
+
+	def "File: Server error"() {
+		setup:
+		server.get("/fileServerError") {
+			it.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		}
+
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+
+		when:
+		def result = Download.create("$PATH/fileServerError").downloadPath(output)
+
+		then:
+		def e = thrown DownloadException
+		e.statusCode == 500
 	}
 
 	def "Cache: Sha1"() {

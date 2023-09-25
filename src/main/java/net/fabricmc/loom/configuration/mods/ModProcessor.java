@@ -133,6 +133,7 @@ public class ModProcessor {
 				.stream().map(File::toPath).toArray(Path[]::new);
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
+				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
 				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false)
 				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));

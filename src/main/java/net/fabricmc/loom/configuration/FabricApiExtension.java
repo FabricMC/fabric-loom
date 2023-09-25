@@ -26,9 +26,11 @@ package net.fabricmc.loom.configuration;
 
 import java.io.File;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -41,24 +43,28 @@ import org.w3c.dom.NodeList;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.download.DownloadException;
 
-public class FabricApiExtension {
-	private final Project project;
-
-	public FabricApiExtension(Project project) {
-		this.project = project;
-	}
+public abstract class FabricApiExtension {
+	@Inject
+	public abstract Project getProject();
 
 	private static final HashMap<String, Map<String, String>> moduleVersionCache = new HashMap<>();
+	private static final HashMap<String, Map<String, String>> deprecatedModuleVersionCache = new HashMap<>();
 
 	public Dependency module(String moduleName, String fabricApiVersion) {
-		return project.getDependencies()
+		return getProject().getDependencies()
 				.create(getDependencyNotation(moduleName, fabricApiVersion));
 	}
 
 	public String moduleVersion(String moduleName, String fabricApiVersion) {
 		String moduleVersion = moduleVersionCache
-				.computeIfAbsent(fabricApiVersion, this::populateModuleVersionMap)
+				.computeIfAbsent(fabricApiVersion, this::getApiModuleVersions)
 				.get(moduleName);
+
+		if (moduleVersion == null) {
+			moduleVersion = deprecatedModuleVersionCache
+					.computeIfAbsent(fabricApiVersion, this::getDeprecatedApiModuleVersions)
+					.get(moduleName);
+		}
 
 		if (moduleVersion == null) {
 			throw new RuntimeException("Failed to find module version for module: " + moduleName);
@@ -71,9 +77,24 @@ public class FabricApiExtension {
 		return String.format("net.fabricmc.fabric-api:%s:%s", moduleName, moduleVersion(moduleName, fabricApiVersion));
 	}
 
-	private Map<String, String> populateModuleVersionMap(String fabricApiVersion) {
-		File pomFile = getApiMavenPom(fabricApiVersion);
+	private Map<String, String> getApiModuleVersions(String fabricApiVersion) {
+		try {
+			return populateModuleVersionMap(getApiMavenPom(fabricApiVersion));
+		} catch (PomNotFoundException e) {
+			throw new RuntimeException("Could not find fabric-api version: " + fabricApiVersion);
+		}
+	}
 
+	private Map<String, String> getDeprecatedApiModuleVersions(String fabricApiVersion) {
+		try {
+			return populateModuleVersionMap(getDeprecatedApiMavenPom(fabricApiVersion));
+		} catch (PomNotFoundException e) {
+			// Not all fabric-api versions have deprecated modules, return an empty map to cache this fact.
+			return Collections.emptyMap();
+		}
+	}
+
+	private Map<String, String> populateModuleVersionMap(File pomFile) {
 		try {
 			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
@@ -101,27 +122,36 @@ public class FabricApiExtension {
 		}
 	}
 
-	private File getApiMavenPom(String fabricApiVersion) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private File getApiMavenPom(String fabricApiVersion) throws PomNotFoundException {
+		return getPom("fabric-api", fabricApiVersion);
+	}
 
-		File mavenPom = new File(extension.getFiles().getUserCache(), "fabric-api/" + fabricApiVersion + ".pom");
+	private File getDeprecatedApiMavenPom(String fabricApiVersion) throws PomNotFoundException {
+		return getPom("fabric-api-deprecated", fabricApiVersion);
+	}
 
-		if (project.getGradle().getStartParameter().isOffline()) {
-			if (!mavenPom.exists()) {
-				throw new RuntimeException("Cannot retrieve fabric-api pom due to being offline");
-			}
-
-			return mavenPom;
-		}
+	private File getPom(String name, String version) throws PomNotFoundException {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final var mavenPom = new File(extension.getFiles().getUserCache(), "fabric-api/%s-%s.pom".formatted(name, version));
 
 		try {
-			extension.download(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/%1$s/fabric-api-%1$s.pom", fabricApiVersion))
+			extension.download(String.format("https://maven.fabricmc.net/net/fabricmc/fabric-api/%2$s/%1$s/%2$s-%1$s.pom", version, name))
 					.defaultCache()
 					.downloadPath(mavenPom.toPath());
 		} catch (DownloadException e) {
-			throw new UncheckedIOException("Failed to download maven info for " + fabricApiVersion, e);
+			if (e.getStatusCode() == 404) {
+				throw new PomNotFoundException(e);
+			}
+
+			throw new UncheckedIOException("Failed to download maven info to " + mavenPom.getName(), e);
 		}
 
 		return mavenPom;
+	}
+
+	private static class PomNotFoundException extends Exception {
+		PomNotFoundException(Throwable cause) {
+			super(cause);
+		}
 	}
 }

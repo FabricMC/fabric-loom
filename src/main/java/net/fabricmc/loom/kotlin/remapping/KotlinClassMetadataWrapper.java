@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.decompilers.fernflower;
+package net.fabricmc.loom.kotlin.remapping;
 
-import java.io.File;
-import java.io.IOException;
+import kotlin.Metadata;
+import kotlinx.metadata.jvm.KotlinClassMetadata;
 
-import org.jetbrains.java.decompiler.util.InterpreterUtil;
-
-import net.fabricmc.loom.util.ZipUtils;
-
-public class FernFlowerUtils {
-	public static byte[] getBytecode(String externalPath, String internalPath) throws IOException {
-		File file = new File(externalPath);
-
-		if (internalPath == null) {
-			return InterpreterUtil.getBytes(file);
-		} else {
-			return ZipUtils.unpack(file.toPath(), internalPath);
-		}
+/**
+ * Similar story to JvmExtensionWrapper, lets abuse the fact that Java can call "internal" Kotlin APIs without reflection :).
+ */
+public record KotlinClassMetadataWrapper(KotlinClassMetadata metadata) {
+	public Metadata getAnnotationData() {
+		return metadata.getAnnotationData$kotlinx_metadata_jvm();
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,6 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,7 +32,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
@@ -47,11 +44,9 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
-import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class MinecraftJarProcessorManager {
-	private static final String CACHE_VALUE_FILE_PATH = "META-INF/Loom-Jar-Processor-Cache";
 	private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftJarProcessorManager.class);
 
 	private final List<ProcessorEntry<?>> jarProcessors;
@@ -101,18 +96,6 @@ public final class MinecraftJarProcessorManager {
 				.collect(Collectors.joining("::"));
 	}
 
-	private String getDebugString() {
-		final StringJoiner sj = new StringJoiner("\n");
-
-		for (ProcessorEntry<?> jarProcessor : jarProcessors) {
-			sj.add(jarProcessor.name() + ":");
-			sj.add("\tHash: " + jarProcessor.hashCode());
-			sj.add("\tStr: " + jarProcessor.toString());
-		}
-
-		return sj.toString();
-	}
-
 	public boolean requiresProcessingJar(Path jar) {
 		Objects.requireNonNull(jar);
 
@@ -121,32 +104,7 @@ public final class MinecraftJarProcessorManager {
 			return true;
 		}
 
-		byte[] existingCache;
-
-		try {
-			existingCache = ZipUtils.unpackNullable(jar, CACHE_VALUE_FILE_PATH);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to unpack jar: " + jar, e);
-		}
-
-		if (existingCache == null) {
-			LOGGER.info("{} does not contain a processor cache value, regenerating", jar);
-			return true;
-		}
-
-		final String existingCacheValue = new String(existingCache, StandardCharsets.UTF_8);
-		final String expectedCacheValue = getCacheValue();
-		final boolean matches = existingCacheValue.equals(expectedCacheValue);
-
-		if (!matches) {
-			LOGGER.info("{} has an invalid cache, got {} expected {}", jar, existingCacheValue, expectedCacheValue);
-
-			if (LOGGER.isInfoEnabled()) {
-				LOGGER.info("Expected state: {}", getDebugString());
-			}
-		}
-
-		return !matches;
+		return false;
 	}
 
 	public void processJar(Path jar, ProcessorContext context) throws IOException {
@@ -157,8 +115,6 @@ public final class MinecraftJarProcessorManager {
 				throw new IOException("Failed to process jar when running jar processor: %s".formatted(entry.name()), e);
 			}
 		}
-
-		ZipUtils.add(jar, CACHE_VALUE_FILE_PATH, getCacheValue());
 	}
 
 	public boolean processMappings(MemoryMappingTree mappings, MappingProcessorContext context) {

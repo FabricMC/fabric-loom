@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -127,7 +127,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	@Override
 	protected String getName(String name) {
 		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
-		return "minecraft-%s-project-%s".formatted(name, Integer.toHexString(jarProcessorManager.getCacheValue().hashCode()));
+		return "minecraft-%s-%s".formatted(name, Integer.toHexString(jarProcessorManager.getCacheValue().hashCode()));
 	}
 
 	@Override

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2020 FabricMC
+ * Copyright (c) 2020-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,18 +34,28 @@ import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.jvm.tasks.Jar;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.download.DownloadException;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class FabricApiExtension {
 	@Inject
 	public abstract Project getProject();
+
+	private static final String DATAGEN_SOURCESET_NAME = "datagen";
 
 	private static final HashMap<String, Map<String, String>> moduleVersionCache = new HashMap<>();
 	private static final HashMap<String, Map<String, String>> deprecatedModuleVersionCache = new HashMap<>();
@@ -71,6 +81,122 @@ public abstract class FabricApiExtension {
 		}
 
 		return moduleVersion;
+	}
+
+	/**
+	 * Configure data generation with the default options.
+	 */
+	public void configureDataGeneration() {
+		configureDataGeneration(dataGenerationSettings -> { });
+	}
+
+	/**
+	 * Configure data generation with custom options.
+	 */
+	public void configureDataGeneration(Action<DataGenerationSettings> action) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		DataGenerationSettings settings = getProject().getObjects().newInstance(DataGenerationSettings.class);
+		settings.getOutputDirectory().set(getProject().file("src/main/generated"));
+		settings.getCreateRunConfiguration().convention(true);
+		settings.getCreateSourceSet().convention(true);
+		settings.getCreateSourceSet().convention(false);
+		settings.getStrictValidation().convention(false);
+
+		action.execute(settings);
+
+		SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+
+		mainSourceSet.resources(files -> {
+			// Add the src/main/generated to the main sourceset's resources.
+			files.getSrcDirs().add(settings.getOutputDirectory().getAsFile().get());
+		});
+
+		// Exclude the cache dir from the output jar to ensure reproducibility.
+		getProject().getTasks().getByName(JavaPlugin.JAR_TASK_NAME, task -> {
+			Jar jar = (Jar) task;
+			jar.exclude(".cache/**");
+		});
+
+		if (settings.getCreateSourceSet().get()) {
+			if (!settings.getModId().isPresent()) {
+				throw new IllegalStateException("TODO");
+			}
+
+			SourceSetContainer sourceSets = SourceSetHelper.getSourceSets(getProject());
+
+			// Create the new datagen sourceset, depend on the main sourceset.
+			sourceSets.create(DATAGEN_SOURCESET_NAME, sourceSet -> {
+				sourceSet.setCompileClasspath(
+							sourceSet.getCompileClasspath()
+								.plus(mainSourceSet.getCompileClasspath())
+								.plus(mainSourceSet.getOutput())
+				);
+
+				sourceSet.setRuntimeClasspath(
+							sourceSet.getRuntimeClasspath()
+									.plus(mainSourceSet.getRuntimeClasspath())
+									.plus(mainSourceSet.getOutput())
+				);
+			});
+
+			extension.getMods().create(settings.getModId().get(), mod -> {
+				// Create a classpath group for this mod. Assume that the main sourceset is already in a group.
+				mod.sourceSet(DATAGEN_SOURCESET_NAME);
+			});
+		}
+
+		if (settings.getCreateRunConfiguration().get()) {
+			extension.getRunConfigs().create("datagen", run -> {
+				run.name("Data Generation");
+				run.inherit(extension.getRunConfigs().getByName("server"));
+
+				run.property("fabric-api.datagen");
+				run.property("fabric-api.datagen.output-dir", settings.getOutputDirectory().getAsFile().get().getAbsolutePath());
+				run.runDir("build/datagen");
+
+				if (settings.getModId().isPresent()) {
+					run.property("fabric-api.datagen.modid", settings.getModId().get());
+				}
+
+				if (settings.getStrictValidation().get()) {
+					run.property("fabric-api.datagen.strict-validation", "true");
+				}
+
+				if (settings.getCreateSourceSet().get()) {
+					run.source(DATAGEN_SOURCESET_NAME);
+				}
+			});
+		}
+	}
+
+	public interface DataGenerationSettings {
+		/**
+		 * Contains the output directory where generated data files will be stored.
+		 */
+		RegularFileProperty getOutputDirectory();
+
+		/**
+		 * Contains a boolean indicating whether a run configuration should be created for the data generation process.
+		 */
+		Property<Boolean> getCreateRunConfiguration();
+
+		/**
+		 * Contains a boolean property indicating whether a new source set should be created for the data generation process.
+		 */
+		Property<Boolean> getCreateSourceSet();
+
+		/**
+		 * Contains a string property representing the mod ID associated with the data generation process.
+		 *
+		 * <p>This must be set when {@link #getCreateRunConfiguration()} is set.
+		 */
+		Property<String> getModId();
+
+		/**
+		 * Contains a boolean property indicating whether strict validation is enabled.
+		 */
+		Property<Boolean> getStrictValidation();
 	}
 
 	private String getDependencyNotation(String moduleName, String fabricApiVersion) {

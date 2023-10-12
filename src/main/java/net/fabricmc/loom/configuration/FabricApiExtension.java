@@ -45,6 +45,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
+import org.gradle.language.base.plugins.LifecycleBasePlugin;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -125,9 +126,10 @@ public abstract class FabricApiExtension {
 			jar.exclude(".cache/**");
 		});
 
-		// Register a command to remove the datagen directory when `clean` is ran.
-		var cleanDatagen = taskContainer.register("cleanDatagen", Delete.class, task -> task.delete(outputDirectory));
-		taskContainer.getByName("clean", task -> task.dependsOn(cleanDatagen));
+		taskContainer.getByName(LifecycleBasePlugin.CLEAN_TASK_NAME, task -> {
+			Delete clean = (Delete) task;
+			clean.delete(outputDirectory);
+		});
 
 		if (settings.getCreateSourceSet().get()) {
 			if (!settings.getModId().isPresent()) {

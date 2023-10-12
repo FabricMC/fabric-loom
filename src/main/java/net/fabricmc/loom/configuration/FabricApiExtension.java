@@ -40,8 +40,10 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -95,6 +97,7 @@ public abstract class FabricApiExtension {
 	 */
 	public void configureDataGeneration(Action<DataGenerationSettings> action) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final TaskContainer taskContainer = getProject().getTasks();
 
 		DataGenerationSettings settings = getProject().getObjects().newInstance(DataGenerationSettings.class);
 		settings.getOutputDirectory().set(getProject().file("src/main/generated"));
@@ -102,25 +105,33 @@ public abstract class FabricApiExtension {
 		settings.getCreateSourceSet().convention(true);
 		settings.getCreateSourceSet().convention(false);
 		settings.getStrictValidation().convention(false);
+		settings.getAddToResources().convention(true);
 
 		action.execute(settings);
 
-		SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+		final File outputDirectory = settings.getOutputDirectory().getAsFile().get();
 
-		mainSourceSet.resources(files -> {
-			// Add the src/main/generated to the main sourceset's resources.
-			files.getSrcDirs().add(settings.getOutputDirectory().getAsFile().get());
-		});
+		if (settings.getAddToResources().get()) {
+			mainSourceSet.resources(files -> {
+				// Add the src/main/generated to the main sourceset's resources.
+				files.getSrcDirs().add(outputDirectory);
+			});
+		}
 
 		// Exclude the cache dir from the output jar to ensure reproducibility.
-		getProject().getTasks().getByName(JavaPlugin.JAR_TASK_NAME, task -> {
+		taskContainer.getByName(JavaPlugin.JAR_TASK_NAME, task -> {
 			Jar jar = (Jar) task;
 			jar.exclude(".cache/**");
 		});
 
+		// Register a command to remove the datagen directory when `clean` is ran.
+		var cleanDatagen = taskContainer.register("cleanDatagen", Delete.class, task -> task.delete(outputDirectory));
+		taskContainer.getByName("clean", task -> task.dependsOn(cleanDatagen));
+
 		if (settings.getCreateSourceSet().get()) {
 			if (!settings.getModId().isPresent()) {
-				throw new IllegalStateException("TODO");
+				throw new IllegalStateException("DataGenerationSettings.getModId() must be set when using split sources.");
 			}
 
 			SourceSetContainer sourceSets = SourceSetHelper.getSourceSets(getProject());
@@ -152,7 +163,7 @@ public abstract class FabricApiExtension {
 				run.inherit(extension.getRunConfigs().getByName("server"));
 
 				run.property("fabric-api.datagen");
-				run.property("fabric-api.datagen.output-dir", settings.getOutputDirectory().getAsFile().get().getAbsolutePath());
+				run.property("fabric-api.datagen.output-dir", outputDirectory.getAbsolutePath());
 				run.runDir("build/datagen");
 
 				if (settings.getModId().isPresent()) {
@@ -197,6 +208,11 @@ public abstract class FabricApiExtension {
 		 * Contains a boolean property indicating whether strict validation is enabled.
 		 */
 		Property<Boolean> getStrictValidation();
+
+		/**
+		 * Contains a boolean property indicating whether the generated resources will be automatically added to the main sourceset.
+		 */
+		Property<Boolean> getAddToResources();
 	}
 
 	private String getDependencyNotation(String moduleName, String fabricApiVersion) {

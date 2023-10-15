@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.unit.library.processors
 
+import org.gradle.api.JavaVersion
+
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessor
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LoomNativeSupportLibraryProcessor
@@ -46,6 +48,51 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		"1.15.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.14.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
+
+	def "Apply when using Java 19 or later on macOS"() {
+		when:
+		def (_, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64, version)
+		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		then:
+		processor.applicationResult == result
+
+		where:
+		version                 || result
+		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.MUST_APPLY
+		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.MUST_APPLY
+		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
+	}
+
+	def "Dont apply when using Java 19 or later on macOS with supported version"() {
+		when:
+		def (_, context) = getLibs("1.20.2", PlatformTestUtils.MAC_OS_X64, version)
+		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.MAC_OS_X64, context)
+		then:
+		processor.applicationResult == result
+
+		where:
+		version                 || result
+		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
+	}
+
+	def "Can apply when using Java 19 or later on other platforms"() {
+		when:
+		def (_, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_ARM64, version)
+		def processor = new LoomNativeSupportLibraryProcessor(PlatformTestUtils.WINDOWS_ARM64, context)
+		then:
+		processor.applicationResult == result
+
+		where:
+		version                 || result
+		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
 	def "Can apply on other platforms"() {

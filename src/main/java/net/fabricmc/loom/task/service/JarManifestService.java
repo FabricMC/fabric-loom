@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.Attributes;
@@ -74,12 +75,19 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 	}
 
 	public void apply(Manifest manifest, Map<String, String> extraValues) {
-		// Don't set when running the reproducible build tests as it will break them when anything updates
+		Attributes attributes = manifest.getMainAttributes();
+
+		extraValues.entrySet().stream()
+				.sorted(Comparator.comparing(Map.Entry::getKey))
+				.forEach(entry -> {
+					attributes.putValue(entry.getKey(), entry.getValue());
+				});
+
+		// Don't set version attributes when running the reproducible build tests as it will break them when anything updates
 		if (Boolean.getBoolean("loom.test.reproducible")) {
 			return;
 		}
 
-		Attributes attributes = manifest.getMainAttributes();
 		Params p = getParameters();
 
 		attributes.putValue("Fabric-Gradle-Version", p.getGradleVersion().get());
@@ -93,10 +101,6 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		if (!attributes.containsKey("Fabric-Mixin-Version")) {
 			attributes.putValue("Fabric-Mixin-Version", p.getMixinVersion().get().version());
 			attributes.putValue("Fabric-Mixin-Group", p.getMixinVersion().get().group());
-		}
-
-		for (Map.Entry<String, String> entry : extraValues.entrySet()) {
-			attributes.putValue(entry.getKey(), entry.getValue());
 		}
 	}
 

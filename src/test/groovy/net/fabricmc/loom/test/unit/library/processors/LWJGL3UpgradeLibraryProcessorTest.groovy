@@ -50,7 +50,6 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
 	}
 
-	// TODO once Minecraft updates to LWJGL 3.3.2 add a new test for this that uses that mc version
 	def "Apply when using Java 19 or later"() {
 		when:
 		def (_, context) = getLibs("1.19.4", PlatformTestUtils.WINDOWS_X64, version)
@@ -62,6 +61,21 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		version                 || result
 		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.MUST_APPLY
 		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.MUST_APPLY
+		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
+	}
+
+	def "Dont apply when using Java 19 or later on supported LWJGL version"() {
+		when:
+		def (_, context) = getLibs("1.20.2", PlatformTestUtils.WINDOWS_X64, version)
+		def processor = new LWJGL3UpgradeLibraryProcessor(PlatformTestUtils.WINDOWS_X64, context)
+		then:
+		processor.applicationResult == result
+
+		where:
+		version                 || result
+		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}

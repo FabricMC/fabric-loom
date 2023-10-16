@@ -26,7 +26,6 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
@@ -43,7 +42,7 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Merged extends ProviderImpl {
-		String MERGED = "merged";
+		String MERGED = MinecraftJar.Merged.NAME;
 
 		default MinecraftJar getMergedJar() {
 			return new MinecraftJar.Merged(getJar(MERGED));
@@ -56,8 +55,8 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Split extends ProviderImpl {
-		String COMMON = "common";
-		String CLIENT_ONLY = "clientOnly";
+		String COMMON = MinecraftJar.Common.NAME;
+		String CLIENT_ONLY = MinecraftJar.ClientOnly.NAME;
 
 		default MinecraftJar getCommonJar() {
 			return new MinecraftJar.Common(getJar(COMMON));
@@ -77,7 +76,7 @@ public interface MappedMinecraftProvider {
 		SingleJarEnvType env();
 
 		default String envName() {
-			return "%sOnly".formatted(env().name().toLowerCase(Locale.ROOT));
+			return env().getName();
 		}
 
 		default MinecraftJar getEnvOnlyJar() {

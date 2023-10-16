@@ -195,14 +195,15 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			clientOnlySourceSet.setCompileClasspath(
 					clientOnlySourceSet.getCompileClasspath()
-							.plus(mainSourceSet.getCompileClasspath())
 							.plus(mainSourceSet.getOutput())
 			);
 			clientOnlySourceSet.setRuntimeClasspath(
 					clientOnlySourceSet.getRuntimeClasspath()
-							.plus(mainSourceSet.getRuntimeClasspath())
 							.plus(mainSourceSet.getOutput())
 			);
+
+			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspathConfigurationName());
 
 			RemapConfigurations.configureClientConfigurations(project, clientOnlySourceSet);
 

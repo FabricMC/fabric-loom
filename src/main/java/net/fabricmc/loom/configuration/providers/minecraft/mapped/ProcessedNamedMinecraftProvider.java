@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -128,7 +127,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	@Override
 	protected String getName(String name) {
 		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
-		return "minecraft-%s-%s".formatted(name, jarProcessorManager.getJarHash()).toLowerCase(Locale.ROOT);
+		return "minecraft-%s-%s".formatted(name, jarProcessorManager.getJarHash());
 	}
 
 	@Override

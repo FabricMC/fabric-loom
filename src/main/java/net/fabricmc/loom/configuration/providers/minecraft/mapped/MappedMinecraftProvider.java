@@ -26,6 +26,7 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
@@ -76,7 +77,7 @@ public interface MappedMinecraftProvider {
 		SingleJarEnvType env();
 
 		default String envName() {
-			return "%sOnly".formatted(env());
+			return "%sOnly".formatted(env().name().toLowerCase(Locale.ROOT));
 		}
 
 		default MinecraftJar getEnvOnlyJar() {

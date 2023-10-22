@@ -36,6 +36,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPlugin;
@@ -142,15 +143,16 @@ public abstract class FabricApiExtension {
 			sourceSets.create(DATAGEN_SOURCESET_NAME, sourceSet -> {
 				sourceSet.setCompileClasspath(
 							sourceSet.getCompileClasspath()
-								.plus(mainSourceSet.getCompileClasspath())
 								.plus(mainSourceSet.getOutput())
 				);
 
 				sourceSet.setRuntimeClasspath(
 							sourceSet.getRuntimeClasspath()
-									.plus(mainSourceSet.getRuntimeClasspath())
 									.plus(mainSourceSet.getOutput())
 				);
+
+				extendsFrom(getProject(), sourceSet.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspathConfigurationName());
+				extendsFrom(getProject(), sourceSet.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspathConfigurationName());
 			});
 
 			extension.getMods().create(settings.getModId().get(), mod -> {
@@ -297,5 +299,13 @@ public abstract class FabricApiExtension {
 		PomNotFoundException(Throwable cause) {
 			super(cause);
 		}
+	}
+
+	private static void extendsFrom(Project project, String name, String extendsFrom) {
+		final ConfigurationContainer configurations = project.getConfigurations();
+
+		configurations.named(name, configuration -> {
+			configuration.extendsFrom(configurations.getByName(extendsFrom));
+		});
 	}
 }

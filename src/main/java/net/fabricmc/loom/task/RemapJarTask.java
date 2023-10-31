@@ -310,13 +310,15 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			}
 
 			for (RemapParams.RefmapData refmapData : getParameters().getMixinData().get()) {
-				int transformed = ZipUtils.transformJson(JsonObject.class, outputFile, refmapData.mixinConfigs().stream().collect(Collectors.toMap(s -> s, s -> json -> {
-					if (!json.has("refmap")) {
-						json.addProperty("refmap", refmapData.refmapName());
-					}
+				if (ZipUtils.contains(outputFile, refmapData.refmapName())) {
+					int transformed = ZipUtils.transformJson(JsonObject.class, outputFile, refmapData.mixinConfigs().stream().collect(Collectors.toMap(s -> s, s -> json -> {
+						if (!json.has("refmap")) {
+							json.addProperty("refmap", refmapData.refmapName());
+						}
 
-					return json;
-				})));
+						return json;
+					})));
+				}
 			}
 		}
 	}

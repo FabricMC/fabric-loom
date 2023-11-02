@@ -47,7 +47,7 @@ public record TinyJarInfo(boolean v2, Optional<String> minecraftVersionId) {
 	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
 		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(path)) {
 			try (BufferedReader reader = Files.newBufferedReader(delegate.fs().getPath("mappings", "mappings.tiny"))) {
-				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
+				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2_FILE;
 			}
 		}
 	}

@@ -308,6 +308,11 @@ public class RunConfigSettings implements Named {
 		startFirstThread();
 		environment("client");
 		defaultMainClass(Constants.Knot.KNOT_CLIENT);
+
+		if (Platform.CURRENT.isRaspberryPi()) {
+			getProject().getLogger().info("Raspberry Pi detected, setting MESA_GL_VERSION_OVERRIDE=4.3");
+			environmentVariable("MESA_GL_VERSION_OVERRIDE", "4.3");
+		}
 	}
 
 	/**

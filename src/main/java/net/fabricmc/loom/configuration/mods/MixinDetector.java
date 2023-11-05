@@ -32,8 +32,6 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -41,8 +39,6 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public final class MixinDetector {
-	private static final Logger LOGGER = LoggerFactory.getLogger(MixinDetector.class);
-
 	public static boolean hasMixinsWithoutRefmap(Path modJar) throws IOException {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(modJar)) {
 			final List<String> mixinConfigs = getMixinConfigs(modJar);
@@ -60,7 +56,7 @@ public final class MixinDetector {
 							return true;
 						}
 					} catch (JsonParseException e) {
-						LOGGER.warn("Could not parse mixin config {} from jar {}", mixinConfig, modJar.toAbsolutePath(), e);
+						throw new RuntimeException("Could not parse mixin config %s from jar %s".formatted(mixinConfig, modJar.toAbsolutePath()), e);
 					}
 				}
 			}

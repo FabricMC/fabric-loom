@@ -38,8 +38,9 @@ class MixinDetectorTest extends Specification {
 
 	private Path makeJar(Map<String, String> mixinConfigs) {
 		def path = tempDir.resolve("test.jar")
+		def fs = FileSystemUtil.getJarFileSystem(path, true)
 
-		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(path, true)) {
+		try {
 			// Create fabric.mod.json
 			def fabricModJson = JsonOutput.toJson([
 			        schemaVersion: 1,
@@ -53,6 +54,8 @@ class MixinDetectorTest extends Specification {
 			mixinConfigs.forEach { name, content ->
 				fs.getPath(name).text = content
 			}
+		} finally {
+			fs.close()
 		}
 
 		return path

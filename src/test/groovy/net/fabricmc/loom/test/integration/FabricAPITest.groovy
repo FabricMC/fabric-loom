@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -46,14 +46,26 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
 				commit: "f091af96c53963fadf9dbc391c67bb40e5678a96",
-				version: version,
+				version: DEFAULT_GRADLE,
 				patch: "fabric_api"
 				)
 
 		gradle.enableMultiProjectOptimisation()
 
+		// Disable the mixin ap if needed. Fabric API is a large enough test project to see if something breaks.
+		def mixinApPatch = ""
+
+		if (disableMixinAp) {
+			mixinApPatch = """
+
+				allprojects {
+					loom.mixin.useLegacyMixinAp = false
+				}
+				""".stripIndent()
+		}
+
 		// Set the version to something constant
-		gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+		gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"") + mixinApPatch
 
 		def server = ServerRunner.create(gradle.projectDir, "23w33a")
 				.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
@@ -83,7 +95,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		serverResult.successful()
 		serverResult.output.contains("- fabric-api $API_VERSION")
 		where:
-		//version << STANDARD_TEST_VERSIONS
-		version << [DEFAULT_GRADLE]
+		disableMixinAp << [false, true]
 	}
 }

@@ -32,8 +32,8 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -41,33 +41,32 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public final class MixinDetector {
-	private static final Logger LOGGER = Logging.getLogger(MixinDetector.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MixinDetector.class);
 
 	public static boolean hasMixinsWithoutRefmap(Path modJar) throws IOException {
-		final List<String> mixinConfigs = getMixinConfigs(modJar);
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(modJar)) {
+			final List<String> mixinConfigs = getMixinConfigs(modJar);
 
-		if (!mixinConfigs.isEmpty()) {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(modJar)) {
+			if (!mixinConfigs.isEmpty()) {
 				for (String mixinConfig : mixinConfigs) {
 					final Path configPath = fs.getPath(mixinConfig);
+					if (Files.notExists(configPath)) continue;
 
-					if (Files.exists(configPath)) {
-						try (BufferedReader reader = Files.newBufferedReader(configPath)) {
-							final JsonObject json = LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
+					try (BufferedReader reader = Files.newBufferedReader(configPath)) {
+						final JsonObject json = LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
 
-							if (!json.has("refmap")) {
-								// We found a mixin config with no refmap, exit the loop.
-								return true;
-							}
-						} catch (JsonParseException e) {
-							LOGGER.warn("Could not parse mixin config {} from jar {}", mixinConfig, modJar.toAbsolutePath(), e);
+						if (!json.has("refmap")) {
+							// We found a mixin config with no refmap, exit the loop.
+							return true;
 						}
+					} catch (JsonParseException e) {
+						LOGGER.warn("Could not parse mixin config {} from jar {}", mixinConfig, modJar.toAbsolutePath(), e);
 					}
 				}
 			}
-		}
 
-		return false;
+			return false;
+		}
 	}
 
 	private static List<String> getMixinConfigs(Path modJar) {

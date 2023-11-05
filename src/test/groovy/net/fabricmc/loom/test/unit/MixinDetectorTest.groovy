@@ -24,13 +24,14 @@
 
 package net.fabricmc.loom.test.unit
 
+import java.nio.file.Path
+
 import groovy.json.JsonOutput
-import net.fabricmc.loom.configuration.mods.MixinDetector
-import net.fabricmc.loom.util.FileSystemUtil
 import spock.lang.Specification
 import spock.lang.TempDir
 
-import java.nio.file.Path
+import net.fabricmc.loom.configuration.mods.MixinDetector
+import net.fabricmc.loom.util.FileSystemUtil
 
 class MixinDetectorTest extends Specification {
 	@TempDir
@@ -43,10 +44,10 @@ class MixinDetectorTest extends Specification {
 		try {
 			// Create fabric.mod.json
 			def fabricModJson = JsonOutput.toJson([
-			        schemaVersion: 1,
-					id: 'test',
-					version: '1',
-					mixins: mixinConfigs.keySet()
+				schemaVersion: 1,
+				id: 'test',
+				version: '1',
+				mixins: mixinConfigs.keySet()
 			])
 			fs.getPath('fabric.mod.json').text = fabricModJson
 
@@ -75,11 +76,11 @@ class MixinDetectorTest extends Specification {
 	def "jar with one mixin config with refmap has no mixins without refmaps"() {
 		setup:
 		def jarPath = makeJar([
-				'test.mixins.json': JsonOutput.toJson([
-						'package': 'com.example.test',
-						'mixins': ['TestMixin'],
-				        'refmap': 'test-refmap.json'
-				])
+			'test.mixins.json': JsonOutput.toJson([
+				'package': 'com.example.test',
+				'mixins': ['TestMixin'],
+				'refmap': 'test-refmap.json'
+			])
 		])
 
 		when:
@@ -92,10 +93,10 @@ class MixinDetectorTest extends Specification {
 	def "jar with one mixin config without refmap has mixins without refmaps"() {
 		setup:
 		def jarPath = makeJar([
-				'test.mixins.json': JsonOutput.toJson([
-						'package': 'com.example.test',
-						'mixins': ['TestMixin']
-				])
+			'test.mixins.json': JsonOutput.toJson([
+				'package': 'com.example.test',
+				'mixins': ['TestMixin']
+			])
 		])
 
 		when:
@@ -108,15 +109,15 @@ class MixinDetectorTest extends Specification {
 	def "jar with mixed mixin configs has mixins without refmaps"() {
 		setup:
 		def jarPath = makeJar([
-				'test.mixins.json': JsonOutput.toJson([
-						'package': 'com.example.test',
-						'mixins': ['TestMixin']
-				]),
-				'test2.mixins.json': JsonOutput.toJson([
-						'package': 'com.example.test2',
-						'mixins': ['TestMixin2'],
-						'refmap': 'test2-refmap.json'
-				])
+			'test.mixins.json': JsonOutput.toJson([
+				'package': 'com.example.test',
+				'mixins': ['TestMixin']
+			]),
+			'test2.mixins.json': JsonOutput.toJson([
+				'package': 'com.example.test2',
+				'mixins': ['TestMixin2'],
+				'refmap': 'test2-refmap.json'
+			])
 		])
 
 		when:

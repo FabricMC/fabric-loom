@@ -96,8 +96,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		serverResult.output.contains("- fabric-api $API_VERSION")
 		where:
 		[version, disableMixinAp] << [
-				[DEFAULT_GRADLE],
-				[false, true]
+			[DEFAULT_GRADLE],
+			[false, true]
 		].combinations()
 	}
 }

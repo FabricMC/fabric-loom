@@ -41,12 +41,12 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	private static final String API_VERSION = "0.0.0+loom"
 
 	@Unroll
-	def "build and run (gradle #version)"() {
+	def "build and run (gradle #version, mixin ap disabled: #disableMixinAp)"() {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
 				commit: "f091af96c53963fadf9dbc391c67bb40e5678a96",
-				version: DEFAULT_GRADLE,
+				version: version,
 				patch: "fabric_api"
 				)
 
@@ -95,6 +95,9 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		serverResult.successful()
 		serverResult.output.contains("- fabric-api $API_VERSION")
 		where:
-		disableMixinAp << [false, true]
+		[version, disableMixinAp] << [
+				[DEFAULT_GRADLE],
+				[false, true]
+		].combinations()
 	}
 }

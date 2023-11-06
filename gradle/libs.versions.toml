@@ -7,7 +7,7 @@ jackson = "2.15.2"
 guava = "32.1.2-jre"
 
 stitch = "0.6.2"
-tiny-remapper = "0.8.9"
+tiny-remapper = "0.8.11"
 access-widener = "2.1.0"
 mapping-io = "0.4.2"
 lorenz-tiny = "4.0.2"

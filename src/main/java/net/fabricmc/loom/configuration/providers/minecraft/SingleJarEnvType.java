@@ -28,16 +28,22 @@ import java.nio.file.Path;
 import java.util.function.Function;
 
 public enum SingleJarEnvType {
-	CLIENT(MinecraftJar.ClientOnly::new),
-	SERVER(MinecraftJar.ServerOnly::new);
+	CLIENT(MinecraftJar.Client::new, MinecraftJar.Client.NAME),
+	SERVER(MinecraftJar.Server::new, MinecraftJar.Server.NAME);
 
 	private final Function<Path, MinecraftJar> jarFunction;
+	private final String name;
 
-	SingleJarEnvType(Function<Path, MinecraftJar> jarFunction) {
+	SingleJarEnvType(Function<Path, MinecraftJar> jarFunction, String name) {
 		this.jarFunction = jarFunction;
+		this.name = name;
 	}
 
 	public Function<Path, MinecraftJar> getJar() {
 		return jarFunction;
+	}
+
+	public String getName() {
+		return name;
 	}
 }

@@ -78,7 +78,7 @@ public record FileMappingsLayer(
 		);
 		MappingNsRenamer renamer = new MappingNsRenamer(nsSwitch, fallbackNamespaceReplacements);
 
-		MappingReader.read(path, enigma ? MappingFormat.ENIGMA_FILE : null, renamer);
+		MappingReader.read(path, enigma ? MappingFormat.ENIGMA_DIR : null, renamer);
 	}
 
 	@Override

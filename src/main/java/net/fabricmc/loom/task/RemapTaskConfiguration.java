@@ -92,7 +92,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		// Configure the default jar task
 		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
 			task.getArchiveClassifier().convention("dev");
-			task.getDestinationDirectory().set(new File(getProject().getBuildDir(), "devlibs"));
+			task.getDestinationDirectory().set(new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "devlibs"));
 		});
 
 		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTask));
@@ -139,7 +139,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			}
 
 			sourcesJarTask.getArchiveClassifier().convention("dev-sources");
-			sourcesJarTask.getDestinationDirectory().set(new File(getProject().getBuildDir(), "devlibs"));
+			sourcesJarTask.getDestinationDirectory().set(new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "devlibs"));
 			task.getArchiveClassifier().convention("sources");
 
 			task.dependsOn(sourcesJarTask);

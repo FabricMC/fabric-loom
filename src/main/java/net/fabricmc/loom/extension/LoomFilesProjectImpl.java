@@ -53,6 +53,6 @@ public final class LoomFilesProjectImpl extends LoomFilesBaseImpl {
 
 	@Override
 	protected File getBuildDir() {
-		return project.getBuildDir();
+		return project.getLayout().getBuildDirectory().getAsFile().get();
 	}
 }

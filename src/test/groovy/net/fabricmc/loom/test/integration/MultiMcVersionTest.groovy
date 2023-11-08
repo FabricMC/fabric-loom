@@ -33,16 +33,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MultiMcVersionTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "build (gradle #version)"() {
-		setup:
-		def gradle = gradleProject(project: "multi-mc-versions", version: version)
-
-		when:
-		def result = gradle.run(tasks: "build")
-
-		then:
-		def versions = [
+	static def versions = [
 			'fabric-1.14.4',
 			'fabric-1.15',
 			'fabric-1.15.2',
@@ -54,8 +45,22 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 			'fabric-1.18.2',
 			'fabric-1.19',
 			'fabric-1.19.3'
-		]
+	]
 
+	@Unroll
+	def "build (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "multi-mc-versions", version: version)
+
+		versions.forEach {
+			// Make dir as its now required by Gradle
+			new File(gradle.projectDir, it).mkdir()
+		}
+
+		when:
+		def result = gradle.run(tasks: "build")
+
+		then:
 		result.task(":build").outcome == SUCCESS
 		versions.forEach {
 			result.task(":$it:build").outcome == SUCCESS

@@ -31,6 +31,8 @@ import spock.lang.Specification
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata
 import net.fabricmc.loom.configuration.mods.ArtifactRef
 
+import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RefmapRemapType.MIXIN
+import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RefmapRemapType.STATIC
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RemapRequirements.*
 import static net.fabricmc.loom.test.util.ZipTestUtils.*
 
@@ -99,6 +101,22 @@ class ArtifactMetadataTest extends Specification {
 		isLoader   | entries
 		true       | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
 		false      | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
+	}
+
+	def "Refmap remap type" () {
+		given:
+		def zip = createZip(entries)
+		when:
+		def metadata = createMetadata(zip)
+		def result = metadata.refmapRemapType()
+		then:
+		result == type
+		where:
+		type | entries
+		MIXIN       | ["hello.json": "{}"] 												// None Mod jar
+		MIXIN       | ["fabric.mod.json": "{}"] 										// Fabric mod without manfiest file
+		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")] 	// Fabric mod without remap type entry
+		STATIC  	| ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod opt-in
 	}
 
 	private static ArtifactMetadata createMetadata(Path zip) {

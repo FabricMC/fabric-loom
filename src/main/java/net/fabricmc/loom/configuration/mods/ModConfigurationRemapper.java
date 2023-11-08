@@ -158,7 +158,7 @@ public class ModConfigurationRemapper {
 					continue;
 				}
 
-				final ModDependency modDependency = ModDependencyFactory.create(artifact, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
+				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
 				scheduleSourcesRemapping(project, sourceRemapper, modDependency);
 				modDependencies.add(modDependency);
 			}

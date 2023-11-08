@@ -149,9 +149,14 @@ public class ModProcessor {
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
-		final Set<InputTag> hasMixinsWithoutRefmaps = new HashSet<>();
-		// Configure the mixin extension to remap mixins from mod jars detected not to contain refmaps.
-		builder.extension(new MixinExtension(hasMixinsWithoutRefmaps::contains));
+		final Set<InputTag> remapMixins = new HashSet<>();
+		final boolean requiresStaticMixinRemap = remapList.stream()
+				.anyMatch(modDependency -> modDependency.getMetadata().refmapRemapType() == ArtifactMetadata.RefmapRemapType.STATIC);
+
+		if (requiresStaticMixinRemap) {
+			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
+			builder.extension(new MixinExtension(remapMixins::contains));
+		}
 
 		final TinyRemapper remapper = builder.build();
 
@@ -182,8 +187,14 @@ public class ModProcessor {
 
 			// Note: this is done at a jar level, not at the level of an individual mixin config.
 			// If a mod has multiple mixin configs, it's assumed that either all or none of them have refmaps.
-			if (MixinDetector.hasMixinsWithoutRefmap(info.getInputFile())) {
-				hasMixinsWithoutRefmaps.add(tag);
+			if (info.getMetadata().refmapRemapType() == ArtifactMetadata.RefmapRemapType.STATIC) {
+				if (!requiresStaticMixinRemap) {
+					// Should be impossible but stranger things have happened.
+					throw new IllegalStateException("Was not configured for static remap, but a mod required it?!");
+				}
+
+				project.getLogger().info("Remapping mixins in {} statically", info.getInputFile());
+				remapMixins.add(tag);
 			}
 
 			remapper.readInputsAsync(tag, info.getInputFile());

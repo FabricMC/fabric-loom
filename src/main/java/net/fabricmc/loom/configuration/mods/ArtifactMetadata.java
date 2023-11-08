@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -41,15 +42,17 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
-public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData) {
+public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, RefmapRemapType refmapRemapType) {
 	private static final String INSTALLER_PATH = "fabric-installer.json";
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	private static final String MANIFEST_REMAP_KEY = "Fabric-Loom-Remap";
+	public static final String MANIFEST_MIXIN_REMAP_TYPE = "Fabric-Loom-Mixin-Remap-Type";
 
 	public static ArtifactMetadata create(ArtifactRef artifact) throws IOException {
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
+		RefmapRemapType refmapRemapType = RefmapRemapType.MIXIN;
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
 			isFabricMod = FabricModJsonFactory.containsMod(fs);
@@ -58,11 +61,20 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			if (Files.exists(manifestPath)) {
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
 				final Attributes mainAttributes = manifest.getMainAttributes();
-				final String value = mainAttributes.getValue(MANIFEST_REMAP_KEY);
+				final String remapKey = mainAttributes.getValue(MANIFEST_REMAP_KEY);
+				final String mixinRemapType = mainAttributes.getValue(MANIFEST_MIXIN_REMAP_TYPE);
 
-				if (value != null) {
+				if (remapKey != null) {
 					// Support opting into and out of remapping with "Fabric-Loom-Remap" manifest entry
-					remapRequirements = Boolean.parseBoolean(value) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+					remapRequirements = Boolean.parseBoolean(remapKey) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+				}
+
+				if (mixinRemapType != null) {
+					try {
+						refmapRemapType = RefmapRemapType.valueOf(mixinRemapType.toUpperCase(Locale.ROOT));
+					} catch (IllegalArgumentException e) {
+						throw new IllegalStateException("Unknown mixin remap type: " + mixinRemapType);
+					}
 				}
 			}
 
@@ -74,7 +86,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			}
 		}
 
-		return new ArtifactMetadata(isFabricMod, remapRequirements, installerData);
+		return new ArtifactMetadata(isFabricMod, remapRequirements, installerData, refmapRemapType);
 	}
 
 	public boolean shouldRemap() {
@@ -98,6 +110,17 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 
 		private Predicate<ArtifactMetadata> getShouldRemap() {
 			return shouldRemap;
+		}
+	}
+
+	public enum RefmapRemapType {
+		// Jar uses refmaps, so will be remapped by mixin
+		MIXIN,
+		// Jar does not use refmaps, so will be remapped by tiny-remapper
+		STATIC;
+
+		public String manifestValue() {
+			return name().toLowerCase(Locale.ROOT);
 		}
 	}
 }

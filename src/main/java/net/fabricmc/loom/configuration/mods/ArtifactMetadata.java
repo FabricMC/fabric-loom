@@ -39,14 +39,12 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.InstallerData;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, MixinRemapType mixinRemapType) {
 	private static final String INSTALLER_PATH = "fabric-installer.json";
-	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
-	private static final String MANIFEST_REMAP_KEY = "Fabric-Loom-Remap";
-	public static final String MANIFEST_MIXIN_REMAP_TYPE = "Fabric-Loom-Mixin-Remap-Type";
 
 	public static ArtifactMetadata create(ArtifactRef artifact) throws IOException {
 		boolean isFabricMod;
@@ -56,13 +54,13 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
 			isFabricMod = FabricModJsonFactory.containsMod(fs);
-			final Path manifestPath = fs.getPath(MANIFEST_PATH);
+			final Path manifestPath = fs.getPath(Constants.Manifest.PATH);
 
 			if (Files.exists(manifestPath)) {
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
 				final Attributes mainAttributes = manifest.getMainAttributes();
-				final String remapValue = mainAttributes.getValue(MANIFEST_REMAP_KEY);
-				final String mixinRemapType = mainAttributes.getValue(MANIFEST_MIXIN_REMAP_TYPE);
+				final String remapValue = mainAttributes.getValue(Constants.Manifest.REMAP_KEY);
+				final String mixinRemapType = mainAttributes.getValue(Constants.Manifest.MIXIN_REMAP_TYPE);
 
 				if (remapValue != null) {
 					// Support opting into and out of remapping with "Fabric-Loom-Remap" manifest entry

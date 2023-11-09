@@ -51,7 +51,6 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -254,10 +253,10 @@ public class ModProcessor {
 	}
 
 	private void remapJarManifestEntries(Path jar) throws IOException {
-		ZipUtils.transform(jar, Map.of(RemapJarTask.MANIFEST_PATH, bytes -> {
+		ZipUtils.transform(jar, Map.of(Constants.Manifest.PATH, bytes -> {
 			var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
-			manifest.getMainAttributes().putValue(RemapJarTask.MANIFEST_NAMESPACE_KEY, toM);
+			manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, toM);
 
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			manifest.write(out);

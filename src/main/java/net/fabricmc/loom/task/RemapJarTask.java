@@ -152,7 +152,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			// This is used by the mod dependency remapper to determine if it should remap the refmap
 			// or if the refmap should be remapped by mixin at runtime.
 			final var refmapRemapType = mixinAp ? ArtifactMetadata.MixinRemapType.MIXIN : ArtifactMetadata.MixinRemapType.STATIC;
-			params.getManifestAttributes().put(ArtifactMetadata.MANIFEST_MIXIN_REMAP_TYPE, refmapRemapType.manifestValue());
+			params.getManifestAttributes().put(Constants.Manifest.MIXIN_REMAP_TYPE, refmapRemapType.manifestValue());
 		});
 	}
 

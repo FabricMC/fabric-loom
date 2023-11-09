@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
@@ -66,19 +65,12 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class AbstractRemapJarTask extends Jar {
-	public static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
-	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
-	public static final String MANIFEST_SPLIT_ENV_KEY = "Fabric-Loom-Split-Environment";
-	public static final String MANIFEST_CLIENT_ENTRIES_KEY = "Fabric-Loom-Client-Only-Entries";
-	public static final String MANIFEST_JAR_TYPE_KEY = "Fabric-Jar-Type";
-	public static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(MANIFEST_SPLIT_ENV_KEY);
-	public static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(MANIFEST_CLIENT_ENTRIES_KEY);
-
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
 
@@ -157,7 +149,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 			}
 
 			if (getJarType().isPresent()) {
-				params.getManifestAttributes().put(MANIFEST_JAR_TYPE_KEY, getJarType().get());
+				params.getManifestAttributes().put(Constants.Manifest.JAR_TYPE, getJarType().get());
 			}
 
 			action.execute(params);
@@ -185,8 +177,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	protected void applyClientOnlyManifestAttributes(AbstractRemapParams params, List<String> entries) {
 		params.getManifestAttributes().set(Map.of(
-				MANIFEST_SPLIT_ENV_KEY, "true",
-				MANIFEST_CLIENT_ENTRIES_KEY, String.join(";", entries)
+				Constants.Manifest.SPLIT_ENV, "true",
+				Constants.Manifest.CLIENT_ENTRIES, String.join(";", entries)
 		));
 	}
 
@@ -201,11 +193,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 		}
 
 		protected void modifyJarManifest() throws IOException {
-			int count = ZipUtils.transform(outputFile, Map.of(MANIFEST_PATH, bytes -> {
+			int count = ZipUtils.transform(outputFile, Map.of(Constants.Manifest.PATH, bytes -> {
 				var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
 				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
-				manifest.getMainAttributes().putValue(MANIFEST_NAMESPACE_KEY, getParameters().getTargetNamespace().get());
+				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				manifest.write(out);

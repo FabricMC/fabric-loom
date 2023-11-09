@@ -43,7 +43,6 @@ import org.intellij.lang.annotations.MagicConstant;
 public class ZipReprocessorUtil {
 	private ZipReprocessorUtil() { }
 
-	private static final String MANIFEST_LOCATION = "META-INF/MANIFEST.MF";
 	private static final String META_INF = "META-INF/";
 
 	// See https://docs.oracle.com/en/java/javase/20/docs/specs/jar/jar.html#signed-jar-file
@@ -68,9 +67,9 @@ public class ZipReprocessorUtil {
 	private static int specialOrdering(String name1, String name2) {
 		if (name1.equals(name2)) {
 			return 0;
-		} else if (name1.equals(MANIFEST_LOCATION)) {
+		} else if (name1.equals(Constants.Manifest.PATH)) {
 			return -1;
-		} else if (name2.equals(MANIFEST_LOCATION)) {
+		} else if (name2.equals(Constants.Manifest.PATH)) {
 			return 1;
 		}
 

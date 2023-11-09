@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
 
-import net.fabricmc.loom.configuration.mods.JarSplitter;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public class MinecraftJarSplitter implements AutoCloseable {
@@ -132,11 +132,11 @@ public class MinecraftJarSplitter implements AutoCloseable {
 	private void writeManifest(FileSystemUtil.Delegate outputFs, String env) throws IOException {
 		final Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-		manifest.getMainAttributes().putValue(JarSplitter.MANIFEST_SPLIT_ENV_NAME_KEY, env);
+		manifest.getMainAttributes().putValue(Constants.Manifest.SPLIT_ENV_NAME, env);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		manifest.write(out);
 		Files.createDirectories(outputFs.get().getPath("META-INF"));
-		Files.write(outputFs.get().getPath("META-INF/MANIFEST.MF"), out.toByteArray());
+		Files.write(outputFs.get().getPath(Constants.Manifest.PATH), out.toByteArray());
 	}
 
 	@Override

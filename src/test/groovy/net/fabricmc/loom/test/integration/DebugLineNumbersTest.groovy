@@ -40,6 +40,7 @@ import io.reactivex.Observable
 import io.reactivex.functions.Function
 import spock.lang.Specification
 import spock.lang.Timeout
+
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils

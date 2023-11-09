@@ -41,6 +41,7 @@ import io.reactivex.functions.Function
 import spock.lang.Specification
 import spock.lang.Timeout
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
@@ -138,7 +139,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
-		File sourcesJar = gradle.getGeneratedSources(mappings, "serveronly")
+		File sourcesJar = gradle.getGeneratedSources(mappings, MinecraftJar.Server.NAME)
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 

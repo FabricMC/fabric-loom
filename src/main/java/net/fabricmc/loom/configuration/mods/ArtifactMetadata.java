@@ -42,7 +42,7 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
-public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, RefmapRemapType refmapRemapType) {
+public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, MixinRemapType mixinRemapType) {
 	private static final String INSTALLER_PATH = "fabric-installer.json";
 	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
 	private static final String MANIFEST_REMAP_KEY = "Fabric-Loom-Remap";
@@ -52,7 +52,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
-		RefmapRemapType refmapRemapType = RefmapRemapType.MIXIN;
+		MixinRemapType refmapRemapType = MixinRemapType.MIXIN;
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
 			isFabricMod = FabricModJsonFactory.containsMod(fs);
@@ -61,17 +61,17 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			if (Files.exists(manifestPath)) {
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
 				final Attributes mainAttributes = manifest.getMainAttributes();
-				final String remapKey = mainAttributes.getValue(MANIFEST_REMAP_KEY);
+				final String remapValue = mainAttributes.getValue(MANIFEST_REMAP_KEY);
 				final String mixinRemapType = mainAttributes.getValue(MANIFEST_MIXIN_REMAP_TYPE);
 
-				if (remapKey != null) {
+				if (remapValue != null) {
 					// Support opting into and out of remapping with "Fabric-Loom-Remap" manifest entry
-					remapRequirements = Boolean.parseBoolean(remapKey) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+					remapRequirements = Boolean.parseBoolean(remapValue) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
 				}
 
 				if (mixinRemapType != null) {
 					try {
-						refmapRemapType = RefmapRemapType.valueOf(mixinRemapType.toUpperCase(Locale.ROOT));
+						refmapRemapType = MixinRemapType.valueOf(mixinRemapType.toUpperCase(Locale.ROOT));
 					} catch (IllegalArgumentException e) {
 						throw new IllegalStateException("Unknown mixin remap type: " + mixinRemapType);
 					}
@@ -113,7 +113,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 		}
 	}
 
-	public enum RefmapRemapType {
+	public enum MixinRemapType {
 		// Jar uses refmaps, so will be remapped by mixin
 		MIXIN,
 		// Jar does not use refmaps, so will be remapped by tiny-remapper

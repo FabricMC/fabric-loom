@@ -31,8 +31,8 @@ import spock.lang.Specification
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata
 import net.fabricmc.loom.configuration.mods.ArtifactRef
 
-import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RefmapRemapType.MIXIN
-import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RefmapRemapType.STATIC
+import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.MixinRemapType.MIXIN
+import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.MixinRemapType.STATIC
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RemapRequirements.*
 import static net.fabricmc.loom.test.util.ZipTestUtils.*
 
@@ -108,7 +108,7 @@ class ArtifactMetadataTest extends Specification {
 		def zip = createZip(entries)
 		when:
 		def metadata = createMetadata(zip)
-		def result = metadata.refmapRemapType()
+		def result = metadata.mixinRemapType()
 		then:
 		result == type
 		where:

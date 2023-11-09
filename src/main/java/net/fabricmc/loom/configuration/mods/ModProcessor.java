@@ -151,7 +151,7 @@ public class ModProcessor {
 
 		final Set<InputTag> remapMixins = new HashSet<>();
 		final boolean requiresStaticMixinRemap = remapList.stream()
-				.anyMatch(modDependency -> modDependency.getMetadata().refmapRemapType() == ArtifactMetadata.RefmapRemapType.STATIC);
+				.anyMatch(modDependency -> modDependency.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC);
 
 		if (requiresStaticMixinRemap) {
 			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
@@ -187,7 +187,7 @@ public class ModProcessor {
 
 			// Note: this is done at a jar level, not at the level of an individual mixin config.
 			// If a mod has multiple mixin configs, it's assumed that either all or none of them have refmaps.
-			if (info.getMetadata().refmapRemapType() == ArtifactMetadata.RefmapRemapType.STATIC) {
+			if (info.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC) {
 				if (!requiresStaticMixinRemap) {
 					// Should be impossible but stranger things have happened.
 					throw new IllegalStateException("Was not configured for static remap, but a mod required it?!");

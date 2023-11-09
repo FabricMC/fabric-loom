@@ -134,21 +134,31 @@ public abstract class LoomTasks implements Runnable {
 		});
 	}
 
+	private static String getRunConfigTaskName(RunConfigSettings config) {
+		String configName = config.getName();
+		return "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
+	}
+
 	private void registerRunTasks() {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
 
 		extension.getRunConfigs().whenObjectAdded(config -> {
-			String configName = config.getName();
-			String taskName = "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
-
-			getTasks().register(taskName, RunGameTask.class, config).configure(t -> {
+			getTasks().register(getRunConfigTaskName(config), RunGameTask.class, config).configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
 				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
 		});
+
+		extension.getRunConfigs().whenObjectRemoved(runConfigSettings -> {
+			getTasks().named(getRunConfigTaskName(runConfigSettings), task -> {
+				// Disable the task so it can't be run
+				task.setEnabled(false);
+			});
+		});
+
 		extension.getRunConfigs().create("client", RunConfigSettings::client);
 		extension.getRunConfigs().create("server", RunConfigSettings::server);
 

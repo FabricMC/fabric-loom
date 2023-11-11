@@ -80,8 +80,12 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class RemapJarTask extends AbstractRemapJarTask {
+	@Deprecated
 	@InputFiles
 	public abstract ConfigurableFileCollection getNestedJars();
+
+	@Internal
+	public abstract ListProperty<Configuration> getNestedConfigurations();
 
 	@Input
 	public abstract Property<Boolean> getAddNestedDependencies();
@@ -106,7 +110,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
-		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
+		getNestedConfigurations().add(includeConfiguration);
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 
@@ -119,6 +123,18 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		setPreserveFileTimestamps(false);
 
 		getJarType().set("classes");
+	}
+
+	@InputFiles
+	public FileCollection getNestedDependenciesResolved() { // for task up-to-date checking
+		final ConfigurableFileCollection files = getProject().files();
+
+		if (getAddNestedDependencies().get()) {
+			getNestedConfigurations().get().forEach(files::from);
+			files.from(getNestedJars());
+		}
+
+		return files;
 	}
 
 	private void setupPreparationTask() {
@@ -141,6 +157,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public void run() {
 		submitWork(RemapAction.class, params -> {
 			if (getAddNestedDependencies().get()) {
+				getNestedConfigurations().get().forEach(configuration -> {
+					params.getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(configuration));
+				});
 				params.getNestedJars().from(getNestedJars());
 			}
 

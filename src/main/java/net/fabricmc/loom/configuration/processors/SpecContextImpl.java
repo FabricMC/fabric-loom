@@ -29,8 +29,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -57,11 +59,12 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
  */
 public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods, List<FabricModJson> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
-		return new SpecContextImpl(getDependentMods(project), FabricModJsonHelpers.getModsInProject(project), getCompileRuntimeMods(project));
+		final Map<String, List<FabricModJson>> fmjCache = new HashMap<>();
+		return new SpecContextImpl(getDependentMods(project, fmjCache), FabricModJsonHelpers.getModsInProject(project), getCompileRuntimeMods(project, fmjCache));
 	}
 
 	// Reruns a list of mods found on both the compile and/or runtime classpaths
-	private static List<FabricModJson> getDependentMods(Project project) {
+	private static List<FabricModJson> getDependentMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		var mods = new ArrayList<FabricModJson>();
 
@@ -69,10 +72,14 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
-				final FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(artifact.toPath());
+				final List<FabricModJson> fabricModJson = fmjCache.computeIfAbsent(artifact.toPath().toAbsolutePath().toString(), $ -> {
+					return FabricModJsonFactory.createFromZipOptional(artifact.toPath())
+							.map(List::of)
+							.orElseGet(List::of);
+				});
 
-				if (fabricModJson != null) {
-					mods.add(fabricModJson);
+				if (!fabricModJson.isEmpty()) {
+					mods.add(fabricModJson.get(0));
 				}
 			}
 		}
@@ -80,7 +87,9 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 		if (!GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
 			// Add all the dependent projects
 			for (Project dependentProject : getDependentProjects(project).toList()) {
-				mods.addAll(FabricModJsonHelpers.getModsInProject(dependentProject));
+				mods.addAll(fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
+					return FabricModJsonHelpers.getModsInProject(dependentProject);
+				}));
 			}
 		}
 
@@ -96,18 +105,20 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<FabricModJson> getCompileRuntimeMods(Project project) {
-		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project).toList());
+	private static List<FabricModJson> getCompileRuntimeMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
+		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project, fmjCache).toList());
 
 		for (Project dependentProject : getCompileRuntimeProjectDependencies(project).toList()) {
-			mods.addAll(FabricModJsonHelpers.getModsInProject(dependentProject));
+			mods.addAll(fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
+				return FabricModJsonHelpers.getModsInProject(dependentProject);
+			}));
 		}
 
 		return Collections.unmodifiableList(mods);
 	}
 
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
-	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project) {
+	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project, Map<String, List<FabricModJson>> fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
@@ -118,9 +129,15 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
 				.flatMap(resolveArtifacts(project, false))
 				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
-				.map(FabricModJsonFactory::createFromZipOptional)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
+				.map(zipPath -> {
+					final List<FabricModJson> list = fmjCache.computeIfAbsent(zipPath.toAbsolutePath().toString(), $ -> {
+						return FabricModJsonFactory.createFromZipOptional(zipPath)
+								.map(List::of)
+								.orElseGet(List::of);
+					});
+					return list.isEmpty() ? null : list.get(0);
+				})
+				.filter(Objects::nonNull)
 				.sorted(Comparator.comparing(FabricModJson::getId));
 	}
 

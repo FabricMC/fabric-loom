@@ -137,6 +137,7 @@ public class ModConfigurationRemapper {
 		// the installer data. The installer data has to be added before
 		// any mods are remapped since remapping needs the dependencies provided by that data.
 		final Map<Configuration, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
+		final Map<ArtifactRef, ArtifactMetadata> metaCache = new HashMap<>();
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
 			/*
 			sourceConfig - The source configuration where the intermediary named artifacts come from. i.e "modApi"
@@ -148,11 +149,13 @@ public class ModConfigurationRemapper {
 			for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
 				final ArtifactMetadata artifactMetadata;
 
-				try {
-					artifactMetadata = ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION);
-				} catch (IOException e) {
-					throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + artifact.path(), e);
-				}
+				artifactMetadata = metaCache.computeIfAbsent(artifact, a -> {
+					try {
+						return ArtifactMetadata.create(a, LoomGradlePlugin.LOOM_VERSION);
+					} catch (IOException e) {
+						throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + a.path(), e);
+					}
+				});
 
 				if (artifactMetadata.installerData() != null) {
 					if (extension.getInstallerData() != null) {

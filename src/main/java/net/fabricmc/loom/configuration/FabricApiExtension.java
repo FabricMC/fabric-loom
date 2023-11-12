@@ -159,6 +159,8 @@ public abstract class FabricApiExtension {
 				// Create a classpath group for this mod. Assume that the main sourceset is already in a group.
 				mod.sourceSet(DATAGEN_SOURCESET_NAME);
 			});
+
+			extension.createRemapConfigurations(sourceSets.getByName(DATAGEN_SOURCESET_NAME));
 		}
 
 		if (settings.getCreateRunConfiguration().get()) {

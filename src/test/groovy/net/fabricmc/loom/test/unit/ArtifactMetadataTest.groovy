@@ -34,7 +34,8 @@ import net.fabricmc.loom.configuration.mods.ArtifactRef
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.MixinRemapType.MIXIN
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.MixinRemapType.STATIC
 import static net.fabricmc.loom.configuration.mods.ArtifactMetadata.RemapRequirements.*
-import static net.fabricmc.loom.test.util.ZipTestUtils.*
+import static net.fabricmc.loom.test.util.ZipTestUtils.createZip
+import static net.fabricmc.loom.test.util.ZipTestUtils.manifest
 
 class ArtifactMetadataTest extends Specification {
 	def "is fabric mod"() {
@@ -119,8 +120,50 @@ class ArtifactMetadataTest extends Specification {
 		STATIC  	| ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod opt-in
 	}
 
-	private static ArtifactMetadata createMetadata(Path zip) {
-		return ArtifactMetadata.create(createArtifact(zip))
+	// Test that a mod with the same or older version of loom can be read
+	def "Valid loom version"() {
+		given:
+		def zip = createMod(modLoomVersion)
+		when:
+		def metadata = createMetadata(zip, loomVersion)
+		then:
+		metadata != null
+		where:
+		loomVersion | modLoomVersion
+		"1.4"       | "1.0.1"
+		"1.4"       | "1.0.99"
+		"1.4"       | "1.4"
+		"1.4"       | "1.4.0"
+		"1.4"       | "1.4.1"
+		"1.4"       | "1.4.99"
+		"1.4"       | "1.4.local"
+		"1.5"		| "1.4.99"
+		"2.0"		| "1.4.99"
+	}
+
+	// Test that a mod with the same or older version of loom can be read
+	def "Invalid loom version"() {
+		given:
+		def zip = createMod(modLoomVersion)
+		when:
+		def metadata = createMetadata(zip, loomVersion)
+		then:
+		def e = thrown(IllegalStateException)
+		e.message == "Mod was built with a newer version of Loom ($modLoomVersion), you are using Loom ($loomVersion)"
+		where:
+		loomVersion | modLoomVersion
+		"1.4"       | "1.5"
+		"1.4"       | "1.5.00"
+		"1.4"       | "2.0"
+		"1.4"       | "2.4"
+	}
+
+	private static Path createMod(String loomVersion) {
+		return createZip(["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Version", loomVersion)])
+	}
+
+	private static ArtifactMetadata createMetadata(Path zip, String loomVersion = "1.4") {
+		return ArtifactMetadata.create(createArtifact(zip), loomVersion)
 	}
 
 	private static ArtifactRef createArtifact(Path zip) {

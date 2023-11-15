@@ -46,7 +46,7 @@ import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, MixinRemapType mixinRemapType) {
 	private static final String INSTALLER_PATH = "fabric-installer.json";
 
-	public static ArtifactMetadata create(ArtifactRef artifact) throws IOException {
+	public static ArtifactMetadata create(ArtifactRef artifact, String currentLoomVersion) throws IOException {
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
@@ -60,11 +60,16 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 				final var manifest = new Manifest(new ByteArrayInputStream(Files.readAllBytes(manifestPath)));
 				final Attributes mainAttributes = manifest.getMainAttributes();
 				final String remapValue = mainAttributes.getValue(Constants.Manifest.REMAP_KEY);
+				final String loomVersion = mainAttributes.getValue(Constants.Manifest.LOOM_VERSION);
 				final String mixinRemapType = mainAttributes.getValue(Constants.Manifest.MIXIN_REMAP_TYPE);
 
 				if (remapValue != null) {
 					// Support opting into and out of remapping with "Fabric-Loom-Remap" manifest entry
 					remapRequirements = Boolean.parseBoolean(remapValue) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
+				}
+
+				if (loomVersion != null) {
+					validateLoomVersion(loomVersion, currentLoomVersion);
 				}
 
 				if (mixinRemapType != null) {
@@ -85,6 +90,25 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 		}
 
 		return new ArtifactMetadata(isFabricMod, remapRequirements, installerData, refmapRemapType);
+	}
+
+	// Validates that the version matches or is less than the current loom version
+	private static void validateLoomVersion(String version, String currentLoomVersion) {
+		final String[] versionParts = version.split("\\.");
+		final String[] currentVersionParts = currentLoomVersion.split("\\.");
+
+		// Check major and minor version
+		for (int i = 0; i < 2; i++) {
+			final int versionPart = Integer.parseInt(versionParts[i]);
+			final int currentVersionPart = Integer.parseInt(currentVersionParts[i]);
+
+			if (versionPart > currentVersionPart) {
+				throw new IllegalStateException("Mod was built with a newer version of Loom (%s), you are using Loom (%s)".formatted(version, currentLoomVersion));
+			} else if (versionPart < currentVersionPart) {
+				// Older version, no need to check further
+				break;
+			}
+		}
 	}
 
 	public boolean shouldRemap() {

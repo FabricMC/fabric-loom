@@ -68,16 +68,16 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 					remapRequirements = Boolean.parseBoolean(remapValue) ? RemapRequirements.OPT_IN : RemapRequirements.OPT_OUT;
 				}
 
-				if (loomVersion != null) {
-					validateLoomVersion(loomVersion, currentLoomVersion);
-				}
-
 				if (mixinRemapType != null) {
 					try {
 						refmapRemapType = MixinRemapType.valueOf(mixinRemapType.toUpperCase(Locale.ROOT));
 					} catch (IllegalArgumentException e) {
 						throw new IllegalStateException("Unknown mixin remap type: " + mixinRemapType);
 					}
+				}
+
+				if (loomVersion != null && refmapRemapType != MixinRemapType.STATIC) {
+					validateLoomVersion(loomVersion, currentLoomVersion);
 				}
 			}
 
@@ -93,7 +93,13 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 	}
 
 	// Validates that the version matches or is less than the current loom version
+	// This is only done for jars with tiny-remapper remapped mixins.
 	private static void validateLoomVersion(String version, String currentLoomVersion) {
+		if ("0.0.0+unknown".equals(currentLoomVersion)) {
+			// Unknown version, skip validation. This is the case when running from source (tests)
+			return;
+		}
+
 		final String[] versionParts = version.split("\\.");
 		final String[] currentVersionParts = currentLoomVersion.split("\\.");
 

@@ -50,6 +50,8 @@ import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.api.remapping.RemapperExtension;
+import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -91,6 +93,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final NamedDomainObjectContainer<ModSettings> mods;
 	private final NamedDomainObjectList<RemapConfigurationSettings> remapConfigurations;
 	private final ListProperty<MinecraftJarProcessor<?>> minecraftJarProcessors;
+	protected final ListProperty<RemapperExtensionHolder> remapperExtensions;
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
@@ -149,6 +152,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
+
+		remapperExtensions = project.getObjects().listProperty(RemapperExtensionHolder.class);
+		remapperExtensions.finalizeValueOnRead();
 
 		// Enable dep iface injection by default
 		interfaceInjection(interfaceInjection -> {
@@ -380,6 +386,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public void createRemapConfigurations(SourceSet sourceSet) {
 		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
+	}
+
+	@Override
+	public <T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
+		T parameters = getProject().getObjects().newInstance(parametersClass);
+		parameterAction.execute(parameters);
+
+		RemapperExtensionHolder holder = getProject().getObjects().newInstance(RemapperExtensionHolder.class, parameters);
+		holder.getRemapperExtensionClassName().set(remapperExtensionClass.getName());
+		remapperExtensions.add(holder);
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

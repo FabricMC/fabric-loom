@@ -51,6 +51,7 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
@@ -152,6 +153,10 @@ public class ModProcessor {
 		final Set<InputTag> hasMixinsWithoutRefmaps = new HashSet<>();
 		// Configure the mixin extension to remap mixins from mod jars detected not to contain refmaps.
 		builder.extension(new MixinExtension(hasMixinsWithoutRefmaps::contains));
+
+		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
+			holder.apply(builder);
+		}
 
 		final TinyRemapper remapper = builder.build();
 

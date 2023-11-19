@@ -44,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
+import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -90,7 +91,7 @@ public class TinyRemapperService implements SharedService {
 				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), extension.getMappingConfiguration().mappingsIdentifier, from, to));
 			}
 
-			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get());
+			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get(), extension.getRemapperExtensions().get());
 		});
 
 		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).filter(Files::exists).toList());
@@ -129,7 +130,7 @@ public class TinyRemapperService implements SharedService {
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
 
-	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, @Nullable KotlinClasspath kotlinClasspath, Set<String> knownIndyBsms) {
+	public TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, @Nullable KotlinClasspath kotlinClasspath, Set<String> knownIndyBsms, List<RemapperExtensionHolder> remapperExtensions) {
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper().withKnownIndyBsm(knownIndyBsms);
 
 		for (IMappingProvider provider : mappings) {
@@ -143,6 +144,10 @@ public class TinyRemapperService implements SharedService {
 		if (kotlinClasspath != null) {
 			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspath);
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
+		}
+
+		for (RemapperExtensionHolder holder : remapperExtensions) {
+			holder.apply(builder);
 		}
 
 		tinyRemapper = builder.build();

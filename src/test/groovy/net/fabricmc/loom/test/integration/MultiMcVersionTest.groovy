@@ -33,7 +33,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MultiMcVersionTest extends Specification implements GradleProjectTestTrait {
-	static def versions = [
+	static List<String> versions = [
 		'fabric-1.14.4',
 		'fabric-1.15',
 		'fabric-1.15.2',

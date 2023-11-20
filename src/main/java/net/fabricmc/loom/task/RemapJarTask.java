@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -52,6 +53,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,15 +138,18 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getNestedJars().from(getNestedJars());
 			}
 
-			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
-			params.getRemapClasspath().from(getClasspath());
-			params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
+			if (!params.namespacesMatch()) {
+				params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
+				params.getRemapClasspath().from(getClasspath());
 
-			final boolean mixinAp = getUseMixinAP().get();
-			params.getUseMixinExtension().set(!mixinAp);
+				params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
 
-			if (mixinAp) {
-				setupLegacyMixinRefmapRemapping(params);
+				final boolean mixinAp = getUseMixinAP().get();
+				params.getUseMixinExtension().set(!mixinAp);
+
+				if (mixinAp) {
+					setupLegacyMixinRefmapRemapping(params);
+				}
 			}
 		});
 	}
@@ -197,11 +202,13 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapAction.class);
 
-		private final TinyRemapperService tinyRemapperService;
-		private TinyRemapper tinyRemapper;
+		private final @Nullable TinyRemapperService tinyRemapperService;
+		private @Nullable TinyRemapper tinyRemapper;
 
 		public RemapAction() {
-			this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
+			this.tinyRemapperService = getParameters().getTinyRemapperBuildServiceUuid().isPresent()
+					? UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class)
+					: null;
 		}
 
 		@Override
@@ -209,13 +216,17 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			try {
 				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
 
-				if (!getParameters().getMultiProjectOptimisation().get()) {
+				if (!getParameters().getMultiProjectOptimisation().getOrElse(false)) {
 					prepare();
 				}
 
-				tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
+				if (tinyRemapperService != null) {
+					tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
 
-				remap();
+					remap();
+				} else {
+					Files.copy(inputFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
+				}
 
 				if (getParameters().getClientOnlyEntries().isPresent()) {
 					markClientOnlyClasses();
@@ -227,7 +238,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				modifyJarManifest();
 				rewriteJar();
 
-				if (!getParameters().getMultiProjectOptimisation().get()) {
+				if (tinyRemapperService != null && !getParameters().getMultiProjectOptimisation().get()) {
 					tinyRemapperService.close();
 				}
 
@@ -245,10 +256,16 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		private void prepare() {
 			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
-			PrepareJarRemapTask.prepare(tinyRemapperService, inputFile);
+
+			if (tinyRemapperService != null) {
+				PrepareJarRemapTask.prepare(tinyRemapperService, inputFile);
+			}
 		}
 
 		private void remap() throws IOException {
+			Objects.requireNonNull(tinyRemapperService, "tinyRemapperService");
+			Objects.requireNonNull(tinyRemapper, "tinyRemapper");
+
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
 				tinyRemapper.apply(outputConsumer, tinyRemapperService.getOrCreateTag(inputFile));
@@ -265,6 +282,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void remapAccessWidener() throws IOException {
+			if (getParameters().namespacesMatch()) {
+				return;
+			}
+
 			final AccessWidenerFile accessWidenerFile = AccessWidenerFile.fromModJar(inputFile);
 
 			if (accessWidenerFile == null) {
@@ -278,6 +299,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private byte[] remapAccessWidener(byte[] input) {
+			Objects.requireNonNull(tinyRemapper, "tinyRemapper");
+
 			int version = AccessWidenerReader.readVersion(input);
 
 			AccessWidenerWriter writer = new AccessWidenerWriter(version);
@@ -305,7 +328,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		}
 
 		private void addRefmaps() throws IOException {
-			if (getParameters().getUseMixinExtension().get()) {
+			if (getParameters().getUseMixinExtension().getOrElse(false)) {
 				return;
 			}
 

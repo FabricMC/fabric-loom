@@ -24,12 +24,15 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
@@ -37,6 +40,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.slf4j.Logger;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -54,13 +58,11 @@ public class LoomDependencyManager {
 		project.getLogger().info(":setting up loom dependencies");
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		if (extension.getInstallerData() == null) {
-			//If we've not found the installer JSON we've probably skipped remapping Fabric loader, let's go looking
-			project.getLogger().info("Searching through modCompileClasspath for installer JSON");
-			final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
+		final Configuration configuration = project.getConfigurations().getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH);
 
-			for (Dependency dependency : configuration.getAllDependencies()) {
-				for (File input : configuration.files(dependency)) {
+		for (Dependency dependency : configuration.getAllDependencies()) {
+			for (File input : configuration.files(dependency)) {
+				if (extension.getInstallerData() == null) {
 					JsonObject jsonObject = readInstallerJson(input);
 
 					if (jsonObject != null) {
@@ -74,6 +76,8 @@ public class LoomDependencyManager {
 						handleInstallerJson(jsonObject, project);
 					}
 				}
+
+				checkJar(input, project.getLogger());
 			}
 		}
 
@@ -141,5 +145,28 @@ public class LoomDependencyManager {
 				}
 			}
 		});
+	}
+
+	// Read the jar files manifest and see if it contains the Fabric-Loom-Mixin-Remap-Type entry
+	private static void checkJar(File file, Logger logger) {
+		try {
+			byte[] bytes = ZipUtils.unpackNullable(file.toPath(), "META-INF/MANIFEST.MF");
+
+			if (bytes == null) {
+				return;
+			}
+
+			final var manifest = new Manifest(new ByteArrayInputStream(bytes));
+			final Attributes mainAttributes = manifest.getMainAttributes();
+
+			// Check to see if the jar was built with a newer version of loom.
+			// This version of loom does not support the remap type value so throw an exception.
+			if (mainAttributes.getValue("Fabric-Loom-Mixin-Remap-Type") != null) {
+				logger.error("The jar {} was built with a newer version of loom and is not compatible with this version of loom.", file.getName());
+				throw new IllegalStateException("This version of loom does not support the mixin remap type value. Please update to the latest version of loom.");
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to read jar file", e);
+		}
 	}
 }

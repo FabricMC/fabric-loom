@@ -196,7 +196,6 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(remappedJars.outputJarPath()).build()) {
 			outputConsumer.addNonClassFiles(remappedJars.inputJar());
-			remapper.readClassPath(TinyRemapperHelper.getMinecraftCompileLibraries(getProject()));
 
 			for (Path path : remappedJars.remapClasspath()) {
 				remapper.readClassPath(path);

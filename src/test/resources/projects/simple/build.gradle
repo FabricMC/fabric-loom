@@ -86,3 +86,18 @@ publishing {
 		// retrieving dependencies.
 	}
 }
+
+// test same-namespace remapJar tasks
+def noRemap = tasks.register('sameNamespaceRemapJar', net.fabricmc.loom.task.RemapJarTask) {
+	sourceNamespace = net.fabricmc.loom.api.mappings.layered.MappingsNamespace.INTERMEDIARY.toString()
+	inputFile = jar.archiveFile
+	archiveClassifier = "no-remap"
+}
+def noRemapSource = tasks.register('sameNamespaceRemapSourcesJar', net.fabricmc.loom.task.RemapSourcesJarTask) {
+	sourceNamespace = net.fabricmc.loom.api.mappings.layered.MappingsNamespace.INTERMEDIARY.toString()
+	inputFile = sourcesJar.archiveFile
+	archiveClassifier = "no-remap-sources"
+}
+tasks.assemble {
+	dependsOn(noRemap, noRemapSource)
+}

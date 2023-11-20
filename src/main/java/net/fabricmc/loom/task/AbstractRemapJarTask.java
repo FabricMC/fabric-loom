@@ -173,6 +173,18 @@ public abstract class AbstractRemapJarTask extends Jar {
 		Property<String> getSourceNamespace();
 		Property<String> getTargetNamespace();
 
+		/**
+		 * Checks whether {@link #getSourceNamespace()} and {@link #getTargetNamespace()}
+		 * have the same value. When this is {@code true}, the user does not intend for any
+		 * remapping to occur. They are using the task for its other features, such as adding
+		 * namespace to the manifest, nesting jars, reproducible builds, etc.
+		 *
+		 * @return whether the source and target namespaces match
+		 */
+		default boolean namespacesMatch() {
+			return this.getSourceNamespace().get().equals(this.getTargetNamespace().get());
+		}
+
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
 		Property<ZipEntryCompression> getEntryCompression();

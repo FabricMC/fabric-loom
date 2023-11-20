@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -35,6 +36,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +59,9 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@TaskAction
 	public void run() {
 		submitWork(RemapSourcesAction.class, params -> {
-			params.getSourcesRemapperServiceUuid().set(UnsafeWorkQueueHelper.create(SourceRemapperService.create(serviceManagerProvider.get().get(), this)));
+			if (!params.namespacesMatch()) {
+				params.getSourcesRemapperServiceUuid().set(UnsafeWorkQueueHelper.create(SourceRemapperService.create(serviceManagerProvider.get().get(), this)));
+			}
 		});
 	}
 
@@ -75,18 +79,24 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
 		private static final Logger LOGGER = LoggerFactory.getLogger(RemapSourcesAction.class);
 
-		private final SourceRemapperService sourceRemapperService;
+		private final @Nullable SourceRemapperService sourceRemapperService;
 
 		public RemapSourcesAction() {
 			super();
 
-			sourceRemapperService = UnsafeWorkQueueHelper.get(getParameters().getSourcesRemapperServiceUuid(), SourceRemapperService.class);
+			sourceRemapperService = getParameters().getSourcesRemapperServiceUuid().isPresent()
+					? UnsafeWorkQueueHelper.get(getParameters().getSourcesRemapperServiceUuid(), SourceRemapperService.class)
+					: null;
 		}
 
 		@Override
 		public void execute() {
 			try {
-				sourceRemapperService.remapSourcesJar(inputFile, outputFile);
+				if (sourceRemapperService != null) {
+					sourceRemapperService.remapSourcesJar(inputFile, outputFile);
+				} else {
+					Files.copy(inputFile, outputFile, StandardCopyOption.REPLACE_EXISTING);
+				}
 
 				modifyJarManifest();
 				rewriteJar();

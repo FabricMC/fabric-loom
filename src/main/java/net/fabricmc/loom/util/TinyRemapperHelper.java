@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -93,11 +92,6 @@ public final class TinyRemapperHelper {
 
 		builderConsumer.accept(builder);
 		return builder.build();
-	}
-
-	public static Path[] getMinecraftCompileLibraries(Project project) {
-		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
-				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 
 	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {

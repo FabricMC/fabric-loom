@@ -43,11 +43,12 @@ import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.task.AbstractRemapJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public class JarSplitter {
-	public static final String MANIFEST_SPLIT_ENV_NAME_KEY = "Fabric-Loom-Split-Environment-Name";
+	private static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(Constants.Manifest.SPLIT_ENV);
+	private static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(Constants.Manifest.CLIENT_ENTRIES);
 
 	final Path inputJar;
 
@@ -58,9 +59,9 @@ public class JarSplitter {
 	@Nullable
 	public Target analyseTarget() {
 		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
-			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
+			final Manifest manifest = input.fromInputStream(Manifest::new, Constants.Manifest.PATH);
 
-			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY))) {
+			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(Constants.Manifest.SPLIT_ENV))) {
 				// Jar was not built with splitting enabled.
 				return null;
 			}
@@ -122,9 +123,9 @@ public class JarSplitter {
 		Files.deleteIfExists(clientOutputJar);
 
 		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
-			final Manifest manifest = input.fromInputStream(Manifest::new, AbstractRemapJarTask.MANIFEST_PATH);
+			final Manifest manifest = input.fromInputStream(Manifest::new, Constants.Manifest.PATH);
 
-			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_KEY))) {
+			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(Constants.Manifest.SPLIT_ENV))) {
 				throw new UnsupportedOperationException("Cannot split jar that has not been built with a split env");
 			}
 
@@ -157,7 +158,7 @@ public class JarSplitter {
 
 					final String entryPath = relativePath.toString();
 
-					if (entryPath.equals(AbstractRemapJarTask.MANIFEST_PATH)) {
+					if (entryPath.equals(Constants.Manifest.PATH)) {
 						continue;
 					}
 
@@ -183,11 +184,11 @@ public class JarSplitter {
 				stripSignatureData(outManifest);
 
 				attributes.remove(Attributes.Name.SIGNATURE_VERSION);
-				Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_SPLIT_ENV_NAME));
-				Objects.requireNonNull(attributes.remove(AbstractRemapJarTask.MANIFEST_CLIENT_ENTRIES_NAME));
+				Objects.requireNonNull(attributes.remove(MANIFEST_SPLIT_ENV_NAME));
+				Objects.requireNonNull(attributes.remove(MANIFEST_CLIENT_ENTRIES_NAME));
 
-				writeBytes(writeWithEnvironment(outManifest, "common"), commonOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
-				writeBytes(writeWithEnvironment(outManifest, "client"), clientOutput.getPath(AbstractRemapJarTask.MANIFEST_PATH));
+				writeBytes(writeWithEnvironment(outManifest, "common"), commonOutput.getPath(Constants.Manifest.PATH));
+				writeBytes(writeWithEnvironment(outManifest, "client"), clientOutput.getPath(Constants.Manifest.PATH));
 			}
 		}
 
@@ -197,7 +198,7 @@ public class JarSplitter {
 	private byte[] writeWithEnvironment(Manifest in, String value) throws IOException {
 		final Manifest manifest = new Manifest(in);
 		final Attributes attributes = manifest.getMainAttributes();
-		attributes.putValue(MANIFEST_SPLIT_ENV_NAME_KEY, value);
+		attributes.putValue(Constants.Manifest.SPLIT_ENV_NAME, value);
 
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		manifest.write(out);
@@ -206,7 +207,7 @@ public class JarSplitter {
 
 	private List<String> readClientEntries(Manifest manifest) {
 		final Attributes attributes = manifest.getMainAttributes();
-		final String clientEntriesValue = attributes.getValue(AbstractRemapJarTask.MANIFEST_CLIENT_ENTRIES_KEY);
+		final String clientEntriesValue = attributes.getValue(Constants.Manifest.CLIENT_ENTRIES);
 
 		if (clientEntriesValue == null || clientEntriesValue.isBlank()) {
 			return Collections.emptyList();

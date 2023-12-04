@@ -30,6 +30,7 @@ import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.commons.Remapper;
@@ -42,6 +43,7 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrClass;
 
 public abstract class RemapperExtensionHolder {
+	// Null when RemapperParameters.None.class
 	private final RemapperParameters remapperParameters;
 
 	@Inject
@@ -53,6 +55,7 @@ public abstract class RemapperExtensionHolder {
 	public abstract Property<String> getRemapperExtensionClassName();
 
 	@Nested
+	@Optional
 	public RemapperParameters getRemapperParameters() {
 		return remapperParameters;
 	}
@@ -81,7 +84,12 @@ public abstract class RemapperExtensionHolder {
 		try {
 			Class<? extends RemapperExtension> remapperExtensionClass = Class.forName(getRemapperExtensionClassName().get())
 					.asSubclass(RemapperExtension.class);
-			return objectFactory.newInstance(remapperExtensionClass, getRemapperParameters());
+
+			if (remapperParameters == RemapperParameters.None.INSTANCE) {
+				return objectFactory.newInstance(remapperExtensionClass);
+			}
+
+			return objectFactory.newInstance(remapperExtensionClass, remapperParameters);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to create remapper extension", e);
 		}

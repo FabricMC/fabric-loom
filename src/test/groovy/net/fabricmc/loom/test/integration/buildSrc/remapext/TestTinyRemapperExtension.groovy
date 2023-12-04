@@ -22,21 +22,34 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.remapping;
+package net.fabricmc.loom.test.integration.buildSrc.remapext
 
-import org.jetbrains.annotations.ApiStatus;
+import org.objectweb.asm.ClassVisitor
 
-/**
- * Marker interface for parameter objects to {@link RemapperExtension}s.
- *
- * <p>Design based off of Gradle's {@link org.gradle.workers.WorkParameters}.
- */
-public interface RemapperParameters {
-	final class None implements RemapperParameters {
-		@ApiStatus.Internal
-		public static None INSTANCE = new None();
+import net.fabricmc.loom.api.remapping.RemapperContext
+import net.fabricmc.loom.api.remapping.RemapperExtension
+import net.fabricmc.loom.api.remapping.RemapperParameters
+import net.fabricmc.loom.api.remapping.TinyRemapperExtension
+import net.fabricmc.tinyremapper.TinyRemapper
 
-		private None() {
-		}
+class TestTinyRemapperExtension implements RemapperExtension<RemapperParameters.None>, TinyRemapperExtension {
+	@Override
+	ClassVisitor insertVisitor(String className, RemapperContext remapperContext, ClassVisitor classVisitor) {
+		return classVisitor
+	}
+
+	@Override
+	TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
+		return null
+	}
+
+	@Override
+	TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
+		return null
+	}
+
+	@Override
+	TinyRemapper.ApplyVisitorProvider getPostApplyVisitor() {
+		return null
 	}
 }

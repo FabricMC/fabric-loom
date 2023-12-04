@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
@@ -390,10 +391,17 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public <T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
-		T parameters = getProject().getObjects().newInstance(parametersClass);
-		parameterAction.execute(parameters);
+		final ObjectFactory objectFactory = getProject().getObjects();
+		final RemapperExtensionHolder holder;
 
-		RemapperExtensionHolder holder = getProject().getObjects().newInstance(RemapperExtensionHolder.class, parameters);
+		if (parametersClass != RemapperParameters.None.class) {
+			T parameters = objectFactory.newInstance(parametersClass);
+			parameterAction.execute(parameters);
+			holder = objectFactory.newInstance(RemapperExtensionHolder.class, parameters);
+		} else {
+			holder = objectFactory.newInstance(RemapperExtensionHolder.class, RemapperParameters.None.INSTANCE);
+		}
+
 		holder.getRemapperExtensionClassName().set(remapperExtensionClass.getName());
 		remapperExtensions.add(holder);
 	}

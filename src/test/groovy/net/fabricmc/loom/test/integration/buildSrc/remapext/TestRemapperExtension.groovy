@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.integration.buildSrc.remapext
 
+import javax.inject.Inject
+
 import org.gradle.api.provider.MapProperty
 import org.objectweb.asm.ClassVisitor
 
@@ -33,9 +35,16 @@ import net.fabricmc.loom.api.remapping.RemapperParameters
 import net.fabricmc.loom.util.Constants
 
 abstract class TestRemapperExtension implements RemapperExtension<Params> {
+	final Params parameters
+
+	@Inject
+	TestRemapperExtension(Params parameters) {
+		this.parameters = parameters
+	}
+
 	@Override
 	ClassVisitor insertVisitor(String className, RemapperContext remapperContext, ClassVisitor classVisitor) {
-		def replacements = getParameters().replacements.get()
+		def replacements = parameters.replacements.get()
 		return new StringReplacementClassVisitor(Constants.ASM_VERSION, classVisitor, replacements)
 	}
 

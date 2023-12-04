@@ -28,6 +28,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 import net.fabricmc.loom.LoomGradleExtension
+import net.fabricmc.loom.api.remapping.RemapperParameters
 
 class TestPlugin implements Plugin<Project> {
 	@Override
@@ -35,6 +36,8 @@ class TestPlugin implements Plugin<Project> {
 		def extension = LoomGradleExtension.get(project)
 		extension.addRemapperExtension(TestRemapperExtension.class, TestRemapperExtension.Params.class) { TestRemapperExtension.Params p ->
 			p.replacements.put("Hello World!", "Hello Loom!")
+		}
+		extension.addRemapperExtension(TestTinyRemapperExtension.class, RemapperParameters.None.class) { RemapperParameters.None p ->
 		}
 	}
 }

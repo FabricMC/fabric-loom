@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.ModSettings;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.configuration.mods.JarSplitter;
 
@@ -47,8 +48,8 @@ public final class SplitModDependency extends ModDependency {
 	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, String mappingsSuffix, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
-		super(artifact, mappingsSuffix, project);
+	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, String mappingsSuffix, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
+		super(artifact, metadata, mappingsSuffix, project);
 		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig);
 		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
 		this.target = Objects.requireNonNull(target);

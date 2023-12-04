@@ -150,9 +150,14 @@ public class ModProcessor {
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
-		final Set<InputTag> hasMixinsWithoutRefmaps = new HashSet<>();
-		// Configure the mixin extension to remap mixins from mod jars detected not to contain refmaps.
-		builder.extension(new MixinExtension(hasMixinsWithoutRefmaps::contains));
+		final Set<InputTag> remapMixins = new HashSet<>();
+		final boolean requiresStaticMixinRemap = remapList.stream()
+				.anyMatch(modDependency -> modDependency.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC);
+
+		if (requiresStaticMixinRemap) {
+			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
+			builder.extension(new MixinExtension(remapMixins::contains));
+		}
 
 		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
 			holder.apply(builder);
@@ -187,8 +192,14 @@ public class ModProcessor {
 
 			// Note: this is done at a jar level, not at the level of an individual mixin config.
 			// If a mod has multiple mixin configs, it's assumed that either all or none of them have refmaps.
-			if (MixinDetector.hasMixinsWithoutRefmap(info.getInputFile())) {
-				hasMixinsWithoutRefmaps.add(tag);
+			if (info.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC) {
+				if (!requiresStaticMixinRemap) {
+					// Should be impossible but stranger things have happened.
+					throw new IllegalStateException("Was not configured for static remap, but a mod required it?!");
+				}
+
+				project.getLogger().info("Remapping mixins in {} statically", info.getInputFile());
+				remapMixins.add(tag);
 			}
 
 			remapper.readInputsAsync(tag, info.getInputFile());
@@ -248,10 +259,10 @@ public class ModProcessor {
 	}
 
 	private void remapJarManifestEntries(Path jar) throws IOException {
-		ZipUtils.transform(jar, Map.of(RemapJarTask.MANIFEST_PATH, bytes -> {
+		ZipUtils.transform(jar, Map.of(Constants.Manifest.PATH, bytes -> {
 			var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
-			manifest.getMainAttributes().putValue(RemapJarTask.MANIFEST_NAMESPACE_KEY, toM);
+			manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, toM);
 
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			manifest.write(out);

@@ -56,6 +56,7 @@ import org.gradle.language.base.artifact.SourcesArtifact;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
@@ -63,6 +64,7 @@ import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -137,9 +139,9 @@ public class ModConfigurationRemapper {
 				final ArtifactMetadata artifactMetadata;
 
 				try {
-					artifactMetadata = ArtifactMetadata.create(artifact);
+					artifactMetadata = ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION);
 				} catch (IOException e) {
-					throw new UncheckedIOException("Failed to read metadata from" + artifact.path(), e);
+					throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + artifact.path(), e);
 				}
 
 				if (artifactMetadata.installerData() != null) {
@@ -158,7 +160,7 @@ public class ModConfigurationRemapper {
 					continue;
 				}
 
-				final ModDependency modDependency = ModDependencyFactory.create(artifact, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
+				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
 				scheduleSourcesRemapping(project, sourceRemapper, modDependency);
 				modDependencies.add(modDependency);
 			}
@@ -257,6 +259,10 @@ public class ModConfigurationRemapper {
 
 	@Nullable
 	public static Path findSources(Project project, ResolvedArtifact artifact) {
+		if (isCIBuild()) {
+			return null;
+		}
+
 		final DependencyHandler dependencies = project.getDependencies();
 
 		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()

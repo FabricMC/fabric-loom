@@ -259,6 +259,10 @@ public class ModConfigurationRemapper {
 
 	@Nullable
 	public static Path findSources(Project project, ResolvedArtifact artifact) {
+		if (isCIBuild()) {
+			return null;
+		}
+
 		final DependencyHandler dependencies = project.getDependencies();
 
 		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()

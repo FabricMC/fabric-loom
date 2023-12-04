@@ -38,18 +38,7 @@ class TestTinyRemapperExtension implements RemapperExtension<RemapperParameters.
 		return classVisitor
 	}
 
-	@Override
-	TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
-		return null
-	}
-
-	@Override
-	TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
-		return null
-	}
-
-	@Override
-	TinyRemapper.ApplyVisitorProvider getPostApplyVisitor() {
-		return null
-	}
+	TinyRemapper.AnalyzeVisitorProvider analyzeVisitorProvider = null
+	TinyRemapper.ApplyVisitorProvider preApplyVisitor = null
+	TinyRemapper.ApplyVisitorProvider PostApplyVisitor = null
 }

@@ -24,5 +24,14 @@
 
 package net.fabricmc.loom.api.remapping;
 
+/**
+ * Marker interface for parameter objects to {@link RemapperExtension}s.
+ *
+ * <p>Design based off of Gradle's {@link org.gradle.workers.WorkParameters}.
+ */
 public interface RemapperParameters {
+	final class None implements RemapperParameters {
+		private None() {
+		}
+	}
 }

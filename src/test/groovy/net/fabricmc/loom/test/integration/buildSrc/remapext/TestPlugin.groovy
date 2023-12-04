@@ -22,26 +22,19 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.remapping;
+package net.fabricmc.loom.test.integration.buildSrc.remapext
 
-import org.objectweb.asm.commons.Remapper;
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
-/**
- * Context for a {@link RemapperExtension}.
- */
-public interface RemapperContext {
-	/**
-	 * @return The {@link Remapper} instance
-	 */
-	Remapper remapper();
+import net.fabricmc.loom.LoomGradleExtension
 
-	/**
-	 * @return the source namespace
-	 */
-	String sourceNamespace();
-
-	/**
-	 * @return the target namespace
-	 */
-	String targetNamespace();
+class TestPlugin implements Plugin<Project> {
+	@Override
+	void apply(Project project) {
+		def extension = LoomGradleExtension.get(project)
+		extension.addRemapperExtension(TestRemapperExtension.class, TestRemapperExtension.Params.class) { TestRemapperExtension.Params p ->
+			p.replacements.put("Hello World!", "Hello Loom!")
+		}
+	}
 }

@@ -24,37 +24,45 @@
 
 package net.fabricmc.loom.api.remapping;
 
-import javax.inject.Inject;
-
 import org.jetbrains.annotations.ApiStatus;
-import org.objectweb.asm.ClassVisitor;
+import org.jetbrains.annotations.Nullable;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
- * A remapper extension can be used to add extra processing to the remapping process.
+ * A remapper extension, that has direct access to the TinyRemapper APIs.
  *
- * <p>Implementations of RemapperExtension's are subject to the following constraints:
- * <ul>
- *     <li>Do not implement {@link #getParameters()} in your class, the method will be implemented by Gradle.</li>
- *     <li>Constructors must be annotated with {@link Inject}.</li>
- * </ul>
- *
- * @param <T> Parameter type for the extension. Should be {@link RemapperParameters.None} if the action does not have parameters.
+ * <p>This API is not stable and may change without notice.
  */
-public interface RemapperExtension<T extends RemapperParameters> {
+@ApiStatus.Experimental
+public interface TinyRemapperExtension {
 	/**
-	 * @return The parameters for this extension.
+	 * See: {@link TinyRemapper.Builder#extraAnalyzeVisitor(TinyRemapper.AnalyzeVisitorProvider)}.
+	 *
+	 * @return A {@link TinyRemapper.AnalyzeVisitorProvider} or {@code null}.
 	 */
-	@ApiStatus.NonExtendable
-	@Inject
-	T getParameters();
+	@Nullable
+	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
+		return null;
+	}
 
 	/**
-	 * Return a {@link ClassVisitor} that will be used when remapping the given class.
+	 * See: {@link TinyRemapper.Builder#extraPreApplyVisitor(TinyRemapper.ApplyVisitorProvider)}.
 	 *
-	 * @param className The name of the class being remapped
-	 * @param remapperContext The remapper context
-	 * @param classVisitor The parent class visitor
-	 * @return A {@link ClassVisitor} that will be used when remapping the given class, or the given {@code classVisitor} if no extra processing is required for this class.
+	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
 	 */
-	ClassVisitor insertVisitor(String className, RemapperContext remapperContext, ClassVisitor classVisitor);
+	@Nullable
+	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
+		return null;
+	}
+
+	/**
+	 * See: {@link TinyRemapper.Builder#extraPostApplyVisitor(TinyRemapper.ApplyVisitorProvider)}.
+	 *
+	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
+	 */
+	@Nullable
+	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor() {
+		return null;
+	}
 }

@@ -159,7 +159,7 @@ public class ModProcessor {
 		}
 
 		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
-			holder.apply(builder);
+			holder.apply(builder, fromM, toM, project.getObjects());
 		}
 
 		final TinyRemapper remapper = builder.build();

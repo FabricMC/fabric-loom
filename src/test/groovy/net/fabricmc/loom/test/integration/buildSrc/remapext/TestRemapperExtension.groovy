@@ -22,26 +22,24 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.remapping;
+package net.fabricmc.loom.test.integration.buildSrc.remapext
 
-import org.objectweb.asm.commons.Remapper;
+import org.gradle.api.provider.MapProperty
+import org.objectweb.asm.ClassVisitor
 
-/**
- * Context for a {@link RemapperExtension}.
- */
-public interface RemapperContext {
-	/**
-	 * @return The {@link Remapper} instance
-	 */
-	Remapper remapper();
+import net.fabricmc.loom.api.remapping.RemapperContext
+import net.fabricmc.loom.api.remapping.RemapperExtension
+import net.fabricmc.loom.api.remapping.RemapperParameters
+import net.fabricmc.loom.util.Constants
 
-	/**
-	 * @return the source namespace
-	 */
-	String sourceNamespace();
+abstract class TestRemapperExtension implements RemapperExtension<Params> {
+	@Override
+	ClassVisitor insertVisitor(String className, RemapperContext remapperContext, ClassVisitor classVisitor) {
+		def replacements = getParameters().replacements.get()
+		return new StringReplacementClassVisitor(Constants.ASM_VERSION, classVisitor, replacements)
+	}
 
-	/**
-	 * @return the target namespace
-	 */
-	String targetNamespace();
+	interface Params extends RemapperParameters {
+		MapProperty<String, String> getReplacements()
+	}
 }

@@ -22,26 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.api.remapping;
+package net.fabricmc.loom.test.integration.buildSrc.remapext
 
-import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.MethodVisitor
 
-/**
- * Context for a {@link RemapperExtension}.
- */
-public interface RemapperContext {
-	/**
-	 * @return The {@link Remapper} instance
-	 */
-	Remapper remapper();
+class StringReplacementClassVisitor extends ClassVisitor {
+	final Map<String, String> replacements
 
-	/**
-	 * @return the source namespace
-	 */
-	String sourceNamespace();
+	StringReplacementClassVisitor(int api, ClassVisitor classVisitor, Map<String, String> replacements) {
+		super(api, classVisitor)
+		this.replacements = replacements
+	}
 
-	/**
-	 * @return the target namespace
-	 */
-	String targetNamespace();
+	@Override
+	MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+		def methodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+		return new StringReplacementMethodVisitor(api, methodVisitor)
+	}
+
+	class StringReplacementMethodVisitor extends MethodVisitor {
+		StringReplacementMethodVisitor(int api, MethodVisitor methodVisitor) {
+			super(api, methodVisitor)
+		}
+
+		@Override
+		void visitLdcInsn(Object value) {
+			if (value instanceof String) {
+				String replacement = replacements.get(value)
+				if (replacement != null) {
+					value = replacement
+				}
+			}
+
+			super.visitLdcInsn(value)
+		}
+	}
 }

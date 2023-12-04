@@ -42,6 +42,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 	def "build and run (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "simple", version: version)
+		gradle.buildSrc("remapext") // apply the remap extension plugin
 
 		def server = ServerRunner.create(gradle.projectDir, "1.16.5")
 				.withMod(gradle.getOutputFile("fabric-example-mod-1.0.0.jar"))
@@ -60,6 +61,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 
 		serverResult.successful()
 		serverResult.output.contains("Hello simple Fabric mod") // A check to ensure our mod init was actually called
+		serverResult.output.contains("Hello Loom!") // Check that the remapper extension worked
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}

@@ -52,7 +52,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
-import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;

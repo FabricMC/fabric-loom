@@ -66,16 +66,20 @@ public abstract class RemapperExtensionHolder {
 		tinyRemapperBuilder.extraPostApplyVisitor(new RemapperExtensionImpl(remapperExtension, sourceNamespace, targetNamespace));
 
 		if (remapperExtension instanceof TinyRemapperExtension tinyRemapperExtension) {
-			if (tinyRemapperExtension.getAnalyzeVisitorProvider() != null) {
-				tinyRemapperBuilder.extraAnalyzeVisitor(tinyRemapperExtension.getAnalyzeVisitorProvider());
+			final TinyRemapper.AnalyzeVisitorProvider analyzeVisitorProvider = tinyRemapperExtension.getAnalyzeVisitorProvider();
+			final TinyRemapper.ApplyVisitorProvider preApplyVisitorProvider = tinyRemapperExtension.getPreApplyVisitor();
+			final TinyRemapper.ApplyVisitorProvider postApplyVisitorProvider = tinyRemapperExtension.getPostApplyVisitor();
+
+			if (analyzeVisitorProvider != null) {
+				tinyRemapperBuilder.extraAnalyzeVisitor(analyzeVisitorProvider);
 			}
 
-			if (tinyRemapperExtension.getPreApplyVisitor() != null) {
-				tinyRemapperBuilder.extraPreApplyVisitor(tinyRemapperExtension.getPreApplyVisitor());
+			if (preApplyVisitorProvider != null) {
+				tinyRemapperBuilder.extraPreApplyVisitor(preApplyVisitorProvider);
 			}
 
-			if (tinyRemapperExtension.getPostApplyVisitor() != null) {
-				tinyRemapperBuilder.extraPostApplyVisitor(tinyRemapperExtension.getPostApplyVisitor());
+			if (postApplyVisitorProvider != null) {
+				tinyRemapperBuilder.extraPostApplyVisitor(postApplyVisitorProvider);
 			}
 		}
 	}

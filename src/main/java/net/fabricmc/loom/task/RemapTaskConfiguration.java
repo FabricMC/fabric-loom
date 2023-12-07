@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-
 import javax.inject.Inject;
 
 import org.gradle.api.Project;

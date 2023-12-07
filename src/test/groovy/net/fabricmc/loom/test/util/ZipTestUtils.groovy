@@ -50,9 +50,15 @@ class ZipTestUtils {
 	}
 
 	static String manifest(String key, String value) {
+		return manifest(Map.of(key, value))
+	}
+
+	static String manifest(Map<String, String> entries) {
 		def manifest = new Manifest()
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
-		manifest.getMainAttributes().putValue(key, value)
+		entries.forEach { key, value ->
+			manifest.getMainAttributes().putValue(key, value)
+		}
 
 		def out = new ByteArrayOutputStream()
 		manifest.write(out)

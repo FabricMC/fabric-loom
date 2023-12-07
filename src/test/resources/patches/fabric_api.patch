@@ -1,10 +1,26 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision 14d319c0729baf781e171e3c9f845fda55670f1b)
-+++ b/build.gradle	(date 1688330748664)
-@@ -37,17 +37,7 @@
- 		throw new NullPointerException("Could not find version for " + project.name)
- 	}
- 
+--- a/build.gradle	(revision 23e8616e7457d7d4a65119b93952d134607ffc5c)
++++ b/build.gradle	(date 1699535194191)
+@@ -13,7 +13,7 @@
+
+ def ENV = System.getenv()
+
+-version = project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()
++version = "999.0.0"
+ logger.lifecycle("Building Fabric: " + version)
+
+
+@@ -22,24 +22,7 @@
+ import org.apache.commons.codec.digest.DigestUtils
+
+ def getSubprojectVersion(project) {
+-	// Get the version from the gradle.properties file
+-	def version = project.properties["${project.name}-version"]
+-
+-	if (!version) {
+-		throw new NullPointerException("Could not find version for " + project.name)
+-	}
+-
 -	if (grgit == null) {
 -		return version + "+nogit"
 -	}
@@ -16,7 +32,7 @@ diff --git a/build.gradle b/build.gradle
 -	}
 -
 -	return version + "+" + latestCommits.get(0).id.substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
-+	return version
++	return "999.0.0"
  }
  
  def getBranch() {

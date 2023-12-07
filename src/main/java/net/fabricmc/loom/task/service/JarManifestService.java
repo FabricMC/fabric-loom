@@ -25,7 +25,6 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Serializable;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.Attributes;
@@ -78,7 +77,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		Attributes attributes = manifest.getMainAttributes();
 
 		extraValues.entrySet().stream()
-				.sorted(Comparator.comparing(Map.Entry::getKey))
+				.sorted(Map.Entry.comparingByKey())
 				.forEach(entry -> {
 					attributes.putValue(entry.getKey(), entry.getValue());
 				});
@@ -90,17 +89,17 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 
 		Params p = getParameters();
 
-		attributes.putValue("Fabric-Gradle-Version", p.getGradleVersion().get());
-		attributes.putValue("Fabric-Loom-Version", p.getLoomVersion().get());
-		attributes.putValue("Fabric-Mixin-Compile-Extensions-Version", p.getMCEVersion().get());
-		attributes.putValue("Fabric-Minecraft-Version", p.getMinecraftVersion().get());
-		attributes.putValue("Fabric-Tiny-Remapper-Version", p.getTinyRemapperVersion().get());
-		attributes.putValue("Fabric-Loader-Version", p.getFabricLoaderVersion().get());
+		attributes.putValue(Constants.Manifest.GRADLE_VERSION, p.getGradleVersion().get());
+		attributes.putValue(Constants.Manifest.LOOM_VERSION, p.getLoomVersion().get());
+		attributes.putValue(Constants.Manifest.MIXIN_COMPILE_EXTENSIONS_VERSION, p.getMCEVersion().get());
+		attributes.putValue(Constants.Manifest.MINECRAFT_VERSION, p.getMinecraftVersion().get());
+		attributes.putValue(Constants.Manifest.TINY_REMAPPER_VERSION, p.getTinyRemapperVersion().get());
+		attributes.putValue(Constants.Manifest.FABRIC_LOADER_VERSION, p.getFabricLoaderVersion().get());
 
 		// This can be overridden by mods if required
-		if (!attributes.containsKey("Fabric-Mixin-Version")) {
-			attributes.putValue("Fabric-Mixin-Version", p.getMixinVersion().get().version());
-			attributes.putValue("Fabric-Mixin-Group", p.getMixinVersion().get().group());
+		if (!attributes.containsKey(Constants.Manifest.MIXIN_VERSION)) {
+			attributes.putValue(Constants.Manifest.MIXIN_VERSION, p.getMixinVersion().get().version());
+			attributes.putValue(Constants.Manifest.MIXIN_GROUP, p.getMixinVersion().get().group());
 		}
 	}
 

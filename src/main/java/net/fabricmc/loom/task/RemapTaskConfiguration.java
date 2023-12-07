@@ -139,7 +139,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			}
 
 			sourcesJarTask.getArchiveClassifier().convention("dev-sources");
-			sourcesJarTask.getDestinationDirectory().set(new File(getProject().getLayout().getBuildDirectory().getAsFile().get(), "devlibs"));
+			sourcesJarTask.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
 			task.getArchiveClassifier().convention("sources");
 
 			task.dependsOn(sourcesJarTask);

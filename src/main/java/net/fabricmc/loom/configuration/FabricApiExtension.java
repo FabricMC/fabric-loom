@@ -28,7 +28,9 @@ import java.io.File;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilder;
@@ -117,7 +119,9 @@ public abstract class FabricApiExtension {
 		if (settings.getAddToResources().get()) {
 			mainSourceSet.resources(files -> {
 				// Add the src/main/generated to the main sourceset's resources.
-				files.getSrcDirs().add(outputDirectory);
+				Set<File> srcDirs = new HashSet<>(files.getSrcDirs());
+				srcDirs.add(outputDirectory);
+				files.setSrcDirs(srcDirs);
 			});
 		}
 

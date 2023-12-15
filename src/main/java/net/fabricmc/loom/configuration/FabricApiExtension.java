@@ -127,7 +127,7 @@ public abstract class FabricApiExtension {
 		// Exclude the cache dir from the output jar to ensure reproducibility.
 		taskContainer.getByName(JavaPlugin.JAR_TASK_NAME, task -> {
 			Jar jar = (Jar) task;
-			jar.exclude(".cache/**");
+			jar.exclude(".cache/**", "**/*.existing.json");
 		});
 
 		taskContainer.getByName(LifecycleBasePlugin.CLEAN_TASK_NAME, task -> {

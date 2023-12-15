@@ -129,6 +129,7 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 
 		return settings -> {
 			final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
+			configuration.setCanBeConsumed(false);
 			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 			return configuration.resolve().stream().map(File::toPath);
 		};

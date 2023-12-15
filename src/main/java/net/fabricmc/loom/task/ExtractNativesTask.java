@@ -40,6 +40,8 @@ public abstract class ExtractNativesTask extends Sync {
 		for (File nativeFile : getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES).getFiles()) {
 			from(getProject().zipTree(nativeFile), copySpec -> {
 				copySpec.exclude("META-INF/**");
+				// Fix pre LWJGL 3 versions on Macos. See: https://github.com/FabricMC/fabric-loom/issues/955
+				copySpec.rename(s -> s.replace(".jnilib", ".dylib"));
 			});
 		}
 

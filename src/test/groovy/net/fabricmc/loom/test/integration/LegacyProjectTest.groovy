@@ -24,9 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
@@ -36,23 +37,23 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	@Unroll
 	def "legacy build (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "legacy", version: version)
+		def gradle = gradleProject(project: "legacy", version: version)
 
 		when:
-			def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build")
 
 		then:
-			result.task(":build").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	@Unroll
 	def "Unsupported minecraft (minecraft #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-			gradle.buildGradle << """
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << """
 				loom {
                     noIntermediateMappings()
                 }
@@ -68,28 +69,28 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			"""
 
 		when:
-			def result = gradle.run(task: "configureClientLaunch")
+		def result = gradle.run(task: "configureClientLaunch")
 
 		then:
-			result.task(":configureClientLaunch").outcome == SUCCESS
+		result.task(":configureClientLaunch").outcome == SUCCESS
 
 		where:
-			version 		| _
-			'1.13.2'		| _
-			'1.12.2'		| _
-			'1.8.9'			| _
-			'1.7.10'		| _
-			'1.7'			| _
-			'1.6.4'			| _
-			'1.4.7'			| _
-			'1.3.2'			| _
+		version 		| _
+		'1.13.2'		| _
+		'1.12.2'		| _
+		'1.8.9'			| _
+		'1.7.10'		| _
+		'1.7'			| _
+		'1.6.4'			| _
+		'1.4.7'			| _
+		'1.3.2'			| _
 	}
 
 	@Unroll
 	def "Ancient minecraft (minecraft #version)"() {
 		setup:
-			def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-			gradle.buildGradle << """
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << """
 				loom {
                     noIntermediateMappings()
 					clientOnlyMinecraftJar()
@@ -106,15 +107,15 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 			"""
 
 		when:
-			def result = gradle.run(task: "configureClientLaunch")
+		def result = gradle.run(task: "configureClientLaunch")
 
 		then:
-			result.task(":configureClientLaunch").outcome == SUCCESS
+		result.task(":configureClientLaunch").outcome == SUCCESS
 
 		where:
-			version 		| _
-			'1.2.5'			| _
-			'b1.8.1'		| _
-			'a1.2.5'		| _
+		version 		| _
+		'1.2.5'			| _
+		'b1.8.1'		| _
+		'a1.2.5'		| _
 	}
 }

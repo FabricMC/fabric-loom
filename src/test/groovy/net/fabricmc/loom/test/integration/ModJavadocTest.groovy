@@ -24,12 +24,13 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.util.ZipUtils
+import java.nio.charset.StandardCharsets
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import java.nio.charset.StandardCharsets
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -38,21 +39,21 @@ class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "mod javadoc (gradle #version)"() {
 		setup:
-			def gradle = gradleProject(project: "modJavadoc", version: version)
-			ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+		def gradle = gradleProject(project: "modJavadoc", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
 
 		when:
-			def result = gradle.run(task: "genSources")
-			def blocks = getClassSource(gradle, "net/minecraft/block/Blocks.java")
+		def result = gradle.run(task: "genSources")
+		def blocks = getClassSource(gradle, "net/minecraft/block/Blocks.java")
 
 		then:
-			result.task(":genSources").outcome == SUCCESS
-			blocks.contains("An example of a mod added class javadoc")
-			blocks.contains("An example of a mod added field javadoc")
-			blocks.contains("An example of a mod added method javadoc")
+		result.task(":genSources").outcome == SUCCESS
+		blocks.contains("An example of a mod added class javadoc")
+		blocks.contains("An example of a mod added field javadoc")
+		blocks.contains("An example of a mod added method javadoc")
 
 		where:
-			version << STANDARD_TEST_VERSIONS
+		version << STANDARD_TEST_VERSIONS
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname) {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -97,7 +97,7 @@ public class MappingConfiguration {
 		final TinyJarInfo jarInfo = TinyJarInfo.get(inputJar);
 		jarInfo.minecraftVersionId().ifPresent(id -> {
 			if (!minecraftProvider.minecraftVersion().equals(id)) {
-				LOGGER.warn("The mappings (%s) were not build for minecraft version (%s) produce with caution.".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()));
+				LOGGER.warn("The mappings (%s) were not built for Minecraft version %s, proceed with caution.".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()));
 			}
 		});
 
@@ -193,7 +193,7 @@ public class MappingConfiguration {
 
 	private static boolean areMappingsV2(Path path) throws IOException {
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
+			return MappingReader.detectFormat(reader) == MappingFormat.TINY_2_FILE;
 		}
 	}
 
@@ -240,7 +240,7 @@ public class MappingConfiguration {
 	}
 
 	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input), JsonObject.class);
+		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input, StandardCharsets.UTF_8), JsonObject.class);
 
 		if (!jsonObject.has("version") || jsonObject.get("version").getAsInt() != 1) {
 			throw new UnsupportedOperationException("Unsupported unpick version");

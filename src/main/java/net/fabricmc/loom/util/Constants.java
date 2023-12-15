@@ -46,15 +46,24 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
 		public static final String MINECRAFT = "minecraft";
+
+		public static final String MINECRAFT_COMPILE_LIBRARIES = "minecraftLibraries";
+		public static final String MINECRAFT_RUNTIME_LIBRARIES = "minecraftRuntimeLibraries";
+
 		/**
-		 * The server specific configuration will be empty when using a legacy (pre 21w38a server jar)
+		 * These configurations contain the minecraft client libraries.
+		 */
+		public static final String MINECRAFT_CLIENT_COMPILE_LIBRARIES = "minecraftClientLibraries";
+		public static final String MINECRAFT_CLIENT_RUNTIME_LIBRARIES = "minecraftClientRuntimeLibraries";
+
+		/**
+		 * The server specific configurations will be empty when using a legacy (pre 21w38a server jar)
 		 * find the client only dependencies on the "minecraftLibraries" config.
 		 */
-		public static final String MINECRAFT_SERVER_DEPENDENCIES = "minecraftServerLibraries";
-		public static final String MINECRAFT_DEPENDENCIES = "minecraftLibraries";
-		public static final String MINECRAFT_RUNTIME_DEPENDENCIES = "minecraftRuntimeOnlyLibraries";
+		public static final String MINECRAFT_SERVER_COMPILE_LIBRARIES = "minecraftServerLibraries";
+		public static final String MINECRAFT_SERVER_RUNTIME_LIBRARIES = "minecraftServerRuntimeLibraries";
 		/**
-		 * Not used on Minecraft 1.19-pre1 or later. Natives are all loaded from the classpath.
+		 * Before Minecraft 1.19-pre1 this contains libraries that need to be extracted otherwise this goes on the runtime classpath.
 		 */
 		public static final String MINECRAFT_NATIVES = "minecraftNatives";
 		public static final String MAPPINGS = "mappings";
@@ -72,34 +81,6 @@ public class Constants {
 		public static final String NAMED_ELEMENTS = "namedElements";
 
 		private Configurations() {
-		}
-	}
-
-	/**
-	 * Constants related to dependencies.
-	 */
-	public static final class Dependencies {
-		public static final String MIXIN_COMPILE_EXTENSIONS = "net.fabricmc:fabric-mixin-compile-extensions:";
-		public static final String DEV_LAUNCH_INJECTOR = "net.fabricmc:dev-launch-injector:";
-		public static final String TERMINAL_CONSOLE_APPENDER = "net.minecrell:terminalconsoleappender:";
-		public static final String JETBRAINS_ANNOTATIONS = "org.jetbrains:annotations:";
-		public static final String NATIVE_SUPPORT = "net.fabricmc:fabric-loom-native-support:";
-
-		private Dependencies() {
-		}
-
-		/**
-		 * Constants for versions of dependencies.
-		 */
-		public static final class Versions {
-			public static final String MIXIN_COMPILE_EXTENSIONS = "0.6.0";
-			public static final String DEV_LAUNCH_INJECTOR = "0.2.1+build.8";
-			public static final String TERMINAL_CONSOLE_APPENDER = "1.2.0";
-			public static final String JETBRAINS_ANNOTATIONS = "24.0.0";
-			public static final String NATIVE_SUPPORT_VERSION = "1.0.1";
-
-			private Versions() {
-			}
 		}
 	}
 
@@ -141,5 +122,26 @@ public class Constants {
 		public static final String DONT_REMAP = "fabric.loom.dontRemap";
 		public static final String DISABLE_REMAPPED_VARIANTS = "fabric.loom.disableRemappedVariants";
 		public static final String DISABLE_PROJECT_DEPENDENT_MODS = "fabric.loom.disableProjectDependentMods";
+		public static final String LIBRARY_PROCESSORS = "fabric.loom.libraryProcessors";
+	}
+
+	public static final class Manifest {
+		public static final String PATH = "META-INF/MANIFEST.MF";
+
+		public static final String REMAP_KEY = "Fabric-Loom-Remap";
+		public static final String MIXIN_REMAP_TYPE = "Fabric-Loom-Mixin-Remap-Type";
+		public static final String MAPPING_NAMESPACE = "Fabric-Mapping-Namespace";
+		public static final String SPLIT_ENV = "Fabric-Loom-Split-Environment";
+		public static final String SPLIT_ENV_NAME = "Fabric-Loom-Split-Environment-Name";
+		public static final String CLIENT_ENTRIES = "Fabric-Loom-Client-Only-Entries";
+		public static final String JAR_TYPE = "Fabric-Jar-Type";
+		public static final String GRADLE_VERSION = "Fabric-Gradle-Version";
+		public static final String LOOM_VERSION = "Fabric-Loom-Version";
+		public static final String MIXIN_COMPILE_EXTENSIONS_VERSION = "Fabric-Mixin-Compile-Extensions-Version";
+		public static final String MINECRAFT_VERSION = "Fabric-Minecraft-Version";
+		public static final String TINY_REMAPPER_VERSION = "Fabric-Tiny-Remapper-Version";
+		public static final String FABRIC_LOADER_VERSION = "Fabric-Loader-Version";
+		public static final String MIXIN_VERSION = "Fabric-Mixin-Version";
+		public static final String MIXIN_GROUP = "Fabric-Mixin-Group";
 	}
 }

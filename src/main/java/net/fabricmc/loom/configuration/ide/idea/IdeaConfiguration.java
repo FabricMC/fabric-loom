@@ -34,6 +34,8 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
+
 import org.gradle.StartParameter;
 import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Project;
@@ -47,22 +49,25 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
 
-public class IdeaConfiguration {
+public abstract class IdeaConfiguration implements Runnable {
 	private static final String INIT_SCRIPT_NAME = "ijmiscinit";
 	private static final Pattern NOTATION_PATTERN = Pattern.compile("'net\\.minecraft:(?<name>.*):(.*):sources'");
 
-	public static void setup(Project project) {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = project.getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			if (LoomGradleExtension.get(project).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
-				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(project));
+	@Inject
+	protected abstract Project getProject();
+
+	public void run() {
+		TaskProvider<IdeaSyncTask> ideaSyncTask = getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
+			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
+				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(getProject()));
 			} else {
 				task.setEnabled(false);
 			}
 		});
 
-		project.getTasks().configureEach(task -> {
+		getProject().getTasks().configureEach(task -> {
 			if (task.getName().equals("DownloadSources")) {
-				hookDownloadSources(project, task);
+				hookDownloadSources(getProject(), task);
 			}
 		});
 
@@ -70,7 +75,7 @@ public class IdeaConfiguration {
 			return;
 		}
 
-		final StartParameter startParameter = project.getGradle().getStartParameter();
+		final StartParameter startParameter = getProject().getGradle().getStartParameter();
 		final List<TaskExecutionRequest> taskRequests = new ArrayList<>(startParameter.getTaskRequests());
 
 		taskRequests.add(new DefaultTaskExecutionRequest(List.of("ideaSyncTask")));

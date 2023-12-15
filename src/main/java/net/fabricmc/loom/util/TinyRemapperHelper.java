@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -82,6 +81,7 @@ public final class TinyRemapperHelper {
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)
 				.inferNameFromSameLvIndex(true)
+				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
 				.extraPreApplyVisitor((cls, next) -> {
 					if (fixRecords && !cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
 						return new RecordComponentFixVisitor(next, mappingTree, intermediaryNsId);
@@ -92,11 +92,6 @@ public final class TinyRemapperHelper {
 
 		builderConsumer.accept(builder);
 		return builder.build();
-	}
-
-	public static Path[] getMinecraftDependencies(Project project) {
-		return project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_DEPENDENCIES).getFiles()
-				.stream().map(File::toPath).toArray(Path[]::new);
 	}
 
 	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.util.Set;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
@@ -33,8 +34,10 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
 
@@ -48,6 +51,8 @@ import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.api.remapping.RemapperExtension;
+import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
@@ -71,6 +76,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
 	protected final Property<String> customManifest;
+	protected final SetProperty<String> knownIndyBsms;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
@@ -88,6 +94,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final NamedDomainObjectContainer<ModSettings> mods;
 	private final NamedDomainObjectList<RemapConfigurationSettings> remapConfigurations;
 	private final ListProperty<MinecraftJarProcessor<?>> minecraftJarProcessors;
+	protected final ListProperty<RemapperExtensionHolder> remapperExtensions;
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
@@ -98,6 +105,12 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
 		this.customManifest = project.getObjects().property(String.class);
+		this.knownIndyBsms = project.getObjects().setProperty(String.class).convention(Set.of(
+				"java/lang/invoke/StringConcatFactory",
+				"java/lang/runtime/ObjectMethods",
+				"org/codehaus/groovy/vmplugin/v8/IndyInterface"
+		));
+		this.knownIndyBsms.finalizeValueOnRead();
 		this.transitiveAccessWideners = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.transitiveAccessWideners.finalizeValueOnRead();
@@ -115,7 +128,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 
 		this.runConfigs = project.container(RunConfigSettings.class,
-				baseName -> new RunConfigSettings(project, baseName));
+				baseName -> project.getObjects().newInstance(RunConfigSettings.class, project, baseName));
 		this.decompilers = project.getObjects().domainObjectContainer(DecompilerOptions.class);
 		this.mods = project.getObjects().domainObjectContainer(ModSettings.class);
 		this.remapConfigurations = project.getObjects().namedDomainObjectList(RemapConfigurationSettings.class);
@@ -140,6 +153,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
+
+		remapperExtensions = project.getObjects().listProperty(RemapperExtensionHolder.class);
+		remapperExtensions.finalizeValueOnRead();
 
 		// Enable dep iface injection by default
 		interfaceInjection(interfaceInjection -> {
@@ -226,6 +242,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<String> getCustomMinecraftManifest() {
 		return customManifest;
+	}
+
+	@Override
+	public SetProperty<String> getKnownIndyBsms() {
+		return knownIndyBsms;
 	}
 
 	@Override
@@ -366,6 +387,23 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public void createRemapConfigurations(SourceSet sourceSet) {
 		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
+	}
+
+	@Override
+	public <T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
+		final ObjectFactory objectFactory = getProject().getObjects();
+		final RemapperExtensionHolder holder;
+
+		if (parametersClass != RemapperParameters.None.class) {
+			T parameters = objectFactory.newInstance(parametersClass);
+			parameterAction.execute(parameters);
+			holder = objectFactory.newInstance(RemapperExtensionHolder.class, parameters);
+		} else {
+			holder = objectFactory.newInstance(RemapperExtensionHolder.class, RemapperParameters.None.INSTANCE);
+		}
+
+		holder.getRemapperExtensionClassName().set(remapperExtensionClass.getName());
+		remapperExtensions.add(holder);
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

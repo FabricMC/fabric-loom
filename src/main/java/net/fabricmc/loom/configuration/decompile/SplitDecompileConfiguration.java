@@ -32,9 +32,9 @@ import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.task.UnpickJarTask;
 import net.fabricmc.loom.util.Constants;
 
 public final class SplitDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider.Split> {
@@ -44,41 +44,26 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 	@Override
 	public void afterEvaluation() {
-		File commonJarToDecompile = minecraftProvider.getCommonJar().toFile();
-		File clientOnlyJarToDecompile = minecraftProvider.getClientOnlyJar().toFile();
-
-		TaskProvider<UnpickJarTask> unpickCommonJar = null;
-		TaskProvider<UnpickJarTask> unpickClientOnlyJar = null;
-
-		if (mappingConfiguration.hasUnpickDefinitions()) {
-			commonJarToDecompile = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
-			clientOnlyJarToDecompile = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
-
-			unpickCommonJar = createUnpickJarTask("unpickCommonJar", minecraftProvider.getCommonJar().toFile(), commonJarToDecompile);
-			unpickClientOnlyJar = createUnpickJarTask("unpickClientOnlyJar", minecraftProvider.getClientOnlyJar().toFile(), clientOnlyJarToDecompile);
-		}
-
-		// Need to re-declare them as final to access them from the lambada
-		final File commonJar = commonJarToDecompile;
-		final File clientOnlyJar = clientOnlyJarToDecompile;
-		final TaskProvider<UnpickJarTask> unpickCommonJarTask = unpickCommonJar;
-		final TaskProvider<UnpickJarTask> unpickClientOnlyJarTask = unpickClientOnlyJar;
+		final MinecraftJar commonJar = minecraftProvider.getCommonJar();
+		final MinecraftJar clientOnlyJar = minecraftProvider.getClientOnlyJar();
 
 		final TaskProvider<Task> commonDecompileTask = createDecompileTasks("Common", task -> {
-			task.getInputJar().set(commonJar);
-			task.getRuntimeJar().set(minecraftProvider.getCommonJar().toFile());
+			task.getInputJarName().set(commonJar.getName());
+			task.getOutputJar().fileValue(GenerateSourcesTask.getMappedJarFileWithSuffix("-sources.jar", commonJar.getPath()));
 
-			if (unpickCommonJarTask != null) {
-				task.dependsOn(unpickCommonJarTask);
+			if (mappingConfiguration.hasUnpickDefinitions()) {
+				File unpickJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
+				configureUnpick(task, unpickJar);
 			}
 		});
 
 		final TaskProvider<Task> clientOnlyDecompileTask = createDecompileTasks("ClientOnly", task -> {
-			task.getInputJar().set(clientOnlyJar);
-			task.getRuntimeJar().set(minecraftProvider.getClientOnlyJar().toFile());
+			task.getInputJarName().set(clientOnlyJar.getName());
+			task.getOutputJar().fileValue(GenerateSourcesTask.getMappedJarFileWithSuffix("-sources.jar", clientOnlyJar.getPath()));
 
-			if (unpickCommonJarTask != null) {
-				task.dependsOn(unpickClientOnlyJarTask);
+			if (mappingConfiguration.hasUnpickDefinitions()) {
+				File unpickJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
+				configureUnpick(task, unpickJar);
 			}
 
 			// Don't allow them to run at the same time.

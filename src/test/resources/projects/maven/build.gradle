@@ -3,11 +3,8 @@ plugins {
 	id 'maven-publish'
 }
 
-archivesBaseName = "fabric-example-mod"
 version = "1.0.0"
 group = "com.example"
-
-println archivesBaseName
 
 repositories {
 	maven {
@@ -27,6 +24,10 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:0.11.2"
 
 	testConfig System.getProperty("loom.test.resolve")
+}
+
+base {
+	archivesName = "fabric-example-mod"
 }
 
 task checkClasspaths {

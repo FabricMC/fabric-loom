@@ -42,6 +42,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class JarManifestService implements BuildService<JarManifestService.Params> {
@@ -63,7 +64,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 
 				params.getGradleVersion().set(GradleVersion.current().getVersion());
 				params.getLoomVersion().set(LoomGradlePlugin.LOOM_VERSION);
-				params.getMCEVersion().set(Constants.Dependencies.Versions.MIXIN_COMPILE_EXTENSIONS);
+				params.getMCEVersion().set(LoomVersions.MIXIN_COMPILE_EXTENSIONS.version());
 				params.getMinecraftVersion().set(project.provider(() -> extension.getMinecraftProvider().minecraftVersion()));
 				params.getTinyRemapperVersion().set(tinyRemapperVersion.orElse("unknown"));
 				params.getFabricLoaderVersion().set(project.provider(() -> Optional.ofNullable(extension.getInstallerData()).map(InstallerData::version).orElse("unknown")));
@@ -73,29 +74,32 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 	}
 
 	public void apply(Manifest manifest, Map<String, String> extraValues) {
-		// Don't set when running the reproducible build tests as it will break them when anything updates
+		Attributes attributes = manifest.getMainAttributes();
+
+		extraValues.entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.forEach(entry -> {
+					attributes.putValue(entry.getKey(), entry.getValue());
+				});
+
+		// Don't set version attributes when running the reproducible build tests as it will break them when anything updates
 		if (Boolean.getBoolean("loom.test.reproducible")) {
 			return;
 		}
 
-		Attributes attributes = manifest.getMainAttributes();
 		Params p = getParameters();
 
-		attributes.putValue("Fabric-Gradle-Version", p.getGradleVersion().get());
-		attributes.putValue("Fabric-Loom-Version", p.getLoomVersion().get());
-		attributes.putValue("Fabric-Mixin-Compile-Extensions-Version", p.getMCEVersion().get());
-		attributes.putValue("Fabric-Minecraft-Version", p.getMinecraftVersion().get());
-		attributes.putValue("Fabric-Tiny-Remapper-Version", p.getTinyRemapperVersion().get());
-		attributes.putValue("Fabric-Loader-Version", p.getFabricLoaderVersion().get());
+		attributes.putValue(Constants.Manifest.GRADLE_VERSION, p.getGradleVersion().get());
+		attributes.putValue(Constants.Manifest.LOOM_VERSION, p.getLoomVersion().get());
+		attributes.putValue(Constants.Manifest.MIXIN_COMPILE_EXTENSIONS_VERSION, p.getMCEVersion().get());
+		attributes.putValue(Constants.Manifest.MINECRAFT_VERSION, p.getMinecraftVersion().get());
+		attributes.putValue(Constants.Manifest.TINY_REMAPPER_VERSION, p.getTinyRemapperVersion().get());
+		attributes.putValue(Constants.Manifest.FABRIC_LOADER_VERSION, p.getFabricLoaderVersion().get());
 
 		// This can be overridden by mods if required
-		if (!attributes.containsKey("Fabric-Mixin-Version")) {
-			attributes.putValue("Fabric-Mixin-Version", p.getMixinVersion().get().version());
-			attributes.putValue("Fabric-Mixin-Group", p.getMixinVersion().get().group());
-		}
-
-		for (Map.Entry<String, String> entry : extraValues.entrySet()) {
-			attributes.putValue(entry.getKey(), entry.getValue());
+		if (!attributes.containsKey(Constants.Manifest.MIXIN_VERSION)) {
+			attributes.putValue(Constants.Manifest.MIXIN_VERSION, p.getMixinVersion().get().version());
+			attributes.putValue(Constants.Manifest.MIXIN_GROUP, p.getMixinVersion().get().group());
 		}
 	}
 

@@ -26,19 +26,19 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.util.List;
 
+import org.gradle.api.Project;
+
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> {
-	public NamedMinecraftProvider(ConfigContext configContext, M minecraftProvider) {
-		super(configContext, minecraftProvider);
+	public NamedMinecraftProvider(Project project, M minecraftProvider) {
+		super(project, minecraftProvider);
 	}
 
 	@Override
@@ -52,8 +52,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 	}
 
 	public static final class MergedImpl extends NamedMinecraftProvider<MergedMinecraftProvider> implements Merged {
-		public MergedImpl(ConfigContext configContext, MergedMinecraftProvider minecraftProvider) {
-			super(configContext, minecraftProvider);
+		public MergedImpl(Project project, MergedMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
 		}
 
 		@Override
@@ -70,8 +70,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 	}
 
 	public static final class SplitImpl extends NamedMinecraftProvider<SplitMinecraftProvider> implements Split {
-		public SplitImpl(ConfigContext configContext, SplitMinecraftProvider minecraftProvider) {
-			super(configContext, minecraftProvider);
+		public SplitImpl(Project project, SplitMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
 		}
 
 		@Override
@@ -84,9 +84,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 		@Override
 		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
-			if (remappedJars.outputJar().equals(getClientOnlyJar())) {
-				tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
-			}
+			configureSplitRemapper(remappedJars, tinyRemapperBuilder);
 		}
 
 		@Override
@@ -98,17 +96,17 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 	public static final class SingleJarImpl extends NamedMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
 		private final SingleJarEnvType env;
 
-		private SingleJarImpl(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
-			super(configContext, minecraftProvider);
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
+			super(project, minecraftProvider);
 			this.env = env;
 		}
 
-		public static SingleJarImpl server(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(configContext, minecraftProvider, SingleJarEnvType.SERVER);
+		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER);
 		}
 
-		public static SingleJarImpl client(ConfigContext configContext, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(configContext, minecraftProvider, SingleJarEnvType.CLIENT);
+		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT);
 		}
 
 		@Override

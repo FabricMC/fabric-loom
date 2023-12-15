@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.benchmark
 
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
+
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
@@ -35,31 +36,40 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
  */
 @Singleton
 class FabricAPIBenchmark implements GradleProjectTestTrait {
-    def run(File dir) {
-        def gradle = gradleProject(
-                version: LoomTestConstants.DEFAULT_GRADLE,
-                projectDir: new File(dir, "project"),
-                gradleHomeDir: new File(dir, "gradlehome"),
-                allowExistingRepo: true,
+	def run(File dir) {
+		def gradle = gradleProject(
+				version: LoomTestConstants.DEFAULT_GRADLE,
+				projectDir: new File(dir, "project"),
+				gradleHomeDir: new File(dir, "gradlehome"),
+				allowExistingRepo: true,
 
-                repo: "https://github.com/FabricMC/fabric.git",
-                commit: "2facd446984085376bd23245410ebf2dc0881b02",
-                patch: "fabric_api"
-        )
+				repo: "https://github.com/FabricMC/fabric.git",
+				commit: "2facd446984085376bd23245410ebf2dc0881b02",
+				patch: "fabric_api"
+				)
 
 		gradle.enableMultiProjectOptimisation()
 
-        def timeStart = new Date()
+		def timeStart = new Date()
 
-        def result = gradle.run(tasks: ["clean", "build", "-x", "test", "-x", "check", "-x", ":fabric-data-generation-api-v1:runDatagen"], args: [])
+		def result = gradle.run(tasks: [
+			"clean",
+			"build",
+			"-x",
+			"test",
+			"-x",
+			"check",
+			"-x",
+			":fabric-data-generation-api-v1:runDatagen"
+		], args: [])
 
-        def timeStop = new Date()
-        TimeDuration duration = TimeCategory.minus(timeStop, timeStart)
-        println(duration)
-    }
+		def timeStop = new Date()
+		TimeDuration duration = TimeCategory.minus(timeStop, timeStart)
+		println(duration)
+	}
 
-    static void main(String[] args) {
-        getInstance().run(new File(args[0]))
-        System.exit(0)
-    }
+	static void main(String[] args) {
+		getInstance().run(new File(args[0]))
+		System.exit(0)
+	}
 }

@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -137,10 +138,10 @@ public class RunConfig {
 		String environment = settings.getEnvironment();
 		SourceSet sourceSet = settings.getSource(project);
 
-		String defaultMain = settings.getDefaultMainClass();
+		String mainClass = settings.getMainClass().getOrNull();
 
-		if (defaultMain == null) {
-			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'defaultMainClass'");
+		if (mainClass == null) {
+			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'mainClass'");
 		}
 
 		if (configName == null) {
@@ -178,7 +179,7 @@ public class RunConfig {
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArgs());
 		runConfig.vmArgs.addAll(settings.getVmArgs());
-		runConfig.vmArgs.add("-Dfabric.dli.main=" + getMainClass(environment, extension, defaultMain));
+		runConfig.vmArgs.add("-Dfabric.dli.main=" + mainClass);
 		runConfig.environmentVariables = new HashMap<>();
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
 		runConfig.projectName = project.getName();
@@ -244,7 +245,7 @@ public class RunConfig {
 		return sb.toString();
 	}
 
-	private static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
+	static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
 		InstallerData installerData = extension.getInstallerData();
 
 		if (installerData == null) {
@@ -286,11 +287,11 @@ public class RunConfig {
 			return Collections.emptyList();
 		}
 
-		final Set<ResolvedArtifact> allLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_DEPENDENCIES);
-		final Set<ResolvedArtifact> serverLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_SERVER_DEPENDENCIES);
+		final Set<ResolvedArtifact> clientLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
+		final Set<ResolvedArtifact> serverLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
 		final List<String> clientOnlyLibraries = new LinkedList<>();
 
-		for (ResolvedArtifact library : allLibraries) {
+		for (ResolvedArtifact library : clientLibraries) {
 			if (!containsLibrary(serverLibraries, library.getModuleVersion().getId())) {
 				clientOnlyLibraries.add(library.getFile().getAbsolutePath());
 			}
@@ -300,9 +301,11 @@ public class RunConfig {
 	}
 
 	private static Set<ResolvedArtifact> getArtifacts(Project project, String configuration) {
-		return project.getConfigurations().getByName(configuration)
-				.getResolvedConfiguration()
-				.getResolvedArtifacts();
+		return project.getConfigurations().getByName(configuration).getHierarchy()
+				.stream()
+				.map(c -> c.getResolvedConfiguration().getResolvedArtifacts())
+				.flatMap(Collection::stream)
+				.collect(Collectors.toSet());
 	}
 
 	private static boolean containsLibrary(Set<ResolvedArtifact> artifacts, ModuleVersionIdentifier identifier) {

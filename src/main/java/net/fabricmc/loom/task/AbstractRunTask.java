@@ -27,6 +27,7 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,17 +39,26 @@ import java.util.stream.Collectors;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 public abstract class AbstractRunTask extends JavaExec {
+	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
+
 	private final RunConfig config;
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
+
+	// Prevent Gradle from running two run tasks in parallel
+	@ServiceReference(SyncTaskBuildService.NAME)
+	abstract Property<SyncTaskBuildService> getSyncTask();
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
@@ -59,11 +69,23 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		args(config.programArgs);
 		getMainClass().set(config.mainClass);
+
+		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 	}
 
 	private boolean canUseArgFile() {
+		if (!canPathBeASCIIEncoded()) {
+			// The gradle home or project dir contain chars that cannot be ascii encoded, thus are not supported by an arg file.
+			return false;
+		}
+
 		// @-files were added for java (not javac) in Java 9, see https://bugs.openjdk.org/browse/JDK-8027634
 		return getJavaVersion().isJava9Compatible();
+	}
+
+	private boolean canPathBeASCIIEncoded() {
+		return ASCII_ENCODER.canEncode(getProject().getProjectDir().getAbsolutePath())
+				&& ASCII_ENCODER.canEncode(getProject().getGradle().getGradleUserHomeDir().getAbsolutePath());
 	}
 
 	@Override
@@ -93,9 +115,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		super.setWorkingDir(dir);
 	}
 
-	@Override
-	public List<String> getJvmArgs() {
-		final List<String> superArgs = super.getJvmArgs();
+	private List<String> getGameJvmArgs() {
 		final List<String> args = new ArrayList<>();
 
 		if (canUseArgFile()) {
@@ -111,10 +131,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to create classpath file", e);
 			}
-		}
-
-		if (superArgs != null) {
-			args.addAll(superArgs);
 		}
 
 		args.addAll(config.vmArgs);

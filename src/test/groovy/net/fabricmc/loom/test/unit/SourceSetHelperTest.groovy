@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.gradle.SourceSetHelper
-import net.fabricmc.loom.util.gradle.SourceSetReference
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.intellij.lang.annotations.Language
@@ -33,93 +31,96 @@ import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.environment.RestoreSystemProperties
 
+import net.fabricmc.loom.util.gradle.SourceSetHelper
+import net.fabricmc.loom.util.gradle.SourceSetReference
+
 class SourceSetHelperTest extends Specification {
-    @Shared
-    private static File projectDir = File.createTempDir()
+	@Shared
+	private static File projectDir = File.createTempDir()
 
-    @RestoreSystemProperties
-    def "idea classpath"() {
-        given:
-            def miscXml = new File(projectDir, ".idea/misc.xml")
-            miscXml.parentFile.mkdirs()
-            miscXml.text = MISC_XML
+	@RestoreSystemProperties
+	def "idea classpath"() {
+		given:
+		def miscXml = new File(projectDir, ".idea/misc.xml")
+		miscXml.parentFile.mkdirs()
+		miscXml.text = MISC_XML
 
-            def mockProject = Mock(Project)
-            def mockSourceSet = Mock(SourceSet)
+		def mockProject = Mock(Project)
+		def mockSourceSet = Mock(SourceSet)
 
-            mockProject.getName() >> "UnitTest"
-            mockProject.getRootDir() >> projectDir
-            mockSourceSet.getName() >> "main"
+		mockProject.getName() >> "UnitTest"
+		mockProject.getRootDir() >> projectDir
+		mockSourceSet.getName() >> "main"
 
-            System.setProperty("fabric-loom.unit.testing", "true")
+		System.setProperty("fabric-loom.unit.testing", "true")
 
-            def ref = new SourceSetReference(mockSourceSet, mockProject)
-        when:
-            def result = SourceSetHelper.getIdeaClasspath(ref, mockProject)
+		def ref = new SourceSetReference(mockSourceSet, mockProject)
+		when:
+		def result = SourceSetHelper.getIdeaClasspath(ref, mockProject)
 
-        then:
-            result.size() == 1
-            !result[0].toString().startsWith("file:")
+		then:
+		result.size() == 1
+		!result[0].toString().startsWith("file:")
 
-            println(result[0].toString())
-    }
+		println(result[0].toString())
+	}
 
-    @RestoreSystemProperties
-    def "eclipse classpath"() {
-        given:
-            def classpath = new File(projectDir, ".classpath")
-            classpath.createNewFile()
+	@RestoreSystemProperties
+	def "eclipse classpath"() {
+		given:
+		def classpath = new File(projectDir, ".classpath")
+		classpath.createNewFile()
 
-            def binDir = new File(projectDir, "bin")
-            binDir.mkdirs()
+		def binDir = new File(projectDir, "bin")
+		binDir.mkdirs()
 
-            def mockProject = Mock(Project)
-            def mockSourceSet = Mock(SourceSet)
+		def mockProject = Mock(Project)
+		def mockSourceSet = Mock(SourceSet)
 
-            mockProject.getName() >> "UnitTest"
-            mockProject.getProjectDir() >> projectDir
-            mockSourceSet.getName() >> "main"
+		mockProject.getName() >> "UnitTest"
+		mockProject.getProjectDir() >> projectDir
+		mockSourceSet.getName() >> "main"
 
-            System.setProperty("fabric-loom.unit.testing", "true")
+		System.setProperty("fabric-loom.unit.testing", "true")
 
-            def ref = new SourceSetReference(mockSourceSet, mockProject)
-        when:
-            def result = SourceSetHelper.getEclipseClasspath(ref, mockProject)
+		def ref = new SourceSetReference(mockSourceSet, mockProject)
+		when:
+		def result = SourceSetHelper.getEclipseClasspath(ref, mockProject)
 
-        then:
-            result.size() == 1
-            println(result[0].toString())
-    }
+		then:
+		result.size() == 1
+		println(result[0].toString())
+	}
 
-    @RestoreSystemProperties
-    def "vscode classpath"() {
-        given:
-            def dotVscode = new File(projectDir, ".vscode")
-            dotVscode.mkdirs()
+	@RestoreSystemProperties
+	def "vscode classpath"() {
+		given:
+		def dotVscode = new File(projectDir, ".vscode")
+		dotVscode.mkdirs()
 
-            def binDir = new File(projectDir, "bin")
-            binDir.mkdirs()
+		def binDir = new File(projectDir, "bin")
+		binDir.mkdirs()
 
-            def mockProject = Mock(Project)
-            def mockSourceSet = Mock(SourceSet)
+		def mockProject = Mock(Project)
+		def mockSourceSet = Mock(SourceSet)
 
-            mockProject.getName() >> "UnitTest"
-            mockProject.getProjectDir() >> projectDir
-            mockSourceSet.getName() >> "main"
+		mockProject.getName() >> "UnitTest"
+		mockProject.getProjectDir() >> projectDir
+		mockSourceSet.getName() >> "main"
 
-            System.setProperty("fabric-loom.unit.testing", "true")
+		System.setProperty("fabric-loom.unit.testing", "true")
 
-            def ref = new SourceSetReference(mockSourceSet, mockProject)
-        when:
-            def result = SourceSetHelper.getVscodeClasspath(ref, mockProject)
+		def ref = new SourceSetReference(mockSourceSet, mockProject)
+		when:
+		def result = SourceSetHelper.getVscodeClasspath(ref, mockProject)
 
-        then:
-            result.size() == 1
-            println(result[0].toString())
-    }
+		then:
+		result.size() == 1
+		println(result[0].toString())
+	}
 
-    @Language("xml")
-    private static String MISC_XML = """<?xml version="1.0" encoding="UTF-8"?>
+	@Language("xml")
+	private static String MISC_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="17" project-jdk-type="JavaSDK">

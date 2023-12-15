@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.gradle.api.Project;
-
+import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
@@ -49,26 +50,31 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	private final MinecraftJarProcessorManager jarProcessorManager;
 
 	public ProcessedNamedMinecraftProvider(P parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
-		super(parentMinecraftProvide.getConfigContext(), parentMinecraftProvide.getMinecraftProvider());
+		super(parentMinecraftProvide.getProject(), parentMinecraftProvide.getMinecraftProvider());
 		this.parentMinecraftProvider = parentMinecraftProvide;
 		this.jarProcessorManager = Objects.requireNonNull(jarProcessorManager);
 	}
 
 	@Override
-	public void provide(boolean applyDependencies) throws Exception {
-		parentMinecraftProvider.provide(false);
+	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+		parentMinecraftProvider.provide(context.withApplyDependencies(false));
 
-		boolean requiresProcessing = parentMinecraftProvider.getMinecraftJars().stream()
+		boolean requiresProcessing = context.refreshOutputs() || parentMinecraftProvider.getMinecraftJars().stream()
 				.map(this::getProcessedPath)
 				.anyMatch(jarProcessorManager::requiresProcessingJar);
 
+		final Map<MinecraftJar, MinecraftJar> minecraftJarOutputMap = parentMinecraftProvider.getMinecraftJars().stream()
+				.collect(Collectors.toMap(Function.identity(), this::getProcessedJar));
+
 		if (requiresProcessing) {
-			processJars();
+			processJars(minecraftJarOutputMap, context.configContext());
 		}
 
-		if (applyDependencies) {
+		if (context.applyDependencies()) {
 			applyDependencies();
 		}
+
+		return List.copyOf(minecraftJarOutputMap.values());
 	}
 
 	@Override
@@ -76,13 +82,16 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		return MavenScope.LOCAL;
 	}
 
-	private void processJars() throws IOException {
-		for (MinecraftJar minecraftJar : parentMinecraftProvider.getMinecraftJars()) {
-			final MinecraftJar outputJar = getProcessedJar(minecraftJar);
+	private void processJars(Map<MinecraftJar, MinecraftJar> minecraftJarMap, ConfigContext configContext) throws IOException {
+		for (Map.Entry<MinecraftJar, MinecraftJar> entry : minecraftJarMap.entrySet()) {
+			final MinecraftJar minecraftJar = entry.getKey();
+			final MinecraftJar outputJar = entry.getValue();
 			deleteSimilarJars(outputJar.getPath());
 
 			final LocalMavenHelper mavenHelper = getMavenHelper(minecraftJar.getName());
 			final Path outputPath = mavenHelper.copyToMaven(minecraftJar.getPath(), null);
+
+			assert outputJar.getPath().equals(outputPath);
 
 			jarProcessorManager.processJar(outputPath, new ProcessorContextImpl(configContext, minecraftJar));
 		}
@@ -117,14 +126,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	protected String getName(String name) {
-		final Project project = getProject();
-
-		if (project.getRootProject() == project) {
-			return "minecraft-%s-project-root".formatted(name).toLowerCase(Locale.ROOT);
-		}
-
-		final String projectPath = project.getPath().replace(':', '@');
-		return "minecraft-%s-project-%s".formatted(name, projectPath).toLowerCase(Locale.ROOT);
+		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
+		return "minecraft-%s-%s".formatted(name, jarProcessorManager.getJarHash());
 	}
 
 	@Override

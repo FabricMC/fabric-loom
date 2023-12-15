@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,54 +24,106 @@
 
 package net.fabricmc.loom.test.integration
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import net.fabricmc.loom.test.util.ServerRunner
+import java.util.concurrent.TimeUnit
+
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
 
-import java.util.concurrent.TimeUnit
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.test.util.ServerRunner
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
 class FabricAPITest extends Specification implements GradleProjectTestTrait {
-	private static final String API_VERSION = "0.0.0+loom"
-
 	@Unroll
-	def "build and run (gradle #version)"() {
+	def "build and run (gradle #version, mixin ap disabled: #disableMixinAp)"() {
 		setup:
-			def gradle = gradleProject(
-					repo: "https://github.com/FabricMC/fabric.git",
-					commit: "2facd446984085376bd23245410ebf2dc0881b02",
-					version: version,
-					patch: "fabric_api"
-			)
+		def gradle = gradleProject(
+				repo: "https://github.com/FabricMC/fabric.git",
+				commit: "23e8616e7457d7d4a65119b93952d134607ffc5c",
+				version: version,
+				patch: "fabric_api"
+				)
 
-			gradle.enableMultiProjectOptimisation()
+		gradle.enableMultiProjectOptimisation()
 
-			// Set the version to something constant
-			gradle.buildGradle.text = gradle.buildGradle.text.replace('project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()', "\"$API_VERSION\"")
+		// Disable the mixin ap if needed. Fabric API is a large enough test project to see if something breaks.
+		if (disableMixinAp) {
+			gradle.buildGradle << """
+				allprojects {
+					loom.mixin.useLegacyMixinAp = false
+				}
+				""".stripIndent()
+		}
 
-			def server = ServerRunner.create(gradle.projectDir, "1.19.3")
-										.withMod(gradle.getOutputFile("fabric-api-${API_VERSION}.jar"))
+		def minecraftVersion = "23w45a"
+		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
+				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
+
+		// Test that the dependent mod can be built against the previously built fabric-api
+		def dependentMod = gradleProject(project: "minimalBase", version: version)
+		dependentMod.buildGradle << """
+				repositories {
+					mavenLocal()
+				}
+
+				loom {
+					loom.mixin.useLegacyMixinAp = ${!disableMixinAp}
+				}
+
+				dependencies {
+                    minecraft "com.mojang:minecraft:${minecraftVersion}"
+                    mappings "net.fabricmc:yarn:${minecraftVersion}+build.1:v2"
+
+					modImplementation "net.fabricmc.fabric-api:fabric-api:999.0.0"
+                }
+		"""
 		when:
-			def result = gradle.run(tasks: ["build", "publishToMavenLocal"], args: ["--parallel", "-x", "check", "-x", "runDatagen", "-x", "runGametest"]) // Note: checkstyle does not appear to like being ran in a test runner
-			gradle.printOutputFiles()
+		def result = gradle.run(tasks: [
+			"clean",
+			"build",
+			"publishToMavenLocal"
+		], args: [
+			"--parallel",
+			"-x",
+			"check",
+			"-x",
+			"runDatagen",
+			"-x",
+			"runGametest"
+		]) // Note: checkstyle does not appear to like being ran in a test runner
+		gradle.printOutputFiles()
 
-			def serverResult = server.run()
+		def serverResult = server.run()
+		def dependentModResult = dependentMod.run(task: "build")
+
 		then:
-			result.task(":build").outcome == SUCCESS
-			result.task(":prepareRemapJar").outcome == SUCCESS
+		result.task(":build").outcome == SUCCESS
+		result.task(":prepareRemapJar").outcome == SUCCESS
 
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0.jar").exists()
-			new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/12.1.0/fabric-biome-api-v1-12.1.0-sources.jar").exists()
+		def biomeApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0.jar")
+		def manifest = ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF").toString()
+		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0-sources.jar").exists()
 
-			serverResult.successful()
-			serverResult.output.contains("- fabric-api $API_VERSION")
+		if (disableMixinAp) {
+			manifest.contains("Fabric-Loom-Mixin-Remap-Type=static")
+		} else {
+			manifest.contains("Fabric-Loom-Mixin-Remap-Type=mixin")
+		}
+
+		serverResult.successful()
+		serverResult.output.contains("- fabric-api 999.0.0")
+
+		dependentModResult.task(":build").outcome == SUCCESS
+
 		where:
-			//version << STANDARD_TEST_VERSIONS
-			version << [DEFAULT_GRADLE]
+		[version, disableMixinAp] << [
+			[PRE_RELEASE_GRADLE],
+			[false, true].shuffled()
+		].combinations()
 	}
 }

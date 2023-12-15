@@ -28,7 +28,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public abstract sealed class MinecraftJar permits MinecraftJar.Merged, MinecraftJar.Common, MinecraftJar.ServerOnly, MinecraftJar.ClientOnly {
+public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server {
 	private final Path path;
 	private final boolean merged, client, server;
 	private final String name;
@@ -68,8 +68,10 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Merged, Minecraft
 	public abstract MinecraftJar forPath(Path path);
 
 	public static final class Merged extends MinecraftJar {
+		public static final String NAME = "merged";
+
 		public Merged(Path path) {
-			super(path, true, true, true, "merged");
+			super(path, true, true, true, NAME);
 		}
 
 		@Override
@@ -79,8 +81,10 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Merged, Minecraft
 	}
 
 	public static final class Common extends MinecraftJar {
+		public static final String NAME = "common";
+
 		public Common(Path path) {
-			super(path, false, false, true, "common");
+			super(path, false, false, true, NAME);
 		}
 
 		@Override
@@ -89,20 +93,39 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Merged, Minecraft
 		}
 	}
 
-	public static final class ServerOnly extends MinecraftJar {
-		public ServerOnly(Path path) {
-			super(path, false, false, true, "serverOnly");
+	public static final class Server extends MinecraftJar {
+		public static final String NAME = "server";
+
+		public Server(Path path) {
+			super(path, false, false, true, NAME);
 		}
 
 		@Override
 		public MinecraftJar forPath(Path path) {
-			return new ServerOnly(path);
+			return new Server(path);
 		}
 	}
 
+	// Un-split client jar
+	public static final class Client extends MinecraftJar {
+		public static final String NAME = "client";
+
+		public Client(Path path) {
+			super(path, false, true, false, NAME);
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new Client(path);
+		}
+	}
+
+	// Split client jar
 	public static final class ClientOnly extends MinecraftJar {
+		public static final String NAME = "clientOnly";
+
 		public ClientOnly(Path path) {
-			super(path, false, true, false, "clientOnly");
+			super(path, false, true, false, NAME);
 		}
 
 		@Override

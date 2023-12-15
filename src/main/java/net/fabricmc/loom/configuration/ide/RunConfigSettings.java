@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,19 +31,23 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
+
+import javax.inject.Inject;
 
 import org.gradle.api.Named;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.OperatingSystem;
+import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public final class RunConfigSettings implements Named {
+public class RunConfigSettings implements Named {
 	/**
 	 * Arguments for the JVM, such as system properties.
 	 */
@@ -64,7 +68,7 @@ public final class RunConfigSettings implements Named {
 	 *
 	 * <p>By default this is determined from the base name.
 	 */
-	private String name;
+	private String configName;
 
 	/**
 	 * The default main class of the run configuration.
@@ -73,6 +77,14 @@ public final class RunConfigSettings implements Named {
 	 * priority over the main class specified in the Fabric installer configuration.
 	 */
 	private String defaultMainClass;
+
+	/**
+	 * The main class of the run configuration.
+	 *
+	 * <p>If unset, {@link #defaultMainClass} is used as the fallback, including the overwritten main class
+	 * from installer files.
+	 */
+	private final Property<String> mainClass;
 
 	/**
 	 * The source set getter, which obtains the source set from the given project.
@@ -87,7 +99,7 @@ public final class RunConfigSettings implements Named {
 	/**
 	 * The base name of the run configuration, which is the name it is created with, i.e. 'client'
 	 */
-	private final String baseName;
+	private final String name;
 
 	/**
 	 * When true a run configuration file will be generated for IDE's.
@@ -101,11 +113,17 @@ public final class RunConfigSettings implements Named {
 	private final Project project;
 	private final LoomGradleExtension extension;
 
-	public RunConfigSettings(Project project, String baseName) {
-		this.baseName = baseName;
+	@Inject
+	public RunConfigSettings(Project project, String name) {
+		this.name = name;
 		this.project = project;
 		this.extension = LoomGradleExtension.get(project);
 		this.ideConfigGenerated = extension.isRootProject();
+		this.mainClass = project.getObjects().property(String.class).convention(project.provider(() -> {
+			Objects.requireNonNull(environment, "Run config " + name + " must specify environment");
+			Objects.requireNonNull(defaultMainClass, "Run config " + name + " must specify default main class");
+			return RunConfig.getMainClass(environment, extension, defaultMainClass);
+		}));
 
 		setSource(p -> {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
@@ -125,7 +143,11 @@ public final class RunConfigSettings implements Named {
 
 	@Override
 	public String getName() {
-		return baseName;
+		return name;
+	}
+
+	public void setName(String name) {
+		this.configName = name;
 	}
 
 	public List<String> getVmArgs() {
@@ -145,11 +167,11 @@ public final class RunConfigSettings implements Named {
 	}
 
 	public String getConfigName() {
-		return name;
+		return configName;
 	}
 
 	public void setConfigName(String name) {
-		this.name = name;
+		this.configName = name;
 	}
 
 	public String getDefaultMainClass() {
@@ -158,6 +180,16 @@ public final class RunConfigSettings implements Named {
 
 	public void setDefaultMainClass(String defaultMainClass) {
 		this.defaultMainClass = defaultMainClass;
+	}
+
+	/**
+	 * The main class of the run configuration.
+	 *
+	 * <p>If unset, {@link #getDefaultMainClass defaultMainClass} is used as the fallback,
+	 * including the overwritten main class from installer files.
+	 */
+	public Property<String> getMainClass() {
+		return mainClass;
 	}
 
 	public String getRunDir() {
@@ -256,7 +288,7 @@ public final class RunConfigSettings implements Named {
 	 * Add the {@code -XstartOnFirstThread} JVM argument when on OSX.
 	 */
 	public void startFirstThread() {
-		if (OperatingSystem.CURRENT_OS.equals(OperatingSystem.MAC_OS)) {
+		if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
 			vmArg("-XstartOnFirstThread");
 		}
 	}
@@ -276,6 +308,11 @@ public final class RunConfigSettings implements Named {
 		startFirstThread();
 		environment("client");
 		defaultMainClass(Constants.Knot.KNOT_CLIENT);
+
+		if (Platform.CURRENT.isRaspberryPi()) {
+			getProject().getLogger().info("Raspberry Pi detected, setting MESA_GL_VERSION_OVERRIDE=4.3");
+			environmentVariable("MESA_GL_VERSION_OVERRIDE", "4.3");
+		}
 	}
 
 	/**
@@ -296,7 +333,7 @@ public final class RunConfigSettings implements Named {
 		environmentVariables.putAll(parent.environmentVariables);
 
 		environment = parent.environment;
-		name = parent.name;
+		configName = parent.configName;
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
 		ideConfigGenerated = parent.ideConfigGenerated;

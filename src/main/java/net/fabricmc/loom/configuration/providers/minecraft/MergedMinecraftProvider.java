@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Objects;
 
 import net.fabricmc.loom.configuration.ConfigContext;
-import net.fabricmc.stitch.merge.JarMerger;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
 	private Path minecraftMergedJar;
@@ -86,7 +85,7 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 		Objects.requireNonNull(jarToMerge, "Cannot merge null input jar?");
 
-		try (JarMerger jarMerger = new JarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
+		try (var jarMerger = new MinecraftJarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}

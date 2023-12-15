@@ -33,6 +33,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 import net.fabricmc.loom.configuration.mods.JarSplitter;
 import net.fabricmc.loom.util.AttributeHelper;
@@ -40,7 +41,7 @@ import net.fabricmc.loom.util.AttributeHelper;
 public class ModDependencyFactory {
 	private static final String TARGET_ATTRIBUTE_KEY = "loom-target";
 
-	public static ModDependency create(ArtifactRef artifact, Configuration targetConfig, @Nullable Configuration targetClientConfig, String mappingsSuffix, Project project) {
+	public static ModDependency create(ArtifactRef artifact, ArtifactMetadata metadata, Configuration targetConfig, @Nullable Configuration targetClientConfig, String mappingsSuffix, Project project) {
 		if (targetClientConfig != null && LoomGradleExtension.get(project).getSplitModDependencies().get()) {
 			final Optional<JarSplitter.Target> cachedTarget = readTarget(artifact);
 			JarSplitter.Target target;
@@ -53,11 +54,11 @@ public class ModDependencyFactory {
 			}
 
 			if (target != null) {
-				return new SplitModDependency(artifact, mappingsSuffix, targetConfig, targetClientConfig, target, project);
+				return new SplitModDependency(artifact, metadata, mappingsSuffix, targetConfig, targetClientConfig, target, project);
 			}
 		}
 
-		return new SimpleModDependency(artifact, mappingsSuffix, targetConfig, project);
+		return new SimpleModDependency(artifact, metadata, mappingsSuffix, targetConfig, project);
 	}
 
 	private static Optional<JarSplitter.Target> readTarget(ArtifactRef artifact) {

@@ -30,11 +30,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
@@ -53,6 +53,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
 import org.gradle.build.event.BuildEventsListenerRegistry;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.workers.WorkAction;
@@ -64,18 +65,12 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class AbstractRemapJarTask extends Jar {
-	public static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
-	public static final String MANIFEST_NAMESPACE_KEY = "Fabric-Mapping-Namespace";
-	public static final String MANIFEST_SPLIT_ENV_KEY = "Fabric-Loom-Split-Environment";
-	public static final String MANIFEST_CLIENT_ENTRIES_KEY = "Fabric-Loom-Client-Only-Entries";
-	public static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(MANIFEST_SPLIT_ENV_KEY);
-	public static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(MANIFEST_CLIENT_ENTRIES_KEY);
-
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
 
@@ -110,6 +105,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
+	@Input
+	@Optional
+	@ApiStatus.Internal
+	public abstract Property<String> getJarType();
+
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
 	@Inject
@@ -118,6 +118,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getRemapperIsolation().convention(false).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
+		getJarType().finalizeValueOnRead();
 
 		jarManifestServiceProvider = JarManifestService.get(getProject());
 		usesService(jarManifestServiceProvider);
@@ -137,12 +138,18 @@ public abstract class AbstractRemapJarTask extends Jar {
 			params.getArchiveReproducibleFileOrder().set(isReproducibleFileOrder());
 
 			params.getJarManifestService().set(jarManifestServiceProvider);
+			params.getEntryCompression().set(getEntryCompression());
 
 			if (getIncludesClientOnlyClasses().get()) {
 				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries(getClientSourceSet()));
 				clientOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
+				Collections.sort(clientOnlyEntries);
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
+			}
+
+			if (getJarType().isPresent()) {
+				params.getManifestAttributes().put(Constants.Manifest.JAR_TYPE, getJarType().get());
 			}
 
 			action.execute(params);
@@ -158,8 +165,21 @@ public abstract class AbstractRemapJarTask extends Jar {
 		Property<String> getSourceNamespace();
 		Property<String> getTargetNamespace();
 
+		/**
+		 * Checks whether {@link #getSourceNamespace()} and {@link #getTargetNamespace()}
+		 * have the same value. When this is {@code true}, the user does not intend for any
+		 * remapping to occur. They are using the task for its other features, such as adding
+		 * namespace to the manifest, nesting jars, reproducible builds, etc.
+		 *
+		 * @return whether the source and target namespaces match
+		 */
+		default boolean namespacesMatch() {
+			return this.getSourceNamespace().get().equals(this.getTargetNamespace().get());
+		}
+
 		Property<Boolean> getArchivePreserveFileTimestamps();
 		Property<Boolean> getArchiveReproducibleFileOrder();
+		Property<ZipEntryCompression> getEntryCompression();
 
 		Property<JarManifestService> getJarManifestService();
 		MapProperty<String, String> getManifestAttributes();
@@ -169,8 +189,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	protected void applyClientOnlyManifestAttributes(AbstractRemapParams params, List<String> entries) {
 		params.getManifestAttributes().set(Map.of(
-				MANIFEST_SPLIT_ENV_KEY, "true",
-				MANIFEST_CLIENT_ENTRIES_KEY, String.join(";", entries)
+				Constants.Manifest.SPLIT_ENV, "true",
+				Constants.Manifest.CLIENT_ENTRIES, String.join(";", entries)
 		));
 	}
 
@@ -185,11 +205,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 		}
 
 		protected void modifyJarManifest() throws IOException {
-			int count = ZipUtils.transform(outputFile, Map.of(MANIFEST_PATH, bytes -> {
+			int count = ZipUtils.transform(outputFile, Map.of(Constants.Manifest.PATH, bytes -> {
 				var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
 				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
-				manifest.getMainAttributes().putValue(MANIFEST_NAMESPACE_KEY, getParameters().getTargetNamespace().get());
+				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				manifest.write(out);
@@ -202,9 +222,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 		protected void rewriteJar() throws IOException {
 			final boolean isReproducibleFileOrder = getParameters().getArchiveReproducibleFileOrder().get();
 			final boolean isPreserveFileTimestamps = getParameters().getArchivePreserveFileTimestamps().get();
+			final ZipEntryCompression compression = getParameters().getEntryCompression().get();
 
-			if (isReproducibleFileOrder || !isPreserveFileTimestamps) {
-				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps);
+			if (isReproducibleFileOrder || !isPreserveFileTimestamps || compression != ZipEntryCompression.DEFLATED) {
+				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
 		}
 	}

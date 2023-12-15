@@ -33,6 +33,7 @@ import java.util.Objects;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -44,6 +45,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
@@ -67,6 +69,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private InstallerData installerData;
 	private boolean refreshDeps;
 	private Provider<Boolean> multiProjectOptimisation;
+	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
@@ -85,8 +88,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
 		});
 
-		refreshDeps = project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
+		refreshDeps = manualRefreshDeps();
 		multiProjectOptimisation = GradleUtils.getBooleanPropertyProvider(project, Constants.Properties.MULTI_PROJECT_OPTIMISATION);
+		libraryProcessorFactories = project.getObjects().listProperty(LibraryProcessorManager.LibraryProcessorFactory.class);
+		libraryProcessorFactories.addAll(LibraryProcessorManager.DEFAULT_LIBRARY_PROCESSORS);
+		libraryProcessorFactories.finalizeValueOnRead();
 
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
@@ -210,11 +216,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			builder.offline();
 		}
 
-		if (refreshDeps()) {
+		if (manualRefreshDeps()) {
 			builder.forceDownload();
 		}
 
 		return builder;
+	}
+
+	private boolean manualRefreshDeps() {
+		return project.getGradle().getStartParameter().isRefreshDependencies() || Boolean.getBoolean("loom.refresh");
 	}
 
 	@Override
@@ -230,6 +240,16 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public boolean multiProjectOptimisation() {
 		return multiProjectOptimisation.getOrElse(false);
+	}
+
+	@Override
+	public ListProperty<LibraryProcessorManager.LibraryProcessorFactory> getLibraryProcessors() {
+		return libraryProcessorFactories;
+	}
+
+	@Override
+	public ListProperty<RemapperExtensionHolder> getRemapperExtensions() {
+		return remapperExtensions;
 	}
 
 	@Override

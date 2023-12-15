@@ -49,10 +49,11 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
+import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
-import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class LayeredMappingsDependency implements SelfResolvingDependency, FileCollectionDependency {
@@ -98,11 +99,12 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 		MemoryMappingTree mappings = processor.getMappings(layers);
 
 		try (Writer writer = new StringWriter()) {
-			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+			var tiny2Writer = new Tiny2FileWriter(writer, false);
 
 			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
 			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
-			mappings.accept(nsSwitch);
+			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
+			mappings.accept(addConstructor);
 
 			Files.deleteIfExists(mappingsFile);
 			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));

@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
-public class RunGameTask extends AbstractRunTask {
+public abstract class RunGameTask extends AbstractRunTask {
 	@Inject
 	public RunGameTask(RunConfigSettings settings) {
 		super(proj -> RunConfig.runConfig(proj, settings));

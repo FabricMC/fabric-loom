@@ -27,13 +27,14 @@ package net.fabricmc.loom.configuration.decompile;
 import java.io.File;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.artifacts.ConfigurationContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
-import net.fabricmc.loom.task.UnpickJarTask;
+import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.util.Constants;
 
 public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> {
 	protected final Project project;
@@ -50,11 +51,13 @@ public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> 
 
 	public abstract void afterEvaluation();
 
-	protected final TaskProvider<UnpickJarTask> createUnpickJarTask(String name, File inputJar, File outputJar) {
-		return project.getTasks().register(name, UnpickJarTask.class, unpickJarTask -> {
-			unpickJarTask.getUnpickDefinitions().set(mappingConfiguration.getUnpickDefinitionsFile());
-			unpickJarTask.getInputJar().set(inputJar);
-			unpickJarTask.getOutputJar().set(outputJar);
-		});
+	protected final void configureUnpick(GenerateSourcesTask task, File unpickOutputJar) {
+		final ConfigurationContainer configurations = task.getProject().getConfigurations();
+
+		task.getUnpickDefinitions().set(mappingConfiguration.getUnpickDefinitionsFile());
+		task.getUnpickOutputJar().set(unpickOutputJar);
+		task.getUnpickConstantJar().setFrom(configurations.getByName(Constants.Configurations.MAPPING_CONSTANTS));
+		task.getUnpickClasspath().setFrom(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+		task.getUnpickClasspath().from(configurations.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED));
 	}
 }

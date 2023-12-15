@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.test.util
 
-import net.fabricmc.loom.LoomGradleExtension
 import org.gradle.api.Project
+import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.file.SourceDirectorySet
@@ -36,22 +36,28 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
 import org.jetbrains.annotations.Nullable
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+
+import net.fabricmc.loom.LoomGradleExtension
+import net.fabricmc.loom.extension.LoomFiles
+import net.fabricmc.loom.test.LoomTestConstants
+import net.fabricmc.loom.util.download.Download
 
 import static org.mockito.ArgumentMatchers.any
-import static org.mockito.Mockito.mock
-import static org.mockito.Mockito.when
+import static org.mockito.Mockito.*
 
 class GradleTestUtil {
-    static <T> Property<T> mockProperty(T value) {
-        def mock = mock(Property.class)
-        when(mock.get()).thenReturn(Objects.requireNonNull(value))
-        return mock
-    }
+	static <T> Property<T> mockProperty(T value) {
+		def mock = mock(Property.class)
+		when(mock.get()).thenReturn(Objects.requireNonNull(value))
+		return mock
+	}
 
 	static SourceSet mockSourceSet(String name) {
 		def sourceSet = new DefaultSourceSet(name, mockObjectFactory()) {
-			final ExtensionContainer extensions = null
-		}
+					final ExtensionContainer extensions = null
+				}
 		return sourceSet
 	}
 
@@ -71,7 +77,18 @@ class GradleTestUtil {
 
 	static LoomGradleExtension mockLoomGradleExtension() {
 		def mock = mock(LoomGradleExtension.class)
+		def loomFiles = mockLoomFiles()
 		when(mock.refreshDeps()).thenReturn(false)
+		when(mock.getFiles()).thenReturn(loomFiles)
+		when(mock.download(any())).thenAnswer {
+			Download.create(it.getArgument(0))
+		}
+		return mock
+	}
+
+	static LoomFiles mockLoomFiles() {
+		def mock = mock(LoomFiles.class, new RequiresStubAnswer())
+		doReturn(LoomTestConstants.TEST_DIR).when(mock).getUserCache()
 		return mock
 	}
 
@@ -113,5 +130,16 @@ class GradleTestUtil {
 		when(mock.get()).thenReturn(regularFile)
 		when(mock.isPresent()).thenReturn(true)
 		return mock
+	}
+
+	static RepositoryHandler mockRepositoryHandler() {
+		def mock = mock(RepositoryHandler.class)
+		return mock
+	}
+
+	static class RequiresStubAnswer implements Answer<Object> {
+		Object answer(InvocationOnMock invocation) throws Throwable {
+			throw new RuntimeException("${invocation.getMethod().getName()} is not stubbed")
+		}
 	}
 }

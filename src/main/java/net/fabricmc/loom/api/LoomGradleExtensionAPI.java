@@ -35,6 +35,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
@@ -43,6 +44,8 @@ import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
+import net.fabricmc.loom.api.remapping.RemapperExtension;
+import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
@@ -128,6 +131,8 @@ public interface LoomGradleExtensionAPI {
 	InterfaceInjectionExtensionAPI getInterfaceInjection();
 
 	Property<String> getCustomMinecraftManifest();
+
+	SetProperty<String> getKnownIndyBsms();
 
 	/**
 	 * Disables the deprecated POM generation for a publication.
@@ -218,4 +223,6 @@ public interface LoomGradleExtensionAPI {
 	Property<Boolean> getRuntimeOnlyLog4j();
 
 	Property<Boolean> getSplitModDependencies();
+
+	<T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,29 +26,49 @@ package net.fabricmc.loom.configuration.providers.mappings.tiny;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.jar.Manifest;
 
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
 
 public record TinyJarInfo(boolean v2, Optional<String> minecraftVersionId) {
+	private static final String MANIFEST_PATH = "META-INF/MANIFEST.MF";
+	private static final String MANIFEST_VERSION_ID_ATTRIBUTE = "Minecraft-Version-Id";
+
 	public static TinyJarInfo get(Path jar) {
-		try {
-			return new TinyJarInfo(doesJarContainV2Mappings(jar), Optional.empty());
+		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(jar)) {
+			return new TinyJarInfo(doesJarContainV2Mappings(delegate), getMinecraftVersionId(delegate));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read tiny jar info", e);
 		}
 	}
 
-	private static boolean doesJarContainV2Mappings(Path path) throws IOException {
-		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(path)) {
-			try (BufferedReader reader = Files.newBufferedReader(delegate.fs().getPath("mappings", "mappings.tiny"))) {
-				return MappingReader.detectFormat(reader) == MappingFormat.TINY_2;
-			}
+	private static boolean doesJarContainV2Mappings(FileSystemUtil.Delegate fs) throws IOException {
+		try (BufferedReader reader = Files.newBufferedReader(fs.getPath("mappings", "mappings.tiny"))) {
+			return MappingReader.detectFormat(reader) == MappingFormat.TINY_2_FILE;
 		}
+	}
+
+	private static Optional<String> getMinecraftVersionId(FileSystemUtil.Delegate fs) throws IOException {
+		final Path manifestPath = fs.getPath(MANIFEST_PATH);
+
+		if (Files.exists(manifestPath)) {
+			final var manifest = new Manifest();
+
+			try (InputStream in = Files.newInputStream(manifestPath)) {
+				manifest.read(in);
+			}
+
+			final String minecraftVersionId = manifest.getMainAttributes().getValue(MANIFEST_VERSION_ID_ATTRIBUTE);
+			return Optional.ofNullable(minecraftVersionId);
+		}
+
+		return Optional.empty();
 	}
 }

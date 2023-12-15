@@ -24,53 +24,57 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.configuration.ide.RunConfig
-import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
+import java.nio.charset.StandardCharsets
+
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
-import java.nio.charset.StandardCharsets
+import net.fabricmc.loom.configuration.ide.RunConfig
+import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
 
 class IdeaClasspathModificationsTest extends Specification {
 
-    def "configure exclusions"() {
-        when:
-            def input = fromDummy()
-            def output = IdeaSyncTask.setClasspathModificationsInXml(input, ["/path/to/file.jar"])
+	def "configure exclusions"() {
+		when:
+		def input = fromDummy()
+		def output = IdeaSyncTask.setClasspathModificationsInXml(input, ["/path/to/file.jar"])
 
-        then:
-            output == EXPECTED
-    }
+		then:
+		output == EXPECTED
+	}
 
-    def "re-configure exclusions"() {
-        when:
-            def input = fromDummy()
-            def output = IdeaSyncTask.setClasspathModificationsInXml(input, ["/path/to/file.jar"])
-            output = IdeaSyncTask.setClasspathModificationsInXml(output, ["/path/to/file.jar", "/path/to/another.jar"])
+	def "re-configure exclusions"() {
+		when:
+		def input = fromDummy()
+		def output = IdeaSyncTask.setClasspathModificationsInXml(input, ["/path/to/file.jar"])
+		output = IdeaSyncTask.setClasspathModificationsInXml(output, [
+			"/path/to/file.jar",
+			"/path/to/another.jar"
+		])
 
-        then:
-            output == EXPECTED2
-    }
+		then:
+		output == EXPECTED2
+	}
 
-    private String fromDummy() {
-        String dummyConfig
+	private String fromDummy() {
+		String dummyConfig
 
-        IdeaSyncTask.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml").withCloseable {
-            dummyConfig = new String(it.readAllBytes(), StandardCharsets.UTF_8)
-        }
+		IdeaSyncTask.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml").withCloseable {
+			dummyConfig = new String(it.readAllBytes(), StandardCharsets.UTF_8)
+		}
 
-        dummyConfig = dummyConfig.replace("%NAME%", "Minecraft Client")
-        dummyConfig = dummyConfig.replace("%MAIN_CLASS%", "net.minecraft.client.Main")
-        dummyConfig = dummyConfig.replace("%IDEA_MODULE%", "main.test")
-        dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", ".run")
-        dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
-        dummyConfig = dummyConfig.replace("%VM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
+		dummyConfig = dummyConfig.replace("%NAME%", "Minecraft Client")
+		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", "net.minecraft.client.Main")
+		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", "main.test")
+		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", ".run")
+		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
+		dummyConfig = dummyConfig.replace("%VM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
 
-        return dummyConfig
-    }
+		return dummyConfig
+	}
 
-    @Language("XML")
-    private static final String EXPECTED = '''
+	@Language("XML")
+	private static final String EXPECTED = '''
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" factoryName="Application" name="Minecraft Client" type="Application">
     <option name="MAIN_CLASS_NAME" value="net.minecraft.client.Main"/>
@@ -89,8 +93,8 @@ class IdeaClasspathModificationsTest extends Specification {
 </component>
 '''.trim()
 
-    @Language("XML")
-    private static final String EXPECTED2 = '''
+	@Language("XML")
+	private static final String EXPECTED2 = '''
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" factoryName="Application" name="Minecraft Client" type="Application">
     <option name="MAIN_CLASS_NAME" value="net.minecraft.client.Main"/>
@@ -108,5 +112,4 @@ class IdeaClasspathModificationsTest extends Specification {
   <classpathModifications><entry exclude="true" path="/path/to/file.jar"/><entry exclude="true" path="/path/to/another.jar"/></classpathModifications></configuration>
 </component>
 '''.trim()
-
 }

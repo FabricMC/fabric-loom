@@ -24,11 +24,16 @@
 
 package net.fabricmc.loom.configuration;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.plugins.JavaPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomRepositoryPlugin;
@@ -36,6 +41,8 @@ import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
 
 public record InstallerData(String version, JsonObject installerJson) {
+	private static final Logger LOGGER = LoggerFactory.getLogger(InstallerData.class);
+
 	public void applyToProject(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
@@ -45,35 +52,61 @@ public record InstallerData(String version, JsonObject installerJson) {
 
 		extension.setInstallerData(this);
 
-		JsonObject libraries = installerJson.get("libraries").getAsJsonObject();
-		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);
-		Configuration apDepsConfig = project.getConfigurations().getByName("annotationProcessor");
+		final JsonObject libraries = installerJson.get("libraries").getAsJsonObject();
 
-		libraries.get("common").getAsJsonArray().forEach(jsonElement -> {
-			String name = jsonElement.getAsJsonObject().get("name").getAsString();
-			project.getLogger().debug("Adding dependency ({}) from installer JSON", name);
+		applyDependendencies(libraries.get("common").getAsJsonArray(), project);
+
+		// Apply development dependencies if they exist.
+		if (libraries.has("development")) {
+			applyDependendencies(libraries.get("development").getAsJsonArray(), project);
+		}
+	}
+
+	private void applyDependendencies(JsonArray jsonArray, Project project) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);
+		Configuration annotationProcessor = project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+
+		for (JsonElement jsonElement : jsonArray) {
+			final JsonObject jsonObject = jsonElement.getAsJsonObject();
+			final String name = jsonObject.get("name").getAsString();
+
+			LOGGER.debug("Adding dependency ({}) from installer JSON", name);
 
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
-			modDep.setTransitive(false);
+			modDep.setTransitive(false); // Match the launcher in not being transitive
 			loaderDepsConfig.getDependencies().add(modDep);
 
-			// TODO: work around until https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14 is fixed.
+			// Work around https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14.
 			if (!IdeaUtils.isIdeaSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
-				apDepsConfig.getDependencies().add(modDep);
+				annotationProcessor.getDependencies().add(modDep);
 			}
 
 			// If user choose to use dependencyResolutionManagement, then they should declare
 			// these repositories manually in the settings file.
-			if (jsonElement.getAsJsonObject().has("url") && !project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
-				String url = jsonElement.getAsJsonObject().get("url").getAsString();
-				long count = project.getRepositories().stream().filter(artifactRepository -> artifactRepository instanceof MavenArtifactRepository)
-						.map(artifactRepository -> (MavenArtifactRepository) artifactRepository)
-						.filter(mavenArtifactRepository -> mavenArtifactRepository.getUrl().toString().equalsIgnoreCase(url)).count();
-
-				if (count == 0) {
-					project.getRepositories().maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(jsonElement.getAsJsonObject().get("url").getAsString()));
-				}
+			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
+				continue;
 			}
-		});
+
+			addRepository(jsonObject, project);
+		}
+	}
+
+	private void addRepository(JsonObject jsonObject, Project project) {
+		if (!jsonObject.has("url")) {
+			return;
+		}
+
+		final String url = jsonObject.get("url").getAsString();
+		final boolean isPresent = project.getRepositories().stream()
+				.filter(artifactRepository -> artifactRepository instanceof MavenArtifactRepository)
+				.map(artifactRepository -> (MavenArtifactRepository) artifactRepository)
+				.anyMatch(mavenArtifactRepository -> mavenArtifactRepository.getUrl().toString().equalsIgnoreCase(url));
+
+		if (isPresent) {
+			return;
+		}
+
+		project.getRepositories().maven(mavenArtifactRepository -> mavenArtifactRepository.setUrl(jsonObject.get("url").getAsString()));
 	}
 }

@@ -24,42 +24,43 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.ipc.IPCClient
-import net.fabricmc.loom.util.ipc.IPCServer
-import spock.lang.Specification
-import spock.lang.Timeout
-
 import java.nio.file.Files
 import java.util.function.Consumer
 
+import spock.lang.Specification
+import spock.lang.Timeout
+
+import net.fabricmc.loom.util.ipc.IPCClient
+import net.fabricmc.loom.util.ipc.IPCServer
+
 @Timeout(20)
 class IPCTest extends Specification {
-    def "ipc test"() {
-        given:
-            def path = Files.createTempFile("loom", "ipc")
-            Files.deleteIfExists(path)
+	def "ipc test"() {
+		given:
+		def path = Files.createTempFile("loom", "ipc")
+		Files.deleteIfExists(path)
 
-            def received = []
-            Consumer<String> consumer = { str ->
-                println str
-                received << str
-            }
+		def received = []
+		Consumer<String> consumer = { str ->
+			println str
+			received << str
+		}
 
-        when:
-            def ipcServer = new IPCServer(path, consumer)
+		when:
+		def ipcServer = new IPCServer(path, consumer)
 
-            new IPCClient(path).withCloseable { client ->
-               client.accept("Test")
-               client.accept("Hello")
-            }
+		new IPCClient(path).withCloseable { client ->
+			client.accept("Test")
+			client.accept("Hello")
+		}
 
-            // Allow ipcServer to finish reading, before closing.
-            while (received.size() != 2) { }
-            ipcServer.close()
+		// Allow ipcServer to finish reading, before closing.
+		while (received.size() != 2) { }
+		ipcServer.close()
 
-        then:
-            received.size() == 2
-            received[0] == "Test"
-            received[1] == "Hello"
-    }
+		then:
+		received.size() == 2
+		received[0] == "Test"
+		received[1] == "Hello"
+	}
 }

@@ -32,9 +32,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,7 +51,6 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -61,6 +62,7 @@ import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public class ModProcessor {
 	private static final String fromM = MappingsNamespace.INTERMEDIARY.toString();
@@ -146,6 +148,15 @@ public class ModProcessor {
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
+		final Set<InputTag> remapMixins = new HashSet<>();
+		final boolean requiresStaticMixinRemap = remapList.stream()
+				.anyMatch(modDependency -> modDependency.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC);
+
+		if (requiresStaticMixinRemap) {
+			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
+			builder.extension(new MixinExtension(remapMixins::contains));
+		}
+
 		final TinyRemapper remapper = builder.build();
 
 		for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
@@ -172,6 +183,18 @@ public class ModProcessor {
 			InputTag tag = remapper.createInputTag();
 
 			project.getLogger().debug("Adding " + info.getInputFile() + " as a remap input");
+
+			// Note: this is done at a jar level, not at the level of an individual mixin config.
+			// If a mod has multiple mixin configs, it's assumed that either all or none of them have refmaps.
+			if (info.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC) {
+				if (!requiresStaticMixinRemap) {
+					// Should be impossible but stranger things have happened.
+					throw new IllegalStateException("Was not configured for static remap, but a mod required it?!");
+				}
+
+				project.getLogger().info("Remapping mixins in {} statically", info.getInputFile());
+				remapMixins.add(tag);
+			}
 
 			remapper.readInputsAsync(tag, info.getInputFile());
 			tagMap.put(info, tag);
@@ -230,10 +253,10 @@ public class ModProcessor {
 	}
 
 	private void remapJarManifestEntries(Path jar) throws IOException {
-		ZipUtils.transform(jar, Map.of(RemapJarTask.MANIFEST_PATH, bytes -> {
+		ZipUtils.transform(jar, Map.of(Constants.Manifest.PATH, bytes -> {
 			var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
-			manifest.getMainAttributes().putValue(RemapJarTask.MANIFEST_NAMESPACE_KEY, toM);
+			manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, toM);
 
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			manifest.write(out);

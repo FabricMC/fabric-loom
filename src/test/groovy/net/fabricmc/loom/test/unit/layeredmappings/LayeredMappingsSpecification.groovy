@@ -48,7 +48,7 @@ import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadBuilder
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
-import net.fabricmc.mappingio.format.Tiny2Writer
+import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 
 abstract class LayeredMappingsSpecification extends Specification implements LayeredMappingsTestConstants {
@@ -102,7 +102,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	String getTiny(MemoryMappingTree mappingTree) {
 		def sw = new StringWriter()
-		mappingTree.accept(new Tiny2Writer(sw, false))
+		mappingTree.accept(new Tiny2FileWriter(sw, false))
 		return sw.toString()
 	}
 

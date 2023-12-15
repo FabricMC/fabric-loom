@@ -106,7 +106,6 @@ public abstract class FabricApiExtension {
 		DataGenerationSettings settings = getProject().getObjects().newInstance(DataGenerationSettings.class);
 		settings.getOutputDirectory().set(getProject().file("src/main/generated"));
 		settings.getCreateRunConfiguration().convention(true);
-		settings.getCreateSourceSet().convention(true);
 		settings.getCreateSourceSet().convention(false);
 		settings.getStrictValidation().convention(false);
 		settings.getAddToResources().convention(true);
@@ -163,6 +162,8 @@ public abstract class FabricApiExtension {
 				// Create a classpath group for this mod. Assume that the main sourceset is already in a group.
 				mod.sourceSet(DATAGEN_SOURCESET_NAME);
 			});
+
+			extension.createRemapConfigurations(sourceSets.getByName(DATAGEN_SOURCESET_NAME));
 		}
 
 		if (settings.getCreateRunConfiguration().get()) {

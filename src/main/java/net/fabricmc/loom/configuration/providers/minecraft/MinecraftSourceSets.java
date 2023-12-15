@@ -152,13 +152,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		@Override
 		public void applyDependencies(BiConsumer<String, String> consumer, List<String> targets) {
 			Preconditions.checkArgument(targets.size() == 2);
-			Preconditions.checkArgument(targets.contains("common"));
-			Preconditions.checkArgument(targets.contains("clientOnly"));
+			Preconditions.checkArgument(targets.contains(MinecraftJar.Common.NAME));
+			Preconditions.checkArgument(targets.contains(MinecraftJar.ClientOnly.NAME));
 
-			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), "common");
-			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), "clientOnly");
-			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), "common");
-			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), "clientOnly");
+			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Common.NAME);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.ClientOnly.NAME);
+			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), MinecraftJar.Common.NAME);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), MinecraftJar.ClientOnly.NAME);
 		}
 
 		@Override

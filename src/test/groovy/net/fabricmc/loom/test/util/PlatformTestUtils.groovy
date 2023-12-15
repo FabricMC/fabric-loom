@@ -58,6 +58,11 @@ class PlatformTestUtils implements Platform  {
 		supportsUnixDomainSockets
 	}
 
+	@Override
+	boolean isRaspberryPi() {
+		return false
+	}
+
 	@Immutable
 	static class TestArchitecture implements Architecture {
 		boolean is64Bit

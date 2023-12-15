@@ -1,25 +1,25 @@
 [versions]
 kotlin = "1.9.0"
-asm = "9.5"
-commons-io = "2.13.0"
+asm = "9.6"
+commons-io = "2.15.0"
 gson = "2.10.1"
-jackson = "2.15.2"
-guava = "32.1.2-jre"
+jackson = "2.16.0"
+guava = "32.1.3-jre"
 
 stitch = "0.6.2"
-tiny-remapper = "0.8.9"
+tiny-remapper = "0.8.11"
 access-widener = "2.1.0"
-mapping-io = "0.4.2"
+mapping-io = "0.5.0"
 lorenz-tiny = "4.0.2"
-mercury = "0.4.0"
+mercury = "0.4.1"
 kotlinx-metadata = "0.7.0"
 
 # Plugins
 spotless = "6.20.0"
-test-retry = "1.5.4"
-checkstyle = "10.12.2"
+test-retry = "1.5.6"
+checkstyle = "10.12.5"
 codenarc = "3.3.0"
-jacoco = "0.8.10"
+jacoco = "0.8.11"
 
 [libraries]
 # Loom compile libraries

@@ -56,4 +56,6 @@ public interface Platform {
 	Architecture getArchitecture();
 
 	boolean supportsUnixDomainSockets();
+
+	boolean isRaspberryPi();
 }

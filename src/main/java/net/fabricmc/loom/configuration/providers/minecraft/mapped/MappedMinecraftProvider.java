@@ -42,7 +42,7 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Merged extends ProviderImpl {
-		String MERGED = "merged";
+		String MERGED = MinecraftJar.Merged.NAME;
 
 		default MinecraftJar getMergedJar() {
 			return new MinecraftJar.Merged(getJar(MERGED));
@@ -55,8 +55,8 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Split extends ProviderImpl {
-		String COMMON = "common";
-		String CLIENT_ONLY = "clientOnly";
+		String COMMON = MinecraftJar.Common.NAME;
+		String CLIENT_ONLY = MinecraftJar.ClientOnly.NAME;
 
 		default MinecraftJar getCommonJar() {
 			return new MinecraftJar.Common(getJar(COMMON));
@@ -76,7 +76,7 @@ public interface MappedMinecraftProvider {
 		SingleJarEnvType env();
 
 		default String envName() {
-			return "%sOnly".formatted(env());
+			return env().getName();
 		}
 
 		default MinecraftJar getEnvOnlyJar() {

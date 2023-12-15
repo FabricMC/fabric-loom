@@ -31,10 +31,12 @@ import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
 
 public abstract sealed class ModDependency permits SplitModDependency, SimpleModDependency {
 	private final ArtifactRef artifact;
+	private final ArtifactMetadata metadata;
 	protected final String group;
 	protected final String name;
 	protected final String version;
@@ -43,8 +45,9 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	protected final String mappingsSuffix;
 	protected final Project project;
 
-	public ModDependency(ArtifactRef artifact, String mappingsSuffix, Project project) {
+	public ModDependency(ArtifactRef artifact, ArtifactMetadata metadata, String mappingsSuffix, Project project) {
 		this.artifact = artifact;
+		this.metadata = metadata;
 		this.group = artifact.group();
 		this.name = artifact.name();
 		this.version = artifact.version();
@@ -76,6 +79,10 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 
 	public ArtifactRef getInputArtifact() {
 		return artifact;
+	}
+
+	public ArtifactMetadata getMetadata() {
+		return metadata;
 	}
 
 	protected String getRemappedGroup() {

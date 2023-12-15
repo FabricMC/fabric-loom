@@ -90,7 +90,7 @@ import net.fabricmc.loom.util.ipc.IPCServer;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
-import net.fabricmc.mappingio.format.Tiny2Writer;
+import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 @DisableCachingByDefault
@@ -483,7 +483,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {
-			Tiny2Writer tiny2Writer = new Tiny2Writer(writer, false);
+			var tiny2Writer = new Tiny2FileWriter(writer, false);
 			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, MappingsNamespace.NAMED.toString()));
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to write mappings", e);

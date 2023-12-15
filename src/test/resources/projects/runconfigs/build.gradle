@@ -25,6 +25,13 @@ loom {
 			name = 'Custom Main Class'
 			mainClass.set 'net.fabricmc.example.Main'
 		}
+
+		// Test that removing a run config works
+		removeMe {
+			inherit server
+		}
+
+		remove removeMe
 	}
 
 	runConfigs.configureEach {

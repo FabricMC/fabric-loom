@@ -16,9 +16,21 @@ jobs:
       image: gradle:${{ matrix.version }}
       options: --user root
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: gradle/wrapper-validation-action@v1
       - run: gradle build check -x test --stacktrace --warning-mode fail
+
+  build_windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+      - uses: gradle/wrapper-validation-action@v1
+      - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
   # This job is used to feed the test matrix of next job to allow the tests to run in parallel
   prepare_test_matrix:
@@ -31,7 +43,7 @@ jobs:
       options: --user root
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: gradle writeActionsTestMatrix --stacktrace --warning-mode fail
       -
         id: set-matrix
@@ -55,7 +67,7 @@ jobs:
       options: --user root
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: gradle printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
@@ -84,9 +96,9 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: setup jdk ${{ matrix.java }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
@@ -118,8 +130,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'

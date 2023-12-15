@@ -1,8 +1,9 @@
 package net.fabricmc.example;
 
-import net.fabricmc.api.ModInitializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import net.fabricmc.api.ModInitializer;
 
 public class ExampleMod implements ModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("modid");
@@ -13,5 +14,6 @@ public class ExampleMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Hello simple Fabric mod!");
+		LOGGER.info("Hello World!");
 	}
 }

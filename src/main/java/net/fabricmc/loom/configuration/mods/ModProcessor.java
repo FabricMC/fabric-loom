@@ -51,6 +51,7 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -155,6 +156,10 @@ public class ModProcessor {
 		if (requiresStaticMixinRemap) {
 			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
 			builder.extension(new MixinExtension(remapMixins::contains));
+		}
+
+		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
+			holder.apply(builder, fromM, toM, project.getObjects());
 		}
 
 		final TinyRemapper remapper = builder.build();

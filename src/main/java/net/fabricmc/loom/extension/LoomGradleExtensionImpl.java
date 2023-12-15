@@ -248,6 +248,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
+	public ListProperty<RemapperExtensionHolder> getRemapperExtensions() {
+		return remapperExtensions;
+	}
+
+	@Override
 	protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
 		provider.getMinecraftVersion().disallowChanges();

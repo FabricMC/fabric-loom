@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -97,7 +97,7 @@ public class MappingConfiguration {
 		final TinyJarInfo jarInfo = TinyJarInfo.get(inputJar);
 		jarInfo.minecraftVersionId().ifPresent(id -> {
 			if (!minecraftProvider.minecraftVersion().equals(id)) {
-				LOGGER.warn("The mappings (%s) were not build for minecraft version (%s) produce with caution.".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()));
+				LOGGER.warn("The mappings (%s) were not built for Minecraft version %s, proceed with caution.".formatted(dependency.getDepString(), minecraftProvider.minecraftVersion()));
 			}
 		});
 

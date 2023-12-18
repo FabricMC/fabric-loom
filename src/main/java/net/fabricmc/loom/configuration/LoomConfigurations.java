@@ -30,9 +30,7 @@ import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -83,23 +81,8 @@ public abstract class LoomConfigurations implements Runnable {
 		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Role.RESOLVABLE);
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
-		registerNonTransitive(Constants.Configurations.INCLUDE, Role.RESOLVABLE).configure(configuration -> {
-			configuration.withDependencies(dependencySet -> {
-				dependencySet.all(dependency -> {
-					if (!(dependency instanceof ModuleDependency module)) {
-						return;
-					}
-
-					final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
-
-					if (category != null && (category.getName().equals(Category.REGULAR_PLATFORM) || category.getName().equals(Category.ENFORCED_PLATFORM))) {
-						return;
-					}
-
-					module.setTransitive(false);
-				});
-			});
-        });
+		// We don't need to make this non-transitive due to the way we resolve it. Also, doing so would break platform dependencies.
+		register(Constants.Configurations.INCLUDE, Role.RESOLVABLE);
 		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
 
 		register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {

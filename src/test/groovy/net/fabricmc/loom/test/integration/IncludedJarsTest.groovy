@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,28 +32,25 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MultiProjectTest extends Specification implements GradleProjectTestTrait {
+class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #version)"() {
+	def "included jars (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "multiproject", version: version)
+		def gradle = gradleProject(project: "includedJars", version: version)
 
 		when:
-		def result = gradle.run(tasks: [
-			"build",
-			"eclipse",
-			"vscode",
-			"idea"
-		])
+		def result = gradle.run(tasks: ["remapJar"])
 
 		then:
-		result.task(":build").outcome == SUCCESS
-		result.task(":core:build").outcome == SUCCESS
-		result.task(":example:build").outcome == SUCCESS
+		result.task(":remapJar").outcome == SUCCESS
 
-		gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/example-1.0.0.jar")
-		gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/core-1.0.0.jar")
-		gradle.hasOutputZipEntry("multiproject-1.0.0.jar", "META-INF/jars/fabric-api-base-0.3.0+f74f7c7d7d.jar")
+		// Assert directly declared dependencies are present
+		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-core-2.22.0.jar")
+		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-text-serializer-gson-4.14.0.jar")
+
+		// But not transitives.
+		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-api-2.22.0.jar")
+		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-api-4.14.0.jar")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

@@ -81,7 +81,8 @@ public abstract class LoomConfigurations implements Runnable {
 		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Role.RESOLVABLE);
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
-		registerNonTransitive(Constants.Configurations.INCLUDE, Role.RESOLVABLE);
+		// We don't need to make this non-transitive due to the way we resolve it. Also, doing so would break platform dependencies.
+		register(Constants.Configurations.INCLUDE, Role.RESOLVABLE);
 		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
 
 		register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {

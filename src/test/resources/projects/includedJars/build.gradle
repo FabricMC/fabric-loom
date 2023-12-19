@@ -1,0 +1,21 @@
+plugins {
+	id 'fabric-loom'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft 'com.mojang:minecraft:1.18.2'
+	mappings 'net.fabricmc:yarn:1.18.2+build.1:v2'
+	modImplementation 'net.fabricmc:fabric-loader:0.13.3'
+
+	include 'org.apache.logging.log4j:log4j-core:2.22.0'
+
+	// Test bom/platform dependencies
+	include platform('net.kyori:adventure-bom:4.14.0')
+
+	// bom provides version
+	include 'net.kyori:adventure-text-serializer-gson'
+}

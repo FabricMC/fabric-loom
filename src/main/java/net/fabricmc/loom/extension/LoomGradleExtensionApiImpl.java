@@ -25,12 +25,14 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -65,6 +67,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfigura
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
+import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
@@ -87,8 +91,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
-
-	private final ModVersionParser versionParser;
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
@@ -123,8 +125,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
 		this.intermediateMappingsProvider.finalizeValueOnRead();
-
-		this.versionParser = new ModVersionParser(project);
 
 		this.deprecationHelper = new DeprecationHelper.ProjectBased(project);
 
@@ -252,7 +252,17 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public String getModVersion() {
-		return versionParser.getModVersion();
+		try {
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(SourceSetHelper.getMainSourceSet(getProject()));
+
+			if (fabricModJson == null) {
+				throw new RuntimeException("Could not find a fabric.mod.json file in the main sourceset");
+			}
+
+			return fabricModJson.getModVersion();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read mod version from main sourceset.", e);
+		}
 	}
 
 	@Override

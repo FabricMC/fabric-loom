@@ -37,6 +37,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
@@ -404,6 +405,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		holder.getRemapperExtensionClassName().set(remapperExtensionClass.getName());
 		remapperExtensions.add(holder);
+	}
+
+	@Override
+	public Provider<String> getMinecraftVersion() {
+		return getProject().provider(() -> LoomGradleExtension.get(getProject()).getMinecraftProvider().minecraftVersion());
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

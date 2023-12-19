@@ -35,6 +35,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
@@ -225,4 +226,9 @@ public interface LoomGradleExtensionAPI {
 	Property<Boolean> getSplitModDependencies();
 
 	<T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);
+
+	/**
+	 * @return The minecraft version, as a {@link Provider}.
+	 */
+	Provider<String> getMinecraftVersion();
 }

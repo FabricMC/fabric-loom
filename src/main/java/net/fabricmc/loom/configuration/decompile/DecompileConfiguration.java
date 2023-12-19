@@ -30,8 +30,8 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
@@ -42,12 +42,14 @@ public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> 
 	protected final LoomGradleExtension extension;
 	protected final MappingConfiguration mappingConfiguration;
 
-	public DecompileConfiguration(ConfigContext configContext, T minecraftProvider) {
-		this.project = configContext.project();
+	public DecompileConfiguration(Project project, T minecraftProvider) {
+		this.project = project;
 		this.minecraftProvider = minecraftProvider;
-		this.extension = configContext.extension();
+		this.extension = LoomGradleExtension.get(project);
 		this.mappingConfiguration = extension.getMappingConfiguration();
 	}
+
+	public abstract String getTaskName(MinecraftJar.Type type);
 
 	public abstract void afterEvaluation();
 

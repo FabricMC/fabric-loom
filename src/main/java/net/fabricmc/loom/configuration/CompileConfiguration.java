@@ -222,8 +222,10 @@ public abstract class CompileConfiguration implements Runnable {
 	private void configureDecompileTasks(ConfigContext configContext) {
 		final LoomGradleExtension extension = configContext.extension();
 
-		extension.getMinecraftJarConfiguration().get().getDecompileConfigurationBiFunction()
-				.apply(configContext, extension.getNamedMinecraftProvider()).afterEvaluation();
+		extension.getMinecraftJarConfiguration().get()
+				.getDecompileConfigurationBiFunction()
+				.apply(configContext.project(), extension.getNamedMinecraftProvider())
+				.afterEvaluation();
 	}
 
 	private Path getLockFile() {

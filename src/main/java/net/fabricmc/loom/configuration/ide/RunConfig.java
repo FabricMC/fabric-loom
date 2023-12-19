@@ -111,8 +111,11 @@ public class RunConfig {
 		return e;
 	}
 
-	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String environment) {
-		runConfig.configName += extension.isRootProject() ? "" : " (" + project.getPath() + ")";
+	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String environment, boolean appendProjectPath) {
+		if (appendProjectPath && !extension.isRootProject()) {
+			runConfig.configName += " (" + project.getPath() + ")";
+		}
+
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 
 		runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
@@ -167,9 +170,10 @@ public class RunConfig {
 			runDir = "run";
 		}
 
+		boolean appendProjectPath = settings.getAppendProjectPathToConfigName();
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
-		populate(project, extension, runConfig, environment);
+		populate(project, extension, runConfig, environment, appendProjectPath);
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;

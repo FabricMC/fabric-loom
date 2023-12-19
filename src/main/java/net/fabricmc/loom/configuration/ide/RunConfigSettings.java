@@ -67,8 +67,19 @@ public class RunConfigSettings implements Named {
 	 * The full name of the run configuration, i.e. 'Minecraft Client'.
 	 *
 	 * <p>By default this is determined from the base name.
+	 *
+	 * <p>Note: unless the project is the root project (or {@link #appendProjectPathToConfigName} is disabled),
+	 * the project path will be appended automatically, e.g. 'Minecraft Client (:some:project)'.
 	 */
 	private String configName;
+
+	/**
+	 * Whether to append the project path to the {@link #configName} when {@code project} isn't the root project.
+	 *
+	 * <p>Warning: could produce ambiguous run config names if disabled, unless used carefully in conjunction with
+	 * {@link #configName}.
+	 */
+	private boolean appendProjectPathToConfigName;
 
 	/**
 	 * The default main class of the run configuration.
@@ -117,6 +128,7 @@ public class RunConfigSettings implements Named {
 	public RunConfigSettings(Project project, String name) {
 		this.name = name;
 		this.project = project;
+		this.appendProjectPathToConfigName = true;
 		this.extension = LoomGradleExtension.get(project);
 		this.ideConfigGenerated = extension.isRootProject();
 		this.mainClass = project.getObjects().property(String.class).convention(project.provider(() -> {
@@ -172,6 +184,14 @@ public class RunConfigSettings implements Named {
 
 	public void setConfigName(String name) {
 		this.configName = name;
+	}
+
+	public boolean getAppendProjectPathToConfigName() {
+		return appendProjectPathToConfigName;
+	}
+
+	public void setAppendProjectPathToConfigName(boolean append) {
+		appendProjectPathToConfigName = append;
 	}
 
 	public String getDefaultMainClass() {

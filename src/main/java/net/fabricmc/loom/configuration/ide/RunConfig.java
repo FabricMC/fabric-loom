@@ -170,7 +170,7 @@ public class RunConfig {
 			runDir = "run";
 		}
 
-		boolean appendProjectPath = settings.getAppendProjectPathToConfigName();
+		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 		populate(project, extension, runConfig, environment, appendProjectPath);

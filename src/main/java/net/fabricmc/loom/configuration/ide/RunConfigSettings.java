@@ -79,7 +79,7 @@ public class RunConfigSettings implements Named {
 	 * <p>Warning: could produce ambiguous run config names if disabled, unless used carefully in conjunction with
 	 * {@link #configName}.
 	 */
-	private boolean appendProjectPathToConfigName;
+	private final Property<Boolean> appendProjectPathToConfigName;
 
 	/**
 	 * The default main class of the run configuration.
@@ -128,7 +128,7 @@ public class RunConfigSettings implements Named {
 	public RunConfigSettings(Project project, String name) {
 		this.name = name;
 		this.project = project;
-		this.appendProjectPathToConfigName = true;
+		this.appendProjectPathToConfigName = project.getObjects().property(Boolean.class).convention(true);
 		this.extension = LoomGradleExtension.get(project);
 		this.ideConfigGenerated = extension.isRootProject();
 		this.mainClass = project.getObjects().property(String.class).convention(project.provider(() -> {
@@ -186,12 +186,8 @@ public class RunConfigSettings implements Named {
 		this.configName = name;
 	}
 
-	public boolean getAppendProjectPathToConfigName() {
+	public Property<Boolean> getAppendProjectPathToConfigName() {
 		return appendProjectPathToConfigName;
-	}
-
-	public void setAppendProjectPathToConfigName(boolean append) {
-		appendProjectPathToConfigName = append;
 	}
 
 	public String getDefaultMainClass() {

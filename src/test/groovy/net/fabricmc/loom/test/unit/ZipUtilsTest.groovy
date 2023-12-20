@@ -165,11 +165,11 @@ class ZipUtilsTest extends Specification {
 		def fileInside = dir.resolve("text.txt")
 		Files.writeString(fileInside, "hello world")
 		ZipUtils.pack(dir, zip)
-		ZipReprocessorUtil.reprocessZip(zip.toFile(), true, false)
+		ZipReprocessorUtil.reprocessZip(zip, true, false)
 
 		when:
 		// Add an entry to it
-		ZipReprocessorUtil.appendZipEntry(zip.toFile(), "fabric.mod.json", "Some text".getBytes(StandardCharsets.UTF_8))
+		ZipReprocessorUtil.appendZipEntry(zip, "fabric.mod.json", "Some text".getBytes(StandardCharsets.UTF_8))
 
 		// Reset the timezone back
 		TimeZone.setDefault(currentTimezone)

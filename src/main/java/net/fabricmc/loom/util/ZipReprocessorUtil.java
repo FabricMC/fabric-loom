@@ -24,12 +24,11 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
@@ -87,16 +86,19 @@ public class ZipReprocessorUtil {
 		return name1.compareTo(name2);
 	}
 
-	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
+	public static void reprocessZip(Path file, boolean reproducibleFileOrder, boolean preserveFileTimestamps) throws IOException {
 		reprocessZip(file, reproducibleFileOrder, preserveFileTimestamps, ZipEntryCompression.DEFLATED);
 	}
 
-	public static void reprocessZip(File file, boolean reproducibleFileOrder, boolean preserveFileTimestamps, ZipEntryCompression zipEntryCompression) throws IOException {
+	public static void reprocessZip(Path file, boolean reproducibleFileOrder, boolean preserveFileTimestamps, ZipEntryCompression zipEntryCompression) throws IOException {
 		if (!reproducibleFileOrder && preserveFileTimestamps) {
 			return;
 		}
 
-		try (var zipFile = new ZipFile(file)) {
+		final Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
+
+		try (var zipFile = new ZipFile(file.toFile());
+				var fileOutputStream = Files.newOutputStream(tempFile)) {
 			ZipEntry[] entries;
 
 			if (reproducibleFileOrder) {
@@ -108,9 +110,7 @@ public class ZipReprocessorUtil {
 						.toArray(ZipEntry[]::new);
 			}
 
-			final var outZip = new ByteArrayOutputStream(entries.length);
-
-			try (var zipOutputStream = new ZipOutputStream(outZip)) {
+			try (var zipOutputStream = new ZipOutputStream(fileOutputStream)) {
 				zipOutputStream.setMethod(zipOutputStreamCompressionMethod(zipEntryCompression));
 
 				for (ZipEntry entry : entries) {
@@ -125,11 +125,9 @@ public class ZipReprocessorUtil {
 					copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
 				}
 			}
-
-			try (var fileOutputStream = new FileOutputStream(file)) {
-				outZip.writeTo(fileOutputStream);
-			}
 		}
+
+		Files.move(tempFile, file, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	/**
@@ -137,15 +135,20 @@ public class ZipReprocessorUtil {
 	 * The new entry is added with a constant time stamp to ensure reproducibility.
 	 * This method should only be used when a reproducible output is required, use {@link ZipUtils#add(Path, String, byte[])} normally.
 	 */
-	public static void appendZipEntry(File file, String path, byte[] data) throws IOException {
-		try (var zipFile = new ZipFile(file)) {
+	public static void appendZipEntry(Path file, String path, byte[] data) throws IOException {
+		final Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
+
+		try (var zipFile = new ZipFile(file.toFile());
+				var fileOutputStream = Files.newOutputStream(tempFile)) {
 			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);
 
-			final var outZip = new ByteArrayOutputStream(entries.length);
-
-			try (var zipOutputStream = new ZipOutputStream(outZip)) {
+			try (var zipOutputStream = new ZipOutputStream(fileOutputStream)) {
 				// Copy existing entries
 				for (ZipEntry entry : entries) {
+					if (entry.getName().equals(path)) {
+						throw new IllegalArgumentException("Zip file (%s) already contains entry (%s)".formatted(file.getFileName().toString(), path));
+					}
+
 					copyZipEntry(zipOutputStream, entry, zipFile.getInputStream(entry));
 				}
 
@@ -156,11 +159,9 @@ public class ZipReprocessorUtil {
 				zipOutputStream.write(data, 0, data.length);
 				zipOutputStream.closeEntry();
 			}
-
-			try (var fileOutputStream = new FileOutputStream(file)) {
-				outZip.writeTo(fileOutputStream);
-			}
 		}
+
+		Files.move(tempFile, file, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	private static void copyZipEntry(ZipOutputStream zipOutputStream, ZipEntry entry, InputStream inputStream) throws IOException {

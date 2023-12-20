@@ -225,7 +225,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 			final ZipEntryCompression compression = getParameters().getEntryCompression().get();
 
 			if (isReproducibleFileOrder || !isPreserveFileTimestamps || compression != ZipEntryCompression.DEFLATED) {
-				ZipReprocessorUtil.reprocessZip(outputFile.toFile(), isReproducibleFileOrder, isPreserveFileTimestamps, compression);
+				ZipReprocessorUtil.reprocessZip(outputFile, isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
 		}
 	}

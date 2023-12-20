@@ -47,6 +47,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.kotlin.KotlinClasspath;
@@ -124,6 +125,8 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	private TinyRemapper tinyRemapper;
+	private InputTag mixinClassPathTag;
+	private InputTag noneMixinClassPathTag;
 	@Nullable
 	private KotlinRemapperClassloader kotlinRemapperClassloader;
 	private final Map<String, InputTag> inputTagMap = new HashMap<>();
@@ -139,7 +142,9 @@ public class TinyRemapperService implements SharedService {
 		}
 
 		if (useMixinExtension) {
-			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
+			// Only run the mixin extension on files that are being remapped (inputTagMap)
+			// or classpath entries that originally had their mixins remapped by TR.
+			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension(inputTag -> inputTagMap.containsValue(inputTag) || inputTag == mixinClassPathTag));
 		}
 
 		if (kotlinClasspath != null) {
@@ -152,6 +157,8 @@ public class TinyRemapperService implements SharedService {
 		}
 
 		tinyRemapper = builder.build();
+		mixinClassPathTag = tinyRemapper.createInputTag();
+		noneMixinClassPathTag = tinyRemapper.createInputTag();
 	}
 
 	public synchronized InputTag getOrCreateTag(Path file) {
@@ -190,7 +197,7 @@ public class TinyRemapperService implements SharedService {
 			classpath.addAll(paths);
 		}
 
-		tinyRemapper.readClassPath(toRead.toArray(Path[]::new));
+		TinyRemapperHelper.readModDependencyClasspath(tinyRemapper, toRead, mixinClassPathTag, noneMixinClassPathTag);
 	}
 
 	@Override

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -132,8 +133,9 @@ public class ModProcessor {
 	private void remapJars(List<ModDependency> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
-		Path[] mcDeps = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
-				.stream().map(File::toPath).toArray(Path[]::new);
+		List<Path> minecraftCompileLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
+				.stream().map(File::toPath)
+				.toList();
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
@@ -164,25 +166,34 @@ public class ModProcessor {
 
 		final TinyRemapper remapper = builder.build();
 
-		for (Path minecraftJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
-			remapper.readClassPathAsync(minecraftJar);
-		}
+		// Create two input tags
+		// One for the dependencies that use static mixin remapping, or are never going to have mixins to remap
+		// One for the dependencies that do not use static mixin remapping
+		final InputTag mixinClassPathTag = remapper.createInputTag();
+		final InputTag noneMixinClassPathTag = remapper.createInputTag();
+		remapMixins.add(mixinClassPathTag);
 
-		remapper.readClassPathAsync(mcDeps);
+		List<Path> minecraftDeps = new ArrayList<>(minecraftCompileLibraries);
+		minecraftDeps.addAll(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
+		remapper.readClassPath(noneMixinClassPathTag, minecraftDeps.toArray(Path[]::new));
 
 		final Map<ModDependency, InputTag> tagMap = new HashMap<>();
 		final Map<ModDependency, OutputConsumerPath> outputConsumerMap = new HashMap<>();
 		final Map<ModDependency, Pair<byte[], String>> accessWidenerMap = new HashMap<>();
+
+		List<Path> remapClasspath = new ArrayList<>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
 			for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().toFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 
-					remapper.readClassPathAsync(inputFile.toPath());
+					remapClasspath.add(inputFile.toPath());
 				}
 			}
 		}
+
+		TinyRemapperHelper.readModDependencyClasspath(remapper, remapClasspath, mixinClassPathTag, noneMixinClassPathTag);
 
 		for (ModDependency info : remapList) {
 			InputTag tag = remapper.createInputTag();

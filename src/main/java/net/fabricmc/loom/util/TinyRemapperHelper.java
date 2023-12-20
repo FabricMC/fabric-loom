@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,11 @@ package net.fabricmc.loom.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -35,11 +39,13 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.task.service.RemapClasspathEntry;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
+import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
@@ -148,5 +154,29 @@ public final class TinyRemapperHelper {
 				}
 			}
 		};
+	}
+
+	/**
+	* Add classpath entries, assigning them to an InputTag based on how their mixins were remapped.
+	*
+	* @param tinyRemapper the {@link TinyRemapper} instance
+	* @param paths A list of {@link Path} to be added onto the tiny remapper classpath
+	* @param mixinClassPathTag An input tag added to classpath entries that use static mixin remapping
+	* @param classPathTag An input tag added to classpath entries that do not use static mixin remapping
+	*/
+	public static void readModDependencyClasspath(TinyRemapper tinyRemapper, List<Path> paths, InputTag mixinClassPathTag, InputTag classPathTag) {
+		Objects.requireNonNull(mixinClassPathTag);
+		Objects.requireNonNull(classPathTag);
+
+		List<CompletableFuture<?>> futures = new ArrayList<>();
+
+		for (Path path : paths) {
+			CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> RemapClasspathEntry.create(path))
+					.thenCompose((remapClasspathEntry -> tinyRemapper.readClassPathAsync(remapClasspathEntry.usesStaticMixinRemapping() ? mixinClassPathTag : classPathTag, remapClasspathEntry.path())));
+
+			futures.add(future);
+		}
+
+		CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 	}
 }

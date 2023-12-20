@@ -33,7 +33,8 @@ import spock.lang.Unroll
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.ServerRunner
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 20, unit = TimeUnit.MINUTES)
@@ -79,5 +80,24 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		'idea' 		| _
 		'eclipse'	| _
 		'vscode'	| _
+	}
+
+	@Unroll
+	def "remap mixins with tiny-remapper"() {
+		setup:
+		def gradle = gradleProject(project: "simple", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << """
+				allprojects {
+					loom.mixin.useLegacyMixinAp = false
+				}
+				""".stripIndent()
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+		!result.output.contains("[WARN]  [MIXIN]") // Assert that tiny remapper didnt not have any warnings when remapping
+		gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
 	}
 }

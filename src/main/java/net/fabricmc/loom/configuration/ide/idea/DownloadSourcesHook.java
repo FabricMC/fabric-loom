@@ -43,16 +43,24 @@ import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 
+// See: https://github.com/JetBrains/intellij-community/blob/a09b1b84ab64a699794c860bc96774766dd38958/plugins/gradle/java/src/util/GradleAttachSourcesProvider.java
 record DownloadSourcesHook(Project project, Task task) {
 	public static final String INIT_SCRIPT_NAME = "ijDownloadSources";
 	private static final Pattern NOTATION_PATTERN = Pattern.compile("dependencyNotation = '(?<notation>.*)'");
-	private static final Logger LOGGER = LoggerFactory.getLogger(IdeaConfiguration.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadSourcesHook.class);
 
-	/*
-		"Parse" the init script enough to figure out what jar we are talking about.
+	public static boolean hasInitScript(Project project) {
+		List<File> initScripts = project.getGradle().getStartParameter().getInitScripts();
 
-		Intelij code: https://github.com/JetBrains/intellij-community/blob/a09b1b84ab64a699794c860bc96774766dd38958/plugins/gradle/java/src/util/GradleAttachSourcesProvider.java
-	 */
+		for (File initScript : initScripts) {
+			if (initScript.getName().contains(INIT_SCRIPT_NAME)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	void tryHook() {
 		List<File> initScripts = project.getGradle().getStartParameter().getInitScripts();
 
@@ -114,7 +122,8 @@ record DownloadSourcesHook(Project project, Task task) {
 	}
 
 	// Return the jar type, or null when this jar isnt used by the project
-	private @Nullable MinecraftJar.Type getJarType(String name) {
+	@Nullable
+	private MinecraftJar.Type getJarType(String name) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final NamedMinecraftProvider<?> minecraftProvider = extension.getNamedMinecraftProvider();
 		final List<MinecraftJar.Type> dependencyTypes = minecraftProvider.getDependencyTypes();

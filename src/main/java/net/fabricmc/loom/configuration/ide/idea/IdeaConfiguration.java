@@ -32,7 +32,6 @@ import javax.inject.Inject;
 import org.gradle.StartParameter;
 import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.DefaultTaskExecutionRequest;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -45,7 +44,7 @@ public abstract class IdeaConfiguration implements Runnable {
 	protected abstract Project getProject();
 
 	public void run() {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
+		getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
 			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
 				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(getProject()));
 			} else {
@@ -70,6 +69,10 @@ public abstract class IdeaConfiguration implements Runnable {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		if (!extension.isRootProject()) {
+			return;
+		}
+
+		if (!DownloadSourcesHook.hasInitScript(getProject())) {
 			return;
 		}
 

@@ -181,7 +181,7 @@ public abstract class FabricApiExtension {
 
 		if (settings.getCreateRunConfiguration().get()) {
 			extension.getRunConfigs().create("datagen", run -> {
-				run.name("Data Generation");
+				run.setConfigName("Data Generation");
 				run.inherit(extension.getRunConfigs().getByName("server"));
 
 				run.property("fabric-api.datagen");

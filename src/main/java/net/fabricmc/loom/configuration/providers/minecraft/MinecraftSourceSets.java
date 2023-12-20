@@ -45,7 +45,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		return LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit() ? Split.INSTANCE : Single.INSTANCE;
 	}
 
-	public abstract void applyDependencies(BiConsumer<String, String> consumer, List<String> targets);
+	public abstract void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets);
 
 	public abstract String getSourceSetForEnv(String env);
 
@@ -100,8 +100,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		private static final Single INSTANCE = new Single();
 
 		@Override
-		public void applyDependencies(BiConsumer<String, String> consumer, List<String> targets) {
-			for (String target : targets) {
+		public void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets) {
+			for (MinecraftJar.Type target : targets) {
 				consumer.accept(MINECRAFT_NAMED.compile(), target);
 				consumer.accept(MINECRAFT_NAMED.runtime(), target);
 			}
@@ -150,15 +150,15 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		private static final Split INSTANCE = new Split();
 
 		@Override
-		public void applyDependencies(BiConsumer<String, String> consumer, List<String> targets) {
+		public void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets) {
 			Preconditions.checkArgument(targets.size() == 2);
-			Preconditions.checkArgument(targets.contains(MinecraftJar.Common.NAME));
-			Preconditions.checkArgument(targets.contains(MinecraftJar.ClientOnly.NAME));
+			Preconditions.checkArgument(targets.contains(MinecraftJar.Type.COMMON));
+			Preconditions.checkArgument(targets.contains(MinecraftJar.Type.CLIENT_ONLY));
 
-			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Common.NAME);
-			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.ClientOnly.NAME);
-			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), MinecraftJar.Common.NAME);
-			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), MinecraftJar.ClientOnly.NAME);
+			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.Type.CLIENT_ONLY);
+			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), MinecraftJar.Type.CLIENT_ONLY);
 		}
 
 		@Override

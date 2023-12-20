@@ -24,40 +24,27 @@
 
 package net.fabricmc.loom.configuration.ide.idea;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
 import org.gradle.StartParameter;
 import org.gradle.TaskExecutionRequest;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
-import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.DefaultTaskExecutionRequest;
-import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.LoomTasks;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public abstract class IdeaConfiguration implements Runnable {
-	private static final String INIT_SCRIPT_NAME = "ijmiscinit";
-	private static final Pattern NOTATION_PATTERN = Pattern.compile("'net\\.minecraft:(?<name>.*):(.*):sources'");
-
 	@Inject
 	protected abstract Project getProject();
 
 	public void run() {
-		TaskProvider<IdeaSyncTask> ideaSyncTask = getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
+		getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
 			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
 				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(getProject()));
 			} else {
@@ -65,11 +52,7 @@ public abstract class IdeaConfiguration implements Runnable {
 			}
 		});
 
-		getProject().getTasks().configureEach(task -> {
-			if (task.getName().equals("DownloadSources")) {
-				hookDownloadSources(getProject(), task);
-			}
-		});
+		hookDownloadSources();
 
 		if (!IdeaUtils.isIdeaSync()) {
 			return;
@@ -82,62 +65,27 @@ public abstract class IdeaConfiguration implements Runnable {
 		startParameter.setTaskRequests(taskRequests);
 	}
 
-	/*
-		"Parse" the init script enough to figure out what jar we are talking about.
+	private void hookDownloadSources() {
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
-		Intelij code: https://github.com/JetBrains/intellij-community/blob/a09b1b84ab64a699794c860bc96774766dd38958/plugins/gradle/java/src/util/GradleAttachSourcesProvider.java
-	 */
-	private static void hookDownloadSources(Project project, Task task) {
-		List<File> initScripts = project.getGradle().getStartParameter().getInitScripts();
+		if (!extension.isRootProject()) {
+			return;
+		}
 
-		for (File initScript : initScripts) {
-			if (!initScript.getName().contains(INIT_SCRIPT_NAME)) {
-				continue;
+		if (!DownloadSourcesHook.hasInitScript(getProject())) {
+			return;
+		}
+
+		getProject().getTasks().configureEach(task -> {
+			if (task.getName().startsWith(DownloadSourcesHook.INIT_SCRIPT_NAME)) {
+				getProject().allprojects(subProject -> {
+					if (!GradleUtils.isLoomProject(subProject)) {
+						return;
+					}
+
+					new DownloadSourcesHook(subProject, task).tryHook();
+				});
 			}
-
-			try {
-				final String script = Files.readString(initScript.toPath(), StandardCharsets.UTF_8);
-				final String notation = parseInitScript(project, script);
-
-				if (notation != null) {
-					task.dependsOn(getGenSourcesTaskName(LoomGradleExtension.get(project), notation));
-				}
-			} catch (IOException e) {
-				// Ignore
-			}
-		}
-	}
-
-	@Nullable
-	private static String parseInitScript(Project project, String script) {
-		if (!script.contains("Attempt to download sources from")
-				|| !script.contains("downloadSources_")
-				|| !script.contains("'%s'".formatted(project.getPath()))) {
-			// Failed some basic sanity checks.
-			return null;
-		}
-
-		// A little gross but should do the job nicely.
-		final Matcher matcher = NOTATION_PATTERN.matcher(script);
-
-		if (matcher.find()) {
-			return matcher.group("name");
-		}
-
-		return null;
-	}
-
-	private static String getGenSourcesTaskName(LoomGradleExtension extension, String notation) {
-		final MinecraftJarConfiguration configuration = extension.getMinecraftJarConfiguration().get();
-
-		if (configuration == MinecraftJarConfiguration.SPLIT) {
-			if (notation.toLowerCase(Locale.ROOT).contains("minecraft-clientonly")) {
-				return "genClientOnlySources";
-			}
-
-			return "genCommonSources";
-		}
-
-		return "genSources";
+		});
 	}
 }

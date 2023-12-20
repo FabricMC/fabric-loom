@@ -38,14 +38,12 @@ public interface MappedMinecraftProvider {
 	List<MinecraftJar> getMinecraftJars();
 
 	interface ProviderImpl extends MappedMinecraftProvider {
-		Path getJar(String name);
+		Path getJar(MinecraftJar.Type type);
 	}
 
 	interface Merged extends ProviderImpl {
-		String MERGED = MinecraftJar.Merged.NAME;
-
 		default MinecraftJar getMergedJar() {
-			return new MinecraftJar.Merged(getJar(MERGED));
+			return new MinecraftJar.Merged(getJar(MinecraftJar.Type.MERGED));
 		}
 
 		@Override
@@ -55,15 +53,12 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Split extends ProviderImpl {
-		String COMMON = MinecraftJar.Common.NAME;
-		String CLIENT_ONLY = MinecraftJar.ClientOnly.NAME;
-
 		default MinecraftJar getCommonJar() {
-			return new MinecraftJar.Common(getJar(COMMON));
+			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON));
 		}
 
 		default MinecraftJar getClientOnlyJar() {
-			return new MinecraftJar.ClientOnly(getJar(CLIENT_ONLY));
+			return new MinecraftJar.ClientOnly(getJar(MinecraftJar.Type.CLIENT_ONLY));
 		}
 
 		@Override
@@ -75,12 +70,12 @@ public interface MappedMinecraftProvider {
 	interface SingleJar extends ProviderImpl {
 		SingleJarEnvType env();
 
-		default String envName() {
-			return env().getName();
+		default MinecraftJar.Type envType() {
+			return env().getType();
 		}
 
 		default MinecraftJar getEnvOnlyJar() {
-			return env().getJar().apply(getJar(envName()));
+			return env().getJar().apply(getJar(env().getType()));
 		}
 
 		@Override

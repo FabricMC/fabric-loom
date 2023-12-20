@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.kotlin
 
+import kotlin.KotlinVersion
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.ClassNode
 import spock.lang.Specification
@@ -36,7 +37,7 @@ import net.fabricmc.tinyremapper.api.TrEnvironment
 import net.fabricmc.tinyremapper.api.TrRemapper
 
 class KotlinRemapperClassloaderTest extends Specification {
-	private static String KOTLIN_VERSION = "1.6.10"
+	private static String KOTLIN_VERSION = KotlinVersion.CURRENT.toString()
 	private static String KOTLIN_METADATA_VERSION = KotlinPluginUtils.kotlinMetadataVersion
 	private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
 	private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-metadata-jvm/${KOTLIN_METADATA_VERSION}/kotlinx-metadata-jvm-${KOTLIN_METADATA_VERSION}.jar"

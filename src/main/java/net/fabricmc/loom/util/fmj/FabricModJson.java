@@ -50,6 +50,10 @@ public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJso
 		return readString(jsonObject, "id");
 	}
 
+	public String getModVersion() {
+		return readString(jsonObject, "version");
+	}
+
 	@Nullable
 	public abstract JsonElement getCustom(String key);
 

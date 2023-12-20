@@ -62,6 +62,7 @@ class FabricModJsonV0Test extends Specification {
 		def fmj = FabricModJsonFactory.create(JSON_OBJECT, mockSource)
 		then:
 		fmj.version == 0
+		fmj.modVersion == "1.0.0"
 	}
 
 	def "id"() {

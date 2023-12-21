@@ -168,15 +168,22 @@ public final class TinyRemapperHelper {
 		Objects.requireNonNull(mixinClassPathTag);
 		Objects.requireNonNull(classPathTag);
 
-		List<CompletableFuture<?>> futures = new ArrayList<>();
+		List<Path> classPathEntries = new ArrayList<>();
+		List<Path> mixinClasspathEntries = new ArrayList<>();
 
 		for (Path path : paths) {
-			CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> RemapClasspathEntry.create(path))
-					.thenCompose((remapClasspathEntry -> tinyRemapper.readClassPathAsync(remapClasspathEntry.usesStaticMixinRemapping() ? mixinClassPathTag : classPathTag, remapClasspathEntry.path())));
+			RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(path);
 
-			futures.add(future);
+			if (classpathEntry.usesStaticMixinRemapping()) {
+				mixinClasspathEntries.add(path);
+			} else {
+				classPathEntries.add(path);
+			}
 		}
 
-		CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+		CompletableFuture.allOf(
+				tinyRemapper.readClassPathAsync(classPathTag, classPathEntries.toArray(Path[]::new)),
+				tinyRemapper.readClassPathAsync(mixinClassPathTag, mixinClasspathEntries.toArray(Path[]::new))
+		).join();
 	}
 }

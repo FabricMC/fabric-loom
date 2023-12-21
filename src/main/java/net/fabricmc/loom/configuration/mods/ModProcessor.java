@@ -133,9 +133,6 @@ public class ModProcessor {
 	private void remapJars(List<ModDependency> remapList) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
-		List<Path> minecraftCompileLibraries = project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES).getFiles()
-				.stream().map(File::toPath)
-				.toList();
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
@@ -173,9 +170,7 @@ public class ModProcessor {
 		final InputTag noneMixinClassPathTag = remapper.createInputTag();
 		remapMixins.add(mixinClassPathTag);
 
-		List<Path> minecraftDeps = new ArrayList<>(minecraftCompileLibraries);
-		minecraftDeps.addAll(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
-		remapper.readClassPath(noneMixinClassPathTag, minecraftDeps.toArray(Path[]::new));
+		remapper.readClassPath(noneMixinClassPathTag, extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY).toArray(Path[]::new));
 
 		final Map<ModDependency, InputTag> tagMap = new HashMap<>();
 		final Map<ModDependency, OutputConsumerPath> outputConsumerMap = new HashMap<>();

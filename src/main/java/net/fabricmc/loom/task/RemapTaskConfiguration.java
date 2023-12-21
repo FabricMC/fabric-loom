@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
@@ -70,8 +71,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			return;
 		}
 
-		// Register the default remap jar task - must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
-		RemapJarTask remapJarTask = getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, task -> {
+		Action<RemapJarTask> remapJarTaskAction = task -> {
 			final AbstractArchiveTask jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
 
 			// Basic task setup
@@ -85,7 +85,14 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			task.getInputFile().convention(jarTask.getArchiveFile());
 			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
 			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
-		});
+		};
+
+		if (extension.multiProjectOptimisation()) {
+			// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
+			getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
+		} else {
+			getTasks().register(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
+		}
 
 		// Configure the default jar task
 		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
@@ -93,7 +100,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			task.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
 		});
 
-		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapJarTask));
+		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(getTasks().named(REMAP_JAR_TASK_NAME)));
 
 		trySetupSourceRemapping();
 

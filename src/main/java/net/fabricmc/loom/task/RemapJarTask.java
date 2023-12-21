@@ -98,7 +98,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
 
 		final Configuration compileClasspath = getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-		final Configuration minecraftCompileLibraries = getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES);
+		final FileCollection minecraftCompileLibraries = getProject().files().from(
+				getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES),
+				getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES)
+		);
 		// Filter out minecraft libraries from the classpath as we are 100% sure they don't play a part in the obfuscation
 		final FileCollection remapClasspath = compileClasspath.filter(file -> !minecraftCompileLibraries.getFiles().contains(file));
 

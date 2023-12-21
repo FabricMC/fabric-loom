@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +51,6 @@ import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.kotlin.KotlinClasspath;
@@ -137,11 +138,14 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	private TinyRemapper tinyRemapper;
-	private InputTag mixinClassPathTag;
-	private InputTag noneMixinClassPathTag;
 	@Nullable
 	private KotlinRemapperClassloader kotlinRemapperClassloader;
-	private final Map<String, InputTag> inputTagMap = new HashMap<>();
+	// Contains all of the tags for inputs and deps
+	private final Map<String, InputTag> tagMap = new HashMap<>();
+	// Contains all of the tags used for jars that are going to be remapped.
+	private final Set<InputTag> inputTagMap = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
+	// Contains all of the tags used by classpath entries that need static mixin remapping.
+	private final Set<InputTag> staticMixinTagMap = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
@@ -153,11 +157,9 @@ public class TinyRemapperService implements SharedService {
 			builder.withMappings(provider);
 		}
 
-		if (useMixinExtension) {
-			// Only run the mixin extension on files that are being remapped (inputTagMap)
-			// or classpath entries that originally had their mixins remapped by TR.
-			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension(inputTag -> inputTagMap.containsValue(inputTag) || inputTag == mixinClassPathTag));
-		}
+		// Only run the mixin extension on files that are being remapped (inputTagMap)
+		// or classpath entries that originally had their mixins remapped by TR (staticMixinTagMap)
+		builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension(inputTag -> (useMixinExtension && inputTagMap.contains(inputTag)) || staticMixinTagMap.contains(inputTag)));
 
 		if (kotlinClasspath != null) {
 			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspath);
@@ -169,16 +171,20 @@ public class TinyRemapperService implements SharedService {
 		}
 
 		tinyRemapper = builder.build();
-		mixinClassPathTag = tinyRemapper.createInputTag();
-		noneMixinClassPathTag = tinyRemapper.createInputTag();
 	}
 
-	public synchronized InputTag getOrCreateTag(Path file) {
-		InputTag tag = inputTagMap.get(file.toAbsolutePath().toString());
+	public InputTag getOrCreateTag(Path file) {
+		InputTag tag = getOrCreateTagInternal(file);
+		inputTagMap.add(tag);
+		return tag;
+	}
+
+	private synchronized InputTag getOrCreateTagInternal(Path file) {
+		InputTag tag = tagMap.get(file.toAbsolutePath().toString());
 
 		if (tag == null) {
 			tag = tinyRemapper.createInputTag();
-			inputTagMap.put(file.toAbsolutePath().toString(), tag);
+			tagMap.put(file.toAbsolutePath().toString(), tag);
 		}
 
 		return tag;
@@ -219,7 +225,16 @@ public class TinyRemapperService implements SharedService {
 			return;
 		}
 
-		TinyRemapperHelper.readModDependencyClasspath(tinyRemapper, toRead, mixinClassPathTag, noneMixinClassPathTag);
+		for (Path path : toRead) {
+			final InputTag tag = getOrCreateTagInternal(path);
+			final RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(path);
+
+			if (classpathEntry.usesStaticMixinRemapping()) {
+				staticMixinTagMap.add(tag);
+			}
+
+			tinyRemapper.readClassPathAsync(tag, path);
+		}
 	}
 
 	@Override

@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +52,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
+import net.fabricmc.loom.task.service.RemapClasspathEntry;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -176,19 +176,22 @@ public class ModProcessor {
 		final Map<ModDependency, OutputConsumerPath> outputConsumerMap = new HashMap<>();
 		final Map<ModDependency, Pair<byte[], String>> accessWidenerMap = new HashMap<>();
 
-		List<Path> remapClasspath = new ArrayList<>();
-
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
 			for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().toFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
 
-					remapClasspath.add(inputFile.toPath());
+					final InputTag tag = remapper.createInputTag();
+					final RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(inputFile.toPath());
+
+					if (classpathEntry.usesStaticMixinRemapping()) {
+						remapMixins.add(tag);
+					}
+
+					remapper.readClassPathAsync(tag, inputFile.toPath());
 				}
 			}
 		}
-
-		TinyRemapperHelper.readModDependencyClasspath(remapper, remapClasspath, mixinClassPathTag, noneMixinClassPathTag);
 
 		for (ModDependency info : remapList) {
 			InputTag tag = remapper.createInputTag();

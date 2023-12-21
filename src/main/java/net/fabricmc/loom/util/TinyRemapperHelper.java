@@ -26,10 +26,7 @@ package net.fabricmc.loom.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -38,13 +35,11 @@ import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.service.RemapClasspathEntry;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
@@ -153,34 +148,5 @@ public final class TinyRemapperHelper {
 				}
 			}
 		};
-	}
-
-	/**
-	* Add classpath entries, assigning them to an InputTag based on how their mixins were remapped.
-	*
-	* @param tinyRemapper the {@link TinyRemapper} instance
-	* @param paths A list of {@link Path} to be added onto the tiny remapper classpath
-	* @param mixinClassPathTag An input tag added to classpath entries that use static mixin remapping
-	* @param classPathTag An input tag added to classpath entries that do not use static mixin remapping
-	*/
-	public static void readModDependencyClasspath(TinyRemapper tinyRemapper, List<Path> paths, InputTag mixinClassPathTag, InputTag classPathTag) {
-		Objects.requireNonNull(mixinClassPathTag);
-		Objects.requireNonNull(classPathTag);
-
-		List<Path> classPathEntries = new ArrayList<>();
-		List<Path> mixinClasspathEntries = new ArrayList<>();
-
-		for (Path path : paths) {
-			RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(path);
-
-			if (classpathEntry.usesStaticMixinRemapping()) {
-				mixinClasspathEntries.add(path);
-			} else {
-				classPathEntries.add(path);
-			}
-		}
-
-		tinyRemapper.readClassPath(classPathTag, classPathEntries.toArray(Path[]::new));
-		tinyRemapper.readClassPath(mixinClassPathTag, mixinClasspathEntries.toArray(Path[]::new));
 	}
 }

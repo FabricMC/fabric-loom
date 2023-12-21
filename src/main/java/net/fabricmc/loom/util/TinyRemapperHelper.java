@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -181,9 +180,7 @@ public final class TinyRemapperHelper {
 			}
 		}
 
-		CompletableFuture.allOf(
-				tinyRemapper.readClassPathAsync(classPathTag, classPathEntries.toArray(Path[]::new)),
-				tinyRemapper.readClassPathAsync(mixinClassPathTag, mixinClasspathEntries.toArray(Path[]::new))
-		).join();
+		tinyRemapper.readClassPath(classPathTag, classPathEntries.toArray(Path[]::new));
+		tinyRemapper.readClassPath(mixinClassPathTag, mixinClasspathEntries.toArray(Path[]::new));
 	}
 }

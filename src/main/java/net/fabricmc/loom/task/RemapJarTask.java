@@ -41,6 +41,7 @@ import javax.inject.Inject;
 
 import com.google.gson.JsonObject;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
@@ -96,19 +97,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public RemapJarTask() {
 		super();
 		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
-
-		final Configuration compileClasspath = getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-		final FileCollection minecraftCompileLibraries = getProject().files().from(
-				getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES),
-				getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES)
-		);
-		// Filter out minecraft libraries from the classpath as we are 100% sure they don't play a part in the obfuscation
-		final FileCollection remapClasspath = compileClasspath.filter(file -> !minecraftCompileLibraries.getFiles().contains(file));
-
-		getClasspath().from(remapClasspath);
+		final ConfigurationContainer configurations = getProject().getConfigurations();
+		getClasspath().from(configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 
-		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());

@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.SourceSet;
@@ -47,6 +48,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -96,8 +98,18 @@ public class TinyRemapperService implements SharedService {
 			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get(), extension.getRemapperExtensions().get(), from, to, project.getObjects());
 		});
 
-		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).filter(Files::exists).toList());
+		final ConfigurationContainer configurations = project.getConfigurations();
 
+		List<Path> classPath = remapJarTask.getClasspath()
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES))
+				.getFiles()
+				.stream()
+				.map(File::toPath)
+				.filter(Files::exists)
+				.toList();
+
+		service.readClasspath(classPath);
 		return service;
 	}
 
@@ -190,11 +202,21 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	void readClasspath(List<Path> paths) {
-		List<Path> toRead;
+		List<Path> toRead = new ArrayList<>();
 
 		synchronized (classpath) {
-			toRead = paths.stream().filter(path -> !classpath.contains(path)).toList();
-			classpath.addAll(paths);
+			for (Path path: paths) {
+				if (classpath.contains(path)) {
+					continue;
+				}
+
+				toRead.add(path);
+				classpath.add(path);
+			}
+		}
+
+		if (toRead.isEmpty()) {
+			return;
 		}
 
 		TinyRemapperHelper.readModDependencyClasspath(tinyRemapper, toRead, mixinClassPathTag, noneMixinClassPathTag);

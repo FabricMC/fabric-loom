@@ -38,15 +38,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
@@ -70,6 +73,7 @@ public class TinyRemapperService implements SharedService {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 		final @Nullable KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
+		boolean multiProjectOptimisation = extension.multiProjectOptimisation();
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
 		final var joiner = new StringJoiner(":");
@@ -80,7 +84,7 @@ public class TinyRemapperService implements SharedService {
 			joiner.add("kotlin-" + kotlinClasspathService.version());
 		}
 
-		if (remapJarTask.getRemapperIsolation().get() || !extension.multiProjectOptimisation()) {
+		if (remapJarTask.getRemapperIsolation().get() || !multiProjectOptimisation) {
 			joiner.add(project.getPath());
 		}
 
@@ -100,10 +104,26 @@ public class TinyRemapperService implements SharedService {
 		});
 
 		final ConfigurationContainer configurations = project.getConfigurations();
+		ConfigurableFileCollection excludedMinecraftJars = project.files();
+
+		// Exclude none root minecraft jars.
+		if (multiProjectOptimisation && !extension.isRootProject()) {
+			MappingsNamespace mappingsNamespace = MappingsNamespace.of(from);
+
+			if (mappingsNamespace != null) {
+				for (Path minecraftJar : extension.getMinecraftJars(mappingsNamespace)) {
+					excludedMinecraftJars.from(minecraftJar.toFile());
+				}
+			} else {
+				// None fatal as this is a performance optimisation.
+				project.getLogger().warn("Unable to find minecraft jar for namespace {}", from);
+			}
+		}
 
 		List<Path> classPath = remapJarTask.getClasspath()
 				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
 				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES))
+				.minus(excludedMinecraftJars)
 				.getFiles()
 				.stream()
 				.map(File::toPath)
@@ -225,6 +245,8 @@ public class TinyRemapperService implements SharedService {
 			return;
 		}
 
+		List<CompletableFuture<?>> futures = new ArrayList<>();
+
 		for (Path path : toRead) {
 			final InputTag tag = getOrCreateTagInternal(path);
 			final RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(path);
@@ -233,8 +255,10 @@ public class TinyRemapperService implements SharedService {
 				staticMixinTagMap.add(tag);
 			}
 
-			tinyRemapper.readClassPathAsync(tag, path);
+			futures.add(tinyRemapper.readClassPathAsync(tag, path));
 		}
+
+		CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 	}
 
 	@Override

@@ -44,7 +44,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "23e8616e7457d7d4a65119b93952d134607ffc5c",
+				commit: "efa5891941a32589207dc58c2e77183d599465b8",
 				version: version,
 				patch: "fabric_api"
 				)
@@ -60,7 +60,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				""".stripIndent()
 		}
 
-		def minecraftVersion = "23w45a"
+		def minecraftVersion = "23w51b"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 

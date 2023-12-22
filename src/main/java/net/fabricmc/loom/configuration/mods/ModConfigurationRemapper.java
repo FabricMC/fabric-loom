@@ -30,6 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,7 +84,16 @@ public class ModConfigurationRemapper {
 		// Client remapped dep collectors for split source sets. Same keys and values.
 		final Map<Configuration, Configuration> clientConfigsToRemap = new HashMap<>();
 
-		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+		/*
+		 * Hack fix/improvement for https://github.com/FabricMC/fabric-loom/issues/1012
+		 * Ensure that modImplementation is processed first, so any installer.json on that configuration takes priority.
+		 */
+		final List<RemapConfigurationSettings> remapConfigurationSettings = extension.getRemapConfigurations()
+				.stream()
+				.sorted(Comparator.comparing(setting -> !setting.getName().equals("modImplementation")))
+				.toList();
+
+		for (RemapConfigurationSettings entry : remapConfigurationSettings) {
 			// key: true if runtime, false if compile
 			final Map<Boolean, Boolean> envToEnabled = ImmutableMap.of(
 					false, entry.getOnCompileClasspath().get(),

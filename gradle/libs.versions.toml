@@ -3,7 +3,6 @@ kotlin = "1.9.0"
 asm = "9.6"
 commons-io = "2.15.0"
 gson = "2.10.1"
-jackson = "2.16.0"
 guava = "33.0.0-jre"
 
 stitch = "0.6.2"
@@ -31,7 +30,6 @@ asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-jackson = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 fabric-stitch = { module = "net.fabricmc:stitch", version.ref = "stitch" }

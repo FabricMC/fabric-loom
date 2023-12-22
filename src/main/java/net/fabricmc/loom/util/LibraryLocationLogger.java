@@ -26,7 +26,6 @@ package net.fabricmc.loom.util;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import kotlinx.metadata.jvm.KotlinClassMetadata;
@@ -53,7 +52,6 @@ public final class LibraryLocationLogger {
 			ClassRemapper.class,
 			ClassNode.class,
 			ASMifier.class,
-			ObjectMapper.class,
 			Gson.class,
 			Preconditions.class,
 			FileUtils.class

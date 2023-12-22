@@ -115,7 +115,7 @@ public final class MinecraftMetadataProvider {
 		}
 
 		final String versionManifest = builder.downloadString(cacheFile);
-		return LoomGradlePlugin.OBJECT_MAPPER.readValue(versionManifest, ManifestVersion.class);
+		return LoomGradlePlugin.GSON.fromJson(versionManifest, ManifestVersion.class);
 	}
 
 	private MinecraftVersionMeta readVersionMeta() throws IOException {
@@ -128,7 +128,7 @@ public final class MinecraftMetadataProvider {
 		}
 
 		final String json = builder.downloadString(options.minecraftMetadataPath());
-		return LoomGradlePlugin.OBJECT_MAPPER.readValue(json, MinecraftVersionMeta.class);
+		return LoomGradlePlugin.GSON.fromJson(json, MinecraftVersionMeta.class);
 	}
 
 	public record Options(String minecraftVersion,

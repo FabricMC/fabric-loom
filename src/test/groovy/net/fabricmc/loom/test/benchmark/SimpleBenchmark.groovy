@@ -39,9 +39,6 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 @Singleton
 class SimpleBenchmark implements GradleProjectTestTrait {
 	def run(File dir) {
-		// Forces loom to refresh files
-		System.setProperty("loom.refresh", "true")
-
 		def gradle = gradleProject(
 				project: "minimalBase",
 				version: LoomTestConstants.PRE_RELEASE_GRADLE,

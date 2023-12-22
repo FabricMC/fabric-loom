@@ -122,7 +122,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 				.sha1(assetIndex.sha1())
 				.downloadString(indexFile.toPath());
 
-		return LoomGradlePlugin.OBJECT_MAPPER.readValue(json, AssetIndex.class);
+		return LoomGradlePlugin.GSON.fromJson(json, AssetIndex.class);
 	}
 
 	private Path getAssetsPath(AssetIndex.Object object, AssetIndex index) {

@@ -131,7 +131,7 @@ class LibraryContextTest extends Specification {
 					}
 				  ]
 				}"""
-		def context = new LibraryContext(MinecraftTestUtils.OBJECT_MAPPER.readValue(metaJson, MinecraftVersionMeta.class), JavaVersion.VERSION_17)
+		def context = new LibraryContext(MinecraftTestUtils.GSON.fromJson(metaJson, MinecraftVersionMeta.class), JavaVersion.VERSION_17)
 
 		then:
 		context.supportsJava19OrLater() == supportsJava19OrLater

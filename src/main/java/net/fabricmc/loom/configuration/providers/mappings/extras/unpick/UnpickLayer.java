@@ -46,15 +46,15 @@ public interface UnpickLayer {
 			final Metadata metadata;
 
 			try (Reader reader = Files.newBufferedReader(metadataPath, StandardCharsets.UTF_8)) {
-				metadata = LoomGradlePlugin.OBJECT_MAPPER.readValue(reader, Metadata.class);
+				metadata = LoomGradlePlugin.GSON.fromJson(reader, Metadata.class);
 			}
 
 			return new UnpickData(metadata, definitions);
 		}
 
 		public record Metadata(int version, String unpickGroup, String unpickVersion) {
-			public String asJson() throws IOException {
-				return LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(this);
+			public String asJson() {
+				return LoomGradlePlugin.GSON.toJson(this);
 			}
 		}
 	}

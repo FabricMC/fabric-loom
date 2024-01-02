@@ -123,7 +123,7 @@ public class ZipUtils {
 
 	public static <T> T unpackJackson(Path zip, String path, Class<T> clazz) throws IOException {
 		final byte[] bytes = unpack(zip, path);
-		return LoomGradlePlugin.OBJECT_MAPPER.readValue(new String(bytes, StandardCharsets.UTF_8), clazz);
+		return LoomGradlePlugin.GSON.fromJson(new String(bytes, StandardCharsets.UTF_8), clazz);
 	}
 
 	public static void pack(Path from, Path zip) throws IOException {

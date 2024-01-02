@@ -118,7 +118,7 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 			return;
 		}
 
-		byte[] data = LoomGradlePlugin.OBJECT_MAPPER.writeValueAsString(signatureFixes).getBytes(StandardCharsets.UTF_8);
+		byte[] data = LoomGradlePlugin.GSON.toJson(signatureFixes).getBytes(StandardCharsets.UTF_8);
 
 		ZipUtils.add(mappingsFile, "extras/record_signatures.json", data);
 	}

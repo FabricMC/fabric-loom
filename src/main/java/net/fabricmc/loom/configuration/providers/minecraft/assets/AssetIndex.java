@@ -28,10 +28,10 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 
 @SuppressWarnings("unused")
-public record AssetIndex(Map<String, Entry> objects, boolean virtual, @JsonProperty("map_to_resources") boolean mapToResources) {
+public record AssetIndex(Map<String, Entry> objects, boolean virtual, @SerializedName("map_to_resources") boolean mapToResources) {
 	public AssetIndex() {
 		this(new LinkedHashMap<>(), false, false);
 	}

@@ -160,12 +160,7 @@ public class TinyRemapperService implements SharedService {
 	private TinyRemapper tinyRemapper;
 	@Nullable
 	private KotlinRemapperClassloader kotlinRemapperClassloader;
-	// Contains all of the tags for inputs and deps
-	private final Map<String, InputTag> tagMap = new HashMap<>();
-	// Contains all of the tags used for jars that are going to be remapped.
-	private final Set<InputTag> inputTagMap = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
-	// Contains all of the tags used by classpath entries that need static mixin remapping.
-	private final Set<InputTag> staticMixinTagMap = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
+	private final Map<String, InputTag> inputTagMap = new HashMap<>();
 	private final HashSet<Path> classpath = new HashSet<>();
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
@@ -177,9 +172,9 @@ public class TinyRemapperService implements SharedService {
 			builder.withMappings(provider);
 		}
 
-		// Only run the mixin extension on files that are being remapped (inputTagMap)
-		// or classpath entries that originally had their mixins remapped by TR (staticMixinTagMap)
-		builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension(inputTag -> (useMixinExtension && inputTagMap.contains(inputTag)) || staticMixinTagMap.contains(inputTag)));
+		if (useMixinExtension) {
+			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
+		}
 
 		if (kotlinClasspath != null) {
 			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspath);
@@ -193,18 +188,12 @@ public class TinyRemapperService implements SharedService {
 		tinyRemapper = builder.build();
 	}
 
-	public InputTag getOrCreateTag(Path file) {
-		InputTag tag = getOrCreateTagInternal(file);
-		inputTagMap.add(tag);
-		return tag;
-	}
-
-	private synchronized InputTag getOrCreateTagInternal(Path file) {
-		InputTag tag = tagMap.get(file.toAbsolutePath().toString());
+	public synchronized InputTag getOrCreateTag(Path file) {
+		InputTag tag = inputTagMap.get(file.toAbsolutePath().toString());
 
 		if (tag == null) {
 			tag = tinyRemapper.createInputTag();
-			tagMap.put(file.toAbsolutePath().toString(), tag);
+			inputTagMap.put(file.toAbsolutePath().toString(), tag);
 		}
 
 		return tag;
@@ -245,20 +234,7 @@ public class TinyRemapperService implements SharedService {
 			return;
 		}
 
-		List<CompletableFuture<?>> futures = new ArrayList<>();
-
-		for (Path path : toRead) {
-			final InputTag tag = getOrCreateTagInternal(path);
-			final RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(path);
-
-			if (classpathEntry.usesStaticMixinRemapping()) {
-				staticMixinTagMap.add(tag);
-			}
-
-			futures.add(tinyRemapper.readClassPathAsync(tag, path));
-		}
-
-		CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+		tinyRemapper.readClassPath(toRead.toArray(Path[]::new));
 	}
 
 	@Override

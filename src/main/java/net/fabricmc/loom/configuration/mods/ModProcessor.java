@@ -52,7 +52,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
-import net.fabricmc.loom.task.service.RemapClasspathEntry;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.TinyRemapperHelper;
@@ -163,14 +162,7 @@ public class ModProcessor {
 
 		final TinyRemapper remapper = builder.build();
 
-		// Create two input tags
-		// One for the dependencies that use static mixin remapping, or are never going to have mixins to remap
-		// One for the dependencies that do not use static mixin remapping
-		final InputTag mixinClassPathTag = remapper.createInputTag();
-		final InputTag noneMixinClassPathTag = remapper.createInputTag();
-		remapMixins.add(mixinClassPathTag);
-
-		remapper.readClassPath(noneMixinClassPathTag, extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY).toArray(Path[]::new));
+		remapper.readClassPath(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY).toArray(Path[]::new));
 
 		final Map<ModDependency, InputTag> tagMap = new HashMap<>();
 		final Map<ModDependency, OutputConsumerPath> outputConsumerMap = new HashMap<>();
@@ -180,15 +172,7 @@ public class ModProcessor {
 			for (File inputFile : entry.getSourceConfiguration().get().getFiles()) {
 				if (remapList.stream().noneMatch(info -> info.getInputFile().toFile().equals(inputFile))) {
 					project.getLogger().debug("Adding " + inputFile + " onto the remap classpath");
-
-					final InputTag tag = remapper.createInputTag();
-					final RemapClasspathEntry classpathEntry = RemapClasspathEntry.create(inputFile.toPath());
-
-					if (classpathEntry.usesStaticMixinRemapping()) {
-						remapMixins.add(tag);
-					}
-
-					remapper.readClassPathAsync(tag, inputFile.toPath());
+					remapper.readClassPathAsync(inputFile.toPath());
 				}
 			}
 		}

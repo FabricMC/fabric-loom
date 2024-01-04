@@ -139,7 +139,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 	}
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
-		File sourcesJar = gradle.getGeneratedSources(mappings, MinecraftJar.Server.NAME)
+		File sourcesJar = gradle.getGeneratedSources(mappings, MinecraftJar.Type.SERVER.toString())
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 

@@ -38,15 +38,19 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.kotlin.KotlinClasspath;
@@ -66,6 +70,7 @@ public class TinyRemapperService implements SharedService {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 		final @Nullable KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
+		boolean multiProjectOptimisation = extension.multiProjectOptimisation();
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
 		final var joiner = new StringJoiner(":");
@@ -76,7 +81,7 @@ public class TinyRemapperService implements SharedService {
 			joiner.add("kotlin-" + kotlinClasspathService.version());
 		}
 
-		if (remapJarTask.getRemapperIsolation().get() || !extension.multiProjectOptimisation()) {
+		if (remapJarTask.getRemapperIsolation().get() || !multiProjectOptimisation) {
 			joiner.add(project.getPath());
 		}
 
@@ -95,8 +100,34 @@ public class TinyRemapperService implements SharedService {
 			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get(), extension.getRemapperExtensions().get(), from, to, project.getObjects());
 		});
 
-		service.readClasspath(remapJarTask.getClasspath().getFiles().stream().map(File::toPath).filter(Files::exists).toList());
+		final ConfigurationContainer configurations = project.getConfigurations();
+		ConfigurableFileCollection excludedMinecraftJars = project.files();
 
+		// Exclude none root minecraft jars.
+		if (multiProjectOptimisation && !extension.isRootProject()) {
+			MappingsNamespace mappingsNamespace = MappingsNamespace.of(from);
+
+			if (mappingsNamespace != null) {
+				for (Path minecraftJar : extension.getMinecraftJars(mappingsNamespace)) {
+					excludedMinecraftJars.from(minecraftJar.toFile());
+				}
+			} else {
+				// None fatal as this is a performance optimisation.
+				project.getLogger().warn("Unable to find minecraft jar for namespace {}", from);
+			}
+		}
+
+		List<Path> classPath = remapJarTask.getClasspath()
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES))
+				.minus(excludedMinecraftJars)
+				.getFiles()
+				.stream()
+				.map(File::toPath)
+				.filter(Files::exists)
+				.toList();
+
+		service.readClasspath(classPath);
 		return service;
 	}
 
@@ -183,11 +214,21 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	void readClasspath(List<Path> paths) {
-		List<Path> toRead;
+		List<Path> toRead = new ArrayList<>();
 
 		synchronized (classpath) {
-			toRead = paths.stream().filter(path -> !classpath.contains(path)).toList();
-			classpath.addAll(paths);
+			for (Path path: paths) {
+				if (classpath.contains(path)) {
+					continue;
+				}
+
+				toRead.add(path);
+				classpath.add(path);
+			}
+		}
+
+		if (toRead.isEmpty()) {
+			return;
 		}
 
 		tinyRemapper.readClassPath(toRead.toArray(Path[]::new));
@@ -196,7 +237,6 @@ public class TinyRemapperService implements SharedService {
 	@Override
 	public void close() throws IOException {
 		if (tinyRemapper != null) {
-			tinyRemapper.getEnvironment();
 			tinyRemapper.finish();
 			tinyRemapper = null;
 		}

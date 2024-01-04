@@ -44,7 +44,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "23e8616e7457d7d4a65119b93952d134607ffc5c",
+				commit: "efa5891941a32589207dc58c2e77183d599465b8",
 				version: version,
 				patch: "fabric_api"
 				)
@@ -60,7 +60,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				""".stripIndent()
 		}
 
-		def minecraftVersion = "23w45a"
+		def minecraftVersion = "23w51b"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 
@@ -106,14 +106,18 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		result.task(":prepareRemapJar").outcome == SUCCESS
 
 		def biomeApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0.jar")
-		def manifest = ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF").toString()
 		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0-sources.jar").exists()
+		def manifest = ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF").toString()
 
 		if (disableMixinAp) {
 			manifest.contains("Fabric-Loom-Mixin-Remap-Type=static")
 		} else {
 			manifest.contains("Fabric-Loom-Mixin-Remap-Type=mixin")
 		}
+
+		// Check that a client mixin exists
+		def blockViewApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-block-view-api-v2/999.0.0/fabric-block-view-api-v2-999.0.0.jar")
+		ZipUtils.contains(blockViewApiJar.toPath(), "net/fabricmc/fabric/mixin/blockview/client/ChunkRendererRegionBuilderMixin.class")
 
 		serverResult.successful()
 		serverResult.output.contains("- fabric-api 999.0.0")

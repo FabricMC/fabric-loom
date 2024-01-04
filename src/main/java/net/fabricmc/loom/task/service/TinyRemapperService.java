@@ -237,7 +237,6 @@ public class TinyRemapperService implements SharedService {
 	@Override
 	public void close() throws IOException {
 		if (tinyRemapper != null) {
-			tinyRemapper.getEnvironment();
 			tinyRemapper.finish();
 			tinyRemapper = null;
 		}

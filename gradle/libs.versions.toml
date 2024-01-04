@@ -16,7 +16,7 @@ kotlinx-metadata = "0.8.0"
 # Plugins
 spotless = "6.20.0"
 test-retry = "1.5.6"
-checkstyle = "10.12.7"
+checkstyle = "10.12.5"
 codenarc = "3.3.0"
 jacoco = "0.8.11"
 

@@ -1,7 +1,7 @@
 [versions]
 kotlin = "1.9.0"
 asm = "9.6"
-commons-io = "2.15.0"
+commons-io = "2.15.1"
 gson = "2.10.1"
 guava = "33.0.0-jre"
 
@@ -16,7 +16,7 @@ kotlinx-metadata = "0.8.0"
 # Plugins
 spotless = "6.20.0"
 test-retry = "1.5.6"
-checkstyle = "10.12.5"
+checkstyle = "10.12.7"
 codenarc = "3.3.0"
 jacoco = "0.8.11"
 

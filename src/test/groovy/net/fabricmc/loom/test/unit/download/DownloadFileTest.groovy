@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -232,6 +232,52 @@ class DownloadFileTest extends DownloadTest {
 
 		then:
 		requestCount == 1
+	}
+
+	def "ETag with max age"() {
+		setup:
+		// The count of requests, can return early if the ETag matches.
+		int requestCount = 0
+		// The count of full downloads
+		int downloadCount = 0
+
+		server.get("/etag") {
+			def clientEtag = it.req.getHeader("If-None-Match")
+
+			def result = "Hello world"
+			def etag = result.hashCode().toString()
+			it.header("ETag", etag)
+
+			requestCount ++
+
+			if (clientEtag == etag) {
+				// Etag matches, no need to send the data.
+				it.status(HttpStatus.NOT_MODIFIED)
+				return
+			}
+
+			it.result(result)
+			downloadCount ++
+		}
+
+		def output = new File(File.createTempDir(), "etag.txt").toPath()
+
+		when:
+		for (i in 0..<3) {
+			if (i == 2) {
+				// On the third request, set the file to be 2 days old, forcing the etag to be checked.
+				Files.setLastModifiedTime(output, FileTime.from(Instant.now() - Duration.ofDays(2)))
+			}
+
+			Download.create("$PATH/etag")
+					.etag(true)
+					.maxAge(Duration.ofDays(1))
+					.downloadPath(output)
+		}
+
+		then:
+		requestCount == 2
+		downloadCount == 1
 	}
 
 	def "Progress: File"() {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -124,12 +124,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		mustRunAfter(prepareJarTask);
 
 		getProject().getGradle().allprojects(project -> {
-			project.getTasks().configureEach(task -> {
-				if (task instanceof PrepareJarRemapTask otherTask) {
-					// Ensure that all remap jars run after all prepare tasks
-					mustRunAfter(otherTask);
-				}
-			});
+			project.getTasks()
+					.withType(PrepareJarRemapTask.class)
+					.configureEach(this::mustRunAfter);
 		});
 	}
 

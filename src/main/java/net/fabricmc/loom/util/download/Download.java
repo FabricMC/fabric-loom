@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
@@ -191,6 +190,13 @@ public final class Download {
 		boolean success = statusCode == HttpURLConnection.HTTP_NOT_MODIFIED || (statusCode >= 200 && statusCode < 300);
 
 		if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
+			try {
+				// Update the last modified time so we don't retry the request until the max age has passed again.
+				Files.setLastModifiedTime(output, FileTime.from(Instant.now()));
+			} catch (IOException e) {
+				throw error(e, "Failed to update last modified time");
+			}
+
 			// Success, etag matched.
 			return;
 		}
@@ -365,9 +371,9 @@ public final class Download {
 
 	private boolean isOutdated(Path path) throws DownloadException {
 		try {
-			final FileTime lastModified = getLastModified(path);
-			return lastModified.toInstant().plus(maxAge)
-					.isBefore(Instant.now());
+			final FileTime lastModified = Files.getLastModifiedTime(path);
+			return lastModified.toInstant()
+					.isBefore(Instant.now().minus(maxAge));
 		} catch (IOException e) {
 			throw error(e, "Failed to check if (%s) is outdated", path);
 		}
@@ -428,11 +434,6 @@ public final class Download {
 	// A faster exists check
 	private static boolean exists(Path path) {
 		return path.getFileSystem() == FileSystems.getDefault() ? path.toFile().exists() : Files.exists(path);
-	}
-
-	private FileTime getLastModified(Path path) throws IOException {
-		final BasicFileAttributeView basicView = Files.getFileAttributeView(path, BasicFileAttributeView.class);
-		return basicView.readAttributes().lastModifiedTime();
 	}
 
 	private Path getLockFile(Path output) {

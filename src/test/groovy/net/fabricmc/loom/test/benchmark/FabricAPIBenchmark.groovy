@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,11 +44,19 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 				allowExistingRepo: true,
 
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "2facd446984085376bd23245410ebf2dc0881b02",
+				commit: "efa5891941a32589207dc58c2e77183d599465b8",
 				patch: "fabric_api"
 				)
 
 		gradle.enableMultiProjectOptimisation()
+
+		if (!gradle.buildGradle.text.contains("loom.mixin.useLegacyMixinAp")) {
+			gradle.buildGradle << """
+				allprojects {
+					loom.mixin.useLegacyMixinAp = false
+				}
+				""".stripIndent()
+		}
 
 		def timeStart = new Date()
 

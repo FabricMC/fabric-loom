@@ -136,11 +136,11 @@ public class ModProcessor {
 				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false);
 
-		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
+		final KotlinClasspathService.Spec kotlinClasspathSpec = KotlinClasspathService.createIfRequired(project);
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;
 
-		if (kotlinClasspathService != null) {
-			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspathService);
+		if (kotlinClasspathSpec != null) {
+			kotlinRemapperClassloader = KotlinRemapperClassloader.create(serviceManager.getOrCreateService(kotlinClasspathSpec));
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 

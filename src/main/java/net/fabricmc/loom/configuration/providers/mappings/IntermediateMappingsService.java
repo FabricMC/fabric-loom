@@ -42,13 +42,26 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.format.Tiny2Reader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class IntermediateMappingsService implements SharedService {
+	public record Spec(String intermediaryMappingsName, String minecraftVersion, Path mappings) implements LoomServiceSpec<IntermediateMappingsService> {
+		@Override
+		public IntermediateMappingsService create(ServiceFactory serviceFactory) {
+			return new IntermediateMappingsService(mappings);
+		}
+
+		@Override
+		public String getCacheKey() {
+			return "IntermediateMappingsService:%s:%s".formatted(intermediaryMappingsName, minecraftVersion);
+		}
+	}
+
 	private final Path intermediaryTiny;
 	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
 
@@ -56,16 +69,14 @@ public final class IntermediateMappingsService implements SharedService {
 		this.intermediaryTiny = intermediaryTiny;
 	}
 
-	public static synchronized IntermediateMappingsService getInstance(SharedServiceManager sharedServiceManager, Project project, MinecraftProvider minecraftProvider) {
+	public static IntermediateMappingsService.Spec getInstance(Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
-		final String id = "IntermediateMappingsService:%s:%s".formatted(intermediateProvider.getName(), intermediateProvider.getMinecraftVersion().get());
-
-		return sharedServiceManager.getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider));
+		return create(intermediateProvider, minecraftProvider);
 	}
 
 	@VisibleForTesting
-	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider) {
+	public static synchronized IntermediateMappingsService.Spec create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider) {
 		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
 
 		try {
@@ -80,7 +91,7 @@ public final class IntermediateMappingsService implements SharedService {
 			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
 		}
 
-		return new IntermediateMappingsService(intermediaryTiny);
+		return new IntermediateMappingsService.Spec(intermediateMappingsProvider.getName(), minecraftProvider.minecraftVersion(), intermediaryTiny);
 	}
 
 	private MemoryMappingTree createMemoryMappingTree() {

@@ -32,30 +32,42 @@ import org.cadixdev.lorenz.MappingSet;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.mappingio.tree.MappingTree;
 
 public final class LorenzMappingService implements SharedService {
+	public record Spec(TinyMappingsService.Spec mappingSpec, String from, String to) implements LoomServiceSpec<LorenzMappingService> {
+		@Override
+		public LorenzMappingService create(ServiceFactory serviceFactory) {
+			final MappingTree m = serviceFactory.getOrCreateService(mappingSpec).getMappingTree();
+
+			try {
+				try (var reader = new TinyMappingsReader(m, from, to)) {
+					return new LorenzMappingService(reader.read());
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read lorenz mappings", e);
+			}
+		}
+
+		@Override
+		public String getCacheKey() {
+			return null;
+		}
+	}
+
 	private MappingSet mappings;
 
 	public LorenzMappingService(MappingSet mappings) {
 		this.mappings = mappings;
 	}
 
-	public static synchronized LorenzMappingService create(SharedServiceManager sharedServiceManager, MappingConfiguration mappingConfiguration, MappingsNamespace from, MappingsNamespace to) {
-		return sharedServiceManager.getOrCreateService(mappingConfiguration.getBuildServiceName("LorenzMappingService", from.toString(), to.toString()), () -> {
-			MemoryMappingTree m = mappingConfiguration.getMappingsService(sharedServiceManager).getMappingTree();
-
-			try {
-				try (var reader = new TinyMappingsReader(m, from.toString(), to.toString())) {
-					return new LorenzMappingService(reader.read());
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read lorenz mappings", e);
-			}
-		});
+	public static LorenzMappingService.Spec create(MappingConfiguration mappingConfiguration, MappingsNamespace from, MappingsNamespace to) {
+		return new Spec(mappingConfiguration.getMappingsSpec(), from.toString(), to.toString());
 	}
 
 	@Override

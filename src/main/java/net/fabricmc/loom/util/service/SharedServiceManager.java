@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * This is a basic replacement for gradle's build service api.
  */
 public abstract class SharedServiceManager {
-	private static final Logger LOGGER = LoggerFactory.getLogger(BuildSharedServiceManager.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SharedServiceManager.class);
 	private final Map<String, SharedService> sharedServiceMap = new HashMap<>();
 
 	private boolean shutdown = false;
@@ -48,23 +47,27 @@ public abstract class SharedServiceManager {
 		LOGGER.info("Creating new SharedServiceManager({})", hashCode());
 	}
 
-	public <S extends SharedService> S getOrCreateService(String id, Supplier<S> function) {
-		synchronized (sharedServiceMap) {
-			if (shutdown) {
-				throw new UnsupportedOperationException("Cannot get or create service has the manager has been shutdown.");
-			}
+	public synchronized <S extends SharedService> S getOrCreateService(LoomServiceSpec<S> spec) {
+		return getOrCreateServiceInternal(spec);
+	}
 
-			//noinspection unchecked
-			S sharedService = (S) sharedServiceMap.get(id);
-
-			if (sharedService == null) {
-				LOGGER.debug("Creating service for {}", id);
-				sharedService = function.get();
-				sharedServiceMap.put(id, sharedService);
-			}
-
-			return sharedService;
+	private <S extends SharedService> S getOrCreateServiceInternal(LoomServiceSpec<S> spec) {
+		if (shutdown) {
+			throw new UnsupportedOperationException("Cannot get or create service has the manager has been shutdown.");
 		}
+
+		final String cacheKey = spec.getCacheKey();
+
+		//noinspection unchecked
+		S sharedService = (S) sharedServiceMap.get(cacheKey);
+
+		if (sharedService == null) {
+			LOGGER.debug("Creating service for {}", cacheKey);
+			sharedService = spec.create(this::getOrCreateServiceInternal);
+			sharedServiceMap.put(cacheKey, sharedService);
+		}
+
+		return sharedService;
 	}
 
 	protected void onFinish() {

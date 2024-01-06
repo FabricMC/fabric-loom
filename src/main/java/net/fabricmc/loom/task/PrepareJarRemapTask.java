@@ -75,7 +75,7 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(ReadInputsAction.class, params -> {
-			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(remapJarTask.getTinyRemapperService()));
+			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(null /* TODO: fix me! */));
 			params.getInputFile().set(getInputFile());
 		});
 	}

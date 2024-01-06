@@ -24,9 +24,8 @@
 
 package net.fabricmc.loom.util.kotlin;
 
-import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.File;
+import java.net.URI;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,25 +33,36 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 
-public record KotlinClasspathService(Set<URL> classpath, String version) implements KotlinClasspath, SharedService {
+public record KotlinClasspathService(Set<URI> classpath, String version) implements KotlinClasspath, SharedService {
+	public record Spec(Set<File> classpath, String kotlinVersion, String kotlinMetadataVersion) implements LoomServiceSpec<KotlinClasspathService> {
+		@Override
+		public KotlinClasspathService create(ServiceFactory serviceFactory) {
+			return new KotlinClasspathService(
+					classpath().stream().map(File::toURI).collect(Collectors.toSet()),
+					kotlinVersion
+			);
+		}
+
+		@Override
+		public String getCacheKey() {
+			return "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
+		}
+	}
+
 	@Nullable
-	public static KotlinClasspathService getOrCreateIfRequired(SharedServiceManager sharedServiceManager, Project project) {
+	public static KotlinClasspathService.Spec createIfRequired(Project project) {
 		if (!KotlinPluginUtils.hasKotlinPlugin(project)) {
 			return null;
 		}
 
-		return getOrCreate(sharedServiceManager, project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
+		return create(project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
 	}
 
-	public static synchronized KotlinClasspathService getOrCreate(SharedServiceManager sharedServiceManager, Project project, String kotlinVersion, String kotlinMetadataVersion) {
-		final String id = "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
-		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion, kotlinMetadataVersion));
-	}
-
-	private static KotlinClasspathService create(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+	private static KotlinClasspathService.Spec create(Project project, String kotlinVersion, String kotlinMetadataVersion) {
 		// Create a detached config to resolve the kotlin std lib for the provided version.
 		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
 				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
@@ -60,15 +70,6 @@ public record KotlinClasspathService(Set<URL> classpath, String version) impleme
 				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
 		);
 
-		Set<URL> classpath = detachedConfiguration.getFiles().stream()
-				.map(file -> {
-					try {
-						return file.toURI().toURL();
-					} catch (MalformedURLException e) {
-						throw new UncheckedIOException(e);
-					}
-				}).collect(Collectors.toSet());;
-
-		return new KotlinClasspathService(classpath, kotlinVersion);
+		return new KotlinClasspathService.Spec(detachedConfiguration.getFiles(), kotlinVersion, kotlinMetadataVersion);
 	}
 }

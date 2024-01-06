@@ -116,8 +116,12 @@ public class MappingConfiguration {
 		return mappingProvider;
 	}
 
+	public TinyMappingsService.Spec getMappingsSpec() {
+		return TinyMappingsService.create(Objects.requireNonNull(tinyMappings));
+	}
+
 	public TinyMappingsService getMappingsService(SharedServiceManager serviceManager) {
-		return TinyMappingsService.create(serviceManager, Objects.requireNonNull(tinyMappings));
+		return serviceManager.getOrCreateService(getMappingsSpec());
 	}
 
 	private void setup(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
@@ -174,8 +178,7 @@ public class MappingConfiguration {
 
 		if (areMappingsV2(baseTinyMappings)) {
 			// These are unmerged v2 mappings
-			IntermediateMappingsService intermediateMappingsService = IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider);
-
+			IntermediateMappingsService intermediateMappingsService = serviceManager.getOrCreateService(IntermediateMappingsService.getInstance(project, minecraftProvider));
 			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, intermediateMappingsService);
 		} else {
 			final List<Path> minecraftJars = minecraftProvider.getMinecraftJars();

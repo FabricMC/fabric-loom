@@ -42,6 +42,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.service.JsonSerializableHolder;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class JarManifestService implements BuildService<JarManifestService.Params> {
@@ -52,7 +53,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		Property<String> getMinecraftVersion();
 		Property<String> getTinyRemapperVersion();
 		Property<String> getFabricLoaderVersion();
-		Property<MixinVersion> getMixinVersion();
+		Property<JsonSerializableHolder<MixinVersion>> getMixinVersion();
 	}
 
 	public static synchronized Provider<JarManifestService> get(Project project) {
@@ -90,8 +91,9 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 
 		// This can be overridden by mods if required
 		if (!attributes.containsKey("Fabric-Mixin-Version")) {
-			attributes.putValue("Fabric-Mixin-Version", p.getMixinVersion().get().version());
-			attributes.putValue("Fabric-Mixin-Group", p.getMixinVersion().get().group());
+			final MixinVersion mixinVersion = p.getMixinVersion().get().get();
+			attributes.putValue("Fabric-Mixin-Version", mixinVersion.version());
+			attributes.putValue("Fabric-Mixin-Group", mixinVersion.group());
 		}
 
 		for (Map.Entry<String, String> entry : extraValues.entrySet()) {
@@ -101,7 +103,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 
 	private record MixinVersion(String group, String version) implements Serializable { }
 
-	private static Provider<MixinVersion> getMixinVersion(Project project) {
+	private static Provider<JsonSerializableHolder<MixinVersion>> getMixinVersion(Project project) {
 		return project.getConfigurations().named(Constants.Configurations.LOADER_DEPENDENCIES).map(configuration -> {
 			// Not super ideal that this uses the mod compile classpath, should prob look into making this not a thing at somepoint
 			Optional<Dependency> dependency = configuration
@@ -114,8 +116,8 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 				project.getLogger().warn("Could not determine Mixin version for jar manifest");
 			}
 
-			return dependency.map(d -> new MixinVersion(d.getGroup(), d.getVersion()))
-					.orElse(new MixinVersion("unknown", "unknown"));
+			return dependency.map(d -> new JsonSerializableHolder<>(new MixinVersion(d.getGroup(), d.getVersion())))
+					.orElse(new JsonSerializableHolder<>(new MixinVersion("unknown", "unknown")));
 		});
 	}
 }

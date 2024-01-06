@@ -28,15 +28,30 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
+import net.fabricmc.loom.util.service.LoomServiceSpec;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class TinyMappingsService implements SharedService {
+	public record Spec(Path mappings) implements LoomServiceSpec<TinyMappingsService> {
+		@Override
+		public TinyMappingsService create(ServiceFactory serviceFactory) {
+			return new TinyMappingsService(mappings);
+		}
+
+		@Override
+		public String getCacheKey() {
+			return "TinyMappingsService:%s".formatted(
+					mappings.toAbsolutePath().toString()
+			);
+		}
+	}
+
 	private final MemoryMappingTree mappingTree;
 
-	public TinyMappingsService(Path tinyMappings) {
+	private TinyMappingsService(Path tinyMappings) {
 		try {
 			this.mappingTree = new MemoryMappingTree();
 			MappingReader.read(tinyMappings, mappingTree);
@@ -45,8 +60,8 @@ public final class TinyMappingsService implements SharedService {
 		}
 	}
 
-	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings) {
-		return serviceManager.getOrCreateService("TinyMappingsService:" + tinyMappings.toAbsolutePath(), () -> new TinyMappingsService(tinyMappings));
+	public static synchronized TinyMappingsService.Spec create(Path tinyMappings) {
+		return new Spec(tinyMappings);
 	}
 
 	public MemoryMappingTree getMappingTree() {

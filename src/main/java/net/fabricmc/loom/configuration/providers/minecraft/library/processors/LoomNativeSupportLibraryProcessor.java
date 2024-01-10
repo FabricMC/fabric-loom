@@ -50,11 +50,6 @@ public class LoomNativeSupportLibraryProcessor extends LibraryProcessor {
 			return ApplicationResult.MUST_APPLY;
 		}
 
-		if (platform.getOperatingSystem().isMacOS() && context.isJava19OrLater() && !context.supportsJava19OrLater()) {
-			// Apply when LWJGL has been updated on MacOS to support Java 19
-			return ApplicationResult.MUST_APPLY;
-		}
-
 		// A developer can opt into this
 		return ApplicationResult.CAN_APPLY;
 	}

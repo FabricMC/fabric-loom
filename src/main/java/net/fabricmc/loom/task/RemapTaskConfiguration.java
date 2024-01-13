@@ -87,12 +87,9 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		};
 
-		if (extension.multiProjectOptimisation()) {
-			// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
-			getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
-		} else {
-			getTasks().register(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
-		}
+		// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
+		// Being lazy also breaks maven publishing, see: https://github.com/FabricMC/fabric-loom/issues/1023
+		getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
 
 		// Configure the default jar task
 		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {

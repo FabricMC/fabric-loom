@@ -52,7 +52,7 @@ public abstract class RemapperExtensionHolder {
 	}
 
 	@Input
-	public abstract Property<String> getRemapperExtensionClassName();
+	public abstract Property<Class<? extends RemapperExtension<?>>> getRemapperExtensionClass();
 
 	@Nested
 	@Optional
@@ -66,9 +66,11 @@ public abstract class RemapperExtensionHolder {
 		tinyRemapperBuilder.extraPostApplyVisitor(new RemapperExtensionImpl(remapperExtension, sourceNamespace, targetNamespace));
 
 		if (remapperExtension instanceof TinyRemapperExtension tinyRemapperExtension) {
-			final TinyRemapper.AnalyzeVisitorProvider analyzeVisitorProvider = tinyRemapperExtension.getAnalyzeVisitorProvider();
-			final TinyRemapper.ApplyVisitorProvider preApplyVisitorProvider = tinyRemapperExtension.getPreApplyVisitor();
-			final TinyRemapper.ApplyVisitorProvider postApplyVisitorProvider = tinyRemapperExtension.getPostApplyVisitor();
+			final var context = new TinyRemapperContextImpl(sourceNamespace, targetNamespace);
+
+			final TinyRemapper.AnalyzeVisitorProvider analyzeVisitorProvider = tinyRemapperExtension.getAnalyzeVisitorProvider(context);
+			final TinyRemapper.ApplyVisitorProvider preApplyVisitorProvider = tinyRemapperExtension.getPreApplyVisitor(context);
+			final TinyRemapper.ApplyVisitorProvider postApplyVisitorProvider = tinyRemapperExtension.getPostApplyVisitor(context);
 
 			if (analyzeVisitorProvider != null) {
 				tinyRemapperBuilder.extraAnalyzeVisitor(analyzeVisitorProvider);
@@ -86,8 +88,7 @@ public abstract class RemapperExtensionHolder {
 
 	private RemapperExtension<?> newInstance(ObjectFactory objectFactory) {
 		try {
-			Class<? extends RemapperExtension> remapperExtensionClass = Class.forName(getRemapperExtensionClassName().get())
-					.asSubclass(RemapperExtension.class);
+			Class<? extends RemapperExtension<?>> remapperExtensionClass = getRemapperExtensionClass().get();
 
 			if (remapperParameters == RemapperParameters.None.INSTANCE) {
 				return objectFactory.newInstance(remapperExtensionClass);
@@ -124,5 +125,8 @@ public abstract class RemapperExtensionHolder {
 	}
 
 	private record RemapperContextImpl(Remapper remapper, String sourceNamespace, String targetNamespace) implements RemapperContext {
+	}
+
+	private record TinyRemapperContextImpl(String sourceNamespace, String targetNamespace) implements TinyRemapperExtension.Context {
 	}
 }

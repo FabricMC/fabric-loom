@@ -413,7 +413,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 			holder = objectFactory.newInstance(RemapperExtensionHolder.class, RemapperParameters.None.INSTANCE);
 		}
 
-		holder.getRemapperExtensionClassName().set(remapperExtensionClass.getName());
+		holder.getRemapperExtensionClass().set(remapperExtensionClass);
 		remapperExtensions.add(holder);
 	}
 

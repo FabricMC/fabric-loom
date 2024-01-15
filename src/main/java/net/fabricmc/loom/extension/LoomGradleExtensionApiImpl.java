@@ -401,7 +401,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public <T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
+	public <T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
 		final ObjectFactory objectFactory = getProject().getObjects();
 		final RemapperExtensionHolder holder;
 

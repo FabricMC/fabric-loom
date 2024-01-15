@@ -53,7 +53,7 @@ public interface TinyRemapperExtension {
 	 */
 	@Nullable
 	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor(Context context) {
-		return null;
+		return getPreApplyVisitor();
 	}
 
 	/**
@@ -63,7 +63,7 @@ public interface TinyRemapperExtension {
 	 */
 	@Nullable
 	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor(Context context) {
-		return null;
+		return getPostApplyVisitor();
 	}
 
 	interface Context {

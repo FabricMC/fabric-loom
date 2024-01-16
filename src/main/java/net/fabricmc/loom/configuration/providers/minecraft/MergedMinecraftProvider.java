@@ -55,7 +55,9 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
-		getExtension().canMergeObfuscatedJarsOrThrow();
+		if (!getExtension().canMergeObfuscatedJars()) {
+			throw new UnsupportedOperationException("The obfuscated client and server jars for Minecraft versions prior to 1.3 cannot be merged. Please provide a common intermediary or use `loom { server/clientOnlyMinecraftJar() }`");
+		}
 
 		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
 			try {

@@ -72,8 +72,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	boolean canMergeObfuscatedJars();
 
-	boolean canMergeObfuscatedJarsOrThrow();
-
 	MappingConfiguration getMappingConfiguration();
 
 	void setMappingConfiguration(MappingConfiguration mappingConfiguration);

@@ -37,8 +37,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.SeparateJarsMinecraft
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider.ProvideContext;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider.RemappedJars;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.SeparatedImpl {

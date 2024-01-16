@@ -55,9 +55,7 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
-		if (!getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */)) {
-			throw new UnsupportedOperationException("Minecraft versions 1.2.5 and older cannot be merged. Please use `loom { server/clientOnlyMinecraftJar() }`");
-		}
+		getExtension().canMergeObfuscatedJarsOrThrow();
 
 		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
 			try {

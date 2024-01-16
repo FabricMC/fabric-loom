@@ -83,4 +83,23 @@ public interface MappedMinecraftProvider {
 			return List.of(getEnvOnlyJar());
 		}
 	}
+
+	interface Separated extends ProviderImpl {
+		default MinecraftJar getMinecraftClientJar() {
+			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
+		}
+
+		default MinecraftJar getMinecraftServerJar() {
+			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
+		}
+
+		default MinecraftJar getMergedJar() {
+			return new MinecraftJar.Merged(getJar(MinecraftJar.Type.MERGED));
+		}
+
+		@Override
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(getMergedJar());
+		}
+	}
 }

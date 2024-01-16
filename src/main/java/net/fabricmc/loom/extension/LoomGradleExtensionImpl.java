@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -63,6 +64,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	private LoomDependencyManager dependencyManager;
 	private MinecraftProvider minecraftProvider;
+	private Boolean canMergeObfuscatedJars;
 	private MappingConfiguration mappingConfiguration;
 	private NamedMinecraftProvider<?> namedMinecraftProvider;
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
@@ -127,6 +129,24 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void setMinecraftProvider(MinecraftProvider minecraftProvider) {
 		this.minecraftProvider = minecraftProvider;
+	}
+
+	@Override
+	public boolean canMergeObfuscatedJars() {
+		if (canMergeObfuscatedJars == null) {
+			canMergeObfuscatedJars = getMinecraftProvider().getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */);
+		}
+
+		return canMergeObfuscatedJars;
+	}
+
+	@Override
+	public boolean canMergeObfuscatedJarsOrThrow() {
+		if (!canMergeObfuscatedJars()) {
+			throw new UnsupportedOperationException("The obfuscated client and server jars for Minecraft versions prior to 1.3 cannot be merged. Please provide a common intermediary or use `loom { server/clientOnlyMinecraftJar() }`");
+		}
+
+		return true;
 	}
 
 	@Override

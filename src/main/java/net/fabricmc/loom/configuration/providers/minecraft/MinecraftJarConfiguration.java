@@ -49,6 +49,13 @@ public enum MinecraftJarConfiguration {
 		SingleJarDecompileConfiguration::new,
 		List.of("client", "server")
 	),
+	SEPARATED(
+		SeparateJarsMinecraftProvider::new,
+		IntermediaryMinecraftProvider.SeparatedImpl::new,
+		ProcessedNamedMinecraftProvider.SeparatedImpl::new,
+		SingleJarDecompileConfiguration::new,
+		List.of("client", "server")
+	),
 	SERVER_ONLY(
 		SingleJarMinecraftProvider::server,
 		IntermediaryMinecraftProvider.SingleJarImpl::server,

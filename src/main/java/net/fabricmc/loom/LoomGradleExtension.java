@@ -70,6 +70,10 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	void setMinecraftProvider(MinecraftProvider minecraftProvider);
 
+	boolean canMergeObfuscatedJars();
+
+	boolean canMergeObfuscatedJarsOrThrow();
+
 	MappingConfiguration getMappingConfiguration();
 
 	void setMappingConfiguration(MappingConfiguration mappingConfiguration);
@@ -86,7 +90,7 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 		return switch (mappingsNamespace) {
 		case NAMED -> getNamedMinecraftProvider().getMinecraftJarPaths();
 		case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJarPaths();
-		case OFFICIAL -> getMinecraftProvider().getMinecraftJars();
+		case OFFICIAL,CLIENT, SERVER -> getMinecraftProvider().getMinecraftJars();
 		};
 	}
 

@@ -42,8 +42,8 @@ public interface TinyRemapperExtension {
 	 * @return A {@link TinyRemapper.AnalyzeVisitorProvider} or {@code null}.
 	 */
 	@Nullable
-	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
-		return null;
+	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider(Context context) {
+		return getAnalyzeVisitorProvider();
 	}
 
 	/**
@@ -52,8 +52,8 @@ public interface TinyRemapperExtension {
 	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
 	 */
 	@Nullable
-	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
-		return null;
+	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor(Context context) {
+		return getPreApplyVisitor();
 	}
 
 	/**
@@ -61,6 +61,47 @@ public interface TinyRemapperExtension {
 	 *
 	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
 	 */
+	@Nullable
+	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor(Context context) {
+		return getPostApplyVisitor();
+	}
+
+	interface Context {
+		/**
+		 * @return The source namespace.
+		 */
+		String sourceNamespace();
+
+		/**
+		 * @return The target namespace.
+		 */
+		String targetNamespace();
+	}
+
+	// Deprecated, for removal in Loom 1.6:
+
+	/**
+	 * @deprecated Use {@link #getAnalyzeVisitorProvider(Context)} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Nullable
+	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
+		return null;
+	}
+
+	/**
+	 * @deprecated Use {@link #getPreApplyVisitor(Context)} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Nullable
+	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
+		return null;
+	}
+
+	/**
+	 * @deprecated Use {@link #getPostApplyVisitor(Context)} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	@Nullable
 	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor() {
 		return null;

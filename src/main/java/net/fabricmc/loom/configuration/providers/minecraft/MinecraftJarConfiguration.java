@@ -49,7 +49,7 @@ public enum MinecraftJarConfiguration {
 		SingleJarDecompileConfiguration::new,
 		List.of("client", "server")
 	),
-	SEPARATED(
+	LEGACY_MERGED(
 		SeparateJarsMinecraftProvider::new,
 		IntermediaryMinecraftProvider.SeparatedImpl::new,
 		NamedMinecraftProvider.SeparatedImpl::new,

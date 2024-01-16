@@ -141,7 +141,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 			if (LoomGradleExtension.get(project).canMergeObfuscatedJars()) {
 				return MinecraftJarConfiguration.MERGED;
 			} else {
-				return MinecraftJarConfiguration.SEPARATED;
+				return MinecraftJarConfiguration.LEGACY_MERGED;
 			}
 		}));
 		this.minecraftJarConfiguration.finalizeValueOnRead();

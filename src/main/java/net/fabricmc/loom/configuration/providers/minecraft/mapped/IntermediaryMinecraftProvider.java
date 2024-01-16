@@ -123,8 +123,8 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getClientJar(), getMinecraftClientJar(), MappingsNamespace.CLIENT),
-				new RemappedJars(minecraftProvider.getServerJar(), getMinecraftServerJar(), MappingsNamespace.SERVER)
+				new RemappedJars(minecraftProvider.getClientJar(), getMinecraftClientJar(), MappingsNamespace.CLIENT_OFFICIAL),
+				new RemappedJars(minecraftProvider.getServerJar(), getMinecraftServerJar(), MappingsNamespace.SERVER_OFFICIAL)
 			);
 		}
 

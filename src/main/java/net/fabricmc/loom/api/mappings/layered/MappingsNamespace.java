@@ -40,12 +40,12 @@ public enum MappingsNamespace {
 	/**
 	 * Official names for the Minecraft client jar, usually obfuscated.
 	 */
-	CLIENT,
+	CLIENT_OFFICIAL,
 
 	/**
 	 * Official names for the Minecraft server jar, usually obfuscated.
 	 */
-	SERVER,
+	SERVER_OFFICIAL,
 
 	/**
 	 * Intermediary mappings have been generated to provide a stable set of names across minecraft versions.
@@ -70,8 +70,8 @@ public enum MappingsNamespace {
 	public static @Nullable MappingsNamespace of(String namespace) {
 		return switch (namespace) {
 		case "official" -> OFFICIAL;
-		case "client" -> CLIENT;
-		case "server" -> SERVER;
+		case "clientOfficial" -> CLIENT_OFFICIAL;
+		case "serverOfficial" -> SERVER_OFFICIAL;
 		case "intermediary" -> INTERMEDIARY;
 		case "named" -> NAMED;
 		default -> null;
@@ -80,6 +80,10 @@ public enum MappingsNamespace {
 
 	@Override
 	public String toString() {
-		return name().toLowerCase(Locale.ROOT);
+		return switch (this) {
+		case CLIENT_OFFICIAL -> "clientOfficial";
+		case SERVER_OFFICIAL -> "serverOfficial";
+		default -> name().toLowerCase(Locale.ROOT);
+		};
 	}
 }

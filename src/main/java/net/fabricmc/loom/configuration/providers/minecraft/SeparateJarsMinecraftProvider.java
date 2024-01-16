@@ -41,6 +41,14 @@ public final class SeparateJarsMinecraftProvider extends MinecraftProvider {
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(getMinecraftClientJar().toPath(), getMinecraftServerJar().toPath());
+		return List.of(getClientJar(), getServerJar());
+	}
+
+	public Path getClientJar() {
+		return getMinecraftClientJar().toPath();
+	}
+
+	public Path getServerJar() {
+		return getMinecraftServerJar().toPath();
 	}
 }

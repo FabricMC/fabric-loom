@@ -34,6 +34,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -63,7 +64,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	private LoomDependencyManager dependencyManager;
 	private MinecraftProvider minecraftProvider;
-	private Boolean canMergeObfuscatedJars;
+	private Property<Boolean> canMergeObfuscatedJars;
 	private MappingConfiguration mappingConfiguration;
 	private NamedMinecraftProvider<?> namedMinecraftProvider;
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
@@ -89,6 +90,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
 		});
 
+		canMergeObfuscatedJars = project.getObjects().property(Boolean.class).convention(project.provider(() -> getMinecraftProvider().getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */)));
 		refreshDeps = manualRefreshDeps();
 		multiProjectOptimisation = GradleUtils.getBooleanPropertyProvider(project, Constants.Properties.MULTI_PROJECT_OPTIMISATION);
 		libraryProcessorFactories = project.getObjects().listProperty(LibraryProcessorManager.LibraryProcessorFactory.class);
@@ -132,11 +134,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	@Override
 	public boolean canMergeObfuscatedJars() {
-		if (canMergeObfuscatedJars == null) {
-			canMergeObfuscatedJars = getMinecraftProvider().getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */);
-		}
-
-		return canMergeObfuscatedJars;
+		return canMergeObfuscatedJars.getOrElse(true);
 	}
 
 	@Override

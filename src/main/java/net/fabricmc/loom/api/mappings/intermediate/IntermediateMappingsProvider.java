@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.function.Function;
 
 import org.gradle.api.Named;
+import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -49,4 +50,21 @@ public abstract class IntermediateMappingsProvider implements Named {
 	 * @throws IOException
 	 */
 	public abstract void provide(Path tinyMappings) throws IOException;
+
+	public final void provideWithContext(Path tinyMappings, Project project) throws IOException {
+		if (this instanceof Contextual ctx) {
+			ctx.provide(tinyMappings, project);
+		} else {
+			this.provide(tinyMappings);
+		}
+	}
+
+	public abstract static class Contextual extends IntermediateMappingsProvider {
+		@Override
+		public final void provide(Path tinyMappings) throws IOException {
+			throw new UnsupportedOperationException();
+		}
+
+		public abstract void provide(Path tinyMappings, Project project) throws IOException;
+	}
 }

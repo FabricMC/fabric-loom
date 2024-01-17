@@ -27,16 +27,26 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import com.google.common.net.UrlEscapers;
+import org.gradle.api.Action;
+import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
+import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
+import net.fabricmc.loom.util.Constants;
 
-public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider {
+public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider.Contextual {
 	public static final String NAME = "intermediary-v2";
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsProvider.class);
 
@@ -45,7 +55,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 	public abstract Property<Boolean> getRefreshDeps();
 
 	@Override
-	public void provide(Path tinyMappings) throws IOException {
+	public void provide(Path tinyMappings, Project project) throws IOException {
 		if (Files.exists(tinyMappings) && !getRefreshDeps().get()) {
 			return;
 		}
@@ -53,16 +63,51 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 		// Download and extract intermediary
 		final Path intermediaryJarPath = Files.createTempFile(getName(), ".jar");
 		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
-		final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
+		final String urlRaw = getIntermediaryUrl().get();
 
-		LOGGER.info("Downloading intermediary from {}", url);
+		if (project != null && urlRaw.equals(LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL)) {
+			final Configuration config = project.getConfigurations()
+					.getByName(Constants.Configurations.INTERMEDIARY_MAPPINGS);
+			try {
+				config.defaultDependencies(new Action<DependencySet>() {
+					@Override
+					public void execute(final DependencySet dependencySet) {
+						final ModuleDependency intermediaryDep = (ModuleDependency) project.getDependencies()
+								.create("net.fabricmc:intermediary:" + encodedMcVersion);
+						intermediaryDep.artifact(new Action<DependencyArtifact>() {
+							@Override
+							public void execute(final DependencyArtifact dependencyArtifact) {
+								dependencyArtifact.setClassifier("v2");
+							}
+						});
+						dependencySet.add(intermediaryDep);
+					}
+				});
+			} catch (final InvalidUserDataException dataException) {
+				// We only care about adding default dependencies once
+				if (!dataException.getMessage().contains("after it has been resolved")) {
+					throw dataException;
+				}
+			}
 
-		Files.deleteIfExists(tinyMappings);
-		Files.deleteIfExists(intermediaryJarPath);
+			Files.copy(
+					config.getIncoming().getArtifacts().getArtifactFiles().getSingleFile().toPath(),
+					intermediaryJarPath,
+					StandardCopyOption.REPLACE_EXISTING
+			);
+			Files.deleteIfExists(tinyMappings);
+		} else {
+			final String url = urlRaw.formatted(encodedMcVersion);
 
-		getDownloader().get().apply(url)
-				.defaultCache()
-				.downloadPath(intermediaryJarPath);
+			LOGGER.info("Downloading intermediary from {}", url);
+
+			Files.deleteIfExists(tinyMappings);
+			Files.deleteIfExists(intermediaryJarPath);
+
+			getDownloader().get().apply(url)
+					.defaultCache()
+					.downloadPath(intermediaryJarPath);
+		}
 
 		MappingConfiguration.extractMappings(intermediaryJarPath, tinyMappings);
 	}

@@ -102,6 +102,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
+	public static final String DEFAULT_INTERMEDIARY_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar";
 
 	protected boolean hasEvaluatedLayeredMappings = false;
 	protected final Map<LayeredMappingSpec, LayeredMappingsFactory> layeredMappingsDependencyMap = new HashMap<>();
@@ -125,7 +126,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.convention(true);
 		this.modProvidedJavadoc.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
-				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
+				.convention(DEFAULT_INTERMEDIARY_URL);
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
 		this.intermediateMappingsProvider.finalizeValueOnRead();

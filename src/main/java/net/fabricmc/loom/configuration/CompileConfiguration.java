@@ -35,7 +35,10 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
@@ -91,8 +94,9 @@ public abstract class CompileConfiguration implements Runnable {
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
 
-			if (getAndLock()) {
-				getProject().getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
+			final LockResult lockResult = acquireProcessLockWaiting(getLockFile());
+			if (lockResult != LockResult.ACQUIRED_CLEAN) {
+				getProject().getLogger().lifecycle("Found existing cache lock file ({}), rebuilding loom cache. This may have been caused by a failed or canceled build.", lockResult);
 				extension.setRefreshDeps(true);
 			}
 
@@ -235,20 +239,83 @@ public abstract class CompileConfiguration implements Runnable {
 		return cacheDirectory.resolve("." + pathHash + ".lock");
 	}
 
-	private boolean getAndLock() {
-		final Path lock = getLockFile();
+	enum LockResult {
+		// acquired immediately or after waiting for another process to release
+		ACQUIRED_CLEAN,
+		// already owned by current pid
+		ACQUIRED_ALREADY_OWNED,
+		// acquired due to current owner not existing
+		ACQUIRED_PREVIOUS_OWNER_MISSING
+	}
 
-		if (Files.exists(lock)) {
-			return true;
-		}
+	private LockResult acquireProcessLockWaiting(Path lockFile) {
+		// one hour
+		return this.acquireProcessLockWaiting(lockFile, 1000L * 60 * 60);
+	}
 
+	private LockResult acquireProcessLockWaiting(Path lockFile, long timeoutMs) {
 		try {
-			Files.createFile(lock);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to acquire getProject() configuration lock", e);
+			return this.acquireProcessLockWaiting_(lockFile, timeoutMs);
+		} catch (final IOException e) {
+			throw new RuntimeException("Exception acquiring lock " + lockFile, e);
+		}
+	}
+
+	// Returns true if our process already owns the lock
+	@SuppressWarnings("BusyWait")
+	private LockResult acquireProcessLockWaiting_(Path lockFile, long timeoutMs) throws IOException {
+		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
+		final long currentPid = ProcessHandle.current().pid();
+		boolean abrupt = false;
+
+		if (Files.exists(lockFile)) {
+			long lockingProcessId;
+			try {
+				lockingProcessId = Long.parseLong(Files.readString(lockFile));
+			} catch (final Exception e) {
+				lockingProcessId = -1;
+			}
+			if (lockingProcessId == currentPid) {
+				return LockResult.ACQUIRED_ALREADY_OWNED;
+			}
+
+			logger.lifecycle("Lock file '{}' is currently held by pid '{}'.", lockFile, lockingProcessId);
+			if (ProcessHandle.of(lockingProcessId).isEmpty()) {
+				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
+				Files.deleteIfExists(lockFile);
+				abrupt = true;
+			} else {
+				logger.lifecycle("Waiting for lock to be released...");
+				long sleptMs = 0;
+				while (Files.exists(lockFile)) {
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+					sleptMs += 100;
+					if (sleptMs >= 1000 * 60 && sleptMs % (1000 * 60) == 0L) {
+						logger.lifecycle(
+								"""
+										Have been waiting on lock file '{}' held by pid '{}' for {} minute(s).
+										If this persists for an unreasonable length of time, kill this process, run './gradlew --stop' and then try again.
+										If the problem persists, the lock file may need to be deleted manually.""",
+								lockFile, lockingProcessId, sleptMs / 1000 / 60
+						);
+					}
+					if (sleptMs >= timeoutMs) {
+						throw new GradleException("Have been waiting on lock file '%s' for %s ms. Giving up as timeout is %s ms."
+								.formatted(lockFile, sleptMs, timeoutMs));
+					}
+				}
+			}
 		}
 
-		return false;
+		if (!Files.exists(lockFile.getParent())) {
+			Files.createDirectories(lockFile.getParent());
+		}
+		Files.writeString(lockFile, String.valueOf(currentPid));
+		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
 	}
 
 	private void releaseLock() {

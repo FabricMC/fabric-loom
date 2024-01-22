@@ -221,8 +221,8 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
-	public static final class SeparatedImpl extends ProcessedNamedMinecraftProvider<SeparateJarsMinecraftProvider, NamedMinecraftProvider.SeparatedImpl> implements Separated {
-		public SeparatedImpl(NamedMinecraftProvider.SeparatedImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
+	public static final class LegacyMergedImpl extends ProcessedNamedMinecraftProvider<SeparateJarsMinecraftProvider, NamedMinecraftProvider.LegacyMergedImpl> implements LegacyMerged {
+		public LegacyMergedImpl(NamedMinecraftProvider.LegacyMergedImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
 			super(parentMinecraftProvide, jarProcessorManager);
 		}
 

@@ -37,7 +37,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.SeparateJarsMinecraft
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider.RemappedJars;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> {
@@ -131,8 +130,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 	}
 
-	public static final class SeparatedImpl extends NamedMinecraftProvider<SeparateJarsMinecraftProvider> implements Separated {
-		public SeparatedImpl(Project project, SeparateJarsMinecraftProvider minecraftProvider) {
+	public static final class LegacyMergedImpl extends NamedMinecraftProvider<SeparateJarsMinecraftProvider> implements LegacyMerged {
+		public LegacyMergedImpl(Project project, SeparateJarsMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
 		}
 

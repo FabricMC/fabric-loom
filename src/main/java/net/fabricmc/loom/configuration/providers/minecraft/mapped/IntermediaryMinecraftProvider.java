@@ -39,7 +39,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftPro
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.SeparatedImpl {
+public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.LegacyMergedImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
 	}
@@ -115,8 +115,8 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		}
 	}
 
-	public static final class SeparatedImpl extends IntermediaryMinecraftProvider<SeparateJarsMinecraftProvider> implements Separated {
-		public SeparatedImpl(Project project, SeparateJarsMinecraftProvider minecraftProvider) {
+	public static final class LegacyMergedImpl extends IntermediaryMinecraftProvider<SeparateJarsMinecraftProvider> implements LegacyMerged {
+		public LegacyMergedImpl(Project project, SeparateJarsMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
 		}
 

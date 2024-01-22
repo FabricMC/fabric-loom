@@ -84,7 +84,12 @@ public interface MappedMinecraftProvider {
 		}
 	}
 
-	interface Separated extends ProviderImpl {
+	interface LegacyMerged extends ProviderImpl {
+		/*
+		 * For legacy versions of Minecraft, the client and server
+		 * jars are remapped separately and then merged together.
+		 */
+
 		default MinecraftJar getMinecraftClientJar() {
 			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
 		}

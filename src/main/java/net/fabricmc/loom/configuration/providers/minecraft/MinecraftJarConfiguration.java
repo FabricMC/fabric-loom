@@ -51,9 +51,9 @@ public enum MinecraftJarConfiguration {
 	),
 	LEGACY_MERGED(
 		SeparateJarsMinecraftProvider::new,
-		IntermediaryMinecraftProvider.SeparatedImpl::new,
-		NamedMinecraftProvider.SeparatedImpl::new,
-		ProcessedNamedMinecraftProvider.SeparatedImpl::new,
+		IntermediaryMinecraftProvider.LegacyMergedImpl::new,
+		NamedMinecraftProvider.LegacyMergedImpl::new,
+		ProcessedNamedMinecraftProvider.LegacyMergedImpl::new,
 		SingleJarDecompileConfiguration::new,
 		List.of("client", "server")
 	),

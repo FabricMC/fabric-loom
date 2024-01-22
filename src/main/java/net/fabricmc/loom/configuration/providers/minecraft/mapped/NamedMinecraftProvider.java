@@ -153,5 +153,4 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 			return env;
 		}
 	}
-
 }

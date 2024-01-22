@@ -225,7 +225,7 @@ public interface LoomGradleExtensionAPI {
 
 	Property<Boolean> getSplitModDependencies();
 
-	<T extends RemapperParameters> void addRemapperExtension(Class<RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);
+	<T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);
 
 	/**
 	 * @return The minecraft version, as a {@link Provider}.

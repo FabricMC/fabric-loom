@@ -133,8 +133,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 			if (!minecraftProvider.canMergeJars()) {
 				sourceNamespace = switch (env()) {
-					case CLIENT -> MappingsNamespace.CLIENT_OFFICIAL;
-					case SERVER -> MappingsNamespace.SERVER_OFFICIAL;
+				case CLIENT -> MappingsNamespace.CLIENT_OFFICIAL;
+				case SERVER -> MappingsNamespace.SERVER_OFFICIAL;
 				};
 			}
 

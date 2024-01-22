@@ -70,8 +70,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	void setMinecraftProvider(MinecraftProvider minecraftProvider);
 
-	boolean canMergeObfuscatedJars();
-
 	MappingConfiguration getMappingConfiguration();
 
 	void setMappingConfiguration(MappingConfiguration mappingConfiguration);

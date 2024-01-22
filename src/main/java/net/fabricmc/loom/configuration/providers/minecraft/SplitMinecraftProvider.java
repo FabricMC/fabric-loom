@@ -56,6 +56,10 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	public void provide() throws Exception {
 		super.provide();
 
+		if (!canMergeJars()) {
+			throw new UnsupportedOperationException("the split jar configuration is not supported at this moment for minecraft versions where the obfuscated client and server jars cannot be merged!");
+		}
+
 		boolean requiresRefresh = getExtension().refreshDeps() || Files.notExists(minecraftClientOnlyJar) || Files.notExists(minecraftCommonJar);
 
 		if (!requiresRefresh) {

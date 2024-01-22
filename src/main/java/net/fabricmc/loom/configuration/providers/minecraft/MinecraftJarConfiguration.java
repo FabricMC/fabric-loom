@@ -49,14 +49,6 @@ public enum MinecraftJarConfiguration {
 		SingleJarDecompileConfiguration::new,
 		List.of("client", "server")
 	),
-	LEGACY_MERGED(
-		SeparateJarsMinecraftProvider::new,
-		IntermediaryMinecraftProvider.LegacyMergedImpl::new,
-		NamedMinecraftProvider.LegacyMergedImpl::new,
-		ProcessedNamedMinecraftProvider.LegacyMergedImpl::new,
-		SingleJarDecompileConfiguration::new,
-		List.of("client", "server")
-	),
 	SERVER_ONLY(
 		SingleJarMinecraftProvider::server,
 		IntermediaryMinecraftProvider.SingleJarImpl::server,

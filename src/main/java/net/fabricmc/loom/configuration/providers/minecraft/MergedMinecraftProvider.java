@@ -48,50 +48,72 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return List.of(minecraftMergedJar);
+		return canMergeJars() ? List.of(minecraftMergedJar) : List.of(getClientJar(), getServerJar());
 	}
 
 	@Override
 	public void provide() throws Exception {
+		// we must first call super.provide() to load the version info
+		// only then can we select the correct merge mode
+
 		super.provide();
 
-		if (!getExtension().canMergeObfuscatedJars()) {
-			throw new UnsupportedOperationException("The obfuscated client and server jars for Minecraft versions prior to 1.3 cannot be merged. Please provide a common intermediary or use `loom { server/clientOnlyMinecraftJar() }`");
-		}
+		if (canMergeJars()) {
+			if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
+				try {
+					mergeJars();
+				} catch (Throwable e) {
+					Files.deleteIfExists(getMinecraftClientJar().toPath());
+					Files.deleteIfExists(getMinecraftServerJar().toPath());
+					Files.deleteIfExists(minecraftMergedJar);
 
-		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
-			try {
-				mergeJars();
-			} catch (Throwable e) {
-				Files.deleteIfExists(getMinecraftClientJar().toPath());
-				Files.deleteIfExists(getMinecraftServerJar().toPath());
-				Files.deleteIfExists(minecraftMergedJar);
-
-				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-				throw e;
+					getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
+					throw e;
+				}
+			}
+		} else {
+			if (!provideClient() || !provideServer()) {
+				throw new UnsupportedOperationException("for the merged jar configuration both the client and server jars must be available - please select the client-only or server-only jar configuration!");
 			}
 		}
 	}
 
 	private void mergeJars() throws IOException {
-		getLogger().info(":merging jars");
-
-		File jarToMerge = getMinecraftServerJar();
+		File minecraftClientJar = getMinecraftClientJar();
+		File minecraftServerJar = getMinecraftServerJar();
 
 		if (getServerBundleMetadata() != null) {
 			extractBundledServerJar();
-			jarToMerge = getMinecraftExtractedServerJar();
+			minecraftServerJar = getMinecraftExtractedServerJar();
 		}
 
-		Objects.requireNonNull(jarToMerge, "Cannot merge null input jar?");
+		mergeJars(minecraftClientJar, minecraftServerJar, minecraftMergedJar.toFile());
+	}
 
-		try (var jarMerger = new MinecraftJarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
+	public void mergeJars(File clientJar, File serverJar, File mergedJar) throws IOException {
+		getLogger().info(":merging jars");
+
+		Objects.requireNonNull(clientJar, "Cannot merge null client jar?");
+		Objects.requireNonNull(serverJar, "Cannot merge null server jar?");
+
+		try (var jarMerger = new MinecraftJarMerger(clientJar, serverJar, mergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}
 	}
 
+	public Path getClientJar() {
+		return getMinecraftClientJar().toPath();
+	}
+
+	public Path getServerJar() {
+		return getMinecraftServerJar().toPath();
+	}
+
 	public Path getMergedJar() {
+		if (!canMergeJars()) {
+			throw new UnsupportedOperationException("the obfuscated client and server jars cannot be merged in this minecraft version");
+		}
 		return minecraftMergedJar;
 	}
 }

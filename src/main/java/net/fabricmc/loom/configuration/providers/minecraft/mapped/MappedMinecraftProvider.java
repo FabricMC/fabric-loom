@@ -42,6 +42,21 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface Merged extends ProviderImpl {
+		/*
+		 * For legacy versions of Minecraft, the client and server
+		 * jars are remapped separately and then merged together.
+		 * For this the remapped client and server jars must be
+		 * available here as well, as an intermediate step.
+		 */
+
+		default MinecraftJar getClientJar() {
+			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
+		}
+
+		default MinecraftJar getServerJar() {
+			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
+		}
+
 		default MinecraftJar getMergedJar() {
 			return new MinecraftJar.Merged(getJar(MinecraftJar.Type.MERGED));
 		}
@@ -81,30 +96,6 @@ public interface MappedMinecraftProvider {
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
 			return List.of(getEnvOnlyJar());
-		}
-	}
-
-	interface LegacyMerged extends ProviderImpl {
-		/*
-		 * For legacy versions of Minecraft, the client and server
-		 * jars are remapped separately and then merged together.
-		 */
-
-		default MinecraftJar getMinecraftClientJar() {
-			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
-		}
-
-		default MinecraftJar getMinecraftServerJar() {
-			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
-		}
-
-		default MinecraftJar getMergedJar() {
-			return new MinecraftJar.Merged(getJar(MinecraftJar.Type.MERGED));
-		}
-
-		@Override
-		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(getMergedJar());
 		}
 	}
 }

@@ -69,7 +69,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 		super.provide();
 
 		// Server only JARs are supported on any version, client only JARs are pretty much useless after 1.3.
-		if (provideClient() && getExtension().canMergeObfuscatedJars()) {
+		if (provideClient() && canMergeJars()) {
 			getProject().getLogger().warn("Using `clientOnlyMinecraftJar()` is not recommended for Minecraft versions 1.3 or newer.");
 		}
 

@@ -33,6 +33,7 @@ import java.util.Objects;
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -58,9 +59,14 @@ public abstract class MinecraftProvider {
 	private BundleMetadata serverBundleMetadata;
 
 	private final Project project;
+	private final Property<Boolean> canMergeJars;
 
 	public MinecraftProvider(ConfigContext configContext) {
 		this.project = configContext.project();
+		this.canMergeJars = this.project.getObjects().property(Boolean.class).convention(this.project.provider(() -> {
+			return getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */);
+		}));
+		this.canMergeJars.finalizeValueOnRead();
 	}
 
 	protected boolean provideClient() {
@@ -205,6 +211,10 @@ public abstract class MinecraftProvider {
 
 	protected LoomGradleExtension getExtension() {
 		return LoomGradleExtension.get(getProject());
+	}
+
+	public boolean canMergeJars() {
+		return canMergeJars.get();
 	}
 
 	public boolean refreshDeps() {

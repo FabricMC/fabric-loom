@@ -31,15 +31,13 @@ import org.gradle.api.Project;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarMerger;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.SeparateJarsMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.LegacyMergedImpl {
+public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
 	}
@@ -61,9 +59,26 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
-			return List.of(
-				new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
-			);
+			return minecraftProvider.canMergeJars()
+				? List.of(
+					new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
+				) : List.of(
+					new RemappedJars(minecraftProvider.getClientJar(), getClientJar(), MappingsNamespace.CLIENT_OFFICIAL),
+					new RemappedJars(minecraftProvider.getServerJar(), getServerJar(), MappingsNamespace.SERVER_OFFICIAL)
+				);
+		}
+
+		@Override
+		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+			List<MinecraftJar> jars = super.provide(context);
+
+			if (minecraftProvider.canMergeJars()) {
+				return jars;
+			}
+
+			minecraftProvider.mergeJars(getClientJar().toFile(), getServerJar().toFile(), getMergedJar().toFile());
+
+			return List.of(getMergedJar());
 		}
 	}
 
@@ -104,40 +119,23 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
+			MappingsNamespace sourceNamespace = MappingsNamespace.OFFICIAL;
+
+			if (!minecraftProvider.canMergeJars()) {
+				sourceNamespace = switch (env()) {
+					case CLIENT -> MappingsNamespace.CLIENT_OFFICIAL;
+					case SERVER -> MappingsNamespace.SERVER_OFFICIAL;
+				};
+			}
+
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), sourceNamespace)
 			);
 		}
 
 		@Override
 		public SingleJarEnvType env() {
 			return env;
-		}
-	}
-
-	public static final class LegacyMergedImpl extends IntermediaryMinecraftProvider<SeparateJarsMinecraftProvider> implements LegacyMerged {
-		public LegacyMergedImpl(Project project, SeparateJarsMinecraftProvider minecraftProvider) {
-			super(project, minecraftProvider);
-		}
-
-		@Override
-		public List<RemappedJars> getRemappedJars() {
-			return List.of(
-				new RemappedJars(minecraftProvider.getClientJar(), getMinecraftClientJar(), MappingsNamespace.CLIENT_OFFICIAL),
-				new RemappedJars(minecraftProvider.getServerJar(), getMinecraftServerJar(), MappingsNamespace.SERVER_OFFICIAL)
-			);
-		}
-
-		@Override
-		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
-			super.provide(context);
-
-			try (var jarMerger = new MinecraftJarMerger(getMinecraftClientJar().toFile(), getMinecraftServerJar().toFile(), getMergedJar().toFile())) {
-				jarMerger.enableSyntheticParamsOffset();
-				jarMerger.merge();
-			}
-
-			return List.of(getMergedJar());
 		}
 	}
 }

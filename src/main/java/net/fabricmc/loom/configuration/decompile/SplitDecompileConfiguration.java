@@ -36,6 +36,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Strings;
 
 public final class SplitDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider.Split> {
 	public SplitDecompileConfiguration(Project project, MappedMinecraftProvider.Split minecraftProvider) {
@@ -44,11 +45,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 	@Override
 	public String getTaskName(MinecraftJar.Type type) {
-		return switch (type) {
-		case COMMON -> "genCommonSources";
-		case CLIENT_ONLY -> "genClientSources";
-		default -> throw new AssertionError();
-		};
+		return "gen%sSources".formatted(Strings.capitalize(type.toString()));
 	}
 
 	@Override

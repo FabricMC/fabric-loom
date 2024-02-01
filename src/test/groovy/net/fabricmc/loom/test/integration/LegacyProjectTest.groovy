@@ -86,8 +86,41 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		'1.3.2'			| _
 	}
 
+	// TODO: need intermediaries for this test to succeed
 	@Unroll
-	def "Ancient minecraft (minecraft #version)"() {
+	def "Ancient minecraft merged (minecraft #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << """
+				loom {
+                    noIntermediateMappings()
+                }
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:${version}"
+                    mappings loom.layered() {
+						// No names
+					}
+
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+			"""
+
+		when:
+		def result = gradle.run(task: "configureClientLaunch")
+
+		then:
+		result.task(":configureClientLaunch").outcome == SUCCESS
+
+		where:
+		version 		| _
+		'1.2.5'			| _
+		'b1.8.1'		| _
+		'a1.2.5'		| _
+	}
+
+	@Unroll
+	def "Ancient minecraft client-only(minecraft #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """

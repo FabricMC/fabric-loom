@@ -170,7 +170,7 @@ public interface LoomGradleExtensionAPI {
 	/**
 	 * When true loom will merge the client and server jars before remapping them,
 	 * otherwise the client and server jars will be remapped separately and then merged.
-	 * 
+	 *
 	 * @return whether the obfuscated client and server jars can be merged
 	 */
 	Property<Boolean> canMergeObfuscatedJars();

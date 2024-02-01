@@ -44,6 +44,7 @@ import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -157,6 +158,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void setIntermediaryMinecraftProvider(IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider) {
 		this.intermediaryMinecraftProvider = intermediaryMinecraftProvider;
+	}
+
+	@Override
+	public void noIntermediateMappings() {
+		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> {
+			p.isLegacyMerged().convention(this.project.provider(() -> !this.minecraftProvider.canMergeJars())).finalizeValueOnRead();
+		});
 	}
 
 	@Override

@@ -430,6 +430,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
+		public void noIntermediateMappings() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
 		public DeprecationHelper getDeprecationHelper() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}

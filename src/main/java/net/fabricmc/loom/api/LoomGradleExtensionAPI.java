@@ -181,9 +181,7 @@ public interface LoomGradleExtensionAPI {
 	 * An Experimental option to provide empty intermediate mappings, to be used for game versions without any intermediate mappings.
 	 */
 	@ApiStatus.Experimental
-	default void noIntermediateMappings() {
-		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
-	}
+	void noIntermediateMappings();
 
 	/**
 	 * Returns the tiny mappings file used to remap the game and mods.

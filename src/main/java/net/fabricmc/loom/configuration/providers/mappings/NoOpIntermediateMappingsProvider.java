@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
@@ -38,10 +39,13 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
  */
 public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappingsProvider {
 	private static final String HEADER = "tiny\t2\t0\tofficial\tintermediary";
+	private static final String HEADER_LEGACY = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
+
+	public abstract Property<Boolean> isLegacyMerged();
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, HEADER, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, isLegacyMerged().get() ? HEADER_LEGACY : HEADER, StandardCharsets.UTF_8);
 	}
 
 	@Override

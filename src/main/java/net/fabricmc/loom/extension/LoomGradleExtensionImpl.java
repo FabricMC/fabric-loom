@@ -163,7 +163,9 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	@Override
 	public void noIntermediateMappings() {
 		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> {
-			p.isLegacyMerged().convention(this.project.provider(() -> !this.minecraftProvider.canMergeJars())).finalizeValueOnRead();
+			p.canMergeObfuscatedJars()
+				.convention(this.project.provider(() -> this.minecraftProvider.canMergeJars()))
+				.finalizeValueOnRead();
 		});
 	}
 

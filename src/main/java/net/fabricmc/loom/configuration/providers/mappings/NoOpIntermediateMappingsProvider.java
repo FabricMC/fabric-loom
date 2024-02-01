@@ -41,11 +41,11 @@ public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappi
 	private static final String HEADER = "tiny\t2\t0\tofficial\tintermediary";
 	private static final String HEADER_LEGACY = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
 
-	public abstract Property<Boolean> isLegacyMerged();
+	public abstract Property<Boolean> canMergeObfuscatedJars();
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, isLegacyMerged().get() ? HEADER_LEGACY : HEADER, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, canMergeObfuscatedJars().get() ? HEADER : HEADER_LEGACY, StandardCharsets.UTF_8);
 	}
 
 	@Override

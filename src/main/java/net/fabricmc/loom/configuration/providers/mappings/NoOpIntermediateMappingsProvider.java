@@ -29,9 +29,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 
 /**
@@ -41,11 +43,17 @@ public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappi
 	private static final String HEADER = "tiny\t2\t0\tofficial\tintermediary";
 	private static final String HEADER_LEGACY = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
 
-	public abstract Property<Boolean> canMergeObfuscatedJars();
+	public Property<Boolean> legacy;
+
+	public void configure(Project project, LoomGradleExtension loom) {
+		legacy = project.getObjects().property(Boolean.class);
+		legacy.convention(project.provider(() -> !loom.getMinecraftProvider().canMergeJars()));
+		legacy.finalizeValueOnRead();
+	}
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, canMergeObfuscatedJars().get() ? HEADER : HEADER_LEGACY, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, legacy != null && legacy.get() ? HEADER_LEGACY : HEADER, StandardCharsets.UTF_8);
 	}
 
 	@Override

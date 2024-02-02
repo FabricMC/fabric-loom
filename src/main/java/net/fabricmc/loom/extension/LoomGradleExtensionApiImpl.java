@@ -84,7 +84,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final SetProperty<String> knownIndyBsms;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
-	protected final Property<Boolean> canMergeObfuscatedJars;
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
@@ -121,8 +120,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.modProvidedJavadoc = project.getObjects().property(Boolean.class)
 				.convention(true);
 		this.modProvidedJavadoc.finalizeValueOnRead();
-		this.canMergeObfuscatedJars = project.getObjects().property(Boolean.class)
-				.convention(true);
 		this.intermediary = project.getObjects().property(String.class)
 				.convention("https://maven.fabricmc.net/net/fabricmc/intermediary/%1$s/intermediary-%1$s-v2.jar");
 
@@ -283,11 +280,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected abstract LoomFiles getFiles();
 
 	@Override
-	public Property<Boolean> canMergeObfuscatedJars() {
-		return canMergeObfuscatedJars;
-	}
-
-	@Override
 	public Property<String> getIntermediaryUrl() {
 		return intermediary;
 	}
@@ -435,11 +427,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		private EnsureCompile() {
 			super(null, null);
 			throw new RuntimeException();
-		}
-
-		@Override
-		public void noIntermediateMappings() {
-			throw new RuntimeException("Yeah... something is really wrong");
 		}
 
 		@Override

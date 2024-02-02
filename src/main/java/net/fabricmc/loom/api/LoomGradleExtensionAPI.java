@@ -49,6 +49,7 @@ import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
@@ -167,14 +168,6 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<Boolean> getEnableModProvidedJavadoc();
 
-	/**
-	 * When true loom will merge the client and server jars before remapping them,
-	 * otherwise the client and server jars will be remapped separately and then merged.
-	 *
-	 * @return whether the obfuscated client and server jars can be merged
-	 */
-	Property<Boolean> canMergeObfuscatedJars();
-
 	@ApiStatus.Experimental
 	IntermediateMappingsProvider getIntermediateMappingsProvider();
 
@@ -188,7 +181,9 @@ public interface LoomGradleExtensionAPI {
 	 * An Experimental option to provide empty intermediate mappings, to be used for game versions without any intermediate mappings.
 	 */
 	@ApiStatus.Experimental
-	void noIntermediateMappings();
+	default void noIntermediateMappings() {
+		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+	}
 
 	/**
 	 * Returns the tiny mappings file used to remap the game and mods.

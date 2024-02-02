@@ -95,7 +95,9 @@ public final class MappingsMerger {
 		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.CLIENT_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.SERVER_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
 		intermediaryTree.accept(nsCompleter);
 
-		inheritMappedNamesOfEnclosingClasses(officialTree);
+		// versions this old strip inner class attributes
+		// from the obfuscated jars anyway
+//		inheritMappedNamesOfEnclosingClasses(officialTree);
 
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			officialTree.accept(writer);

@@ -50,7 +50,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 group = 'net.fabricmc'
-def baseVersion = '1.5'
+def baseVersion = '1.6'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {

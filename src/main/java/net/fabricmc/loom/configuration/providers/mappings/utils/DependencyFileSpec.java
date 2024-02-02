@@ -30,21 +30,37 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.SelfResolvingDependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
+import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
 
 public record DependencyFileSpec(Dependency dependency) implements FileSpec {
 	@Override
 	public Path get(MappingContext context) {
-		if (dependency instanceof SelfResolvingDependency selfResolvingDependency) {
-			Set<File> files = selfResolvingDependency.resolve();
+		if (SelfResolvingDependencyUtils.isExplicitSRD(dependency)) {
+			if (context instanceof GradleMappingContext gradleMappingContext) {
+				gradleMappingContext.getExtension().getProblemReporter().reportSelfResolvingDependencyUsage();
+			}
 
-			if (files.size() == 0) {
-				throw new RuntimeException("SelfResolvingDependency (%s) resolved no files".formatted(selfResolvingDependency.toString()));
+			Set<File> files = SelfResolvingDependencyUtils.resolve(dependency);
+
+			if (files.isEmpty()) {
+				throw new RuntimeException("SelfResolvingDependency (%s) resolved no files".formatted(dependency.toString()));
 			} else if (files.size() > 1) {
-				throw new RuntimeException("SelfResolvingDependency (%s) resolved too many files (%d) only 1 is expected".formatted(selfResolvingDependency.toString(), files.size()));
+				throw new RuntimeException("SelfResolvingDependency (%s) resolved too many files (%d) only 1 is expected".formatted(dependency.toString(), files.size()));
+			}
+
+			return files.iterator().next().toPath();
+		} else if (dependency instanceof FileCollectionDependency fileCollectionDependency) {
+			Set<File> files = fileCollectionDependency.getFiles().getFiles();
+
+			if (files.isEmpty()) {
+				throw new RuntimeException("FileCollectionDependency (%s) resolved no files".formatted(fileCollectionDependency.toString()));
+			} else if (files.size() > 1) {
+				throw new RuntimeException("FileCollectionDependency (%s) resolved too many files (%d) only 1 is expected".formatted(fileCollectionDependency.toString(), files.size()));
 			}
 
 			return files.iterator().next().toPath();

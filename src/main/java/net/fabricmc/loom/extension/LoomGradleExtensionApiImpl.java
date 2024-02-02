@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.gradle.api.Action;
@@ -59,10 +61,9 @@ import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.GradleMappingContext;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
@@ -101,6 +102,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
+
+	protected final Map<LayeredMappingSpec, LayeredMappingsFactory> layeredMappingsDependencyMap = new HashMap<>();
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
 		this.jarProcessors = project.getObjects().listProperty(JarProcessor.class)
@@ -216,8 +219,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		action.execute(builder);
 		layeredSpecBuilderScope.set(false);
 
-		LayeredMappingSpec builtSpec = builder.build();
-		return new LayeredMappingsDependency(getProject(), new GradleMappingContext(getProject(), builtSpec.getVersion().replace("+", "_").replace(".", "_")), builtSpec, builtSpec.getVersion());
+		final LayeredMappingSpec builtSpec = builder.build();
+		// TODO maybe throw if we are too late?
+		final LayeredMappingsFactory layeredMappingsFactory = layeredMappingsDependencyMap.computeIfAbsent(builtSpec, LayeredMappingsFactory::new);
+		return layeredMappingsFactory.createDependency(getProject());
 	}
 
 	@Override

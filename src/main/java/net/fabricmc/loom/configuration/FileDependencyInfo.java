@@ -42,19 +42,24 @@ import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.SelfResolvingDependency;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.FileCollectionDependency;
 
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
 
 public class FileDependencyInfo extends DependencyInfo {
 	protected final Map<String, File> classifierToFile = new HashMap<>();
 	protected final Set<File> resolvedFiles;
 	protected final String group, name, version;
 
-	FileDependencyInfo(Project project, SelfResolvingDependency dependency, Configuration configuration) {
+	FileDependencyInfo(Project project, FileCollectionDependency dependency, Configuration configuration) {
+		this(project, dependency, configuration, dependency.getFiles().getFiles());
+	}
+
+	private FileDependencyInfo(Project project, Dependency dependency, Configuration configuration, Set<File> files) {
 		super(project, dependency, configuration);
 
-		Set<File> files = dependency.resolve();
 		this.resolvedFiles = files;
 		switch (files.size()) {
 		case 0 -> //Don't think Gradle would ever let you do this
@@ -124,6 +129,15 @@ public class FileDependencyInfo extends DependencyInfo {
 				throw new UncheckedIOException("Failed to read input file: " + root, e);
 			}
 		}
+	}
+
+	@Deprecated // Remove in Gradle 9
+	public static FileDependencyInfo createForDeprecatedSRD(Project project, Dependency dependency, Configuration configuration) {
+		if (!SelfResolvingDependencyUtils.isExplicitSRD(dependency)) {
+			throw new IllegalArgumentException("Dependency is a FileCollectionDependency");
+		}
+
+		return new FileDependencyInfo(project, dependency, configuration, SelfResolvingDependencyUtils.resolve(dependency));
 	}
 
 	@Override

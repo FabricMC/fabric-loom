@@ -176,7 +176,7 @@ public class MappingConfiguration {
 			// These are unmerged v2 mappings
 			IntermediateMappingsService intermediateMappingsService = IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider);
 
-			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, intermediateMappingsService);
+			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, minecraftProvider, intermediateMappingsService);
 		} else {
 			final List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
 

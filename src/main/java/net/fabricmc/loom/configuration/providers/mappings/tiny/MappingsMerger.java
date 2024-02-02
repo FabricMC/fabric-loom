@@ -97,7 +97,7 @@ public final class MappingsMerger {
 
 		// versions this old strip inner class attributes
 		// from the obfuscated jars anyway
-//		inheritMappedNamesOfEnclosingClasses(officialTree);
+		//inheritMappedNamesOfEnclosingClasses(officialTree);
 
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			officialTree.accept(writer);

@@ -32,8 +32,11 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
-import org.gradle.api.artifacts.SelfResolvingDependency;
+
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
 
 public class DependencyInfo {
 	final Project project;
@@ -61,8 +64,11 @@ public class DependencyInfo {
 	}
 
 	public static DependencyInfo create(Project project, Dependency dependency, Configuration sourceConfiguration) {
-		if (dependency instanceof SelfResolvingDependency selfResolvingDependency) {
-			return new FileDependencyInfo(project, selfResolvingDependency, sourceConfiguration);
+		if (SelfResolvingDependencyUtils.isExplicitSRD(dependency)) {
+			LoomGradleExtension.get(project).getProblemReporter().reportSelfResolvingDependencyUsage();
+			return FileDependencyInfo.createForDeprecatedSRD(project, dependency, sourceConfiguration);
+		} else if (dependency instanceof FileCollectionDependency fileCollectionDependency) {
+			return new FileDependencyInfo(project, fileCollectionDependency, sourceConfiguration);
 		} else {
 			return new DependencyInfo(project, dependency, sourceConfiguration);
 		}
@@ -99,10 +105,6 @@ public class DependencyInfo {
 	}
 
 	public Set<File> resolve() {
-		if (dependency instanceof SelfResolvingDependency selfResolvingDependency) {
-			return selfResolvingDependency.resolve();
-		}
-
 		return sourceConfiguration.files(dependency);
 	}
 

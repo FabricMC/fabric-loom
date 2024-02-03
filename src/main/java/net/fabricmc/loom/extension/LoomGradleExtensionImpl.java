@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@ package net.fabricmc.loom.extension;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,6 +45,7 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
@@ -70,6 +73,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private boolean refreshDeps;
 	private Provider<Boolean> multiProjectOptimisation;
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
+	private final LoomProblemReporter problemReporter;
 
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
@@ -97,6 +101,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
+
+		problemReporter = project.getObjects().newInstance(LoomProblemReporter.class);
 	}
 
 	@Override
@@ -253,11 +259,22 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
+	public Collection<LayeredMappingsFactory> getLayeredMappingFactories() {
+		hasEvaluatedLayeredMappings = true;
+		return Collections.unmodifiableCollection(layeredMappingsDependencyMap.values());
+	}
+
+	@Override
 	protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
 		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
 		provider.getMinecraftVersion().disallowChanges();
 
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
+	}
+
+	@Override
+	public LoomProblemReporter getProblemReporter() {
+		return problemReporter;
 	}
 }

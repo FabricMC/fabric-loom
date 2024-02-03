@@ -53,6 +53,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -147,6 +148,9 @@ public abstract class CompileConfiguration implements Runnable {
 		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
+
+		// Created any layered mapping files.
+		LayeredMappingsFactory.afterEvaluate(configContext);
 
 		final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
 		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceManager(), mappingsDep, minecraftProvider);

@@ -31,6 +31,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
@@ -233,11 +234,23 @@ public abstract class CompileConfiguration implements Runnable {
 				.afterEvaluation();
 	}
 
-	private Path getLockFile() {
+	private LockFile getLockFile() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
 		final String pathHash = Checksum.projectHash(getProject());
-		return cacheDirectory.resolve("." + pathHash + ".lock");
+		return new LockFile(
+				cacheDirectory.resolve("." + pathHash + ".lock"),
+				"Lock for cache='%s', project='%s'".formatted(
+						cacheDirectory, getProject().absoluteProjectPath(getProject().getPath())
+				)
+		);
+	}
+
+	record LockFile(Path file, String description) {
+		@Override
+		public String toString() {
+			return this.description;
+		}
 	}
 
 	enum LockResult {
@@ -249,14 +262,14 @@ public abstract class CompileConfiguration implements Runnable {
 		ACQUIRED_PREVIOUS_OWNER_MISSING
 	}
 
-	private LockResult acquireProcessLockWaiting(Path lockFile) {
+	private LockResult acquireProcessLockWaiting(LockFile lockFile) {
 		// one hour
-		return this.acquireProcessLockWaiting(lockFile, 1000L * 60 * 60);
+		return this.acquireProcessLockWaiting(lockFile, Duration.ofHours(1));
 	}
 
-	private LockResult acquireProcessLockWaiting(Path lockFile, long timeoutMs) {
+	private LockResult acquireProcessLockWaiting(LockFile lockFile, Duration timeout) {
 		try {
-			return this.acquireProcessLockWaiting_(lockFile, timeoutMs);
+			return this.acquireProcessLockWaiting_(lockFile, timeout);
 		} catch (final IOException e) {
 			throw new RuntimeException("Exception acquiring lock " + lockFile, e);
 		}
@@ -264,16 +277,17 @@ public abstract class CompileConfiguration implements Runnable {
 
 	// Returns true if our process already owns the lock
 	@SuppressWarnings("BusyWait")
-	private LockResult acquireProcessLockWaiting_(Path lockFile, long timeoutMs) throws IOException {
+	private LockResult acquireProcessLockWaiting_(LockFile lockFile, Duration timeout) throws IOException {
+		final long timeoutMs = timeout.toMillis();
 		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
 		final long currentPid = ProcessHandle.current().pid();
 		boolean abrupt = false;
 
-		if (Files.exists(lockFile)) {
+		if (Files.exists(lockFile.file)) {
 			long lockingProcessId;
 
 			try {
-				lockingProcessId = Long.parseLong(Files.readString(lockFile));
+				lockingProcessId = Long.parseLong(Files.readString(lockFile.file));
 			} catch (final Exception e) {
 				lockingProcessId = -1;
 			}
@@ -282,17 +296,17 @@ public abstract class CompileConfiguration implements Runnable {
 				return LockResult.ACQUIRED_ALREADY_OWNED;
 			}
 
-			logger.lifecycle("Lock file '{}' is currently held by pid '{}'.", lockFile, lockingProcessId);
+			logger.lifecycle("Lock file \"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
 
 			if (ProcessHandle.of(lockingProcessId).isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
-				Files.deleteIfExists(lockFile);
+				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 
-				while (Files.exists(lockFile)) {
+				while (Files.exists(lockFile.file)) {
 					try {
 						Thread.sleep(100);
 					} catch (final InterruptedException e) {
@@ -304,9 +318,8 @@ public abstract class CompileConfiguration implements Runnable {
 					if (sleptMs >= 1000 * 60 && sleptMs % (1000 * 60) == 0L) {
 						logger.lifecycle(
 								"""
-										Have been waiting on lock file '{}' held by pid '{}' for {} minute(s).
-										If this persists for an unreasonable length of time, kill this process, run './gradlew --stop' and then try again.
-										If the problem persists, the lock file may need to be deleted manually.""",
+										Have been waiting on "{}" held by pid '{}' for {} minute(s).
+										If this persists for an unreasonable length of time, kill this process, run './gradlew --stop' and then try again.""",
 								lockFile, lockingProcessId, sleptMs / 1000 / 60
 						);
 					}
@@ -319,16 +332,16 @@ public abstract class CompileConfiguration implements Runnable {
 			}
 		}
 
-		if (!Files.exists(lockFile.getParent())) {
-			Files.createDirectories(lockFile.getParent());
+		if (!Files.exists(lockFile.file.getParent())) {
+			Files.createDirectories(lockFile.file.getParent());
 		}
 
-		Files.writeString(lockFile, String.valueOf(currentPid));
+		Files.writeString(lockFile.file, String.valueOf(currentPid));
 		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
 	}
 
 	private void releaseLock() {
-		final Path lock = getLockFile();
+		final Path lock = getLockFile().file;
 
 		if (!Files.exists(lock)) {
 			return;

@@ -103,6 +103,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	// A common mistake with layered mappings is to call the wrong `officialMojangMappings` method, use this to keep track of when we are building a layered mapping spec.
 	protected final ThreadLocal<Boolean> layeredSpecBuilderScope = ThreadLocal.withInitial(() -> false);
 
+	protected boolean hasEvaluatedLayeredMappings = false;
 	protected final Map<LayeredMappingSpec, LayeredMappingsFactory> layeredMappingsDependencyMap = new HashMap<>();
 
 	protected LoomGradleExtensionApiImpl(Project project, LoomFiles directories) {
@@ -213,6 +214,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
+		if (hasEvaluatedLayeredMappings) {
+			throw new IllegalStateException("Layered mappings have already been evaluated");
+		}
+
 		LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl();
 
 		layeredSpecBuilderScope.set(true);
@@ -220,7 +225,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		layeredSpecBuilderScope.set(false);
 
 		final LayeredMappingSpec builtSpec = builder.build();
-		// TODO maybe throw if we are too late?
 		final LayeredMappingsFactory layeredMappingsFactory = layeredMappingsDependencyMap.computeIfAbsent(builtSpec, LayeredMappingsFactory::new);
 		return layeredMappingsFactory.createDependency(getProject());
 	}

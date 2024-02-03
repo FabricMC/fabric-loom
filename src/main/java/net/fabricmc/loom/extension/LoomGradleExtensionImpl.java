@@ -260,6 +260,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 	@Override
 	public Collection<LayeredMappingsFactory> getLayeredMappingFactories() {
+		hasEvaluatedLayeredMappings = true;
 		return Collections.unmodifiableCollection(layeredMappingsDependencyMap.values());
 	}
 

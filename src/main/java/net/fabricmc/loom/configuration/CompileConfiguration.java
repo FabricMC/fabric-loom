@@ -296,7 +296,7 @@ public abstract class CompileConfiguration implements Runnable {
 				return LockResult.ACQUIRED_ALREADY_OWNED;
 			}
 
-			logger.lifecycle("Lock file \"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
+			logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
 
 			if (ProcessHandle.of(lockingProcessId).isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");

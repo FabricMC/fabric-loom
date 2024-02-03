@@ -85,7 +85,7 @@ public final class MappingsMerger {
 
 	private static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
-		intermediateMappingsService.getMemoryMappingTree();
+		intermediateMappingsService.getMemoryMappingTree().accept(intermediaryTree);
 
 		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
 			Tiny2FileReader.read(reader, intermediaryTree);

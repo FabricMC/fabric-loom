@@ -28,13 +28,18 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class TinyMappingsService implements SharedService {
-	private final MemoryMappingTree mappingTree;
+	private final String defaultSrcNs;
+
+	private MemoryMappingTree mappingTree;
+	private String lastSrcNs;
 
 	public TinyMappingsService(Path tinyMappings) {
 		try {
@@ -43,6 +48,9 @@ public final class TinyMappingsService implements SharedService {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read mappings", e);
 		}
+
+		this.defaultSrcNs = this.mappingTree.getSrcNamespace();
+		this.lastSrcNs = this.defaultSrcNs;
 	}
 
 	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings) {
@@ -50,6 +58,27 @@ public final class TinyMappingsService implements SharedService {
 	}
 
 	public MemoryMappingTree getMappingTree() {
+		return getMappingTree(defaultSrcNs);
+	}
+
+	public MemoryMappingTree getMappingTree(MappingsNamespace srcNs) {
+		return getMappingTree(srcNs.toString());
+	}
+
+	public MemoryMappingTree getMappingTree(String srcNs) {
+		if (!srcNs.equals(lastSrcNs)) {
+			MemoryMappingTree tree = new MemoryMappingTree();
+
+			try {
+				mappingTree.accept(new MappingSourceNsSwitch(tree, srcNs));
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to switch source namespace", e);
+			}
+
+			mappingTree = tree;
+			lastSrcNs = srcNs;
+		}
+
 		return mappingTree;
 	}
 }

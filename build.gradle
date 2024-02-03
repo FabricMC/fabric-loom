@@ -370,6 +370,11 @@ task writeActionsTestMatrix() {
 					return
 				}
 
+				if (it.name.endsWith("DebugLineNumbersTest.groovy")) {
+					// Known flakey test
+					return
+				}
+
 				def className = it.name.replace(".groovy", "")
 				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
 			}

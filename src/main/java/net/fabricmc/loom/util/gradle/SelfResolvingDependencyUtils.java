@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.ProjectDependency;
 
 // SelfResolvingDependency is deprecated for removal, use reflection to ensure backwards compat.
 @Deprecated
@@ -52,6 +53,8 @@ public class SelfResolvingDependencyUtils {
 	public static boolean isExplicitSRD(Dependency dependency) {
 		// FileCollectionDependency is usually the replacement for SelfResolvingDependency
 		if (dependency instanceof FileCollectionDependency) {
+			return false;
+		} else if (dependency instanceof ProjectDependency) {
 			return false;
 		}
 

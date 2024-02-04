@@ -50,10 +50,12 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class IntermediateMappingsService implements SharedService {
 	private final Path intermediaryTiny;
+	private final String expectedSrcNs;
 	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
 
-	private IntermediateMappingsService(Path intermediaryTiny) {
+	private IntermediateMappingsService(Path intermediaryTiny, String expectedSrcNs) {
 		this.intermediaryTiny = intermediaryTiny;
+		this.expectedSrcNs = expectedSrcNs;
 	}
 
 	public static synchronized IntermediateMappingsService getInstance(SharedServiceManager sharedServiceManager, Project project, MinecraftProvider minecraftProvider) {
@@ -80,7 +82,11 @@ public final class IntermediateMappingsService implements SharedService {
 			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
 		}
 
-		return new IntermediateMappingsService(intermediaryTiny);
+		String expectedSrcNs = minecraftProvider.canMergeJars()
+				? MappingsNamespace.OFFICIAL.toString() // >=1.3
+				: MappingsNamespace.INTERMEDIARY.toString(); // <1.3
+
+		return new IntermediateMappingsService(intermediaryTiny, expectedSrcNs);
 	}
 
 	private MemoryMappingTree createMemoryMappingTree() {
@@ -94,6 +100,10 @@ public final class IntermediateMappingsService implements SharedService {
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read intermediary mappings", e);
+		}
+
+		if (!expectedSrcNs.equals(tree.getSrcNamespace())) {
+			throw new RuntimeException("Invalid intermediate mappings: expected source namespace \'" + expectedSrcNs + "\' but found \'" + tree.getSrcNamespace() + "\'");
 		}
 
 		return tree;

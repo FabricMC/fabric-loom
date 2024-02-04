@@ -382,7 +382,7 @@ public abstract class CompileConfiguration implements Runnable {
 				handle.info().command().orElse("unknown command"),
 				handle.info().arguments().map(arr -> {
 					if (getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.INFO
-						&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
+							&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
 						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
 					}
 

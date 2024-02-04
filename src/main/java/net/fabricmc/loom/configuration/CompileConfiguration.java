@@ -375,11 +375,19 @@ public abstract class CompileConfiguration implements Runnable {
 	}
 
 	private String getInfoString(ProcessHandle handle) {
-		return "(%s) pid %s '%s %s'%s".formatted(
+		return "(%s) pid %s '%s%s'%s".formatted(
 				handle.info().user().orElse("unknown user"),
 				handle.pid(),
 				handle.info().command().orElse("unknown command"),
-				handle.info().arguments().map(arr -> String.join(" ", arr)).orElse("(unknown arguments)"),
+				handle.info().arguments().map(arr -> {
+					String join = String.join(" ", arr);
+
+					if (join.isBlank()) {
+						return "";
+					}
+
+					return " " + join;
+				}).orElse(" (unknown arguments)"),
 				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
 		);
 	}

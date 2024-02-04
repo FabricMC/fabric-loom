@@ -1,0 +1,222 @@
+/*
+ * This file is part of fabric-loom, licensed under the MIT License (MIT).
+ *
+ * Copyright (c) 2024 FabricMC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package net.fabricmc.loom.decompilers.cache;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.fabricmc.loom.util.FileSystemUtil;
+
+public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CachedJarProcessor.class);
+
+	public WorkJob prepareJob(Path inputJar) throws IOException {
+		boolean isIncomplete = false;
+		boolean hasSomeExisting = false;
+
+		Path incompleteJar = Files.createTempFile("loom-cache-incomplete", ".jar");
+		Path existingJar = Files.createTempFile("loom-cache-existing", ".jar");
+
+		// We must delete the empty files, so they can be created as a zip
+		Files.delete(incompleteJar);
+		Files.delete(existingJar);
+
+		// Sources name -> hash
+		Map<String, String> outputNameMap = new HashMap<>();
+
+		try (FileSystemUtil.Delegate inputFs = FileSystemUtil.getJarFileSystem(inputJar, false);
+				FileSystemUtil.Delegate incompleteFs = FileSystemUtil.getJarFileSystem(incompleteJar, true);
+				FileSystemUtil.Delegate existingFs = FileSystemUtil.getJarFileSystem(existingJar, true)) {
+			final List<ClassEntry> inputClasses = JarWalker.findClasses(inputFs);
+
+			for (ClassEntry entry : inputClasses) {
+				String outputFileName = entry.sourcesFileName();
+				String fullHash = baseHash + entry.hash(inputFs.getRoot());
+
+				byte[] entryData = fileStore.getEntry(fullHash);
+
+				if (entryData == null) {
+					// Cached entry was not found, so copy the input to the incomplete jar to be processed
+					entry.copyTo(inputFs.getRoot(), incompleteFs.getRoot());
+					isIncomplete = true;
+					outputNameMap.put(outputFileName, fullHash);
+
+					LOGGER.info("Cached entry not found, going to process {}", outputFileName);
+				} else {
+					final Path outputPath = existingFs.getPath(outputFileName);
+					Files.createDirectories(outputPath.getParent());
+					Files.write(outputPath, entryData);
+					hasSomeExisting = true;
+
+					LOGGER.info("Cached entry found: {}", outputFileName);
+				}
+			}
+		}
+
+		// A jar file that will be created by the work action, containing the newly processed items.
+		Path outputJar = Files.createTempFile("loom-cache-output", ".jar");
+		Files.delete(outputJar);
+
+		if (isIncomplete && !hasSomeExisting) {
+			// The cache contained nothing of use, fully process the input jar
+			Files.delete(incompleteJar);
+			Files.delete(existingJar);
+
+			LOGGER.info("No cached entries found, going to process the whole jar");
+			return new FullWorkJob(inputJar, outputJar, outputNameMap);
+		} else if (isIncomplete) {
+			// The cache did not contain everything so we have some work to do
+			LOGGER.info("Some cached entries found, using partial work job");
+			return new PartialWorkJob(incompleteJar, existingJar, outputJar, outputNameMap);
+		} else {
+			// The cached contained everything we need, so the existing jar is the output
+			LOGGER.info("All cached entries found, using completed work job");
+			Files.delete(incompleteJar);
+			return new CompletedWorkJob(existingJar);
+		}
+	}
+
+	public void completeJob(Path output, WorkJob workJob) throws IOException {
+		if (workJob instanceof CompletedWorkJob completedWorkJob) {
+			// Fully complete, nothing new to cache
+			Files.move(completedWorkJob.completed(), output);
+			return;
+		}
+
+		// Work has been done, we need to cache the newly processed items
+		if (workJob instanceof WorkToDoJob workToDoJob) {
+			// Sources name -> hash
+			Map<String, String> outputNameMap = workToDoJob.outputNameMap();
+
+			try (FileSystemUtil.Delegate outputFs = FileSystemUtil.getJarFileSystem(workToDoJob.output(), false);
+					Stream<Path> walk = Files.walk(outputFs.getRoot())) {
+				Iterator<Path> iterator = walk.iterator();
+
+				while (iterator.hasNext()) {
+					Path fsPath = iterator.next();
+
+					if (!Files.isRegularFile(fsPath)) {
+						continue;
+					}
+
+					final String hash = outputNameMap.get(fsPath.toString().substring(outputFs.getRoot().toString().length()));
+
+					if (hash == null) {
+						throw new IllegalStateException("Unexpected output: " + fsPath);
+					}
+
+					LOGGER.debug("Saving processed entry to cache: {}", fsPath);
+					fileStore.putEntry(hash, Files.readAllBytes(fsPath));
+				}
+			}
+		} else {
+			throw new IllegalStateException();
+		}
+
+		if (workJob instanceof PartialWorkJob partialWorkJob) {
+			// Copy all the existing items to the output jar
+			try (FileSystemUtil.Delegate outputFs = FileSystemUtil.getJarFileSystem(partialWorkJob.output(), false);
+					FileSystemUtil.Delegate existingFs = FileSystemUtil.getJarFileSystem(partialWorkJob.existing(), false);
+					Stream<Path> walk = Files.walk(existingFs.getRoot())) {
+				Iterator<Path> iterator = walk.iterator();
+
+				while (iterator.hasNext()) {
+					Path existingPath = iterator.next();
+
+					if (!Files.isRegularFile(existingPath)) {
+						continue;
+					}
+
+					final Path outputPath = outputFs.getRoot().resolve(existingPath.toString());
+
+					LOGGER.debug("Copying existing entry to output: {}", existingPath);
+					Files.createDirectories(outputPath.getParent());
+					Files.copy(existingPath, outputPath);
+				}
+			}
+
+			Files.delete(partialWorkJob.existing());
+			Files.move(partialWorkJob.output(), output);
+		} else if (workJob instanceof FullWorkJob fullWorkJob) {
+			// Nothing to merge, just use the output jar
+			Files.move(fullWorkJob.output, output);
+		} else {
+			throw new IllegalStateException();
+		}
+	}
+
+	public sealed interface WorkJob permits CompletedWorkJob, WorkToDoJob {
+	}
+
+	public sealed interface WorkToDoJob extends WorkJob permits PartialWorkJob, FullWorkJob {
+		/**
+		 * @return A jar file to be written to during processing
+		 */
+		Path output();
+
+		/**
+		 * @return A map of sources name to hash
+		 */
+		Map<String, String> outputNameMap();
+	}
+
+	/**
+	 * No work to be done, all restored from cache.
+	 *
+	 * @param completed
+	 */
+	public record CompletedWorkJob(Path completed) implements WorkJob {
+	}
+
+	/**
+	 * Some work needs to be done.
+	 *
+	 * @param incomplete A path to jar file containing all the classes to be processed
+	 * @param existing A path pointing to a jar containing existing classes that have previously been processed
+	 * @param output A path to a temporary jar where work output should be written to
+	 * @param outputNameMap A map of sources name to hash
+	 */
+	public record PartialWorkJob(Path incomplete, Path existing, Path output, Map<String, String> outputNameMap) implements WorkToDoJob {
+	}
+
+	/**
+	 * The full jar must be processed.
+	 *
+	 * @param incomplete A path to jar file containing all the classes to be processed
+	 * @param output A path to a temporary jar where work output should be written to
+	 * @param outputNameMap A map of sources name to hash
+	 */
+	public record FullWorkJob(Path incomplete, Path output, Map<String, String> outputNameMap) implements WorkToDoJob {
+	}
+}

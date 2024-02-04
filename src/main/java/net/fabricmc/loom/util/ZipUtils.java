@@ -79,13 +79,13 @@ public class ZipUtils {
 
 	public static void unpackAll(Path zip, Path output) throws IOException {
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false);
-				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
+				Stream<Path> walk = Files.walk(fs.getRoot())) {
 			Iterator<Path> iterator = walk.iterator();
 
 			while (iterator.hasNext()) {
 				Path fsPath = iterator.next();
 				if (!Files.isRegularFile(fsPath)) continue;
-				Path dstPath = output.resolve(fs.get().getPath("/").relativize(fsPath).toString());
+				Path dstPath = output.resolve(fs.getRoot().relativize(fsPath).toString());
 				Path dstPathParent = dstPath.getParent();
 				if (dstPathParent != null) Files.createDirectories(dstPathParent);
 				Files.copy(fsPath, dstPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);

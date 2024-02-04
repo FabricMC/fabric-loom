@@ -61,8 +61,8 @@ public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar min
 	}
 
 	@Override
-	public MemoryMappingTree getMappings() {
+	public MemoryMappingTree getMappings(String srcNs) {
 		LoomGradleExtension extension = LoomGradleExtension.get(configContext().project());
-		return extension.getMappingConfiguration().getMappingsService(configContext().serviceManager()).getMappingTree();
+		return extension.getMappingConfiguration().getMappingsService(configContext().serviceManager(), srcNs).getMappingTree();
 	}
 }

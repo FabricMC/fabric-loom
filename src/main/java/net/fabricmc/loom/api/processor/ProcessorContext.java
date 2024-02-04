@@ -41,5 +41,5 @@ public interface ProcessorContext {
 
 	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
 
-	MemoryMappingTree getMappings();
+	MemoryMappingTree getMappings(String srcNs);
 }

@@ -109,7 +109,7 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
 		try (var serviceManager = new ScopedSharedServiceManager()) {
-			MemoryMappingTree currentMappings = mappingConfiguration.getMappingsService(serviceManager).getMappingTree();
+			MemoryMappingTree currentMappings = mappingConfiguration.getMappingsService(serviceManager, MappingsNamespace.INTERMEDIARY.toString()).getMappingTree();
 			MemoryMappingTree targetMappings = getMappings(mappings);
 			migrateMappings(project, extension, inputDir, outputDir, currentMappings, targetMappings);
 			project.getLogger().lifecycle(":remapped project written to " + outputDir.toAbsolutePath());

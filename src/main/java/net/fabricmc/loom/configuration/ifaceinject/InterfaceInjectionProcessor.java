@@ -102,7 +102,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
 		// Remap from intermediary->named
-		final MemoryMappingTree mappings = context.getMappings();
+		final MemoryMappingTree mappings = context.getMappings(MappingsNamespace.INTERMEDIARY.toString());
 		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
 		final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()

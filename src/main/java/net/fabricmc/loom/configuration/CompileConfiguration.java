@@ -306,6 +306,7 @@ public abstract class CompileConfiguration implements Runnable {
 			logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
 
 			Optional<ProcessHandle> handle = ProcessHandle.of(lockingProcessId);
+
 			if (handle.isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
 				Files.deleteIfExists(lockFile.file);

@@ -33,11 +33,9 @@ import javax.inject.Inject;
 
 import com.google.common.net.UrlEscapers;
 import org.gradle.api.Action;
-import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.DependencyArtifact;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.gradle.api.provider.Property;
@@ -49,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
-import net.fabricmc.loom.util.Constants;
 
 @ApiStatus.Internal
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProviderInternal {
@@ -76,32 +73,18 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 		final String urlRaw = getIntermediaryUrl().get();
 
 		if (project != null && urlRaw.equals(LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL)) {
-			final Configuration config = project.getConfigurations()
-					.getByName(Constants.Configurations.INTERMEDIARY_MAPPINGS);
-			try {
-				config.defaultDependencies(new Action<DependencySet>() {
-					@Override
-					public void execute(final DependencySet dependencySet) {
-						final ModuleDependency intermediaryDep = getDependencyFactory()
-								.create(FABRIC_INTERMEDIARY_GROUP_NAME + ':' + encodedMcVersion);
-						intermediaryDep.artifact(new Action<DependencyArtifact>() {
-							@Override
-							public void execute(final DependencyArtifact dependencyArtifact) {
-								dependencyArtifact.setClassifier("v2");
-							}
-						});
-						dependencySet.add(intermediaryDep);
-					}
-				});
-			} catch (final InvalidUserDataException dataException) {
-				// We only care about adding default dependencies once
-				if (!dataException.getMessage().contains("after it has been resolved")) {
-					throw dataException;
+			final ModuleDependency intermediaryDep = getDependencyFactory()
+					.create(FABRIC_INTERMEDIARY_GROUP_NAME + ':' + encodedMcVersion);
+			intermediaryDep.artifact(new Action<DependencyArtifact>() {
+				@Override
+				public void execute(final DependencyArtifact dependencyArtifact) {
+					dependencyArtifact.setClassifier("v2");
 				}
-			}
+			});
+			final Configuration config = project.getConfigurations().detachedConfiguration(intermediaryDep);
 
 			Files.copy(
-					config.getIncoming().getArtifacts().getArtifactFiles().getSingleFile().toPath(),
+					config.getSingleFile().toPath(),
 					intermediaryJarPath,
 					StandardCopyOption.REPLACE_EXISTING
 			);

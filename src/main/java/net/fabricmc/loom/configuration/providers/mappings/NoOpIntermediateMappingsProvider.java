@@ -29,31 +29,30 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.gradle.api.Project;
+import javax.inject.Inject;
+
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 
 /**
  * A bit of a hack, creates an empty intermediary mapping file to be used for mc versions without any intermediate mappings.
  */
 public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappingsProvider {
-	private static final String HEADER = "tiny\t2\t0\tofficial\tintermediary";
-	private static final String HEADER_LEGACY = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
+	private static final String HEADER_OFFICIAL_MERGED = "tiny\t2\t0\tofficial\tintermediary";
+	private static final String HEADER_OFFICIAL_SPLIT = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
 
-	public Property<Boolean> legacy;
-
-	public void configure(Project project, LoomGradleExtension loom) {
-		legacy = project.getObjects().property(Boolean.class);
-		legacy.convention(project.provider(() -> !loom.getMinecraftProvider().canMergeJars()));
-		legacy.finalizeValueOnRead();
+	@Inject
+	public NoOpIntermediateMappingsProvider() {
+		getIsOfficialSplit().finalizeValueOnRead();
 	}
+
+	public abstract Property<Boolean> getIsOfficialSplit();
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, legacy != null && legacy.get() ? HEADER_LEGACY : HEADER, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, getIsOfficialSplit().get() ? HEADER_OFFICIAL_SPLIT : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
 	}
 
 	@Override

@@ -39,11 +39,13 @@ public enum MappingsNamespace {
 
 	/**
 	 * Official names for the Minecraft client jar, usually obfuscated.
+	 * This namespace is used for versions <1.3, where the client and server jars are obfuscated differently.
 	 */
 	CLIENT_OFFICIAL,
 
 	/**
 	 * Official names for the Minecraft server jar, usually obfuscated.
+	 * This namespace is used for versions <1.3, where the client and server jars are obfuscated differently.
 	 */
 	SERVER_OFFICIAL,
 

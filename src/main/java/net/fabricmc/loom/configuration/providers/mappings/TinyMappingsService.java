@@ -35,7 +35,7 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class TinyMappingsService implements SharedService {
-	private MemoryMappingTree mappingTree;
+	private final MemoryMappingTree mappingTree;
 
 	public TinyMappingsService(Path tinyMappings, String srcNs) {
 		try {

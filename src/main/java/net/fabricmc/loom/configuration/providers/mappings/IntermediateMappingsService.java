@@ -69,8 +69,11 @@ public final class IntermediateMappingsService implements SharedService {
 		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
 
 		try {
-			IntermediateMappingsProviderInternal.wrap(project.getObjects(), intermediateMappingsProvider)
-					.provide(intermediaryTiny, project);
+			if (intermediateMappingsProvider instanceof IntermediateMappingsProviderInternal internal) {
+				internal.provide(intermediaryTiny, project);
+			} else {
+				intermediateMappingsProvider.provide(intermediaryTiny);
+			}
 		} catch (IOException e) {
 			try {
 				Files.deleteIfExists(intermediaryTiny);

@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import javax.inject.Inject;
+
 import com.google.common.net.UrlEscapers;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
@@ -37,8 +39,11 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.DependencyArtifact;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.gradle.api.provider.Property;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,16 +51,21 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
 import net.fabricmc.loom.util.Constants;
 
-public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProvider.Contextual {
+@ApiStatus.Internal
+public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProviderInternal {
 	public static final String NAME = "intermediary-v2";
+	private static final String FABRIC_INTERMEDIARY_GROUP_NAME = "net.fabricmc:intermediary";
 	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsProvider.class);
 
 	public abstract Property<String> getIntermediaryUrl();
 
 	public abstract Property<Boolean> getRefreshDeps();
 
+	@Inject
+	public abstract DependencyFactory getDependencyFactory();
+
 	@Override
-	public void provide(Path tinyMappings, Project project) throws IOException {
+	public void provide(Path tinyMappings, @Nullable Project project) throws IOException {
 		if (Files.exists(tinyMappings) && !getRefreshDeps().get()) {
 			return;
 		}
@@ -72,8 +82,8 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 				config.defaultDependencies(new Action<DependencySet>() {
 					@Override
 					public void execute(final DependencySet dependencySet) {
-						final ModuleDependency intermediaryDep = (ModuleDependency) project.getDependencies()
-								.create("net.fabricmc:intermediary:" + encodedMcVersion);
+						final ModuleDependency intermediaryDep = getDependencyFactory()
+								.create(FABRIC_INTERMEDIARY_GROUP_NAME + ':' + encodedMcVersion);
 						intermediaryDep.artifact(new Action<DependencyArtifact>() {
 							@Override
 							public void execute(final DependencyArtifact dependencyArtifact) {

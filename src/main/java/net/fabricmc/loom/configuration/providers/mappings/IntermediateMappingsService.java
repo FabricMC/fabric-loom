@@ -61,15 +61,19 @@ public final class IntermediateMappingsService implements SharedService {
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		final String id = "IntermediateMappingsService:%s:%s".formatted(intermediateProvider.getName(), intermediateProvider.getMinecraftVersion().get());
 
-		return sharedServiceManager.getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider));
+		return sharedServiceManager.getOrCreateService(id, () -> create(intermediateProvider, minecraftProvider, project));
 	}
 
 	@VisibleForTesting
-	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider) {
+	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider, Project project) {
 		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
 
 		try {
-			intermediateMappingsProvider.provide(intermediaryTiny);
+			if (intermediateMappingsProvider instanceof IntermediateMappingsProviderInternal internal) {
+				internal.provide(intermediaryTiny, project);
+			} else {
+				intermediateMappingsProvider.provide(intermediaryTiny);
+			}
 		} catch (IOException e) {
 			try {
 				Files.deleteIfExists(intermediaryTiny);

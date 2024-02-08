@@ -352,9 +352,9 @@ public abstract class CompileConfiguration implements Runnable {
 	}
 
 	private String printWithParents(ProcessHandle processHandle) {
-		StringBuilder output = new StringBuilder();
+		var output = new StringBuilder();
 
-		var chain = getParentChain(null, processHandle);
+		List<ProcessHandle> chain = getParentChain(null, processHandle);
 
 		for (int i = 0; i < chain.size(); i++) {
 			ProcessHandle handle = chain.get(i);

@@ -5,7 +5,12 @@
   "name": "Own Dummy Mod",
   "custom": {
     "loom:injected_interfaces": {
-      "net/minecraft/class_2248": ["OwnInjectedInterface"]
+      "net/minecraft/class_2248": [
+        "OwnInjectedInterface<Ljava/lang/String;>"
+      ],
+      "net/minecraft/class_5321": [
+        "GenericInjectedInterface<TT;>"
+      ]
     }
   }
 }

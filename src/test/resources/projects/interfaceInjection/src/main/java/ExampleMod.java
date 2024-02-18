@@ -7,5 +7,7 @@ public class ExampleMod implements ModInitializer {
 	public void onInitialize() {
 		Blocks.AIR.newMethodThatDidNotExist();
 		Blocks.AIR.anotherNewMethodThatDidNotExist();
+		Blocks.AIR.typedMethodThatDidNotExist();
+		RegistryKeys.BLOCK.genericMethodThatDidNotExist();
 	}
 }

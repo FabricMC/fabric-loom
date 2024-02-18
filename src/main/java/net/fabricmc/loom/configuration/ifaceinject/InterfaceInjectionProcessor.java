@@ -54,11 +54,13 @@ import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
@@ -105,24 +107,35 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		final MemoryMappingTree mappings = context.getMappings();
 		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
-		final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
-				.map(injectedInterface -> remap(injectedInterface, s -> mappings.mapClassName(s, intermediaryIndex, namedIndex)))
-				.toList();
 
-		try {
-			ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
+		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+			final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
+					.map(injectedInterface -> remap(
+							injectedInterface,
+							s -> mappings.mapClassName(s, intermediaryIndex, namedIndex),
+							s -> tinyRemapper.get().getEnvironment().getRemapper().mapSignature(s, true)
+					))
+					.toList();
+
+			try {
+				ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to apply interface injections to " + jar, e);
+			}
 		}
 	}
 
-	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper) {
-		return new InjectedInterface(
-				in.modId(),
-				remapper.apply(in.className()),
-				remapper.apply(in.ifaceName()),
-				in.generics().stream().map(generic -> generic.applyRemapper(remapper)).toList()
-		);
+	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper, Function<String, String> signatureRemapper) {
+		String className = remapper.apply(in.className());
+		String ifaceName = remapper.apply(in.ifaceName());
+		String generics = null;
+
+		if (in.generics() != null) {
+			String fakeSignature = signatureRemapper.apply("Ljava/lang/Object" + in.generics() + ";"); // Turning the raw generics string into a fake signature
+			generics = fakeSignature.substring("Ljava/lang/Object".length(), fakeSignature.length() - 1); // Retrieving the remapped raw generics string from the remapped fake signature
+		}
+
+		return new InjectedInterface(in.modId(), className, ifaceName, generics);
 	}
 
 	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(List<InjectedInterface> injectedInterfaces) {
@@ -197,7 +210,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		return comment;
 	}
 
-	private record InjectedInterface(String modId, String className, String ifaceName, List<Generic> generics) {
+	private record InjectedInterface(String modId, String className, String ifaceName, @Nullable String generics) {
 		public static List<InjectedInterface> fromMod(FabricModJson fabricModJson) {
 			final String modId = fabricModJson.getId();
 			final JsonElement jsonElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE);
@@ -213,20 +226,16 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			for (String className : addedIfaces.keySet()) {
 				final JsonArray ifacesInfo = addedIfaces.getAsJsonArray(className);
 
-				for (JsonElement ifaceInfo : ifacesInfo) {
-					if (ifaceInfo.isJsonPrimitive()) {
-						result.add(new InjectedInterface(modId, className, ifaceInfo.getAsString(), List.of()));
-					} else {
-						JsonObject ifaceInfoObject = ifaceInfo.getAsJsonObject();
+				for (JsonElement ifaceElement : ifacesInfo) {
+					String ifaceInfo = ifaceElement.getAsString();
 
-						final String ifaceName = ifaceInfoObject.get("interface").getAsString();
-						final List<Generic> generics = new ArrayList<>();
-
-						for (JsonElement generic : ifaceInfoObject.get("generics").getAsJsonArray()) {
-							generics.add(Generic.from(generic));
-						}
+					if (ifaceInfo.contains("<") && ifaceInfo.contains(">")) {
+						String ifaceName = ifaceInfo.substring(0, ifaceInfo.indexOf("<"));
+						String generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
 
 						result.add(new InjectedInterface(modId, className, ifaceName, generics));
+					} else {
+						result.add(new InjectedInterface(modId, className, ifaceElement.getAsString(), null));
 					}
 				}
 			}
@@ -243,83 +252,12 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 		public static boolean containsGenerics(List<InjectedInterface> injectedInterfaces) {
 			for (InjectedInterface injectedInterface : injectedInterfaces) {
-				if (!injectedInterface.generics().isEmpty()) {
+				if (injectedInterface.generics() != null) {
 					return true;
 				}
 			}
 
 			return false;
-		}
-	}
-
-	private static class Generic {
-		private final String name;
-		private final Wildcard wildcard;
-		private final List<Generic> generics;
-
-		public static Generic from(JsonElement interfaceInfo) {
-			if (interfaceInfo.isJsonPrimitive()) {
-				return new Generic(interfaceInfo.getAsString());
-			} else {
-				JsonObject asObject = interfaceInfo.getAsJsonObject();
-
-				String name = asObject.get("class").getAsString();
-				Wildcard wildcard = asObject.has("wildcard") ? Wildcard.valueOf(asObject.get("wildcard").getAsString()) : Wildcard.NONE;
-				List<Generic> generics = new ArrayList<>();
-
-				if (asObject.has("generics")) {
-					for (JsonElement genericInfo : asObject.getAsJsonArray("generics")) {
-						generics.add(Generic.from(genericInfo));
-					}
-				}
-
-				return new Generic(name, wildcard, generics);
-			}
-		}
-
-		private Generic(String name) {
-			this(name, Wildcard.NONE, List.of());
-		}
-
-		private Generic(String name, Wildcard wildcard, List<Generic> generics) {
-			this.name = name;
-			this.wildcard = wildcard;
-			this.generics = generics;
-		}
-
-		public Generic applyRemapper(Function<String, String> remapper) {
-			String name = remapper.apply(this.name);
-			List<Generic> generics = new ArrayList<>();
-
-			for (Generic generic : this.generics) {
-				generics.add(generic.applyRemapper(remapper));
-			}
-
-			return new Generic(name, this.wildcard, generics);
-		}
-
-		public String getSignature() {
-			StringBuilder builder = new StringBuilder("L" + this.name);
-
-			if (!this.generics.isEmpty()) {
-				builder.append("<");
-
-				for (Generic generic : this.generics) {
-					builder.append(generic.getSignature());
-				}
-
-				builder.append(">");
-			}
-
-			builder.append(";");
-
-			return builder.toString();
-		}
-
-		private enum Wildcard {
-			NONE,
-			EXTENDS,
-			SUPER
 		}
 	}
 
@@ -336,6 +274,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+			String[] baseInterfaces = interfaces.clone();
 			Set<String> modifiedInterfaces = new LinkedHashSet<>(interfaces.length + injectedInterfaces.size());
 			Collections.addAll(modifiedInterfaces, interfaces);
 
@@ -344,31 +283,29 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 
 			// See JVMS: https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-ClassSignature
-			if (InjectedInterface.containsGenerics(injectedInterfaces)) {
-				if (signature == null) {
-					signature = "L" + superName + ";L" + name + ";";
+			if (InjectedInterface.containsGenerics(injectedInterfaces) && signature == null) {
+				// Classes that are not using generics don't need signatures, so they are null
+				// So if the class is not using generics but that an injected interface is using them, we are creating the signature
+				StringBuilder baseSignatureBuilder = new StringBuilder("L" + superName + ";");
+
+				for (String baseInterface : baseInterfaces) {
+					baseSignatureBuilder.append("L").append(baseInterface).append(";");
 				}
 
-				InterfaceInjectionProcessor.LOGGER.warn(signature);
+				signature = baseSignatureBuilder.toString();
+			}
 
+			if (signature != null) {
 				var resultingSignature = new StringBuilder(signature);
 
 				for (InjectedInterface injectedInterface : injectedInterfaces) {
-					var resultingSuperInterfaceSignature = new StringBuilder("L" + injectedInterface.ifaceName());
+					String superinterfaceSignature;
 
-					if (!injectedInterface.generics().isEmpty()) {
-						resultingSuperInterfaceSignature.append("<");
-
-						for (Generic generic : injectedInterface.generics()) {
-							resultingSuperInterfaceSignature.append(generic.getSignature());
-						}
-
-						resultingSuperInterfaceSignature.append(">");
+					if (injectedInterface.generics() != null) {
+						superinterfaceSignature = "L" + injectedInterface.ifaceName() + injectedInterface.generics() + ";";
+					} else {
+						superinterfaceSignature = "L" + injectedInterface.ifaceName() + ";";
 					}
-
-					resultingSuperInterfaceSignature.append(";");
-
-					String superinterfaceSignature = resultingSuperInterfaceSignature.toString();
 
 					if (resultingSignature.indexOf(superinterfaceSignature) == -1) {
 						resultingSignature.append(superinterfaceSignature);
@@ -376,8 +313,6 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				}
 
 				signature = resultingSignature.toString();
-
-				InterfaceInjectionProcessor.LOGGER.warn(signature);
 			}
 
 			super.visit(version, access, name, signature, superName, modifiedInterfaces.toArray(new String[0]));

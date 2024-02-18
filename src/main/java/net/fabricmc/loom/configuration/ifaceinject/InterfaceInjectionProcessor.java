@@ -60,7 +60,7 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec>, List<List<? extends Object>> {
+public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
 
 	private final String name;

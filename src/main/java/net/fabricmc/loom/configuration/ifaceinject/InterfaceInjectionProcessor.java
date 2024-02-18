@@ -284,8 +284,8 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 			// See JVMS: https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-ClassSignature
 			if (InjectedInterface.containsGenerics(injectedInterfaces) && signature == null) {
-				// Classes that are not using generics don't need signatures, so they are null
-				// So if the class is not using generics but that an injected interface is using them, we are creating the signature
+				// Classes that are not using generics don't need signatures, so their signatures are null
+				// If the class is not using generics but that an injected interface targeting the class is using them, we are creating the class signature
 				StringBuilder baseSignatureBuilder = new StringBuilder("L" + superName + ";");
 
 				for (String baseInterface : baseInterfaces) {

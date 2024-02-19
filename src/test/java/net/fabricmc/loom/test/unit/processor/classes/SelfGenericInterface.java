@@ -25,7 +25,6 @@
 package net.fabricmc.loom.test.unit.processor.classes;
 
 public interface SelfGenericInterface<S extends SelfGenericInterface<S>> {
-
 	default S selfGenericInjectedMethod() {
 		return null;
 	}

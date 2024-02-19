@@ -41,9 +41,6 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
-import net.fabricmc.tinyremapper.api.TrRemapper;
-
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -67,6 +64,7 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.api.TrRemapper;
 
 public abstract class InterfaceInjectionProcessor implements MinecraftJarProcessor<InterfaceInjectionProcessor.Spec> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InterfaceInjectionProcessor.class);
@@ -132,11 +130,18 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper, TrRemapper signatureRemapper) {
+		String generics = null;
+
+		if (in.generics() != null) {
+			String fakeSignature = signatureRemapper.mapSignature("Ljava/lang/Object" + in.generics() + ";", false); // Turning the raw generics string into a fake signature
+			generics = fakeSignature.substring("Ljava/lang/Object".length(), fakeSignature.length() - 1); // Retrieving the remapped raw generics string from the remapped fake signature
+		}
+
 		return new InjectedInterface(
 				in.modId(),
 				remapper.apply(in.className()),
 				remapper.apply(in.ifaceName()),
-				in.generics() != null ? signatureRemapper.mapSignature(in.generics(), false) : null
+				generics
 		);
 	}
 
@@ -237,9 +242,9 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 						generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
 
 						// First Generics Check, if there are generics, are them correctly written?
-						SignatureReader reader = new SignatureReader(generics);
-						CheckSignatureAdapter checker = new CheckSignatureAdapter(CheckSignatureAdapter.TYPE_SIGNATURE, null);
-						reader.acceptType(checker);
+						SignatureReader reader = new SignatureReader("Ljava/lang/Object" + generics + ";");
+						CheckSignatureAdapter checker = new CheckSignatureAdapter(CheckSignatureAdapter.CLASS_SIGNATURE, null);
+						reader.accept(checker);
 					}
 
 					result.add(new InjectedInterface(modId, className, ifaceElement.getAsString(), generics));
@@ -302,10 +307,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 
 			if (signature != null) {
-				// Second Generics Check, if there are passed generics, are all of them present in the target class?
 				SignatureReader reader = new SignatureReader(signature);
+
+				// Second Generics Check, if there are passed generics, are all of them present in the target class?
 				GenericsChecker checker = new GenericsChecker(Constants.ASM_VERSION, injectedInterfaces);
-				reader.acceptType(checker);
+				reader.accept(checker);
 
 				var resultingSignature = new StringBuilder(signature);
 
@@ -379,8 +385,8 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	private static class GenericsChecker extends SignatureVisitor {
-
 		private final List<String> typeVariables;
+
 		private final List<InjectedInterface> injectedInterfaces;
 
 		GenericsChecker(int asmVersion, List<InjectedInterface> injectedInterfaces) {
@@ -399,14 +405,14 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		public void visitEnd() {
 			for (InjectedInterface injectedInterface : this.injectedInterfaces) {
 				if (injectedInterface.generics() != null) {
-					SignatureReader reader = new SignatureReader(injectedInterface.generics());
+					SignatureReader reader = new SignatureReader("Ljava/lang/Object" + injectedInterface.generics() + ";");
 					GenericsConfirm confirm = new GenericsConfirm(
 							Constants.ASM_VERSION,
 							injectedInterface.className(),
 							injectedInterface.ifaceName(),
 							this.typeVariables
 					);
-					reader.acceptType(confirm);
+					reader.accept(confirm);
 				}
 			}
 
@@ -414,9 +420,10 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		}
 
 		public static class GenericsConfirm extends SignatureVisitor {
-
 			private final String className;
+
 			private final String interfaceName;
+
 			private final List<String> acceptedTypeVariables;
 
 			GenericsConfirm(int asmVersion, String className, String interfaceName, List<String> acceptedTypeVariables) {

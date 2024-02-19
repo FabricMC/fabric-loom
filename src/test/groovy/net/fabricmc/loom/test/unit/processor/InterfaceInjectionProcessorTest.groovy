@@ -24,12 +24,6 @@
 
 package net.fabricmc.loom.test.unit.processor
 
-import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericTargetClass
-import net.fabricmc.loom.test.unit.processor.classes.DoubleGenericTargetClass
-import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass
-import net.fabricmc.loom.test.unit.processor.classes.PassingGenericTargetClass
-import net.fabricmc.loom.test.unit.processor.classes.SelfGenericTargetClass
-
 import java.nio.file.Path
 import java.util.function.Consumer
 
@@ -41,6 +35,11 @@ import spock.lang.TempDir
 import net.fabricmc.loom.api.processor.ProcessorContext
 import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor
+import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.DoubleGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.PassingGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.SelfGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.SimpleInterface
 import net.fabricmc.loom.test.unit.processor.classes.SimpleTargetClass
 import net.fabricmc.loom.util.Constants
@@ -95,35 +94,35 @@ class InterfaceInjectionProcessorTest extends Specification {
 		}
 
 		// Class using interface with generics
-		"class_3" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<Ljava/lang/String;>" | GenericTargetClass.class { Class<?> loadedClass ->
+		"class_3" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<Ljava/lang/String;>" | GenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
 			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null
 		}
 
 		// Class using generics and passing them to interface
-		"class_4" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<TT;>" | PassingGenericTargetClass.class { Class<?> loadedClass ->
+		"class_4" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<TT;>" | PassingGenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
 			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null
 		}
 
 		// Class having one injected interface with two generics, including one provided by the class
-		"class_5" | "net/fabricmc/loom/test/unit/processor/classes/AdvancedGenericInterface<Ljava/util/function/Predicate<TT;>;Ljava/lang/Integer;>" | AdvancedGenericTargetClass.class { Class<?> loadedClass ->
+		"class_5" | "net/fabricmc/loom/test/unit/processor/classes/AdvancedGenericInterface<Ljava/util/function/Predicate<TT;>;Ljava/lang/Integer;>" | AdvancedGenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/AdvancedGenericInterface"
 			loadedClass.constructors.first().newInstance().advancedGenericInjectedMethod().getClass() == Pair.class
 		}
 
 		// Class having two injected interfaces with one generic for each of them, including one provided by the class
-		"class_6" | "net/fabricmc/loom/test/unit/processor/classes/FirstGenericInterface<Ljava/util/function/Predicate<TT;>;>" | DoubleGenericTargetClass.class { Class<?> loadedClass ->
+		"class_6" | "net/fabricmc/loom/test/unit/processor/classes/FirstGenericInterface<Ljava/util/function/Predicate<TT;>;>" | DoubleGenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/FirstGenericInterface"
 			loadedClass.constructors.first().newInstance().firstGenericInjectedMethod() == null
 		}
-		"class_6" | "net/fabricmc/loom/test/unit/processor/classes/SecondGenericInterface<Ljava/lang/Integer;>" | DoubleGenericTargetClass.class { Class<?> loadedClass ->
+		"class_6" | "net/fabricmc/loom/test/unit/processor/classes/SecondGenericInterface<Ljava/lang/Integer;>" | DoubleGenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.last().name == "net/fabricmc/loom/test/unit/processor/classes/SecondGenericInterface"
 			loadedClass.constructors.last().newInstance().secondGenericInjectedMethod() == null
 		}
 
 		// Self Generic Types + Signature Remapping Check
-		"class_7" | "net/fabricmc/loom/test/unit/processor/classes/SelfGenericInterface<Lclass_7;>" | SelfGenericTargetClass.class { Class<?> loadedClass ->
+		"class_7" | "net/fabricmc/loom/test/unit/processor/classes/SelfGenericInterface<Lclass_7;>" | SelfGenericTargetClass.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/proessor/classes/SelfGenericInterface"
 			loadedClass.constructors.first().newInstance().selfGenericInjectedMethod() == null
 		}

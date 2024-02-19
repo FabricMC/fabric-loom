@@ -45,13 +45,20 @@ class OfflineModeTest extends Specification implements GradleProjectTestTrait {
                 modImplementation 'net.fabricmc:fabric-loader:0.15.6'
                 modImplementation 'net.fabricmc.fabric-api:fabric-api:0.95.4+1.20.4'
             }
+
+			import net.fabricmc.loom.util.Checksum
+			def projectHash = Checksum.projectHash(getProject())
+            println("%%" + projectHash + "%%")
+
             """.stripIndent()
 		when:
 		// Normal online run to populate the caches
 		def result1 = gradle.run(task: "build")
 
+		def projectHash = result1.output.split("%%")[1]
+
 		// Create a dummy lock file to ensure that the loom cache is rebuilt on the next run
-		def lockFile = new File(gradle.gradleHomeDir, "caches/fabric-loom/.2f70726976617465.lock")
+		def lockFile = new File(gradle.gradleHomeDir, "caches/fabric-loom/.${projectHash}.lock")
 		lockFile.text = "12345"
 
 		// Run with --offline to ensure that nothing is downloaded.

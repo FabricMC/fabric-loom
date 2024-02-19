@@ -24,5 +24,9 @@
 
 package net.fabricmc.loom.test.unit.processor.classes;
 
-public class GenericTargetClass {
+public interface FirstGenericInterface<T> {
+
+	default T firstGenericInjectedMethod() {
+		return null;
+	}
 }

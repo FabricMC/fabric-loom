@@ -32,7 +32,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
+import org.gradle.api.configuration.BuildFeatures;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
@@ -56,7 +59,7 @@ import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
-public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
+public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
 	private final MixinExtension mixinApExtension;
 	private final LoomFiles loomFiles;
@@ -71,10 +74,13 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	private IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider;
 	private InstallerData installerData;
 	private boolean refreshDeps;
-	private Provider<Boolean> multiProjectOptimisation;
+	private final Provider<Boolean> multiProjectOptimisation;
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
 	private final LoomProblemReporter problemReporter;
 
+	protected abstract BuildFeatures getBuildFeatures();
+
+	@Inject
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
 		this.project = project;
@@ -97,6 +103,15 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		libraryProcessorFactories = project.getObjects().listProperty(LibraryProcessorManager.LibraryProcessorFactory.class);
 		libraryProcessorFactories.addAll(LibraryProcessorManager.DEFAULT_LIBRARY_PROCESSORS);
 		libraryProcessorFactories.finalizeValueOnRead();
+
+		// Fundamentally impossible to support multi-project optimisation with the configuration cache and/or isolated projects.
+		if (multiProjectOptimisation.get() && getBuildFeatures().getConfigurationCache().getActive().get()) {
+			throw new UnsupportedOperationException("Multi-project optimisation is not supported with the configuration cache");
+		}
+
+		if (multiProjectOptimisation.get() && getBuildFeatures().getIsolatedProjects().getActive().get()) {
+			throw new UnsupportedOperationException("Isolated projects are not supported with multi-project optimisation");
+		}
 
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");

@@ -150,6 +150,7 @@ trait GradleProjectTestTrait {
 		private String gradleHomeDir
 		private String warningMode
 		private boolean useBuildSrc
+		private boolean enableDebugging = true
 
 		BuildResult run(Map options) {
 			// Setup the system props to tell loom that its running in a test env
@@ -179,6 +180,10 @@ trait GradleProjectTestTrait {
 				writeBuildSrcDeps(runner)
 			}
 
+			if (options.disableDebugging) {
+				enableDebugging = false
+			}
+
 			return options.expectFailure ? runner.buildAndFail() : runner.build()
 		}
 
@@ -188,7 +193,7 @@ trait GradleProjectTestTrait {
 					.withPluginClasspath()
 					.withGradleVersion(gradleVersion)
 					.forwardOutput()
-					.withDebug(true)
+					.withDebug(enableDebugging)
 		}
 
 		File getProjectDir() {

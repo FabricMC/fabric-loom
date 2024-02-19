@@ -32,12 +32,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
@@ -302,11 +306,14 @@ public abstract class CompileConfiguration implements Runnable {
 
 			logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
 
-			if (ProcessHandle.of(lockingProcessId).isEmpty()) {
+			Optional<ProcessHandle> handle = ProcessHandle.of(lockingProcessId);
+
+			if (handle.isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
+				logger.lifecycle(printWithParents(handle.get()));
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 
@@ -342,6 +349,69 @@ public abstract class CompileConfiguration implements Runnable {
 
 		Files.writeString(lockFile.file, String.valueOf(currentPid));
 		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
+	}
+
+	private String printWithParents(ProcessHandle processHandle) {
+		var output = new StringBuilder();
+
+		List<ProcessHandle> chain = getParentChain(null, processHandle);
+
+		for (int i = 0; i < chain.size(); i++) {
+			ProcessHandle handle = chain.get(i);
+
+			output.append("\t".repeat(i));
+
+			if (i != 0) {
+				output.append("└─ ");
+			}
+
+			output.append(getInfoString(handle));
+
+			if (i < chain.size() - 1) {
+				output.append('\n');
+			}
+		}
+
+		return output.toString();
+	}
+
+	private String getInfoString(ProcessHandle handle) {
+		return "(%s) pid %s '%s%s'%s".formatted(
+				handle.info().user().orElse("unknown user"),
+				handle.pid(),
+				handle.info().command().orElse("unknown command"),
+				handle.info().arguments().map(arr -> {
+					if (getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.INFO
+							&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
+						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
+					}
+
+					String join = String.join(" ", arr);
+
+					if (join.isBlank()) {
+						return "";
+					}
+
+					return " " + join;
+				}).orElse(" (unknown arguments)"),
+				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
+		);
+	}
+
+	private List<ProcessHandle> getParentChain(List<ProcessHandle> collectTo, ProcessHandle processHandle) {
+		if (collectTo == null) {
+			collectTo = new ArrayList<>();
+		}
+
+		Optional<ProcessHandle> parent = processHandle.parent();
+
+		if (parent.isPresent()) {
+			getParentChain(collectTo, parent.get());
+		}
+
+		collectTo.add(processHandle);
+
+		return collectTo;
 	}
 
 	private void releaseLock() {

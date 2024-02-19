@@ -91,11 +91,13 @@ class InterfaceInjectionProcessorTest extends Specification {
 			loadedClass.constructors.first().newInstance().injectedMethod() == 123
 		}
 
+		// Class using interface with generics
 		"class_3" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<Ljava/lang/String;>" | GenericTargetClass.class { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
 			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null
 		}
 
+		// Class using generics and passing them to interface
 		"class_4" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<TT;>" | PassingGenericTargetClass.class { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
 			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null

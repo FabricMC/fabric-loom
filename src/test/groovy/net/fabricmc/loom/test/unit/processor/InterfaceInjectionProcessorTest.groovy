@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.PassingGenericTargetClass
+
 import java.nio.file.Path
 import java.util.function.Consumer
 
@@ -83,9 +86,19 @@ class InterfaceInjectionProcessorTest extends Specification {
 		}
 
 		// Inner class with a simple interface
-		"class_1\$class_2" | "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface" |  SimpleTargetClass.Inner.class | { Class<?> loadedClass ->
+		"class_1\$class_2" | "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface" | SimpleTargetClass.Inner.class | { Class<?> loadedClass ->
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface"
 			loadedClass.constructors.first().newInstance().injectedMethod() == 123
+		}
+
+		"class_3" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<Ljava/lang/String;>" | GenericTargetClass.class { Class<?> loadedClass ->
+			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
+			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null
+		}
+
+		"class_4" | "net/fabricmc/loom/test/unit/processor/classes/GenericInterface<TT;>" | PassingGenericTargetClass.class { Class<?> loadedClass ->
+			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/GenericInterface"
+			loadedClass.constructors.first().newInstance().genericInjectedMethod() == null
 		}
 	}
 
@@ -165,5 +178,7 @@ class InterfaceInjectionProcessorTest extends Specification {
 tiny\t2\t0\tintermediary\tnamed
 c\tclass_1\tnet/fabricmc/loom/test/unit/processor/classes/SimpleTargetClass
 c\tclass_1\$class_2\tnet/fabricmc/loom/test/unit/processor/classes/SimpleTargetClass\$Inner
+c\tclass_3\tnet/fabricmc/loom/test/unit/processor/classes/GenericTargetClass
+c\tclass_4\tnet/fabricmc/loom/test/unit/processor/classes/PassingGenericTargetClass
 """.trim()
 }

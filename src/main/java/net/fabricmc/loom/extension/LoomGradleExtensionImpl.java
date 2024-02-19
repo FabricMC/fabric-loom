@@ -78,6 +78,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
 	private final LoomProblemReporter problemReporter;
 
+	@Inject
 	protected abstract BuildFeatures getBuildFeatures();
 
 	@Inject

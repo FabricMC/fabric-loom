@@ -55,7 +55,7 @@ class OfflineModeTest extends Specification implements GradleProjectTestTrait {
 		lockFile.text = "12345"
 
 		// Run with --offline to ensure that nothing is downloaded.
-		def result2 = gradle.run(task: "build", args: ["--offline"])
+		def result2 = gradle.run(tasks: ["clean", "build"], args: ["--offline"])
 		then:
 		result1.task(":build").outcome == SUCCESS
 		result2.task(":build").outcome == SUCCESS

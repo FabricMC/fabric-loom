@@ -41,11 +41,17 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import net.fabricmc.tinyremapper.api.TrRemapper;
+
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.signature.SignatureReader;
+import org.objectweb.asm.signature.SignatureVisitor;
+import org.objectweb.asm.util.CheckSignatureAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,7 +119,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 					.map(injectedInterface -> remap(
 							injectedInterface,
 							s -> mappings.mapClassName(s, intermediaryIndex, namedIndex),
-							s -> tinyRemapper.get().getEnvironment().getRemapper().mapSignature(s, true)
+							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();
 
@@ -125,17 +131,13 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		}
 	}
 
-	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper, Function<String, String> signatureRemapper) {
-		String className = remapper.apply(in.className());
-		String ifaceName = remapper.apply(in.ifaceName());
-		String generics = null;
-
-		if (in.generics() != null) {
-			String fakeSignature = signatureRemapper.apply("Ljava/lang/Object" + in.generics() + ";"); // Turning the raw generics string into a fake signature
-			generics = fakeSignature.substring("Ljava/lang/Object".length(), fakeSignature.length() - 1); // Retrieving the remapped raw generics string from the remapped fake signature
-		}
-
-		return new InjectedInterface(in.modId(), className, ifaceName, generics);
+	private InjectedInterface remap(InjectedInterface in, Function<String, String> remapper, TrRemapper signatureRemapper) {
+		return new InjectedInterface(
+				in.modId(),
+				remapper.apply(in.className()),
+				remapper.apply(in.ifaceName()),
+				in.generics() != null ? signatureRemapper.mapSignature(in.generics(), false) : null
+		);
 	}
 
 	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(List<InjectedInterface> injectedInterfaces) {
@@ -229,14 +231,18 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				for (JsonElement ifaceElement : ifacesInfo) {
 					String ifaceInfo = ifaceElement.getAsString();
 
-					if (ifaceInfo.contains("<") && ifaceInfo.contains(">")) {
-						String ifaceName = ifaceInfo.substring(0, ifaceInfo.indexOf("<"));
-						String generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
+					String generics = null;
 
-						result.add(new InjectedInterface(modId, className, ifaceName, generics));
-					} else {
-						result.add(new InjectedInterface(modId, className, ifaceElement.getAsString(), null));
+					if (ifaceInfo.contains("<") && ifaceInfo.contains(">")) {
+						generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
+
+						// First Generics Check, if there are generics, are them correctly written?
+						SignatureReader reader = new SignatureReader(generics);
+						CheckSignatureAdapter checker = new CheckSignatureAdapter(CheckSignatureAdapter.TYPE_SIGNATURE, null);
+						reader.acceptType(checker);
 					}
+
+					result.add(new InjectedInterface(modId, className, ifaceElement.getAsString(), generics));
 				}
 			}
 
@@ -296,6 +302,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 
 			if (signature != null) {
+				// Second Generics Check, if there are passed generics, are all of them present in the target class?
+				SignatureReader reader = new SignatureReader(signature);
+				GenericsChecker checker = new GenericsChecker(Constants.ASM_VERSION, injectedInterfaces);
+				reader.acceptType(checker);
+
 				var resultingSignature = new StringBuilder(signature);
 
 				for (InjectedInterface injectedInterface : injectedInterfaces) {
@@ -364,6 +375,73 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 
 			super.visitEnd();
+		}
+	}
+
+	private static class GenericsChecker extends SignatureVisitor {
+
+		private final List<String> typeVariables;
+		private final List<InjectedInterface> injectedInterfaces;
+
+		GenericsChecker(int asmVersion, List<InjectedInterface> injectedInterfaces) {
+			super(asmVersion);
+			this.typeVariables = new ArrayList<>();
+			this.injectedInterfaces = injectedInterfaces;
+		}
+
+		@Override
+		public void visitTypeVariable(String name) {
+			this.typeVariables.add(name);
+			super.visitTypeVariable(name);
+		}
+
+		@Override
+		public void visitEnd() {
+			for (InjectedInterface injectedInterface : this.injectedInterfaces) {
+				if (injectedInterface.generics() != null) {
+					SignatureReader reader = new SignatureReader(injectedInterface.generics());
+					GenericsConfirm confirm = new GenericsConfirm(
+							Constants.ASM_VERSION,
+							injectedInterface.className(),
+							injectedInterface.ifaceName(),
+							this.typeVariables
+					);
+					reader.acceptType(confirm);
+				}
+			}
+
+			super.visitEnd();
+		}
+
+		public static class GenericsConfirm extends SignatureVisitor {
+
+			private final String className;
+			private final String interfaceName;
+			private final List<String> acceptedTypeVariables;
+
+			GenericsConfirm(int asmVersion, String className, String interfaceName, List<String> acceptedTypeVariables) {
+				super(asmVersion);
+				this.className = className;
+				this.interfaceName = interfaceName;
+				this.acceptedTypeVariables = acceptedTypeVariables;
+			}
+
+			@Override
+			public void visitTypeVariable(String name) {
+				if (!this.acceptedTypeVariables.contains(name)) {
+					throw new IllegalStateException(
+							"Interface "
+							+ this.interfaceName
+							+ " attempted to use a type variable named "
+							+ name
+							+ " which is not present in the "
+							+ this.className
+							+ " class"
+					);
+				}
+
+				super.visitTypeVariable(name);
+			}
 		}
 	}
 }

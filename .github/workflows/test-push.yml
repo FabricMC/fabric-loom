@@ -17,7 +17,7 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/wrapper-validation-action@v2
       - run: gradle build check -x test --stacktrace --warning-mode fail
 
   build_windows:
@@ -29,7 +29,7 @@ jobs:
         with:
           java-version: 17
           distribution: 'temurin'
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/wrapper-validation-action@v2
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
   # This job is used to feed the test matrix of next job to allow the tests to run in parallel

@@ -48,14 +48,11 @@ class InterfaceInjectionProcessorTest extends Specification {
 	@TempDir
 	Path tempDir
 
-	def "inject simple"() {
+	def "interface injection"() {
 		given:
 		def fmj = Mock(FabricModJson.Mockable)
 		fmj.getId() >> "modid"
-		fmj.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE) >> createCustomObject(
-				// class_1 is remapped to SimpleTargetClass
-				"class_1", "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface"
-				)
+		fmj.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE) >> createCustomObject(key, value)
 
 		def specContext = Mock(SpecContext)
 		specContext.localMods() >> [fmj]
@@ -75,27 +72,36 @@ class InterfaceInjectionProcessorTest extends Specification {
 		then:
 		spec != null
 
-		withTargetClass(jar, SimpleTargetClass.class) { loadedClass ->
-			loadedClass.interfaces[0].name == "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface"
-			def instance = loadedClass.constructors[0].newInstance()
+		withTargetClass(jar, target, validator)
 
-			instance.injectedMethod() == 123
+		where:
+		key | value | target | validator
+		// Simple class with a simple interface
+		"class_1" | "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface" | SimpleTargetClass.class | { Class<?> loadedClass ->
+			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface"
+			loadedClass.constructors.first().newInstance().injectedMethod() == 123
+		}
+
+		// Inner class with a simple interface
+		"class_1\$class_2" | "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface" |  SimpleTargetClass.Inner.class | { Class<?> loadedClass ->
+			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/SimpleInterface"
+			loadedClass.constructors.first().newInstance().injectedMethod() == 123
 		}
 	}
 
-    def "nothing to inject"() {
-        given:
-        def specContext = Mock(SpecContext)
-        specContext.localMods() >> []
-        specContext.modDependenciesCompileRuntime() >> []
+	def "nothing to inject"() {
+		given:
+		def specContext = Mock(SpecContext)
+		specContext.localMods() >> []
+		specContext.modDependenciesCompileRuntime() >> []
 
-        when:
-        def processor = new TestInterfaceInjectionProcessor()
-        def spec = processor.buildSpec(specContext)
+		when:
+		def processor = new TestInterfaceInjectionProcessor()
+		def spec = processor.buildSpec(specContext)
 
-        then:
-        spec == null
-    }
+		then:
+		spec == null
+	}
 
 	// Create the custom FMJ entry for the injected interface
 	static JsonObject createCustomObject(String key, String value) {
@@ -152,10 +158,12 @@ class InterfaceInjectionProcessorTest extends Specification {
 
 	private static final List<Class<?>> CLASSES_TO_PACKAGE = [
 		SimpleTargetClass.class,
+		SimpleTargetClass.Inner.class,
 		SimpleInterface.class
 	]
 	private static final String MAPPINGS = """
 tiny\t2\t0\tintermediary\tnamed
 c\tclass_1\tnet/fabricmc/loom/test/unit/processor/classes/SimpleTargetClass
+c\tclass_1\$class_2\tnet/fabricmc/loom/test/unit/processor/classes/SimpleTargetClass\$Inner
 """.trim()
 }

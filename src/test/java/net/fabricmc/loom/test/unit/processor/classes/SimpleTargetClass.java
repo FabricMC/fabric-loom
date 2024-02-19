@@ -25,4 +25,6 @@
 package net.fabricmc.loom.test.unit.processor.classes;
 
 public class SimpleTargetClass {
+	public static class Inner {
+	}
 }

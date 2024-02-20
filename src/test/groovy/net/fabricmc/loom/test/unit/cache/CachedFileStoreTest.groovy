@@ -33,6 +33,7 @@ import java.time.Instant
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import net.fabricmc.loom.decompilers.cache.CachedFileStore
 import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl
 import net.fabricmc.loom.util.FileSystemUtil
 
@@ -55,7 +56,7 @@ class CachedFileStoreTest extends Specification {
 	def "putEntry"() {
 		given:
 		def cacheRules = new CachedFileStoreImpl.CacheRules(100, Duration.ofDays(7))
-		def store = new CachedFileStoreImpl(root, cacheRules)
+		def store = new CachedFileStoreImpl(root, BYTE_ARRAY_SERIALIZER, cacheRules)
 		when:
 		store.putEntry("abc", "Hello world".bytes)
 		then:
@@ -65,7 +66,7 @@ class CachedFileStoreTest extends Specification {
 	def "getEntry"() {
 		given:
 		def cacheRules = new CachedFileStoreImpl.CacheRules(100, Duration.ofDays(7))
-		def store = new CachedFileStoreImpl(root, cacheRules)
+		def store = new CachedFileStoreImpl(root, BYTE_ARRAY_SERIALIZER, cacheRules)
 		when:
 		store.putEntry("abc", "Hello world".bytes)
 		def entry = store.getEntry("abc")
@@ -78,7 +79,7 @@ class CachedFileStoreTest extends Specification {
 	def "pruneManyFiles"() {
 		given:
 		def cacheRules = new CachedFileStoreImpl.CacheRules(250, Duration.ofDays(7))
-		def store = new CachedFileStoreImpl(root, cacheRules)
+		def store = new CachedFileStoreImpl(root, BYTE_ARRAY_SERIALIZER, cacheRules)
 		when:
 
 		for (i in 0..<500) {
@@ -99,7 +100,7 @@ class CachedFileStoreTest extends Specification {
 	def "pruneOldFiles"() {
 		given:
 		def cacheRules = new CachedFileStoreImpl.CacheRules(1000, Duration.ofSeconds(250))
-		def store = new CachedFileStoreImpl(root, cacheRules)
+		def store = new CachedFileStoreImpl(root, BYTE_ARRAY_SERIALIZER, cacheRules)
 		when:
 
 		for (i in 0..<500) {
@@ -115,5 +116,17 @@ class CachedFileStoreTest extends Specification {
 		Files.exists(root.resolve("test_0"))
 		Files.exists(root.resolve("test_100"))
 		Files.notExists(root.resolve("test_300"))
+	}
+
+	private static CachedFileStore.EntrySerializer<byte[]> BYTE_ARRAY_SERIALIZER = new CachedFileStore.EntrySerializer<byte[]>() {
+		@Override
+		byte[] read(Path path) throws IOException {
+			return Files.readAllBytes(path)
+		}
+
+		@Override
+		void write(byte[] entry, Path path) throws IOException {
+			Files.write(path, entry)
+		}
 	}
 }

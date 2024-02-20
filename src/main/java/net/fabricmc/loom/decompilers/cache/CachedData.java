@@ -33,6 +33,9 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
@@ -44,15 +47,30 @@ import net.fabricmc.loom.decompilers.ClassLineNumbers;
 // Serialised data for a class entry in the cache
 // Uses the RIFF format, allows for appending the line numbers to the end of the file
 // Stores the source code and line numbers for the class
-public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNumbers) {
+public record CachedData(String className, String sources, @Nullable ClassLineNumbers.Entry lineNumbers) {
+	public static final CachedFileStore.EntrySerializer<CachedData> SERIALIZER = new EntrySerializer();
+
 	private static final String HEADER_ID = "LOOM";
+	private static final String NAME_ID = "NAME";
 	private static final String SOURCES_ID = "SRC ";
 	private static final String LINE_NUMBERS_ID = "LNUM";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CachedData.class);
 
+	public CachedData {
+		Objects.requireNonNull(className, "className");
+		Objects.requireNonNull(sources, "sources");
+
+		if (lineNumbers != null) {
+			if (!className.equals(lineNumbers.className())) {
+				throw new IllegalArgumentException("Class name does not match line numbers class name");
+			}
+		}
+	}
+
 	public void write(FileChannel fileChannel) {
 		try (var c = new RiffChunk(HEADER_ID, fileChannel)) {
+			writeClassname(fileChannel);
 			writeSource(fileChannel);
 
 			if (lineNumbers != null) {
@@ -60,6 +78,12 @@ public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNu
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to write cached data", e);
+		}
+	}
+
+	private void writeClassname(FileChannel fileChannel) throws IOException {
+		try (var c = new RiffChunk(NAME_ID, fileChannel)) {
+			fileChannel.write(ByteBuffer.wrap(className.getBytes(StandardCharsets.UTF_8)));
 		}
 	}
 
@@ -90,6 +114,7 @@ public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNu
 		// Read the data length
 		int length = readInt(inputStream);
 
+		String className = null;
 		String sources = null;
 		ClassLineNumbers.Entry lineNumbers = null;
 
@@ -103,10 +128,25 @@ public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNu
 			}
 
 			switch (chunkHeader) {
+			case NAME_ID -> {
+				if (className != null) {
+					throw new IOException("Duplicate name chunk");
+				}
+
+				className = new String(chunkData, StandardCharsets.UTF_8);
+			}
 			case SOURCES_ID -> {
+				if (sources != null) {
+					throw new IOException("Duplicate sources chunk");
+				}
+
 				sources = new String(chunkData, StandardCharsets.UTF_8);
 			}
 			case LINE_NUMBERS_ID -> {
+				if (lineNumbers != null) {
+					throw new IOException("Duplicate line numbers chunk");
+				}
+
 				try (var br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(chunkData), StandardCharsets.UTF_8))) {
 					ClassLineNumbers classLineNumbers = ClassLineNumbers.readMappings(br);
 
@@ -129,7 +169,7 @@ public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNu
 			throw new IOException("Missing sources");
 		}
 
-		return new CachedData(sources, lineNumbers);
+		return new CachedData(className, sources, lineNumbers);
 	}
 
 	private static String readHeader(InputStream inputStream) throws IOException {
@@ -150,5 +190,21 @@ public record CachedData(String sources, @Nullable ClassLineNumbers.Entry lineNu
 		}
 
 		return ByteBuffer.wrap(bytes).getInt();
+	}
+
+	static class EntrySerializer implements CachedFileStore.EntrySerializer<CachedData> {
+		@Override
+		public CachedData read(Path path) throws IOException {
+			try (InputStream inputStream = Files.newInputStream(path)) {
+				return CachedData.read(inputStream);
+			}
+		}
+
+		@Override
+		public void write(CachedData entry, Path path) throws IOException {
+			try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW)) {
+				entry.write(fileChannel);
+			}
+		}
 	}
 }

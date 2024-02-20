@@ -27,7 +27,6 @@ package net.fabricmc.loom.decompilers.cache;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,9 +39,9 @@ import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
 
-public record CachedFileStoreImpl(Path root, CacheRules cacheRules) implements CachedFileStore {
+public record CachedFileStoreImpl<T>(Path root, EntrySerializer<T> entrySerializer, CacheRules cacheRules) implements CachedFileStore<T> {
 	@Override
-	public byte @Nullable [] getEntry(String key) throws IOException {
+	public @Nullable T getEntry(String key) throws IOException {
 		Path path = resolve(key);
 
 		if (Files.notExists(path)) {
@@ -51,13 +50,13 @@ public record CachedFileStoreImpl(Path root, CacheRules cacheRules) implements C
 
 		// Update last modified, so recently used files stay in the cache
 		Files.setLastModifiedTime(path, FileTime.from(Instant.now()));
-		return Files.readAllBytes(path);
+		return entrySerializer.read(path);
 	}
 
 	@Override
-	public void putEntry(String key, byte[] data) throws IOException {
+	public void putEntry(String key, T data) throws IOException {
 		Path path = resolve(key);
-		Files.write(path, data, StandardOpenOption.CREATE_NEW);
+		entrySerializer.write(data, path);
 	}
 
 	private Path resolve(String key) {

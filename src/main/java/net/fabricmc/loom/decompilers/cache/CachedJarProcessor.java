@@ -27,6 +27,7 @@ package net.fabricmc.loom.decompilers.cache;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -36,12 +37,13 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.util.FileSystemUtil;
 
-public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
+public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String baseHash) {
 	private static final Logger LOGGER = LoggerFactory.getLogger(CachedJarProcessor.class);
 
-	public WorkJob prepareJob(Path inputJar) throws IOException {
+	public WorkRequest prepareJob(Path inputJar) throws IOException {
 		boolean isIncomplete = false;
 		boolean hasSomeExisting = false;
 
@@ -54,6 +56,7 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 
 		// Sources name -> hash
 		Map<String, String> outputNameMap = new HashMap<>();
+		Map<String, ClassLineNumbers.Entry> lineNumbersMap = new HashMap<>();
 
 		try (FileSystemUtil.Delegate inputFs = FileSystemUtil.getJarFileSystem(inputJar, false);
 				FileSystemUtil.Delegate incompleteFs = FileSystemUtil.getJarFileSystem(incompleteJar, true);
@@ -64,7 +67,7 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 				String outputFileName = entry.sourcesFileName();
 				String fullHash = baseHash + entry.hash(inputFs.getRoot());
 
-				byte[] entryData = fileStore.getEntry(fullHash);
+				final CachedData entryData = fileStore.getEntry(fullHash);
 
 				if (entryData == null) {
 					// Cached entry was not found, so copy the input to the incomplete jar to be processed
@@ -76,7 +79,8 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 				} else {
 					final Path outputPath = existingFs.getPath(outputFileName);
 					Files.createDirectories(outputPath.getParent());
-					Files.write(outputPath, entryData);
+					Files.writeString(outputPath, entryData.sources());
+					lineNumbersMap.put(entryData.className(), entryData.lineNumbers());
 					hasSomeExisting = true;
 
 					LOGGER.info("Cached entry found: {}", outputFileName);
@@ -88,26 +92,31 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 		Path outputJar = Files.createTempFile("loom-cache-output", ".jar");
 		Files.delete(outputJar);
 
+		final var lineNumbers = new ClassLineNumbers(Collections.unmodifiableMap(lineNumbersMap));
+
 		if (isIncomplete && !hasSomeExisting) {
 			// The cache contained nothing of use, fully process the input jar
 			Files.delete(incompleteJar);
 			Files.delete(existingJar);
 
 			LOGGER.info("No cached entries found, going to process the whole jar");
-			return new FullWorkJob(inputJar, outputJar, outputNameMap);
+			return new FullWorkJob(inputJar, outputJar, outputNameMap)
+					.asRequest(lineNumbers);
 		} else if (isIncomplete) {
 			// The cache did not contain everything so we have some work to do
 			LOGGER.info("Some cached entries found, using partial work job");
-			return new PartialWorkJob(incompleteJar, existingJar, outputJar, outputNameMap);
+			return new PartialWorkJob(incompleteJar, existingJar, outputJar, outputNameMap)
+					.asRequest(lineNumbers);
 		} else {
 			// The cached contained everything we need, so the existing jar is the output
 			LOGGER.info("All cached entries found, using completed work job");
 			Files.delete(incompleteJar);
-			return new CompletedWorkJob(existingJar);
+			return new CompletedWorkJob(existingJar)
+					.asRequest(lineNumbers);
 		}
 	}
 
-	public void completeJob(Path output, WorkJob workJob) throws IOException {
+	public void completeJob(Path output, WorkJob workJob, ClassLineNumbers lineNumbers) throws IOException {
 		if (workJob instanceof CompletedWorkJob completedWorkJob) {
 			// Fully complete, nothing new to cache
 			Files.move(completedWorkJob.completed(), output);
@@ -136,8 +145,14 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 						throw new IllegalStateException("Unexpected output: " + fsPath);
 					}
 
+					// Trim the leading / and the .java extension
+					final String className = fsPath.toString().substring(1, fsPath.toString().length() - ".java".length());
+					final String sources = Files.readString(fsPath);
+
+					final var cachedData = new CachedData(className, sources, lineNumbers.lineMap().get(className));
+					fileStore.putEntry(hash, cachedData);
+
 					LOGGER.debug("Saving processed entry to cache: {}", fsPath);
-					fileStore.putEntry(hash, Files.readAllBytes(fsPath));
 				}
 			}
 		} else {
@@ -176,7 +191,13 @@ public record CachedJarProcessor(CachedFileStore fileStore, String baseHash) {
 		}
 	}
 
+	public record WorkRequest(WorkJob job, ClassLineNumbers lineNumbers) {
+	}
+
 	public sealed interface WorkJob permits CompletedWorkJob, WorkToDoJob {
+		default WorkRequest asRequest(ClassLineNumbers lineNumbers) {
+			return new WorkRequest(this, lineNumbers);
+		}
 	}
 
 	public sealed interface WorkToDoJob extends WorkJob permits PartialWorkJob, FullWorkJob {

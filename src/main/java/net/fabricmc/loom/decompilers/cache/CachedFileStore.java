@@ -25,11 +25,18 @@
 package net.fabricmc.loom.decompilers.cache;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
 
-public interface CachedFileStore {
-	byte @Nullable [] getEntry(String key) throws IOException;
+public interface CachedFileStore<T> {
+	@Nullable T getEntry(String key) throws IOException;
 
-	void putEntry(String key, byte[] data) throws IOException;
+	void putEntry(String key, T entry) throws IOException;
+
+	interface EntrySerializer<T> {
+		T read(Path path) throws IOException;
+
+		void write(T entry, Path path) throws IOException;
+	}
 }

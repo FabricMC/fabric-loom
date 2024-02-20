@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit
+package net.fabricmc.loom.test.unit.cache
 
 import java.nio.file.Files
 import java.nio.file.Path

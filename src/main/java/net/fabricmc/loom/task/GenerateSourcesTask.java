@@ -75,6 +75,7 @@ import net.fabricmc.loom.configuration.processors.MappingProcessorContextImpl;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
+import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
@@ -410,8 +411,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		private void remapLineNumbers(IOStringConsumer logger, Path oldCompiledJar, Path linemap, Path linemappedJarDestination) throws IOException {
-			LineNumberRemapper remapper = new LineNumberRemapper();
-			remapper.readMappings(linemap.toFile());
+			final ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
+			final LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
 
 			try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
 					FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {

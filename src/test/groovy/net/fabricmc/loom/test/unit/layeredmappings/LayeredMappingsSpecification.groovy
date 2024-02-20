@@ -141,7 +141,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		@Override
 		Supplier<MemoryMappingTree> intermediaryTree() {
 			return {
-				IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider()).memoryMappingTree
+				IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider(), null).memoryMappingTree
 			}
 		}
 

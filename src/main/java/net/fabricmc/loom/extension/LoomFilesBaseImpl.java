@@ -107,4 +107,9 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 	public File getLocalMinecraftRepo() {
 		return new File(getRootProjectPersistentCache(), "minecraftMaven");
 	}
+
+	@Override
+	public File getDecompileCache(String version) {
+		return new File(getUserCache(), "decompile/" + version + ".cache");
+	}
 }

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +36,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,6 +46,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+
+import net.fabricmc.loom.LoomGradleExtension;
 
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -65,7 +67,10 @@ import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -101,6 +106,8 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 @DisableCachingByDefault
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateSourcesTask.class);
+	private static final String CACHE_VERSION = "v1";
 	private final DecompilerOptions decompilerOptions;
 
 	/**
@@ -132,6 +139,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Optional
 	public abstract RegularFileProperty getUnpickOutputJar();
 
+	// Internal outputs
+	@ApiStatus.Internal
+	@OutputFile
+	public abstract RegularFileProperty getDecompileCacheFile();
+
 	// Injects
 	@Inject
 	public abstract WorkerExecutor getWorkerExecutor();
@@ -153,6 +165,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getOutputs().upToDateWhen((o) -> false);
 		getClasspath().from(decompilerOptions.getClasspath()).finalizeValueOnRead();
 		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
+
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		getDecompileCacheFile().set(extension.getFiles().getDecompileCache(CACHE_VERSION));
 	}
 
 	@TaskAction
@@ -164,15 +179,18 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
-		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(null, CachedData.SERIALIZER, cacheRules);
+		final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
+
+		// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
+
+		// TODO need to open cache file as a zip here
+		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheFile, CachedData.SERIALIZER, cacheRules);
 		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, "TODO");
-
 		final MinecraftJar minecraftJar = rebuildInputJar();
+		final CachedJarProcessor.WorkRequest workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
+		final CachedJarProcessor.WorkJob job = workRequest.job();
 
-		Path sourcesJar = null;
-
-		CachedJarProcessor.WorkRequest workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
-		CachedJarProcessor.WorkJob job = workRequest.job();
+		ClassLineNumbers outputLineNumbers = null;
 
 		if (job instanceof CachedJarProcessor.WorkToDoJob workToDoJob) {
 			Path inputJar = workToDoJob.incomplete();
@@ -182,24 +200,49 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				inputJar = unpickJar(inputJar, existing);
 			}
 
-			runDecompileJob();
+			outputLineNumbers = runDecompileJob(inputJar, workToDoJob.output(), existing);
+
+			if (Files.notExists(workToDoJob.output())) {
+				throw new RuntimeException("Failed to decompile sources");
+			}
 		} else if (job instanceof CachedJarProcessor.CompletedWorkJob completedWorkJob) {
-			sourcesJar = completedWorkJob.completed();
+			// Nothing to do :)
 		}
 
-		// TODO remap line numbers
-		// TODO write output to
-		Path runtimeJar = minecraftJar.getPath();
+		// The final output sources jar
+		final Path sourcesJar = getOutputJar().get().getAsFile().toPath();
+		cachedJarProcessor.completeJob(sourcesJar, job, outputLineNumbers);
+
+		// This is the minecraft jar used at runtime.
+		final Path classesJar = minecraftJar.getPath();
+
+		// Remap the line numbers with the new and existing numbers
+		final ClassLineNumbers existingLinenumbers = workRequest.lineNumbers();
+		final ClassLineNumbers lineNumbers = ClassLineNumbers.merge(existingLinenumbers, outputLineNumbers);
+
+		if (lineNumbers == null) {
+			LOGGER.info("No line numbers to remap, skipping remapping");
+			return;
+		}
+
+		Path tempJar = Files.createTempFile("loom", "linenumber-remap");
+		Files.delete(tempJar);
+
+		remapLineNumbers(lineNumbers, classesJar, tempJar);
+		Files.move(tempJar, classesJar);
 	}
 
-	private void runDecompileJob() throws IOException {
+	@Nullable
+	private ClassLineNumbers runDecompileJob(Path inputJar, Path outputJar, @Nullable Path existingJar) throws IOException {
 		final Platform platform = Platform.CURRENT;
+		final Path lineMapFile = File.createTempFile("loom", "linemap").toPath();
+		Files.delete(lineMapFile);
 
 		if (!platform.supportsUnixDomainSockets()) {
 			getProject().getLogger().warn("Decompile worker logging disabled as Unix Domain Sockets is not supported on your operating system.");
 
-			doWork(null, inputJar, runtimeJar);
-			return;
+			doWork(null, inputJar, outputJar, lineMapFile, existingJar);
+			return readLineNumbers(lineMapFile);
 		}
 
 		// Set up the IPC path to get the log output back from the forked JVM
@@ -208,12 +251,14 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompilerOptions.getName(), "Decompiling minecraft sources");
 			 IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
-			doWork(logReceiver, inputJar, runtimeJar);
+			doWork(logReceiver, inputJar, outputJar, lineMapFile, existingJar);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
 		} finally {
 			Files.deleteIfExists(ipcPath);
 		}
+
+		return readLineNumbers(lineMapFile);
 	}
 
 	// Re-run the named minecraft provider to give us a fresh jar to decompile.
@@ -296,25 +341,39 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return unpickLoggingConfigFile;
 	}
 
-	private void doWork(@Nullable IPCServer ipcServer, Path inputJar, Path runtimeJar) {
+	private void remapLineNumbers(ClassLineNumbers lineNumbers, Path inputJar, Path outputJar) throws IOException {
+		final var remapper = new LineNumberRemapper(lineNumbers);
+
+		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, true);
+			 FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
+			remapper.process(inFs.get().getPath("/"), outFs.get().getPath("/"));
+		}
+	}
+
+	private void doWork(@Nullable IPCServer ipcServer, Path inputJar, Path outputJar, Path linemapFile, @Nullable Path existingJar) {
 		final String jvmMarkerValue = UUID.randomUUID().toString();
 		final WorkQueue workQueue = createWorkQueue(jvmMarkerValue);
+
+		ConfigurableFileCollection classpath = getProject().files();
+		classpath.from(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+
+		if (existingJar != null) {
+			classpath.from(existingJar);
+		}
 
 		workQueue.submit(DecompileAction.class, params -> {
 			params.getDecompilerOptions().set(decompilerOptions.toDto());
 
 			params.getInputJar().set(inputJar.toFile());
-			params.getRuntimeJar().set(runtimeJar.toFile());
-			params.getSourcesDestinationJar().set(getOutputJar());
-			params.getLinemap().set(getMappedJarFileWithSuffix("-sources.lmap", runtimeJar));
-			params.getLinemapJar().set(getMappedJarFileWithSuffix("-linemapped.jar", runtimeJar));
+			params.getOutputJar().set(outputJar.toFile());
+			params.getLinemapFile().set(linemapFile.toFile());
 			params.getMappings().set(getMappings().toFile());
 
 			if (ipcServer != null) {
 				params.getIPCPath().set(ipcServer.getPath().toFile());
 			}
 
-			params.getClassPath().setFrom(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+			params.getClassPath().setFrom(classpath);
 		});
 
 		try {
@@ -356,10 +415,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Property<DecompilerOptions.Dto> getDecompilerOptions();
 
 		RegularFileProperty getInputJar();
-		RegularFileProperty getRuntimeJar();
-		RegularFileProperty getSourcesDestinationJar();
-		RegularFileProperty getLinemap();
-		RegularFileProperty getLinemapJar();
+		RegularFileProperty getOutputJar();
+		RegularFileProperty getLinemapFile();
 		RegularFileProperty getMappings();
 
 		RegularFileProperty getIPCPath();
@@ -387,10 +444,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		private void doDecompile(IOStringConsumer logger) {
 			final Path inputJar = getParameters().getInputJar().get().getAsFile().toPath();
-			final Path sourcesDestinationJar = getParameters().getSourcesDestinationJar().get().getAsFile().toPath();
-			final Path linemap = getParameters().getLinemap().get().getAsFile().toPath();
-			final Path linemapJar = getParameters().getLinemapJar().get().getAsFile().toPath();
-			final Path runtimeJar = getParameters().getRuntimeJar().get().getAsFile().toPath();
+			final Path linemap = getParameters().getLinemapFile().get().getAsFile().toPath();
+			final Path outputJar = getParameters().getOutputJar().get().getAsFile().toPath();
 
 			final DecompilerOptions.Dto decompilerOptions = getParameters().getDecompilerOptions().get();
 
@@ -406,7 +461,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				throw new RuntimeException("Failed to create decompiler", e);
 			}
 
-			DecompilationMetadata metadata = new DecompilationMetadata(
+			final var metadata = new DecompilationMetadata(
 					decompilerOptions.maxThreads(),
 					getParameters().getMappings().get().getAsFile().toPath(),
 					getLibraries(),
@@ -416,7 +471,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 			decompiler.decompile(
 					inputJar,
-					sourcesDestinationJar,
+					outputJar,
 					linemap,
 					metadata
 			);
@@ -427,43 +482,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to close loggers", e);
 			}
-
-			if (Files.exists(linemap)) {
-				try {
-					// Line map the actually jar used to run the game, not the one used to decompile
-					remapLineNumbers(metadata.logger(), runtimeJar, linemap, linemapJar);
-
-					Files.copy(linemapJar, runtimeJar, StandardCopyOption.REPLACE_EXISTING);
-					Files.delete(linemapJar);
-				} catch (IOException e) {
-					throw new UncheckedIOException("Failed to remap line numbers", e);
-				}
-			}
-		}
-
-		private void remapLineNumbers(IOStringConsumer logger, Path oldCompiledJar, Path linemap, Path linemappedJarDestination) throws IOException {
-			final ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
-			final LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
-
-			try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(oldCompiledJar.toFile(), true);
-					FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(linemappedJarDestination.toFile(), true)) {
-				remapper.process(logger, inFs.get().getPath("/"), outFs.get().getPath("/"));
-			}
 		}
 
 		private Collection<Path> getLibraries() {
 			return getParameters().getClassPath().getFiles().stream().map(File::toPath).collect(Collectors.toSet());
 		}
-	}
-
-	public static File getMappedJarFileWithSuffix(String suffix, Path runtimeJar) {
-		final String path = runtimeJar.toFile().getAbsolutePath();
-
-		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
-			throw new RuntimeException("Invalid mapped JAR path: " + path);
-		}
-
-		return new File(path.substring(0, path.length() - 4) + suffix);
 	}
 
 	private Path getMappings() {
@@ -524,8 +547,25 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return outputMappings;
 	}
 
-	public interface MappingsProcessor {
-		boolean transform(MemoryMappingTree mappings);
+	public static File getJarFileWithSuffix(String suffix, Path runtimeJar) {
+		final String path = runtimeJar.toFile().getAbsolutePath();
+
+		if (!path.toLowerCase(Locale.ROOT).endsWith(".jar")) {
+			throw new RuntimeException("Invalid mapped JAR path: " + path);
+		}
+
+		return new File(path.substring(0, path.length() - 4) + suffix);
+	}
+
+	@Nullable
+	private static ClassLineNumbers readLineNumbers(Path linemapFile) throws IOException {
+		if (Files.notExists(linemapFile)) {
+			return null;
+		}
+
+		try (BufferedReader reader = Files.newBufferedReader(linemapFile, StandardCharsets.UTF_8)) {
+			return ClassLineNumbers.readMappings(reader);
+		}
 	}
 
 	private static Constructor<LoomDecompiler> getDecompilerConstructor(String clazz) {
@@ -537,5 +577,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public interface MappingsProcessor {
+		boolean transform(MemoryMappingTree mappings);
 	}
 }

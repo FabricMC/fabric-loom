@@ -35,11 +35,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
 
 public record CachedFileStoreImpl<T>(Path root, EntrySerializer<T> entrySerializer, CacheRules cacheRules) implements CachedFileStore<T> {
+	public CachedFileStoreImpl {
+		Objects.requireNonNull(root, "root");
+	}
+
 	@Override
 	public @Nullable T getEntry(String key) throws IOException {
 		Path path = resolve(key);
@@ -56,6 +61,7 @@ public record CachedFileStoreImpl<T>(Path root, EntrySerializer<T> entrySerializ
 	@Override
 	public void putEntry(String key, T data) throws IOException {
 		Path path = resolve(key);
+		Files.createDirectories(path.getParent());
 		entrySerializer.write(data, path);
 	}
 

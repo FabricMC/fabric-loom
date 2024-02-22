@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 
 			for (ClassEntry entry : inputClasses) {
 				String outputFileName = entry.sourcesFileName();
-				String fullHash = baseHash + entry.hash(inputFs.getRoot());
+				String fullHash = baseHash + "/" + entry.hash(inputFs.getRoot());
 
 				final CachedData entryData = fileStore.getEntry(fullHash);
 
@@ -92,7 +93,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 		Path outputJar = Files.createTempFile("loom-cache-output", ".jar");
 		Files.delete(outputJar);
 
-		final var lineNumbers = new ClassLineNumbers(Collections.unmodifiableMap(lineNumbersMap));
+		final ClassLineNumbers lineNumbers = lineNumbersMap.isEmpty() ? null : new ClassLineNumbers(Collections.unmodifiableMap(lineNumbersMap));
 
 		if (isIncomplete && !hasSomeExisting) {
 			// The cache contained nothing of use, fully process the input jar
@@ -149,7 +150,13 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					final String className = fsPath.toString().substring(1, fsPath.toString().length() - ".java".length());
 					final String sources = Files.readString(fsPath);
 
-					final var cachedData = new CachedData(className, sources, lineNumbers.lineMap().get(className));
+					ClassLineNumbers.Entry lineMapEntry = null;
+
+					if (lineNumbers != null) {
+						lineMapEntry = lineNumbers.lineMap().get(className);
+					}
+
+					final var cachedData = new CachedData(className, sources, lineMapEntry);
 					fileStore.putEntry(hash, cachedData);
 
 					LOGGER.debug("Saving processed entry to cache: {}", fsPath);
@@ -191,11 +198,11 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 		}
 	}
 
-	public record WorkRequest(WorkJob job, ClassLineNumbers lineNumbers) {
+	public record WorkRequest(WorkJob job, @Nullable ClassLineNumbers lineNumbers) {
 	}
 
 	public sealed interface WorkJob permits CompletedWorkJob, WorkToDoJob {
-		default WorkRequest asRequest(ClassLineNumbers lineNumbers) {
+		default WorkRequest asRequest(@Nullable ClassLineNumbers lineNumbers) {
 			return new WorkRequest(this, lineNumbers);
 		}
 	}

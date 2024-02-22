@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.decompilers;
 
+import org.jetbrains.annotations.Nullable;
+
 import static java.text.MessageFormat.format;
 
 import java.io.BufferedReader;
@@ -38,6 +40,14 @@ import java.util.Map;
 import java.util.Objects;
 
 public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
+	public ClassLineNumbers {
+		Objects.requireNonNull(lineMap, "lineMap");
+
+		if (lineMap.isEmpty()) {
+			throw new IllegalArgumentException("lineMap is empty");
+		}
+	}
+
 	public static ClassLineNumbers readMappings(Path lineMappingsPath) {
 		try (BufferedReader reader = Files.newBufferedReader(lineMappingsPath)) {
 			return readMappings(reader);
@@ -108,7 +118,14 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 	/**
 	 * Merge two ClassLineNumbers together, throwing an exception if there are any duplicate class line mappings.
 	 */
-	public static ClassLineNumbers merge(ClassLineNumbers a, ClassLineNumbers b) {
+	@Nullable
+	public static ClassLineNumbers merge(@Nullable ClassLineNumbers a, @Nullable ClassLineNumbers b) {
+		if (a == null) {
+			return b;
+		} else if (b == null) {
+			return a;
+		}
+
 		var lineMap = new HashMap<>(a.lineMap());
 
 		for (Map.Entry<String, Entry> entry : b.lineMap().entrySet()) {

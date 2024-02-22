@@ -38,12 +38,15 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.IOStringConsumer;
 
 public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
-	public void process(IOStringConsumer logger, Path input, Path output) throws IOException {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LineNumberRemapper.class);
+
+	public void process(Path input, Path output) throws IOException {
 		Files.walkFileTree(input, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -64,9 +67,7 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 
 					String idx = rel.substring(0, rel.length() - 6);
 
-					if (logger != null) {
-						logger.accept("Remapping " + idx);
-					}
+					LOGGER.debug("Remapping line numbers for class: " + idx);
 
 					int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
 

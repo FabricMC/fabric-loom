@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -77,6 +78,10 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
+import net.fabricmc.loom.decompilers.cache.CachedData;
+import net.fabricmc.loom.decompilers.cache.CachedFileStore;
+import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl;
+import net.fabricmc.loom.decompilers.cache.CachedJarProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -158,15 +163,37 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
-		final MinecraftJar minecraftJar = rebuildInputJar();
-		// Input jar is the jar to decompile, this may be unpicked.
-		Path inputJar = minecraftJar.getPath();
-		// Runtime jar is the jar used to run the game
-		final Path runtimeJar = inputJar;
+		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
+		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(null, CachedData.SERIALIZER, cacheRules);
+		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, "TODO");
 
-		if (getUnpickDefinitions().isPresent()) {
-			inputJar = unpickJar(inputJar);
+		final MinecraftJar minecraftJar = rebuildInputJar();
+
+		Path sourcesJar = null;
+
+		CachedJarProcessor.WorkRequest workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
+		CachedJarProcessor.WorkJob job = workRequest.job();
+
+		if (job instanceof CachedJarProcessor.WorkToDoJob workToDoJob) {
+			Path inputJar = workToDoJob.incomplete();
+			@Nullable Path existing = (job instanceof CachedJarProcessor.PartialWorkJob partialWorkJob) ? partialWorkJob.existing() : null;
+
+			if (getUnpickDefinitions().isPresent()) {
+				inputJar = unpickJar(inputJar, existing);
+			}
+
+			runDecompileJob();
+		} else if (job instanceof CachedJarProcessor.CompletedWorkJob completedWorkJob) {
+			sourcesJar = completedWorkJob.completed();
 		}
+
+		// TODO remap line numbers
+		// TODO write output to
+		Path runtimeJar = minecraftJar.getPath();
+	}
+
+	private void runDecompileJob() throws IOException {
+		final Platform platform = Platform.CURRENT;
 
 		if (!platform.supportsUnixDomainSockets()) {
 			getProject().getLogger().warn("Decompile worker logging disabled as Unix Domain Sockets is not supported on your operating system.");
@@ -180,7 +207,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.deleteIfExists(ipcPath);
 
 		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompilerOptions.getName(), "Decompiling minecraft sources");
-				IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
+			 IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
 			doWork(logReceiver, inputJar, runtimeJar);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
@@ -214,9 +241,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		);
 	}
 
-	private Path unpickJar(Path inputJar) {
+	private Path unpickJar(Path inputJar, @Nullable Path existingJar) {
 		final Path outputJar = getUnpickOutputJar().get().getAsFile().toPath();
-		final List<String> args = getUnpickArgs(inputJar, outputJar);
+		final List<String> args = getUnpickArgs(inputJar, outputJar, existingJar);
 
 		ExecResult result = getExecOperations().javaexec(spec -> {
 			spec.getMainClass().set("daomephsta.unpick.cli.Main");
@@ -230,7 +257,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return outputJar;
 	}
 
-	private List<String> getUnpickArgs(Path inputJar, Path outputJar) {
+	private List<String> getUnpickArgs(Path inputJar, Path outputJar, @Nullable Path existingJar) {
 		var fileArgs = new ArrayList<File>();
 
 		fileArgs.add(inputJar.toFile());
@@ -245,6 +272,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		for (File file : getUnpickClasspath()) {
 			fileArgs.add(file);
+		}
+
+		if (existingJar != null) {
+			fileArgs.add(existingJar.toFile());
 		}
 
 		return fileArgs.stream()

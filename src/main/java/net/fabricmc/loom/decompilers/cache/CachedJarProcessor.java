@@ -202,6 +202,11 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 
 	public sealed interface WorkToDoJob extends WorkJob permits PartialWorkJob, FullWorkJob {
 		/**
+		 * A path to jar file containing all the classes to be processed
+		 */
+		Path incomplete();
+
+		/**
 		 * @return A jar file to be written to during processing
 		 */
 		Path output();

@@ -25,4 +25,8 @@
 package net.fabricmc.loom.test.unit.processor.classes;
 
 public class AdvancedGenericTargetClass<T> {
+	public static class Pair<F, S> {
+		Pair(F ignoredF, S ignoredS) {
+		}
+	}
 }

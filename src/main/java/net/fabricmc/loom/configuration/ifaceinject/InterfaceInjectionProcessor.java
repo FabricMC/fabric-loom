@@ -120,7 +120,6 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();
-
 			try {
 				ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
 			} catch (IOException e) {
@@ -236,9 +235,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				for (JsonElement ifaceElement : ifacesInfo) {
 					String ifaceInfo = ifaceElement.getAsString();
 
+					String name = ifaceInfo;
 					String generics = null;
 
 					if (ifaceInfo.contains("<") && ifaceInfo.contains(">")) {
+						name = ifaceInfo.substring(0, ifaceInfo.indexOf("<"));
 						generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
 
 						// First Generics Check, if there are generics, are them correctly written?
@@ -247,7 +248,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 						reader.accept(checker);
 					}
 
-					result.add(new InjectedInterface(modId, className, ifaceElement.getAsString(), generics));
+					result.add(new InjectedInterface(modId, className, name, generics));
 				}
 			}
 
@@ -385,20 +386,20 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	private static class GenericsChecker extends SignatureVisitor {
-		private final List<String> typeVariables;
+		private final List<String> typeParameters;
 
 		private final List<InjectedInterface> injectedInterfaces;
 
 		GenericsChecker(int asmVersion, List<InjectedInterface> injectedInterfaces) {
 			super(asmVersion);
-			this.typeVariables = new ArrayList<>();
+			this.typeParameters = new ArrayList<>();
 			this.injectedInterfaces = injectedInterfaces;
 		}
 
 		@Override
-		public void visitTypeVariable(String name) {
-			this.typeVariables.add(name);
-			super.visitTypeVariable(name);
+		public void visitFormalTypeParameter(String name) {
+			this.typeParameters.add(name);
+			super.visitFormalTypeParameter(name);
 		}
 
 		@Override
@@ -410,7 +411,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 							Constants.ASM_VERSION,
 							injectedInterface.className(),
 							injectedInterface.ifaceName(),
-							this.typeVariables
+							this.typeParameters
 					);
 					reader.accept(confirm);
 				}

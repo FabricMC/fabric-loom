@@ -59,6 +59,9 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 		Map<String, String> outputNameMap = new HashMap<>();
 		Map<String, ClassLineNumbers.Entry> lineNumbersMap = new HashMap<>();
 
+		int hits = 0;
+		int misses = 0;
+
 		try (FileSystemUtil.Delegate inputFs = FileSystemUtil.getJarFileSystem(inputJar, false);
 				FileSystemUtil.Delegate incompleteFs = FileSystemUtil.getJarFileSystem(incompleteJar, true);
 				FileSystemUtil.Delegate existingFs = FileSystemUtil.getJarFileSystem(existingJar, true)) {
@@ -77,6 +80,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					outputNameMap.put(outputFileName, fullHash);
 
 					LOGGER.info("Cached entry not found, going to process {}", outputFileName);
+					misses++;
 				} else {
 					final Path outputPath = existingFs.getPath(outputFileName);
 					Files.createDirectories(outputPath.getParent());
@@ -85,6 +89,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					hasSomeExisting = true;
 
 					LOGGER.info("Cached entry found: {}", outputFileName);
+					hits++;
 				}
 			}
 		}
@@ -94,6 +99,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 		Files.delete(outputJar);
 
 		final ClassLineNumbers lineNumbers = lineNumbersMap.isEmpty() ? null : new ClassLineNumbers(Collections.unmodifiableMap(lineNumbersMap));
+		final var stats = new CacheStats(hits, misses);
 
 		if (isIncomplete && !hasSomeExisting) {
 			// The cache contained nothing of use, fully process the input jar
@@ -102,18 +108,18 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 
 			LOGGER.info("No cached entries found, going to process the whole jar");
 			return new FullWorkJob(inputJar, outputJar, outputNameMap)
-					.asRequest(lineNumbers);
+					.asRequest(stats, lineNumbers);
 		} else if (isIncomplete) {
 			// The cache did not contain everything so we have some work to do
 			LOGGER.info("Some cached entries found, using partial work job");
 			return new PartialWorkJob(incompleteJar, existingJar, outputJar, outputNameMap)
-					.asRequest(lineNumbers);
+					.asRequest(stats, lineNumbers);
 		} else {
 			// The cached contained everything we need, so the existing jar is the output
 			LOGGER.info("All cached entries found, using completed work job");
 			Files.delete(incompleteJar);
 			return new CompletedWorkJob(existingJar)
-					.asRequest(lineNumbers);
+					.asRequest(stats, lineNumbers);
 		}
 	}
 
@@ -134,7 +140,11 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 				Iterator<Path> iterator = walk.iterator();
 
 				while (iterator.hasNext()) {
-					Path fsPath = iterator.next();
+					final Path fsPath = iterator.next();
+
+					if (fsPath.startsWith("/META-INF/")) {
+						continue;
+					}
 
 					if (!Files.isRegularFile(fsPath)) {
 						continue;
@@ -198,18 +208,21 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 		}
 	}
 
-	public record WorkRequest(WorkJob job, @Nullable ClassLineNumbers lineNumbers) {
+	public record WorkRequest(WorkJob job, CacheStats stats, @Nullable ClassLineNumbers lineNumbers) {
+	}
+
+	public record CacheStats(int hits, int misses) {
 	}
 
 	public sealed interface WorkJob permits CompletedWorkJob, WorkToDoJob {
-		default WorkRequest asRequest(@Nullable ClassLineNumbers lineNumbers) {
-			return new WorkRequest(this, lineNumbers);
+		default WorkRequest asRequest(CacheStats stats, @Nullable ClassLineNumbers lineNumbers) {
+			return new WorkRequest(this, stats, lineNumbers);
 		}
 	}
 
 	public sealed interface WorkToDoJob extends WorkJob permits PartialWorkJob, FullWorkJob {
 		/**
-		 * A path to jar file containing all the classes to be processed
+		 * A path to jar file containing all the classes to be processed.
 		 */
 		Path incomplete();
 

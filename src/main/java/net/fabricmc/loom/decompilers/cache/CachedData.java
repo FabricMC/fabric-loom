@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.decompilers.cache;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -121,11 +122,7 @@ public record CachedData(String className, String sources, @Nullable ClassLineNu
 		while (inputStream.available() > 0) {
 			String chunkHeader = readHeader(inputStream);
 			int chunkLength = readInt(inputStream);
-			byte[] chunkData = new byte[chunkLength];
-
-			if (inputStream.read(chunkData) != chunkLength) {
-				throw new IOException("Failed to read chunk data");
-			}
+			byte[] chunkData = readBytes(inputStream, chunkLength);
 
 			switch (chunkHeader) {
 			case NAME_ID -> {
@@ -173,36 +170,38 @@ public record CachedData(String className, String sources, @Nullable ClassLineNu
 	}
 
 	private static String readHeader(InputStream inputStream) throws IOException {
-		byte[] header = new byte[4];
-
-		if (inputStream.read(header) != 4) {
-			throw new IOException("Failed to read header");
-		}
-
+		byte[] header = readBytes(inputStream, 4);
 		return new String(header, StandardCharsets.US_ASCII);
 	}
 
 	private static int readInt(InputStream inputStream) throws IOException {
-		byte[] bytes = new byte[4];
+		byte[] bytes = readBytes(inputStream, 4);
+		return ByteBuffer.wrap(bytes).getInt();
+	}
 
-		if (inputStream.read(bytes) != 4) {
-			throw new IOException("Failed to read int");
+	private static byte[] readBytes(InputStream inputStream, int length) throws IOException {
+		byte[] bytes = new byte[length];
+
+		int read = inputStream.read(bytes);
+
+		if (read != length) {
+			throw new IOException("Failed to read bytes expected " + length + " bytes but got " + read + " bytes");
 		}
 
-		return ByteBuffer.wrap(bytes).getInt();
+		return bytes;
 	}
 
 	static class EntrySerializer implements CachedFileStore.EntrySerializer<CachedData> {
 		@Override
 		public CachedData read(Path path) throws IOException {
-			try (InputStream inputStream = Files.newInputStream(path)) {
+			try (var inputStream = new BufferedInputStream(Files.newInputStream(path))) {
 				return CachedData.read(inputStream);
 			}
 		}
 
 		@Override
 		public void write(CachedData entry, Path path) throws IOException {
-			try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW)) {
+			try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 				entry.write(fileChannel);
 			}
 		}

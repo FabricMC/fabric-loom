@@ -36,6 +36,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,8 +48,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import net.fabricmc.loom.LoomGradleExtension;
-
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -56,6 +55,7 @@ import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
@@ -72,6 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -141,8 +142,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	// Internal outputs
 	@ApiStatus.Internal
-	@OutputFile
-	public abstract RegularFileProperty getDecompileCacheFile();
+	@Internal
+	protected abstract RegularFileProperty getDecompileCacheFile();
 
 	// Injects
 	@Inject
@@ -178,17 +179,34 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
+		try (var timer = new Timer("Decompiled sources")) {
+			final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
+
+			// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
+			// TODO handle being unable to read the cache file
+			Files.createDirectories(cacheFile.getParent());
+
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
+				runWithCache(fs.getRoot());
+			}
+		}
+	}
+
+	private void runWithCache(Path cacheRoot) throws IOException {
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
-		final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
-
-		// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
-
-		// TODO need to open cache file as a zip here
-		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheFile, CachedData.SERIALIZER, cacheRules);
+		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
 		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, "TODO");
 		final MinecraftJar minecraftJar = rebuildInputJar();
-		final CachedJarProcessor.WorkRequest workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
+		final CachedJarProcessor.WorkRequest workRequest;
+
+		try (var timer = new Timer("Prepare job")) {
+			workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
+		}
+
 		final CachedJarProcessor.WorkJob job = workRequest.job();
+		final CachedJarProcessor.CacheStats cacheStats = workRequest.stats();
+
+		getProject().getLogger().lifecycle("Decompiling: Cache stats: {} hits, {} misses", cacheStats.hits(), cacheStats.misses());
 
 		ClassLineNumbers outputLineNumbers = null;
 
@@ -197,10 +215,14 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			@Nullable Path existing = (job instanceof CachedJarProcessor.PartialWorkJob partialWorkJob) ? partialWorkJob.existing() : null;
 
 			if (getUnpickDefinitions().isPresent()) {
-				inputJar = unpickJar(inputJar, existing);
+				try (var timer = new Timer("Unpick")) {
+					inputJar = unpickJar(inputJar, existing);
+				}
 			}
 
-			outputLineNumbers = runDecompileJob(inputJar, workToDoJob.output(), existing);
+			try (var timer = new Timer("Decompile")) {
+				outputLineNumbers = runDecompileJob(inputJar, workToDoJob.output(), existing);
+			}
 
 			if (Files.notExists(workToDoJob.output())) {
 				throw new RuntimeException("Failed to decompile sources");
@@ -211,7 +233,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		// The final output sources jar
 		final Path sourcesJar = getOutputJar().get().getAsFile().toPath();
-		cachedJarProcessor.completeJob(sourcesJar, job, outputLineNumbers);
+		Files.deleteIfExists(sourcesJar);
+
+		try (var timer = new Timer("Complete job")) {
+			cachedJarProcessor.completeJob(sourcesJar, job, outputLineNumbers);
+		}
 
 		// This is the minecraft jar used at runtime.
 		final Path classesJar = minecraftJar.getPath();
@@ -228,8 +254,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Path tempJar = Files.createTempFile("loom", "linenumber-remap");
 		Files.delete(tempJar);
 
-		remapLineNumbers(lineNumbers, classesJar, tempJar);
-		Files.move(tempJar, classesJar);
+		try (var timer = new Timer("Remap line numbers")) {
+			remapLineNumbers(lineNumbers, classesJar, tempJar);
+		}
+
+		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	@Nullable
@@ -250,7 +279,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.deleteIfExists(ipcPath);
 
 		try (ThreadedProgressLoggerConsumer loggerConsumer = new ThreadedProgressLoggerConsumer(getProject(), decompilerOptions.getName(), "Decompiling minecraft sources");
-			 IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
+				IPCServer logReceiver = new IPCServer(ipcPath, loggerConsumer)) {
 			doWork(logReceiver, inputJar, outputJar, lineMapFile, existingJar);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Failed to shutdown log receiver", e);
@@ -345,7 +374,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final var remapper = new LineNumberRemapper(lineNumbers);
 
 		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, true);
-			 FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
+				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
 			remapper.process(inFs.get().getPath("/"), outFs.get().getPath("/"));
 		}
 	}
@@ -581,5 +610,20 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	public interface MappingsProcessor {
 		boolean transform(MemoryMappingTree mappings);
+	}
+
+	private final class Timer implements AutoCloseable {
+		private final String name;
+		private final long start;
+
+		Timer(String name) {
+			this.name = name;
+			this.start = System.currentTimeMillis();
+		}
+
+		@Override
+		public void close() {
+			getProject().getLogger().lifecycle("{} took {}ms", name, System.currentTimeMillis() - start);
+		}
 	}
 }

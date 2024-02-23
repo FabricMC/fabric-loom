@@ -110,6 +110,6 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 
 	@Override
 	public File getDecompileCache(String version) {
-		return new File(getUserCache(), "decompile/" + version + ".cache");
+		return new File(getUserCache(), "decompile/" + version + ".zip");
 	}
 }

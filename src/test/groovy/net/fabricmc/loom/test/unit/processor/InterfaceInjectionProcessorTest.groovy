@@ -183,17 +183,17 @@ class InterfaceInjectionProcessorTest extends Specification {
 
 	static LazyCloseable<TinyRemapper> createRemapper(Path jar, MemoryMappingTree mappings) {
 		return new LazyCloseable<>(() -> {
-			TinyRemapper.Builder builder = TinyRemapper.newRemapper();
+			TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 			builder.withMappings(TinyRemapperHelper.create(
 					mappings,
 					MappingsNamespace.INTERMEDIARY.toString(),
 					MappingsNamespace.NAMED.toString(),
 					false
-			));
-			TinyRemapper tinyRemapper = builder.build();
-			tinyRemapper.readClassPath(jar);
-			return tinyRemapper;
-		}, TinyRemapper::finish);
+			))
+			TinyRemapper tinyRemapper = builder.build()
+			tinyRemapper.readClassPath(jar)
+			return tinyRemapper
+		}, TinyRemapper::finish)
 	}
 
 	// Load a class from a jar file and execute a closure with it

@@ -80,7 +80,7 @@ public interface ArtifactRef {
 		public void applyToConfiguration(Project project, Configuration configuration) {
 			final DependencyHandler dependencies = project.getDependencies();
 
-			Dependency dep = dependencies.module(artifact.getModuleVersion() + (artifact.getClassifier() == null ? "" : ':' + artifact.getClassifier())); // the owning module of the artifact
+			Dependency dep = dependencies.create(artifact.getModuleVersion() + (artifact.getClassifier() == null ? "" : ':' + artifact.getClassifier())); // the owning module of the artifact
 
 			if (dep instanceof ModuleDependency moduleDependency) {
 				moduleDependency.setTransitive(false);

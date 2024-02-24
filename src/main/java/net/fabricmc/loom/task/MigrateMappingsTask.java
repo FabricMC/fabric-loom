@@ -143,10 +143,10 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 			project.getLogger().info("Could not locate mappings, presuming V2 Yarn");
 
 			try {
-				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2"))).resolve();
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2"))).resolve();
 			} catch (GradleException ignored2) {
 				project.getLogger().info("Could not locate mappings, presuming V1 Yarn");
-				files = project.getConfigurations().detachedConfiguration(project.getDependencies().module(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
+				files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
 			}
 		}
 

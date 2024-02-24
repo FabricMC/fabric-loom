@@ -97,11 +97,12 @@ class KotlinClassRemapper(private val remapper: Remapper) {
     }
 
     private fun remap(type: KmType): KmType {
-        type.classifier = when (val classifier = type.classifier) {
-            is KmClassifier.Class -> KmClassifier.Class(remap(classifier.name))
-            is KmClassifier.TypeParameter -> KmClassifier.TypeParameter(classifier.id)
-            is KmClassifier.TypeAlias -> KmClassifier.TypeAlias(remap(classifier.name))
-        }
+        type.classifier =
+            when (val classifier = type.classifier) {
+                is KmClassifier.Class -> KmClassifier.Class(remap(classifier.name))
+                is KmClassifier.TypeParameter -> KmClassifier.TypeParameter(classifier.id)
+                is KmClassifier.TypeAlias -> KmClassifier.TypeAlias(remap(classifier.name))
+            }
         type.arguments.replaceAll(this::remap)
         type.abbreviatedType = type.abbreviatedType?.let { remap(it) }
         type.outerType = type.outerType?.let { remap(it) }

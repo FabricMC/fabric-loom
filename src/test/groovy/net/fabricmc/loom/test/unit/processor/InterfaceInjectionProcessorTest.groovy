@@ -24,16 +24,6 @@
 
 package net.fabricmc.loom.test.unit.processor
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
-import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericInterface
-import net.fabricmc.loom.test.unit.processor.classes.FirstGenericInterface
-import net.fabricmc.loom.test.unit.processor.classes.GenericInterface
-import net.fabricmc.loom.test.unit.processor.classes.SecondGenericInterface
-import net.fabricmc.loom.test.unit.processor.classes.SelfGenericInterface
-import net.fabricmc.loom.util.LazyCloseable
-import net.fabricmc.loom.util.TinyRemapperHelper
-import net.fabricmc.tinyremapper.TinyRemapper
-
 import java.nio.file.Path
 import java.util.function.Consumer
 
@@ -42,22 +32,31 @@ import com.google.gson.JsonObject
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.processor.ProcessorContext
 import net.fabricmc.loom.api.processor.SpecContext
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor
+import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.DoubleGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.FirstGenericInterface
+import net.fabricmc.loom.test.unit.processor.classes.GenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.PassingGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.SecondGenericInterface
+import net.fabricmc.loom.test.unit.processor.classes.SelfGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.SelfGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.SimpleInterface
 import net.fabricmc.loom.test.unit.processor.classes.SimpleTargetClass
 import net.fabricmc.loom.util.Constants
+import net.fabricmc.loom.util.LazyCloseable
 import net.fabricmc.loom.util.Pair
+import net.fabricmc.loom.util.TinyRemapperHelper
 import net.fabricmc.loom.util.ZipUtils
 import net.fabricmc.loom.util.fmj.FabricModJson
 import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.tree.MemoryMappingTree
+import net.fabricmc.tinyremapper.TinyRemapper
 
 class InterfaceInjectionProcessorTest extends Specification {
 	@TempDir
@@ -182,18 +181,13 @@ class InterfaceInjectionProcessorTest extends Specification {
 	}
 
 	static LazyCloseable<TinyRemapper> createRemapper(Path jar, MemoryMappingTree mappings) {
-		return new LazyCloseable<>(() -> {
+		return new LazyCloseable<>({
 			TinyRemapper.Builder builder = TinyRemapper.newRemapper()
-			builder.withMappings(TinyRemapperHelper.create(
-					mappings,
-					MappingsNamespace.INTERMEDIARY.toString(),
-					MappingsNamespace.NAMED.toString(),
-					false
-			))
+			builder.withMappings(TinyRemapperHelper.create(mappings, MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.NAMED.toString(), false))
 			TinyRemapper tinyRemapper = builder.build()
 			tinyRemapper.readClassPath(jar)
 			return tinyRemapper
-		}, TinyRemapper::finish)
+		}, { tinyRemapper -> tinyRemapper.finish() })
 	}
 
 	// Load a class from a jar file and execute a closure with it
@@ -223,20 +217,20 @@ class InterfaceInjectionProcessorTest extends Specification {
 	}
 
 	private static final List<Class<?>> CLASSES_TO_PACKAGE = [
-			SimpleTargetClass.class,
-			SimpleTargetClass.Inner.class,
-			SimpleInterface.class,
-			GenericTargetClass.class,
-			PassingGenericTargetClass.class,
-			GenericInterface.class,
-			AdvancedGenericTargetClass.class,
-			AdvancedGenericTargetClass.Pair.class,
-			AdvancedGenericInterface.class,
-			DoubleGenericTargetClass.class,
-			FirstGenericInterface.class,
-			SecondGenericInterface.class,
-			SelfGenericTargetClass.class,
-			SelfGenericInterface.class
+		SimpleTargetClass.class,
+		SimpleTargetClass.Inner.class,
+		SimpleInterface.class,
+		GenericTargetClass.class,
+		PassingGenericTargetClass.class,
+		GenericInterface.class,
+		AdvancedGenericTargetClass.class,
+		AdvancedGenericTargetClass.Pair.class,
+		AdvancedGenericInterface.class,
+		DoubleGenericTargetClass.class,
+		FirstGenericInterface.class,
+		SecondGenericInterface.class,
+		SelfGenericTargetClass.class,
+		SelfGenericInterface.class
 	]
 
 	private static final String MAPPINGS = """

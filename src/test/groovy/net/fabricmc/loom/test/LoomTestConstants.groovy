@@ -33,7 +33,7 @@ class LoomTestConstants {
 	// Test against the version of Gradle being used to build loom
 	public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
 	// Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
-	public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? NIGHTLY_VERSION : DEFAULT_GRADLE
+	public final static String PRE_RELEASE_GRADLE = "8.7-rc-1"
 	// Randomly sorted to ensure that all versions can run with a clean gradle home.
 	public final static List<String> STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
 		DEFAULT_GRADLE,

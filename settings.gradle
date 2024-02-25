@@ -12,3 +12,4 @@ dependencyResolutionManagement {
 }
 
 include "bootstrap"
+include "native"

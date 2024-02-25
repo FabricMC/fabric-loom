@@ -22,5 +22,6 @@
 !/checkstyle.xml
 !/codenarc.groovy
 !/bootstrap
+!/native
 
 /src/**/generated

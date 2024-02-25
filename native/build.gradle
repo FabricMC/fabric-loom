@@ -1,0 +1,43 @@
+plugins {
+	id 'cpp-library'
+	id 'cpp-unit-test'
+	alias(libs.plugins.spotless)
+}
+
+library {
+	targetMachines = [
+			machines.windows.x86, machines.windows.x86_64, machines.windows.architecture("aarch64")
+	]
+}
+
+library {
+	linkage = [
+		Linkage.SHARED
+	]
+}
+
+import org.gradle.internal.jvm.Jvm
+def jvmHome = Jvm.current().javaHome
+
+tasks.withType(CppCompile).configureEach {
+	includes.from(new File(jvmHome, "include"))
+	includes.from(new File(jvmHome, "include/win32"))
+	includes.from(project.rootProject.getLayout().buildDirectory.dir("generated/sources/headers/java/main"))
+
+
+	compilerArgs.addAll("/std:c++20", "/EHsc")
+}
+
+tasks.withType(AbstractLinkTask).configureEach {
+	linkerArgs.addAll("Rstrtmgr.lib")
+}
+
+spotless {
+	lineEndings = com.diffplug.spotless.LineEnding.UNIX
+
+	cpp {
+		target 'src/main/cpp/**', 'src/main/headers/**', 'src/test/cpp/**'
+		clangFormat('16.0.0')
+		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
+	}
+}

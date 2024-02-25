@@ -1,0 +1,8 @@
+# Ignore everything
+/*
+
+!/src
+!/.vscode
+
+!/build.gradle
+!/.gitignore

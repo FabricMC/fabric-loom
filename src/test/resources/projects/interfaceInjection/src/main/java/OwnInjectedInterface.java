@@ -4,5 +4,6 @@ public interface OwnInjectedInterface<T> {
 	}
 
 	default T typedMethodThatDidNotExist() {
+		return null;
 	}
 }

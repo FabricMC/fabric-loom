@@ -90,7 +90,7 @@ public abstract class MinecraftProvider {
 		final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
 		final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
 
-		if (!requiredJavaVersion.isCompatibleWith(JavaVersion.current())) {
+		if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
 			throw new IllegalStateException("Minecraft " + minecraftVersion + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
 		}
 

@@ -48,7 +48,7 @@ public record MinecraftVersionMeta(
 		String releaseTime,
 		String time,
 		String type,
-		JavaVersion javaVersion
+		@Nullable JavaVersion javaVersion
 ) {
 	private static Map<Platform.OperatingSystem, String> OS_NAMES = Map.of(
 			Platform.OperatingSystem.WINDOWS, "windows",

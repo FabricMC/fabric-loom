@@ -87,11 +87,15 @@ public abstract class MinecraftProvider {
 				getExtension()::download
 		);
 
-		final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
-		final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
+		final MinecraftVersionMeta.JavaVersion javaVersion = getVersionInfo().javaVersion();
 
-		if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
-			throw new IllegalStateException("Minecraft " + minecraftVersion + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
+		if (javaVersion != null) {
+			final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
+			final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
+
+			if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
+				throw new IllegalStateException("Minecraft " + minecraftVersion + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
+			}
 		}
 
 		downloadJars();

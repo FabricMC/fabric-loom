@@ -149,6 +149,7 @@ class KotlinClassRemapper(private val remapper: Remapper) {
 
     private fun remap(typeParameter: KmTypeParameter): KmTypeParameter {
         typeParameter.upperBounds.replaceAll(this::remap)
+        typeParameter.annotations.replaceAll(this::remap)
         return typeParameter
     }
 

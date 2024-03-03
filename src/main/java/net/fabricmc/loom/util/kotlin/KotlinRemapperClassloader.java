@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.kotlin.remapping.JvmExtensionWrapper;
 import net.fabricmc.loom.kotlin.remapping.KotlinMetadataTinyRemapperExtensionImpl;
 
 /**
@@ -62,8 +61,7 @@ public class KotlinRemapperClassloader extends URLClassLoader {
 	public static KotlinRemapperClassloader create(KotlinClasspath classpathProvider) {
 		// Include the libraries that are not on the kotlin classpath.
 		final Stream<URL> loomUrls = getClassUrls(
-				KotlinMetadataTinyRemapperExtensionImpl.class, // Loom (Kotlin)
-				JvmExtensionWrapper.class // Loom (Java)
+				KotlinMetadataTinyRemapperExtensionImpl.class // Loom (Kotlin)
 		);
 
 		final URL[] urls = Stream.concat(

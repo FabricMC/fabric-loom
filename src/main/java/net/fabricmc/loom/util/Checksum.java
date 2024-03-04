@@ -96,7 +96,7 @@ public class Checksum {
 
 	public static String projectHash(Project project) {
 		String str = project.getProjectDir().getAbsolutePath() + ":" + project.getPath();
-		String hex = toHex(str.getBytes(StandardCharsets.UTF_8));
+		String hex = sha1Hex(str.getBytes(StandardCharsets.UTF_8));
 		return hex.substring(hex.length() - 16);
 	}
 }

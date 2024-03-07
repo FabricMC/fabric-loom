@@ -32,8 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -41,7 +39,6 @@ import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
@@ -72,6 +69,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraft
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ExceptionUtil;
+import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
@@ -110,6 +108,7 @@ public abstract class CompileConfiguration implements Runnable {
 			try {
 				setupMinecraft(configContext);
 			} catch (Exception e) {
+				ExceptionUtil.printFileLocks(e, getProject());
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
 
@@ -313,7 +312,8 @@ public abstract class CompileConfiguration implements Runnable {
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
-				logger.lifecycle(printWithParents(handle.get()));
+				ProcessUtil processUtil = ProcessUtil.create(getProject());
+				logger.lifecycle(processUtil.printWithParents(handle.get()));
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 
@@ -351,68 +351,7 @@ public abstract class CompileConfiguration implements Runnable {
 		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
 	}
 
-	private String printWithParents(ProcessHandle processHandle) {
-		var output = new StringBuilder();
 
-		List<ProcessHandle> chain = getParentChain(null, processHandle);
-
-		for (int i = 0; i < chain.size(); i++) {
-			ProcessHandle handle = chain.get(i);
-
-			output.append("\t".repeat(i));
-
-			if (i != 0) {
-				output.append("└─ ");
-			}
-
-			output.append(getInfoString(handle));
-
-			if (i < chain.size() - 1) {
-				output.append('\n');
-			}
-		}
-
-		return output.toString();
-	}
-
-	private String getInfoString(ProcessHandle handle) {
-		return "(%s) pid %s '%s%s'%s".formatted(
-				handle.info().user().orElse("unknown user"),
-				handle.pid(),
-				handle.info().command().orElse("unknown command"),
-				handle.info().arguments().map(arr -> {
-					if (getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.INFO
-							&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
-						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
-					}
-
-					String join = String.join(" ", arr);
-
-					if (join.isBlank()) {
-						return "";
-					}
-
-					return " " + join;
-				}).orElse(" (unknown arguments)"),
-				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
-		);
-	}
-
-	private List<ProcessHandle> getParentChain(List<ProcessHandle> collectTo, ProcessHandle processHandle) {
-		if (collectTo == null) {
-			collectTo = new ArrayList<>();
-		}
-
-		Optional<ProcessHandle> parent = processHandle.parent();
-
-		if (parent.isPresent()) {
-			getParentChain(collectTo, parent.get());
-		}
-
-		collectTo.add(processHandle);
-
-		return collectTo;
-	}
 
 	private void releaseLock() {
 		final Path lock = getLockFile().file;

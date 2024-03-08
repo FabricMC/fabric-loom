@@ -71,7 +71,6 @@ repositories {
 		url = 'https://maven.fabricmc.net/'
 	}
 	mavenCentral()
-	mavenLocal()
 }
 
 configurations {

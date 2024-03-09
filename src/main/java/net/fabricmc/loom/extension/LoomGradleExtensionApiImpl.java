@@ -53,6 +53,8 @@ import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.manifest.VersionMetadataProvider;
+import net.fabricmc.loom.api.manifest.VersionsManifestProvider;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -86,6 +88,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
+	protected final Property<VersionsManifestProvider> versionsManifestProvider;
+	protected final Property<VersionMetadataProvider> versionMetadataProvider;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> splitModDependencies;
@@ -127,6 +131,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.modProvidedJavadoc.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention(DEFAULT_INTERMEDIARY_URL);
+
+		this.versionsManifestProvider = project.getObjects().property(VersionsManifestProvider.class);
+		this.versionsManifestProvider.finalizeValueOnRead();
+		this.versionMetadataProvider = project.getObjects().property(VersionMetadataProvider.class);
+		this.versionMetadataProvider.finalizeValueOnRead();
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
 		this.intermediateMappingsProvider.finalizeValueOnRead();
@@ -295,6 +304,42 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public VersionsManifestProvider getVersionsManifestProvider() {
+		return versionsManifestProvider.get();
+	}
+
+	@Override
+	public void setVersionsManifestProvider(VersionsManifestProvider versionsManifestProvider) {
+		this.versionsManifestProvider.set(versionsManifestProvider);
+	}
+
+	@Override
+	public <T extends VersionsManifestProvider> void setVersionsManifestProvider(Class<T> clazz, Action<T> action) {
+		T provider = getProject().getObjects().newInstance(clazz);
+		configureVersionsManifestProviderInternal(provider);
+		action.execute(provider);
+		versionsManifestProvider.set(provider);
+	}
+
+	@Override
+	public VersionMetadataProvider getVersionMetadataProvider() {
+		return versionMetadataProvider.get();
+	}
+
+	@Override
+	public void setVersionMetadataProvider(VersionMetadataProvider VersionMetadataProvider) {
+		this.versionMetadataProvider.set(VersionMetadataProvider);
+	}
+
+	@Override
+	public <T extends VersionMetadataProvider> void setVersionMetadataProvider(Class<T> clazz, Action<T> action) {
+		T provider = getProject().getObjects().newInstance(clazz);
+		configureVersionMetadataProviderInternal(provider);
+		action.execute(provider);
+		versionMetadataProvider.set(provider);
+	}
+
+	@Override
 	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
 		return intermediateMappingsProvider.get();
 	}
@@ -330,6 +375,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		return (GenerateSourcesTask) getProject().getTasks().getByName(taskName);
 	}
+
+	protected abstract <T extends VersionsManifestProvider> void configureVersionsManifestProviderInternal(T provider);
+
+	protected abstract <T extends VersionMetadataProvider> void configureVersionMetadataProviderInternal(T provider);
 
 	protected abstract <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider);
 
@@ -451,6 +500,16 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected LoomFiles getFiles() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected <T extends VersionsManifestProvider> void configureVersionsManifestProviderInternal(T provider) {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		protected <T extends VersionMetadataProvider> void configureVersionMetadataProviderInternal(T provider) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 

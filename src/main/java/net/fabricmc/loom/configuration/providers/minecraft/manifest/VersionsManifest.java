@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,20 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.configuration.providers.minecraft.manifest;
 
 import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
-public record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
-	public static class Versions {
+public record VersionsManifest(List<Version> versions, Map<String, String> latest) {
+	public static class Version {
 		public String id, url, sha1;
 	}
 
 	@Nullable
-	public Versions getVersion(String id) {
+	public Version getVersion(String id) {
 		return versions.stream()
 				.filter(versions -> versions.id.equalsIgnoreCase(id))
 				.findFirst()

@@ -42,6 +42,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.manifest.VersionMetadataProvider;
+import net.fabricmc.loom.api.manifest.VersionsManifestProvider;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -167,6 +169,24 @@ public interface LoomGradleExtensionAPI {
 	 * @return the property controlling the mod provided javadoc
 	 */
 	Property<Boolean> getEnableModProvidedJavadoc();
+
+	@ApiStatus.Experimental
+	VersionsManifestProvider getVersionsManifestProvider();
+
+	@ApiStatus.Experimental
+	void setVersionsManifestProvider(VersionsManifestProvider versionsManifestProvider);
+
+	@ApiStatus.Experimental
+	<T extends VersionsManifestProvider> void setVersionsManifestProvider(Class<T> clazz, Action<T> action);
+
+	@ApiStatus.Experimental
+	VersionMetadataProvider getVersionMetadataProvider();
+
+	@ApiStatus.Experimental
+	void setVersionMetadataProvider(VersionMetadataProvider versionsManifestProvider);
+
+	@ApiStatus.Experimental
+	<T extends VersionMetadataProvider> void setVersionMetadataProvider(Class<T> clazz, Action<T> action);
 
 	@ApiStatus.Experimental
 	IntermediateMappingsProvider getIntermediateMappingsProvider();

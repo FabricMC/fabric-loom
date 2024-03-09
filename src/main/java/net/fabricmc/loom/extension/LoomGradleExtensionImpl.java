@@ -39,6 +39,8 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.manifest.VersionMetadataProvider;
+import net.fabricmc.loom.api.manifest.VersionsManifestProvider;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -49,9 +51,12 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.MinecraftVersionMetadataProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.MinecraftVersionsManifestProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -83,6 +88,29 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 
+		// Setup the default versions manifest provider.
+		setVersionsManifestProvider(MinecraftVersionsManifestProvider.class, provider -> {
+			provider.getVersionsManifestUrl()
+					.convention(MirrorUtil.getVersionManifests(project))
+					.finalizeValueOnRead();
+			provider.getExperimentalVersionsManifestUrl()
+					.convention(MirrorUtil.getExperimentalVersions(project))
+					.finalizeValueOnRead();
+
+			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
+		});
+		// Setup the default version metadata provider.
+		setVersionMetadataProvider(MinecraftVersionMetadataProvider.class, provider -> {
+			provider.getVersionMetadataUrl().set(project.provider(() -> null));
+			provider.getVersionsManifest()
+					.convention(project.provider(() -> getMinecraftProvider().getManifest()))
+					.finalizeValueOnRead();
+			provider.getExperimentalVersionsManifest()
+					.convention(project.provider(() -> getMinecraftProvider().getExperimentalManifest()))
+					.finalizeValueOnRead();
+
+			provider.getRefreshDeps().set(project.provider(() -> LoomGradleExtension.get(project).refreshDeps()));
+		});
 		// Setup the default intermediate mappings provider.
 		setIntermediateMappingsProvider(IntermediaryMappingsProvider.class, provider -> {
 			provider.getIntermediaryUrl()
@@ -262,6 +290,21 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	public Collection<LayeredMappingsFactory> getLayeredMappingFactories() {
 		hasEvaluatedLayeredMappings = true;
 		return Collections.unmodifiableCollection(layeredMappingsDependencyMap.values());
+	}
+
+	@Override
+	protected <T extends VersionsManifestProvider> void configureVersionsManifestProviderInternal(T provider) {
+		provider.getDownloader().set(this::download);
+		provider.getDownloader().disallowChanges();
+	}
+
+	@Override
+	protected <T extends VersionMetadataProvider> void configureVersionMetadataProviderInternal(T provider) {
+		provider.getMinecraftVersion().set(getProject().provider(() -> getMinecraftProvider().minecraftVersion()));
+		provider.getMinecraftVersion().disallowChanges();
+
+		provider.getDownloader().set(this::download);
+		provider.getDownloader().disallowChanges();
 	}
 
 	@Override

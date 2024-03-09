@@ -277,13 +277,13 @@ public class MinecraftClassMerger {
 			}
 
 			// if the order is scrambled, it's not possible to merge
-            // the lists while preserving the order from both sides
-            if (i + j == saved) {
-                out.add(first.get(i));
-                out.add(second.get(j));
-                i++;
-                j++;
-            }
+			// the lists while preserving the order from both sides
+			if (i + j == saved) {
+				out.add(first.get(i));
+				out.add(second.get(j));
+				i++;
+				j++;
+			}
 		}
 
 		return out;

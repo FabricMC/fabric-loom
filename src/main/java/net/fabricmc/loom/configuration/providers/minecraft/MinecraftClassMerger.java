@@ -257,6 +257,8 @@ public class MinecraftClassMerger {
 		int j = 0;
 
 		while (i < first.size() || j < second.size()) {
+			int saved = i + j;
+
 			while (i < first.size() && j < second.size()
 					&& first.get(i).equals(second.get(j))) {
 				out.add(first.get(i));
@@ -273,6 +275,15 @@ public class MinecraftClassMerger {
 				out.add(second.get(j));
 				j++;
 			}
+
+			// if the order is scrambled, it's not possible to merge
+            // the lists while preserving the order from both sides
+            if (i + j == saved) {
+                out.add(first.get(i));
+                out.add(second.get(j));
+                i++;
+                j++;
+            }
 		}
 
 		return out;

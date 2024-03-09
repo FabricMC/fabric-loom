@@ -80,6 +80,17 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 			return List.of(getMergedJar());
 		}
+
+		// in mc versions prior to 1.3, the client and server jars
+		// are remapped separately before being merged
+
+		private MinecraftJar getClientJar() {
+			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
+		}
+
+		private MinecraftJar getServerJar() {
+			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
+		}
 	}
 
 	public static final class SplitImpl extends IntermediaryMinecraftProvider<SplitMinecraftProvider> implements Split {

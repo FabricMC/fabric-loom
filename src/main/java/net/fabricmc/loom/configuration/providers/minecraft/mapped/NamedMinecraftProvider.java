@@ -85,6 +85,17 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		public List<MinecraftJar.Type> getDependencyTypes() {
 			return List.of(MinecraftJar.Type.MERGED);
 		}
+
+		// in mc versions prior to 1.3, the client and server jars
+		// are remapped separately before being merged
+
+		private MinecraftJar getClientJar() {
+			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
+		}
+
+		private MinecraftJar getServerJar() {
+			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
+		}
 	}
 
 	public static final class SplitImpl extends NamedMinecraftProvider<SplitMinecraftProvider> implements Split {

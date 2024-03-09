@@ -46,7 +46,7 @@ import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class FabricModJsonFactory {
-	private static final String FABRIC_MOD_JSON = "fabric.mod.json";
+	public static final String FABRIC_MOD_JSON = "fabric.mod.json";
 
 	private FabricModJsonFactory() {
 	}

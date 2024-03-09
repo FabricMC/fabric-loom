@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.time.ZoneId
 
+import com.google.gson.JsonObject
 import spock.lang.Specification
 
 import net.fabricmc.loom.util.Checksum
@@ -187,5 +188,29 @@ class ZipUtilsTest extends Specification {
 		"Australia/Sydney" 	| _
 		"Etc/GMT-6" 		| _
 		"Etc/GMT+9" 		| _
+	}
+
+	def "transform json"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "test.json").text = """
+		{
+			"test": "This is a test of transforming"
+		}
+		"""
+		ZipUtils.pack(dir.toPath(), zip)
+
+		when:
+		ZipUtils.transformJson(JsonObject.class, zip, "test.json") { json ->
+			def test = json.get("test").getAsString()
+			json.addProperty("test", test.toUpperCase())
+			json
+		}
+
+		def transformed = ZipUtils.unpackJson(zip, "test.json", JsonObject.class)
+
+		then:
+		transformed.get("test").asString == "THIS IS A TEST OF TRANSFORMING"
 	}
 }

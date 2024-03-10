@@ -101,10 +101,6 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	public Path getMergedJar() {
-		if (!canMergeJars()) {
-			throw new UnsupportedOperationException("the obfuscated client and server jars cannot be merged in this minecraft version");
-		}
-
 		return minecraftMergedJar;
 	}
 }

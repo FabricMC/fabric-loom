@@ -28,10 +28,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import org.intellij.lang.annotations.Language
+
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionMetadataService
-import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifestService
 import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifest
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifestService
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.loom.test.unit.download.DownloadTest

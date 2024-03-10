@@ -27,6 +27,9 @@ package net.fabricmc.loom.test.unit
 import java.util.function.Function
 
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.MinecraftVersionMetadataProvider
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.MinecraftVersionsManifestProvider
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifest
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.download.Download
 
@@ -34,6 +37,36 @@ import static org.mockito.Mockito.spy
 import static org.mockito.Mockito.when
 
 class LoomMocks {
+	static MinecraftVersionsManifestProvider minecraftVersionsManifestProviderMock(String versionsManifestUrl, String experimentalVersionsManifestUrl = null) {
+		def versionsManifestUrlProperty = GradleTestUtil.mockProperty(versionsManifestUrl)
+		def experimentalVersionsManifestUrlProperty = GradleTestUtil.mockProperty(experimentalVersionsManifestUrl)
+		def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
+
+		def mock = spy(MinecraftVersionsManifestProvider.class)
+		when(mock.getVersionsManifestUrl()).thenReturn(versionsManifestUrlProperty)
+		when(mock.getExperimentalVersionsManifestUrl()).thenReturn(experimentalVersionsManifestUrlProperty)
+		when(mock.getDownloader()).thenReturn(downloaderProperty)
+		return mock
+	}
+
+	static MinecraftVersionMetadataProvider minecraftVersionMetadataProviderMock(String minecraftVersion, String versionMetadataUrl, VersionsManifest versionsManifest, VersionsManifest experimentalVersionsManifest = null) {
+		def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
+		def versionMetadataUrlProperty = GradleTestUtil.mockProperty(versionMetadataUrl)
+		def versionsManifestProperty = GradleTestUtil.mockProperty(versionsManifest)
+		def experimentalVersionsManifestProperty = GradleTestUtil.mockProperty(experimentalVersionsManifest)
+		def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
+
+		Objects.requireNonNull(minecraftVersionProperty.get())
+
+		def mock = spy(MinecraftVersionMetadataProvider.class)
+		when(mock.getMinecraftVersion()).thenReturn(minecraftVersionProperty)
+		when(mock.getVersionMetadataUrl()).thenReturn(versionMetadataUrl)
+		when(mock.getVersionsManifest()).thenReturn(versionsManifest)
+		when(mock.getExperimentalVersionsManifest()).thenReturn(experimentalVersionsManifest)
+		when(mock.getDownloader()).thenReturn(downloaderProperty)
+		return mock
+	}
+
 	static IntermediaryMappingsProvider intermediaryMappingsProviderMock(String minecraftVersion, String intermediaryUrl) {
 		def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
 		def intermediaryUrlProperty = GradleTestUtil.mockProperty(intermediaryUrl)

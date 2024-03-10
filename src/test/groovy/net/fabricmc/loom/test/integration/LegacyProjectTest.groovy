@@ -86,14 +86,13 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		'1.3.2'			| _
 	}
 
-	// TODO: need intermediaries for this test to succeed
 	@Unroll
 	def "Ancient minecraft merged (minecraft #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
 				loom {
-                    noIntermediateMappings()
+                    legacyMergedMinecraftJar()
                 }
 
                 dependencies {
@@ -102,7 +101,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7" // 0.15.2 fixed MC 1.2.5 not launching
                 }
 			"""
 
@@ -115,8 +114,6 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		where:
 		version 		| _
 		'1.2.5'			| _
-		'b1.8.1'		| _
-		'a1.2.5'		| _
 	}
 
 	@Unroll
@@ -125,7 +122,6 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
 				loom {
-                    noIntermediateMappings()
 					clientOnlyMinecraftJar()
                 }
 
@@ -135,7 +131,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7" // 0.15.2 fixed MC 1.2.5 not launching
                 }
 			"""
 

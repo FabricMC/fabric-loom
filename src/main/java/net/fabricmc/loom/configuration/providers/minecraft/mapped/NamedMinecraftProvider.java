@@ -89,9 +89,9 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 			// then merge them
 			MergedMinecraftProvider.mergeJars(
-				client.getEnvOnlyJar().toFile(),
-				server.getEnvOnlyJar().toFile(),
-				getMergedJar().toFile()
+						client.getEnvOnlyJar().toFile(),
+						server.getEnvOnlyJar().toFile(),
+						getMergedJar().toFile()
 			);
 
 			return List.of(getMergedJar());

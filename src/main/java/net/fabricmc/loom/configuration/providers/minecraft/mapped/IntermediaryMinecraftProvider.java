@@ -84,9 +84,9 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 			// then merge them
 			MergedMinecraftProvider.mergeJars(
-				client.getEnvOnlyJar().toFile(),
-				server.getEnvOnlyJar().toFile(),
-				getMergedJar().toFile()
+						client.getEnvOnlyJar().toFile(),
+						server.getEnvOnlyJar().toFile(),
+						getMergedJar().toFile()
 			);
 
 			return List.of(getMergedJar());

@@ -40,14 +40,20 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionMetadataService;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifest;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifestService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
+import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public abstract class MinecraftProvider {
 	private String minecraftVersion;
-	private MinecraftMetadataProvider metadataProvider;
+	private VersionsManifest versionsManifest;
+	private VersionsManifest experimentalVersionsManifest;
+	private MinecraftVersionMeta versionMetadata;
 
 	private File workingDir;
 	private File minecraftClientJar;
@@ -59,9 +65,11 @@ public abstract class MinecraftProvider {
 	private BundleMetadata serverBundleMetadata;
 
 	private final Project project;
+	private final SharedServiceManager serviceManager;
 
 	public MinecraftProvider(ConfigContext configContext) {
 		this.project = configContext.project();
+		this.serviceManager = configContext.serviceManager();
 	}
 
 	protected boolean provideClient() {
@@ -78,14 +86,9 @@ public abstract class MinecraftProvider {
 
 		initFiles();
 
-		metadataProvider = new MinecraftMetadataProvider(
-				MinecraftMetadataProvider.Options.create(
-						minecraftVersion,
-						getProject(),
-						file("minecraft-info.json").toPath()
-				),
-				getExtension()::download
-		);
+		versionsManifest = VersionsManifestService.getInstance(serviceManager, project).getVersionsManifest();
+		experimentalVersionsManifest = VersionsManifestService.getInstance(serviceManager, project).getExperimentalVersionsManifest();
+		versionMetadata = VersionMetadataService.getInstance(serviceManager, project, this).getVersionMetadata();
 
 		final MinecraftVersionMeta.JavaVersion javaVersion = getVersionInfo().javaVersion();
 
@@ -196,8 +199,16 @@ public abstract class MinecraftProvider {
 		return minecraftVersion;
 	}
 
+	public VersionsManifest getManifest() {
+		return Objects.requireNonNull(versionsManifest, "Manifest provider not setup");
+	}
+
+	public VersionsManifest getExperimentalManifest() {
+		return Objects.requireNonNull(experimentalVersionsManifest, "Manifest provider not setup");
+	}
+
 	public MinecraftVersionMeta getVersionInfo() {
-		return Objects.requireNonNull(metadataProvider, "Metadata provider not setup").getVersionMeta();
+		return Objects.requireNonNull(versionMetadata, "Metadata provider not setup");
 	}
 
 	@Nullable

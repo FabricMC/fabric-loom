@@ -29,8 +29,8 @@ import java.time.Duration
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 
-import net.fabricmc.loom.configuration.providers.minecraft.ManifestVersion
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifest
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
@@ -41,7 +41,7 @@ class MinecraftTestUtils {
 
 	static MinecraftVersionMeta getVersionMeta(String id) {
 		def versionManifest = download(Constants.VERSION_MANIFESTS, "version_manifest.json")
-		def manifest = GSON.fromJson(versionManifest, ManifestVersion.class)
+		def manifest = GSON.fromJson(versionManifest, VersionsManifest.class)
 		def version = manifest.versions().find { it.id == id }
 
 		def metaJson = download(version.url, "${id}.json")

@@ -204,7 +204,7 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<String> getIntermediaryUrl();
 
-	Property<MinecraftJarConfiguration> getMinecraftJarConfiguration();
+	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
 
 	default void serverOnlyMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SERVER_ONLY);

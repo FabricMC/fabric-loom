@@ -29,9 +29,8 @@ import java.nio.file.Path
 
 import org.intellij.lang.annotations.Language
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
-import net.fabricmc.loom.configuration.providers.minecraft.manifest.MinecraftVersionsManifestProvider
 import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionMetadataService
-import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifestService;
+import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifestService
 import net.fabricmc.loom.configuration.providers.minecraft.manifest.VersionsManifest
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.LoomMocks
@@ -75,7 +74,7 @@ class MinecraftVersionMetadataProviderTest extends DownloadTest {
 		manifest.versions().size() == 1
 	}
 
-	def "Download version metadata"(){
+	def "Download version metadata"() {
 		setup:
 		server.get("/versionsManifest") {
 			it.result(VERSIONS_MANIFEST_1)
@@ -89,7 +88,7 @@ class MinecraftVersionMetadataProviderTest extends DownloadTest {
 		metadata.id() == "1.20.1"
 	}
 
-	def "Download experimental version metadata"(){
+	def "Download experimental version metadata"() {
 		setup:
 		server.get("/versionsManifest") {
 			it.result(VERSIONS_MANIFEST_1)
@@ -140,23 +139,23 @@ class MinecraftVersionMetadataProviderTest extends DownloadTest {
 	}
 
 	private VersionsManifestService manifestService(String manifestUrl, String experimentalManifestUrl = null) {
-		return VersionsManifestService.create(LoomMocks.minecraftVersionsManifestProviderMock(manifestUrl, experimentalManifestUrl), GradleTestUtil.mockLoomGradleExtension(), null);
+		return VersionsManifestService.create(LoomMocks.minecraftVersionsManifestProviderMock(manifestUrl, experimentalManifestUrl), GradleTestUtil.mockLoomGradleExtension(), null)
 	}
 
 	private VersionsManifest versionsManifest(String manifestUrl, String experimentalManifestUrl = null) {
-		return manifestService(manifestUrl, experimentalManifestUrl).versionsManifest;
+		return manifestService(manifestUrl, experimentalManifestUrl).versionsManifest
 	}
 
 	private VersionsManifest experimentalVersionsManifest(String manifestUrl, String experimentalManifestUrl = null) {
-		return manifestService(manifestUrl, experimentalManifestUrl).experimentalVersionsManifest;
+		return manifestService(manifestUrl, experimentalManifestUrl).experimentalVersionsManifest
 	}
 
 	private VersionMetadataService metadataService(String minecraftVersion, String metadataUrl, VersionsManifest manifest = null, VersionsManifest experimentalManifest = null) {
-		return VersionMetadataService.create(LoomMocks.minecraftVersionMetadataProviderMock(minecraftVersion, metadataUrl, manifest, experimentalManifest), Mock(MinecraftProvider), null);
+		return VersionMetadataService.create(LoomMocks.minecraftVersionMetadataProviderMock(minecraftVersion, metadataUrl, manifest, experimentalManifest), Mock(MinecraftProvider), null)
 	}
 
 	private VersionsManifest versionMetadata(String minecraftVersion, String metadataUrl, VersionsManifest manifest = null, VersionsManifest experimentalManifest = null) {
-		return metadataService(minecraftVersion, metadataUrl, manifest, experimentalManifest).versionMetadata;
+		return metadataService(minecraftVersion, metadataUrl, manifest, experimentalManifest).versionMetadata
 	}
 
 	private static final String VERSIONS_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"

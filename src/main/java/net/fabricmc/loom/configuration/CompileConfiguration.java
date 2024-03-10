@@ -54,7 +54,6 @@ import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
@@ -141,10 +140,10 @@ public abstract class CompileConfiguration implements Runnable {
 	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
-		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
+		final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars -- TODO share across getProject()s.
-		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
+		final MinecraftProvider minecraftProvider = jarConfiguration.createMinecraftProvider(configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
@@ -154,15 +153,15 @@ public abstract class CompileConfiguration implements Runnable {
 		mappingConfiguration.applyToProject(getProject(), mappingsDep);
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
-		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.createIntermediaryMinecraftProvider(project);
+		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
 		registerGameProcessors(configContext);
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
-			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, minecraftJarProcessorManager);
+			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(project, minecraftJarProcessorManager);
 		}
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
@@ -223,8 +222,7 @@ public abstract class CompileConfiguration implements Runnable {
 		final LoomGradleExtension extension = configContext.extension();
 
 		extension.getMinecraftJarConfiguration().get()
-				.getDecompileConfigurationBiFunction()
-				.apply(configContext.project(), extension.getNamedMinecraftProvider())
+				.createDecompileConfiguration(getProject())
 				.afterEvaluation();
 	}
 

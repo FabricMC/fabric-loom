@@ -88,7 +88,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> splitModDependencies;
-	private final Property<MinecraftJarConfiguration> minecraftJarConfiguration;
+	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
@@ -137,7 +137,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.minecraftJarProcessors = (ListProperty<MinecraftJarProcessor<?>>) (Object) project.getObjects().listProperty(MinecraftJarProcessor.class);
 		this.minecraftJarProcessors.finalizeValueOnRead();
 
-		this.minecraftJarConfiguration = project.getObjects().property(MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
+		//noinspection unchecked
+		this.minecraftJarConfiguration = project.getObjects().property((Class<MinecraftJarConfiguration<?, ?, ?>>) (Class<?>) MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
 
 		this.accessWidener.finalizeValueOnRead();
@@ -329,7 +330,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public Property<MinecraftJarConfiguration> getMinecraftJarConfiguration() {
+	public Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration() {
 		return minecraftJarConfiguration;
 	}
 

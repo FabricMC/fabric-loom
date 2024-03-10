@@ -26,8 +26,10 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -50,8 +52,8 @@ import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
-import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsDependency;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
@@ -133,8 +135,8 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 					throw new UnsupportedOperationException("Migrating Mojang mappings is currently only supported for the specified minecraft version");
 				}
 
-				LayeredMappingsDependency dep = (LayeredMappingsDependency) getExtension().layered(LayeredMappingSpecBuilder::officialMojangMappings);
-				files = dep.resolve();
+				LayeredMappingsFactory dep = new LayeredMappingsFactory(LayeredMappingSpecBuilderImpl.buildOfficialMojangMappings());
+				files = Collections.singleton(dep.resolve(getProject()).toFile());
 			} else {
 				Dependency dependency = project.getDependencies().create(mappings);
 				files = project.getConfigurations().detachedConfiguration(dependency).resolve();
@@ -148,6 +150,8 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 				project.getLogger().info("Could not locate mappings, presuming V1 Yarn");
 				files = project.getConfigurations().detachedConfiguration(project.getDependencies().create(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings))).resolve();
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to resolve mappings", e);
 		}
 
 		if (files.isEmpty()) {

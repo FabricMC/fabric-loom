@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,30 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.kotlin.remapping
+package net.fabricmc.loom.extension;
 
-import net.fabricmc.loom.util.kotlin.KotlinMetadataTinyRemapperExtension
-import net.fabricmc.tinyremapper.TinyRemapper
-import net.fabricmc.tinyremapper.api.TrClass
-import org.objectweb.asm.ClassVisitor
+import javax.inject.Inject;
 
-object KotlinMetadataTinyRemapperExtensionImpl : KotlinMetadataTinyRemapperExtension {
-    override fun insertApplyVisitor(
-        cls: TrClass,
-        next: ClassVisitor?,
-    ): ClassVisitor {
-        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
-    }
+import org.gradle.api.problems.ProblemReporter;
+import org.gradle.api.problems.Problems;
+import org.gradle.api.problems.Severity;
 
-    override fun attach(builder: TinyRemapper.Builder) {
-        builder.extraPreApplyVisitor(this)
-    }
+public abstract class LoomProblemReporter {
+	private final ProblemReporter problemReporter;
+
+	@Inject
+	public LoomProblemReporter(Problems problems) {
+		this.problemReporter = problems.forNamespace("net.fabricmc.loom");
+	}
+
+	public void reportSelfResolvingDependencyUsage() {
+		problemReporter.reporting(spec -> spec
+				.label("SelfResolvingDependency is deprecated")
+				.details("SelfResolvingDependency has been deprecated for removal in Gradle 9")
+				.solution("Please replace usages of SelfResolvingDependency")
+				.documentedAt("https://github.com/gradle/gradle/pull/27420")
+				.severity(Severity.WARNING)
+				.stackLocation()
+		);
+	}
 }

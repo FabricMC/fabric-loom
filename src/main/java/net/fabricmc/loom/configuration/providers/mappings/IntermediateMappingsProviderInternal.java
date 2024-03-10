@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,23 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.kotlin.remapping
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import net.fabricmc.loom.util.kotlin.KotlinMetadataTinyRemapperExtension
-import net.fabricmc.tinyremapper.TinyRemapper
-import net.fabricmc.tinyremapper.api.TrClass
-import org.objectweb.asm.ClassVisitor
+import java.io.IOException;
+import java.nio.file.Path;
 
-object KotlinMetadataTinyRemapperExtensionImpl : KotlinMetadataTinyRemapperExtension {
-    override fun insertApplyVisitor(
-        cls: TrClass,
-        next: ClassVisitor?,
-    ): ClassVisitor {
-        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
-    }
+import org.gradle.api.Project;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
-    override fun attach(builder: TinyRemapper.Builder) {
-        builder.extraPreApplyVisitor(this)
-    }
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
+
+@ApiStatus.Internal
+public abstract class IntermediateMappingsProviderInternal extends IntermediateMappingsProvider {
+	public abstract void provide(Path tinyMappings, @Nullable Project project) throws IOException;
+
+	@Override
+	public void provide(Path tinyMappings) throws IOException {
+		this.provide(tinyMappings, null);
+	}
 }

@@ -31,11 +31,19 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
@@ -53,6 +61,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -91,8 +100,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
 
-			if (getAndLock()) {
-				getProject().getLogger().lifecycle("Found existing cache lock file, rebuilding loom cache. This may have been caused by a failed or canceled build.");
+			final LockResult lockResult = acquireProcessLockWaiting(getLockFile());
+
+			if (lockResult != LockResult.ACQUIRED_CLEAN) {
+				getProject().getLogger().lifecycle("Found existing cache lock file ({}), rebuilding loom cache. This may have been caused by a failed or canceled build.", lockResult);
 				extension.setRefreshDeps(true);
 			}
 
@@ -147,6 +158,9 @@ public abstract class CompileConfiguration implements Runnable {
 		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
+
+		// Created any layered mapping files.
+		LayeredMappingsFactory.afterEvaluate(configContext);
 
 		final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
 		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceManager(), mappingsDep, minecraftProvider);
@@ -228,31 +242,180 @@ public abstract class CompileConfiguration implements Runnable {
 				.afterEvaluation();
 	}
 
-	private Path getLockFile() {
+	private LockFile getLockFile() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
 		final String pathHash = Checksum.projectHash(getProject());
-		return cacheDirectory.resolve("." + pathHash + ".lock");
+		return new LockFile(
+				cacheDirectory.resolve("." + pathHash + ".lock"),
+				"Lock for cache='%s', project='%s'".formatted(
+						cacheDirectory, getProject().absoluteProjectPath(getProject().getPath())
+				)
+		);
 	}
 
-	private boolean getAndLock() {
-		final Path lock = getLockFile();
-
-		if (Files.exists(lock)) {
-			return true;
+	record LockFile(Path file, String description) {
+		@Override
+		public String toString() {
+			return this.description;
 		}
+	}
 
+	enum LockResult {
+		// acquired immediately or after waiting for another process to release
+		ACQUIRED_CLEAN,
+		// already owned by current pid
+		ACQUIRED_ALREADY_OWNED,
+		// acquired due to current owner not existing
+		ACQUIRED_PREVIOUS_OWNER_MISSING
+	}
+
+	private LockResult acquireProcessLockWaiting(LockFile lockFile) {
+		// one hour
+		return this.acquireProcessLockWaiting(lockFile, Duration.ofHours(1));
+	}
+
+	private LockResult acquireProcessLockWaiting(LockFile lockFile, Duration timeout) {
 		try {
-			Files.createFile(lock);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to acquire getProject() configuration lock", e);
+			return this.acquireProcessLockWaiting_(lockFile, timeout);
+		} catch (final IOException e) {
+			throw new RuntimeException("Exception acquiring lock " + lockFile, e);
+		}
+	}
+
+	// Returns true if our process already owns the lock
+	@SuppressWarnings("BusyWait")
+	private LockResult acquireProcessLockWaiting_(LockFile lockFile, Duration timeout) throws IOException {
+		final long timeoutMs = timeout.toMillis();
+		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
+		final long currentPid = ProcessHandle.current().pid();
+		boolean abrupt = false;
+
+		if (Files.exists(lockFile.file)) {
+			long lockingProcessId;
+
+			try {
+				lockingProcessId = Long.parseLong(Files.readString(lockFile.file));
+			} catch (final Exception e) {
+				lockingProcessId = -1;
+			}
+
+			if (lockingProcessId == currentPid) {
+				return LockResult.ACQUIRED_ALREADY_OWNED;
+			}
+
+			logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
+
+			Optional<ProcessHandle> handle = ProcessHandle.of(lockingProcessId);
+
+			if (handle.isEmpty()) {
+				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
+				Files.deleteIfExists(lockFile.file);
+				abrupt = true;
+			} else {
+				logger.lifecycle(printWithParents(handle.get()));
+				logger.lifecycle("Waiting for lock to be released...");
+				long sleptMs = 0;
+
+				while (Files.exists(lockFile.file)) {
+					try {
+						Thread.sleep(100);
+					} catch (final InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+
+					sleptMs += 100;
+
+					if (sleptMs >= 1000 * 60 && sleptMs % (1000 * 60) == 0L) {
+						logger.lifecycle(
+								"""
+										Have been waiting on "{}" held by pid '{}' for {} minute(s).
+										If this persists for an unreasonable length of time, kill this process, run './gradlew --stop' and then try again.""",
+								lockFile, lockingProcessId, sleptMs / 1000 / 60
+						);
+					}
+
+					if (sleptMs >= timeoutMs) {
+						throw new GradleException("Have been waiting on lock file '%s' for %s ms. Giving up as timeout is %s ms."
+								.formatted(lockFile, sleptMs, timeoutMs));
+					}
+				}
+			}
 		}
 
-		return false;
+		if (!Files.exists(lockFile.file.getParent())) {
+			Files.createDirectories(lockFile.file.getParent());
+		}
+
+		Files.writeString(lockFile.file, String.valueOf(currentPid));
+		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
+	}
+
+	private String printWithParents(ProcessHandle processHandle) {
+		var output = new StringBuilder();
+
+		List<ProcessHandle> chain = getParentChain(null, processHandle);
+
+		for (int i = 0; i < chain.size(); i++) {
+			ProcessHandle handle = chain.get(i);
+
+			output.append("\t".repeat(i));
+
+			if (i != 0) {
+				output.append("└─ ");
+			}
+
+			output.append(getInfoString(handle));
+
+			if (i < chain.size() - 1) {
+				output.append('\n');
+			}
+		}
+
+		return output.toString();
+	}
+
+	private String getInfoString(ProcessHandle handle) {
+		return "(%s) pid %s '%s%s'%s".formatted(
+				handle.info().user().orElse("unknown user"),
+				handle.pid(),
+				handle.info().command().orElse("unknown command"),
+				handle.info().arguments().map(arr -> {
+					if (getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.INFO
+							&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
+						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
+					}
+
+					String join = String.join(" ", arr);
+
+					if (join.isBlank()) {
+						return "";
+					}
+
+					return " " + join;
+				}).orElse(" (unknown arguments)"),
+				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
+		);
+	}
+
+	private List<ProcessHandle> getParentChain(List<ProcessHandle> collectTo, ProcessHandle processHandle) {
+		if (collectTo == null) {
+			collectTo = new ArrayList<>();
+		}
+
+		Optional<ProcessHandle> parent = processHandle.parent();
+
+		if (parent.isPresent()) {
+			getParentChain(collectTo, parent.get());
+		}
+
+		collectTo.add(processHandle);
+
+		return collectTo;
 	}
 
 	private void releaseLock() {
-		final Path lock = getLockFile();
+		final Path lock = getLockFile().file;
 
 		if (!Files.exists(lock)) {
 			return;

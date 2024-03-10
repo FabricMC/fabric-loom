@@ -25,6 +25,7 @@
 package net.fabricmc.loom;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 import org.gradle.api.Project;
@@ -38,12 +39,14 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.extension.LoomProblemReporter;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.util.download.DownloadBuilder;
@@ -118,4 +121,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	ListProperty<LibraryProcessorManager.LibraryProcessorFactory> getLibraryProcessors();
 
 	ListProperty<RemapperExtensionHolder> getRemapperExtensions();
+
+	Collection<LayeredMappingsFactory> getLayeredMappingFactories();
+
+	LoomProblemReporter getProblemReporter();
 }

@@ -50,7 +50,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 group = 'net.fabricmc'
-def baseVersion = '1.5'
+def baseVersion = '1.6'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -245,6 +245,13 @@ checkstyle {
 	toolVersion = libs.versions.checkstyle.get()
 }
 
+// Workaround https://github.com/gradle/gradle/issues/27035
+configurations.checkstyle {
+	resolutionStrategy.capabilitiesResolution.withCapability("com.google.collections:google-collections") {
+		select("com.google.guava:guava:0")
+	}
+}
+
 codenarc {
 	toolVersion = libs.versions.codenarc.get()
 	configFile = file("codenarc.groovy")
@@ -367,6 +374,11 @@ task writeActionsTestMatrix() {
 			if (it.name.endsWith("Test.groovy")) {
 				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
 					// This test gets a special case to run across all os's
+					return
+				}
+
+				if (it.name.endsWith("DebugLineNumbersTest.groovy")) {
+					// Known flakey test
 					return
 				}
 

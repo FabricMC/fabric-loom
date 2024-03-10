@@ -89,12 +89,12 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public abstract Property<Boolean> getAddNestedDependencies();
 
 	/**
-	 * Whether to optimise the fabric.mod.json file, by default this is true.
+	 * Whether to optimize the fabric.mod.json file, by default this is true.
 	 *
 	 * <p>The schemaVersion entry will be placed first in the json file
 	 */
 	@Input
-	public abstract Property<Boolean> getOptimiseFabricModJson();
+	public abstract Property<Boolean> getOptimizeFabricModJson();
 
 	@Input
 	@ApiStatus.Internal
@@ -109,7 +109,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 		getClasspath().from(configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
-		getOptimiseFabricModJson().convention(true).finalizeValueOnRead();
+		getOptimizeFabricModJson().convention(true).finalizeValueOnRead();
 
 		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
@@ -152,7 +152,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getRemapClasspath().from(getClasspath());
 
 				params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
-				params.getOptimiseFmj().set(getOptimiseFabricModJson().get());
+				params.getOptimizeFmj().set(getOptimizeFabricModJson().get());
 
 				final boolean mixinAp = getUseMixinAP().get();
 				params.getUseMixinExtension().set(!mixinAp);
@@ -208,7 +208,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		Property<Boolean> getUseMixinExtension();
 		Property<Boolean> getMultiProjectOptimisation();
-		Property<Boolean> getOptimiseFmj();
+		Property<Boolean> getOptimizeFmj();
 
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
@@ -255,8 +255,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				modifyJarManifest();
 				rewriteJar();
 
-				if (getParameters().getOptimiseFmj().get()) {
-					optimiseFMJ();
+				if (getParameters().getOptimizeFmj().get()) {
+					optimizeFMJ();
 				}
 
 				if (tinyRemapperService != null && !getParameters().getMultiProjectOptimisation().get()) {
@@ -366,12 +366,12 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			}
 		}
 
-		private void optimiseFMJ() throws IOException {
+		private void optimizeFMJ() throws IOException {
 			if (!ZipUtils.contains(outputFile, FabricModJsonFactory.FABRIC_MOD_JSON)) {
 				return;
 			}
 
-			ZipUtils.transformJson(JsonObject.class, outputFile, FabricModJsonFactory.FABRIC_MOD_JSON, FabricModJsonUtils::optimiseFmj);
+			ZipUtils.transformJson(JsonObject.class, outputFile, FabricModJsonFactory.FABRIC_MOD_JSON, FabricModJsonUtils::optimizeFmj);
 		}
 	}
 

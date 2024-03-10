@@ -33,13 +33,13 @@ import net.fabricmc.loom.util.fmj.FabricModJsonUtils
 
 class FabricModJsonUtilsTest extends Specification {
 	// Test that the schemaVersion is moved to the first position
-	def "optimise FMJ"() {
+	def "optimize FMJ"() {
 		given:
 		// Matches LoomGradlePlugin
 		def gson = new GsonBuilder().setPrettyPrinting().create()
 		def json = gson.fromJson(INPUT_FMJ, JsonObject.class)
 		when:
-		def outputJson = FabricModJsonUtils.optimiseFmj(json)
+		def outputJson = FabricModJsonUtils.optimizeFmj(json)
 		def output = gson.toJson(outputJson)
 		then:
 		output == OUTPUT_FMJ

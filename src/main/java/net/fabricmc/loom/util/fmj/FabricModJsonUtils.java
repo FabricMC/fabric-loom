@@ -52,7 +52,7 @@ public final class FabricModJsonUtils {
 
 	// Ensure that the schemaVersion json entry, is first in the json file
 	// This exercises an optimisation here: https://github.com/FabricMC/fabric-loader/blob/d69cb72d26497e3f387cf46f9b24340b402a4644/src/main/java/net/fabricmc/loader/impl/metadata/ModMetadataParser.java#L62
-	public static JsonObject optimiseFmj(JsonObject json) {
+	public static JsonObject optimizeFmj(JsonObject json) {
 		if (!json.has("schemaVersion")) {
 			// No schemaVersion, something will explode later?!
 			return json;

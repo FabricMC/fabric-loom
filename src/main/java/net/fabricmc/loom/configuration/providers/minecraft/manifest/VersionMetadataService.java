@@ -57,13 +57,12 @@ public final class VersionMetadataService implements SharedService {
 		final VersionMetadataProvider metadataProvider = extension.getVersionMetadataProvider();
 		final String id = "VersionMetadataService:%s:%s".formatted(metadataProvider.getName(), minecraftProvider.minecraftVersion());
 
-		return sharedServiceManager.getOrCreateService(id, () -> create(metadataProvider, extension, project));
+		return sharedServiceManager.getOrCreateService(id, () -> create(metadataProvider, minecraftProvider, project));
 	}
 
 	@VisibleForTesting
-	public static VersionMetadataService create(VersionMetadataProvider versionMetadataProvider, LoomGradleExtension extension, Project project) {
-		final Path userCache = extension.getFiles().getUserCache().toPath();
-		final Path metadataJson = userCache.resolve(versionMetadataProvider.getName() + ".json");
+	public static VersionMetadataService create(VersionMetadataProvider versionMetadataProvider, MinecraftProvider minecraftProvider, Project project) {
+		final Path metadataJson = minecraftProvider.file(versionMetadataProvider.getName() + ".json").toPath();
 
 		try {
 			versionMetadataProvider.provide(metadataJson);

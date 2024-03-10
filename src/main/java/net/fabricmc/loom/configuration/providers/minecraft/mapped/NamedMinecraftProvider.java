@@ -159,6 +159,11 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		@Override
+		public List<MinecraftJar.Type> getDependencyTypes() {
+			return List.of(envType());
+		}
+
+		@Override
 		public SingleJarEnvType env() {
 			return env;
 		}

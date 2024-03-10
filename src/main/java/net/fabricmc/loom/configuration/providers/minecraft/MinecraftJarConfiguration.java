@@ -61,6 +61,17 @@ public record MinecraftJarConfiguration<
 				List.of("client", "server")
 			);
 	public static final MinecraftJarConfiguration<
+			LegacyMinecraftProvider,
+			NamedMinecraftProvider.LegacyMergedImpl,
+			MappedMinecraftProvider> LEGACY_MERGED = new MinecraftJarConfiguration<>(
+				LegacyMinecraftProvider::new,
+				IntermediaryMinecraftProvider.LegacyMergedImpl::new,
+				NamedMinecraftProvider.LegacyMergedImpl::new,
+				ProcessedNamedMinecraftProvider.LegacyMergedImpl::new,
+				SingleJarDecompileConfiguration::new,
+				List.of("client", "server")
+			);
+	public static final MinecraftJarConfiguration<
 			SingleJarMinecraftProvider,
 			NamedMinecraftProvider.SingleJarImpl,
 			MappedMinecraftProvider> SERVER_ONLY = new MinecraftJarConfiguration<>(

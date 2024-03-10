@@ -48,32 +48,30 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 	@Override
 	public List<Path> getMinecraftJars() {
-		return canMergeJars() ? List.of(minecraftMergedJar) : List.of(getClientJar(), getServerJar());
+		return List.of(minecraftMergedJar);
 	}
 
 	@Override
 	public void provide() throws Exception {
 		// we must first call super.provide() to load the version info
-		// only then can we select the correct merge mode
+		// then we verify that this version allows merging the obfuscated jars
 
 		super.provide();
 
-		if (canMergeJars()) {
-			if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
-				try {
-					mergeJars();
-				} catch (Throwable e) {
-					Files.deleteIfExists(getMinecraftClientJar().toPath());
-					Files.deleteIfExists(getMinecraftServerJar().toPath());
-					Files.deleteIfExists(minecraftMergedJar);
+		if (!canMergeJars()) {
+			throw new UnsupportedOperationException("This version does not allow merging the obfuscated jars - please select the legacy-merged jar configuration with appropriate mappings, or use the client-only or server-only jar configuration!");
+		}
 
-					getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
-					throw e;
-				}
-			}
-		} else {
-			if (!provideClient() || !provideServer()) {
-				throw new UnsupportedOperationException("for the merged jar configuration both the client and server jars must be available - please select the client-only or server-only jar configuration!");
+		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
+			try {
+				mergeJars();
+			} catch (Throwable e) {
+				Files.deleteIfExists(getMinecraftClientJar().toPath());
+				Files.deleteIfExists(getMinecraftServerJar().toPath());
+				Files.deleteIfExists(minecraftMergedJar);
+
+				getProject().getLogger().error("Could not merge JARs! Deleting source JARs - please re-run the command and move on.", e);
+				throw e;
 			}
 		}
 	}
@@ -87,12 +85,12 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 			minecraftServerJar = getMinecraftExtractedServerJar();
 		}
 
+		getLogger().info(":merging jars");
+
 		mergeJars(minecraftClientJar, minecraftServerJar, minecraftMergedJar.toFile());
 	}
 
-	public void mergeJars(File clientJar, File serverJar, File mergedJar) throws IOException {
-		getLogger().info(":merging jars");
-
+	public static void mergeJars(File clientJar, File serverJar, File mergedJar) throws IOException {
 		Objects.requireNonNull(clientJar, "Cannot merge null client jar?");
 		Objects.requireNonNull(serverJar, "Cannot merge null server jar?");
 
@@ -100,14 +98,6 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}
-	}
-
-	public Path getClientJar() {
-		return getMinecraftClientJar().toPath();
-	}
-
-	public Path getServerJar() {
-		return getMinecraftServerJar().toPath();
 	}
 
 	public Path getMergedJar() {

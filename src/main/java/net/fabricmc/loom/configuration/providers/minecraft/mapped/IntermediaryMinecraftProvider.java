@@ -29,6 +29,7 @@ import java.util.List;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -37,7 +38,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftPro
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
+public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.LegacyMergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
 	}
@@ -59,37 +60,47 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
-			return minecraftProvider.canMergeJars()
-				? List.of(
-					new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
-				) : List.of(
-					new RemappedJars(minecraftProvider.getClientJar(), getClientJar(), MappingsNamespace.CLIENT_OFFICIAL),
-					new RemappedJars(minecraftProvider.getServerJar(), getServerJar(), MappingsNamespace.SERVER_OFFICIAL)
-				);
+			return List.of(
+				new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
+			);
+		}
+	}
+
+	public static final class LegacyMergedImpl extends IntermediaryMinecraftProvider<LegacyMinecraftProvider> implements Merged {
+		private final SingleJarImpl server;
+		private final SingleJarImpl client;
+
+		public LegacyMergedImpl(Project project, LegacyMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
+			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER, MappingsNamespace.SERVER_OFFICIAL);
+			client = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
 		}
 
 		@Override
 		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
-			List<MinecraftJar> jars = super.provide(context);
+			// Map the client and server jars separately
+			server.provide(context);
+			client.provide(context);
 
-			if (minecraftProvider.canMergeJars()) {
-				return jars;
-			}
-
-			minecraftProvider.mergeJars(getClientJar().toFile(), getServerJar().toFile(), getMergedJar().toFile());
+			// then merge them
+			MergedMinecraftProvider.mergeJars(
+				client.getEnvOnlyJar().toFile(),
+				server.getEnvOnlyJar().toFile(),
+				getMergedJar().toFile()
+			);
 
 			return List.of(getMergedJar());
 		}
 
-		// in mc versions prior to 1.3, the client and server jars
-		// are remapped separately before being merged
-
-		private MinecraftJar getClientJar() {
-			return new MinecraftJar.Client(getJar(MinecraftJar.Type.CLIENT));
+		@Override
+		public List<RemappedJars> getRemappedJars() {
+			// The delegate providers will handle the remapping
+			throw new UnsupportedOperationException("LegacyMergedImpl does not support getRemappedJars");
 		}
 
-		private MinecraftJar getServerJar() {
-			return new MinecraftJar.Server(getJar(MinecraftJar.Type.SERVER));
+		@Override
+		public List<MinecraftJar.Type> getDependencyTypes() {
+			return List.of(MinecraftJar.Type.MERGED);
 		}
 	}
 
@@ -114,33 +125,26 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 	public static final class SingleJarImpl extends IntermediaryMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
 		private final SingleJarEnvType env;
+		private final MappingsNamespace sourceNs;
 
-		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env, MappingsNamespace sourceNs) {
 			super(project, minecraftProvider);
 			this.env = env;
+			this.sourceNs = sourceNs;
 		}
 
 		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.SERVER_OFFICIAL);
 		}
 
 		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL);
 		}
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
-			MappingsNamespace sourceNamespace = MappingsNamespace.OFFICIAL;
-
-			if (!minecraftProvider.canMergeJars()) {
-				sourceNamespace = switch (env()) {
-				case CLIENT -> MappingsNamespace.CLIENT_OFFICIAL;
-				case SERVER -> MappingsNamespace.SERVER_OFFICIAL;
-				};
-			}
-
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), sourceNamespace)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), sourceNs)
 			);
 		}
 

@@ -43,11 +43,11 @@ public record MinecraftJarConfiguration<
 		M extends MinecraftProvider,
 		N extends NamedMinecraftProvider<M>,
 		Q extends MappedMinecraftProvider>(
-				MinecraftProviderFactory<M> minecraftProviderFunction,
-				IntermediaryMinecraftProviderFactory<M> intermediaryMinecraftProviderBiFunction,
-				NamedMinecraftProviderFactory<M> namedMinecraftProviderBiFunction,
-				ProcessedNamedMinecraftProviderFactory<M, N> processedNamedMinecraftProviderBiFunction,
-				DecompileConfigurationFactory<Q> decompileConfigurationBiFunction,
+				MinecraftProviderFactory<M> minecraftProviderFactory,
+				IntermediaryMinecraftProviderFactory<M> intermediaryMinecraftProviderFactory,
+				NamedMinecraftProviderFactory<M> namedMinecraftProviderFactory,
+				ProcessedNamedMinecraftProviderFactory<M, N> processedNamedMinecraftProviderFactory,
+				DecompileConfigurationFactory<Q> decompileConfigurationFactory,
 				List<String> supportedEnvironments) {
 	public static final MinecraftJarConfiguration<
 			MergedMinecraftProvider,
@@ -95,35 +95,29 @@ public record MinecraftJarConfiguration<
 			);
 
 	public MinecraftProvider createMinecraftProvider(ConfigContext context) {
-		return minecraftProviderFunction.create(context);
+		return minecraftProviderFactory.create(context);
 	}
 
 	public IntermediaryMinecraftProvider<M> createIntermediaryMinecraftProvider(Project project) {
-		return intermediaryMinecraftProviderBiFunction.create(project, getMinecraftProvider(project));
+		return intermediaryMinecraftProviderFactory.create(project, getMinecraftProvider(project));
 	}
 
 	public NamedMinecraftProvider<M> createNamedMinecraftProvider(Project project) {
-		return namedMinecraftProviderBiFunction.create(project, getMinecraftProvider(project));
+		return namedMinecraftProviderFactory.create(project, getMinecraftProvider(project));
 	}
 
-	public ProcessedNamedMinecraftProvider<M, N> createProcessedNamedMinecraftProvider(Project project, MinecraftJarProcessorManager jarProcessorManager) {
-		return processedNamedMinecraftProviderBiFunction.create(getNamedMinecraftProvider(project), jarProcessorManager);
+	public ProcessedNamedMinecraftProvider<M, N> createProcessedNamedMinecraftProvider(NamedMinecraftProvider<?> namedMinecraftProvider, MinecraftJarProcessorManager jarProcessorManager) {
+		return processedNamedMinecraftProviderFactory.create((N) namedMinecraftProvider, jarProcessorManager);
 	}
 
 	public DecompileConfiguration<Q> createDecompileConfiguration(Project project) {
-		return decompileConfigurationBiFunction.create(project, getMappedMinecraftProvider(project));
+		return decompileConfigurationFactory.create(project, getMappedMinecraftProvider(project));
 	}
 
 	private M getMinecraftProvider(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		//noinspection unchecked
 		return (M) extension.getMinecraftProvider();
-	}
-
-	private N getNamedMinecraftProvider(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		//noinspection unchecked
-		return (N) extension.getNamedMinecraftProvider();
 	}
 
 	private Q getMappedMinecraftProvider(Project project) {

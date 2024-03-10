@@ -175,7 +175,7 @@ public abstract class CompileConfiguration implements Runnable {
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
-			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(project, minecraftJarProcessorManager);
+			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(namedMinecraftProvider, minecraftJarProcessorManager);
 		}
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);

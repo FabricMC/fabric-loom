@@ -183,7 +183,7 @@ public interface LoomGradleExtensionAPI {
 	VersionMetadataProvider getVersionMetadataProvider();
 
 	@ApiStatus.Experimental
-	void setVersionMetadataProvider(VersionMetadataProvider versionsManifestProvider);
+	void setVersionMetadataProvider(VersionMetadataProvider versionMetadataProvider);
 
 	@ApiStatus.Experimental
 	<T extends VersionMetadataProvider> void setVersionMetadataProvider(Class<T> clazz, Action<T> action);

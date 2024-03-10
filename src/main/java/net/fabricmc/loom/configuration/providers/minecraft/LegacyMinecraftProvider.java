@@ -53,6 +53,15 @@ public final class LegacyMinecraftProvider extends MinecraftProvider {
 
 	@Override
 	public void provide() throws Exception {
+		// we must first call super.provide() to load the version info
+		// then we verify that this version allows merging the obfuscated jars
+
+		super.provide();
+
+		if (canMergeJars()) {
+			throw new UnsupportedOperationException("The legacy-merged jar configuration should only be used for versions where the obfuscated jars cannot be merged - please select the merged jar configuration or use the client-only or server-only jar configuration!");
+		}
+
 		serverMinecraftProvider.provide();
 		clientMinecraftProvider.provide();
 	}

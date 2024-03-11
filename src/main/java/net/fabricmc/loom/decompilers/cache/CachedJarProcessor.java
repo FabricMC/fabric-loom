@@ -79,7 +79,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					isIncomplete = true;
 					outputNameMap.put(outputFileName, fullHash);
 
-					LOGGER.info("Cached entry not found, going to process {}", outputFileName);
+					LOGGER.debug("Cached entry ({}) not found, going to process {}", fullHash, outputFileName);
 					misses++;
 				} else {
 					final Path outputPath = existingFs.getPath(outputFileName);
@@ -88,7 +88,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					lineNumbersMap.put(entryData.className(), entryData.lineNumbers());
 					hasSomeExisting = true;
 
-					LOGGER.info("Cached entry found: {}", outputFileName);
+					LOGGER.debug("Cached entry ({}) found: {}", fullHash, outputFileName);
 					hits++;
 				}
 			}
@@ -169,7 +169,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					final var cachedData = new CachedData(className, sources, lineMapEntry);
 					fileStore.putEntry(hash, cachedData);
 
-					LOGGER.debug("Saving processed entry to cache: {}", fsPath);
+					LOGGER.debug("Saving processed entry ({}) to cache: {}", hash, fsPath);
 				}
 			}
 		} else {

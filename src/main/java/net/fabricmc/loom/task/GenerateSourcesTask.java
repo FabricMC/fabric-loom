@@ -142,6 +142,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Optional
 	public abstract ConfigurableFileCollection getUnpickClasspath();
 
+	@InputFiles
+	@Optional
+	@ApiStatus.Internal
+	public abstract ConfigurableFileCollection getUnpickRuntimeClasspath();
+
 	@OutputFile
 	@Optional
 	public abstract RegularFileProperty getUnpickOutputJar();
@@ -180,6 +185,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		getDecompileCacheFile().set(extension.getFiles().getDecompileCache(CACHE_VERSION));
+		getUnpickRuntimeClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
 
 		getUseCache().convention(false);
 	}
@@ -219,7 +225,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final MinecraftJar minecraftJar = rebuildInputJar();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
 		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
-		final String cacheKey = getCacheKey(minecraftJar.getPath().toFile());
+		final String cacheKey = getCacheKey();
 		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, cacheKey);
 		final CachedJarProcessor.WorkRequest workRequest;
 
@@ -327,10 +333,12 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private String getCacheKey(File inputJar) {
+	private String getCacheKey() {
 		var sj = new StringJoiner(",");
 		sj.add(getDecompilerCheckKey());
 		sj.add(getUnpickCacheKey());
+
+		LOGGER.info("Decompile cache data: {}", sj);
 
 		try {
 			return Checksum.sha256Hex(sj.toString().getBytes(StandardCharsets.UTF_8));
@@ -359,7 +367,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		var sj = new StringJoiner(",");
 		sj.add(fileHash(getUnpickDefinitions().getAsFile().get()));
 		sj.add(fileCollectionHash(getUnpickConstantJar()));
-		sj.add(fileCollectionHash(getUnpickClasspath()));
+		sj.add(fileCollectionHash(getUnpickRuntimeClasspath()));
 
 		return sj.toString();
 	}
@@ -424,7 +432,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		ExecResult result = getExecOperations().javaexec(spec -> {
 			spec.getMainClass().set("daomephsta.unpick.cli.Main");
-			spec.classpath(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
+			spec.classpath(getUnpickRuntimeClasspath());
 			spec.args(args);
 			spec.systemProperty("java.util.logging.config.file", writeUnpickLogConfig().getAbsolutePath());
 		});

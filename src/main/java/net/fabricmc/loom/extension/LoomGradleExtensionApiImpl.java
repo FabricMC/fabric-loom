@@ -145,7 +145,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.minecraftJarProcessors.finalizeValueOnRead();
 
 		//noinspection unchecked
-		this.minecraftJarConfiguration = project.getObjects().property((Class<MinecraftJarConfiguration<?, ?, ?>>) (Class<?>) MinecraftJarConfiguration.class);
+		this.minecraftJarConfiguration = project.getObjects().property((Class<MinecraftJarConfiguration<?, ?, ?>>) (Class<?>) MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
 		this.minecraftJarConfiguration.finalizeValueOnRead();
 
 		this.accessWidener.finalizeValueOnRead();

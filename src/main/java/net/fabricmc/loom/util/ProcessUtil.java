@@ -58,6 +58,7 @@ public record ProcessUtil(LogLevel logLevel) {
 		handle.info().command().ifPresent(command -> lines.add("command: " + command));
 		getProcessArguments(handle).ifPresent(arguments -> lines.add("arguments: " + arguments));
 		handle.info().startInstant().ifPresent(instant -> lines.add("started at: " + instant));
+		handle.info().user().ifPresent(user -> lines.add("user: " + user));
 		handle.parent().ifPresent(parent -> lines.add("parent:\n" + printWithParents(parent, depth + 1)));
 
 		StringBuilder sj = new StringBuilder();

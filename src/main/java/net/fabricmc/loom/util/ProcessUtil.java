@@ -35,78 +35,66 @@ import org.gradle.api.logging.LogLevel;
 import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
 
 public record ProcessUtil(LogLevel logLevel) {
+	private static final String EXPLORER_COMMAND = "C:\\Windows\\explorer.exe";
+
 	public static ProcessUtil create(Project project) {
 		return new ProcessUtil(project.getGradle().getStartParameter().getLogLevel());
 	}
 
-	public String printWithParents(ProcessHandle processHandle) {
-		var output = new StringBuilder();
+	public String printWithParents(ProcessHandle handle) {
+		String result = printWithParents(handle, 0).trim();
 
-		List<ProcessHandle> chain = getParentChain(null, processHandle);
+		if (logLevel != LogLevel.INFO && logLevel != LogLevel.DEBUG) {
+			return "Run with --info or --debug to show arguments, may reveal sensitive info\n" + result;
+		}
 
-		for (int i = 0; i < chain.size(); i++) {
-			ProcessHandle handle = chain.get(i);
+		return result;
+	}
 
-			output.append("\t".repeat(i));
+	private String printWithParents(ProcessHandle handle, int depth) {
+		var lines = new ArrayList<String>();
+		getWindowTitles(handle).ifPresent(titles -> lines.add("title: " + titles));
+		lines.add("pid: " + handle.pid());
+		handle.info().command().ifPresent(command -> lines.add("command: " + command));
+		getProcessArguments(handle).ifPresent(arguments -> lines.add("arguments: " + arguments));
+		handle.info().startInstant().ifPresent(instant -> lines.add("started at: " + instant));
+		handle.parent().ifPresent(parent -> lines.add("parent:\n" + printWithParents(parent, depth + 1)));
 
-			if (i != 0) {
-				output.append("└─ ");
+		StringBuilder sj = new StringBuilder();
+
+		for (String line : lines) {
+			sj.append("\t".repeat(depth)).append("- ").append(line).append('\n');
+		}
+
+		return sj.toString();
+	}
+
+	private Optional<String> getProcessArguments(ProcessHandle handle) {
+		if (logLevel != LogLevel.INFO && logLevel != LogLevel.DEBUG) {
+			return Optional.empty();
+		}
+
+		return handle.info().arguments().map(arr -> {
+			String join = String.join(" ", arr);
+
+			if (join.isBlank()) {
+				return "";
 			}
 
-			output.append(getInfoString(handle));
-
-			if (i < chain.size() - 1) {
-				output.append('\n');
-			}
-		}
-
-		return output.toString();
+			return " " + join;
+		});
 	}
 
-	private String getInfoString(ProcessHandle handle) {
-		return "(%s) pid %s '%s%s'%s%s".formatted(
-				handle.info().user().orElse("unknown user"),
-				handle.pid(),
-				handle.info().command().orElse("unknown command"),
-				handle.info().arguments().map(arr -> {
-					if (logLevel != LogLevel.INFO && logLevel != LogLevel.DEBUG) {
-						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
-					}
-
-					String join = String.join(" ", arr);
-
-					if (join.isBlank()) {
-						return "";
-					}
-
-					return " " + join;
-				}).orElse(""),
-				getWindowTitles(handle),
-				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
-		);
-	}
-
-	private List<ProcessHandle> getParentChain(List<ProcessHandle> collectTo, ProcessHandle processHandle) {
-		if (collectTo == null) {
-			collectTo = new ArrayList<>();
+	private Optional<String> getWindowTitles(ProcessHandle processHandle) {
+		if (processHandle.info().command().orElse("").equals(EXPLORER_COMMAND)) {
+			// Explorer is a single process, so the window titles are not useful
+			return Optional.empty();
 		}
 
-		Optional<ProcessHandle> parent = processHandle.parent();
-
-		if (parent.isPresent()) {
-			getParentChain(collectTo, parent.get());
-		}
-
-		collectTo.add(processHandle);
-
-		return collectTo;
-	}
-
-	private String getWindowTitles(ProcessHandle processHandle) {
 		List<String> titles = LoomNativePlatform.getWindowTitlesForPid(processHandle.pid());
 
 		if (titles.isEmpty()) {
-			return "";
+			return Optional.empty();
 		}
 
 		final StringJoiner joiner = new StringJoiner(", ");
@@ -115,6 +103,6 @@ public record ProcessUtil(LogLevel logLevel) {
 			joiner.add("'" + title + "'");
 		}
 
-		return joiner.toString();
+		return Optional.of(joiner.toString());
 	}
 }

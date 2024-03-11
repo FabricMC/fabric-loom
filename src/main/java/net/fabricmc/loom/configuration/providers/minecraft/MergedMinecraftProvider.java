@@ -43,6 +43,10 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 	public MergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
+
+		if (!canMergeJars()) {
+			throw new RuntimeException("something has gone wrong - merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " does not allow merging the obfuscated jars - the legacy-merged jar configuration should have been selected!");
+		}
 	}
 
 	@Override
@@ -58,13 +62,10 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 	@Override
 	public void provide() throws Exception {
-		// we must first call super.provide() to load the version info
-		// then we verify that this version allows merging the obfuscated jars
-
 		super.provide();
 
-		if (!canMergeJars()) {
-			throw new UnsupportedOperationException("This version does not allow merging the obfuscated jars - please select the legacy-merged jar configuration with appropriate mappings, or use the client-only or server-only jar configuration!");
+		if (!provideServer() || !provideClient()) {
+			throw new UnsupportedOperationException("This version does not provide both the client and server jars - please select the client-only or server-only jar configuration!");
 		}
 
 		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {

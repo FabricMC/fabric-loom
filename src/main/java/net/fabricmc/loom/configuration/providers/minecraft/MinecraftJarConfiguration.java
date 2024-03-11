@@ -131,12 +131,6 @@ public record MinecraftJarConfiguration<
 		return (M) extension.getMinecraftProvider();
 	}
 
-	private N getNamedMinecraftProvider(Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		//noinspection unchecked
-		return (N) extension.getNamedMinecraftProvider();
-	}
-
 	private Q getMappedMinecraftProvider(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		//noinspection unchecked

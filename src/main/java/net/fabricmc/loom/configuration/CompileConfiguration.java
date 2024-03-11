@@ -63,6 +63,7 @@ import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -155,6 +156,9 @@ public abstract class CompileConfiguration implements Runnable {
 
 		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
 
+		extension.getMinecraftJarConfiguration().convention(metadataProvider.getVersionMeta().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */)
+				? MinecraftJarConfiguration.MERGED
+				: MinecraftJarConfiguration.LEGACY_MERGED);
 		final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars

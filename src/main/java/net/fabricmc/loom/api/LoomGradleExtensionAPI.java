@@ -206,10 +206,6 @@ public interface LoomGradleExtensionAPI {
 
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
 
-	default void legacyMergedMinecraftJar() {
-		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.LEGACY_MERGED);
-	}
-
 	default void serverOnlyMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SERVER_ONLY);
 	}

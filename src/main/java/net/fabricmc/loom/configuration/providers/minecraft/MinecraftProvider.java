@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -87,6 +88,17 @@ public abstract class MinecraftProvider {
 				getExtension()::download
 		);
 		canMergeJars = getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */);
+
+		final MinecraftVersionMeta.JavaVersion javaVersion = getVersionInfo().javaVersion();
+
+		if (javaVersion != null) {
+			final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
+			final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
+
+			if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
+				throw new IllegalStateException("Minecraft " + minecraftVersion + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
+			}
+		}
 
 		downloadJars();
 

@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.configuration.providers.mappings;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,20 +34,18 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.FileCollectionDependency;
-import org.gradle.api.artifacts.SelfResolvingDependency;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.tasks.TaskDependency;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
 import net.fabricmc.loom.util.ZipUtils;
@@ -56,43 +54,61 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public class LayeredMappingsDependency implements SelfResolvingDependency, FileCollectionDependency {
+public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	private static final String GROUP = "loom";
 	private static final String MODULE = "mappings";
+	private static final Logger LOGGER = LoggerFactory.getLogger(LayeredMappingsFactory.class);
 
-	private final Project project;
-	private final MappingContext mappingContext;
-	private final LayeredMappingSpec layeredMappingSpec;
-	private final String version;
-
-	public LayeredMappingsDependency(Project project, MappingContext mappingContext, LayeredMappingSpec layeredMappingSpec, String version) {
-		this.project = project;
-		this.mappingContext = mappingContext;
-		this.layeredMappingSpec = layeredMappingSpec;
-		this.version = version;
-	}
-
-	@Override
-	public Set<File> resolve() {
-		Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
-		Path mappingsFile = mappingsDir.resolve(String.format("%s.%s-%s.tiny", GROUP, MODULE, getVersion()));
-
-		if (!Files.exists(mappingsFile) || mappingContext.refreshDeps()) {
+	/*
+	As we no longer have SelfResolvingDependency we now always create the mappings file after evaluation.
+	This works in a similar way to how remapped mods are handled.
+	 */
+	public static void afterEvaluate(ConfigContext configContext) {
+		for (LayeredMappingsFactory layeredMappingFactory : configContext.extension().getLayeredMappingFactories()) {
 			try {
-				var processor = new LayeredMappingsProcessor(layeredMappingSpec);
-				List<MappingLayer> layers = processor.resolveLayers(mappingContext);
-
-				Files.deleteIfExists(mappingsFile);
-
-				writeMapping(processor, layers, mappingsFile);
-				writeSignatureFixes(processor, layers, mappingsFile);
-				writeUnpickData(processor, layers, mappingsFile);
+				layeredMappingFactory.evaluate(configContext);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to resolve layered mappings", e);
+				throw new UncheckedIOException("Failed to setup layered mappings: %s".formatted(layeredMappingFactory.mavenNotation()), e);
 			}
 		}
+	}
 
-		return Collections.singleton(mappingsFile.toFile());
+	private void evaluate(ConfigContext configContext) throws IOException {
+		LOGGER.info("Evaluating layer mapping: {}", mavenNotation());
+
+		final Path mavenRepoDir = configContext.extension().getFiles().getGlobalMinecraftRepo().toPath();
+		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec().getVersion(), null, mavenRepoDir);
+		final Path jar = resolve(configContext.project());
+		maven.copyToMaven(jar, null);
+	}
+
+	public Path resolve(Project project) throws IOException {
+		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_"));
+		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
+		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, spec.getVersion()));
+
+		if (Files.exists(mappingsZip) && !mappingContext.refreshDeps()) {
+			return mappingsZip;
+		}
+
+		var processor = new LayeredMappingsProcessor(spec);
+		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
+
+		Files.deleteIfExists(mappingsZip);
+
+		writeMapping(processor, layers, mappingsZip);
+		writeSignatureFixes(processor, layers, mappingsZip);
+		writeUnpickData(processor, layers, mappingsZip);
+
+		return mappingsZip;
+	}
+
+	public Dependency createDependency(Project project) {
+		return project.getDependencies().create(mavenNotation());
+	}
+
+	public String mavenNotation() {
+		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion());
 	}
 
 	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
@@ -132,58 +148,5 @@ public class LayeredMappingsDependency implements SelfResolvingDependency, FileC
 
 		ZipUtils.add(mappingsFile, "extras/definitions.unpick", unpickData.definitions());
 		ZipUtils.add(mappingsFile, "extras/unpick.json", unpickData.metadata().asJson());
-	}
-
-	@Override
-	public Set<File> resolve(boolean transitive) {
-		return resolve();
-	}
-
-	@Override
-	public TaskDependency getBuildDependencies() {
-		return task -> Collections.emptySet();
-	}
-
-	@Override
-	public String getGroup() {
-		return GROUP;
-	}
-
-	@Override
-	public String getName() {
-		return MODULE;
-	}
-
-	@Override
-	public String getVersion() {
-		return version;
-	}
-
-	@Override
-	public boolean contentEquals(Dependency dependency) {
-		if (dependency instanceof LayeredMappingsDependency layeredMappingsDependency) {
-			return Objects.equals(layeredMappingsDependency.getVersion(), this.getVersion());
-		}
-
-		return false;
-	}
-
-	@Override
-	public Dependency copy() {
-		return new LayeredMappingsDependency(project, mappingContext, layeredMappingSpec, version);
-	}
-
-	@Override
-	public String getReason() {
-		return null;
-	}
-
-	@Override
-	public void because(String s) {
-	}
-
-	@Override
-	public FileCollection getFiles() {
-		return project.files(resolve());
 	}
 }

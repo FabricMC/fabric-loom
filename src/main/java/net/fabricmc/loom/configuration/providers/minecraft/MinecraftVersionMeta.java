@@ -47,7 +47,8 @@ public record MinecraftVersionMeta(
 		int minimumLauncherVersion,
 		String releaseTime,
 		String time,
-		String type
+		String type,
+		@Nullable JavaVersion javaVersion
 ) {
 	private static Map<Platform.OperatingSystem, String> OS_NAMES = Map.of(
 			Platform.OperatingSystem.WINDOWS, "windows",
@@ -167,5 +168,8 @@ public record MinecraftVersionMeta(
 			Objects.requireNonNull(path(), "Cannot get relative file from a null path");
 			return new File(baseDirectory, path());
 		}
+	}
+
+	public record JavaVersion(String component, int majorVersion) {
 	}
 }

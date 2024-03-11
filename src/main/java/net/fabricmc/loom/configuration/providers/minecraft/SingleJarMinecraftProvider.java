@@ -135,6 +135,11 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		protected boolean provideServer() {
 			return true;
 		}
+
+		@Override
+		protected boolean provideClient() {
+			return false;
+		}
 	}
 
 	public static final class Client extends SingleJarMinecraftProvider {
@@ -150,6 +155,11 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		@Override
 		public Path getInputJar(SingleJarMinecraftProvider provider) throws Exception {
 			return provider.getMinecraftClientJar().toPath();
+		}
+
+		@Override
+		protected boolean provideServer() {
+			return false;
 		}
 
 		@Override

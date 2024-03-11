@@ -63,6 +63,7 @@ import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
@@ -151,10 +152,13 @@ public abstract class CompileConfiguration implements Runnable {
 	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
+
+		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
+
 		final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
-		// Provide the vanilla mc jars -- TODO share across getProject()s.
-		final MinecraftProvider minecraftProvider = jarConfiguration.createMinecraftProvider(configContext);
+		// Provide the vanilla mc jars
+		final MinecraftProvider minecraftProvider = jarConfiguration.createMinecraftProvider(metadataProvider, configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 

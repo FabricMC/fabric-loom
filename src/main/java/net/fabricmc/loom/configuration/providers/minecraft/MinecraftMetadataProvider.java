@@ -35,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.DependencyInfo;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 
@@ -45,9 +48,32 @@ public final class MinecraftMetadataProvider {
 	private ManifestVersion.Versions versionEntry;
 	private MinecraftVersionMeta versionMeta;
 
-	public MinecraftMetadataProvider(Options options, Function<String, DownloadBuilder> download) {
+	private MinecraftMetadataProvider(Options options, Function<String, DownloadBuilder> download) {
 		this.options = options;
 		this.download = download;
+	}
+
+	public static MinecraftMetadataProvider create(ConfigContext configContext) {
+		final String minecraftVersion = resolveMinecraftVersion(configContext.project());
+		final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(configContext.project(), minecraftVersion).toPath();
+
+		return new MinecraftMetadataProvider(
+				MinecraftMetadataProvider.Options.create(
+						minecraftVersion,
+						configContext.project(),
+						workingDir.resolve("minecraft-info.json")
+				),
+				configContext.extension()::download
+		);
+	}
+
+	private static String resolveMinecraftVersion(Project project) {
+		final DependencyInfo dependency = DependencyInfo.create(project, Constants.Configurations.MINECRAFT);
+		return dependency.getDependency().getVersion();
+	}
+
+	public String getMinecraftVersion() {
+		return options.minecraftVersion();
 	}
 
 	public MinecraftVersionMeta getVersionMeta() {

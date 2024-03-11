@@ -37,16 +37,16 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvider permits SingleJarMinecraftProvider.Server, SingleJarMinecraftProvider.Client {
 	private Path minecraftEnvOnlyJar;
 
-	private SingleJarMinecraftProvider(ConfigContext configContext) {
-		super(configContext);
+	private SingleJarMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		super(metadataProvider, configContext);
 	}
 
-	public static SingleJarMinecraftProvider.Server server(ConfigContext configContext) {
-		return new SingleJarMinecraftProvider.Server(configContext);
+	public static SingleJarMinecraftProvider.Server server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		return new SingleJarMinecraftProvider.Server(metadataProvider, configContext);
 	}
 
-	public static SingleJarMinecraftProvider.Client client(ConfigContext configContext) {
-		return new SingleJarMinecraftProvider.Client(configContext);
+	public static SingleJarMinecraftProvider.Client client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		return new SingleJarMinecraftProvider.Client(metadataProvider, configContext);
 	}
 
 	@Override
@@ -110,8 +110,8 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 	abstract Path getInputJar(SingleJarMinecraftProvider provider) throws Exception;
 
 	public static final class Server extends SingleJarMinecraftProvider {
-		private Server(ConfigContext configContext) {
-			super(configContext);
+		private Server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+			super(metadataProvider, configContext);
 		}
 
 		@Override
@@ -143,8 +143,8 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 	}
 
 	public static final class Client extends SingleJarMinecraftProvider {
-		private Client(ConfigContext configContext) {
-			super(configContext);
+		private Client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+			super(metadataProvider, configContext);
 		}
 
 		@Override

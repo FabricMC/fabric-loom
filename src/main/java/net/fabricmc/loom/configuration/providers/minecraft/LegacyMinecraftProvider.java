@@ -37,10 +37,10 @@ public final class LegacyMinecraftProvider extends MinecraftProvider {
 	private final SingleJarMinecraftProvider.Server serverMinecraftProvider;
 	private final SingleJarMinecraftProvider.Client clientMinecraftProvider;
 
-	public LegacyMinecraftProvider(ConfigContext configContext) {
-		super(configContext);
-		serverMinecraftProvider = SingleJarMinecraftProvider.server(configContext);
-		clientMinecraftProvider = SingleJarMinecraftProvider.client(configContext);
+	public LegacyMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		super(metadataProvider, configContext);
+		serverMinecraftProvider = SingleJarMinecraftProvider.server(metadataProvider, configContext);
+		clientMinecraftProvider = SingleJarMinecraftProvider.client(metadataProvider, configContext);
 	}
 
 	public SingleJarMinecraftProvider.Server getServerMinecraftProvider() {

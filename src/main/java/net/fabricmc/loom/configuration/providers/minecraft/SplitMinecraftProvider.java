@@ -35,8 +35,8 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 	private Path minecraftClientOnlyJar;
 	private Path minecraftCommonJar;
 
-	public SplitMinecraftProvider(ConfigContext configContext) {
-		super(configContext);
+	public SplitMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		super(metadataProvider, configContext);
 	}
 
 	@Override

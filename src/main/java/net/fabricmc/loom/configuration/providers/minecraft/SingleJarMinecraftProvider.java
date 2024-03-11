@@ -34,29 +34,26 @@ import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public final class SingleJarMinecraftProvider extends MinecraftProvider {
-	private final Environment environment;
-
+public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvider permits SingleJarMinecraftProvider.Server, SingleJarMinecraftProvider.Client {
 	private Path minecraftEnvOnlyJar;
 
-	private SingleJarMinecraftProvider(ConfigContext configContext, Environment environment) {
-		super(configContext);
-		this.environment = environment;
+	private SingleJarMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		super(metadataProvider, configContext);
 	}
 
-	public static SingleJarMinecraftProvider server(ConfigContext configContext) {
-		return new SingleJarMinecraftProvider(configContext, new Server());
+	public static SingleJarMinecraftProvider.Server server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		return new SingleJarMinecraftProvider.Server(metadataProvider, configContext);
 	}
 
-	public static SingleJarMinecraftProvider client(ConfigContext configContext) {
-		return new SingleJarMinecraftProvider(configContext, new Client());
+	public static SingleJarMinecraftProvider.Client client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		return new SingleJarMinecraftProvider.Client(metadataProvider, configContext);
 	}
 
 	@Override
 	protected void initFiles() {
 		super.initFiles();
 
-		minecraftEnvOnlyJar = path("minecraft-%s-only.jar".formatted(environment.type()));
+		minecraftEnvOnlyJar = path("minecraft-%s-only.jar".formatted(type()));
 	}
 
 	@Override
@@ -79,7 +76,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 			return;
 		}
 
-		final Path inputJar = environment.getInputJar(this);
+		final Path inputJar = getInputJar(this);
 
 		TinyRemapper remapper = null;
 
@@ -96,7 +93,7 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 			}
 		} catch (Exception e) {
 			Files.deleteIfExists(minecraftEnvOnlyJar);
-			throw new RuntimeException("Failed to process %s only jar".formatted(environment.type()), e);
+			throw new RuntimeException("Failed to process %s only jar".formatted(type()), e);
 		} finally {
 			if (remapper != null) {
 				remapper.finish();
@@ -104,27 +101,19 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 		}
 	}
 
-	@Override
-	protected boolean provideClient() {
-		return environment instanceof Client;
-	}
-
-	@Override
-	protected boolean provideServer() {
-		return environment instanceof Server;
-	}
-
 	public Path getMinecraftEnvOnlyJar() {
 		return minecraftEnvOnlyJar;
 	}
 
-	private interface Environment {
-		SingleJarEnvType type();
+	abstract SingleJarEnvType type();
 
-		Path getInputJar(SingleJarMinecraftProvider provider) throws Exception;
-	}
+	abstract Path getInputJar(SingleJarMinecraftProvider provider) throws Exception;
 
-	private static final class Server implements Environment {
+	public static final class Server extends SingleJarMinecraftProvider {
+		private Server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+			super(metadataProvider, configContext);
+		}
+
 		@Override
 		public SingleJarEnvType type() {
 			return SingleJarEnvType.SERVER;
@@ -141,9 +130,23 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 			provider.extractBundledServerJar();
 			return provider.getMinecraftExtractedServerJar().toPath();
 		}
+
+		@Override
+		protected boolean provideServer() {
+			return true;
+		}
+
+		@Override
+		protected boolean provideClient() {
+			return false;
+		}
 	}
 
-	private static final class Client implements Environment {
+	public static final class Client extends SingleJarMinecraftProvider {
+		private Client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+			super(metadataProvider, configContext);
+		}
+
 		@Override
 		public SingleJarEnvType type() {
 			return SingleJarEnvType.CLIENT;
@@ -152,6 +155,16 @@ public final class SingleJarMinecraftProvider extends MinecraftProvider {
 		@Override
 		public Path getInputJar(SingleJarMinecraftProvider provider) throws Exception {
 			return provider.getMinecraftClientJar().toPath();
+		}
+
+		@Override
+		protected boolean provideServer() {
+			return false;
+		}
+
+		@Override
+		protected boolean provideClient() {
+			return true;
 		}
 	}
 }

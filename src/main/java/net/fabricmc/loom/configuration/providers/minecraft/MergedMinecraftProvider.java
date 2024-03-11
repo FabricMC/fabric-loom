@@ -31,13 +31,18 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.fabricmc.loom.configuration.ConfigContext;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
+	private static final Logger LOGGER = LoggerFactory.getLogger(MergedMinecraftProvider.class);
+
 	private Path minecraftMergedJar;
 
-	public MergedMinecraftProvider(ConfigContext configContext) {
-		super(configContext);
+	public MergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+		super(metadataProvider, configContext);
 	}
 
 	@Override
@@ -74,7 +79,7 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	private void mergeJars() throws IOException {
-		getLogger().info(":merging jars");
+		LOGGER.info(":merging jars");
 
 		File jarToMerge = getMinecraftServerJar();
 

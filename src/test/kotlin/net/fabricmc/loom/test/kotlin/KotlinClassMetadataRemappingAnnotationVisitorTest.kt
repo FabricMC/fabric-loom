@@ -55,9 +55,10 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
 
         val classReader = ClassReader(inputPosInChunk)
 
-        val tinyRemapper = TinyRemapper.newRemapper()
-            .withMappings(readMappings("PosInChunk"))
-            .build()
+        val tinyRemapper =
+            TinyRemapper.newRemapper()
+                .withMappings(readMappings("PosInChunk"))
+                .build()
 
         val inputWriter = StringWriter()
         classReader.accept(stringWriterVisitor(inputWriter), 0)
@@ -77,9 +78,10 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest {
         val input = getClassBytes("TestExtensionKt")
         val classReader = ClassReader(input)
 
-        val tinyRemapper = TinyRemapper.newRemapper()
-            .withMappings(readMappings("TestExtensionKt"))
-            .build()
+        val tinyRemapper =
+            TinyRemapper.newRemapper()
+                .withMappings(readMappings("TestExtensionKt"))
+                .build()
 
         val inputWriter = StringWriter()
         classReader.accept(stringWriterVisitor(inputWriter), 0)

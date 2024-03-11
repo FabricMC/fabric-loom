@@ -12,7 +12,7 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/wrapper-validation-action@v2
 
       # Generate the build number based on tags to allow per branch build numbers, not something github provides by default.
       - name: Generate build number

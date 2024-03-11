@@ -116,8 +116,7 @@ record DownloadSourcesHook(Project project, Task task) {
 	private String getGenSourcesTaskName(MinecraftJar.Type jarType) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		return extension.getMinecraftJarConfiguration().get()
-				.getDecompileConfigurationBiFunction()
-				.apply(project, extension.getNamedMinecraftProvider())
+				.createDecompileConfiguration(project)
 				.getTaskName(jarType);
 	}
 

@@ -63,6 +63,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
 import org.gradle.work.DisableCachingByDefault;
@@ -145,6 +146,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Optional
 	public abstract RegularFileProperty getUnpickOutputJar();
 
+	@Input
+	@Option(option = "use-cache", description = "Use the decompile cache")
+	@ApiStatus.Experimental
+	public abstract Property<Boolean> getUseCache();
+
 	// Internal outputs
 	@ApiStatus.Internal
 	@Internal
@@ -174,6 +180,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		getDecompileCacheFile().set(extension.getFiles().getDecompileCache(CACHE_VERSION));
+
+		getUseCache().convention(false);
 	}
 
 	@TaskAction
@@ -184,7 +192,17 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
-		try (var timer = new Timer("Decompiled sources")) {
+		if (!getUseCache().get()) {
+			try (var timer = new Timer("Decompiled sources")) {
+				runWithoutCache();
+			}
+
+			return;
+		}
+
+		LOGGER.warn("Using decompile cache is experimental and may not work as expected.");
+
+		try (var timer = new Timer("Decompiled sources with cache")) {
 			final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
 
 			// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
@@ -269,12 +287,48 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
+	private void runWithoutCache() throws IOException {
+		final MinecraftJar minecraftJar = rebuildInputJar();
+
+		Path inputJar = minecraftJar.getPath();
+		// The final output sources jar
+		final Path sourcesJar = getOutputJar().get().getAsFile().toPath();
+
+		if (getUnpickDefinitions().isPresent()) {
+			try (var timer = new Timer("Unpick")) {
+				inputJar = unpickJar(inputJar, null);
+			}
+		}
+
+		ClassLineNumbers lineNumbers;
+
+		try (var timer = new Timer("Decompile")) {
+			lineNumbers = runDecompileJob(inputJar, sourcesJar, null);
+		}
+
+		if (Files.notExists(sourcesJar)) {
+			throw new RuntimeException("Failed to decompile sources");
+		}
+
+		if (lineNumbers != null) {
+			LOGGER.info("No line numbers to remap, skipping remapping");
+			return;
+		}
+
+		// This is the minecraft jar used at runtime.
+		final Path classesJar = minecraftJar.getPath();
+		final Path tempJar = Files.createTempFile("loom", "linenumber-remap");
+		Files.delete(tempJar);
+
+		try (var timer = new Timer("Remap line numbers")) {
+			remapLineNumbers(lineNumbers, classesJar, tempJar);
+		}
+
+		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
+	}
+
 	private String getCacheKey(File inputJar) {
 		var sj = new StringJoiner(",");
-
-		sj.add(fileHash(inputJar));
-		sj.add(fileCollectionHash(getExtension().getNamedMinecraftJars()));
-
 		sj.add(getDecompilerCheckKey());
 		sj.add(getUnpickCacheKey());
 
@@ -692,7 +746,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		@Override
 		public void close() {
-			getProject().getLogger().lifecycle("{} took {}ms", name, System.currentTimeMillis() - start);
+			getProject().getLogger().info("{} took {}ms", name, System.currentTimeMillis() - start);
 		}
 	}
 }

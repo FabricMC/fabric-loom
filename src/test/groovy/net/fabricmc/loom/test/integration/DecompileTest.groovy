@@ -74,4 +74,17 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	def "decompile cache"() {
+		setup:
+		def gradle = gradleProject(project: "decompile", version: PRE_RELEASE_GRADLE)
+
+		when:
+		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+
+		then:
+		result.task(":genSourcesWithVineflower").outcome == SUCCESS
+		result2.task(":genSourcesWithVineflower").outcome == SUCCESS
+	}
 }

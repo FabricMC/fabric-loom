@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.decompilers;
 
-import org.jetbrains.annotations.Nullable;
-
 import static java.text.MessageFormat.format;
 
 import java.io.BufferedReader;
@@ -38,6 +36,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import org.jetbrains.annotations.Nullable;
 
 public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 	public ClassLineNumbers {

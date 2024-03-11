@@ -40,15 +40,19 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
@@ -88,6 +92,7 @@ import net.fabricmc.loom.decompilers.cache.CachedData;
 import net.fabricmc.loom.decompilers.cache.CachedFileStore;
 import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl;
 import net.fabricmc.loom.decompilers.cache.CachedJarProcessor;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
@@ -193,11 +198,14 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void runWithCache(Path cacheRoot) throws IOException {
+		final MinecraftJar minecraftJar = rebuildInputJar();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
 		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
-		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, "TODO");
-		final MinecraftJar minecraftJar = rebuildInputJar();
+		final String cacheKey = getCacheKey(minecraftJar.getPath().toFile());
+		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, cacheKey);
 		final CachedJarProcessor.WorkRequest workRequest;
+
+		LOGGER.info("Decompile cache key: {}", cacheKey);
 
 		try (var timer = new Timer("Prepare job")) {
 			workRequest = cachedJarProcessor.prepareJob(minecraftJar.getPath());
@@ -259,6 +267,47 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	private String getCacheKey(File inputJar) {
+		var sj = new StringJoiner(",");
+
+		sj.add(fileHash(inputJar));
+		sj.add(fileCollectionHash(getExtension().getNamedMinecraftJars()));
+
+		sj.add(getDecompilerCheckKey());
+		sj.add(getUnpickCacheKey());
+
+		try {
+			return Checksum.sha256Hex(sj.toString().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	private String getDecompilerCheckKey() {
+		var sj = new StringJoiner(",");
+		sj.add(decompilerOptions.getDecompilerClassName().get());
+		sj.add(fileCollectionHash(decompilerOptions.getClasspath()));
+
+		for (Map.Entry<String, String> entry : decompilerOptions.getOptions().get().entrySet()) {
+			sj.add(entry.getKey() + "=" + entry.getValue());
+		}
+
+		return sj.toString();
+	}
+
+	private String getUnpickCacheKey() {
+		if (!getUnpickDefinitions().isPresent()) {
+			return "";
+		}
+
+		var sj = new StringJoiner(",");
+		sj.add(fileHash(getUnpickDefinitions().getAsFile().get()));
+		sj.add(fileCollectionHash(getUnpickConstantJar()));
+		sj.add(fileCollectionHash(getUnpickClasspath()));
+
+		return sj.toString();
 	}
 
 	@Nullable
@@ -606,6 +655,26 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static String fileHash(File file) {
+		try {
+			return Checksum.sha256Hex(Files.readAllBytes(file.toPath()));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	private static String fileCollectionHash(FileCollection files) {
+		var sj = new StringJoiner(",");
+
+		files.getFiles()
+				.stream()
+				.sorted(Comparator.comparing(File::getAbsolutePath))
+				.map(GenerateSourcesTask::fileHash)
+				.forEach(sj::add);
+
+		return sj.toString();
 	}
 
 	public interface MappingsProcessor {

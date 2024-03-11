@@ -157,6 +157,7 @@ public abstract class CompileConfiguration implements Runnable {
 		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
+
 		if (jarConfiguration == MinecraftJarConfiguration.MERGED && !metadataProvider.getVersionMeta().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */)) {
 			jarConfiguration = MinecraftJarConfiguration.LEGACY_MERGED;
 		}

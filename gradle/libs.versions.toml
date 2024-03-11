@@ -39,7 +39,7 @@ fabric-access-widener = { module = "net.fabricmc:access-widener", version.ref = 
 fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping-io" }
 fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
-fabric-loom-native = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
+fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
 
 # Misc
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

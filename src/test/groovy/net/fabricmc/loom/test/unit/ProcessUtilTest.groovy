@@ -24,17 +24,18 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.ProcessUtil
 import org.gradle.api.logging.LogLevel
 import spock.lang.Specification
 
-class ProcessUtilTest extends Specification {
-    def "print process info"() {
-        when:
-        def output = new ProcessUtil(LogLevel.DEBUG).printWithParents(ProcessHandle.current())
+import net.fabricmc.loom.util.ProcessUtil
 
-        then:
-        // Just a simple check to see if the output is not empty
-        !output.isEmpty()
-    }
+class ProcessUtilTest extends Specification {
+	def "print process info"() {
+		when:
+		def output = new ProcessUtil(LogLevel.DEBUG).printWithParents(ProcessHandle.current())
+
+		then:
+		// Just a simple check to see if the output is not empty
+		!output.isEmpty()
+	}
 }

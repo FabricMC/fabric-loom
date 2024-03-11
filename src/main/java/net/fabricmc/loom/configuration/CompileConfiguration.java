@@ -353,8 +353,6 @@ public abstract class CompileConfiguration implements Runnable {
 		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
 	}
 
-
-
 	private void releaseLock() {
 		final Path lock = getLockFile().file;
 

@@ -105,8 +105,8 @@ public record MinecraftJarConfiguration<
 				List.of("client", "server")
 			);
 
-	public MinecraftProvider createMinecraftProvider(ConfigContext context) {
-		return minecraftProviderFactory.create(context);
+	public MinecraftProvider createMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext context) {
+		return minecraftProviderFactory.create(metadataProvider, context);
 	}
 
 	public IntermediaryMinecraftProvider<M> createIntermediaryMinecraftProvider(Project project) {
@@ -145,7 +145,7 @@ public record MinecraftJarConfiguration<
 
 	// Factory interfaces:
 	private interface MinecraftProviderFactory<M extends MinecraftProvider> {
-		M create(ConfigContext configContext);
+		M create(MinecraftMetadataProvider metadataProvider, ConfigContext configContext);
 	}
 
 	private interface IntermediaryMinecraftProviderFactory<M extends MinecraftProvider> {

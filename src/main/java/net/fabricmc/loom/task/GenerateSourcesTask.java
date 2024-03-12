@@ -224,7 +224,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private void runWithCache(Path cacheRoot) throws IOException {
 		final MinecraftJar minecraftJar = rebuildInputJar();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
-		final CachedFileStore<CachedData> decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
+		final var decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
 		final String cacheKey = getCacheKey();
 		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, cacheKey);
 		final CachedJarProcessor.WorkRequest workRequest;
@@ -291,6 +291,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		Files.move(tempJar, classesJar, StandardCopyOption.REPLACE_EXISTING);
+
+		try (var timer = new Timer("Prune cache")) {
+			decompileCache.prune();
+		}
 	}
 
 	private void runWithoutCache() throws IOException {

@@ -43,8 +43,8 @@ class CachedJarProcessorTest extends Specification {
 		"net/fabricmc/other/Test\$1.class": "",
 	]
 
-	static String ExampleHash = "abc123cd372fb85148700fa88095e3492d3f9f5beb43e555e5ff26d95f5a6adc36f8e6"
-	static String TestHash = "abc123ecd40b16ec50b636a390cb8da716a22606965f14e526e3051144dd567f336bc5"
+	static String ExampleHash = "abc123/cd372fb85148700fa88095e3492d3f9f5beb43e555e5ff26d95f5a6adc36f8e6"
+	static String TestHash = "abc123/ecd40b16ec50b636a390cb8da716a22606965f14e526e3051144dd567f336bc5"
 
 	static CachedData ExampleCachedData = new CachedData("net/fabricmc/Example", "Example sources", lineNumber("net/fabricmc/Example"))
 	static CachedData TestCachedData = new CachedData("net/fabricmc/other/Test", "Test sources", lineNumber("net/fabricmc/other/Test"))
@@ -60,7 +60,7 @@ class CachedJarProcessorTest extends Specification {
 		def workJob = workRequest.job() as CachedJarProcessor.FullWorkJob
 
 		then:
-		workRequest.lineNumbers().lineMap().size() == 0
+		workRequest.lineNumbers() == null
 		workJob.outputNameMap().size() == 2
 
 		// Expect two calls looking for the existing entry in the cache

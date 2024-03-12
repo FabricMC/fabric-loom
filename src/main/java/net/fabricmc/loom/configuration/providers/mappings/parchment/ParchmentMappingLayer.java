@@ -47,6 +47,6 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {
-		return ZipUtils.unpackJackson(parchmentFile, PARCHMENT_DATA_FILE_NAME, ParchmentTreeV1.class);
+		return ZipUtils.unpackJson(parchmentFile, PARCHMENT_DATA_FILE_NAME, ParchmentTreeV1.class);
 	}
 }

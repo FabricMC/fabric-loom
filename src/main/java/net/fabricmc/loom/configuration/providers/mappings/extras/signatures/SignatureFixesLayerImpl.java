@@ -47,7 +47,7 @@ public record SignatureFixesLayerImpl(Path mappingsFile) implements MappingLayer
 	public Map<String, String> getSignatureFixes() {
 		try {
 			//noinspection unchecked
-			return ZipUtils.unpackJackson(mappingsFile(), SIGNATURE_FIXES_PATH, Map.class);
+			return ZipUtils.unpackJson(mappingsFile(), SIGNATURE_FIXES_PATH, Map.class);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to extract signature fixes", e);
 		}

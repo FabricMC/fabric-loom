@@ -414,7 +414,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true, configContext);
 			minecraftJars = getExtension().getNamedMinecraftProvider().provide(provideContext);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to rebuild input jars", e);
+			ExceptionUtil.printFileLocks(e, getProject());
+			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to rebuild input jars", e);
 		}
 
 		for (MinecraftJar minecraftJar : minecraftJars) {

@@ -101,7 +101,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.15.7" // 0.15.2 fixed MC 1.2.5 not launching
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
                 }
 			"""
 
@@ -131,7 +131,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.15.7" // 0.15.2 fixed MC 1.2.5 not launching
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
                 }
 			"""
 

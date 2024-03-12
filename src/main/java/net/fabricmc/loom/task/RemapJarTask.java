@@ -152,7 +152,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				params.getRemapClasspath().from(getClasspath());
 
 				params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
-				params.getOptimizeFmj().set(getOptimizeFabricModJson().get());
 
 				final boolean mixinAp = getUseMixinAP().get();
 				params.getUseMixinExtension().set(!mixinAp);
@@ -167,6 +166,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				final var refmapRemapType = mixinAp ? ArtifactMetadata.MixinRemapType.MIXIN : ArtifactMetadata.MixinRemapType.STATIC;
 				params.getManifestAttributes().put(Constants.Manifest.MIXIN_REMAP_TYPE, refmapRemapType.manifestValue());
 			}
+
+			params.getOptimizeFmj().set(getOptimizeFabricModJson().get());
 		});
 	}
 

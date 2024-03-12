@@ -90,7 +90,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMapped
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.decompilers.cache.CachedData;
-import net.fabricmc.loom.decompilers.cache.CachedFileStore;
 import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl;
 import net.fabricmc.loom.decompilers.cache.CachedJarProcessor;
 import net.fabricmc.loom.util.Checksum;

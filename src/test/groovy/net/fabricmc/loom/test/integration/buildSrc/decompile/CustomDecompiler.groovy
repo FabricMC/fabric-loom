@@ -26,6 +26,8 @@ package net.fabricmc.loom.test.integration.buildSrc.decompile
 
 import java.nio.file.Path
 
+import com.google.common.io.Files
+
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata
 import net.fabricmc.loom.api.decompilers.LoomDecompiler
 
@@ -33,5 +35,6 @@ class CustomDecompiler implements LoomDecompiler {
 	@Override
 	void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
 		println("Running custom decompiler")
+		Files.touch(sourcesDestination.toFile())
 	}
 }

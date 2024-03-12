@@ -319,7 +319,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to decompile sources");
 		}
 
-		if (lineNumbers != null) {
+		if (lineNumbers == null) {
 			LOGGER.info("No line numbers to remap, skipping remapping");
 			return;
 		}
@@ -485,6 +485,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void remapLineNumbers(ClassLineNumbers lineNumbers, Path inputJar, Path outputJar) throws IOException {
+		Objects.requireNonNull(lineNumbers, "lineNumbers");
 		final var remapper = new LineNumberRemapper(lineNumbers);
 
 		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, true);

@@ -55,8 +55,8 @@ class ReproducibleBuildTest extends Specification implements GradleProjectTestTr
 
 		where:
 		version              | modHash                               | sourceHash
-		DEFAULT_GRADLE       | "10832fa9ddc3969b2b0613a0e3430a1d"    | "8e8fac2a5e32fc872e6cf0f9ccc55cfd"
-		PRE_RELEASE_GRADLE   | "10832fa9ddc3969b2b0613a0e3430a1d"    | "8e8fac2a5e32fc872e6cf0f9ccc55cfd"
+		DEFAULT_GRADLE       | "207bd75aa34fc996a97e962dd98b61d5"    | "8e8fac2a5e32fc872e6cf0f9ccc55cfd"
+		PRE_RELEASE_GRADLE   | "207bd75aa34fc996a97e962dd98b61d5"    | "8e8fac2a5e32fc872e6cf0f9ccc55cfd"
 	}
 
 	String generateMD5(File file) {

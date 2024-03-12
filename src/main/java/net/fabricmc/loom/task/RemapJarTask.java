@@ -89,7 +89,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public abstract Property<Boolean> getAddNestedDependencies();
 
 	/**
-	 * Whether to optimize the fabric.mod.json file, by default this is true.
+	 * Whether to optimize the fabric.mod.json file, by default this is false.
 	 *
 	 * <p>The schemaVersion entry will be placed first in the json file
 	 */
@@ -109,7 +109,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 		getClasspath().from(configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
-		getOptimizeFabricModJson().convention(true).finalizeValueOnRead();
+		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 
 		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
 		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));

@@ -42,6 +42,7 @@ import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.decompilers.jadx.LoomJadxDecompiler;
 import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.ZipUtils;
@@ -55,16 +56,22 @@ public abstract class DecompilerConfiguration implements Runnable {
 		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
 		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
 		var vineflowerConfiguration = createConfiguration("vineflower", LoomVersions.VINEFLOWER);
+		var jadxConfiguration = createConfiguration("jadx", LoomVersions.JADX_CORE, LoomVersions.JADX_JAVA); // FIXME: exclude transitive aapt2-proto and raung-disasm dependencies
 
 		registerDecompiler(getProject(), "fernFlower", BuiltinFernflower.class, fernflowerConfiguration);
 		registerDecompiler(getProject(), "cfr", BuiltinCfr.class, cfrConfiguration);
 		registerDecompiler(getProject(), "vineflower", BuiltinVineflower.class, vineflowerConfiguration);
+		registerDecompiler(getProject(), "jadx", BuiltinVineflower.class, jadxConfiguration);
 	}
 
-	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions version) {
+	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions... versions) {
 		final String configurationName = name + "DecompilerClasspath";
 		NamedDomainObjectProvider<Configuration> configuration = getProject().getConfigurations().register(configurationName);
-		getProject().getDependencies().add(configurationName, version.mavenNotation());
+
+		for (LoomVersions version : versions) {
+			getProject().getDependencies().add(configurationName, version.mavenNotation());
+		}
+
 		return configuration;
 	}
 
@@ -77,7 +84,7 @@ public abstract class DecompilerConfiguration implements Runnable {
 
 	// We need to wrap the internal API with the public API.
 	// This is needed as the sourceset containing fabric's decompilers do not have access to loom classes.
-	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower {
+	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower, BuiltinJadx {
 		private final LoomInternalDecompiler internalDecompiler;
 
 		BuiltinDecompiler(LoomInternalDecompiler internalDecompiler) {
@@ -164,6 +171,12 @@ public abstract class DecompilerConfiguration implements Runnable {
 	public static final class BuiltinVineflower extends BuiltinDecompiler {
 		public BuiltinVineflower() {
 			super(new VineflowerDecompiler());
+		}
+	}
+
+	public static final class BuiltinJadx extends BuiltinDecompiler {
+		public BuiltinJadx() {
+			super(new LoomJadxDecompiler());
 		}
 	}
 }

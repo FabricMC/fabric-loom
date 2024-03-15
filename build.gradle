@@ -24,7 +24,8 @@ def brokenConfigurations = [
 	"commonDecompilerRuntimeClasspath",
 	"fernflowerRuntimeClasspath",
 	"cfrRuntimeClasspath",
-	"vineflowerRuntimeClasspath"
+	"vineflowerRuntimeClasspath",
+	"jadxRuntimeClasspath",
 ]
 
 configurations.configureEach {
@@ -109,6 +110,11 @@ sourceSets {
 			srcDir("src/decompilers/vineflower")
 		}
 	}
+	jadx {
+		java {
+			srcDir("src/decompilers/jadx")
+		}
+	}
 }
 
 dependencies {
@@ -147,14 +153,24 @@ dependencies {
 	vineflowerCompileOnly runtimeLibs.vineflower
 	vineflowerCompileOnly libs.fabric.mapping.io
 
+	jadxCompileOnly dependencies.create(runtimeLibs.jadx.core.get()) {
+		exclude group: 'com.android.tools.build', module: 'aapt2-proto'
+	}
+	jadxCompileOnly dependencies.create(runtimeLibs.jadx.java.get()) {
+		exclude group: 'io.github.skylot', module: 'raung-disasm'
+	}
+	jadxCompileOnly libs.fabric.mapping.io
+
 	fernflowerApi sourceSets.commonDecompiler.output
 	cfrApi sourceSets.commonDecompiler.output
 	vineflowerApi sourceSets.commonDecompiler.output
+	jadxApi sourceSets.commonDecompiler.output
 
 	implementation sourceSets.commonDecompiler.output
 	implementation sourceSets.fernflower.output
 	implementation sourceSets.cfr.output
 	implementation sourceSets.vineflower.output
+	implementation sourceSets.jadx.output
 
 	// source code remapping
 	implementation libs.fabric.mercury
@@ -198,6 +214,7 @@ jar {
 	from sourceSets.cfr.output.classesDirs
 	from sourceSets.fernflower.output.classesDirs
 	from sourceSets.vineflower.output.classesDirs
+	from sourceSets.jadx.output.classesDirs
 }
 
 base {

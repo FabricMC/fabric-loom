@@ -38,7 +38,7 @@ public class JarEntryWriter {
 	JarEntryWriter(JarOutputStream outputStream) {
 		this.outputStream = outputStream;
 	}
-	
+
 	synchronized void write(String filename, byte[] data) throws IOException {
 		String[] path = filename.split("/");
 		String pathPart = "";

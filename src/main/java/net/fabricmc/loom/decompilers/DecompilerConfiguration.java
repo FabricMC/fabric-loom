@@ -34,6 +34,8 @@ import javax.inject.Inject;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,12 +58,12 @@ public abstract class DecompilerConfiguration implements Runnable {
 		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
 		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
 		var vineflowerConfiguration = createConfiguration("vineflower", LoomVersions.VINEFLOWER);
-		var jadxConfiguration = createConfiguration("jadx", LoomVersions.JADX_CORE, LoomVersions.JADX_JAVA); // FIXME: exclude transitive aapt2-proto and raung-disasm dependencies
+		var jadxConfiguration = createJadxConfiguration();
 
 		registerDecompiler(getProject(), "fernFlower", BuiltinFernflower.class, fernflowerConfiguration);
 		registerDecompiler(getProject(), "cfr", BuiltinCfr.class, cfrConfiguration);
 		registerDecompiler(getProject(), "vineflower", BuiltinVineflower.class, vineflowerConfiguration);
-		registerDecompiler(getProject(), "jadx", BuiltinVineflower.class, jadxConfiguration);
+		registerDecompiler(getProject(), "jadx", BuiltinJadx.class, jadxConfiguration);
 	}
 
 	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions... versions) {
@@ -71,6 +73,29 @@ public abstract class DecompilerConfiguration implements Runnable {
 		for (LoomVersions version : versions) {
 			getProject().getDependencies().add(configurationName, version.mavenNotation());
 		}
+
+		return configuration;
+	}
+
+	private NamedDomainObjectProvider<Configuration> createJadxConfiguration() {
+		final String configurationName = "jadxDecompilerClasspath";
+		final NamedDomainObjectProvider<Configuration> configuration = getProject().getConfigurations().register(configurationName);
+		final DependencyFactory dependencyFactory = getProject().getDependencyFactory();
+
+		final ExternalModuleDependency jadxCore = dependencyFactory.create(LoomVersions.JADX_CORE.mavenNotation());
+		jadxCore.exclude(Map.of(
+				"group", "com.android.tools.build",
+				"module", "aapt2-proto"
+		));
+
+		final ExternalModuleDependency jadxJava = dependencyFactory.create(LoomVersions.JADX_JAVA.mavenNotation());
+		jadxJava.exclude(Map.of(
+				"group", "io.github.skylot",
+				"module", "raung-disasm"
+		));
+
+		getProject().getDependencies().add(configurationName, jadxCore);
+		getProject().getDependencies().add(configurationName, jadxJava);
 
 		return configuration;
 	}

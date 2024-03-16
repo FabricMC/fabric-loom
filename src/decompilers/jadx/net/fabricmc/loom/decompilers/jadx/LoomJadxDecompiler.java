@@ -144,7 +144,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 
 				// Write to JAR
 				String filename = clsMapping.getSrcName() + ".java";
-				
+
 				try {
 					byte[] code = codeInfo.getCodeStr().getBytes(StandardCharsets.UTF_8);
 					jarEntryWriter.write(filename, code);

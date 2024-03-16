@@ -81,6 +81,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 
 	@Override
 	public void decompile(LoomInternalDecompiler.Context context) {
+		System.out.println(System.getProperty("java.io.tmpdir"));
 		JadxArgs jadxArgs = getJadxArgs();
 		jadxArgs.setThreadsCount(context.numberOfThreads());
 
@@ -96,7 +97,6 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 			jadx.addCustomLoad(JavaInputPlugin.loadClassFiles(inputs));
 			jadx.load();
 
-			String comment;
 			MappingTree tree = readMappings(context.javaDocs().toFile());
 			JarEntryWriter jarEntryWriter = new JarEntryWriter(jarOutputStream);
 
@@ -107,28 +107,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 
 				// Add Javadocs
 				ClassMapping clsMapping = tree.getClass(internalNameOf(cls.getClassNode()));
-
-				if ((comment = emptyToNull(clsMapping.getComment())) != null) {
-					cls.getClassNode().addAttr(AType.CODE_COMMENTS, comment);
-				}
-
-				for (JavaField fld : cls.getFields()) {
-					FieldMapping fldMapping = clsMapping.getField(fld.getFieldNode().getName(), TypeGen.signature(fld.getType()));
-
-					if ((comment = emptyToNull(fldMapping.getComment())) != null) {
-						fld.getFieldNode().addAttr(AType.CODE_COMMENTS, comment);
-					}
-				}
-
-				for (JavaMethod mth : cls.getMethods()) {
-					MethodInfo mthInfo = mth.getMethodNode().getMethodInfo();
-					String mthName = mthInfo.getName();
-					MethodMapping mthMapping = clsMapping.getMethod(mthName, mthInfo.getShortId().substring(mthName.length()));
-
-					if ((comment = emptyToNull(mthMapping.getComment())) != null) {
-						mth.getMethodNode().addAttr(AType.CODE_COMMENTS, comment);
-					}
-				}
+				addJavadocs(cls, clsMapping);
 
 				// Decompile
 				ICodeInfo codeInfo = cls.getCodeInfo();
@@ -185,6 +164,36 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 			return mappingTree;
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read mappings", e);
+		}
+	}
+
+	private void addJavadocs(JavaClass cls, ClassMapping clsMapping) {
+		String comment;
+
+		if (clsMapping == null) {
+			return;
+		}
+
+		if ((comment = emptyToNull(clsMapping.getComment())) != null) {
+			cls.getClassNode().addAttr(AType.CODE_COMMENTS, comment);
+		}
+
+		for (JavaField fld : cls.getFields()) {
+			FieldMapping fldMapping = clsMapping.getField(fld.getFieldNode().getName(), TypeGen.signature(fld.getType()));
+
+			if ((comment = emptyToNull(fldMapping.getComment())) != null) {
+				fld.getFieldNode().addAttr(AType.CODE_COMMENTS, comment);
+			}
+		}
+
+		for (JavaMethod mth : cls.getMethods()) {
+			MethodInfo mthInfo = mth.getMethodNode().getMethodInfo();
+			String mthName = mthInfo.getName();
+			MethodMapping mthMapping = clsMapping.getMethod(mthName, mthInfo.getShortId().substring(mthName.length()));
+
+			if ((comment = emptyToNull(mthMapping.getComment())) != null) {
+				mth.getMethodNode().addAttr(AType.CODE_COMMENTS, comment);
+			}
 		}
 	}
 

@@ -282,7 +282,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			return;
 		}
 
-		Path tempJar = Files.createTempFile("loom", "linenumber-remap");
+		Path tempJar = Files.createTempFile("loom", "linenumber-remap.jar");
 		Files.delete(tempJar);
 
 		try (var timer = new Timer("Remap line numbers")) {
@@ -326,7 +326,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		// This is the minecraft jar used at runtime.
 		final Path classesJar = minecraftJar.getPath();
-		final Path tempJar = Files.createTempFile("loom", "linenumber-remap");
+		final Path tempJar = Files.createTempFile("loom", "linenumber-remap.jar");
 		Files.delete(tempJar);
 
 		try (var timer = new Timer("Remap line numbers")) {
@@ -489,7 +489,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Objects.requireNonNull(lineNumbers, "lineNumbers");
 		final var remapper = new LineNumberRemapper(lineNumbers);
 
-		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, true);
+		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, false);
 				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
 			remapper.process(inFs.get().getPath("/"), outFs.get().getPath("/"));
 		}

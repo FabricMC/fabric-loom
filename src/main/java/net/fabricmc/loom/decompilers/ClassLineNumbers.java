@@ -88,7 +88,7 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 				if (line.charAt(0) != '\t') {
 					if (currentClass != null) {
 						currentClass.putEntry(lineMap, currentMappings);
-						currentMappings.clear();
+						currentMappings = new HashMap<>();
 					}
 
 					currentClass = new CurrentClass(segments[0], Integer.parseInt(segments[1]), Integer.parseInt(segments[2]));

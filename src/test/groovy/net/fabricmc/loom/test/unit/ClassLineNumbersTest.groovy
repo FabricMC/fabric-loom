@@ -24,28 +24,29 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.decompilers.ClassLineNumbers
 import spock.lang.Specification
 
+import net.fabricmc.loom.decompilers.ClassLineNumbers
+
 class ClassLineNumbersTest extends Specification {
-    def "read linemap"() {
-        when:
-        def reader = new BufferedReader(new StringReader(LINE_MAP))
-        def lineNumbers = ClassLineNumbers.readMappings(reader)
-        def lineMap = lineNumbers.lineMap()
+	def "read linemap"() {
+		when:
+		def reader = new BufferedReader(new StringReader(LINE_MAP))
+		def lineNumbers = ClassLineNumbers.readMappings(reader)
+		def lineMap = lineNumbers.lineMap()
 
-        then:
-        lineMap.size() == 2
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].lineMap().size() == 39
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].maxLine() == 203
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].maxLineDest() == 187
+		then:
+		lineMap.size() == 2
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].lineMap().size() == 39
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].maxLine() == 203
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesHandler"].maxLineDest() == 187
 
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].lineMap().size() == 6
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].maxLine() == 25
-        lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].maxLineDest() == 30
-    }
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].lineMap().size() == 6
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].maxLine() == 25
+		lineMap["net/minecraft/server/dedicated/ServerPropertiesLoader"].maxLineDest() == 30
+	}
 
-    private static final String LINE_MAP = """
+	private static final String LINE_MAP = """
 net/minecraft/server/dedicated/ServerPropertiesHandler\t203\t187
 \t48\t187
 \t91\t92

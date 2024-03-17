@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration.buildSrc.decompile
+package net.fabricmc.loom.test.unit.cache
 
+import java.nio.channels.FileChannel
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
-import com.google.common.io.Files
+import spock.lang.Specification
+import spock.lang.TempDir
 
-import net.fabricmc.loom.api.decompilers.DecompilationMetadata
-import net.fabricmc.loom.api.decompilers.LoomDecompiler
+import net.fabricmc.loom.decompilers.ClassLineNumbers
+import net.fabricmc.loom.decompilers.cache.CachedData
 
-class CustomDecompiler implements LoomDecompiler {
-	@Override
-	void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		println("Running custom decompiler")
-		Files.touch(sourcesDestination.toFile())
+class CachedDataTest extends Specification {
+	@TempDir
+	Path testPath
+
+	// Simple test to check if the CachedData class can be written and read from a file
+	def "Read + Write CachedData"() {
+		given:
+		def lineNumberEntry = new ClassLineNumbers.Entry("net/test/TestClass", 1, 2, [1: 2, 4: 7])
+		def cachedData = new CachedData("net/test/TestClass", "Example sources", lineNumberEntry)
+		def path = testPath.resolve("cachedData.bin")
+		when:
+		// Write the cachedData to a file
+		FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE).withCloseable {
+			cachedData.write(it)
+		}
+
+		// And read it back
+		def readCachedData = Files.newInputStream(path).withCloseable {
+			return CachedData.read(it)
+		}
+
+		then:
+		cachedData == readCachedData
 	}
 }

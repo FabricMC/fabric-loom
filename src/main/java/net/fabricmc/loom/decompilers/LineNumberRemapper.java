@@ -24,11 +24,6 @@
 
 package net.fabricmc.loom.decompilers;
 
-import static java.text.MessageFormat.format;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileVisitResult;
@@ -37,57 +32,21 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.IOStringConsumer;
 
-/**
- * Created by covers1624 on 18/02/19.
- */
-public class LineNumberRemapper {
-	private final Map<String, RClass> lineMap = new HashMap<>();
+public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LineNumberRemapper.class);
 
-	public void readMappings(File lineMappings) {
-		try (BufferedReader reader = new BufferedReader(new FileReader(lineMappings))) {
-			RClass clazz = null;
-			String line = null;
-			int i = 0;
-
-			try {
-				while ((line = reader.readLine()) != null) {
-					if (line.isEmpty()) {
-						continue;
-					}
-
-					String[] segs = line.trim().split("\t");
-
-					if (line.charAt(0) != '\t') {
-						clazz = lineMap.computeIfAbsent(segs[0], RClass::new);
-						clazz.maxLine = Integer.parseInt(segs[1]);
-						clazz.maxLineDest = Integer.parseInt(segs[2]);
-					} else {
-						clazz.lineMap.put(Integer.parseInt(segs[0]), Integer.parseInt(segs[1]));
-					}
-
-					i++;
-				}
-			} catch (Exception e) {
-				throw new RuntimeException(format("Exception reading mapping line @{0}: {1}", i, line), e);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Exception reading LineMappings file.", e);
-		}
-	}
-
-	public void process(IOStringConsumer logger, Path input, Path output) throws IOException {
+	public void process(Path input, Path output) throws IOException {
 		Files.walkFileTree(input, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -108,9 +67,7 @@ public class LineNumberRemapper {
 
 					String idx = rel.substring(0, rel.length() - 6);
 
-					if (logger != null) {
-						logger.accept("Remapping " + idx);
-					}
+					LOGGER.debug("Remapping line numbers for class: " + idx);
 
 					int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
 
@@ -118,12 +75,12 @@ public class LineNumberRemapper {
 						idx = idx.substring(0, dollarPos);
 					}
 
-					if (lineMap.containsKey(idx)) {
+					if (lineNumbers.lineMap().containsKey(idx)) {
 						try (InputStream is = Files.newInputStream(file)) {
 							ClassReader reader = new ClassReader(is);
 							ClassWriter writer = new ClassWriter(0);
 
-							reader.accept(new LineNumberVisitor(Constants.ASM_VERSION, writer, lineMap.get(idx)), 0);
+							reader.accept(new LineNumberVisitor(Constants.ASM_VERSION, writer, lineNumbers.lineMap().get(idx)), 0);
 							Files.write(dst, writer.toByteArray());
 							return FileVisitResult.CONTINUE;
 						}
@@ -137,11 +94,11 @@ public class LineNumberRemapper {
 	}
 
 	private static class LineNumberVisitor extends ClassVisitor {
-		private final RClass rClass;
+		private final ClassLineNumbers.Entry lineNumbers;
 
-		LineNumberVisitor(int api, ClassVisitor classVisitor, RClass rClass) {
+		LineNumberVisitor(int api, ClassVisitor classVisitor, ClassLineNumbers.Entry lineNumbers) {
 			super(api, classVisitor);
-			this.rClass = rClass;
+			this.lineNumbers = lineNumbers;
 		}
 
 		@Override
@@ -153,30 +110,19 @@ public class LineNumberRemapper {
 
 					if (tLine <= 0) {
 						super.visitLineNumber(line, start);
-					} else if (tLine >= rClass.maxLine) {
-						super.visitLineNumber(rClass.maxLineDest, start);
+					} else if (tLine >= lineNumbers.maxLine()) {
+						super.visitLineNumber(lineNumbers.maxLineDest(), start);
 					} else {
 						Integer matchedLine = null;
 
-						while (tLine <= rClass.maxLine && ((matchedLine = rClass.lineMap.get(tLine)) == null)) {
+						while (tLine <= lineNumbers.maxLine() && ((matchedLine = lineNumbers.lineMap().get(tLine)) == null)) {
 							tLine++;
 						}
 
-						super.visitLineNumber(matchedLine != null ? matchedLine : rClass.maxLineDest, start);
+						super.visitLineNumber(matchedLine != null ? matchedLine : lineNumbers.maxLineDest(), start);
 					}
 				}
 			};
-		}
-	}
-
-	private static class RClass {
-		private final String name;
-		private int maxLine;
-		private int maxLineDest;
-		private final Map<Integer, Integer> lineMap = new HashMap<>();
-
-		private RClass(String name) {
-			this.name = name;
 		}
 	}
 }

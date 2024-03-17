@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,21 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration.buildSrc.decompile
+package net.fabricmc.loom.decompilers.cache;
 
-import java.nio.file.Path
+import java.io.IOException;
+import java.nio.file.Path;
 
-import com.google.common.io.Files
+import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.api.decompilers.DecompilationMetadata
-import net.fabricmc.loom.api.decompilers.LoomDecompiler
+public interface CachedFileStore<T> {
+	@Nullable T getEntry(String key) throws IOException;
 
-class CustomDecompiler implements LoomDecompiler {
-	@Override
-	void decompile(Path compiledJar, Path sourcesDestination, Path linemapDestination, DecompilationMetadata metaData) {
-		println("Running custom decompiler")
-		Files.touch(sourcesDestination.toFile())
+	void putEntry(String key, T entry) throws IOException;
+
+	interface EntrySerializer<T> {
+		T read(Path path) throws IOException;
+
+		void write(T entry, Path path) throws IOException;
 	}
 }

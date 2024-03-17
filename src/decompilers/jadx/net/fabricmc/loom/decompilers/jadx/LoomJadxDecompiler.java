@@ -105,9 +105,10 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 					continue;
 				}
 
+				String clsName = internalNameOf(cls.getClassNode());
+
 				// Add Javadocs
-				ClassMapping clsMapping = tree.getClass(internalNameOf(cls.getClassNode()));
-				addJavadocs(cls, clsMapping);
+				addJavadocs(cls, tree.getClass(clsName));
 
 				// Decompile
 				ICodeInfo codeInfo = cls.getCodeInfo();
@@ -122,7 +123,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 				}
 
 				// Write to JAR
-				String filename = clsMapping.getSrcName() + ".java";
+				String filename = clsName + ".java";
 
 				try {
 					byte[] code = codeInfo.getCodeStr().getBytes(StandardCharsets.UTF_8);
@@ -146,7 +147,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 					builder.append("\t").append(src).append("\t").append(dst).append("\n");
 				}
 
-				lineMapWriter.write(String.format(Locale.ENGLISH, "%s\t%d\t%d\n", clsMapping.getSrcName(), maxLine, maxLineDest));
+				lineMapWriter.write(String.format(Locale.ENGLISH, "%s\t%d\t%d\n", clsName, maxLine, maxLineDest));
 				lineMapWriter.write(builder.toString());
 				lineMapWriter.write("\n");
 			}

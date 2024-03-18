@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
@@ -199,10 +198,6 @@ public abstract class MinecraftProvider {
 
 	protected LoomGradleExtension getExtension() {
 		return configContext.extension();
-	}
-
-	public boolean canMergeJars() {
-		return getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3);
 	}
 
 	public boolean refreshDeps() {

@@ -61,10 +61,10 @@ public record MinecraftJarConfiguration<
 				List.of("client", "server")
 			);
 	public static final MinecraftJarConfiguration<
-			LegacyMinecraftProvider,
+			LegacyMergedMinecraftProvider,
 			NamedMinecraftProvider.LegacyMergedImpl,
 			MappedMinecraftProvider> LEGACY_MERGED = new MinecraftJarConfiguration<>(
-				LegacyMinecraftProvider::new,
+				LegacyMergedMinecraftProvider::new,
 				IntermediaryMinecraftProvider.LegacyMergedImpl::new,
 				NamedMinecraftProvider.LegacyMergedImpl::new,
 				ProcessedNamedMinecraftProvider.LegacyMergedImpl::new,

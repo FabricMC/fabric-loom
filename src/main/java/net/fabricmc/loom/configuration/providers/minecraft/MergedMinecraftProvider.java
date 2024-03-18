@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.util.Constants;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MergedMinecraftProvider.class);
@@ -44,7 +45,7 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	public MergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
 
-		if (!canMergeJars()) {
+		if (!getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
 			throw new RuntimeException("something has gone wrong - merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " does not allow merging the obfuscated jars - the legacy-merged jar configuration should have been selected!");
 		}
 	}

@@ -37,7 +37,7 @@ import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
-import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -178,7 +178,7 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
-	public static final class LegacyMergedImpl extends ProcessedNamedMinecraftProvider<LegacyMinecraftProvider, NamedMinecraftProvider.LegacyMergedImpl> implements Merged {
+	public static final class LegacyMergedImpl extends ProcessedNamedMinecraftProvider<LegacyMergedMinecraftProvider, NamedMinecraftProvider.LegacyMergedImpl> implements Merged {
 		public LegacyMergedImpl(NamedMinecraftProvider.LegacyMergedImpl parentMinecraftProvider, MinecraftJarProcessorManager jarProcessorManager) {
 			super(parentMinecraftProvider, jarProcessorManager);
 		}

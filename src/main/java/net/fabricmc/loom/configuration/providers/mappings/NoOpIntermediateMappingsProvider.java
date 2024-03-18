@@ -29,9 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import javax.inject.Inject;
-
-import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
@@ -41,18 +38,11 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
  */
 public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappingsProvider {
 	private static final String HEADER_OFFICIAL_MERGED = "tiny\t2\t0\tofficial\tintermediary";
-	private static final String HEADER_OFFICIAL_SPLIT = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
-
-	@Inject
-	public NoOpIntermediateMappingsProvider() {
-		getIsOfficialSplit().finalizeValueOnRead();
-	}
-
-	public abstract Property<Boolean> getIsOfficialSplit();
+	private static final String HEADER_OFFICIAL_LEGACY_MERGED = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, getIsOfficialSplit().get() ? HEADER_OFFICIAL_SPLIT : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, getIsLegacyMerged().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
 	}
 
 	@Override

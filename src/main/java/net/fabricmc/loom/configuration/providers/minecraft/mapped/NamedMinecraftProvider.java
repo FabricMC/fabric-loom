@@ -29,7 +29,7 @@ import java.util.List;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -71,11 +71,11 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 	}
 
-	public static final class LegacyMergedImpl extends NamedMinecraftProvider<LegacyMinecraftProvider> implements Merged {
+	public static final class LegacyMergedImpl extends NamedMinecraftProvider<LegacyMergedMinecraftProvider> implements Merged {
 		private final SingleJarImpl server;
 		private final SingleJarImpl client;
 
-		public LegacyMergedImpl(Project project, LegacyMinecraftProvider minecraftProvider) {
+		public LegacyMergedImpl(Project project, LegacyMergedMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
 			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER, MappingsNamespace.SERVER_OFFICIAL);
 			client = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
@@ -144,11 +144,11 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.SERVER_OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, MappingsNamespace.OFFICIAL);
 		}
 
 		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, MappingsNamespace.OFFICIAL);
 		}
 
 		@Override

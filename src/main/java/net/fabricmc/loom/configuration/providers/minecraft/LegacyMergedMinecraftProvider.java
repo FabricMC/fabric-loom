@@ -28,21 +28,22 @@ import java.nio.file.Path;
 import java.util.List;
 
 import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.util.Constants;
 
 /**
  * Minecraft versions prior to 1.3 obfuscate the server and client jars differently.
  * The obfuscated jars must be provided separately, and can be merged after remapping.
  */
-public final class LegacyMinecraftProvider extends MinecraftProvider {
+public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 	private final SingleJarMinecraftProvider.Server serverMinecraftProvider;
 	private final SingleJarMinecraftProvider.Client clientMinecraftProvider;
 
-	public LegacyMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+	public LegacyMergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
 		serverMinecraftProvider = SingleJarMinecraftProvider.server(metadataProvider, configContext);
 		clientMinecraftProvider = SingleJarMinecraftProvider.client(metadataProvider, configContext);
 
-		if (canMergeJars()) {
+		if (getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
 			throw new RuntimeException("something has gone wrong - legacy-merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " allows merging the obfuscated jars - the merged jar configuration should have been selected!");
 		}
 	}

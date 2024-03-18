@@ -33,6 +33,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraft
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
@@ -83,9 +84,11 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 		@Override
 		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+			final ProvideContext childContext = context.withApplyDependencies(false);
+
 			// Map the client and server jars separately
-			server.provide(context);
-			client.provide(context);
+			server.provide(childContext);
+			client.provide(childContext);
 
 			// then merge them
 			MergedMinecraftProvider.mergeJars(
@@ -93,6 +96,15 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 						server.getEnvOnlyJar().toFile(),
 						getMergedJar().toFile()
 			);
+
+			getMavenHelper(MinecraftJar.Type.MERGED).savePom();
+
+			if (context.applyDependencies()) {
+				MinecraftSourceSets.get(getProject()).applyDependencies(
+						(configuration, type) -> getProject().getDependencies().add(configuration, getDependencyNotation(type)),
+						getDependencyTypes()
+				);
+			}
 
 			return List.of(getMergedJar());
 		}

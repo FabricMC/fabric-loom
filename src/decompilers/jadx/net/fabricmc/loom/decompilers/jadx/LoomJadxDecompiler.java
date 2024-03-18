@@ -85,16 +85,13 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 		JadxArgs jadxArgs = getJadxArgs();
 		jadxArgs.setThreadsCount(context.numberOfThreads());
 
-		List<Path> inputs = new ArrayList<>(context.libraries());
-		inputs.add(context.compiledJar());
-
 		Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
 		try (JadxDecompiler jadx = new JadxDecompiler(jadxArgs);
 				JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(context.sourcesDestination()), manifest);
 				Writer lineMapWriter = Files.newBufferedWriter(context.linemapDestination(), StandardCharsets.UTF_8)) {
-			jadx.addCustomLoad(JavaInputPlugin.loadClassFiles(inputs));
+			jadx.addCustomLoad(JavaInputPlugin.loadClassFiles(List.of(context.compiledJar())));
 			jadx.load();
 
 			MappingTree tree = readMappings(context.javaDocs().toFile());

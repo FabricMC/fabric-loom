@@ -31,6 +31,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
@@ -49,6 +51,8 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -58,6 +62,9 @@ import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public final class IncludedJarFactory {
 	private final Project project;
+	private static final Logger LOGGER = LoggerFactory.getLogger(IncludedJarFactory.class);
+	private static final String semverRegex = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+	private static final Pattern pattern = Pattern.compile(semverRegex);
 
 	public IncludedJarFactory(Project project) {
 		this.project = project;
@@ -190,7 +197,8 @@ public final class IncludedJarFactory {
 		jsonObject.addProperty("schemaVersion", 1);
 
 		jsonObject.addProperty("id", modId);
-		jsonObject.addProperty("version", metadata.version());
+		String version = getVersion(metadata);
+		jsonObject.addProperty("version", version);
 		jsonObject.addProperty("name", metadata.name());
 
 		JsonObject custom = new JsonObject();
@@ -209,5 +217,34 @@ public final class IncludedJarFactory {
 				return "_" + classifier;
 			}
 		}
+
+		@Override
+		public String toString() {
+			return group + ":" + name + ":" + version + classifier();
+		}
+	}
+
+	private static String getVersion(Metadata metadata) {
+		String version = metadata.version();
+
+		if (validSemVer(version)) {
+			return version;
+		}
+
+		if (version.endsWith(".Final") || version.endsWith(".final")) {
+			String trimmedVersion = version.substring(0, version.length() - 6);
+
+			if (validSemVer(trimmedVersion)) {
+				return trimmedVersion;
+			}
+		}
+
+		LOGGER.warn("({}) is not valid semver for dependency {}", version, metadata);
+		return version;
+	}
+
+	private static boolean validSemVer(String version) {
+		Matcher matcher = pattern.matcher(version);
+		return matcher.find();
 	}
 }

@@ -46,7 +46,7 @@ public final class LorenzMappingService implements SharedService {
 
 	public static synchronized LorenzMappingService create(SharedServiceManager sharedServiceManager, MappingConfiguration mappingConfiguration, MappingsNamespace from, MappingsNamespace to) {
 		return sharedServiceManager.getOrCreateService(mappingConfiguration.getBuildServiceName("LorenzMappingService", from.toString(), to.toString()), () -> {
-			MemoryMappingTree m = mappingConfiguration.getMappingsService(sharedServiceManager, from.toString()).getMappingTree();
+			MemoryMappingTree m = mappingConfiguration.getMappingsService(sharedServiceManager).getMappingTree();
 
 			try {
 				try (var reader = new TinyMappingsReader(m, from.toString(), to.toString())) {

@@ -82,6 +82,8 @@ public class MinecraftJarMerger implements AutoCloseable {
 			}
 		}
 
+		Files.createDirectories(output.toPath().getParent());
+
 		this.inputClient = (inputClientFs = FileSystemUtil.getJarFileSystem(inputClient, false)).get().getPath("/");
 		this.inputServer = (inputServerFs = FileSystemUtil.getJarFileSystem(inputServer, false)).get().getPath("/");
 		this.outputFs = FileSystemUtil.getJarFileSystem(output, true);

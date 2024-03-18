@@ -116,8 +116,8 @@ public class MappingConfiguration {
 		return mappingProvider;
 	}
 
-	public TinyMappingsService getMappingsService(SharedServiceManager serviceManager, String srcNs) {
-		return TinyMappingsService.create(serviceManager, Objects.requireNonNull(tinyMappings), srcNs);
+	public TinyMappingsService getMappingsService(SharedServiceManager serviceManager) {
+		return TinyMappingsService.create(serviceManager, Objects.requireNonNull(tinyMappings));
 	}
 
 	private void setup(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {

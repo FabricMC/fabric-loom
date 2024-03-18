@@ -31,24 +31,22 @@ import java.nio.file.Path;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 import net.fabricmc.mappingio.MappingReader;
-import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class TinyMappingsService implements SharedService {
 	private final MemoryMappingTree mappingTree;
 
-	public TinyMappingsService(Path tinyMappings, String srcNs) {
+	public TinyMappingsService(Path tinyMappings) {
 		try {
 			this.mappingTree = new MemoryMappingTree();
-			MappingSourceNsSwitch srcNsSwitch = new MappingSourceNsSwitch(this.mappingTree, srcNs);
-			MappingReader.read(tinyMappings, srcNsSwitch);
+			MappingReader.read(tinyMappings, mappingTree);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read mappings", e);
 		}
 	}
 
-	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings, String srcNs) {
-		return serviceManager.getOrCreateService("TinyMappingsService:" + tinyMappings.toAbsolutePath() + " [" + srcNs + "]", () -> new TinyMappingsService(tinyMappings, srcNs));
+	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings) {
+		return serviceManager.getOrCreateService("TinyMappingsService:" + tinyMappings.toAbsolutePath(), () -> new TinyMappingsService(tinyMappings));
 	}
 
 	public MemoryMappingTree getMappingTree() {

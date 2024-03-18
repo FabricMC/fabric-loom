@@ -41,6 +41,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
@@ -68,6 +69,7 @@ public final class IntermediateMappingsService implements SharedService {
 
 	@VisibleForTesting
 	public static IntermediateMappingsService create(IntermediateMappingsProvider intermediateMappingsProvider, MinecraftProvider minecraftProvider, Project project) {
+
 		final Path intermediaryTiny = minecraftProvider.file(intermediateMappingsProvider.getName() + ".tiny").toPath();
 
 		try {
@@ -86,9 +88,11 @@ public final class IntermediateMappingsService implements SharedService {
 			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
 		}
 
-		String expectedSrcNs = minecraftProvider.canMergeJars()
-				? MappingsNamespace.OFFICIAL.toString() // >=1.3
-				: MappingsNamespace.INTERMEDIARY.toString(); // <1.3
+		// When merging legacy versions there will be multiple named namespaces, so use intermediary as the common src ns
+		// Newer versions will use intermediary as the src ns
+		final String expectedSrcNs = (minecraftProvider instanceof LegacyMinecraftProvider)
+				? MappingsNamespace.INTERMEDIARY.toString() // <1.3
+				: MappingsNamespace.OFFICIAL.toString(); // >=1.3
 
 		return new IntermediateMappingsService(intermediaryTiny, expectedSrcNs);
 	}
@@ -107,7 +111,7 @@ public final class IntermediateMappingsService implements SharedService {
 		}
 
 		if (!expectedSrcNs.equals(tree.getSrcNamespace())) {
-			throw new RuntimeException("Invalid intermediate mappings: expected source namespace \'" + expectedSrcNs + "\' but found \'" + tree.getSrcNamespace() + "\'");
+			throw new RuntimeException("Invalid intermediate mappings: expected source namespace '" + expectedSrcNs + "' but found '" + tree.getSrcNamespace() + "\'");
 		}
 
 		return tree;

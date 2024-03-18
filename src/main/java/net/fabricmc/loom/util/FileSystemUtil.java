@@ -43,6 +43,10 @@ public final class FileSystemUtil {
 			return get().getPath(path, more);
 		}
 
+		public Path getRoot() {
+			return get().getPath("/");
+		}
+
 		public byte[] readAllBytes(String path) throws IOException {
 			Path fsPath = getPath(path);
 

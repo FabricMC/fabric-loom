@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,31 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.parchment;
+package net.fabricmc.loom.test.unit.cache
 
-import java.io.IOException;
-import java.nio.file.Path;
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 
-import net.fabricmc.loom.api.mappings.layered.MappingLayer;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.mappingio.MappingVisitor;
+import spock.lang.Specification
+import spock.lang.TempDir
 
-public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) implements MappingLayer {
-	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
+import net.fabricmc.loom.decompilers.ClassLineNumbers
+import net.fabricmc.loom.decompilers.cache.CachedData
 
-	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
-		ParchmentTreeV1 parchmentData = getParchmentData();
+class CachedDataTest extends Specification {
+	@TempDir
+	Path testPath
 
-		if (removePrefix()) {
-			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingVisitor);
+	// Simple test to check if the CachedData class can be written and read from a file
+	def "Read + Write CachedData"() {
+		given:
+		def lineNumberEntry = new ClassLineNumbers.Entry("net/test/TestClass", 1, 2, [1: 2, 4: 7])
+		def cachedData = new CachedData("net/test/TestClass", "Example sources", lineNumberEntry)
+		def path = testPath.resolve("cachedData.bin")
+		when:
+		// Write the cachedData to a file
+		FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE).withCloseable {
+			cachedData.write(it)
 		}
 
-		parchmentData.visit(mappingVisitor, MappingsNamespace.NAMED.toString());
-	}
+		// And read it back
+		def readCachedData = Files.newInputStream(path).withCloseable {
+			return CachedData.read(it)
+		}
 
-	private ParchmentTreeV1 getParchmentData() throws IOException {
-		return ZipUtils.unpackJson(parchmentFile, PARCHMENT_DATA_FILE_NAME, ParchmentTreeV1.class);
+		then:
+		cachedData == readCachedData
 	}
 }

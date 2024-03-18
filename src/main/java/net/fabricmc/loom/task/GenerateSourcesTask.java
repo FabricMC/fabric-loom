@@ -488,11 +488,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private void remapLineNumbers(ClassLineNumbers lineNumbers, Path inputJar, Path outputJar) throws IOException {
 		Objects.requireNonNull(lineNumbers, "lineNumbers");
 		final var remapper = new LineNumberRemapper(lineNumbers);
-
-		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputJar, false);
-				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
-			remapper.process(inFs.get().getPath("/"), outFs.get().getPath("/"));
-		}
+		remapper.process(inputJar, outputJar);
 	}
 
 	private void doWork(@Nullable IPCServer ipcServer, Path inputJar, Path outputJar, Path linemapFile, @Nullable Path existingJar) {

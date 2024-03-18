@@ -26,12 +26,12 @@ package net.fabricmc.loom.decompilers;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -41,31 +41,28 @@ import org.objectweb.asm.MethodVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.util.AsyncZipProcessor;
 import net.fabricmc.loom.util.Constants;
 
 public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LineNumberRemapper.class);
 
 	public void process(Path input, Path output) throws IOException {
-		Files.walkFileTree(input, new SimpleFileVisitor<>() {
+		AsyncZipProcessor.processEntries(input, output, new AsyncZipProcessor() {
+			private final Set<Path> createdParents = Collections.synchronizedSet(new HashSet<>());
+
 			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				String rel = input.relativize(file).toString();
-				Path dst = output.resolve(rel);
+			public void processEntryAsync(Path file, Path dst) throws IOException {
 				Path parent = dst.getParent();
 
-				if (parent != null) {
+				if (parent != null && createdParents.add(parent)) {
 					Files.createDirectories(parent);
 				}
 
-				String fName = file.getFileName().toString();
+				String fileName = file.getFileName().toString();
 
-				if (fName.endsWith(".class")) {
-					if (Files.exists(dst)) {
-						Files.delete(dst);
-					}
-
-					String idx = rel.substring(0, rel.length() - 6);
+				if (fileName.endsWith(".class")) {
+					String idx = fileName.substring(0, fileName.length() - 6);
 
 					LOGGER.debug("Remapping line numbers for class: " + idx);
 
@@ -82,13 +79,12 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 
 							reader.accept(new LineNumberVisitor(Constants.ASM_VERSION, writer, lineNumbers.lineMap().get(idx)), 0);
 							Files.write(dst, writer.toByteArray());
-							return FileVisitResult.CONTINUE;
+							return;
 						}
 					}
 				}
 
 				Files.copy(file, dst, StandardCopyOption.REPLACE_EXISTING);
-				return FileVisitResult.CONTINUE;
 			}
 		});
 	}

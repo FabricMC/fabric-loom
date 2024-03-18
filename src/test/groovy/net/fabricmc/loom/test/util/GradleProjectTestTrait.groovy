@@ -45,7 +45,7 @@ trait GradleProjectTestTrait {
 		String gradleVersion = options.version as String ?: LoomTestConstants.DEFAULT_GRADLE
 		String warningMode = options.warningMode as String ?: "fail"
 		File projectDir = options.projectDir as File ?: options.sharedFiles ? sharedProjectDir : File.createTempDir()
-		File gradleHomeDir = gradleHomeDir
+		File gradleHomeDir = options.gradleHomeDir as File ?: gradleHomeDir
 
 		setupProject(options, projectDir)
 

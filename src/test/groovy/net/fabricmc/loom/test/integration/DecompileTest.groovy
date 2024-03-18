@@ -77,7 +77,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 
 	def "decompile cache"() {
 		setup:
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE, gradleHomeDir: File.createTempDir())
 		gradle.buildSrc("decompile")
 		gradle.buildGradle << '''
                 dependencies {

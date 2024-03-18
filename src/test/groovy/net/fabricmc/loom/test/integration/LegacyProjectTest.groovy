@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.integration
 
+import java.nio.file.Path
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -87,41 +89,12 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	}
 
 	@Unroll
-	def "Ancient minecraft merged (minecraft #version)"() {
+	def "Ancient minecraft (minecraft #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
 				loom {
-                    legacyMergedMinecraftJar()
-                }
-
-                dependencies {
-                    minecraft "com.mojang:minecraft:${version}"
-                    mappings loom.layered() {
-						// No names
-					}
-
-                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
-                }
-			"""
-
-		when:
-		def result = gradle.run(task: "configureClientLaunch")
-
-		then:
-		result.task(":configureClientLaunch").outcome == SUCCESS
-
-		where:
-		version 		| _
-		'1.2.5'			| _
-	}
-
-	@Unroll
-	def "Ancient minecraft client-only(minecraft #version)"() {
-		setup:
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << """
-				loom {
+                    noIntermediateMappings()
 					clientOnlyMinecraftJar()
                 }
 
@@ -131,7 +104,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
                 }
 			"""
 
@@ -146,5 +119,36 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		'1.2.5'			| _
 		'b1.8.1'		| _
 		'a1.2.5'		| _
+	}
+
+	@Unroll
+	def "Legacy merged"() {
+		setup:
+		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny").toAbsolutePath()
+		def gradle = gradleProject(
+				project: "minimalBase",
+				version: PRE_RELEASE_GRADLE,
+				args: [
+					"-Dloom.test.legacyMergedIntermediary.mappingPath=${mappings}"
+				]
+				)
+
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.2.5"
+                    mappings loom.layered() {
+						// No names
+					}
+
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
+                }
+			"""
+		gradle.buildSrc("legacyMergedIntermediary")
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
 	}
 }

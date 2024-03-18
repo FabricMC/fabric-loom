@@ -41,7 +41,7 @@ class TestPlugin implements Plugin<Project> {
 	void apply(Project project) {
 		LoomGradleExtensionAPI extension = project.getExtensions().getByName("loom")
 		extension.setIntermediateMappingsProvider(LegacyIntermediaryProvider.class) {
-			mappingPath.set(System.getProperty("loom.test.legacyMergedIntermediary.mappingPath"))
+			mappingPath.set(project.property("loom.test.legacyMergedIntermediary.mappingPath"))
 		}
 	}
 

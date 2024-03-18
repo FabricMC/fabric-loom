@@ -73,7 +73,7 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		public LegacyMergedImpl(Project project, LegacyMergedMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
 			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER, MappingsNamespace.SERVER_OFFICIAL);
-			client = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
+			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
 		}
 
 		@Override

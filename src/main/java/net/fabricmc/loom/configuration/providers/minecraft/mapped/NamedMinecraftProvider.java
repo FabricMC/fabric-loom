@@ -78,7 +78,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		public LegacyMergedImpl(Project project, LegacyMergedMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
 			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER, MappingsNamespace.SERVER_OFFICIAL);
-			client = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
+			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
 		}
 
 		@Override

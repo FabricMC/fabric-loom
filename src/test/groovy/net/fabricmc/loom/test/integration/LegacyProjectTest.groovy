@@ -125,13 +125,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	def "Legacy merged"() {
 		setup:
 		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny.zip").toAbsolutePath()
-		def gradle = gradleProject(
-				project: "minimalBase",
-				version: PRE_RELEASE_GRADLE,
-				args: [
-					"-Dloom.test.legacyMergedIntermediary.mappingPath=${mappings}"
-				]
-				)
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 
 		gradle.buildGradle << """
                 dependencies {
@@ -146,7 +140,9 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		gradle.buildSrc("legacyMergedIntermediary")
 
 		when:
-		def result = gradle.run(task: "build")
+		def result = gradle.run(task: "build", args: [
+			"-Ploom.test.legacyMergedIntermediary.mappingPath=${mappings}"
+		])
 
 		then:
 		result.task(":build").outcome == SUCCESS

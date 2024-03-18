@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -49,14 +48,16 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 
 	public void process(Path input, Path output) throws IOException {
 		AsyncZipProcessor.processEntries(input, output, new AsyncZipProcessor() {
-			private final Set<Path> createdParents = Collections.synchronizedSet(new HashSet<>());
+			private final Set<Path> createdParents = new HashSet<>();
 
 			@Override
 			public void processEntryAsync(Path file, Path dst) throws IOException {
 				Path parent = dst.getParent();
 
-				if (parent != null && createdParents.add(parent)) {
-					Files.createDirectories(parent);
+				synchronized (createdParents) {
+					if (parent != null && createdParents.add(parent)) {
+						Files.createDirectories(parent);
+					}
 				}
 
 				String fileName = file.getFileName().toString();

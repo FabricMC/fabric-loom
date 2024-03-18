@@ -182,7 +182,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 		for (JavaField fld : cls.getFields()) {
 			FieldMapping fldMapping = clsMapping.getField(fld.getFieldNode().getName(), TypeGen.signature(fld.getType()));
 
-			if ((comment = emptyToNull(fldMapping.getComment())) != null) {
+			if (fldMapping != null && (comment = emptyToNull(fldMapping.getComment())) != null) {
 				fld.getFieldNode().addAttr(AType.CODE_COMMENTS, comment);
 			}
 		}
@@ -192,7 +192,7 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 			String mthName = mthInfo.getName();
 			MethodMapping mthMapping = clsMapping.getMethod(mthName, mthInfo.getShortId().substring(mthName.length()));
 
-			if ((comment = emptyToNull(mthMapping.getComment())) != null) {
+			if (mthMapping != null && (comment = emptyToNull(mthMapping.getComment())) != null) {
 				mth.getMethodNode().addAttr(AType.CODE_COMMENTS, comment);
 			}
 		}
@@ -203,6 +203,6 @@ public final class LoomJadxDecompiler implements LoomInternalDecompiler {
 	}
 
 	public static String emptyToNull(String string) {
-		return string.isEmpty() ? null : string;
+		return string == null || string.isEmpty() ? null : string;
 	}
 }

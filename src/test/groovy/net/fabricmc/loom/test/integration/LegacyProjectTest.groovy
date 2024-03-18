@@ -124,7 +124,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	@Unroll
 	def "Legacy merged"() {
 		setup:
-		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny").toAbsolutePath()
+		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny.zip").toAbsolutePath()
 		def gradle = gradleProject(
 				project: "minimalBase",
 				version: PRE_RELEASE_GRADLE,

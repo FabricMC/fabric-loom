@@ -34,6 +34,7 @@ import org.gradle.api.provider.Property
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider
+import net.fabricmc.loom.util.ZipUtils
 
 class TestPlugin implements Plugin<Project> {
 	@Override
@@ -55,7 +56,8 @@ class TestPlugin implements Plugin<Project> {
 				throw new IllegalStateException("This plugin only supports Minecraft 1.2.5")
 			}
 
-			Files.copy(Paths.get(getMappingPath().get()), tinyMappings)
+			byte[] data = ZipUtils.unpack(Paths.get(getMappingPath().get()), "1.2.5-intermediary.tiny")
+			Files.write(tinyMappings, data)
 		}
 	}
 }

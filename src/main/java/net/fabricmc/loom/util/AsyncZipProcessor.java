@@ -25,8 +25,6 @@
 package net.fabricmc.loom.util;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,8 +37,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.gradle.api.JavaVersion;
-
 public interface AsyncZipProcessor {
 	static void processEntries(Path inputZip, Path outputZip, AsyncZipProcessor processor) throws IOException {
 		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputZip, false);
@@ -49,7 +45,7 @@ public interface AsyncZipProcessor {
 			final Path outRoot = outFs.get().getPath("/");
 
 			List<CompletableFuture<Void>> futures = new ArrayList<>();
-			final ExecutorService executor = getExecutor();
+			final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 			Files.walkFileTree(inRoot, new SimpleFileVisitor<>() {
 				@Override
@@ -64,7 +60,7 @@ public interface AsyncZipProcessor {
 						}
 
 						return null;
-					});
+					}, executor);
 
 					futures.add(future);
 					return FileVisitResult.CONTINUE;
@@ -86,23 +82,6 @@ public interface AsyncZipProcessor {
 
 			executor.shutdown();
 		}
-	}
-
-	/**
-	 * On Java 21 return the virtual thread pool, otherwise return a fixed thread pool.
-	 */
-	private static ExecutorService getExecutor() {
-		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
-			// I'm not sure if this is actually faster, but its fun to use loom in loom :D
-			try {
-				Method m = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
-				return (ExecutorService) m.invoke(null);
-			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				throw new RuntimeException("Failed to create virtual thread executor", e);
-			}
-		}
-
-		return Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
 	void processEntryAsync(Path inputEntry, Path outputEntry) throws IOException;

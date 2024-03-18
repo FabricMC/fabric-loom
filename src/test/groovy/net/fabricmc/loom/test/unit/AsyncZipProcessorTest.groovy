@@ -68,7 +68,7 @@ class AsyncZipProcessorTest extends Specification {
 		thrown(IOException)
 	}
 
-	Map<String, String> createEntries(int count = 1000) {
+	Map<String, String> createEntries(int count = 10000) {
 		Map<String, String> entries = [:]
 		for (int i = 0; i < count; i++) {
 			entries.put("file" + i + ".txt", "file$i")

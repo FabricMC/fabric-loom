@@ -321,7 +321,6 @@ public class RunConfigSettings implements Named {
 	 * Configure run config with the default client options.
 	 */
 	public void client() {
-		startFirstThread();
 		environment("client");
 		defaultMainClass(Constants.Knot.KNOT_CLIENT);
 

@@ -50,3 +50,7 @@ dependencies {
 base {
 	archivesName = "fabric-example-mod"
 }
+
+runClient {
+	// Realise this task to ensure that the runConfig is lazily evaluated
+}

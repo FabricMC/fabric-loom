@@ -57,7 +57,11 @@ class KotlinMetadataRemappingClassVisitor(private val remapper: Remapper, next: 
         var result: AnnotationVisitor? = super.visitAnnotation(descriptor, visible)
 
         if (descriptor == ANNOTATION_DESCRIPTOR && result != null) {
-            result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result, className)
+            try {
+                result = KotlinClassMetadataRemappingAnnotationVisitor(remapper, result, className)
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to remap Kotlin metadata annotation in class $className", e)
+            }
         }
 
         return result

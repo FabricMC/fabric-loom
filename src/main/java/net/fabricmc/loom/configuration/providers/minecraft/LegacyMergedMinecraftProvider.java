@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.nio.file.Path;
 import java.util.List;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 
 /**
@@ -42,7 +43,7 @@ public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 		serverMinecraftProvider = SingleJarMinecraftProvider.server(metadataProvider, configContext);
 		clientMinecraftProvider = SingleJarMinecraftProvider.client(metadataProvider, configContext);
 
-		if (canMergeJars()) {
+		if (!isLegacyVersion()) {
 			throw new RuntimeException("something has gone wrong - legacy-merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " allows merging the obfuscated jars - the merged jar configuration should have been selected!");
 		}
 	}
@@ -71,5 +72,12 @@ public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 			serverMinecraftProvider.getMinecraftEnvOnlyJar(),
 			clientMinecraftProvider.getMinecraftEnvOnlyJar()
 		);
+	}
+
+	@Override
+	@Deprecated
+	public MappingsNamespace getOfficialNamespace() {
+		// Legacy merged providers do not have a single namespace as they delegate to the single jar providers
+		throw new UnsupportedOperationException("Cannot query the official namespace for legacy-merged minecraft providers");
 	}
 }

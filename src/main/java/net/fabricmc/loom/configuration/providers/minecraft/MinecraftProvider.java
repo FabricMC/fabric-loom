@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
@@ -186,8 +187,11 @@ public abstract class MinecraftProvider {
 		return Objects.requireNonNull(metadataProvider, "Metadata provider not setup").getVersionMeta();
 	}
 
-	public boolean canMergeJars() {
-		return getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3);
+	/**
+	 * @return true if the minecraft version is older than 1.3.
+	 */
+	public boolean isLegacyVersion() {
+		return !getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3);
 	}
 
 	@Nullable
@@ -196,6 +200,8 @@ public abstract class MinecraftProvider {
 	}
 
 	public abstract List<Path> getMinecraftJars();
+
+	public abstract MappingsNamespace getOfficialNamespace();
 
 	protected Project getProject() {
 		return configContext.project();

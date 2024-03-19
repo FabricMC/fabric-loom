@@ -54,10 +54,10 @@ public final class MappingsMerger {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
-		if (minecraftProvider.canMergeJars()) {
-			mergeAndSaveMappings(from, out, intermediateMappingsService);
-		} else {
+		if (minecraftProvider.isLegacyVersion()) {
 			legacyMergeAndSaveMappings(from, out, intermediateMappingsService);
+		} else {
+			mergeAndSaveMappings(from, out, intermediateMappingsService);
 		}
 
 		LOGGER.info(":merged mappings in " + stopwatch.stop());

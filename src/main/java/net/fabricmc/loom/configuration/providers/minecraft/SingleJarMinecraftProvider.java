@@ -28,25 +28,38 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvider permits SingleJarMinecraftProvider.Server, SingleJarMinecraftProvider.Client {
+	private final MappingsNamespace officialNamespace;
 	private Path minecraftEnvOnlyJar;
 
-	private SingleJarMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
+	private SingleJarMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext, MappingsNamespace officialNamespace) {
 		super(metadataProvider, configContext);
+		this.officialNamespace = officialNamespace;
 	}
 
 	public static SingleJarMinecraftProvider.Server server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
-		return new SingleJarMinecraftProvider.Server(metadataProvider, configContext);
+		return new SingleJarMinecraftProvider.Server(metadataProvider, configContext, getOfficialNamespace(metadataProvider, true));
 	}
 
 	public static SingleJarMinecraftProvider.Client client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
-		return new SingleJarMinecraftProvider.Client(metadataProvider, configContext);
+		return new SingleJarMinecraftProvider.Client(metadataProvider, configContext, getOfficialNamespace(metadataProvider, false));
+	}
+
+	private static MappingsNamespace getOfficialNamespace(MinecraftMetadataProvider metadataProvider, boolean server) {
+		// Versions before 1.3 don't have a common namespace, so use side specific namespaces.
+		if (!metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+			return server ? MappingsNamespace.SERVER_OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL;
+		}
+
+		return MappingsNamespace.OFFICIAL;
 	}
 
 	@Override
@@ -66,7 +79,7 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		super.provide();
 
 		// Server only JARs are supported on any version, client only JARs are pretty much useless after 1.3.
-		if (provideClient() && canMergeJars()) {
+		if (provideClient() && !isLegacyVersion()) {
 			getProject().getLogger().warn("Using `clientOnlyMinecraftJar()` is not recommended for Minecraft versions 1.3 or newer.");
 		}
 
@@ -105,13 +118,18 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		return minecraftEnvOnlyJar;
 	}
 
+	@Override
+	public MappingsNamespace getOfficialNamespace() {
+		return officialNamespace;
+	}
+
 	abstract SingleJarEnvType type();
 
 	abstract Path getInputJar(SingleJarMinecraftProvider provider) throws Exception;
 
 	public static final class Server extends SingleJarMinecraftProvider {
-		private Server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
-			super(metadataProvider, configContext);
+		private Server(MinecraftMetadataProvider metadataProvider, ConfigContext configContext, MappingsNamespace officialNamespace) {
+			super(metadataProvider, configContext, officialNamespace);
 		}
 
 		@Override
@@ -143,8 +161,8 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 	}
 
 	public static final class Client extends SingleJarMinecraftProvider {
-		private Client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
-			super(metadataProvider, configContext);
+		private Client(MinecraftMetadataProvider metadataProvider, ConfigContext configContext, MappingsNamespace officialNamespace) {
+			super(metadataProvider, configContext, officialNamespace);
 		}
 
 		@Override

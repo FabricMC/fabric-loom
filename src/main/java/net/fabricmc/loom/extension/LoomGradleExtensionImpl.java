@@ -278,8 +278,8 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
 
-		provider.getIsLegacyMerged().set(getProject().provider(() -> !getMinecraftProvider().canMergeJars()));
-		provider.getIsLegacyMerged().disallowChanges();
+		provider.getIsLegacyMinecraft().set(getProject().provider(() -> getMinecraftProvider().isLegacyVersion()));
+		provider.getIsLegacyMinecraft().disallowChanges();
 	}
 
 	@Override

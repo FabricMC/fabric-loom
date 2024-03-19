@@ -42,7 +42,7 @@ public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappi
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, getIsLegacyMerged().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, getIsLegacyMinecraft().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
 	}
 
 	@Override

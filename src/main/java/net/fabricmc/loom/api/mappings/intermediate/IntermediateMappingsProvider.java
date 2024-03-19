@@ -45,12 +45,12 @@ public abstract class IntermediateMappingsProvider implements Named {
 	public abstract Property<Function<String, DownloadBuilder>> getDownloader();
 
 	/**
-	 * Set to true if the minecraft version is pre 1.3, and the client and server are going to be merged.
-	 * When true the expected src namespace is intermediary, and the expected dst namespaces are clientOfficial and serverOfficial
+	 * Set to true if the minecraft version is pre 1.3.
+	 * When true the expected src namespace is intermediary, and the expected dst namespaces are clientOfficial and/or serverOfficial
 	 * When false the expected src namespace is named and the expected dst namespace is intermediary
 	 */
 	@ApiStatus.Experimental
-	public abstract Property<Boolean> getIsLegacyMerged();
+	public abstract Property<Boolean> getIsLegacyMinecraft();
 
 	/**
 	 * Generate or download a tinyv2 mapping file with intermediary and named namespaces.

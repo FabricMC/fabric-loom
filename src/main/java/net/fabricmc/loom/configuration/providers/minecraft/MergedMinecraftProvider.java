@@ -34,6 +34,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
@@ -44,7 +45,7 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	public MergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
 
-		if (!canMergeJars()) {
+		if (isLegacyVersion()) {
 			throw new RuntimeException("something has gone wrong - merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " does not allow merging the obfuscated jars - the legacy-merged jar configuration should have been selected!");
 		}
 	}
@@ -58,6 +59,11 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	@Override
 	public List<Path> getMinecraftJars() {
 		return List.of(minecraftMergedJar);
+	}
+
+	@Override
+	public MappingsNamespace getOfficialNamespace() {
+		return MappingsNamespace.OFFICIAL;
 	}
 
 	@Override

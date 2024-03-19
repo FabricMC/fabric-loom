@@ -62,7 +62,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), minecraftProvider.getOfficialNamespace())
 			);
 		}
 
@@ -78,8 +78,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 		public LegacyMergedImpl(Project project, LegacyMergedMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
-			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER, MappingsNamespace.SERVER_OFFICIAL);
-			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT, MappingsNamespace.CLIENT_OFFICIAL);
+			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER);
+			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT);
 		}
 
 		@Override
@@ -129,8 +129,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), MappingsNamespace.OFFICIAL),
-				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar())
+				new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), minecraftProvider.getOfficialNamespace()),
+				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar())
 			);
 		}
 
@@ -147,26 +147,24 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 
 	public static final class SingleJarImpl extends NamedMinecraftProvider<SingleJarMinecraftProvider> implements SingleJar {
 		private final SingleJarEnvType env;
-		private final MappingsNamespace sourceNs;
 
-		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env, MappingsNamespace sourceNs) {
+		private SingleJarImpl(Project project, SingleJarMinecraftProvider minecraftProvider, SingleJarEnvType env) {
 			super(project, minecraftProvider);
 			this.env = env;
-			this.sourceNs = sourceNs;
 		}
 
 		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.SERVER_OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER);
 		}
 
 		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT);
 		}
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), sourceNs)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), minecraftProvider.getOfficialNamespace())
 			);
 		}
 

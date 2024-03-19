@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -60,8 +61,7 @@ public final class MinecraftMetadataProvider {
 		return new MinecraftMetadataProvider(
 				MinecraftMetadataProvider.Options.create(
 						minecraftVersion,
-						configContext.project(),
-						workingDir.resolve("minecraft-info.json")
+						configContext.project()
 				),
 				configContext.extension()::download
 		);
@@ -164,18 +164,38 @@ public final class MinecraftMetadataProvider {
 					Path versionManifestPath,
 					Path experimentalVersionManifestPath,
 					Path minecraftMetadataPath) {
-		public static Options create(String minecraftVersion, Project project, Path minecraftMetadataPath) {
+		public static Options create(String minecraftVersion, Project project) {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 			final Path userCache = extension.getFiles().getUserCache().toPath();
+			final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(project, minecraftVersion).toPath();
+
+			final String manifestUrl = MirrorUtil.getVersionManifests(project);
+			final String expManifestUrl = MirrorUtil.getExperimentalVersions(project);
+			final Property<String> customMetaUrl = extension.getCustomMinecraftManifest();
+
+			final boolean customManifest = !manifestUrl.equals(Constants.VERSION_MANIFESTS);
+			final boolean customExpManifest = !expManifestUrl.equals(Constants.EXPERIMENTAL_VERSIONS);
+
+			final Path manifestPath = customManifest
+					? userCache.resolve("version_manifest-" + manifestUrl.hashCode() + ".json")
+					: userCache.resolve("version_manifest.json");
+			final Path expManifestPath = customExpManifest
+					? userCache.resolve("experimental_version_manifest-" + expManifestUrl.hashCode() + ".json")
+					: userCache.resolve("experimental_version_manifest.json");
+			final Path metadataPath = customMetaUrl.isPresent()
+					? workingDir.resolve("minecraft-info-" + customMetaUrl.get().hashCode() + ".json")
+					: customManifest || customExpManifest
+							? workingDir.resolve("minecraft-info-" + manifestUrl.hashCode() + ".json")
+							: workingDir.resolve("minecraft-info.json");
 
 			return new Options(
 					minecraftVersion,
-					MirrorUtil.getVersionManifests(project),
-					MirrorUtil.getExperimentalVersions(project),
-					extension.getCustomMinecraftManifest().getOrNull(),
-					userCache.resolve("version_manifest.json"),
-					userCache.resolve("experimental_version_manifest.json"),
-					minecraftMetadataPath
+					manifestUrl,
+					expManifestUrl,
+					customMetaUrl.getOrNull(),
+					manifestPath,
+					expManifestPath,
+					metadataPath
 			);
 		}
 	}

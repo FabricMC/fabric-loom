@@ -63,8 +63,8 @@ import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 public final class IncludedJarFactory {
 	private final Project project;
 	private static final Logger LOGGER = LoggerFactory.getLogger(IncludedJarFactory.class);
-	private static final String semverRegex = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
-	private static final Pattern pattern = Pattern.compile(semverRegex);
+	private static final String SEMVER_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+	private static final Pattern SEMVER_PATTERN = Pattern.compile(SEMVER_REGEX);
 
 	public IncludedJarFactory(Project project) {
 		this.project = project;
@@ -244,7 +244,7 @@ public final class IncludedJarFactory {
 	}
 
 	private static boolean validSemVer(String version) {
-		Matcher matcher = pattern.matcher(version);
+		Matcher matcher = SEMVER_PATTERN.matcher(version);
 		return matcher.find();
 	}
 }

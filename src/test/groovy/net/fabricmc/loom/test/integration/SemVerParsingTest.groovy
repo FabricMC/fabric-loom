@@ -25,10 +25,10 @@
 package net.fabricmc.loom.test.integration
 
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import net.fabricmc.loom.build.nesting.IncludedJarFactory
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
-import spock.lang.Unroll
 
 class SemVerParsingTest extends Specification implements GradleProjectTestTrait {
 	@Unroll

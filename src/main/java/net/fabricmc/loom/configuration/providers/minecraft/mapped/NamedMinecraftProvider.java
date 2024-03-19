@@ -156,11 +156,11 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		}
 
 		public static SingleJarImpl server(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, MappingsNamespace.OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.SERVER, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.SERVER_OFFICIAL);
 		}
 
 		public static SingleJarImpl client(Project project, SingleJarMinecraftProvider minecraftProvider) {
-			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, MappingsNamespace.OFFICIAL);
+			return new SingleJarImpl(project, minecraftProvider, SingleJarEnvType.CLIENT, minecraftProvider.canMergeJars() ? MappingsNamespace.OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL);
 		}
 
 		@Override

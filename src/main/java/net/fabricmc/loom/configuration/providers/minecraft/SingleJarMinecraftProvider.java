@@ -30,7 +30,6 @@ import java.util.List;
 
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -67,7 +66,7 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		super.provide();
 
 		// Server only JARs are supported on any version, client only JARs are pretty much useless after 1.3.
-		if (provideClient() && getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+		if (provideClient() && canMergeJars()) {
 			getProject().getLogger().warn("Using `clientOnlyMinecraftJar()` is not recommended for Minecraft versions 1.3 or newer.");
 		}
 

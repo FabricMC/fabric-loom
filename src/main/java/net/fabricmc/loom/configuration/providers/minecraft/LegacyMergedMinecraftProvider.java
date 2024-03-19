@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import net.fabricmc.loom.configuration.ConfigContext;
-import net.fabricmc.loom.util.Constants;
 
 /**
  * Minecraft versions prior to 1.3 obfuscate the server and client jars differently.
@@ -43,7 +42,7 @@ public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 		serverMinecraftProvider = SingleJarMinecraftProvider.server(metadataProvider, configContext);
 		clientMinecraftProvider = SingleJarMinecraftProvider.client(metadataProvider, configContext);
 
-		if (getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+		if (canMergeJars()) {
 			throw new RuntimeException("something has gone wrong - legacy-merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " allows merging the obfuscated jars - the merged jar configuration should have been selected!");
 		}
 	}

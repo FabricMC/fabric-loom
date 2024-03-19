@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
-import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
@@ -55,10 +54,10 @@ public final class MappingsMerger {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
-		if (minecraftProvider instanceof LegacyMergedMinecraftProvider) {
-			legacyMergeAndSaveMappings(from, out, intermediateMappingsService);
-		} else {
+		if (minecraftProvider.canMergeJars()) {
 			mergeAndSaveMappings(from, out, intermediateMappingsService);
+		} else {
+			legacyMergeAndSaveMappings(from, out, intermediateMappingsService);
 		}
 
 		LOGGER.info(":merged mappings in " + stopwatch.stop());

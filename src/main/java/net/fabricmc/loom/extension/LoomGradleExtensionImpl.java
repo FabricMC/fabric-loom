@@ -48,7 +48,6 @@ import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsPr
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -279,7 +278,7 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
 
-		provider.getIsLegacyMerged().set(getProject().provider(() -> getMinecraftProvider() instanceof LegacyMergedMinecraftProvider));
+		provider.getIsLegacyMerged().set(getProject().provider(() -> !getMinecraftProvider().canMergeJars()));
 		provider.getIsLegacyMerged().disallowChanges();
 	}
 

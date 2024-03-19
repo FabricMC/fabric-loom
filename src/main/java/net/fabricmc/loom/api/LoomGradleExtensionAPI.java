@@ -134,6 +134,10 @@ public interface LoomGradleExtensionAPI {
 
 	Property<String> getCustomMinecraftManifest();
 
+	Property<String> getCustomVersionsManifest();
+
+	Property<String> getCustomExperimentalVersionsManifest();
+
 	SetProperty<String> getKnownIndyBsms();
 
 	/**

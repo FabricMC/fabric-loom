@@ -282,6 +282,7 @@ public class MinecraftClassMerger {
 				for (; i < first.size(); i++) {
 					out.add(first.get(i));
 				}
+
 				for (; j < second.size(); j++) {
 					if (!first.contains(second.get(j))) {
 						out.add(second.get(j));

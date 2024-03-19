@@ -34,6 +34,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {
@@ -43,6 +44,10 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 
 	public MergedMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
+
+		if (isLegacyVersion()) {
+			throw new RuntimeException("something has gone wrong - merged jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " does not allow merging the obfuscated jars - the legacy-merged jar configuration should have been selected!");
+		}
 	}
 
 	@Override
@@ -57,11 +62,16 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	@Override
+	public MappingsNamespace getOfficialNamespace() {
+		return MappingsNamespace.OFFICIAL;
+	}
+
+	@Override
 	public void provide() throws Exception {
 		super.provide();
 
-		if (!getVersionInfo().isVersionOrNewer("2012-07-25T22:00:00+00:00" /* 1.3 release date */)) {
-			throw new UnsupportedOperationException("Minecraft versions 1.2.5 and older cannot be merged. Please use `loom { server/clientOnlyMinecraftJar() }`");
+		if (!provideServer() || !provideClient()) {
+			throw new UnsupportedOperationException("This version does not provide both the client and server jars - please select the client-only or server-only jar configuration!");
 		}
 
 		if (!Files.exists(minecraftMergedJar) || getExtension().refreshDeps()) {
@@ -79,18 +89,24 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	private void mergeJars() throws IOException {
-		LOGGER.info(":merging jars");
-
-		File jarToMerge = getMinecraftServerJar();
+		File minecraftClientJar = getMinecraftClientJar();
+		File minecraftServerJar = getMinecraftServerJar();
 
 		if (getServerBundleMetadata() != null) {
 			extractBundledServerJar();
-			jarToMerge = getMinecraftExtractedServerJar();
+			minecraftServerJar = getMinecraftExtractedServerJar();
 		}
 
-		Objects.requireNonNull(jarToMerge, "Cannot merge null input jar?");
+		mergeJars(minecraftClientJar, minecraftServerJar, minecraftMergedJar.toFile());
+	}
 
-		try (var jarMerger = new MinecraftJarMerger(getMinecraftClientJar(), jarToMerge, minecraftMergedJar.toFile())) {
+	public static void mergeJars(File clientJar, File serverJar, File mergedJar) throws IOException {
+		LOGGER.info(":merging jars");
+
+		Objects.requireNonNull(clientJar, "Cannot merge null client jar?");
+		Objects.requireNonNull(serverJar, "Cannot merge null server jar?");
+
+		try (var jarMerger = new MinecraftJarMerger(clientJar, serverJar, mergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}

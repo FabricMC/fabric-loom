@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -166,6 +167,11 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 	}
 
 	@Override
+	public void noIntermediateMappings() {
+		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+	}
+
+	@Override
 	public FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace) {
 		return getProject().files(
 			getProject().provider(() ->
@@ -271,6 +277,9 @@ public class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implemen
 
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
+
+		provider.getIsLegacyMinecraft().set(getProject().provider(() -> getMinecraftProvider().isLegacyVersion()));
+		provider.getIsLegacyMinecraft().disallowChanges();
 	}
 
 	@Override

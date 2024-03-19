@@ -169,29 +169,26 @@ public final class MinecraftMetadataProvider {
 			final Path userCache = extension.getFiles().getUserCache().toPath();
 			final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(project, minecraftVersion).toPath();
 
-			final String manifestUrl = MirrorUtil.getVersionManifests(project);
-			final String expManifestUrl = MirrorUtil.getExperimentalVersions(project);
+			final Property<String> customManifestUrl = extension.getCustomVersionsManifest();
+			final Property<String> customExpManifestUrl = extension.getCustomExperimentalVersionsManifest();
 			final Property<String> customMetaUrl = extension.getCustomMinecraftManifest();
 
-			final boolean customManifest = !manifestUrl.equals(Constants.VERSION_MANIFESTS);
-			final boolean customExpManifest = !expManifestUrl.equals(Constants.EXPERIMENTAL_VERSIONS);
-
-			final Path manifestPath = customManifest
-					? userCache.resolve("version_manifest-" + manifestUrl.hashCode() + ".json")
+			final Path manifestPath = customManifestUrl.isPresent()
+					? userCache.resolve("version_manifest-" + customManifestUrl.get().hashCode() + ".json")
 					: userCache.resolve("version_manifest.json");
-			final Path expManifestPath = customExpManifest
-					? userCache.resolve("experimental_version_manifest-" + expManifestUrl.hashCode() + ".json")
+			final Path expManifestPath = customExpManifestUrl.isPresent()
+					? userCache.resolve("experimental_version_manifest-" + customExpManifestUrl.get().hashCode() + ".json")
 					: userCache.resolve("experimental_version_manifest.json");
 			final Path metadataPath = customMetaUrl.isPresent()
 					? workingDir.resolve("minecraft-info-" + customMetaUrl.get().hashCode() + ".json")
-					: customManifest || customExpManifest
-							? workingDir.resolve("minecraft-info-" + manifestUrl.hashCode() + ".json")
+					: customManifestUrl.isPresent() || customExpManifestUrl.isPresent()
+							? workingDir.resolve("minecraft-info-" + customManifestUrl.get().hashCode() + ".json")
 							: workingDir.resolve("minecraft-info.json");
 
 			return new Options(
 					minecraftVersion,
-					manifestUrl,
-					expManifestUrl,
+					customManifestUrl.getOrElse(MirrorUtil.getVersionManifests(project)),
+					customExpManifestUrl.getOrElse(MirrorUtil.getExperimentalVersions(project)),
 					customMetaUrl.getOrNull(),
 					manifestPath,
 					expManifestPath,

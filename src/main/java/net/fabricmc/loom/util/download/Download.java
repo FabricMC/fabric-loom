@@ -279,10 +279,9 @@ public final class Download {
 		}
 
 		try {
-			// Once the file has been fully read, create a hard link to the destination file.
-			// And then remove the temporary file, this ensures that the output file only exists in fully populated state.
-			Files.createLink(output, partFile);
-			Files.delete(partFile);
+			// Once the file has been fully read, move it to the destination file.
+			// This ensures that the output file only exists in fully populated state.
+			Files.move(partFile, output);
 		} catch (IOException e) {
 			throw error(e, "Failed to complete download");
 		}

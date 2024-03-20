@@ -55,12 +55,14 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.Constants;
 
 public abstract class IdeaSyncTask extends AbstractLoomTask {
 	@Inject
 	public IdeaSyncTask() {
 		// Always re-run this task.
 		getOutputs().upToDateWhen(element -> false);
+		setGroup(Constants.TaskGroup.IDE);
 	}
 
 	@TaskAction

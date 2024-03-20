@@ -66,10 +66,12 @@ import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
+import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
+import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -84,8 +86,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
 	protected final Property<String> customManifest;
-	protected final Property<String> customVersionsManifest;
-	protected final Property<String> customExperimentalVersionsManifest;
+	protected final ManifestLocations versionsManifests;
+	protected final ManifestLocations experimentalVersionsManifests;
 	protected final SetProperty<String> knownIndyBsms;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
@@ -117,8 +119,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
 		this.customManifest = project.getObjects().property(String.class);
-		this.customVersionsManifest = project.getObjects().property(String.class);
-		this.customExperimentalVersionsManifest = project.getObjects().property(String.class);
+		this.versionsManifests = new ManifestLocations(MirrorUtil.getVersionManifests(project), "versions_manifest");
+		this.experimentalVersionsManifests = new ManifestLocations(MirrorUtil.getExperimentalVersions(project), "experimental_versions_manifest");
 		this.knownIndyBsms = project.getObjects().setProperty(String.class).convention(Set.of(
 				"java/lang/invoke/StringConcatFactory",
 				"java/lang/runtime/ObjectMethods",
@@ -263,13 +265,13 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public Property<String> getCustomVersionsManifest() {
-		return customVersionsManifest;
+	public ManifestLocations getVersionsManifests() {
+		return versionsManifests;
 	}
 
 	@Override
-	public Property<String> getCustomExperimentalVersionsManifest() {
-		return customExperimentalVersionsManifest;
+	public ManifestLocations getExperimentalVersionsManifests() {
+		return experimentalVersionsManifests;
 	}
 
 	@Override

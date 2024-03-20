@@ -186,7 +186,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getDecompileCacheFile().set(extension.getFiles().getDecompileCache(CACHE_VERSION));
 		getUnpickRuntimeClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
 
-		getUseCache().convention(false);
+		getUseCache().convention(true);
 	}
 
 	@TaskAction
@@ -205,7 +205,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			return;
 		}
 
-		LOGGER.warn("Using decompile cache is experimental and may not work as expected.");
+		LOGGER.info("Using decompile cache.");
 
 		try (var timer = new Timer("Decompiled sources with cache")) {
 			final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
@@ -237,7 +237,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final CachedJarProcessor.WorkJob job = workRequest.job();
 		final CachedJarProcessor.CacheStats cacheStats = workRequest.stats();
 
-		getProject().getLogger().lifecycle("Decompiling: Cache stats: {} hits, {} misses", cacheStats.hits(), cacheStats.misses());
+		getProject().getLogger().lifecycle("Decompile cache stats: {} hits, {} misses", cacheStats.hits(), cacheStats.misses());
 
 		ClassLineNumbers outputLineNumbers = null;
 

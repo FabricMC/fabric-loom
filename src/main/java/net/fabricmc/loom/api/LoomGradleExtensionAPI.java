@@ -43,6 +43,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
+import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -51,6 +52,7 @@ import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
@@ -132,11 +134,19 @@ public interface LoomGradleExtensionAPI {
 
 	InterfaceInjectionExtensionAPI getInterfaceInjection();
 
+	default void versionsManifests(Action<VersionsManifestsAPI> action) {
+		action.execute(getVersionsManifests());
+	}
+
+	ManifestLocations getVersionsManifests();
+
+	default void experimentalVersionsManifests(Action<VersionsManifestsAPI> action) {
+		action.execute(getExperimentalVersionsManifests());
+	}
+
+	ManifestLocations getExperimentalVersionsManifests();
+
 	Property<String> getCustomMinecraftManifest();
-
-	Property<String> getCustomVersionsManifest();
-
-	Property<String> getCustomExperimentalVersionsManifest();
 
 	SetProperty<String> getKnownIndyBsms();
 

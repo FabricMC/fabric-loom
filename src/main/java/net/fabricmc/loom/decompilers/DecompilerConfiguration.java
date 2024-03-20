@@ -34,6 +34,8 @@ import javax.inject.Inject;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
+import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,7 @@ import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
+import net.fabricmc.loom.decompilers.jadx.LoomJadxDecompiler;
 import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.ZipUtils;
@@ -55,16 +58,45 @@ public abstract class DecompilerConfiguration implements Runnable {
 		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
 		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
 		var vineflowerConfiguration = createConfiguration("vineflower", LoomVersions.VINEFLOWER);
+		var jadxConfiguration = createJadxConfiguration();
 
 		registerDecompiler(getProject(), "fernFlower", BuiltinFernflower.class, fernflowerConfiguration);
 		registerDecompiler(getProject(), "cfr", BuiltinCfr.class, cfrConfiguration);
 		registerDecompiler(getProject(), "vineflower", BuiltinVineflower.class, vineflowerConfiguration);
+		registerDecompiler(getProject(), "jadx", BuiltinJadx.class, jadxConfiguration);
 	}
 
-	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions version) {
+	private NamedDomainObjectProvider<Configuration> createConfiguration(String name, LoomVersions... versions) {
 		final String configurationName = name + "DecompilerClasspath";
 		NamedDomainObjectProvider<Configuration> configuration = getProject().getConfigurations().register(configurationName);
-		getProject().getDependencies().add(configurationName, version.mavenNotation());
+
+		for (LoomVersions version : versions) {
+			getProject().getDependencies().add(configurationName, version.mavenNotation());
+		}
+
+		return configuration;
+	}
+
+	private NamedDomainObjectProvider<Configuration> createJadxConfiguration() {
+		final String configurationName = "jadxDecompilerClasspath";
+		final NamedDomainObjectProvider<Configuration> configuration = getProject().getConfigurations().register(configurationName);
+		final DependencyFactory dependencyFactory = getProject().getDependencyFactory();
+
+		final ExternalModuleDependency jadxCore = dependencyFactory.create(LoomVersions.JADX_CORE.mavenNotation());
+		jadxCore.exclude(Map.of(
+				"group", "com.android.tools.build",
+				"module", "aapt2-proto"
+		));
+
+		final ExternalModuleDependency jadxJava = dependencyFactory.create(LoomVersions.JADX_JAVA.mavenNotation());
+		jadxJava.exclude(Map.of(
+				"group", "io.github.skylot",
+				"module", "raung-disasm"
+		));
+
+		getProject().getDependencies().add(configurationName, jadxCore);
+		getProject().getDependencies().add(configurationName, jadxJava);
+
 		return configuration;
 	}
 
@@ -77,7 +109,7 @@ public abstract class DecompilerConfiguration implements Runnable {
 
 	// We need to wrap the internal API with the public API.
 	// This is needed as the sourceset containing fabric's decompilers do not have access to loom classes.
-	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower {
+	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower, BuiltinJadx {
 		private final LoomInternalDecompiler internalDecompiler;
 
 		BuiltinDecompiler(LoomInternalDecompiler internalDecompiler) {
@@ -164,6 +196,12 @@ public abstract class DecompilerConfiguration implements Runnable {
 	public static final class BuiltinVineflower extends BuiltinDecompiler {
 		public BuiltinVineflower() {
 			super(new VineflowerDecompiler());
+		}
+	}
+
+	public static final class BuiltinJadx extends BuiltinDecompiler {
+		public BuiltinJadx() {
+			super(new LoomJadxDecompiler());
 		}
 	}
 }

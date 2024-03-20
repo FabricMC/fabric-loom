@@ -3,6 +3,7 @@
 fernflower = "2.0.0"
 cfr = "0.2.2"
 vineflower = "1.9.3"
+jadx = "1.4.7"
 
 # Runtime depedencies
 mixin-compile-extensions = "0.6.0"
@@ -16,6 +17,9 @@ native-support = "1.0.1"
 fernflower = { module = "net.fabricmc:fabric-fernflower", version.ref = "fernflower" }
 cfr = { module = "net.fabricmc:cfr", version.ref = "cfr" }
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower" }
+jadx-core = { module = "io.github.skylot:jadx-core", version.ref = "jadx" }
+jadx-java = { module = "io.github.skylot:jadx-java-input", version.ref = "jadx" }
+
 
 # Runtime depedencies
 mixin-compile-extensions = { module = "net.fabricmc:fabric-mixin-compile-extensions", version.ref = "mixin-compile-extensions" }

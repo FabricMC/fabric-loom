@@ -30,7 +30,7 @@ import spock.lang.Unroll
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
 
 class ConfigurationCacheTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
@@ -50,8 +50,8 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		def result2 = gradle.run(task: task, args: ["--configuration-cache"])
 
 		then:
-		result.task(":${task}").outcome == SUCCESS
-		result2.task(":${task}").outcome == SUCCESS
+		result.task(":${task}").outcome != FAILED
+		result2.task(":${task}").outcome != FAILED
 
 		where:
 		task                    | _

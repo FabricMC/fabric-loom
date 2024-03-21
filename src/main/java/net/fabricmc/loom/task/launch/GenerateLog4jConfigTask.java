@@ -29,14 +29,26 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.inject.Inject;
+
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.task.AbstractLoomTask;
 
 public abstract class GenerateLog4jConfigTask extends AbstractLoomTask {
+	@OutputFile
+	public abstract RegularFileProperty getOutputFile();
+
+	@Inject
+	public GenerateLog4jConfigTask() {
+		getOutputFile().set(getExtension().getFiles().getDefaultLog4jConfigFile());
+	}
+
 	@TaskAction
 	public void run() {
-		Path outputFile = getExtension().getFiles().getDefaultLog4jConfigFile().toPath();
+		Path outputFile = getOutputFile().get().getAsFile().toPath();
 
 		try (InputStream is = GenerateLog4jConfigTask.class.getClassLoader().getResourceAsStream("log4j2.fabric.xml")) {
 			Files.deleteIfExists(outputFile);

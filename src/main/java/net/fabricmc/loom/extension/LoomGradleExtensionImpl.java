@@ -78,6 +78,8 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private final Provider<Boolean> multiProjectOptimisation;
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
 	private final LoomProblemReporter problemReporter;
+	private final boolean configurationCacheActive;
+	private final boolean isolatedProjectsActive;
 
 	@Inject
 	protected abstract BuildFeatures getBuildFeatures();
@@ -106,12 +108,15 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		libraryProcessorFactories.addAll(LibraryProcessorManager.DEFAULT_LIBRARY_PROCESSORS);
 		libraryProcessorFactories.finalizeValueOnRead();
 
+		configurationCacheActive = getBuildFeatures().getConfigurationCache().getActive().get();
+		isolatedProjectsActive = getBuildFeatures().getIsolatedProjects().getActive().get();
+
 		// Fundamentally impossible to support multi-project optimisation with the configuration cache and/or isolated projects.
-		if (multiProjectOptimisation.get() && getBuildFeatures().getConfigurationCache().getActive().get()) {
+		if (multiProjectOptimisation.get() && configurationCacheActive) {
 			throw new UnsupportedOperationException("Multi-project optimisation is not supported with the configuration cache");
 		}
 
-		if (multiProjectOptimisation.get() && getBuildFeatures().getIsolatedProjects().getActive().get()) {
+		if (multiProjectOptimisation.get() && isolatedProjectsActive) {
 			throw new UnsupportedOperationException("Isolated projects are not supported with multi-project optimisation");
 		}
 
@@ -301,5 +306,10 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public LoomProblemReporter getProblemReporter() {
 		return problemReporter;
+	}
+
+	@Override
+	public boolean isConfigurationCacheActive() {
+		return configurationCacheActive;
 	}
 }

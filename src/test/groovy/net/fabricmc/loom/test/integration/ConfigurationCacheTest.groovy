@@ -34,7 +34,7 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ConfigurationCacheTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "Configuration cache"() {
+	def "Configuration cache (task #task)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
@@ -46,9 +46,16 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
             }
             """.stripIndent()
 		when:
-		def result = gradle.run(task: "help", args: ["--configuration-cache"], disableDebugging: true)
+		def result = gradle.run(task: task, args: ["--configuration-cache"])
+		def result2 = gradle.run(task: task, args: ["--configuration-cache"])
 
 		then:
-		result.task(":help").outcome == SUCCESS
+		result.task(":${task}").outcome == SUCCESS
+		result2.task(":${task}").outcome == SUCCESS
+
+		where:
+		task                    | _
+		"help"                  | _
+		"configureClientLaunch" | _
 	}
 }

@@ -43,6 +43,11 @@ public class ProgressGroup implements Closeable {
 		this.progressLoggerFactory = ((ProjectInternal) project).getServices().get(ProgressLoggerFactory.class);
 	}
 
+	public ProgressGroup(String name, ProgressLoggerFactory progressLoggerFactory) {
+		this.name = name;
+		this.progressLoggerFactory = progressLoggerFactory;
+	}
+
 	private void start() {
 		this.progressGroup = this.progressLoggerFactory.newOperation(name).setDescription(name);
 		this.progressGroup.started();

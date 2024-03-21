@@ -32,6 +32,7 @@ import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -203,7 +204,8 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<String> getIntermediaryUrl();
 
-	Property<MinecraftJarConfiguration> getMinecraftJarConfiguration();
+	@ApiStatus.Experimental
+	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
 
 	default void serverOnlyMinecraftJar() {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SERVER_ONLY);
@@ -231,4 +233,9 @@ public interface LoomGradleExtensionAPI {
 	 * @return The minecraft version, as a {@link Provider}.
 	 */
 	Provider<String> getMinecraftVersion();
+
+	/**
+	 * @return A lazily evaluated {@link FileCollection} containing the named minecraft jars.
+	 */
+	FileCollection getNamedMinecraftJars();
 }

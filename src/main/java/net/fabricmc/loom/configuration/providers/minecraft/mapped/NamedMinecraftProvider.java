@@ -29,9 +29,11 @@ import java.util.List;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
@@ -60,8 +62,57 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-					new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMergedJar(), getMergedJar(), minecraftProvider.getOfficialNamespace())
 			);
+		}
+
+		@Override
+		public List<MinecraftJar.Type> getDependencyTypes() {
+			return List.of(MinecraftJar.Type.MERGED);
+		}
+	}
+
+	public static final class LegacyMergedImpl extends NamedMinecraftProvider<LegacyMergedMinecraftProvider> implements Merged {
+		private final SingleJarImpl server;
+		private final SingleJarImpl client;
+
+		public LegacyMergedImpl(Project project, LegacyMergedMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
+			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER);
+			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT);
+		}
+
+		@Override
+		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+			final ProvideContext childContext = context.withApplyDependencies(false);
+
+			// Map the client and server jars separately
+			server.provide(childContext);
+			client.provide(childContext);
+
+			// then merge them
+			MergedMinecraftProvider.mergeJars(
+						client.getEnvOnlyJar().toFile(),
+						server.getEnvOnlyJar().toFile(),
+						getMergedJar().toFile()
+			);
+
+			getMavenHelper(MinecraftJar.Type.MERGED).savePom();
+
+			if (context.applyDependencies()) {
+				MinecraftSourceSets.get(getProject()).applyDependencies(
+						(configuration, type) -> getProject().getDependencies().add(configuration, getDependencyNotation(type)),
+						getDependencyTypes()
+				);
+			}
+
+			return List.of(getMergedJar());
+		}
+
+		@Override
+		public List<RemappedJars> getRemappedJars() {
+			// The delegate providers will handle the remapping
+			throw new UnsupportedOperationException("LegacyMergedImpl does not support getRemappedJars");
 		}
 
 		@Override
@@ -78,8 +129,8 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-					new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), MappingsNamespace.OFFICIAL),
-					new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), MappingsNamespace.OFFICIAL, minecraftProvider.getMinecraftCommonJar())
+				new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), minecraftProvider.getOfficialNamespace()),
+				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar())
 			);
 		}
 
@@ -113,7 +164,7 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<RemappedJars> getRemappedJars() {
 			return List.of(
-				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), MappingsNamespace.OFFICIAL)
+				new RemappedJars(minecraftProvider.getMinecraftEnvOnlyJar(), getEnvOnlyJar(), minecraftProvider.getOfficialNamespace())
 			);
 		}
 

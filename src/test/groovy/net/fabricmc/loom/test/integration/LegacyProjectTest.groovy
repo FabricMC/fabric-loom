@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.integration
 
+import java.nio.file.Path
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -117,5 +119,32 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		'1.2.5'			| _
 		'b1.8.1'		| _
 		'a1.2.5'		| _
+	}
+
+	@Unroll
+	def "Legacy merged"() {
+		setup:
+		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny.zip").toAbsolutePath()
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.2.5"
+                    mappings loom.layered() {
+						// No names
+					}
+
+                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
+                }
+			"""
+		gradle.buildSrc("legacyMergedIntermediary")
+
+		when:
+		def result = gradle.run(task: "build", args: [
+			"-Ploom.test.legacyMergedIntermediary.mappingPath=${mappings}"
+		])
+
+		then:
+		result.task(":build").outcome == SUCCESS
 	}
 }

@@ -67,6 +67,11 @@ public class Checksum {
 		}
 	}
 
+	public static String sha256Hex(byte[] input) throws IOException {
+		HashCode hash = ByteSource.wrap(input).hash(Hashing.sha256());
+		return Checksum.toHex(hash.asBytes());
+	}
+
 	public static String sha1Hex(Path path) throws IOException {
 		HashCode hash = Files.asByteSource(path.toFile()).hash(Hashing.sha1());
 		return toHex(hash.asBytes());
@@ -96,6 +101,7 @@ public class Checksum {
 
 	public static String projectHash(Project project) {
 		String str = project.getProjectDir().getAbsolutePath() + ":" + project.getPath();
-		return toHex(str.getBytes(StandardCharsets.UTF_8)).substring(0, 16);
+		String hex = sha1Hex(str.getBytes(StandardCharsets.UTF_8));
+		return hex.substring(hex.length() - 16);
 	}
 }

@@ -88,12 +88,15 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
 
                     modDatagenImplementation fabricApi.module("fabric-data-generation-api-v1", "0.90.0+1.20.2")
                 }
+
+                println("%%" + loom.runs.datagen.configName + "%%")
             '''
 		when:
 		def result = gradle.run(task: "runDatagen")
 
 		then:
 		result.task(":runDatagen").outcome == SUCCESS
+		result.output.contains("%%Data Generation%%")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

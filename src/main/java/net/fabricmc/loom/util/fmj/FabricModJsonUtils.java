@@ -25,13 +25,14 @@
 package net.fabricmc.loom.util.fmj;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-final class FabricModJsonUtils {
+public final class FabricModJsonUtils {
 	private FabricModJsonUtils() {
 	}
 
@@ -47,6 +48,30 @@ final class FabricModJsonUtils {
 		ensurePrimitive(element, JsonPrimitive::isNumber, key);
 
 		return element.getAsInt();
+	}
+
+	// Ensure that the schemaVersion json entry, is first in the json file
+	// This exercises an optimisation here: https://github.com/FabricMC/fabric-loader/blob/d69cb72d26497e3f387cf46f9b24340b402a4644/src/main/java/net/fabricmc/loader/impl/metadata/ModMetadataParser.java#L62
+	public static JsonObject optimizeFmj(JsonObject json) {
+		if (!json.has("schemaVersion")) {
+			// No schemaVersion, something will explode later?!
+			return json;
+		}
+
+		// Create a new json object with the schemaVersion first
+		var out = new JsonObject();
+		out.add("schemaVersion", json.get("schemaVersion"));
+
+		for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+			if (entry.getKey().equals("schemaVersion")) {
+				continue;
+			}
+
+			// Add all other entries
+			out.add(entry.getKey(), entry.getValue());
+		}
+
+		return out;
 	}
 
 	private static JsonElement getElement(JsonObject jsonObject, String key) {

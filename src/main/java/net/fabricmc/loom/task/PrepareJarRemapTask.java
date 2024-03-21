@@ -100,6 +100,6 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 	}
 
 	static void prepare(TinyRemapperService tinyRemapperService, Path inputFile) {
-		tinyRemapperService.getTinyRemapperForInputs().readInputs(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
+		tinyRemapperService.getTinyRemapperForInputs().readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
 	}
 }

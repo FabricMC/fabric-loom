@@ -32,8 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -41,7 +39,6 @@ import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.gradle.api.logging.LogLevel;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
@@ -64,6 +61,7 @@ import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
@@ -71,7 +69,9 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMi
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
+import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
@@ -110,6 +110,7 @@ public abstract class CompileConfiguration implements Runnable {
 			try {
 				setupMinecraft(configContext);
 			} catch (Exception e) {
+				ExceptionUtil.printFileLocks(e, getProject());
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
 
@@ -152,10 +153,17 @@ public abstract class CompileConfiguration implements Runnable {
 	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
-		final MinecraftJarConfiguration jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
-		// Provide the vanilla mc jars -- TODO share across getProject()s.
-		final MinecraftProvider minecraftProvider = jarConfiguration.getMinecraftProviderFunction().apply(configContext);
+		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
+
+		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
+
+		if (jarConfiguration == MinecraftJarConfiguration.MERGED && !metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+			jarConfiguration = MinecraftJarConfiguration.LEGACY_MERGED;
+		}
+
+		// Provide the vanilla mc jars
+		final MinecraftProvider minecraftProvider = jarConfiguration.createMinecraftProvider(metadataProvider, configContext);
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
@@ -168,15 +176,15 @@ public abstract class CompileConfiguration implements Runnable {
 		mappingConfiguration.applyToProject(getProject(), mappingsDep);
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.getIntermediaryMinecraftProviderBiFunction().apply(project, minecraftProvider);
-		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.getNamedMinecraftProviderBiFunction().apply(project, minecraftProvider);
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.createIntermediaryMinecraftProvider(project);
+		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
 		registerGameProcessors(configContext);
 		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
-			namedMinecraftProvider = jarConfiguration.getProcessedNamedMinecraftProviderBiFunction().apply(namedMinecraftProvider, minecraftJarProcessorManager);
+			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(namedMinecraftProvider, minecraftJarProcessorManager);
 		}
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
@@ -237,8 +245,7 @@ public abstract class CompileConfiguration implements Runnable {
 		final LoomGradleExtension extension = configContext.extension();
 
 		extension.getMinecraftJarConfiguration().get()
-				.getDecompileConfigurationBiFunction()
-				.apply(configContext.project(), extension.getNamedMinecraftProvider())
+				.createDecompileConfiguration(getProject())
 				.afterEvaluation();
 	}
 
@@ -313,7 +320,8 @@ public abstract class CompileConfiguration implements Runnable {
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
-				logger.lifecycle(printWithParents(handle.get()));
+				ProcessUtil processUtil = ProcessUtil.create(getProject());
+				logger.lifecycle(processUtil.printWithParents(handle.get()));
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 
@@ -349,69 +357,6 @@ public abstract class CompileConfiguration implements Runnable {
 
 		Files.writeString(lockFile.file, String.valueOf(currentPid));
 		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
-	}
-
-	private String printWithParents(ProcessHandle processHandle) {
-		var output = new StringBuilder();
-
-		List<ProcessHandle> chain = getParentChain(null, processHandle);
-
-		for (int i = 0; i < chain.size(); i++) {
-			ProcessHandle handle = chain.get(i);
-
-			output.append("\t".repeat(i));
-
-			if (i != 0) {
-				output.append("└─ ");
-			}
-
-			output.append(getInfoString(handle));
-
-			if (i < chain.size() - 1) {
-				output.append('\n');
-			}
-		}
-
-		return output.toString();
-	}
-
-	private String getInfoString(ProcessHandle handle) {
-		return "(%s) pid %s '%s%s'%s".formatted(
-				handle.info().user().orElse("unknown user"),
-				handle.pid(),
-				handle.info().command().orElse("unknown command"),
-				handle.info().arguments().map(arr -> {
-					if (getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.INFO
-							&& getProject().getGradle().getStartParameter().getLogLevel() != LogLevel.DEBUG) {
-						return " (run with --info or --debug to show arguments, may reveal sensitive info)";
-					}
-
-					String join = String.join(" ", arr);
-
-					if (join.isBlank()) {
-						return "";
-					}
-
-					return " " + join;
-				}).orElse(" (unknown arguments)"),
-				handle.info().startInstant().map(instant -> " started at " + instant).orElse("")
-		);
-	}
-
-	private List<ProcessHandle> getParentChain(List<ProcessHandle> collectTo, ProcessHandle processHandle) {
-		if (collectTo == null) {
-			collectTo = new ArrayList<>();
-		}
-
-		Optional<ProcessHandle> parent = processHandle.parent();
-
-		if (parent.isPresent()) {
-			getParentChain(collectTo, parent.get());
-		}
-
-		collectTo.add(processHandle);
-
-		return collectTo;
 	}
 
 	private void releaseLock() {

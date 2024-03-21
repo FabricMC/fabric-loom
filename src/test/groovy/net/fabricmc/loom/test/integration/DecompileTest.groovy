@@ -74,4 +74,36 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	def "decompile cache"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE, gradleHomeDir: File.createTempDir())
+		gradle.buildSrc("decompile")
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.20.4"
+                    mappings "net.fabricmc:yarn:1.20.4+build.3:v2"
+                }
+		'''
+
+		when:
+		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+
+		// Add fabric API to the project, this introduces some transitive access wideners
+		gradle.buildGradle << '''
+                dependencies {
+                    modImplementation "net.fabricmc.fabric-api:fabric-api:0.96.4+1.20.4"
+                }
+		'''
+
+		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+
+		// And run again, with no changes
+		def result3 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+
+		then:
+		result.task(":genSourcesWithVineflower").outcome == SUCCESS
+		result2.task(":genSourcesWithVineflower").outcome == SUCCESS
+		result3.task(":genSourcesWithVineflower").outcome == SUCCESS
+	}
 }

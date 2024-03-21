@@ -37,15 +37,22 @@ import java.util.Map;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 // Recommended vscode plugin pack:
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
-public class GenVsCodeProjectTask extends AbstractLoomTask {
+public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
+	// Prevent Gradle from running vscode task asynchronously
+	@ServiceReference(SyncTaskBuildService.NAME)
+	abstract Property<SyncTaskBuildService> getSyncTask();
+
 	@TaskAction
 	public void genRuns() throws IOException {
 		final Path projectDir = getProject().getRootDir().toPath().resolve(".vscode");

@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
@@ -49,10 +50,20 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 public final class MappingsMerger {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingsMerger.class);
 
-	public static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	public static void mergeAndSaveMappings(Path from, Path out, MinecraftProvider minecraftProvider, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
+		if (minecraftProvider.isLegacyVersion()) {
+			legacyMergeAndSaveMappings(from, out, intermediateMappingsService);
+		} else {
+			mergeAndSaveMappings(from, out, intermediateMappingsService);
+		}
+
+		LOGGER.info(":merged mappings in " + stopwatch.stop());
+	}
+
+	private static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
@@ -70,8 +81,27 @@ public final class MappingsMerger {
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			officialTree.accept(writer);
 		}
+	}
 
-		LOGGER.info(":merged mappings in " + stopwatch.stop());
+	private static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
+		intermediateMappingsService.getMemoryMappingTree().accept(intermediaryTree);
+
+		try (BufferedReader reader = Files.newBufferedReader(from, StandardCharsets.UTF_8)) {
+			Tiny2FileReader.read(reader, intermediaryTree);
+		}
+
+		MemoryMappingTree officialTree = new MemoryMappingTree();
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.CLIENT_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.SERVER_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
+		intermediaryTree.accept(nsCompleter);
+
+		// versions this old strip inner class attributes
+		// from the obfuscated jars anyway
+		//inheritMappedNamesOfEnclosingClasses(officialTree);
+
+		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
+			officialTree.accept(writer);
+		}
 	}
 
 	/**

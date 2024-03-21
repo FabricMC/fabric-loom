@@ -40,6 +40,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.services.ServiceReference;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
@@ -52,7 +53,7 @@ import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 public abstract class AbstractRunTask extends JavaExec {
 	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
 
-	private final RunConfig config;
+	private final Provider<RunConfig> config;
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	private final ConfigurableFileCollection classpath = getProject().getObjects().fileCollection();
 
@@ -63,13 +64,12 @@ public abstract class AbstractRunTask extends JavaExec {
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
 		setGroup(Constants.TaskGroup.FABRIC);
-		this.config = configProvider.apply(getProject());
 
-		setClasspath(config.sourceSet.getRuntimeClasspath().filter(File::exists).filter(new LibraryFilter()));
+		this.config = getProject().provider(() -> configProvider.apply(getProject()));
 
-		args(config.programArgs);
-		getMainClass().set(config.mainClass);
-
+		classpath.from(config.map(runConfig -> runConfig.sourceSet.getRuntimeClasspath().filter(File::exists).filter(new LibraryFilter())));
+		getArgumentProviders().add(() -> config.get().programArgs);
+		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 	}
 
@@ -100,8 +100,8 @@ public abstract class AbstractRunTask extends JavaExec {
 			super.setClasspath(classpath);
 		}
 
-		setWorkingDir(new File(getProject().getProjectDir(), config.runDir));
-		environment(config.environmentVariables);
+		setWorkingDir(new File(getProject().getProjectDir(), config.get().runDir));
+		environment(config.get().environmentVariables);
 
 		super.exec();
 	}
@@ -133,7 +133,7 @@ public abstract class AbstractRunTask extends JavaExec {
 			}
 		}
 
-		args.addAll(config.vmArgs);
+		args.addAll(config.get().vmArgs);
 		return args;
 	}
 
@@ -204,11 +204,11 @@ public abstract class AbstractRunTask extends JavaExec {
 		@Override
 		public boolean isSatisfiedBy(File element) {
 			if (excludedLibraryPaths == null) {
-				excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
+				excludedLibraryPaths = config.get().getExcludedLibraryPaths(getProject());
 			}
 
 			if (excludedLibraryPaths.contains(element.getAbsolutePath())) {
-				getProject().getLogger().debug("Excluding library {} from {} run config", element.getName(), config.configName);
+				getProject().getLogger().debug("Excluding library {} from {} run config", element.getName(), config.get().configName);
 				return false;
 			}
 

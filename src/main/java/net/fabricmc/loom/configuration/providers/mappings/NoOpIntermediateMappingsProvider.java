@@ -37,11 +37,12 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
  * A bit of a hack, creates an empty intermediary mapping file to be used for mc versions without any intermediate mappings.
  */
 public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappingsProvider {
-	private static final String HEADER = "tiny\t2\t0\tofficial\tintermediary";
+	private static final String HEADER_OFFICIAL_MERGED = "tiny\t2\t0\tofficial\tintermediary";
+	private static final String HEADER_OFFICIAL_LEGACY_MERGED = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, HEADER, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, getIsLegacyMinecraft().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
 	}
 
 	@Override

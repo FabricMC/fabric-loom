@@ -181,8 +181,8 @@ public abstract class FabricApiExtension {
 
 		if (settings.getCreateRunConfiguration().get()) {
 			extension.getRunConfigs().create("datagen", run -> {
-				run.setConfigName("Data Generation");
 				run.inherit(extension.getRunConfigs().getByName("server"));
+				run.setConfigName("Data Generation");
 
 				run.property("fabric-api.datagen");
 				run.property("fabric-api.datagen.output-dir", outputDirectory.getAbsolutePath());

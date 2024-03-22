@@ -35,16 +35,19 @@ import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations.Man
 public class ManifestLocations implements VersionsManifestsAPI, Iterable<ManifestLocation> {
 	private static final String FILE_EXTENSION = ".json";
 	private final Queue<ManifestLocation> locations = new PriorityQueue<>();
-	private final String baseCacheFileName;
+	private final String baseFileName;
 
-	public ManifestLocations(String builtInUrl, String baseCacheFileName) {
-		this.locations.add(new ManifestLocation(true, 0, builtInUrl));
-		this.baseCacheFileName = baseCacheFileName;
+	public ManifestLocations(String baseFileName) {
+		this.baseFileName = baseFileName;
+	}
+
+	public void addBuiltIn(int priority, String url, String fileName) {
+		locations.add(new ManifestLocation(priority, url, fileName));
 	}
 
 	@Override
 	public void add(String url, int priority) {
-		locations.add(new ManifestLocation(false, priority, url));
+		locations.add(new ManifestLocation(priority, url));
 	}
 
 	@Override
@@ -53,18 +56,22 @@ public class ManifestLocations implements VersionsManifestsAPI, Iterable<Manifes
 	}
 
 	public class ManifestLocation implements Comparable<ManifestLocation> {
-		private final boolean builtIn;
 		private final int priority;
 		private final String url;
+		private final String builtInFileName;
 
-		private ManifestLocation(boolean builtIn, int priority, String url) {
-			this.builtIn = builtIn;
+		private ManifestLocation(int priority, String url) {
+			this(priority, url, null);
+		}
+
+		private ManifestLocation(int priority, String url, String builtInFileName) {
 			this.priority = priority;
 			this.url = url;
+			this.builtInFileName = builtInFileName;
 		}
 
 		public boolean isBuiltIn() {
-			return builtIn;
+			return builtInFileName != null;
 		}
 
 		public String url() {
@@ -72,9 +79,9 @@ public class ManifestLocations implements VersionsManifestsAPI, Iterable<Manifes
 		}
 
 		public Path cacheFile(Path dir) {
-			String fileName = !builtIn
-					? baseCacheFileName + "-" + url.hashCode() + FILE_EXTENSION
-					: baseCacheFileName + FILE_EXTENSION;
+			String fileName = (builtInFileName == null)
+					? builtInFileName + FILE_EXTENSION
+					: baseFileName + "-" + url.hashCode() + FILE_EXTENSION;
 			return dir.resolve(fileName);
 		}
 

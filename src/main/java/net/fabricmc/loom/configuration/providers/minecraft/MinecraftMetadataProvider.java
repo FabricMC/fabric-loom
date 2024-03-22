@@ -165,12 +165,12 @@ public final class MinecraftMetadataProvider {
 
 		// custom version metadata
 		if (versionEntry.manifest == null) {
-			return base + versionEntry.entry.url.hashCode() + ".json";
+			return base + Integer.toHexString(versionEntry.entry.url.hashCode()) + ".json";
 		}
 
 		// custom versions manifest
 		if (!versionEntry.manifest.isBuiltIn()) {
-			return base + versionEntry.manifest.url().hashCode() + ".json";
+			return base + Integer.toHexString(versionEntry.manifest.url().hashCode()) + ".json";
 		}
 
 		return base + ".json";

@@ -134,16 +134,20 @@ public interface LoomGradleExtensionAPI {
 
 	InterfaceInjectionExtensionAPI getInterfaceInjection();
 
+	@ApiStatus.Experimental
 	default void versionsManifests(Action<VersionsManifestsAPI> action) {
 		action.execute(getVersionsManifests());
 	}
 
+	@ApiStatus.Experimental
 	ManifestLocations getVersionsManifests();
 
+	@ApiStatus.Experimental
 	default void experimentalVersionsManifests(Action<VersionsManifestsAPI> action) {
 		action.execute(getExperimentalVersionsManifests());
 	}
 
+	@ApiStatus.Experimental
 	ManifestLocations getExperimentalVersionsManifests();
 
 	Property<String> getCustomMinecraftManifest();

@@ -29,6 +29,7 @@ import java.nio.file.Path
 
 import org.intellij.lang.annotations.Language
 
+import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.download.DownloadTest
@@ -152,14 +153,16 @@ class MinecraftMetadataProviderTest extends DownloadTest {
 	}
 
 	private MinecraftMetadataProvider.Options options(String version, String customUrl) {
+		ManifestLocations manifests = new ManifestLocations("versions_manifest")
+		manifests.addBuiltIn(0, "$PATH/versionManifest", "versions_manifest")
+		manifests.addBuiltIn(1, "$PATH/experimentalVersionManifest", "experimental_versions_manifest")
+
 		return new MinecraftMetadataProvider.Options(
 				version,
-				"$PATH/versionManifest",
-				"$PATH/experimentalVersionManifest",
+				manifests,
 				customUrl,
-				testDir.resolve("version_manifest.json"),
-				testDir.resolve("experimental_version_manifest.json"),
-				testDir.resolve("${version}.json")
+				testDir,
+				testDir
 				)
 	}
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2023 FabricMC
+ * Copyright (c) 2016-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,35 +22,23 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.util
+package net.fabricmc.loom.configuration.providers.minecraft;
 
-import java.time.Duration
+import java.util.List;
+import java.util.Map;
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
+import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
-import net.fabricmc.loom.configuration.providers.minecraft.VersionsManifest
-import net.fabricmc.loom.test.LoomTestConstants
-import net.fabricmc.loom.util.Constants
-import net.fabricmc.loom.util.download.Download
-
-class MinecraftTestUtils {
-	private static final File TEST_DIR = new File(LoomTestConstants.TEST_DIR, "minecraft")
-	public static final Gson GSON = new GsonBuilder().create()
-
-	static MinecraftVersionMeta getVersionMeta(String id) {
-		def versionManifest = download(Constants.VERSION_MANIFESTS, "version_manifest.json")
-		def manifest = GSON.fromJson(versionManifest, VersionsManifest.class)
-		def version = manifest.versions().find { it.id == id }
-
-		def metaJson = download(version.url, "${id}.json")
-		GSON.fromJson(metaJson, MinecraftVersionMeta.class)
+public record VersionsManifest(List<Version> versions, Map<String, String> latest) {
+	public static class Version {
+		public String id, url, sha1;
 	}
 
-	static String download(String url, String name) {
-		Download.create(url)
-				.maxAge(Duration.ofDays(31))
-				.downloadString(new File(TEST_DIR, name).toPath())
+	@Nullable
+	public Version getVersion(String id) {
+		return versions.stream()
+				.filter(versions -> versions.id.equalsIgnoreCase(id))
+				.findFirst()
+				.orElse(null);
 	}
 }

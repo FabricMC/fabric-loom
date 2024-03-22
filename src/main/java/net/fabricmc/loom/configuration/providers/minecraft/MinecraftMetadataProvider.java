@@ -108,18 +108,8 @@ public final class MinecraftMetadataProvider {
 			suppliers.add(() -> getManifestEntry(location, false));
 		}
 
-		// Then try finding the experimental version with caching
-		for (ManifestLocation location : options.experimentalVersionsManifests()) {
-			suppliers.add(() -> getManifestEntry(location, false));
-		}
-
 		// Then force download Mojang's metadata to find the version
 		for (ManifestLocation location : options.versionsManifests()) {
-			suppliers.add(() -> getManifestEntry(location, true));
-		}
-
-		// Finally try a force downloaded experimental metadata.
-		for (ManifestLocation location : options.experimentalVersionsManifests()) {
 			suppliers.add(() -> getManifestEntry(location, true));
 		}
 
@@ -188,7 +178,6 @@ public final class MinecraftMetadataProvider {
 
 	public record Options(String minecraftVersion,
 					ManifestLocations versionsManifests,
-					ManifestLocations experimentalVersionsManifests,
 					@Nullable String customManifestUrl,
 					Path userCache,
 					Path workingDir) {
@@ -198,13 +187,11 @@ public final class MinecraftMetadataProvider {
 			final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(project, minecraftVersion).toPath();
 
 			final ManifestLocations manifestLocations = extension.getVersionsManifests();
-			final ManifestLocations experimentalManifestLocations = extension.getExperimentalVersionsManifests();
 			final Property<String> customMetaUrl = extension.getCustomMinecraftManifest();
 
 			return new Options(
 					minecraftVersion,
 					manifestLocations,
-					experimentalManifestLocations,
 					customMetaUrl.getOrNull(),
 					userCache,
 					workingDir

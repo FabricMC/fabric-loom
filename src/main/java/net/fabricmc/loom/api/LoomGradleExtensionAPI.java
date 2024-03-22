@@ -142,14 +142,6 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	ManifestLocations getVersionsManifests();
 
-	@ApiStatus.Experimental
-	default void experimentalVersionsManifests(Action<VersionsManifestsAPI> action) {
-		action.execute(getExperimentalVersionsManifests());
-	}
-
-	@ApiStatus.Experimental
-	ManifestLocations getExperimentalVersionsManifests();
-
 	Property<String> getCustomMinecraftManifest();
 
 	SetProperty<String> getKnownIndyBsms();

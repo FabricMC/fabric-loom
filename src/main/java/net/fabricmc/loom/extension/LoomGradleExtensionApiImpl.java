@@ -87,7 +87,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final RegularFileProperty accessWidener;
 	protected final Property<String> customManifest;
 	protected final ManifestLocations versionsManifests;
-	protected final ManifestLocations experimentalVersionsManifests;
 	protected final SetProperty<String> knownIndyBsms;
 	protected final Property<Boolean> transitiveAccessWideners;
 	protected final Property<Boolean> modProvidedJavadoc;
@@ -119,8 +118,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
 		this.customManifest = project.getObjects().property(String.class);
-		this.versionsManifests = new ManifestLocations(MirrorUtil.getVersionManifests(project), "versions_manifest");
-		this.experimentalVersionsManifests = new ManifestLocations(MirrorUtil.getExperimentalVersions(project), "experimental_versions_manifest");
+		this.versionsManifests = new ManifestLocations("versions_manifest");
+		this.versionsManifests.addBuiltIn(0, MirrorUtil.getVersionManifests(project), "versions_manifest");
+		this.versionsManifests.addBuiltIn(1, MirrorUtil.getExperimentalVersions(project), "experimental_versions_manifest");
 		this.knownIndyBsms = project.getObjects().setProperty(String.class).convention(Set.of(
 				"java/lang/invoke/StringConcatFactory",
 				"java/lang/runtime/ObjectMethods",
@@ -267,11 +267,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public ManifestLocations getVersionsManifests() {
 		return versionsManifests;
-	}
-
-	@Override
-	public ManifestLocations getExperimentalVersionsManifests() {
-		return experimentalVersionsManifests;
 	}
 
 	@Override

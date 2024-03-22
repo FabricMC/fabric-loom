@@ -153,10 +153,13 @@ class MinecraftMetadataProviderTest extends DownloadTest {
 	}
 
 	private MinecraftMetadataProvider.Options options(String version, String customUrl) {
+		ManifestLocations manifests = new ManifestLocations("versions_manifest")
+		manifests.addBuiltIn(0, "$PATH/versionManifest", "versions_manifest")
+		manifests.addBuiltIn(1, "$PATH/experimentalVersionManifest", "experimental_versions_manifest")
+
 		return new MinecraftMetadataProvider.Options(
 				version,
-				new ManifestLocations("$PATH/versionManifest", "versions_manifest"),
-				new ManifestLocations("$PATH/experimentalVersionManifest", "experimental_versions_manifest"),
+				manifests,
 				customUrl,
 				testDir,
 				testDir

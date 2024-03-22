@@ -36,6 +36,9 @@ import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.ZipUtils
 
 trait GradleProjectTestTrait {
+	// Set to enable configuration cache for all tests
+	public static boolean ENABLE_CONFIGURATION_CACHE = System.getenv("LOOM_TEST_CONFIGURATION_CACHE") != null
+
 	@Lazy
 	@Shared
 	private static File sharedProjectDir = File.createTempDir()
@@ -150,6 +153,7 @@ trait GradleProjectTestTrait {
 		private String gradleHomeDir
 		private String warningMode
 		private boolean useBuildSrc
+		private boolean enableDebugging = true
 
 		BuildResult run(Map options) {
 			// Setup the system props to tell loom that its running in a test env
@@ -163,6 +167,14 @@ trait GradleProjectTestTrait {
 
 			if (options.task) {
 				args << options.task
+			}
+
+			if (options.configurationCache || ENABLE_CONFIGURATION_CACHE) {
+				args << "--configuration-cache"
+			}
+
+			if (options.isloatedProjects) {
+				args << "-Dorg.gradle.unsafe.isolated-projects=true"
 			}
 
 			args.addAll(options.tasks ?: [])
@@ -179,6 +191,10 @@ trait GradleProjectTestTrait {
 				writeBuildSrcDeps(runner)
 			}
 
+			if (options.disableDebugging) {
+				enableDebugging = false
+			}
+
 			return options.expectFailure ? runner.buildAndFail() : runner.build()
 		}
 
@@ -188,7 +204,7 @@ trait GradleProjectTestTrait {
 					.withPluginClasspath()
 					.withGradleVersion(gradleVersion)
 					.forwardOutput()
-					.withDebug(true)
+					.withDebug(enableDebugging)
 		}
 
 		File getProjectDir() {

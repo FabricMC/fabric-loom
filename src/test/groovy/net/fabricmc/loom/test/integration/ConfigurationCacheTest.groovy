@@ -46,8 +46,8 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
             }
             """.stripIndent()
 		when:
-		def result = gradle.run(task: task, args: ["--configuration-cache"])
-		def result2 = gradle.run(task: task, args: ["--configuration-cache"])
+		def result = gradle.run(task: task, configurationCache: true, isloatedProjects: false)
+		def result2 = gradle.run(task: task, configurationCache: true, isloatedProjects: false)
 
 		then:
 		result.task(":${task}").outcome != FAILED

@@ -164,14 +164,26 @@ public final class MinecraftMetadataProvider {
 			builder.defaultCache();
 		}
 
-		final String fileName = versionEntry.manifest == null
-				? "minecraft-info-" + versionEntry.entry.url.hashCode() + ".json"
-				: !versionEntry.manifest.isBuiltIn()
-						? "minecraft-info-" + versionEntry.manifest.url().hashCode() + ".json"
-						: "minecraft-info.json";
+		final String fileName = getVersionMetaFileName();
 		final Path cacheFile = options.workingDir().resolve(fileName);
 		final String json = builder.downloadString(cacheFile);
 		return LoomGradlePlugin.GSON.fromJson(json, MinecraftVersionMeta.class);
+	}
+
+	private String getVersionMetaFileName() {
+		String base = "minecraft-info";
+
+		// custom version metadata
+		if (versionEntry.manifest == null) {
+			return base + versionEntry.entry.url.hashCode() + ".json";
+		}
+
+		// custom versions manifest
+		if (!versionEntry.manifest.isBuiltIn()) {
+			return base + versionEntry.manifest.url().hashCode() + ".json";
+		}
+
+		return base + ".json";
 	}
 
 	public record Options(String minecraftVersion,

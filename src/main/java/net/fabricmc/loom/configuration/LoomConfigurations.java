@@ -31,6 +31,10 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Bundling;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.attributes.LibraryElements;
+import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -82,7 +86,15 @@ public abstract class LoomConfigurations implements Runnable {
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
 		// We don't need to make this non-transitive due to the way we resolve it. Also, doing so would break platform dependencies.
-		register(Constants.Configurations.INCLUDE, Role.RESOLVABLE);
+		register(Constants.Configurations.INCLUDE, Role.RESOLVABLE).configure(configuration -> {
+			configuration.setTransitive(false);
+			configuration.attributes(attributes -> {
+				attributes.attribute(Usage.USAGE_ATTRIBUTE, getProject().getObjects().named(Usage.class, Usage.JAVA_RUNTIME));
+				attributes.attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, getProject().getObjects().named(LibraryElements.class, LibraryElements.JAR));
+				attributes.attribute(Category.CATEGORY_ATTRIBUTE, getProject().getObjects().named(Category.class, Category.LIBRARY));
+				attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, getProject().getObjects().named(Bundling.class, Bundling.EXTERNAL));
+			});
+		});
 		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
 
 		register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {

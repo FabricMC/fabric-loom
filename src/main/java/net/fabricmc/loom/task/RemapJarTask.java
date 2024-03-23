@@ -112,7 +112,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 
 		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
-		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
+		getNestedJars().from(new IncludedJarFactory(this).getNestedJars(includeConfiguration));
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 

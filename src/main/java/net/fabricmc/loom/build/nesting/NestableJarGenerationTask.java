@@ -26,12 +26,10 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
@@ -45,18 +43,11 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.ChangeType;
 import org.gradle.work.Incremental;
 import org.gradle.work.InputChanges;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public abstract class NestableJarGenerationTask extends DefaultTask {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IncludedJarFactory.class);
-	private static final String SEMVER_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
-	private static final Pattern SEMVER_PATTERN = Pattern.compile(SEMVER_REGEX);
-
 	@InputFiles
 	@Incremental
 	@PathSensitive(PathSensitivity.NAME_ONLY)
@@ -113,22 +104,6 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 			ZipReprocessorUtil.appendZipEntry(output.toPath(), "fabric.mod.json", FileUtils.readFileToByteArray(modJsonFile));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to add dummy mod while including %s".formatted(input), e);
-		}
-	}
-
-	protected record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
-		@Override
-		public String classifier() {
-			if (classifier == null) {
-				return "";
-			} else {
-				return "_" + classifier;
-			}
-		}
-
-		@Override
-		public String toString() {
-			return group + ":" + name + ":" + version + classifier();
 		}
 	}
 }

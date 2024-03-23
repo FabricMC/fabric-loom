@@ -32,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,8 +63,8 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.extension.MixinExtension;
@@ -112,7 +113,13 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 
 		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
-		getNestedJars().from(new IncludedJarFactory(this).getNestedJars(includeConfiguration));
+		String nestableJarTaskName = getName() + "NestableJars" + includeConfiguration.getName().substring(0, 1).toUpperCase(Locale.ROOT) + includeConfiguration.getName().substring(1);
+		var nestableJarsTask = getProject().getTasks().register(nestableJarTaskName, NestableJarGenerationTask.class, task -> {
+			task.from(includeConfiguration);
+			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir("nestableJars/" + nestableJarTaskName));
+		});
+		getNestedJars().from(getProject().fileTree(nestableJarsTask.get().getOutputDirectory()));
+		getNestedJars().builtBy(nestableJarsTask);
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 

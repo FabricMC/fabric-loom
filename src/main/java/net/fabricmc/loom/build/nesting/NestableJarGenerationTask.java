@@ -26,84 +26,201 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.google.common.hash.Hashing;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.artifacts.ArtifactView;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.MapProperty;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.work.ChangeType;
-import org.gradle.work.Incremental;
-import org.gradle.work.InputChanges;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public abstract class NestableJarGenerationTask extends DefaultTask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(NestableJarGenerationTask.class);
+	private static final String SEMVER_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+	private static final Pattern SEMVER_PATTERN = Pattern.compile(SEMVER_REGEX);
+
 	@InputFiles
-	@Incremental
 	@PathSensitive(PathSensitivity.NAME_ONLY)
 	protected abstract ConfigurableFileCollection getJars();
 
-	@InputFiles
-	@Incremental
-	@PathSensitive(PathSensitivity.NAME_ONLY)
-	protected abstract ConfigurableFileCollection getModJsons();
-
 	@OutputDirectory
-	protected abstract DirectoryProperty getOutputDirectory();
+	public abstract DirectoryProperty getOutputDirectory();
+
+	@Input
+	protected abstract MapProperty<String, ComponentArtifactIdentifier> getJarIds();
 
 	@TaskAction
-	void makeNestableJars(InputChanges inputChanges) {
-		Map<String, File> fabricModJsons = new HashMap<>();
-		getModJsons().forEach(file -> {
-			String name = file.getName();
-			if (name.endsWith(".json")) {
-				fabricModJsons.put(name.substring(0, name.length() - 5), file);
+	void makeNestableJars() {
+		Map<String, String> fabricModJsons = new HashMap<>();
+		getJarIds().get().forEach((fileName, id) -> {
+			if (!(id instanceof ModuleComponentArtifactIdentifier moduleIdentifier)) {
+				throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component.");
 			}
+
+			String group = moduleIdentifier.getComponentIdentifier().getGroup();
+			String name = moduleIdentifier.getComponentIdentifier().getModule();
+			String version = moduleIdentifier.getComponentIdentifier().getVersion();
+			String classifier = null;
+
+			if (moduleIdentifier.getFileName().startsWith(name + "-" + version + "-")) {
+				String rest = moduleIdentifier.getFileName().substring(name.length() + version.length() + 2);
+				int dotIndex = rest.indexOf('.');
+
+				if (dotIndex != -1) {
+					classifier = rest.substring(0, dotIndex);
+				}
+			}
+
+			Metadata metadata = new Metadata(group, name, version, classifier);
+			fabricModJsons.put(fileName, generateModForDependency(metadata));
 		});
-		if (!inputChanges.isIncremental()) {
-			try {
-				File targetDir = getOutputDirectory().get().getAsFile();
-				FileUtils.deleteDirectory(targetDir);
-				targetDir.mkdirs();
-			} catch (IOException e) {
-                    throw new org.gradle.api.UncheckedIOException(e);
-            }
+
+		try {
+			File targetDir = getOutputDirectory().get().getAsFile();
+			FileUtils.deleteDirectory(targetDir);
+			targetDir.mkdirs();
+		} catch (IOException e) {
+			throw new org.gradle.api.UncheckedIOException(e);
 		}
-		inputChanges.getFileChanges(getJars()).forEach(change -> {
-			File targetFile = getOutputDirectory().file(change.getFile().getName()).get().getAsFile();
+
+		getJars().forEach(file -> {
+			File targetFile = getOutputDirectory().file(file.getName()).get().getAsFile();
 			targetFile.delete();
-			if (change.getChangeType() != ChangeType.REMOVED) {
-				File fabricModJson = Objects.requireNonNull(fabricModJsons.get(change.getFile().getName()), "Generated fabric.mod.json file is missing for dependency file "+change.getFile().getName());
-				makeNestableJar(change.getFile(), targetFile, fabricModJson);
-			}
+			String fabricModJson = Objects.requireNonNull(fabricModJsons.get(file.getName()), "Could not generate fabric.mod.json for included dependency "+file.getName());
+			makeNestableJar(file, targetFile, fabricModJson);
 		});
 	}
 
-	private void makeNestableJar(final File input, final File output, final File modJsonFile) {
+	public void from(Configuration configuration) {
+		ArtifactView artifacts = configuration.getIncoming().artifactView(config -> {
+			config.attributes(
+					attr -> attr.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, ArtifactTypeDefinition.JAR_TYPE)
+			);
+		});
+		getJars().from(artifacts.getFiles());
+		dependsOn(configuration);
+		getJarIds().set(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
+			Map<String, ComponentArtifactIdentifier> map = new HashMap<>();
+			set.forEach(artifact -> {
+				map.put(artifact.getFile().getName(), artifact.getId());
+			});
+			return map;
+		}));
+	}
+
+	// Generates a barebones mod for a dependency
+	private static String generateModForDependency(Metadata metadata) {
+		String modId = (metadata.group() + "_" + metadata.name() + metadata.classifier())
+				.replaceAll("\\.", "_")
+				.toLowerCase(Locale.ENGLISH);
+
+		// Fabric Loader can't handle modIds longer than 64 characters
+		if (modId.length() > 64) {
+			String hash = Hashing.sha256()
+					.hashString(modId, StandardCharsets.UTF_8)
+					.toString();
+			modId = modId.substring(0, 50) + hash.substring(0, 14);
+		}
+
+		final JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("schemaVersion", 1);
+
+		jsonObject.addProperty("id", modId);
+		String version = getVersion(metadata);
+		jsonObject.addProperty("version", version);
+		jsonObject.addProperty("name", metadata.name());
+
+		JsonObject custom = new JsonObject();
+		custom.addProperty("fabric-loom:generated", true);
+		jsonObject.add("custom", custom);
+
+		return LoomGradlePlugin.GSON.toJson(jsonObject);
+	}
+
+	private static String getVersion(Metadata metadata) {
+		String version = metadata.version();
+
+		if (validSemVer(version)) {
+			return version;
+		}
+
+		if (version.endsWith(".Final") || version.endsWith(".final")) {
+			String trimmedVersion = version.substring(0, version.length() - 6);
+
+			if (validSemVer(trimmedVersion)) {
+				return trimmedVersion;
+			}
+		}
+
+		LOGGER.warn("({}) is not valid semver for dependency {}", version, metadata);
+		return version;
+	}
+
+	private static boolean validSemVer(String version) {
+		Matcher matcher = SEMVER_PATTERN.matcher(version);
+		return matcher.find();
+	}
+
+	private void makeNestableJar(final File input, final File output, final String modJsonFile) {
 		try {
 			FileUtils.copyFile(input, output);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to copy mod file %s".formatted(input), e);
 		}
+
 		if (FabricModJsonFactory.isModJar(input)) {
 			// Input is a mod, nothing needs to be done.
 			return;
 		}
 
 		try {
-			ZipReprocessorUtil.appendZipEntry(output.toPath(), "fabric.mod.json", FileUtils.readFileToByteArray(modJsonFile));
+			ZipReprocessorUtil.appendZipEntry(output.toPath(), "fabric.mod.json", modJsonFile.getBytes(StandardCharsets.UTF_8));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to add dummy mod while including %s".formatted(input), e);
+		}
+	}
+
+	protected record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
+		@Override
+		public String classifier() {
+			if (classifier == null) {
+				return "";
+			} else {
+				return "_" + classifier;
+			}
+		}
+
+		@Override
+		public String toString() {
+			return group + ":" + name + ":" + version + classifier();
 		}
 	}
 }

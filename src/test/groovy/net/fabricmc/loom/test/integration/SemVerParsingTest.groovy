@@ -27,17 +27,14 @@ package net.fabricmc.loom.test.integration
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import net.fabricmc.loom.build.nesting.IncludedJarFactory
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 class SemVerParsingTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "test valid Semantic Versioning strings"() {
-		given:
-		IncludedJarFactory includedJarFactory = new IncludedJarFactory(null)
-
 		expect:
-		includedJarFactory.validSemVer(version) == true
+		NestableJarGenerationTask.validSemVer(version) == true
 
 		where:
 		version                   | _
@@ -50,11 +47,8 @@ class SemVerParsingTest extends Specification implements GradleProjectTestTrait 
 
 	@Unroll
 	def "test non-Semantic Versioning strings"() {
-		given:
-		IncludedJarFactory includedJarFactory = new IncludedJarFactory(null)
-
 		expect:
-		includedJarFactory.validSemVer(version) == false
+		NestableJarGenerationTask.validSemVer(version) == false
 
 		where:
 		version                   | _
@@ -66,15 +60,12 @@ class SemVerParsingTest extends Specification implements GradleProjectTestTrait 
 
 	@Unroll
 	def "test '.Final' suffixed SemVer"() {
-		given:
-		IncludedJarFactory includedJarFactory = new IncludedJarFactory(null)
-
 		expect:
-		includedJarFactory.getVersion(metadata) == expectedVersion
+		NestableJarGenerationTask.getVersion(metadata) == expectedVersion
 
 		where:
 		metadata                                                               | expectedVersion
-		new IncludedJarFactory.Metadata("group", "name", "1.0.0.Final", null)  | "1.0.0"
-		new IncludedJarFactory.Metadata("group", "name", "2.5.3.final", null)  | "2.5.3"
+		new NestableJarGenerationTask.Metadata("group", "name", "1.0.0.Final", null)  | "1.0.0"
+		new NestableJarGenerationTask.Metadata("group", "name", "2.5.3.final", null)  | "2.5.3"
 	}
 }

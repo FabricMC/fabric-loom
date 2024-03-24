@@ -26,7 +26,6 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -208,7 +207,7 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 		}
 	}
 
-	protected record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
+	private record Metadata(String group, String name, String version, @Nullable String classifier) {
 		@Override
 		public String classifier() {
 			if (classifier == null) {

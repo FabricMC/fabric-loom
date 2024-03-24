@@ -26,6 +26,7 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -41,8 +42,11 @@ import org.apache.commons.io.FileUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.ArtifactView;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.artifacts.result.ResolvedVariantResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
+import org.gradle.api.capabilities.Capability;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.MapProperty;
@@ -52,7 +56,6 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,31 +77,12 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 	public abstract DirectoryProperty getOutputDirectory();
 
 	@Input
-	protected abstract MapProperty<String, ComponentArtifactIdentifier> getJarIds();
+	protected abstract MapProperty<String, Metadata> getJarIds();
 
 	@TaskAction
 	void makeNestableJars() {
 		Map<String, String> fabricModJsons = new HashMap<>();
-		getJarIds().get().forEach((fileName, id) -> {
-			if (!(id instanceof ModuleComponentArtifactIdentifier moduleIdentifier)) {
-				throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component.");
-			}
-
-			String group = moduleIdentifier.getComponentIdentifier().getGroup();
-			String name = moduleIdentifier.getComponentIdentifier().getModule();
-			String version = moduleIdentifier.getComponentIdentifier().getVersion();
-			String classifier = null;
-
-			if (moduleIdentifier.getFileName().startsWith(name + "-" + version + "-")) {
-				String rest = moduleIdentifier.getFileName().substring(name.length() + version.length() + 2);
-				int dotIndex = rest.indexOf('.');
-
-				if (dotIndex != -1) {
-					classifier = rest.substring(0, dotIndex);
-				}
-			}
-
-			Metadata metadata = new Metadata(group, name, version, classifier);
+		getJarIds().get().forEach((fileName, metadata) -> {
 			fabricModJsons.put(fileName, generateModForDependency(metadata));
 		});
 
@@ -127,9 +111,52 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 		getJars().from(artifacts.getFiles());
 		dependsOn(configuration);
 		getJarIds().set(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
-			Map<String, ComponentArtifactIdentifier> map = new HashMap<>();
+			Map<String, Metadata> map = new HashMap<>();
 			set.forEach(artifact -> {
-				map.put(artifact.getFile().getName(), artifact.getId());
+				ResolvedVariantResult result = artifact.getVariant();
+
+				while (result.getExternalVariant().isPresent()) {
+					result = result.getExternalVariant().get();
+				}
+
+				String group;
+				String name;
+				String version;
+
+				ComponentIdentifier id = result.getOwner();
+
+				if (!(id instanceof ModuleComponentIdentifier moduleIdentifier)) {
+					if (result.getCapabilities().isEmpty()) {
+						throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component and has no capabilities.");
+					}
+
+					Capability capability = result.getCapabilities().get(0);
+					group = capability.getGroup();
+					name = capability.getName();
+					version = capability.getVersion();
+
+					if (version == null) {
+						throw new RuntimeException("Attempted to nest artifact " + id + " which has no version");
+					}
+				} else {
+					group = moduleIdentifier.getGroup();
+					name = moduleIdentifier.getModule();
+					version = moduleIdentifier.getVersion();
+				}
+
+				String classifier = null;
+
+				if (artifact.getFile().getName().startsWith(name + "-" + version + "-")) {
+					String rest = artifact.getFile().getName().substring(name.length() + version.length() + 2);
+					int dotIndex = rest.indexOf('.');
+
+					if (dotIndex != -1) {
+						classifier = rest.substring(0, dotIndex);
+					}
+				}
+
+				Metadata metadata = new Metadata(group, name, version, classifier);
+				map.put(artifact.getFile().getName(), metadata);
 			});
 			return map;
 		}));
@@ -207,7 +234,7 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 		}
 	}
 
-	private record Metadata(String group, String name, String version, @Nullable String classifier) {
+	protected record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
 		@Override
 		public String classifier() {
 			if (classifier == null) {

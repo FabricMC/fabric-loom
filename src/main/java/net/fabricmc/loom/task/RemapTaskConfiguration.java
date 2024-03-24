@@ -72,7 +72,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			return;
 		}
 
-		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE);
+		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE_INTERNAL);
 		getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
 			task.from(includeConfiguration);
 			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));

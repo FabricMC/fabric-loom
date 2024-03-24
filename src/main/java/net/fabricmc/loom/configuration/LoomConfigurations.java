@@ -98,7 +98,7 @@ public abstract class LoomConfigurations implements Runnable {
 			configuration.getDependencies().addAllLater(getProject().provider(() -> {
 				List<Dependency> dependencies = new ArrayList<>();
 
-				for (Dependency dependency : include.get().getAllDependencies()) {
+				for (Dependency dependency : include.get().getIncoming().getDependencies()) {
 					if (dependency instanceof HasConfigurableAttributes<?> hasAttributes) {
 						Category category = hasAttributes.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
 

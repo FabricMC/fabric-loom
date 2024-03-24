@@ -113,6 +113,13 @@ public class Constants {
 		}
 	}
 
+	public static final class Task {
+		public static final String PROCESS_INCLUDE_JARS = "processIncludeJars";
+
+		private Task() {
+		}
+	}
+
 	public static final class CustomModJsonKeys {
 		public static final String INJECTED_INTERFACE = "loom:injected_interfaces";
 		public static final String PROVIDED_JAVADOC = "loom:provided_javadoc";

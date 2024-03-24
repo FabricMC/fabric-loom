@@ -113,24 +113,20 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 		getJarIds().set(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
 			Map<String, Metadata> map = new HashMap<>();
 			set.forEach(artifact -> {
-				ResolvedVariantResult result = artifact.getVariant();
-
-				while (result.getExternalVariant().isPresent()) {
-					result = result.getExternalVariant().get();
-				}
+				ResolvedVariantResult variant = artifact.getVariant();
 
 				String group;
 				String name;
 				String version;
 
-				ComponentIdentifier id = result.getOwner();
+				ComponentIdentifier id = variant.getOwner();
 
 				if (!(id instanceof ModuleComponentIdentifier moduleIdentifier)) {
-					if (result.getCapabilities().isEmpty()) {
+					if (variant.getCapabilities().isEmpty()) {
 						throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component and has no capabilities.");
 					}
 
-					Capability capability = result.getCapabilities().get(0);
+					Capability capability = variant.getCapabilities().get(0);
 					group = capability.getGroup();
 					name = capability.getName();
 					version = capability.getVersion();

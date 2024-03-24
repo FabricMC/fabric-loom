@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "subproject",
+  "version": "0.0.0",
+
+  "name": "Example Mod",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "environment": "*"
+}

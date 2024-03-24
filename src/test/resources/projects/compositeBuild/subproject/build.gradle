@@ -1,0 +1,9 @@
+plugins {
+	id 'java'
+}
+
+group = 'subproject'
+version = '0.0.1'
+
+dependencies {
+}

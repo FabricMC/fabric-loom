@@ -1,0 +1,16 @@
+plugins {
+	id 'fabric-loom'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft 'com.mojang:minecraft:1.18.2'
+	mappings 'net.fabricmc:yarn:1.18.2+build.1:v2'
+	modImplementation 'net.fabricmc:fabric-loader:0.13.3'
+
+	include 'external:external'
+	include project(':subproject')
+}

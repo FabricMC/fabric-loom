@@ -30,6 +30,7 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +47,6 @@ import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedVariantResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
-import org.gradle.api.capabilities.Capability;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.MapProperty;
@@ -115,31 +115,35 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 			set.forEach(artifact -> {
 				ResolvedVariantResult variant = artifact.getVariant();
 
-				String group;
-				String name;
-				String version;
-
 				ComponentIdentifier id = variant.getOwner();
+				Metadata moduleLocation = null;
 
-				if (!(id instanceof ModuleComponentIdentifier moduleIdentifier)) {
-					if (variant.getCapabilities().isEmpty()) {
-						throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component and has no capabilities.");
-					}
-
-					Capability capability = variant.getCapabilities().get(0);
-					group = capability.getGroup();
-					name = capability.getName();
-					version = capability.getVersion();
-
-					if (version == null) {
-						throw new RuntimeException("Attempted to nest artifact " + id + " which has no version");
-					}
-				} else {
-					group = moduleIdentifier.getGroup();
-					name = moduleIdentifier.getModule();
-					version = moduleIdentifier.getVersion();
+				if (id instanceof ModuleComponentIdentifier moduleIdentifier) {
+					moduleLocation = new Metadata(
+							moduleIdentifier.getGroup(),
+							moduleIdentifier.getModule(),
+							moduleIdentifier.getVersion(),
+							null
+					);
 				}
 
+				List<Metadata> capabilityLocations = variant.getCapabilities().stream()
+						.map(capability -> new Metadata(capability.getGroup(), capability.getName(), capability.getVersion(), null))
+						.toList();
+
+				if (!capabilityLocations.isEmpty() && (moduleLocation == null || !capabilityLocations.contains(moduleLocation))) {
+					moduleLocation = capabilityLocations.get(0);
+				}
+
+				if (moduleLocation == null) {
+					throw new RuntimeException("Attempted to nest artifact " + id + " which is not a module component and has no capabilities.");
+				} else if (moduleLocation.version == null) {
+					throw new RuntimeException("Attempted to nest artifact " + id + " which has no version");
+				}
+
+				String group = moduleLocation.group;
+				String name = moduleLocation.name;
+				String version = moduleLocation.version;
 				String classifier = null;
 
 				if (artifact.getFile().getName().startsWith(name + "-" + version + "-")) {

@@ -36,9 +36,6 @@ import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.ZipUtils
 
 trait GradleProjectTestTrait {
-	// Set to enable configuration cache for all tests
-	public static boolean ENABLE_CONFIGURATION_CACHE = System.getenv("LOOM_TEST_CONFIGURATION_CACHE") != null
-
 	@Lazy
 	@Shared
 	private static File sharedProjectDir = File.createTempDir()
@@ -169,7 +166,7 @@ trait GradleProjectTestTrait {
 				args << options.task
 			}
 
-			if (options.configurationCache || ENABLE_CONFIGURATION_CACHE) {
+			if (options.configurationCache || System.getenv("LOOM_TEST_CONFIGURATION_CACHE") != null) {
 				args << "--configuration-cache"
 			}
 

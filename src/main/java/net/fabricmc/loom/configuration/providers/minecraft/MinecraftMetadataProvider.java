@@ -108,7 +108,7 @@ public final class MinecraftMetadataProvider {
 			suppliers.add(() -> getManifestEntry(location, false));
 		}
 
-		// Then force download Mojang's metadata to find the version
+		// Then force download the manifest to find the version
 		for (ManifestLocation location : options.versionsManifests()) {
 			suppliers.add(() -> getManifestEntry(location, true));
 		}

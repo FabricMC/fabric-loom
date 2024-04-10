@@ -187,7 +187,7 @@ public final class MinecraftMetadataProvider {
 			final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(project, minecraftVersion).toPath();
 
 			final ManifestLocations manifestLocations = extension.getVersionsManifests();
-			final Property<String> customMetaUrl = extension.getCustomMinecraftManifest();
+			final Property<String> customMetaUrl = extension.getCustomMinecraftMetadata();
 
 			return new Options(
 					minecraftVersion,

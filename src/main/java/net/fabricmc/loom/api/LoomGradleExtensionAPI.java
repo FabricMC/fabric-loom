@@ -142,7 +142,15 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	ManifestLocations getVersionsManifests();
 
-	Property<String> getCustomMinecraftManifest();
+	/**
+	 * @deprecated use {@linkplain #getCustomMinecraftMetadata} instead
+	 */
+	@Deprecated
+	default Property<String> getCustomMinecraftManifest() {
+		return getCustomMinecraftMetadata();
+	}
+
+	Property<String> getCustomMinecraftMetadata();
 
 	SetProperty<String> getKnownIndyBsms();
 

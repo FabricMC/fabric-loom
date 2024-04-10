@@ -2,7 +2,7 @@
 # Decompilers
 fernflower = "2.0.0"
 cfr = "0.2.2"
-vineflower = "1.9.3"
+vineflower = "1.10.0"
 
 # Runtime depedencies
 mixin-compile-extensions = "0.6.0"

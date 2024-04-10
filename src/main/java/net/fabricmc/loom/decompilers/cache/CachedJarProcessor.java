@@ -85,7 +85,13 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					final Path outputPath = existingFs.getPath(outputFileName);
 					Files.createDirectories(outputPath.getParent());
 					Files.writeString(outputPath, entryData.sources());
-					lineNumbersMap.put(entryData.className(), entryData.lineNumbers());
+
+					if (entryData.lineNumbers() != null) {
+						lineNumbersMap.put(entryData.className(), entryData.lineNumbers());
+					} else {
+						LOGGER.info("Cached entry ({}) does not have line numbers", outputFileName);
+					}
+
 					hasSomeExisting = true;
 
 					LOGGER.debug("Cached entry ({}) found: {}", fullHash, outputFileName);
@@ -164,6 +170,10 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 
 					if (lineNumbers != null) {
 						lineMapEntry = lineNumbers.lineMap().get(className);
+					}
+
+					if (lineMapEntry == null) {
+						LOGGER.info("No line numbers generated for class: {}", className);
 					}
 
 					final var cachedData = new CachedData(className, sources, lineMapEntry);

@@ -79,7 +79,7 @@ public class ManifestLocations implements VersionsManifestsAPI, Iterable<Manifes
 		}
 
 		public Path cacheFile(Path dir) {
-			String fileName = (builtInFileName == null)
+			String fileName = (builtInFileName != null)
 					? builtInFileName + FILE_EXTENSION
 					: baseFileName + "-" + Integer.toHexString(url.hashCode()) + FILE_EXTENSION;
 			return dir.resolve(fileName);

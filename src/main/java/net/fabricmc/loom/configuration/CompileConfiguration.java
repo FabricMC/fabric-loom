@@ -306,12 +306,12 @@ public abstract class CompileConfiguration implements Runnable {
 			long lockingProcessId = -1;
 
 			try {
-				String LockValue = Files.readString(lockFile.file);
+				String lockValue = Files.readString(lockFile.file);
 
-				if ("disowned".equals(LockValue)) {
+				if ("disowned".equals(lockValue)) {
 					disowned = true;
 				} else {
-					lockingProcessId = Long.parseLong(LockValue);
+					lockingProcessId = Long.parseLong(lockValue);
 					logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
 				}
 			} catch (final Exception ignored) {

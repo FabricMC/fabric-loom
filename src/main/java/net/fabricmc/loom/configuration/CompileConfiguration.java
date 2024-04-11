@@ -109,14 +109,15 @@ public abstract class CompileConfiguration implements Runnable {
 
 			try {
 				setupMinecraft(configContext);
+
+				LoomDependencyManager dependencyManager = new LoomDependencyManager();
+				extension.setDependencyManager(dependencyManager);
+				dependencyManager.handleDependencies(getProject(), serviceManager);
 			} catch (Exception e) {
 				ExceptionUtil.printFileLocks(e, getProject());
+				disownLock();
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
-
-			LoomDependencyManager dependencyManager = new LoomDependencyManager();
-			extension.setDependencyManager(dependencyManager);
-			dependencyManager.handleDependencies(getProject(), serviceManager);
 
 			releaseLock();
 			extension.setRefreshDeps(previousRefreshDeps);
@@ -274,7 +275,9 @@ public abstract class CompileConfiguration implements Runnable {
 		// already owned by current pid
 		ACQUIRED_ALREADY_OWNED,
 		// acquired due to current owner not existing
-		ACQUIRED_PREVIOUS_OWNER_MISSING
+		ACQUIRED_PREVIOUS_OWNER_MISSING,
+		// acquired due to previous owner disowning the lock
+		ACQUIRED_PREVIOUS_OWNER_DISOWNED
 	}
 
 	private LockResult acquireProcessLockWaiting(LockFile lockFile) {
@@ -297,25 +300,34 @@ public abstract class CompileConfiguration implements Runnable {
 		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
 		final long currentPid = ProcessHandle.current().pid();
 		boolean abrupt = false;
+		boolean disowned = false;
 
 		if (Files.exists(lockFile.file)) {
-			long lockingProcessId;
+			long lockingProcessId = -1;
 
 			try {
-				lockingProcessId = Long.parseLong(Files.readString(lockFile.file));
-			} catch (final Exception e) {
-				lockingProcessId = -1;
+				String LockValue = Files.readString(lockFile.file);
+
+				if ("disowned".equals(LockValue)) {
+					disowned = true;
+				} else {
+					lockingProcessId = Long.parseLong(LockValue);
+					logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
+				}
+			} catch (final Exception ignored) {
+				// ignored
 			}
 
 			if (lockingProcessId == currentPid) {
 				return LockResult.ACQUIRED_ALREADY_OWNED;
 			}
 
-			logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
-
 			Optional<ProcessHandle> handle = ProcessHandle.of(lockingProcessId);
 
-			if (handle.isEmpty()) {
+			if (disowned) {
+				logger.lifecycle("Previous process has disowned the lock due to abrupt termination.");
+				Files.deleteIfExists(lockFile.file);
+			} else if (handle.isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
@@ -356,7 +368,26 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 
 		Files.writeString(lockFile.file, String.valueOf(currentPid));
-		return abrupt ? LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING : LockResult.ACQUIRED_CLEAN;
+
+		if (disowned) {
+			return LockResult.ACQUIRED_PREVIOUS_OWNER_DISOWNED;
+		} else if (abrupt) {
+			return LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING;
+		}
+
+		return LockResult.ACQUIRED_CLEAN;
+	}
+
+	// When we fail to configure, write a -1 to the lock file to release it from this process
+	// This allows the next run to rebuild without waiting for this process to exit
+	private void disownLock() {
+		final Path lock = getLockFile().file;
+
+		try {
+			Files.writeString(lock, "disowned");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	private void releaseLock() {

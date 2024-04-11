@@ -378,7 +378,7 @@ public abstract class CompileConfiguration implements Runnable {
 		return LockResult.ACQUIRED_CLEAN;
 	}
 
-	// When we fail to configure, write a -1 to the lock file to release it from this process
+	// When we fail to configure, write "disowned" to the lock file to release it from this process
 	// This allows the next run to rebuild without waiting for this process to exit
 	private void disownLock() {
 		final Path lock = getLockFile().file;

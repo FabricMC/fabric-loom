@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -489,6 +490,14 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Objects.requireNonNull(lineNumbers, "lineNumbers");
 		final var remapper = new LineNumberRemapper(lineNumbers);
 		remapper.process(inputJar, outputJar);
+
+		final Path lineMap = inputJar.resolveSibling(inputJar.getFileName() + ".linemap.txt");
+
+		try (BufferedWriter writer = Files.newBufferedWriter(lineMap)) {
+			lineNumbers.write(writer);
+		}
+
+		LOGGER.info("Wrote linemap to {}", lineMap);
 	}
 
 	private void doWork(@Nullable IPCServer ipcServer, Path inputJar, Path outputJar, Path linemapFile, @Nullable Path existingJar) {

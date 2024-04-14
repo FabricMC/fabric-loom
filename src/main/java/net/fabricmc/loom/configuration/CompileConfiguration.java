@@ -282,7 +282,7 @@ public abstract class CompileConfiguration implements Runnable {
 
 	private LockResult acquireProcessLockWaiting(LockFile lockFile) {
 		// one hour
-		return this.acquireProcessLockWaiting(lockFile, Duration.ofHours(1));
+		return this.acquireProcessLockWaiting(lockFile, getDefaultTimeout());
 	}
 
 	private LockResult acquireProcessLockWaiting(LockFile lockFile, Duration timeout) {
@@ -376,6 +376,15 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 
 		return LockResult.ACQUIRED_CLEAN;
+	}
+
+	private static Duration getDefaultTimeout() {
+		if (System.getenv("CI") != null) {
+			// Set a small timeout on CI, as it's unlikely going to unlock.
+			return Duration.ofMinutes(1);
+		}
+
+		return Duration.ofHours(1);
 	}
 
 	// When we fail to configure, write "disowned" to the lock file to release it from this process

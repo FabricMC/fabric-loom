@@ -60,12 +60,11 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 					}
 				}
 
-				String fileName = file.getFileName().toString();
+				String fileName = file.toAbsolutePath().toString();
 
 				if (fileName.endsWith(".class")) {
-					String idx = fileName.substring(0, fileName.length() - 6);
-
-					LOGGER.debug("Remapping line numbers for class: " + idx);
+					// Strip the leading slash and the .class extension
+					String idx = fileName.substring(1, fileName.length() - 6);
 
 					int dollarPos = idx.indexOf('$'); //This makes the assumption that only Java classes are to be remapped.
 
@@ -74,6 +73,8 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 					}
 
 					if (lineNumbers.lineMap().containsKey(idx)) {
+						LOGGER.debug("Remapping line numbers for class: {}", idx);
+
 						try (InputStream is = Files.newInputStream(file)) {
 							ClassReader reader = new ClassReader(is);
 							ClassWriter writer = new ClassWriter(0);
@@ -82,6 +83,8 @@ public record LineNumberRemapper(ClassLineNumbers lineNumbers) {
 							Files.write(dst, writer.toByteArray());
 							return;
 						}
+					} else {
+						LOGGER.debug("No linemap found for: {}", idx);
 					}
 				}
 

@@ -163,11 +163,14 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			}
 
 			if (getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
-				getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask);
-
 				// Remove the dev sources artifact
 				Configuration configuration = getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-				configuration.getArtifacts().removeIf(a -> a.getFile().equals(sourcesJarTask.getArchiveFile().get().getAsFile()));
+				configuration.getArtifacts().removeIf(a -> "sources".equals(a.getClassifier()));
+
+				// Add the remapped sources artifact
+				getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask.map(AbstractArchiveTask::getArchiveFile), artifact -> {
+					artifact.setClassifier("sources");
+				});
 			} else {
 				// Sources jar may not have been created with withSourcesJar
 				getProject().getLogger().warn("Not publishing sources jar as it was not found. Use java.withSourcesJar() to fix.");

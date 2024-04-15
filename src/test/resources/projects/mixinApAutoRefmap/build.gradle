@@ -1,6 +1,5 @@
 plugins {
 	id 'fabric-loom'
-	id 'com.github.johnrengelman.shadow' version '7.0.0'
 	id 'maven-publish'
 }
 
@@ -83,9 +82,8 @@ loom {
 	}
 }
 
-shadowJar {
+task shadowJar(type: Jar) {
 	archiveClassifier.set("universal-dev")
-	configurations = []
 
 	from(sourceSets["main"].output)
 	from(sourceSets["mixin"].output)

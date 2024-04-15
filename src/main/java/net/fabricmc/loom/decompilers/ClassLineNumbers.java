@@ -46,6 +46,11 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 		if (lineMap.isEmpty()) {
 			throw new IllegalArgumentException("lineMap is empty");
 		}
+
+		for (Map.Entry<String, Entry> entry : lineMap.entrySet()) {
+			Objects.requireNonNull(entry.getKey(), "lineMap key");
+			Objects.requireNonNull(entry.getValue(), "lineMap value");
+		}
 	}
 
 	public static ClassLineNumbers readMappings(Path lineMappingsPath) {

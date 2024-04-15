@@ -34,6 +34,8 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
@@ -104,8 +106,21 @@ public class DependencyInfo {
 		return sourceConfiguration;
 	}
 
+	private boolean matches(ComponentIdentifier identifier) {
+		if (identifier instanceof ModuleComponentIdentifier moduleComponentIdentifier) {
+			return moduleComponentIdentifier.getGroup().equals(dependency.getGroup())
+					&& moduleComponentIdentifier.getModule().equals(dependency.getName())
+					&& moduleComponentIdentifier.getVersion().equals(dependency.getVersion());
+		}
+
+		return false;
+	}
+
 	public Set<File> resolve() {
-		return sourceConfiguration.files(dependency);
+		return sourceConfiguration.getIncoming()
+				.artifactView(view -> view.componentFilter(this::matches))
+				.getFiles()
+				.getFiles();
 	}
 
 	public Optional<File> resolveFile() {

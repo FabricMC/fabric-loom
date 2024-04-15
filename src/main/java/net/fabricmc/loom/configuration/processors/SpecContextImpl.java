@@ -60,16 +60,7 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods, List<FabricModJson> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
 		final Map<String, List<FabricModJson>> fmjCache = new HashMap<>();
-		List<FabricModJson> modsInProject;
-
-		if (LoomGradleExtension.get(project).isConfigurationCacheActive()) {
-			project.getLogger().warn("Configuration cache is active, Loom does not support injected interfaces or mod provided java doc with the configuration cache yet.");
-			modsInProject = Collections.emptyList();
-		} else {
-			modsInProject = FabricModJsonHelpers.getModsInProject(project);
-		}
-
-		return new SpecContextImpl(getDependentMods(project, fmjCache), modsInProject, getCompileRuntimeMods(project, fmjCache));
+		return new SpecContextImpl(getDependentMods(project, fmjCache), FabricModJsonHelpers.getModsInProject(project), getCompileRuntimeMods(project, fmjCache));
 	}
 
 	// Reruns a list of mods found on both the compile and/or runtime classpaths

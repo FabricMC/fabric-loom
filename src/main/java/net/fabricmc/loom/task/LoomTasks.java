@@ -56,18 +56,22 @@ public abstract class LoomTasks implements Runnable {
 			t.setDescription("Migrates mappings to a new version.");
 			t.getOutputs().upToDateWhen(o -> false);
 		});
+
+		var generateLog4jConfig = getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
+			t.setDescription("Generate the log4j config file");
+		});
+		var generateRemapClasspath = getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
+			t.setDescription("Generate the remap classpath file");
+		});
 		getTasks().register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");
 
 			// Must allow these IDE files to be generated first
 			t.mustRunAfter(getTasks().named("eclipse"));
 			t.mustRunAfter(getTasks().named("idea"));
-		});
-		getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
-			t.setDescription("Generate the log4j config file");
-		});
-		getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
-			t.setDescription("Generate the remap classpath file");
+
+			t.dependsOn(generateLog4jConfig);
+			t.getRemapClasspathFile().set(generateRemapClasspath.get().getRemapClasspathFile());
 		});
 
 		getTasks().register("configureLaunch", task -> {

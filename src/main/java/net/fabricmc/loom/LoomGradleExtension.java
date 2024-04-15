@@ -125,4 +125,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	Collection<LayeredMappingsFactory> getLayeredMappingFactories();
 
 	LoomProblemReporter getProblemReporter();
+
+	boolean isConfigurationCacheActive();
 }

@@ -50,6 +50,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.xml.sax.InputSource;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 
@@ -235,6 +236,15 @@ public final class SourceSetHelper {
 	public static File findFileInResource(SourceSet sourceSet, String path) {
 		Objects.requireNonNull(sourceSet);
 		Objects.requireNonNull(path);
+
+		final Project project = getSourceSetProject(sourceSet);
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.isConfigurationCacheActive()) {
+			// TODO config cache, figure this out
+			project.getLogger().warn("Unable to find resource ({}) in source set ({}) when configuration cache is active", path, sourceSet.getName());
+			return null;
+		}
 
 		try {
 			return sourceSet.getResources()

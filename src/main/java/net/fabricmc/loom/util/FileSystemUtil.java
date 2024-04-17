@@ -30,15 +30,24 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Supplier;
 
+import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
 import net.fabricmc.tinyremapper.FileSystemReference;
 
 public final class FileSystemUtil {
 	public record Delegate(FileSystemReference reference) implements AutoCloseable, Supplier<FileSystem> {
+		public Delegate {
+			if (!reference.getFs().isOpen()) {
+				throw new IllegalStateException("Zip filesystem is closed");
+			}
+		}
+
 		public Path getPath(String path, String... more) {
 			return get().getPath(path, more);
 		}
@@ -87,18 +96,31 @@ public final class FileSystemUtil {
 	}
 
 	public static Delegate getJarFileSystem(File file, boolean create) throws IOException {
+		checkFileLocks(file.toPath());
 		return new Delegate(FileSystemReference.openJar(file.toPath(), create));
 	}
 
 	public static Delegate getJarFileSystem(Path path, boolean create) throws IOException {
+		checkFileLocks(path);
 		return new Delegate(FileSystemReference.openJar(path, create));
 	}
 
 	public static Delegate getJarFileSystem(Path path) throws IOException {
+		checkFileLocks(path);
 		return new Delegate(FileSystemReference.openJar(path));
 	}
 
 	public static Delegate getJarFileSystem(URI uri, boolean create) throws IOException {
 		return new Delegate(FileSystemReference.open(uri, create));
+	}
+
+	private static void checkFileLocks(Path path) throws IOException {
+		final List<ProcessHandle> processes = LoomNativePlatform.getProcessesWithLockOn(path);
+
+		if (processes.isEmpty()) {
+			return;
+		}
+
+		throw new FileSystemException(path.toAbsolutePath().toString(), null, "Loom cannot open the zip file because it is being used by another process.");
 	}
 }

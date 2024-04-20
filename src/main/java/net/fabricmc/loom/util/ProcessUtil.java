@@ -31,11 +31,15 @@ import java.util.StringJoiner;
 
 import org.gradle.api.Project;
 import org.gradle.api.logging.LogLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
+import net.fabricmc.loom.nativeplatform.LoomNativePlatformException;
 
 public record ProcessUtil(LogLevel logLevel) {
 	private static final String EXPLORER_COMMAND = "C:\\Windows\\explorer.exe";
+	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessUtil.class);
 
 	public static ProcessUtil create(Project project) {
 		return new ProcessUtil(project.getGradle().getStartParameter().getLogLevel());
@@ -92,7 +96,14 @@ public record ProcessUtil(LogLevel logLevel) {
 			return Optional.empty();
 		}
 
-		List<String> titles = LoomNativePlatform.getWindowTitlesForPid(processHandle.pid());
+		List<String> titles;
+
+		try {
+			titles = LoomNativePlatform.getWindowTitlesForPid(processHandle.pid());
+		} catch (LoomNativePlatformException e) {
+			LOGGER.error("{}, Failed to query window title for pid {}", e.getMessage(), processHandle.pid());
+			return Optional.empty();
+		}
 
 		if (titles.isEmpty()) {
 			return Optional.empty();

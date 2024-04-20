@@ -32,10 +32,15 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import org.gradle.api.Project;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
+import net.fabricmc.loom.nativeplatform.LoomNativePlatformException;
 
 public final class ExceptionUtil {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionUtil.class);
+
 	/**
 	 * Creates a descriptive user-facing wrapper exception for an underlying cause.
 	 *
@@ -74,7 +79,14 @@ public final class ExceptionUtil {
 			return;
 		}
 
-		final List<ProcessHandle> processes = LoomNativePlatform.getProcessesWithLockOn(path);
+		final List<ProcessHandle> processes;
+
+		try {
+			processes = LoomNativePlatform.getProcessesWithLockOn(path);
+		} catch (LoomNativePlatformException e) {
+			LOGGER.error("{}, Failed to query processes holding a lock on {}", e.getMessage(), path);
+			return;
+		}
 
 		if (processes.isEmpty()) {
 			return;

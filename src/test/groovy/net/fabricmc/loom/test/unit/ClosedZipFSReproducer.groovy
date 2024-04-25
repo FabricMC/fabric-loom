@@ -44,13 +44,13 @@ class ClosedZipFSReproducer extends Specification {
 
 		// Create a new ZipFileSystem, and prevent it from being written on close
 		def fs = openZipFS(zipFile, true)
-		Files.writeString(fs.getPath("test.txt"), "Hello, World!");
+		Files.writeString(fs.getPath("test.txt"), "Hello, World!")
 
 		// Before we close the ZipFS do something to prevent the zip from being written on close
 		// E.G lock the file
-		Files.delete(zipFile);
-		Files.createDirectories(zipFile);
-		Files.createFile(zipFile.resolve("lock"));
+		Files.delete(zipFile)
+		Files.createDirectories(zipFile)
+		Files.createFile(zipFile.resolve("lock"))
 
 		try {
 			fs.close()
@@ -60,21 +60,20 @@ class ClosedZipFSReproducer extends Specification {
 		}
 
 		// Remove the "lock"
-		Files.delete(zipFile.resolve("lock"));
+		Files.delete(zipFile.resolve("lock"))
 
 		// We would expect a new FileSystem to be created, but instead we get the old one
 		// That is in a broken state
 		fs = openZipFS(zipFile, true)
-
 
 		then:
 		!fs.isOpen()
 	}
 
 	private static FileSystem openZipFS(Path path, boolean create) throws IOException {
-		URI uri = toJarUri(path);
+		URI uri = toJarUri(path)
 		try {
-			return FileSystems.getFileSystem(uri);
+			return FileSystems.getFileSystem(uri)
 		} catch (FileSystemNotFoundException e) {
 			try {
 				return FileSystems.newFileSystem(uri, create ? Collections.singletonMap("create", "true") : Collections.emptyMap())
@@ -85,12 +84,12 @@ class ClosedZipFSReproducer extends Specification {
 	}
 
 	private static URI toJarUri(Path path) {
-		URI uri = path.toUri();
+		URI uri = path.toUri()
 
 		try {
-			return new URI("jar:" + uri.getScheme(), uri.getHost(), uri.getPath(), uri.getFragment());
+			return new URI("jar:" + uri.getScheme(), uri.getHost(), uri.getPath(), uri.getFragment())
 		} catch (URISyntaxException e) {
-			throw new RuntimeException("can't convert path "+path+" to uri", e);
+			throw new RuntimeException("can't convert path " + path + " to uri", e)
 		}
 	}
 }

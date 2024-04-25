@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.sandbox;
 
 import java.nio.file.Path;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -58,17 +59,16 @@ public abstract class SandboxConfiguration implements Runnable {
 
 	@Override
 	public void run() {
-		GradleUtils.afterSuccessfulEvaluation(getProject(), this::evaluate);
-	}
-
-	private void evaluate() {
-		final Object property = getProject().findProperty(Constants.Properties.SANDBOX);
-
-		if (!(property instanceof final String sandboxNotation)) {
+		if (getProject().findProperty(Constants.Properties.SANDBOX) == null) {
 			LOGGER.debug("No fabric sandbox property set");
 			return;
 		}
 
+		GradleUtils.afterSuccessfulEvaluation(getProject(), this::evaluate);
+	}
+
+	private void evaluate() {
+		final String sandboxNotation = (String) Objects.requireNonNull(getProject().findProperty(Constants.Properties.SANDBOX));
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final ExternalModuleDependency dependency = getDependencyFactory().create(sandboxNotation);
 		final Configuration configuration = getProject().getConfigurations().detachedConfiguration(dependency);

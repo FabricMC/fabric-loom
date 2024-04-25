@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.configuration.MavenPublication;
 import net.fabricmc.loom.configuration.ide.IdeConfiguration;
 import net.fabricmc.loom.configuration.ide.idea.IdeaConfiguration;
+import net.fabricmc.loom.configuration.sandbox.SandboxConfiguration;
 import net.fabricmc.loom.decompilers.DecompilerConfiguration;
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
@@ -63,7 +64,8 @@ public class LoomGradlePlugin implements BootstrappedPlugin {
 			LoomTasks.class,
 			DecompilerConfiguration.class,
 			IdeaConfiguration.class,
-			IdeConfiguration.class
+			IdeConfiguration.class,
+			SandboxConfiguration.class
 	);
 
 	@Override

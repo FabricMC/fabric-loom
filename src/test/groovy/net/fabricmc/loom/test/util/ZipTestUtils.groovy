@@ -33,8 +33,8 @@ import java.util.jar.Manifest
 import net.fabricmc.loom.util.FileSystemUtil
 
 class ZipTestUtils {
-	static Path createZip(Map<String, String> entries) {
-		def file = Files.createTempFile("loom-test", ".zip")
+	static Path createZip(Map<String, String> entries, String suffix = ".zip") {
+		def file = Files.createTempFile("loom-test", suffix)
 		Files.delete(file)
 
 		FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->

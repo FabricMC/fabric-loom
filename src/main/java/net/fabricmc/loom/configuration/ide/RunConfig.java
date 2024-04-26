@@ -113,18 +113,6 @@ public class RunConfig {
 		return e;
 	}
 
-	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String environment, boolean appendProjectPath) {
-		if (appendProjectPath && !extension.isRootProject()) {
-			runConfig.configName += " (" + project.getPath() + ")";
-		}
-
-		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-
-		runConfig.mainClass = "net.fabricmc.devlaunchinjector.Main";
-		runConfig.vmArgs.add("-Dfabric.dli.config=" + encodeEscaped(extension.getFiles().getDevLauncherConfig().getAbsolutePath()));
-		runConfig.vmArgs.add("-Dfabric.dli.env=" + environment.toLowerCase());
-	}
-
 	// Turns camelCase/PascalCase into Capital Case
 	// caseConversionExample -> Case Conversion Example
 	private static String capitalizeCamelCaseName(String name) {
@@ -181,7 +169,15 @@ public class RunConfig {
 		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
-		populate(project, extension, runConfig, environment, appendProjectPath);
+
+		if (appendProjectPath && !extension.isRootProject()) {
+			runConfig.configName += " (" + project.getPath() + ")";
+		}
+
+		runConfig.mainClass = settings.devLaunchMainClass().get();
+		runConfig.vmArgs.add("-Dfabric.dli.config=" + encodeEscaped(extension.getFiles().getDevLauncherConfig().getAbsolutePath()));
+		runConfig.vmArgs.add("-Dfabric.dli.env=" + environment.toLowerCase());
+		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
 		runConfig.runDir = runDir;

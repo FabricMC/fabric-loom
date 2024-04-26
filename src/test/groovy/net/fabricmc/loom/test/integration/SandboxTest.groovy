@@ -67,7 +67,9 @@ class SandboxTest extends Specification implements GradleProjectTestTrait {
 
 		then:
 		result.task(":runClientSandbox").outcome == SUCCESS
-		result.output.contains("Running real main: net.fabricmc.loader.impl.launch.knot.KnotClient")
+		result.output.contains("Running real main: net.fabricmc.devlaunchinjector.Main")
+		// Ensure that we weren't launched via DLI
+		!result.output.contains("at net.fabricmc.devlaunchinjector.Main")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

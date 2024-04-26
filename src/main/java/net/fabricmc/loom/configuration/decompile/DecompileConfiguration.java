@@ -37,6 +37,8 @@ import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Constants;
 
 public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> {
+	static final String DEFAULT_DECOMPILER = "Vineflower";
+
 	protected final Project project;
 	protected final T minecraftProvider;
 	protected final LoomGradleExtension extension;

@@ -133,8 +133,14 @@ public class ModProcessor {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
+		Set<String> knownIndyBsms = new HashSet<>(extension.getKnownIndyBsms().get());
+
+		for (ModDependency modDependency : remapList) {
+			knownIndyBsms.addAll(modDependency.getMetadata().knownIdyBsms());
+		}
+
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
-				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
+				.withKnownIndyBsm(knownIndyBsms)
 				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false)
 				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));

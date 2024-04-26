@@ -91,7 +91,7 @@ public abstract class NestableJarGenerationTask extends DefaultTask {
 			FileUtils.deleteDirectory(targetDir);
 			targetDir.mkdirs();
 		} catch (IOException e) {
-			throw new org.gradle.api.UncheckedIOException(e);
+			throw new UncheckedIOException(e);
 		}
 
 		getJars().forEach(file -> {

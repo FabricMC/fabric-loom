@@ -144,5 +144,6 @@ public class Constants {
 		public static final String FABRIC_LOADER_VERSION = "Fabric-Loader-Version";
 		public static final String MIXIN_VERSION = "Fabric-Mixin-Version";
 		public static final String MIXIN_GROUP = "Fabric-Mixin-Group";
+		public static final String KNOWN_IDY_BSMS = "Fabric-Loom-Known-Indy-BSMS";
 	}
 }

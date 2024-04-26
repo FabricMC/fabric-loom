@@ -122,6 +122,8 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 				def result = it.get()
 				println("Breakpoint triggered: ${result.location()}")
 			}
+
+			println("All breakpoints triggered")
 		} finally {
 			// Close the debugger and target process
 			debugger.close()

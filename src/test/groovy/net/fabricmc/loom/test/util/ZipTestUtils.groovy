@@ -34,6 +34,15 @@ import net.fabricmc.loom.util.FileSystemUtil
 
 class ZipTestUtils {
 	static Path createZip(Map<String, String> entries) {
+		return createZipFromBytes(entries.collectEntries { k, v ->
+			[
+				k,
+				v.getBytes(StandardCharsets.UTF_8)
+			]
+		})
+	}
+
+	static Path createZipFromBytes(Map<String, byte[]> entries) {
 		def file = Files.createTempFile("loom-test", ".zip")
 		Files.delete(file)
 
@@ -42,7 +51,7 @@ class ZipTestUtils {
 				def fsPath = zip.getPath(path)
 				def fsPathParent = fsPath.getParent()
 				if (fsPathParent != null) Files.createDirectories(fsPathParent)
-				Files.writeString(fsPath, value, StandardCharsets.UTF_8)
+				Files.write(fsPath, value)
 			}
 		}
 

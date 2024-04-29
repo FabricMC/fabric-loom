@@ -31,6 +31,11 @@ dependencies {
 	modImplementation fileTree("myFileTree") // an entire file tree
 	modImplementation name: "test-data-e" // a flatDir dependency
 
+	// Test changing
+	modImplementation("net.fabricmc:fabric-loom-native-support:1.0.0") {
+		changing = true
+	}
+
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.
 }

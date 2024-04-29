@@ -59,6 +59,10 @@ public final class SplitModDependency extends ModDependency {
 
 	@Override
 	public boolean isCacheInvalid(Project project, @Nullable String variant) {
+		if (getInputArtifact().changing()) {
+			return true;
+		}
+
 		boolean exists = switch (target) {
 		case COMMON_ONLY -> getCommonMaven().exists(variant);
 		case CLIENT_ONLY -> getClientMaven().exists(variant);

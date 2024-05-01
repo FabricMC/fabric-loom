@@ -46,6 +46,7 @@ import org.gradle.launcher.daemon.registry.DaemonRegistry;
 import org.gradle.launcher.daemon.registry.PersistentDaemonRegistry;
 import org.gradle.util.GradleVersion;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,11 +71,12 @@ public final class DaemonUtils {
 		}
 	}
 
-	private static void stopWhenIdle(Project project) {
+	@VisibleForTesting
+	public static boolean stopWhenIdle(Project project) {
 		DaemonInfo daemonInfo = findCurrentDaemon(project);
 
 		if (daemonInfo == null) {
-			return;
+			return false;
 		}
 
 		RemoteConnection<Message> connection = null;
@@ -92,6 +94,7 @@ public final class DaemonUtils {
 		}
 
 		LOGGER.warn("Requested Gradle daemon to stop on exit.");
+		return true;
 	}
 
 	@Nullable

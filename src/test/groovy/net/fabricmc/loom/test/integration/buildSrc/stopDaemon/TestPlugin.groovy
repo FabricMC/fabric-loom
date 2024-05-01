@@ -45,6 +45,7 @@ import org.gradle.launcher.daemon.protocol.Finished
 import org.gradle.launcher.daemon.protocol.Message
 import org.gradle.launcher.daemon.protocol.StopWhenIdle
 import org.gradle.launcher.daemon.protocol.Success
+import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer
 import org.gradle.launcher.daemon.registry.DaemonInfo
 import org.gradle.launcher.daemon.registry.PersistentDaemonRegistry
 import org.gradle.launcher.daemon.server.DaemonTcpServerConnector

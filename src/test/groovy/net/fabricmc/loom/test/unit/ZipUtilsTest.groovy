@@ -32,6 +32,7 @@ import com.google.gson.JsonObject
 import spock.lang.Specification
 
 import net.fabricmc.loom.util.Checksum
+import net.fabricmc.loom.util.FileSystemUtil
 import net.fabricmc.loom.util.Pair
 import net.fabricmc.loom.util.ZipReprocessorUtil
 import net.fabricmc.loom.util.ZipUtils
@@ -212,5 +213,31 @@ class ZipUtilsTest extends Specification {
 
 		then:
 		transformed.get("test").asString == "THIS IS A TEST OF TRANSFORMING"
+	}
+
+	// Also see: ClosedZipFSReproducer
+	def "unrecoverable error"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "test.json").text = """
+		{
+			"test": "This is a test of transforming"
+		}
+		"""
+		ZipUtils.pack(dir.toPath(), zip)
+
+		when:
+		ZipUtils.transformJson(JsonObject.class, zip, "test.json") { json ->
+			// Before we close the ZipFS do something to prevent the zip from being written on close
+			// E.G lock the file
+			Files.delete(zip)
+			Files.createDirectories(zip)
+			Files.createFile(zip.resolve("lock"))
+
+			json
+		}
+		then:
+		thrown FileSystemUtil.UnrecoverableZipException
 	}
 }

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
 import net.fabricmc.loom.nativeplatform.LoomNativePlatformException;
+import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 
 public final class ExceptionUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionUtil.class);
@@ -59,16 +60,23 @@ public final class ExceptionUtil {
 		return constructor.apply(descriptiveMessage, cause);
 	}
 
-	public static void printFileLocks(Throwable e, Project project) {
+	public static void processException(Throwable e, Project project) {
 		Throwable cause = e;
+		boolean unrecoverable = false;
 
 		while (cause != null) {
-			if (cause instanceof FileSystemException fse) {
+			if (cause instanceof FileSystemUtil.UnrecoverableZipException) {
+				unrecoverable = true;
+			} else if (cause instanceof FileSystemException fse) {
 				printFileLocks(fse.getFile(), project);
 				break;
 			}
 
 			cause = cause.getCause();
+		}
+
+		if (unrecoverable) {
+			DaemonUtils.tryStopGradleDaemon(project);
 		}
 	}
 

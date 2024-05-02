@@ -202,7 +202,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			try (var timer = new Timer("Decompiled sources")) {
 				runWithoutCache();
 			} catch (Exception e) {
-				ExceptionUtil.printFileLocks(e, getProject());
+				ExceptionUtil.processException(e, getProject());
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 			}
 
@@ -222,7 +222,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				runWithCache(fs.getRoot());
 			}
 		} catch (Exception e) {
-			ExceptionUtil.printFileLocks(e, getProject());
+			ExceptionUtil.processException(e, getProject());
 			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 		}
 	}

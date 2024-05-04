@@ -31,7 +31,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -120,7 +119,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 		try (Writer writer = new StringWriter()) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
 
-			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
+			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()));
 			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
 			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
 			mappings.accept(addConstructor);

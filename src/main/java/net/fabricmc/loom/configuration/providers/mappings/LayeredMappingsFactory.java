@@ -40,6 +40,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -83,6 +84,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	public Path resolve(Project project) throws IOException {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_"));
 		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
 		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, spec.getVersion()));
@@ -91,7 +93,8 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return mappingsZip;
 		}
 
-		var processor = new LayeredMappingsProcessor(spec);
+		boolean noIntermediateMappings = extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider;
+		var processor = new LayeredMappingsProcessor(spec, noIntermediateMappings);
 		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
 		Files.deleteIfExists(mappingsZip);

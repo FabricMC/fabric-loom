@@ -1,0 +1,9 @@
+rootProject.name = "compositeBuild"
+
+includeBuild('external') {
+	dependencySubstitution {
+		substitute module('external:external') using project(':')
+	}
+}
+
+include('subproject')

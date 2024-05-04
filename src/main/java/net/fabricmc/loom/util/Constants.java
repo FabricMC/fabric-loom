@@ -46,6 +46,7 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
+		public static final String INCLUDE_INTERNAL = "includeInternal";
 		public static final String MINECRAFT = "minecraft";
 
 		public static final String MINECRAFT_COMPILE_LIBRARIES = "minecraftLibraries";
@@ -110,6 +111,13 @@ public class Constants {
 		public static final String IDE = "ide";
 
 		private TaskGroup() {
+		}
+	}
+
+	public static final class Task {
+		public static final String PROCESS_INCLUDE_JARS = "processIncludeJars";
+
+		private Task() {
 		}
 	}
 

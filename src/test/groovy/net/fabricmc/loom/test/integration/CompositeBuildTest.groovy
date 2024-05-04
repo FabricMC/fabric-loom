@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2018-2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,45 +27,27 @@ package net.fabricmc.loom.test.integration
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import net.fabricmc.loom.build.nesting.NestableJarGenerationTask
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
-class SemVerParsingTest extends Specification implements GradleProjectTestTrait {
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+
+class CompositeBuildTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "test valid Semantic Versioning strings"() {
-		expect:
-		NestableJarGenerationTask.validSemVer(version) == true
+	def "build (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "compositeBuild", version: version)
+
+		when:
+		def result = gradle.run(tasks: ["remapJar"])
+
+		then:
+		result.task(":remapJar").outcome == SUCCESS
+
+		gradle.hasOutputZipEntry("compositeBuild.jar", "META-INF/jars/external-0.0.1.jar")
+		gradle.hasOutputZipEntry("compositeBuild.jar", "META-INF/jars/subproject-0.0.1.jar")
 
 		where:
-		version                   | _
-		"1.0.0"                   | _
-		"2.5.3"                   | _
-		"3.0.0-beta.2"            | _
-		"4.2.1-alpha+001"         | _
-		"5.0.0-rc.1+build.1"      | _
-	}
-
-	@Unroll
-	def "test non-Semantic Versioning strings"() {
-		expect:
-		NestableJarGenerationTask.validSemVer(version) == false
-
-		where:
-		version                   | _
-		"1.0"                     | _
-		"3.0.0.Beta1-120922-126"  | _
-		"3.0.2.Final"             | _
-		"4.2.1.4.RELEASE"         | _
-	}
-
-	@Unroll
-	def "test '.Final' suffixed SemVer"() {
-		expect:
-		NestableJarGenerationTask.getVersion(metadata) == expectedVersion
-
-		where:
-		metadata                                                               | expectedVersion
-		new NestableJarGenerationTask.Metadata("group", "name", "1.0.0.Final", null)  | "1.0.0"
-		new NestableJarGenerationTask.Metadata("group", "name", "2.5.3.final", null)  | "2.5.3"
+		version << STANDARD_TEST_VERSIONS
 	}
 }

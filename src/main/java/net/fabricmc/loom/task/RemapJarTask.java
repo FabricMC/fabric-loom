@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 import com.google.gson.JsonObject;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -53,6 +52,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -62,8 +62,8 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.nesting.IncludedJarFactory;
 import net.fabricmc.loom.build.nesting.JarNester;
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.extension.MixinExtension;
@@ -111,8 +111,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 
-		Configuration includeConfiguration = configurations.getByName(Constants.Configurations.INCLUDE);
-		getNestedJars().from(new IncludedJarFactory(getProject()).getNestedJars(includeConfiguration));
+		TaskProvider<NestableJarGenerationTask> processIncludeJars = getProject().getTasks().named(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class);
+		getNestedJars().from(getProject().fileTree(processIncludeJars.get().getOutputDirectory()));
+		getNestedJars().builtBy(processIncludeJars);
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 

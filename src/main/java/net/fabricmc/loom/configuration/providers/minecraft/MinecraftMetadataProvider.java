@@ -27,25 +27,27 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.DependencyInfo;
+import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations.ManifestLocation;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 
 public final class MinecraftMetadataProvider {
 	private final Options options;
 	private final Function<String, DownloadBuilder> download;
 
-	private ManifestVersion.Versions versionEntry;
+	private ManifestEntryLocation versionEntry;
 	private MinecraftVersionMeta versionMeta;
 
 	private MinecraftMetadataProvider(Options options, Function<String, DownloadBuilder> download) {
@@ -55,13 +57,11 @@ public final class MinecraftMetadataProvider {
 
 	public static MinecraftMetadataProvider create(ConfigContext configContext) {
 		final String minecraftVersion = resolveMinecraftVersion(configContext.project());
-		final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(configContext.project(), minecraftVersion).toPath();
 
 		return new MinecraftMetadataProvider(
 				MinecraftMetadataProvider.Options.create(
 						minecraftVersion,
-						configContext.project(),
-						workingDir.resolve("minecraft-info.json")
+						configContext.project()
 				),
 				configContext.extension()::download
 		);
@@ -92,28 +92,29 @@ public final class MinecraftMetadataProvider {
 		return versionMeta;
 	}
 
-	private ManifestVersion.Versions getVersionEntry() throws IOException {
+	private ManifestEntryLocation getVersionEntry() throws IOException {
 		// Custom URL always takes priority
 		if (options.customManifestUrl() != null) {
-			ManifestVersion.Versions customVersion = new ManifestVersion.Versions();
+			VersionsManifest.Version customVersion = new VersionsManifest.Version();
 			customVersion.id = options.minecraftVersion();
 			customVersion.url = options.customManifestUrl();
-			return customVersion;
+			return new ManifestEntryLocation(null, customVersion);
 		}
 
-		final List<ManifestVersionSupplier> suppliers = List.of(
-				// First try finding the version with caching
-				() -> getVersions(false),
-				// Then try finding the experimental version with caching
-				() -> getExperimentalVersions(false),
-				// Then force download Mojang's metadata to find the version
-				() -> getVersions(true),
-				// Finally try a force downloaded experimental metadata.
-				() -> getExperimentalVersions(true)
-		);
+		final List<ManifestEntrySupplier> suppliers = new ArrayList<>();
 
-		for (ManifestVersionSupplier supplier : suppliers) {
-			final ManifestVersion.Versions version = supplier.get().getVersion(options.minecraftVersion());
+		// First try finding the version with caching
+		for (ManifestLocation location : options.versionsManifests()) {
+			suppliers.add(() -> getManifestEntry(location, false));
+		}
+
+		// Then force download the manifest to find the version
+		for (ManifestLocation location : options.versionsManifests()) {
+			suppliers.add(() -> getManifestEntry(location, true));
+		}
+
+		for (ManifestEntrySupplier supplier : suppliers) {
+			final ManifestEntryLocation version = supplier.get();
 
 			if (version != null) {
 				return version;
@@ -123,16 +124,8 @@ public final class MinecraftMetadataProvider {
 		throw new RuntimeException("Failed to find minecraft version: " + options.minecraftVersion());
 	}
 
-	private ManifestVersion getVersions(boolean forceDownload) throws IOException {
-		return getVersions(options.versionManifestUrl(), options.versionManifestPath(), forceDownload);
-	}
-
-	private ManifestVersion getExperimentalVersions(boolean forceDownload) throws IOException {
-		return getVersions(options.experimentalVersionManifestUrl(), options.experimentalVersionManifestPath(), forceDownload);
-	}
-
-	private ManifestVersion getVersions(String url, Path cacheFile, boolean forceDownload) throws IOException {
-		DownloadBuilder builder = download.apply(url);
+	private ManifestEntryLocation getManifestEntry(ManifestLocation location, boolean forceDownload) throws IOException {
+		DownloadBuilder builder = download.apply(location.url());
 
 		if (forceDownload) {
 			builder = builder.forceDownload();
@@ -140,48 +133,77 @@ public final class MinecraftMetadataProvider {
 			builder = builder.defaultCache();
 		}
 
+		final Path cacheFile = location.cacheFile(options.userCache());
 		final String versionManifest = builder.downloadString(cacheFile);
-		return LoomGradlePlugin.GSON.fromJson(versionManifest, ManifestVersion.class);
+		final VersionsManifest manifest = LoomGradlePlugin.GSON.fromJson(versionManifest, VersionsManifest.class);
+		final VersionsManifest.Version version = manifest.getVersion(options.minecraftVersion());
+
+		if (version != null) {
+			return new ManifestEntryLocation(location, version);
+		}
+
+		return null;
 	}
 
 	private MinecraftVersionMeta readVersionMeta() throws IOException {
-		final DownloadBuilder builder = download.apply(versionEntry.url);
+		final DownloadBuilder builder = download.apply(versionEntry.entry.url);
 
-		if (versionEntry.sha1 != null) {
-			builder.sha1(versionEntry.sha1);
+		if (versionEntry.entry.sha1 != null) {
+			builder.sha1(versionEntry.entry.sha1);
 		} else {
 			builder.defaultCache();
 		}
 
-		final String json = builder.downloadString(options.minecraftMetadataPath());
+		final String fileName = getVersionMetaFileName();
+		final Path cacheFile = options.workingDir().resolve(fileName);
+		final String json = builder.downloadString(cacheFile);
 		return LoomGradlePlugin.GSON.fromJson(json, MinecraftVersionMeta.class);
 	}
 
+	private String getVersionMetaFileName() {
+		String base = "minecraft-info";
+
+		// custom version metadata
+		if (versionEntry.manifest == null) {
+			return base + Integer.toHexString(versionEntry.entry.url.hashCode()) + ".json";
+		}
+
+		// custom versions manifest
+		if (!versionEntry.manifest.isBuiltIn()) {
+			return base + Integer.toHexString(versionEntry.manifest.url().hashCode()) + ".json";
+		}
+
+		return base + ".json";
+	}
+
 	public record Options(String minecraftVersion,
-					String versionManifestUrl,
-					String experimentalVersionManifestUrl,
+					ManifestLocations versionsManifests,
 					@Nullable String customManifestUrl,
-					Path versionManifestPath,
-					Path experimentalVersionManifestPath,
-					Path minecraftMetadataPath) {
-		public static Options create(String minecraftVersion, Project project, Path minecraftMetadataPath) {
+					Path userCache,
+					Path workingDir) {
+		public static Options create(String minecraftVersion, Project project) {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 			final Path userCache = extension.getFiles().getUserCache().toPath();
+			final Path workingDir = MinecraftProvider.minecraftWorkingDirectory(project, minecraftVersion).toPath();
+
+			final ManifestLocations manifestLocations = extension.getVersionsManifests();
+			final Property<String> customMetaUrl = extension.getCustomMinecraftMetadata();
 
 			return new Options(
 					minecraftVersion,
-					MirrorUtil.getVersionManifests(project),
-					MirrorUtil.getExperimentalVersions(project),
-					extension.getCustomMinecraftManifest().getOrNull(),
-					userCache.resolve("version_manifest.json"),
-					userCache.resolve("experimental_version_manifest.json"),
-					minecraftMetadataPath
+					manifestLocations,
+					customMetaUrl.getOrNull(),
+					userCache,
+					workingDir
 			);
 		}
 	}
 
 	@FunctionalInterface
-	private interface ManifestVersionSupplier {
-		ManifestVersion get() throws IOException;
+	private interface ManifestEntrySupplier {
+		ManifestEntryLocation get() throws IOException;
+	}
+
+	private record ManifestEntryLocation(ManifestLocation manifest, VersionsManifest.Version entry) {
 	}
 }

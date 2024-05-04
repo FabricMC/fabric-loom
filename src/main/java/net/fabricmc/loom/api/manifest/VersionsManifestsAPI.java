@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +22,25 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft;
+package net.fabricmc.loom.api.manifest;
 
-import java.util.List;
-import java.util.Map;
+import org.jetbrains.annotations.ApiStatus;
 
-import org.jetbrains.annotations.Nullable;
-
-public record ManifestVersion(List<Versions> versions, Map<String, String> latest) {
-	public static class Versions {
-		public String id, url, sha1;
+@ApiStatus.Experimental
+public interface VersionsManifestsAPI {
+	/**
+	 * Adds a URL to a versions manifest json with the default priority of {@code 0}.
+	 * @param url the String-representation of the URL to the manifest json
+	 */
+	default void add(String url) {
+		add(url, 0);
 	}
 
-	@Nullable
-	public Versions getVersion(String id) {
-		return versions.stream()
-				.filter(versions -> versions.id.equalsIgnoreCase(id))
-				.findFirst()
-				.orElse(null);
-	}
+	/**
+	 * Adds a URL to a versions manifest json with the given priority.
+	 * @param url the String-representation of the URL to the manifest json
+	 * @param priority the priority with which this URL gets sorted against other entries
+	 *        entries are sorted by priority, from lowest to highest
+	 */
+	void add(String url, int priority);
 }

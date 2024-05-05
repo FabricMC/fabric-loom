@@ -103,7 +103,8 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		}
 	}
 
-	private record MixinVersion(String group, String version) implements Serializable { }
+	// Must be public for configuration cache
+	public record MixinVersion(String group, String version) implements Serializable { }
 
 	private static Provider<MixinVersion> getMixinVersion(Project project) {
 		return project.getConfigurations().named(Constants.Configurations.LOADER_DEPENDENCIES).map(configuration -> {

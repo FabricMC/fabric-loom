@@ -54,8 +54,10 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		result2.task(":${task}").outcome != FAILED
 
 		where:
-		task                    | _
-		"help"                  | _
-		"configureClientLaunch" | _
+		task                      | _
+		"help"                    | _
+		"configureClientLaunch"   | _
+		"jar"                     | _
+		"check"                   | _
 	}
 }

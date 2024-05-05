@@ -59,5 +59,6 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		"configureClientLaunch"   | _
 		"jar"                     | _
 		"check"                   | _
+		"build"                   | _
 	}
 }

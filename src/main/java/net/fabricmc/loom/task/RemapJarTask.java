@@ -49,7 +49,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
@@ -77,6 +76,7 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonUtils;
 import net.fabricmc.loom.util.service.BuildSharedServiceManager;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -100,12 +100,24 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@ApiStatus.Internal
 	public abstract Property<Boolean> getUseMixinAP();
 
+	@Input
+	@ApiStatus.Internal
+	public abstract Property<Boolean> getMultiProjectOptimisation();
+
+	@Input
+	@ApiStatus.Internal
+	public abstract Property<TinyRemapperService.Spec> getTinyRemapperServiceSpec();
+
+	// Only used for multi-project optimisation, normally a scoped service is used
+	@Nullable
 	private final Provider<BuildSharedServiceManager> serviceManagerProvider;
 
 	@Inject
 	public RemapJarTask() {
 		super();
-		serviceManagerProvider = BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry());
+		boolean multiProjectOptimisation = LoomGradleExtension.get(getProject()).multiProjectOptimisation();
+		serviceManagerProvider = multiProjectOptimisation ? BuildSharedServiceManager.createForTask(this, getBuildEventsListenerRegistry()) : null;
+
 		final ConfigurationContainer configurations = getProject().getConfigurations();
 		getClasspath().from(configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
@@ -116,6 +128,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getNestedJars().builtBy(processIncludeJars);
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
+		getMultiProjectOptimisation().set(multiProjectOptimisation);
+		getTinyRemapperServiceSpec().set(getProject().provider(this::createTinyRemapperServiceSpec));
 
 		if (getLoomExtension().multiProjectOptimisation()) {
 			setupPreparationTask();
@@ -149,10 +163,15 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			}
 
 			if (!params.namespacesMatch()) {
-				params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
+				params.getTinyRemapperServiceSpec().set(getTinyRemapperServiceSpec());
+
+				if (getMultiProjectOptimisation().get()) {
+					params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService(getTinyRemapperServiceSpec().get())));
+				}
+
 				params.getRemapClasspath().from(getClasspath());
 
-				params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
+				params.getMultiProjectOptimisation().set(getMultiProjectOptimisation());
 
 				final boolean mixinAp = getUseMixinAP().get();
 				params.getUseMixinExtension().set(!mixinAp);
@@ -215,6 +234,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
 		ListProperty<RefmapData> getMixinData();
 
+		Property<TinyRemapperService.Spec> getTinyRemapperServiceSpec();
 		Property<String> getTinyRemapperBuildServiceUuid();
 	}
 
@@ -223,11 +243,21 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		private final @Nullable TinyRemapperService tinyRemapperService;
 		private @Nullable TinyRemapper tinyRemapper;
+		private @Nullable ScopedSharedServiceManager serviceManager;
 
 		public RemapAction() {
-			this.tinyRemapperService = getParameters().getTinyRemapperBuildServiceUuid().isPresent()
-					? UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class)
-					: null;
+			if (getParameters().namespacesMatch()) {
+				// Nothing to remap
+				this.tinyRemapperService = null;
+			} else if (getParameters().getMultiProjectOptimisation().get()) {
+				// Use the shared tiny remapper service
+				this.tinyRemapperService = UnsafeWorkQueueHelper.get(getParameters().getTinyRemapperBuildServiceUuid(), TinyRemapperService.class);
+			} else {
+				// Create a new tiny remapper service, in a scoped service manager
+				serviceManager = new ScopedSharedServiceManager();
+				TinyRemapperService.Spec spec = getParameters().getTinyRemapperServiceSpec().get();
+				this.tinyRemapperService = TinyRemapperService.getOrCreate(serviceManager, null, spec);
+			}
 		}
 
 		@Override
@@ -274,6 +304,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				}
 
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap", e);
+			} finally {
+				if (serviceManager != null) {
+					serviceManager.close();
+				}
 			}
 		}
 
@@ -393,8 +427,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				.toList();
 	}
 
-	@Internal
-	public TinyRemapperService getTinyRemapperService() {
-		return TinyRemapperService.getOrCreate(serviceManagerProvider.get().get(), this);
+	private TinyRemapperService.Spec createTinyRemapperServiceSpec() {
+		return TinyRemapperService.Spec.create(this);
+	}
+
+	public TinyRemapperService getTinyRemapperService(TinyRemapperService.Spec spec) {
+		return TinyRemapperService.getOrCreate(serviceManagerProvider.get().get(), this, spec);
 	}
 }

@@ -37,6 +37,7 @@ import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.service.UnsafeWorkQueueHelper;
 
@@ -50,6 +51,12 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 
 	@Inject
 	public PrepareJarRemapTask(RemapJarTask remapJarTask) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		if (!extension.multiProjectOptimisation()) {
+			throw new IllegalStateException("PrepareJarRemapTask should only be used with multi-project optimisation enabled");
+		}
+
 		this.remapJarTask = remapJarTask;
 
 		getInputFile().set(remapJarTask.getInputFile());
@@ -75,7 +82,8 @@ public abstract class PrepareJarRemapTask extends AbstractLoomTask {
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(ReadInputsAction.class, params -> {
-			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(remapJarTask.getTinyRemapperService()));
+			final TinyRemapperService.Spec spec = remapJarTask.getTinyRemapperServiceSpec().get();
+			params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(remapJarTask.getTinyRemapperService(spec)));
 			params.getInputFile().set(getInputFile());
 		});
 	}

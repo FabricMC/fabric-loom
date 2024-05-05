@@ -28,6 +28,9 @@ import java.io.Closeable;
 import java.io.IOException;
 
 public interface SharedService extends Closeable {
+	interface Spec {
+	}
+
 	@Override
 	default void close() throws IOException {
 	}

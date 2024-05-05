@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -42,8 +43,12 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -63,29 +68,68 @@ import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class TinyRemapperService implements SharedService {
-	public static synchronized TinyRemapperService getOrCreate(SharedServiceManager serviceManager, AbstractRemapJarTask remapJarTask) {
+	private static final Logger LOGGER = LoggerFactory.getLogger(TinyRemapperService.class);
+
+	public interface Spec extends SharedService.Spec {
+		Property<String> getTaskName();
+		Property<String> getSourceNamespace();
+		Property<String> getTargetNamespace();
+		Property<Boolean> getMultiProjectOptimisation();
+		Property<Boolean> getRootProject();
+		Property<Boolean> getRemapperIsolation();
+		Property<String> getProjectPath();
+		Property<Boolean> getLegacyMixin();
+		ListProperty<String> getKnownIndyBsms();
+		@org.gradle.api.tasks.Optional
+		Property<KotlinClasspathService.Spec> getKotlinSpec();
+
+		static Spec create(AbstractRemapJarTask remapJarTask) {
+			final Project project = remapJarTask.getProject();
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			final Spec spec = project.getObjects().newInstance(Spec.class);
+
+			spec.getTaskName().set(remapJarTask.getName());
+			spec.getSourceNamespace().set(remapJarTask.getSourceNamespace().get());
+			spec.getTargetNamespace().set(remapJarTask.getTargetNamespace().get());
+			spec.getMultiProjectOptimisation().set(extension.multiProjectOptimisation());
+			spec.getRootProject().set(extension.isRootProject());
+			spec.getRemapperIsolation().set(remapJarTask.getRemapperIsolation().get());
+			spec.getProjectPath().set(project.getPath());
+			spec.getLegacyMixin().set(extension.getMixin().getUseLegacyMixinAp().get());
+			spec.getKnownIndyBsms().addAll(extension.getKnownIndyBsms().get());
+			KotlinClasspathService.Spec.createIfRequired(project).ifPresent(spec.getKotlinSpec()::set);
+
+			return spec;
+		}
+	}
+
+	// TODO aim to remove the AbstractRemapJarTask parameter.
+	public static synchronized TinyRemapperService getOrCreate(SharedServiceManager serviceManager, AbstractRemapJarTask remapJarTask, Spec spec) {
 		final Project project = remapJarTask.getProject();
-		final String to = remapJarTask.getTargetNamespace().get();
-		final String from = remapJarTask.getSourceNamespace().get();
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
-		final @Nullable KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
-		boolean multiProjectOptimisation = extension.multiProjectOptimisation();
+
+		final String to = spec.getTargetNamespace().get();
+		final String from = spec.getSourceNamespace().get();
+		final boolean legacyMixin = spec.getLegacyMixin().get();
+		final @Nullable KotlinClasspathService kotlinClasspathService = Optional.ofNullable(spec.getKotlinSpec().getOrNull())
+				.map(kspec -> KotlinClasspathService.getOrCreate(serviceManager, kspec))
+				.orElse(null);
+		boolean multiProjectOptimisation = spec.getMultiProjectOptimisation().get();
 
 		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
 		final var joiner = new StringJoiner(":");
 		joiner.add(extension.getMappingConfiguration().getBuildServiceName("remapJarService", from, to));
-		joiner.add(remapJarTask.getName());
+		joiner.add(spec.getTaskName().get());
 
 		if (kotlinClasspathService != null) {
 			joiner.add("kotlin-" + kotlinClasspathService.version());
 		}
 
-		if (remapJarTask.getRemapperIsolation().get() || !multiProjectOptimisation) {
-			joiner.add(project.getPath());
+		if (spec.getRemapperIsolation().get() || !multiProjectOptimisation) {
+			joiner.add(spec.getProjectPath().get());
 		}
 
-		extension.getKnownIndyBsms().get().stream().sorted().forEach(joiner::add);
+		spec.getKnownIndyBsms().get().forEach(joiner::add);
 
 		final String id = joiner.toString();
 
@@ -97,14 +141,14 @@ public class TinyRemapperService implements SharedService {
 				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), extension.getMappingConfiguration().mappingsIdentifier, from, to));
 			}
 
-			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get(), extension.getRemapperExtensions().get(), from, to, project.getObjects());
+			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, new HashSet<>(spec.getKnownIndyBsms().get()), extension.getRemapperExtensions().get(), from, to, project.getObjects());
 		});
 
 		final ConfigurationContainer configurations = project.getConfigurations();
 		ConfigurableFileCollection excludedMinecraftJars = project.files();
 
 		// Exclude none root minecraft jars.
-		if (multiProjectOptimisation && !extension.isRootProject()) {
+		if (multiProjectOptimisation && !spec.getRootProject().get()) {
 			MappingsNamespace mappingsNamespace = MappingsNamespace.of(from);
 
 			if (mappingsNamespace != null) {
@@ -113,7 +157,7 @@ public class TinyRemapperService implements SharedService {
 				}
 			} else {
 				// None fatal as this is a performance optimisation.
-				project.getLogger().warn("Unable to find minecraft jar for namespace {}", from);
+				LOGGER.warn("Unable to find minecraft jar for namespace {}", from);
 			}
 		}
 

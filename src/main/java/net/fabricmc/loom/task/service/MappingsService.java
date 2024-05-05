@@ -42,7 +42,7 @@ import net.fabricmc.tinyremapper.IMappingProvider;
 public final class MappingsService implements SharedService {
 	private record Options(Path mappingsFile, String from, String to, boolean remapLocals) { }
 
-	public static synchronized MappingsService create(SharedServiceManager sharedServiceManager, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
+	public static MappingsService create(SharedServiceManager sharedServiceManager, String name, Path mappingsFile, String from, String to, boolean remapLocals) {
 		final Options options = new Options(mappingsFile, from, to, remapLocals);
 		final String id = name + options.hashCode();
 		return sharedServiceManager.getOrCreateService(id, () -> new MappingsService(options));

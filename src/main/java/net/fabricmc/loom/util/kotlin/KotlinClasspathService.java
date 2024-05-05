@@ -27,40 +27,69 @@ package net.fabricmc.loom.util.kotlin;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Property;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.util.service.SharedService;
 import net.fabricmc.loom.util.service.SharedServiceManager;
 
 public record KotlinClasspathService(Set<URL> classpath, String version) implements KotlinClasspath, SharedService {
-	@Nullable
-	public static KotlinClasspathService getOrCreateIfRequired(SharedServiceManager sharedServiceManager, Project project) {
-		if (!KotlinPluginUtils.hasKotlinPlugin(project)) {
-			return null;
+	public interface Spec extends SharedService.Spec {
+		Property<String> getKotlinVersion();
+		Property<String> getKotlinMetadataVersion();
+		ConfigurableFileCollection getClasspath();
+
+		static Optional<Spec> createIfRequired(Project project) {
+			if (!KotlinPluginUtils.hasKotlinPlugin(project)) {
+				return Optional.empty();
+			}
+
+			final String kotlinVersion = KotlinPluginUtils.getKotlinPluginVersion(project);
+			final String kotlinMetadataVersion = KotlinPluginUtils.getKotlinMetadataVersion();
+
+			// Create a detached config to resolve the kotlin std lib for the provided version.
+			Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
+					project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
+					// Load kotlinx-metadata-jvm like this to work around: https://github.com/gradle/gradle/issues/14727
+					project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
+			);
+
+			Spec spec = project.getObjects().newInstance(Spec.class);
+			spec.getKotlinVersion().set(kotlinVersion);
+			spec.getKotlinMetadataVersion().set(kotlinMetadataVersion);
+			spec.getClasspath().from(detachedConfiguration);
+
+			return Optional.of(spec);
 		}
 
-		return getOrCreate(sharedServiceManager, project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
+		@ApiStatus.Internal
+		default String getId() {
+			return "kotlinclasspath:%s:%s".formatted(getKotlinVersion().get(), getKotlinMetadataVersion().get());
+		}
 	}
 
-	public static synchronized KotlinClasspathService getOrCreate(SharedServiceManager sharedServiceManager, Project project, String kotlinVersion, String kotlinMetadataVersion) {
-		final String id = "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
-		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion, kotlinMetadataVersion));
+	@Nullable
+	public static KotlinClasspathService getOrCreateIfRequired(SharedServiceManager sharedServiceManager, Project project) {
+		return Spec.createIfRequired(project).map(spec -> getOrCreate(sharedServiceManager, spec)).orElse(null);
 	}
 
-	private static KotlinClasspathService create(Project project, String kotlinVersion, String kotlinMetadataVersion) {
-		// Create a detached config to resolve the kotlin std lib for the provided version.
-		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
-				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
-				// Load kotlinx-metadata-jvm like this to work around: https://github.com/gradle/gradle/issues/14727
-				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
-		);
+	public static KotlinClasspathService getOrCreate(SharedServiceManager sharedServiceManager, Spec spec) {
+		Objects.requireNonNull(spec, "spec");
+		return sharedServiceManager.getOrCreateService(spec.getId(), () -> create(spec.getClasspath(), spec.getKotlinVersion().get(), spec.getKotlinMetadataVersion().get()));
+	}
 
-		Set<URL> classpath = detachedConfiguration.getFiles().stream()
+	private static KotlinClasspathService create(FileCollection configuration, String kotlinVersion, String kotlinMetadataVersion) {
+		Set<URL> classpath = configuration.getFiles().stream()
 				.map(file -> {
 					try {
 						return file.toURI().toURL();

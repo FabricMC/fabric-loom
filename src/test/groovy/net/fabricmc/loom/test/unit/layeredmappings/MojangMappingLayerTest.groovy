@@ -68,6 +68,27 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		!tiny.contains('this$0')
 	}
 
+	def "Read mojang mappings with no intermediary" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		when:
+		def mappings = getLayeredMappings(
+				new NoIntermediateMappingsSpec(),
+				buildMojangMappingsSpec(true)
+				)
+		def tiny = getTiny(mappings)
+		def intermediaryId = mappings.getNamespaceId("intermediary")
+		def officialId = mappings.getNamespaceId("official")
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 6113
+		mappings.getClass("com/mojang/blaze3d/Blaze3D").getDstName(intermediaryId) == "com/mojang/blaze3d/Blaze3D"
+		mappings.getClass("com/mojang/blaze3d/Blaze3D").getDstName(officialId) == "doe"
+		mappings.getClass("com/mojang/blaze3d/Blaze3D").getSrcName() == "com/mojang/blaze3d/Blaze3D"
+	}
+
 	static def buildMojangMappingsSpec(boolean nameSyntheticFields) {
 		def builder = MojangMappingsSpecBuilderImpl.builder()
 		builder.setNameSyntheticMembers(nameSyntheticFields)

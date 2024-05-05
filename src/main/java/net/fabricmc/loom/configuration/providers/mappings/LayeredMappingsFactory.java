@@ -31,7 +31,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +39,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -83,6 +83,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	public Path resolve(Project project) throws IOException {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_"));
 		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
 		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, spec.getVersion()));
@@ -91,7 +92,8 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return mappingsZip;
 		}
 
-		var processor = new LayeredMappingsProcessor(spec);
+		boolean noIntermediateMappings = extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider;
+		var processor = new LayeredMappingsProcessor(spec, noIntermediateMappings);
 		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
 		Files.deleteIfExists(mappingsZip);
@@ -117,7 +119,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 		try (Writer writer = new StringWriter()) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
 
-			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, Collections.singletonList(MappingsNamespace.NAMED.toString()));
+			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()));
 			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
 			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
 			mappings.accept(addConstructor);

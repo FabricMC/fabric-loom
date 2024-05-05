@@ -51,6 +51,26 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 	}
 
 	@Unroll
+	def "build no intermediary (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "mojangMappings", version: version)
+		gradle.buildGradle << '''
+			loom {
+				noIntermediateMappings()
+			}
+		'''
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
 	def "mojang mappings without synthetic field names (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)

@@ -120,45 +120,50 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 	private void trySetupSourceRemapping() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(getProject()).getSourcesJarTaskName();
 
 		TaskProvider<RemapSourcesJarTask> remapSourcesTask = getTasks().register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
-
-			final Task sourcesTask = getTasks().findByName(sourcesJarTaskName);
-
-			if (sourcesTask == null) {
-				getProject().getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
-				task.setEnabled(false);
-				return;
-			}
-
-			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
-				getProject().getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
-				task.setEnabled(false);
-				return;
-			}
-
-			sourcesJarTask.getArchiveClassifier().convention("dev-sources");
-			sourcesJarTask.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
-			task.getArchiveClassifier().convention("sources");
-
-			task.dependsOn(sourcesJarTask);
-			task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		});
 
 		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
 
-		if (GradleUtils.getBooleanProperty(getProject(), "fabric.loom.disableRemappedVariants")) {
-			return;
-		}
-
 		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
+			final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(getProject()).getSourcesJarTaskName();
 			final Task sourcesTask = getTasks().findByName(sourcesJarTaskName);
 
-			if (!(sourcesTask instanceof Jar sourcesJarTask)) {
+			boolean canRemap = true;
+
+			if (sourcesTask == null) {
+				getProject().getLogger().info("{} task was not found, not remapping sources", sourcesJarTaskName);
+				canRemap = false;
+			}
+
+			if (canRemap && !(sourcesTask instanceof Jar)) {
+				getProject().getLogger().info("{} task is not a Jar task, not remapping sources", sourcesJarTaskName);
+				canRemap = false;
+			}
+
+			boolean finalCanRemap = canRemap;
+
+			remapSourcesTask.configure(task -> {
+				if (!finalCanRemap) {
+					task.setEnabled(false);
+					return;
+				}
+
+				final Jar sourcesJarTask = (Jar) sourcesTask;
+
+				sourcesJarTask.getArchiveClassifier().convention("dev-sources");
+				sourcesJarTask.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
+				task.getArchiveClassifier().convention("sources");
+
+				task.dependsOn(sourcesJarTask);
+				task.getInputFile().convention(sourcesJarTask.getArchiveFile());
+			});
+
+			if (GradleUtils.getBooleanProperty(getProject(), "fabric.loom.disableRemappedVariants")) {
 				return;
 			}
 

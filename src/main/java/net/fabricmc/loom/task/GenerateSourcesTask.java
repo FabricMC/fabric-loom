@@ -201,6 +201,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		if (!getUseCache().get()) {
 			try (var timer = new Timer("Decompiled sources")) {
 				runWithoutCache();
+			} catch (Exception e) {
+				ExceptionUtil.printFileLocks(e, getProject());
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 			}
 
 			return;
@@ -218,6 +221,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
 				runWithCache(fs.getRoot());
 			}
+		} catch (Exception e) {
+			ExceptionUtil.printFileLocks(e, getProject());
+			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 		}
 	}
 
@@ -415,7 +421,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true, configContext);
 			minecraftJars = getExtension().getNamedMinecraftProvider().provide(provideContext);
 		} catch (Exception e) {
-			ExceptionUtil.printFileLocks(e, getProject());
 			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to rebuild input jars", e);
 		}
 

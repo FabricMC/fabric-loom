@@ -114,7 +114,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			task.setDescription("Decompile minecraft (%s) using the default decompiler.".formatted(name));
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
-			task.dependsOn(project.getTasks().named("gen%sSourcesWithCfr".formatted(name)));
+			task.dependsOn(project.getTasks().named("gen%sSourcesWith%s".formatted(name, DecompileConfiguration.DEFAULT_DECOMPILER)));
 		});
 	}
 }

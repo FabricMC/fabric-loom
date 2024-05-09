@@ -40,6 +40,7 @@ import org.gradle.api.Named;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -98,6 +99,14 @@ public class RunConfigSettings implements Named {
 	private final Property<String> mainClass;
 
 	/**
+	 * The true entrypoint, this is usually dev launch injector.
+	 * This should not be changed unless you know what you are doing.
+	 */
+	@ApiStatus.Internal
+	@ApiStatus.Experimental
+	private final Property<String> devLaunchMainClass;
+
+	/**
 	 * The source set getter, which obtains the source set from the given project.
 	 */
 	private Function<Project, SourceSet> source;
@@ -136,6 +145,7 @@ public class RunConfigSettings implements Named {
 			Objects.requireNonNull(defaultMainClass, "Run config " + name + " must specify default main class");
 			return RunConfig.getMainClass(environment, extension, defaultMainClass);
 		}));
+		this.devLaunchMainClass = project.getObjects().property(String.class).convention("net.fabricmc.devlaunchinjector.Main");
 
 		setSource(p -> {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
@@ -368,5 +378,11 @@ public class RunConfigSettings implements Named {
 
 	public void setIdeConfigGenerated(boolean ideConfigGenerated) {
 		this.ideConfigGenerated = ideConfigGenerated;
+	}
+
+	@ApiStatus.Internal
+	@ApiStatus.Experimental
+	public Property<String> devLaunchMainClass() {
+		return devLaunchMainClass;
 	}
 }

@@ -66,10 +66,11 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 				FileSystemUtil.Delegate incompleteFs = FileSystemUtil.getJarFileSystem(incompleteJar, true);
 				FileSystemUtil.Delegate existingFs = FileSystemUtil.getJarFileSystem(existingJar, true)) {
 			final List<ClassEntry> inputClasses = JarWalker.findClasses(inputFs);
+			final Map<String, String> rawEntryHashes = getEntryHashes(inputClasses, inputFs.getRoot());
 
 			for (ClassEntry entry : inputClasses) {
 				String outputFileName = entry.sourcesFileName();
-				String fullHash = baseHash + "/" + entry.hash(inputFs.getRoot());
+				String fullHash = baseHash + "/" + entry.hashSuperHierarchy(rawEntryHashes);
 
 				final CachedData entryData = fileStore.getEntry(fullHash);
 
@@ -127,6 +128,21 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 			return new CompletedWorkJob(existingJar)
 					.asRequest(stats, lineNumbers);
 		}
+	}
+
+	private static Map<String, String> getEntryHashes(List<ClassEntry> entries, Path root) throws IOException {
+		final Map<String, String> rawEntryHashes = new HashMap<>();
+
+		for (ClassEntry entry : entries) {
+			String hash = entry.hash(root);
+			rawEntryHashes.put(entry.name(), hash);
+
+			for (String s : entry.innerClasses()) {
+				rawEntryHashes.put(s, hash);
+			}
+		}
+
+		return Collections.unmodifiableMap(rawEntryHashes);
 	}
 
 	public void completeJob(Path output, WorkJob workJob, ClassLineNumbers lineNumbers) throws IOException {

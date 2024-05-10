@@ -141,6 +141,7 @@ public final class JarWalker {
 				.collect(CompletableFutureCollector.allOf())
 				.thenApply(lists -> lists.stream()
 						.flatMap(List::stream)
+						.filter(JarWalker::isNotReservedClass)
 						.distinct()
 						.toList())
 				.thenApply(parentClasses -> new ClassEntry(outerClass, innerClasses, parentClasses));
@@ -175,5 +176,10 @@ public final class JarWalker {
 		}
 
 		return ForkJoinPool.commonPool();
+	}
+
+	// Slight optimization, if we skip over Object
+	private static boolean isNotReservedClass(String name) {
+		return !"java/lang/Object".equals(name);
 	}
 }

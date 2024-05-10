@@ -25,14 +25,18 @@
 package net.fabricmc.loom.test.unit.cache
 
 import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Duration
 
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import spock.lang.Specification
+import spock.lang.TempDir
 
 import net.fabricmc.loom.decompilers.ClassLineNumbers
 import net.fabricmc.loom.decompilers.cache.CachedData
 import net.fabricmc.loom.decompilers.cache.CachedFileStore
+import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl
 import net.fabricmc.loom.decompilers.cache.CachedJarProcessor
 import net.fabricmc.loom.test.util.ZipTestUtils
 import net.fabricmc.loom.util.ZipUtils
@@ -50,6 +54,9 @@ class CachedJarProcessorTest extends Specification {
 
 	static CachedData ExampleCachedData = new CachedData("net/fabricmc/Example", "Example sources", lineNumber("net/fabricmc/Example"))
 	static CachedData TestCachedData = new CachedData("net/fabricmc/other/Test", "Test sources", lineNumber("net/fabricmc/other/Test"))
+
+	@TempDir
+	Path testPath
 
 	def "prepare full work job"() {
 		given:
@@ -233,6 +240,55 @@ class CachedJarProcessorTest extends Specification {
 		0 * _ // Strict mock
 	}
 
+	def "hierarchy change invalidates cache"() {
+		given:
+		def jar1 = ZipTestUtils.createZipFromBytes(
+				[
+					"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
+					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
+					"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner", ["net/fabricmc/Example"] as String[]),
+					"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+				]
+				)
+		// The second jar changes Example, so we would expect Test to be invalidated, thus causing a full decompile in this case
+		def jar2 = ZipTestUtils.createZipFromBytes(
+				[
+					"net/fabricmc/Example.class": newClass("net/fabricmc/Example", ["java/lang/Runnable"] as String[]),
+					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
+					"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner", ["net/fabricmc/Example"] as String[]),
+					"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+				]
+				)
+
+		def cache = new CachedFileStoreImpl<>(testPath.resolve("cache"), CachedData.SERIALIZER, new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90)))
+		def processor = new CachedJarProcessor(cache, "abc123")
+
+		when:
+		def workRequest = processor.prepareJob(jar1)
+		def workJob = workRequest.job() as CachedJarProcessor.FullWorkJob
+		def outputSourcesJar = workJob.output()
+
+		// Do the work, such as decompiling.
+		ZipUtils.add(outputSourcesJar, "net/fabricmc/Example.java", "Example sources")
+		ZipUtils.add(outputSourcesJar, "net/fabricmc/other/Test.java", "Test sources")
+
+		// Complete the job
+		def outputJar = Files.createTempFile("loom-test-output", ".jar")
+		Files.delete(outputJar)
+
+		ClassLineNumbers lineNumbers = lineNumbers([
+			"net/fabricmc/Example",
+			"net/fabricmc/other/Test"
+		])
+		processor.completeJob(outputJar, workJob, lineNumbers)
+
+		workRequest = processor.prepareJob(jar2)
+		def newWorkJob = workRequest.job()
+
+		then:
+		newWorkJob instanceof CachedJarProcessor.FullWorkJob
+	}
+
 	private static ClassLineNumbers lineNumbers(List<String> names) {
 		return new ClassLineNumbers(names.collectEntries { [it, lineNumber(it)] })
 	}
@@ -241,9 +297,9 @@ class CachedJarProcessorTest extends Specification {
 		return new ClassLineNumbers.Entry(name, 0, 0, [:])
 	}
 
-	private static byte[] newClass(String name) {
+	private static byte[] newClass(String name, String[] interfaces = null, String superName = "java/lang/Object") {
 		def writer = new ClassWriter(0)
-		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, "java/lang/Object", null)
+		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
 		return writer.toByteArray()
 	}
 }

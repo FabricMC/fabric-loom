@@ -32,7 +32,12 @@ import java.util.StringJoiner;
 
 import net.fabricmc.loom.util.Checksum;
 
-public record ClassEntry(String parentClass, List<String> innerClasses) {
+/**
+ * @param name The class name
+ * @param innerClasses A list of inner class names
+ * @param superClasses A list of parent classes (super and interface) from the class and all inner classes
+ */
+public record ClassEntry(String name, List<String> innerClasses, List<String> superClasses) {
 	/**
 	 * Copy the class and its inner classes to the target root.
 	 * @param sourceRoot The root of the source jar
@@ -41,9 +46,9 @@ public record ClassEntry(String parentClass, List<String> innerClasses) {
 	 * @throws IOException If an error occurs while copying the files
 	 */
 	public void copyTo(Path sourceRoot, Path targetRoot) throws IOException {
-		Path targetPath = targetRoot.resolve(parentClass);
+		Path targetPath = targetRoot.resolve(name);
 		Files.createDirectories(targetPath.getParent());
-		Files.copy(sourceRoot.resolve(parentClass), targetPath);
+		Files.copy(sourceRoot.resolve(name), targetPath);
 
 		for (String innerClass : innerClasses) {
 			Files.copy(sourceRoot.resolve(innerClass), targetRoot.resolve(innerClass));
@@ -60,7 +65,7 @@ public record ClassEntry(String parentClass, List<String> innerClasses) {
 	public String hash(Path root) throws IOException {
 		StringJoiner joiner = new StringJoiner(",");
 
-		joiner.add(Checksum.sha256Hex(Files.readAllBytes(root.resolve(parentClass))));
+		joiner.add(Checksum.sha256Hex(Files.readAllBytes(root.resolve(name))));
 
 		for (String innerClass : innerClasses) {
 			joiner.add(Checksum.sha256Hex(Files.readAllBytes(root.resolve(innerClass))));
@@ -70,6 +75,6 @@ public record ClassEntry(String parentClass, List<String> innerClasses) {
 	}
 
 	public String sourcesFileName() {
-		return parentClass.replace(".class", ".java");
+		return name.replace(".class", ".java");
 	}
 }

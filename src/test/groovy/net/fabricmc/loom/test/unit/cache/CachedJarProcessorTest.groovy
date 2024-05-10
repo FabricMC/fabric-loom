@@ -26,6 +26,8 @@ package net.fabricmc.loom.test.unit.cache
 
 import java.nio.file.Files
 
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Opcodes
 import spock.lang.Specification
 
 import net.fabricmc.loom.decompilers.ClassLineNumbers
@@ -36,22 +38,22 @@ import net.fabricmc.loom.test.util.ZipTestUtils
 import net.fabricmc.loom.util.ZipUtils
 
 class CachedJarProcessorTest extends Specification {
-	static Map<String, String> jarEntries = [
-		"net/fabricmc/Example.class": "",
-		"net/fabricmc/other/Test.class": "",
-		"net/fabricmc/other/Test\$Inner.class": "",
-		"net/fabricmc/other/Test\$1.class": "",
+	static Map<String, byte[]> jarEntries = [
+		"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
+		"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
+		"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner"),
+		"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
 	]
 
-	static String ExampleHash = "abc123/cd372fb85148700fa88095e3492d3f9f5beb43e555e5ff26d95f5a6adc36f8e6"
-	static String TestHash = "abc123/ecd40b16ec50b636a390cb8da716a22606965f14e526e3051144dd567f336bc5"
+	static String ExampleHash = "abc123/db5c3a2d04e0c6ea03aef0d217517aa0233f9b8198753d3c96574fe5825a13c4"
+	static String TestHash = "abc123/06f9f4c7dbca9baa037fbea007298ee15277d97de594bbf6e4a1ee346c079e65"
 
 	static CachedData ExampleCachedData = new CachedData("net/fabricmc/Example", "Example sources", lineNumber("net/fabricmc/Example"))
 	static CachedData TestCachedData = new CachedData("net/fabricmc/other/Test", "Test sources", lineNumber("net/fabricmc/other/Test"))
 
 	def "prepare full work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -71,7 +73,7 @@ class CachedJarProcessorTest extends Specification {
 
 	def "prepare partial work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -97,7 +99,7 @@ class CachedJarProcessorTest extends Specification {
 
 	def "prepare completed work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -125,7 +127,7 @@ class CachedJarProcessorTest extends Specification {
 
 	def "complete full work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -165,7 +167,7 @@ class CachedJarProcessorTest extends Specification {
 
 	def "complete partial work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -203,7 +205,7 @@ class CachedJarProcessorTest extends Specification {
 
 	def "complete completed work job"() {
 		given:
-		def jar = ZipTestUtils.createZip(jarEntries)
+		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 		def cache = Mock(CachedFileStore)
 		def processor = new CachedJarProcessor(cache, "abc123")
 
@@ -237,5 +239,11 @@ class CachedJarProcessorTest extends Specification {
 
 	private static ClassLineNumbers.Entry lineNumber(String name) {
 		return new ClassLineNumbers.Entry(name, 0, 0, [:])
+	}
+
+	private static byte[] newClass(String name) {
+		def writer = new ClassWriter(0)
+		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, "java/lang/Object", null)
+		return writer.toByteArray()
 	}
 }

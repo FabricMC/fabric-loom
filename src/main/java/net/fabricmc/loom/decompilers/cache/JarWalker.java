@@ -25,6 +25,10 @@
 package net.fabricmc.loom.decompilers.cache;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,11 +37,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.gradle.api.JavaVersion;
+import org.objectweb.asm.ClassReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.util.CompletableFutureCollector;
 import net.fabricmc.loom.util.FileSystemUtil;
 
 public final class JarWalker {
@@ -88,7 +103,8 @@ public final class JarWalker {
 
 		Collections.sort(outerClasses);
 
-		List<ClassEntry> classEntries = new ArrayList<>();
+		final Executor executor = getExecutor();
+		List<CompletableFuture<ClassEntry>> classEntries = new ArrayList<>();
 
 		for (String outerClass : outerClasses) {
 			List<String> innerClasList = innerClasses.get(outerClass);
@@ -99,10 +115,71 @@ public final class JarWalker {
 				Collections.sort(innerClasList);
 			}
 
-			ClassEntry classEntry = new ClassEntry(outerClass, Collections.unmodifiableList(innerClasList));
-			classEntries.add(classEntry);
+			classEntries.add(getClassEntry(outerClass, innerClasList, fs, executor));
 		}
 
-		return Collections.unmodifiableList(classEntries);
+		try {
+			return classEntries.stream()
+					.collect(CompletableFutureCollector.allOf())
+					.get(10, TimeUnit.MINUTES);
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			throw new RuntimeException("Failed to get class entries", e);
+		}
+	}
+
+	private static CompletableFuture<ClassEntry> getClassEntry(String outerClass, List<String> innerClasses, FileSystemUtil.Delegate fs, Executor executor) {
+		List<CompletableFuture<List<String>>> parentClassesFutures = new ArrayList<>();
+
+		// Get the super classes of the outer class and any inner classes
+		parentClassesFutures.add(CompletableFuture.supplyAsync(() -> getSuperClasses(outerClass, fs), executor));
+
+		for (String innerClass : innerClasses) {
+			parentClassesFutures.add(CompletableFuture.supplyAsync(() -> getSuperClasses(innerClass, fs), executor));
+		}
+
+		return parentClassesFutures.stream()
+				.collect(CompletableFutureCollector.allOf())
+				.thenApply(lists -> lists.stream()
+						.flatMap(List::stream)
+						.filter(JarWalker::isNotReservedClass)
+						.distinct()
+						.toList())
+				.thenApply(parentClasses -> new ClassEntry(outerClass, innerClasses, parentClasses));
+	}
+
+	private static List<String> getSuperClasses(String classFile, FileSystemUtil.Delegate fs) {
+		try (InputStream is = Files.newInputStream(fs.getPath(classFile))) {
+			final ClassReader reader = new ClassReader(is);
+
+			List<String> parentClasses = new ArrayList<>();
+			String superName = reader.getSuperName();
+
+			if (superName != null) {
+				parentClasses.add(superName);
+			}
+
+			Collections.addAll(parentClasses, reader.getInterfaces());
+			return Collections.unmodifiableList(parentClasses);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read class file: " + classFile, e);
+		}
+	}
+
+	private static Executor getExecutor() {
+		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+			try {
+				Method m = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
+				return (ExecutorService) m.invoke(null);
+			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+				throw new RuntimeException("Failed to create virtual thread executor", e);
+			}
+		}
+
+		return ForkJoinPool.commonPool();
+	}
+
+	// Slight optimization, if we skip over Object
+	private static boolean isNotReservedClass(String name) {
+		return !"java/lang/Object".equals(name);
 	}
 }

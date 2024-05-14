@@ -94,7 +94,8 @@ class CachedJarProcessorTest extends Specification {
 		lineMap.get("net/fabricmc/Example") == ExampleCachedData.lineNumbers()
 
 		workJob.outputNameMap().size() == 1
-		ZipUtils.unpackNullable(workJob.existing(), "net/fabricmc/Example.java") == "Example sources".bytes
+		ZipUtils.unpackNullable(workJob.existingSources(), "net/fabricmc/Example.java") == "Example sources".bytes
+		ZipUtils.unpackNullable(workJob.existingClasses(), "net/fabricmc/Example.class") == newClass("net/fabricmc/Example")
 
 		// Provide one cached entry
 		// And then one call not finding the entry in the cache
@@ -161,7 +162,7 @@ class CachedJarProcessorTest extends Specification {
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test.java") == "Test sources".bytes
 
-		// Expect two calls looking for the existing entry in the cache
+		// Expect two calls looking for the existingSources entry in the cache
 		1 * cache.getEntry(ExampleHash) >> null
 		1 * cache.getEntry(TestHash) >> null
 

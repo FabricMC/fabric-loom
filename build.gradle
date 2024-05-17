@@ -53,7 +53,11 @@ def baseVersion = '1.7'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
-	version = baseVersion + '.' + ENV.BUILD_NUMBER
+	if (ENV.EXPERIMENTAL) {
+		version = baseVersion + '.0-alpha.' + ENV.BUILD_NUMBER
+	} else {
+		version = baseVersion + '.' + ENV.BUILD_NUMBER
+	}
 } else {
 	version = baseVersion + '.local'
 }

@@ -193,7 +193,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getUnpickRuntimeClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
 
 		getUseCache().convention(true);
-		getResetCache().convention(false);
+		getResetCache().convention(extension.refreshDeps());
 	}
 
 	@TaskAction

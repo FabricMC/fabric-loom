@@ -87,7 +87,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					misses++;
 				} else {
 					final Path outputPath = existingSourcesFs.getPath(outputFileName);
-					Files.createDirectories(outputPath.getParent());
+					createParentDirectories(outputPath);
 					Files.writeString(outputPath, entryData.sources());
 
 					entry.copyTo(inputFs.getRoot(), existingClassesFs.getRoot());
@@ -226,7 +226,7 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 					final Path outputPath = outputFs.getRoot().resolve(existingPath.toString());
 
 					LOGGER.debug("Copying existing entry to output: {}", existingPath);
-					Files.createDirectories(outputPath.getParent());
+					createParentDirectories(outputPath);
 					Files.copy(existingPath, outputPath);
 				}
 			}
@@ -299,5 +299,15 @@ public record CachedJarProcessor(CachedFileStore<CachedData> fileStore, String b
 	 * @param outputNameMap A map of sources name to hash
 	 */
 	public record FullWorkJob(Path incomplete, Path output, Map<String, String> outputNameMap) implements WorkToDoJob {
+	}
+
+	private static void createParentDirectories(Path path) throws IOException {
+		final Path parent = path.getParent();
+
+		if (parent == null) {
+			return;
+		}
+
+		Files.createDirectories(parent);
 	}
 }

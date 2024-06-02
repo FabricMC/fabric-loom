@@ -6,7 +6,7 @@ gson = "2.10.1"
 guava = "33.0.0-jre"
 
 stitch = "0.6.2"
-tiny-remapper = "0.10.1"
+tiny-remapper = "0.10.3"
 access-widener = "2.1.0"
 mapping-io = "0.5.1"
 lorenz-tiny = "4.0.2"

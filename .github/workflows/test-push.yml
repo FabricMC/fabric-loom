@@ -7,18 +7,14 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        version: [8.7.0-jdk17]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
-      image: gradle:${{ matrix.version }}
+      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
       options: --user root
     steps:
       - uses: actions/checkout@v4
       - uses: gradle/wrapper-validation-action@v2
-      - run: gradle build check -x test --stacktrace --warning-mode fail
+      - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
   build_windows:
     runs-on: windows-2022
@@ -27,7 +23,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
       - uses: gradle/wrapper-validation-action@v2
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
@@ -37,14 +33,14 @@ jobs:
     # Lets wait to ensure it builds before going running tests
     needs: build
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
-      image: gradle:8.7.0-jdk17
+      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
       options: --user root
 
     steps:
       - uses: actions/checkout@v4
-      - run: gradle writeActionsTestMatrix --stacktrace --warning-mode fail
+      - run: ./gradlew writeActionsTestMatrix --stacktrace --warning-mode fail
       -
         id: set-matrix
         run: echo "matrix=$(cat build/test_matrix.json)" >> $GITHUB_OUTPUT
@@ -58,17 +54,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [8.7.0-jdk17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
-      image: gradle:${{ matrix.version }}
+      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
       options: --user root
 
     steps:
       - uses: actions/checkout@v4
-      - run: gradle printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
+      - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
         id: test
@@ -90,17 +85,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [17]
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
-      - name: setup jdk ${{ matrix.java }}
+      - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
+          java-version: 17
           distribution: 'temurin'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
@@ -126,7 +120,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17, 21 ]
-        os: [ windows-2022, ubuntu-22.04, macos-14 ]
+        os: [ windows-2022, ubuntu-24.04, macos-14 ]
 
     runs-on: ${{ matrix.os }}
     steps:

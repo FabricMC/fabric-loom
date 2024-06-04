@@ -38,6 +38,7 @@ import org.gradle.internal.nativeintegration.services.NativeServices
 import org.gradle.internal.remote.internal.inet.InetAddressFactory
 import org.gradle.internal.service.ServiceRegistry
 import org.gradle.invocation.DefaultGradle
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.launcher.daemon.configuration.DaemonParameters
 import org.gradle.launcher.daemon.context.DefaultDaemonContext
 import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer
@@ -52,7 +53,6 @@ import org.gradle.launcher.daemon.server.DefaultDaemonConnection
 import org.gradle.launcher.daemon.server.IncomingConnectionHandler
 import org.gradle.launcher.daemon.server.SynchronizedDispatchConnection
 import org.gradle.launcher.daemon.server.api.DaemonStateControl
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.util.GradleVersion
 
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils

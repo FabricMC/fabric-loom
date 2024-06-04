@@ -28,7 +28,6 @@ import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.cache.FileLockManager
@@ -53,6 +52,7 @@ import org.gradle.launcher.daemon.server.DefaultDaemonConnection
 import org.gradle.launcher.daemon.server.IncomingConnectionHandler
 import org.gradle.launcher.daemon.server.SynchronizedDispatchConnection
 import org.gradle.launcher.daemon.server.api.DaemonStateControl
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.util.GradleVersion
 
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils
@@ -109,7 +109,7 @@ class TestPlugin implements Plugin<Project> {
 			return new DefaultDaemonContext(
 					UUID.randomUUID().toString(),
 					new File("."),
-					JavaVersion.current(),
+					JavaLanguageVersion.current(),
 					new File("."),
 					ProcessHandle.current().pid(),
 					0,

@@ -8,10 +8,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
-      options: --user root
     steps:
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
       - uses: actions/checkout@v4
       - uses: gradle/wrapper-validation-action@v2
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
@@ -34,11 +36,13 @@ jobs:
     needs: build
 
     runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
-      options: --user root
 
     steps:
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
       - uses: actions/checkout@v4
       - run: ./gradlew writeActionsTestMatrix --stacktrace --warning-mode fail
       -
@@ -57,12 +61,14 @@ jobs:
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
     runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/openjdk/jdk:21-ubuntu
-      options: --user root
 
     steps:
       - uses: actions/checkout@v4
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail

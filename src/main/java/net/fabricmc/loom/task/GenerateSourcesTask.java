@@ -553,7 +553,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				boolean stopped = WorkerDaemonClientsManagerHelper.stopIdleJVM(getWorkerDaemonClientsManager(), jvmMarkerValue);
 
 				if (!stopped && ipcServer.hasReceivedMessage()) {
-					throw new RuntimeException("Failed to stop decompile worker JVM");
+					LOGGER.info("Failed to stop decompile worker JVM, it may have already been stopped?");
 				}
 			}
 		}

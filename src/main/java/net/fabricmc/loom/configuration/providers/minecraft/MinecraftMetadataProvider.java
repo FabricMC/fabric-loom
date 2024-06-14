@@ -161,19 +161,13 @@ public final class MinecraftMetadataProvider {
 	}
 
 	private String getVersionMetaFileName() {
-		String base = "minecraft-info";
-
 		// custom version metadata
 		if (versionEntry.manifest == null) {
-			return base + Integer.toHexString(versionEntry.entry.url.hashCode()) + ".json";
+			return "minecraft_info_" + Integer.toHexString(versionEntry.entry.url.hashCode()) + ".json";
 		}
 
-		// custom versions manifest
-		if (!versionEntry.manifest.isBuiltIn()) {
-			return base + Integer.toHexString(versionEntry.manifest.url().hashCode()) + ".json";
-		}
-
-		return base + ".json";
+		// metadata url taken from versions manifest
+		return versionEntry.manifest.name() + "_minecraft_info.json";
 	}
 
 	public record Options(String minecraftVersion,

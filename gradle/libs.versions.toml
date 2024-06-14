@@ -17,9 +17,8 @@ loom-native = "0.2.0"
 # Plugins
 spotless = "6.25.0"
 test-retry = "1.5.6"
-checkstyle = "10.13.0"
+checkstyle = "10.17.0"
 codenarc = "3.4.0"
-jacoco = "0.8.11"
 
 [libraries]
 # Loom compile libraries

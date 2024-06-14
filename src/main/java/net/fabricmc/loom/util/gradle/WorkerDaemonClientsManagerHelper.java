@@ -59,8 +59,13 @@ public class WorkerDaemonClientsManagerHelper {
 			return Collections.emptyList();
 		};
 
-		//noinspection unchecked
-		manager.selectIdleClientsToStop((Transformer) transformer);
+		try {
+			Method selectIdleClientsToStop = manager.getClass().getDeclaredMethod("selectIdleClientsToStop", Transformer.class);
+			selectIdleClientsToStop.setAccessible(true);
+			selectIdleClientsToStop.invoke(manager, transformer);
+		} catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+			throw new RuntimeException("Failed to selectIdleClientsToStop", e);
+		}
 
 		return stopped.get();
 	}

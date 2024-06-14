@@ -40,7 +40,7 @@ public abstract class LoomProblemReporter {
 
 	public void reportSelfResolvingDependencyUsage() {
 		problemReporter.reporting(spec -> spec
-				.label("SelfResolvingDependency is deprecated")
+				.id("loom-deprecated-selfresolvingdependency", "SelfResolvingDependency is deprecated")
 				.details("SelfResolvingDependency has been deprecated for removal in Gradle 9")
 				.solution("Please replace usages of SelfResolvingDependency")
 				.documentedAt("https://github.com/gradle/gradle/pull/27420")

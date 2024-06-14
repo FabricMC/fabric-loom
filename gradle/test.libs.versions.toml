@@ -1,13 +1,13 @@
 [versions]
 spock = "2.3-groovy-3.0"
 junit = "5.10.2"
-javalin = "6.1.3"
-mockito = "5.11.0"
+javalin = "6.1.6"
+mockito = "5.12.0"
 java-debug = "0.52.0"
 mixin = "0.12.5+mixin.0.8.5"
 
-gradle-nightly = "8.9-20240505002558+0000"
-fabric-loader = "0.15.10"
+gradle-nightly = "8.10-20240613003017+0000"
+fabric-loader = "0.15.11"
 fabric-installer = "1.0.1"
 
 [libraries]

@@ -1,6 +1,6 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision 23e8616e7457d7d4a65119b93952d134607ffc5c)
-+++ b/build.gradle	(date 1699535194191)
+--- a/build.gradle	(revision 41bc64cd617f03d49ecc4a4f7788cb65d465415c)
++++ b/build.gradle	(date 1718312645477)
 @@ -13,7 +13,7 @@
 
  def ENV = System.getenv()
@@ -9,8 +9,8 @@ diff --git a/build.gradle b/build.gradle
 +version = "999.0.0"
  logger.lifecycle("Building Fabric: " + version)
 
-
-@@ -22,24 +22,7 @@
+ def metaProjects = [
+@@ -34,24 +34,7 @@
  import org.apache.commons.codec.digest.DigestUtils
 
  def getSubprojectVersion(project) {

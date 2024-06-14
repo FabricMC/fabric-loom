@@ -28,7 +28,6 @@ import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.cache.FileLockManager
@@ -39,6 +38,7 @@ import org.gradle.internal.nativeintegration.services.NativeServices
 import org.gradle.internal.remote.internal.inet.InetAddressFactory
 import org.gradle.internal.service.ServiceRegistry
 import org.gradle.invocation.DefaultGradle
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.launcher.daemon.configuration.DaemonParameters
 import org.gradle.launcher.daemon.context.DefaultDaemonContext
 import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer
@@ -109,7 +109,7 @@ class TestPlugin implements Plugin<Project> {
 			return new DefaultDaemonContext(
 					UUID.randomUUID().toString(),
 					new File("."),
-					JavaVersion.current(),
+					JavaLanguageVersion.current(),
 					new File("."),
 					ProcessHandle.current().pid(),
 					0,

@@ -29,6 +29,7 @@ import groovy.transform.Immutable
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.util.GradleVersion
 import spock.lang.Shared
 
 import net.fabricmc.loom.test.LoomTestConstants
@@ -201,7 +202,8 @@ trait GradleProjectTestTrait {
 					.withPluginClasspath()
 					.withGradleVersion(gradleVersion)
 					.forwardOutput()
-					.withDebug(enableDebugging)
+					// Only enable debugging when the current gradle version matches the version we are testing
+					.withDebug(enableDebugging && gradleVersion == GradleVersion.current().getVersion())
 		}
 
 		File getProjectDir() {

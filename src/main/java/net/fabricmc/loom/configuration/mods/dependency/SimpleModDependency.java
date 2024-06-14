@@ -48,7 +48,7 @@ public final class SimpleModDependency extends ModDependency {
 
 	@Override
 	public boolean isCacheInvalid(Project project, @Nullable String variant) {
-		return !maven.exists(variant);
+		return getInputArtifact().changing() || !maven.exists(variant);
 	}
 
 	@Override

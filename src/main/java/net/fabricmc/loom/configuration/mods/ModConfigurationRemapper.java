@@ -40,7 +40,10 @@ import java.util.function.Supplier;
 import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.FileCollectionDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.MutableVersionConstraint;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
@@ -242,15 +245,23 @@ public class ModConfigurationRemapper {
 
 	private static List<ArtifactRef> resolveArtifacts(Project project, Configuration configuration) {
 		final List<ArtifactRef> artifacts = new ArrayList<>();
+		final DependencySet allDependencies = configuration.getAllDependencies();
+		final List<String> changingDependencies = allDependencies.withType(ExternalModuleDependency.class)
+				.matching(ExternalModuleDependency::isChanging)
+				.stream()
+				.map(dependency -> "%s:%s:%s".formatted(dependency.getGroup(), dependency.getName(), dependency.getVersion()))
+				.toList();
 
 		for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
 			final Path sources = findSources(project, artifact);
-			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
+			final ModuleVersionIdentifier moduleId = artifact.getModuleVersion().getId();
+			final String id = "%s:%s:%s".formatted(moduleId.getGroup(), moduleId.getName(), moduleId.getVersion());
+			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources, changingDependencies.contains(id)));
 		}
 
 		// FileCollectionDependency (files/fileTree) doesn't resolve properly,
 		// so we have to "resolve" it on our own. The naming is "abc.jar" => "unspecified:abc:unspecified".
-		for (FileCollectionDependency dependency : configuration.getAllDependencies().withType(FileCollectionDependency.class)) {
+		for (FileCollectionDependency dependency : allDependencies.withType(FileCollectionDependency.class)) {
 			final String group = replaceIfNullOrEmpty(dependency.getGroup(), () -> MISSING_GROUP);
 			final FileCollection files = dependency.getFiles();
 

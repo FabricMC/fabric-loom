@@ -52,9 +52,11 @@ public interface ArtifactRef {
 
 	@Nullable String classifier();
 
+	boolean changing();
+
 	void applyToConfiguration(Project project, Configuration configuration);
 
-	record ResolvedArtifactRef(ResolvedArtifact artifact, @Nullable Path sources) implements ArtifactRef {
+	record ResolvedArtifactRef(ResolvedArtifact artifact, @Nullable Path sources, boolean changing) implements ArtifactRef {
 		@Override
 		public Path path() {
 			return artifact.getFile().toPath();
@@ -99,6 +101,11 @@ public interface ArtifactRef {
 		@Override
 		public @Nullable String classifier() {
 			return null;
+		}
+
+		@Override
+		public boolean changing() {
+			return false;
 		}
 
 		@Override

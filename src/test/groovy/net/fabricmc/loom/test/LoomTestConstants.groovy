@@ -24,14 +24,12 @@
 
 package net.fabricmc.loom.test
 
-import org.gradle.util.GradleVersion
-
 class LoomTestConstants {
 	private final static String NIGHTLY_VERSION = LoomTestVersions.GRADLE_NIGHTLY.version()
 	private final static boolean NIGHTLY_EXISTS = nightlyExists(NIGHTLY_VERSION)
 
 	// Test against the version of Gradle being used to build loom
-	public final static String DEFAULT_GRADLE = GradleVersion.current().getVersion()
+	public final static String DEFAULT_GRADLE = "8.9-rc-1"
 	// Tests that depend specifically on the nightly will run on the current version when the nightly is not available.
 	public final static String PRE_RELEASE_GRADLE = NIGHTLY_EXISTS ? NIGHTLY_VERSION : DEFAULT_GRADLE
 	// Randomly sorted to ensure that all versions can run with a clean gradle home.

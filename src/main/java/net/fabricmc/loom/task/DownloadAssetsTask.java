@@ -27,7 +27,6 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -92,8 +91,9 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 			getLegacyResourcesDirectory().set(new File(assetsDir, "/legacy/" + versionInfo.id()));
 		} else {
 			// pre-1.6 resources
-			RunConfigSettings client = Objects.requireNonNull(getExtension().getRunConfigs().findByName("client"), "Could not find client run config");
-			getLegacyResourcesDirectory().set(new File(getProject().getProjectDir(), client.getRunDir() + "/resources"));
+			RunConfigSettings client = getExtension().getRunConfigs().findByName("client");
+			String runDir = client != null ? client.getRunDir() : "run";
+			getLegacyResourcesDirectory().set(new File(getProject().getProjectDir(), runDir + "/resources"));
 		}
 
 		getResourcesBaseUrl().set(MirrorUtil.getResourcesBase(getProject()));

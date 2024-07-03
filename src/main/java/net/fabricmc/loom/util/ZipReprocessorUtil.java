@@ -186,13 +186,11 @@ public class ZipReprocessorUtil {
 		// We need to read the entire input stream to calculate the CRC32 checksum and the size of the entry.
 		final byte[] data = inputStream.readAllBytes();
 
-		entry.setMethod(ZipEntry.STORED);
-		entry.setSize(data.length);
-		entry.setCompressedSize(data.length);
-
-		final CRC32 crc = new CRC32();
+		var crc = new CRC32();
 		crc.update(data);
 		entry.setCrc(crc.getValue());
+		entry.setSize(data.length);
+		entry.setCompressedSize(data.length);
 
 		zipOutputStream.putNextEntry(entry);
 		zipOutputStream.write(data, 0, data.length);

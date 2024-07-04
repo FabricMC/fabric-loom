@@ -40,7 +40,6 @@ import java.util.regex.Pattern;
 import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.ArtifactView;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
@@ -61,10 +60,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
-public abstract class NestableJarGenerationTask extends DefaultTask {
+public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(NestableJarGenerationTask.class);
 	private static final String SEMVER_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
 	private static final Pattern SEMVER_PATTERN = Pattern.compile(SEMVER_REGEX);

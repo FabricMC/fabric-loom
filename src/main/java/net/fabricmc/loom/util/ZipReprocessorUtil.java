@@ -32,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -122,7 +123,12 @@ public class ZipReprocessorUtil {
 					}
 
 					newEntry.setMethod(zipEntryCompressionMethod(zipEntryCompression));
-					copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
+
+					if (zipEntryCompression == ZipEntryCompression.STORED) {
+						copyUncompressedZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
+					} else {
+						copyZipEntry(zipOutputStream, newEntry, zipFile.getInputStream(entry));
+					}
 				}
 			}
 		}
@@ -173,6 +179,21 @@ public class ZipReprocessorUtil {
 			zipOutputStream.write(buf, 0, length);
 		}
 
+		zipOutputStream.closeEntry();
+	}
+
+	private static void copyUncompressedZipEntry(ZipOutputStream zipOutputStream, ZipEntry entry, InputStream inputStream) throws IOException {
+		// We need to read the entire input stream to calculate the CRC32 checksum and the size of the entry.
+		final byte[] data = inputStream.readAllBytes();
+
+		var crc = new CRC32();
+		crc.update(data);
+		entry.setCrc(crc.getValue());
+		entry.setSize(data.length);
+		entry.setCompressedSize(data.length);
+
+		zipOutputStream.putNextEntry(entry);
+		zipOutputStream.write(data, 0, data.length);
 		zipOutputStream.closeEntry();
 	}
 

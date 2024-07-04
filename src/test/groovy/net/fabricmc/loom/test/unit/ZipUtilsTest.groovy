@@ -29,6 +29,7 @@ import java.nio.file.Files
 import java.time.ZoneId
 
 import com.google.gson.JsonObject
+import org.gradle.api.tasks.bundling.ZipEntryCompression
 import spock.lang.Specification
 
 import net.fabricmc.loom.util.Checksum
@@ -239,5 +240,22 @@ class ZipUtilsTest extends Specification {
 		}
 		then:
 		thrown FileSystemUtil.UnrecoverableZipException
+	}
+
+	def "reprocess uncompressed"() {
+		given:
+		// Create a reproducible input zip
+		def dir = Files.createTempDirectory("loom-zip-test")
+		def zip = Files.createTempFile("loom-zip-test", ".zip")
+		def fileInside = dir.resolve("text.txt")
+		Files.writeString(fileInside, "hello world")
+		ZipUtils.pack(dir, zip)
+
+		when:
+		ZipReprocessorUtil.reprocessZip(zip, true, false, ZipEntryCompression.STORED)
+
+		then:
+		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
+		Checksum.sha1Hex(zip) == "e699fa52a520553241aac798f72255ac0a912b05"
 	}
 }

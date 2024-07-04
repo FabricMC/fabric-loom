@@ -115,7 +115,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
                     modImplementation "net.fabricmc:fabric-loader:0.12.12"
                 }
-                
+
                 loom {
     				runs.clear()
 				}

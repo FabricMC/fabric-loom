@@ -107,6 +107,20 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 	@Override
 	public @NotNull String getName() {
-		return NAME;
+		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
+		final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
+		return NAME + "-" + getSha1(url);
+	}
+
+	private String getSha1(String value) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			digest.reset();
+			digest.update(value.getBytes(StandardCharsets.UTF_8));
+			return String.format("%040x", new BigInteger(1, digest.digest()));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
 	}
 }

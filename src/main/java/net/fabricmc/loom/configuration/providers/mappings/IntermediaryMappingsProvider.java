@@ -25,12 +25,10 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
 
 import javax.inject.Inject;
 
@@ -50,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
+import net.fabricmc.loom.util.Checksum;
 
 @ApiStatus.Internal
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProviderInternal {
@@ -112,22 +111,13 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 	public @NotNull String getName() {
 		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
 		final String urlRaw = getIntermediaryUrl().get();
+
 		if (!LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL.equals(urlRaw)) {
 			final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
-			return NAME + "-" + getSha1(url);
-		}
-		return NAME;
-	}
 
-	private String getSha1(String value) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-1");
-			digest.reset();
-			digest.update(value.getBytes(StandardCharsets.UTF_8));
-			return String.format("%040x", new BigInteger(1, digest.digest()));
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "";
+			return NAME + "-" + Checksum.sha1Hex(url.getBytes(StandardCharsets.UTF_8));
 		}
+
+		return NAME;
 	}
 }

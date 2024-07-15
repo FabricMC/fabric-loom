@@ -25,9 +25,12 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
 
 import javax.inject.Inject;
 
@@ -108,8 +111,12 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 	@Override
 	public @NotNull String getName() {
 		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
-		final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
-		return NAME + "-" + getSha1(url);
+		final String urlRaw = getIntermediaryUrl().get();
+		if (!LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL.equals(urlRaw)) {
+			final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
+			return NAME + "-" + getSha1(url);
+		}
+		return NAME;
 	}
 
 	private String getSha1(String value) {

@@ -38,23 +38,28 @@ class JarWalkerTest extends Specification {
 		def jar = ZipTestUtils.createZipFromBytes([
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner"),
-			"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
+			"net/fabricmc/other/Test\$NotInner.class": newClass("net/fabricmc/other/Test\$NotInner"),
 		])
 		when:
 		def entries = JarWalker.findClasses(jar)
 		then:
-		entries.size() == 2
+		entries.size() == 3
 
 		entries[0].name() == "net/fabricmc/Test.class"
 		entries[0].sourcesFileName() == "net/fabricmc/Test.java"
 		entries[0].innerClasses().size() == 0
 
-		entries[1].name() == "net/fabricmc/other/Test.class"
-		entries[1].sourcesFileName() == "net/fabricmc/other/Test.java"
-		entries[1].innerClasses().size() == 2
-		entries[1].innerClasses()[0] == "net/fabricmc/other/Test\$1.class"
-		entries[1].innerClasses()[1] == "net/fabricmc/other/Test\$Inner.class"
+		entries[1].name() == "net/fabricmc/other/Test\$NotInner.class"
+		entries[1].sourcesFileName() == "net/fabricmc/other/Test\$NotInner.java"
+		entries[1].innerClasses().size() == 0
+
+		entries[2].name() == "net/fabricmc/other/Test.class"
+		entries[2].sourcesFileName() == "net/fabricmc/other/Test.java"
+		entries[2].innerClasses().size() == 2
+		entries[2].innerClasses()[0] == "net/fabricmc/other/Test\$1.class"
+		entries[2].innerClasses()[1] == "net/fabricmc/other/Test\$Inner.class"
 	}
 
 	def "Hash Classes"() {
@@ -73,17 +78,17 @@ class JarWalkerTest extends Specification {
 		"b055df8d9503b60050f6d0db387c84c47fedb4d9ed82c4f8174b4e465a9c479b" | [
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
 		]
-		"3ba069bc20db1ee1b4bb69450dba3fd57a91059bd85e788d5af712aee3191792" | [
+		"b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330" | [
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner"),
-			"net/fabricmc/other/Test\$Inner\$2.class": newClass("net/fabricmc/other/Test\$Inner\$2"),
-			"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
+			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
-		"3ba069bc20db1ee1b4bb69450dba3fd57a91059bd85e788d5af712aee3191792" | [
+		"b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330" | [
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner"),
-			"net/fabricmc/other/Test\$Inner\$2.class": newClass("net/fabricmc/other/Test\$Inner\$2"),
-			"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
+			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
 	}
 
@@ -125,8 +130,8 @@ class JarWalkerTest extends Specification {
 		given:
 		def jarEntries = [
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner", null, "net/fabricmc/other/Super"),
-			"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1", ["java/lang/Runnable"] as String[]),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "net/fabricmc/other/Super"),
+			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test", null, ["java/lang/Runnable"] as String[]),
 		]
 		def jar = ZipTestUtils.createZipFromBytes(jarEntries)
 
@@ -149,6 +154,16 @@ class JarWalkerTest extends Specification {
 	private static byte[] newClass(String name, String[] interfaces = null, String superName = "java/lang/Object") {
 		def writer = new ClassWriter(0)
 		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		return writer.toByteArray()
+	}
+
+	private static byte[] newInnerClass(String name, String outerClass, String innerName = null, String[] interfaces = null, String superName = "java/lang/Object") {
+		def writer = new ClassWriter(0)
+		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		writer.visitInnerClass(name, outerClass, innerName, 0)
+		if (innerName == null) {
+			writer.visitOuterClass(outerClass, null, null)
+		}
 		return writer.toByteArray()
 	}
 }

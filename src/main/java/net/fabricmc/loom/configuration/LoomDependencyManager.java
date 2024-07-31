@@ -44,7 +44,7 @@ public class LoomDependencyManager {
 		sourceRemapper.remapAll();
 
 		if (extension.getInstallerData() == null) {
-			project.getLogger().warn("fabric-installer.json not found in dependencies!");
+			project.getLogger().info("fabric-installer.json not found in dependencies!");
 		}
 	}
 }

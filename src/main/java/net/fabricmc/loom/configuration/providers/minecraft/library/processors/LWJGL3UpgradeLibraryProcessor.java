@@ -79,12 +79,13 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 
 	@Override
 	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
+		final String version = upgradeLinuxRiscV() ? LWJGL_VERSION_RISCV : LWJGL_VERSION;
+
 		return library -> {
 			if (library.is(LWJGL_GROUP) && library.name().startsWith("lwjgl")) {
 				// Replace the natives with the new version, none natives become runtime only
 				final Library.Target target = library.target() == Library.Target.NATIVES ? Library.Target.NATIVES : Library.Target.RUNTIME;
-				final String upgradedVersion = upgradeLinuxRiscV() ? LWJGL_VERSION_RISCV : LWJGL_VERSION;
-				final Library upgradedLibrary = library.withVersion(upgradedVersion).withTarget(target);
+				final Library upgradedLibrary = library.withVersion(version).withTarget(target);
 				dependencyConsumer.accept(upgradedLibrary);
 			}
 

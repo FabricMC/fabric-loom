@@ -51,6 +51,8 @@ public interface Platform {
 		boolean is64Bit();
 
 		boolean isArm();
+
+		boolean isRiscV();
 	}
 
 	Architecture getArchitecture();

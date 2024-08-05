@@ -147,7 +147,8 @@ public final class SourceSetHelper {
 		}
 
 		// Add dev jars from dependency projects if the source set is "main".
-		if (SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && !reference.project().getPath().equals(project.getPath())) {
+		if (SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && !reference.project().getPath().equals(project.getPath())
+				&& GradleUtils.isLoomProject(reference.project())) {
 			final Configuration namedElements = reference.project().getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS);
 
 			// Note: We're not looking at the artifacts from configuration variants. It's probably not needed

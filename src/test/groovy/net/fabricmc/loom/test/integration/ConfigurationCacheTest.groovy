@@ -84,6 +84,7 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 				}
 			}
 
+			println "Configuring task testTask"
             tasks.register('testTask', TestTask) {
             	modVersion.set(loom.getModVersion()) // loom.getModVersion() returns a String
 			}
@@ -107,16 +108,19 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		// Test that the cache is created
 		result.task(":testTask").outcome != FAILED
 		result.output.contains("Calculating task graph as no cached configuration is available for tasks: testTask")
+		result.output.contains("Configuring task testTask")
 		result.output.contains("Version: 1.0.0")
 
 		// Test that the cache is reused when nothing has changed
 		result2.task(":testTask").outcome != FAILED
 		!result2.output.contains("Calculating task graph")
+		!result2.output.contains("Configuring task testTask")
 		result2.output.contains("Version: 1.0.0")
 
 		// Test that the cache is invalidated when the file changes
 		result3.task(":testTask").outcome != FAILED
 		result3.output.contains("Calculating task graph as configuration cache cannot be reused because file 'src/main/resources/fabric.mod.json' has changed.")
+		result3.output.contains("Configuring task testTask")
 		result3.output.contains("Version: 2.0.0")
 
 		where:

@@ -24,9 +24,11 @@
 
 package net.fabricmc.loom.util.gradle;
 
+import java.io.File;
 import java.util.function.Consumer;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
@@ -77,5 +79,13 @@ public final class GradleUtils {
 
 	public static boolean getBooleanProperty(Project project, String key) {
 		return getBooleanPropertyProvider(project, key).getOrElse(false);
+	}
+
+	// A hack to include the given file in the configuration cache input
+	// this ensures that configuration cache is invalidated when the file changes
+	public static File configurationInputFile(Project project, File file) {
+		final RegularFileProperty property = project.getObjects().fileProperty();
+		property.set(file);
+		return property.getAsFile().get();
 	}
 }

@@ -242,10 +242,10 @@ public final class SourceSetHelper {
 
 		if (extension.isConfigurationCacheActive()) {
 			for (File rootDir: sourceSet.getResources().getSrcDirs()) {
-				final File file = new File(rootDir, path);
+				final File file = GradleUtils.configurationInputFile(project, new File(rootDir, path));
 
 				if (file.exists()) {
-					return GradleUtils.configurationInputFile(project, file);
+					return file;
 				}
 			}
 

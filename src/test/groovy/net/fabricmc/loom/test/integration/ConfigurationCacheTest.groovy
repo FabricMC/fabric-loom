@@ -94,10 +94,6 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		fabricModJson.parentFile.mkdirs()
 		fabricModJson.text = fmj("1.0.0")
 
-		// Without these the 2nd run complains about the cache being invalid, TODO look into why
-		new File(gradle.projectDir, ".gradle/loom-cache/remapped_mods").mkdirs()
-		new File(gradle.projectDir, "build/loom-cache").mkdirs()
-
 		when:
 		def result = gradle.run(task: "testTask", configurationCache: true)
 		def result2 = gradle.run(task: "testTask", configurationCache: true)

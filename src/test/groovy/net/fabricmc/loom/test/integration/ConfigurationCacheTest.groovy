@@ -115,7 +115,7 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 
 		// Test that the cache is invalidated when the file changes
 		result3.task(":testTask").outcome != FAILED
-		result3.output.contains("Calculating task graph as configuration cache cannot be reused because file 'src/main/resources/fabric.mod.json' has changed.")
+		result3.output.contains("Calculating task graph as configuration cache cannot be reused because file 'src/main/resources/fabric.mod.json' has changed.".replace("/", File.separator))
 		result3.output.contains("Configuring task testTask")
 		result3.output.contains("Version: 2.0.0")
 

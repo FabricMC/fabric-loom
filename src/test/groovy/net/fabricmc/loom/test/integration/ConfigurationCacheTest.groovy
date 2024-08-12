@@ -30,6 +30,7 @@ import spock.lang.Unroll
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.FAILED
 
 class ConfigurationCacheTest extends Specification implements GradleProjectTestTrait {
@@ -59,5 +60,76 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		"configureClientLaunch"   | _
 		"jar"                     | _
 		"check"                   | _
+	}
+
+	// Test GradleUtils.configurationInputFile invalidates the cache when the file changes
+	@Unroll
+	def "File input (#version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:1.20.4'
+                mappings 'net.fabricmc:yarn:1.20.4+build.3:v2'
+                modImplementation 'net.fabricmc:fabric-loader:0.15.6'
+            }
+
+			abstract class TestTask extends DefaultTask {
+				@Input
+				abstract Property<String> getModVersion()
+
+				@TaskAction
+				void run() {
+					println "Version: " + modVersion.get()
+				}
+			}
+
+			println "Configuring task testTask"
+            tasks.register('testTask', TestTask) {
+            	modVersion.set(loom.getModVersion()) // loom.getModVersion() returns a String
+			}
+            """.stripIndent()
+
+		def fabricModJson = new File(gradle.projectDir, "src/main/resources/fabric.mod.json")
+		fabricModJson.parentFile.mkdirs()
+		fabricModJson.text = fmj("1.0.0")
+
+		when:
+		def result = gradle.run(task: "testTask", configurationCache: true)
+		def result2 = gradle.run(task: "testTask", configurationCache: true)
+		fabricModJson.text = fmj("2.0.0")
+		def result3 = gradle.run(task: "testTask", configurationCache: true)
+
+		then:
+		// Test that the cache is created
+		result.task(":testTask").outcome != FAILED
+		result.output.contains("Calculating task graph as no cached configuration is available for tasks: testTask")
+		result.output.contains("Configuring task testTask")
+		result.output.contains("Version: 1.0.0")
+
+		// Test that the cache is reused when nothing has changed
+		result2.task(":testTask").outcome != FAILED
+		!result2.output.contains("Calculating task graph")
+		!result2.output.contains("Configuring task testTask")
+		result2.output.contains("Version: 1.0.0")
+
+		// Test that the cache is invalidated when the file changes
+		result3.task(":testTask").outcome != FAILED
+		result3.output.contains("Calculating task graph as configuration cache cannot be reused because file 'src/main/resources/fabric.mod.json' has changed.".replace("/", File.separator))
+		result3.output.contains("Configuring task testTask")
+		result3.output.contains("Version: 2.0.0")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	static def fmj(String version) {
+		return """
+		{
+			"schemaVersion": 1,
+			"id": "test",
+			"version": "${version}"
+		}
+		"""
 	}
 }

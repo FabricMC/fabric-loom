@@ -40,11 +40,7 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 
 	private static File createFile(File parent, String child) {
 		File file = new File(parent, child);
-
-		if (!file.exists()) {
-			file.mkdirs();
-		}
-
+		file.mkdirs();
 		return file;
 	}
 

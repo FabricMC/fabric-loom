@@ -241,8 +241,14 @@ public final class SourceSetHelper {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.isConfigurationCacheActive()) {
-			// TODO config cache, figure this out
-			project.getLogger().warn("Unable to find resource ({}) in source set ({}) when configuration cache is active", path, sourceSet.getName());
+			for (File rootDir: sourceSet.getResources().getSrcDirs()) {
+				final File file = GradleUtils.configurationInputFile(project, new File(rootDir, path));
+
+				if (file.exists()) {
+					return file;
+				}
+			}
+
 			return null;
 		}
 

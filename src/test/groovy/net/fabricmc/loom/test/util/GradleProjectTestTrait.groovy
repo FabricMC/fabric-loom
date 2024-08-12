@@ -33,7 +33,6 @@ import org.gradle.util.GradleVersion
 import spock.lang.Shared
 
 import net.fabricmc.loom.test.LoomTestConstants
-import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.ZipUtils
 
 trait GradleProjectTestTrait {

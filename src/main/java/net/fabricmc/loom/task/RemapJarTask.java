@@ -117,28 +117,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getUseMixinAP().set(LoomGradleExtension.get(getProject()).getMixin().getUseLegacyMixinAp());
 
-		if (getLoomExtension().multiProjectOptimisation()) {
-			setupPreparationTask();
-		}
-
 		// Make outputs reproducible by default
 		setReproducibleFileOrder(true);
 		setPreserveFileTimestamps(false);
 
 		getJarType().set("classes");
-	}
-
-	private void setupPreparationTask() {
-		PrepareJarRemapTask prepareJarTask = getProject().getTasks().create("prepare" + getName().substring(0, 1).toUpperCase() + getName().substring(1), PrepareJarRemapTask.class, this);
-
-		dependsOn(prepareJarTask);
-		mustRunAfter(prepareJarTask);
-
-		getProject().getGradle().allprojects(project -> {
-			project.getTasks()
-					.withType(PrepareJarRemapTask.class)
-					.configureEach(this::mustRunAfter);
-		});
 	}
 
 	@TaskAction
@@ -151,8 +134,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			if (!params.namespacesMatch()) {
 				params.getTinyRemapperBuildServiceUuid().set(UnsafeWorkQueueHelper.create(getTinyRemapperService()));
 				params.getRemapClasspath().from(getClasspath());
-
-				params.getMultiProjectOptimisation().set(getLoomExtension().multiProjectOptimisation());
 
 				final boolean mixinAp = getUseMixinAP().get();
 				params.getUseMixinExtension().set(!mixinAp);
@@ -209,7 +190,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		ConfigurableFileCollection getRemapClasspath();
 
 		Property<Boolean> getUseMixinExtension();
-		Property<Boolean> getMultiProjectOptimisation();
 		Property<Boolean> getOptimizeFmj();
 
 		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
@@ -235,9 +215,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			try {
 				LOGGER.info("Remapping {} to {}", inputFile, outputFile);
 
-				if (!getParameters().getMultiProjectOptimisation().getOrElse(false)) {
-					prepare();
-				}
+				prepare();
 
 				if (tinyRemapperService != null) {
 					tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
@@ -261,7 +239,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					optimizeFMJ();
 				}
 
-				if (tinyRemapperService != null && !getParameters().getMultiProjectOptimisation().get()) {
+				if (tinyRemapperService != null) {
 					tinyRemapperService.close();
 				}
 
@@ -281,7 +259,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			final Path inputFile = getParameters().getInputFile().getAsFile().get().toPath();
 
 			if (tinyRemapperService != null) {
-				PrepareJarRemapTask.prepare(tinyRemapperService, inputFile);
+				tinyRemapperService.getTinyRemapperForInputs().readInputsAsync(tinyRemapperService.getOrCreateTag(inputFile), inputFile);
 			}
 		}
 

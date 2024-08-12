@@ -332,9 +332,5 @@ trait GradleProjectTestTrait {
                 }
             """
 		}
-
-		void enableMultiProjectOptimisation() {
-			getGradleProperties() << "\n${Constants.Properties.MULTI_PROJECT_OPTIMISATION}=true"
-		}
 	}
 }

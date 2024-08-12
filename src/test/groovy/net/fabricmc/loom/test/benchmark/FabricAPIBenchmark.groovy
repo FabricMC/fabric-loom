@@ -48,8 +48,6 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 				patch: "fabric_api"
 				)
 
-		gradle.enableMultiProjectOptimisation()
-
 		if (!gradle.buildGradle.text.contains("loom.mixin.useLegacyMixinAp")) {
 			gradle.buildGradle << """
 				allprojects {

@@ -65,6 +65,7 @@ final class CurrentPlatform implements Platform {
 		final String arch = System.getProperty("os.arch");
 		final boolean is64Bit = arch.contains("64") || arch.startsWith("armv8");
 		final boolean isArm = arch.startsWith("arm") || arch.startsWith("aarch64");
+		final boolean isRiscV = arch.startsWith("riscv");
 
 		return new Architecture() {
 			@Override
@@ -75,6 +76,11 @@ final class CurrentPlatform implements Platform {
 			@Override
 			public boolean isArm() {
 				return isArm;
+			}
+
+			@Override
+			public boolean isRiscV() {
+				return isRiscV;
 			}
 		};
 	}

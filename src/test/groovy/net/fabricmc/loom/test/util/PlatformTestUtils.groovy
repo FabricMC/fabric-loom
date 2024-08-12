@@ -34,6 +34,7 @@ class PlatformTestUtils implements Platform  {
 	public static final Platform WINDOWS_ARM64 = platform(OperatingSystem.WINDOWS, true)
 	public static final Platform LINUX_X64 = platform(OperatingSystem.LINUX, false)
 	public static final Platform LINUX_ARM64 = platform(OperatingSystem.LINUX, true)
+	public static final Platform LINUX_RISCV = platform(OperatingSystem.LINUX, false, true, true)
 	public static final Platform MAC_OS_X64 = platform(OperatingSystem.MAC_OS, false)
 	public static final Platform MAC_OS_ARM64 = platform(OperatingSystem.MAC_OS, true)
 	public static final List<Platform> ALL = [
@@ -41,12 +42,13 @@ class PlatformTestUtils implements Platform  {
 		WINDOWS_ARM64,
 		LINUX_X64,
 		LINUX_ARM64,
+		LINUX_RISCV,
 		MAC_OS_X64,
 		MAC_OS_ARM64
 	]
 
-	private static Platform platform(OperatingSystem operatingSystem, boolean isArm = false, boolean is64Bit = true) {
-		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: is64Bit, isArm: isArm), supportsUnixDomainSockets: true)
+	private static Platform platform(OperatingSystem operatingSystem, boolean isArm = false, boolean is64Bit = true, boolean isRiscV = false) {
+		new PlatformTestUtils(operatingSystem: operatingSystem, architecture: new TestArchitecture(is64Bit: is64Bit, isArm: isArm, isRiscV: isRiscV), supportsUnixDomainSockets: true)
 	}
 
 	OperatingSystem operatingSystem
@@ -67,6 +69,7 @@ class PlatformTestUtils implements Platform  {
 	static class TestArchitecture implements Architecture {
 		boolean is64Bit
 		boolean isArm
+		boolean isRiscV
 
 		@Override
 		boolean is64Bit() {
@@ -76,6 +79,11 @@ class PlatformTestUtils implements Platform  {
 		@Override
 		boolean isArm() {
 			isArm
+		}
+
+		@Override
+		boolean isRiscV() {
+			return isRiscV
 		}
 	}
 }

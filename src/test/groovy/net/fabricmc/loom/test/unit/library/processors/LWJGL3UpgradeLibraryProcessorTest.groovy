@@ -98,6 +98,23 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
 	}
 
+	def "Apply when adding linux riscv support"() {
+		when:
+		def (_, context) = getLibs(id, PlatformTestUtils.LINUX_RISCV)
+		def processor = new LWJGL3UpgradeLibraryProcessor(PlatformTestUtils.LINUX_RISCV, context)
+		then:
+		processor.applicationResult == result
+
+		where:
+		id       || result
+		"1.21"   || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
+		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not using classpath natives.
+		"1.16.5" || LibraryProcessor.ApplicationResult.DONT_APPLY
+		"1.14.4" || LibraryProcessor.ApplicationResult.DONT_APPLY
+		"1.12.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not LWJGL 3
+	}
+
 	def "Upgrade LWJGL classpath natives"() {
 		when:
 		def (original, context) = getLibs("1.19.4", PlatformTestUtils.MAC_OS_X64, JavaVersion.VERSION_20)
@@ -132,5 +149,23 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		// Test to make sure that the natives were replaced.
 		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
 		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.2"
+	}
+
+	def "Upgrade LWJGL classpath natives Linux riscv"() {
+		when:
+		def (original, context) = getLibs("1.19.4", PlatformTestUtils.LINUX_RISCV, JavaVersion.VERSION_20)
+		def processor = new LWJGL3UpgradeLibraryProcessor(PlatformTestUtils.LINUX_RISCV, context)
+		def processed = mockLibraryProcessorManager().processLibraries([processor], original)
+
+		then:
+		// Test to make sure that we compile against the original version
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
+		// And at runtime we have the new version.
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.4"
+
+		// Test to make sure that the natives were replaced.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.1"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.4"
 	}
 }

@@ -78,6 +78,29 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
 	}
 
+	// A test to ensure that we can add linux RISC-V support on an unsupported version
+	def "Linux riscv"() {
+		when:
+		def platform = PlatformTestUtils.LINUX_RISCV
+		def (original, context) = getLibs("1.21", platform)
+		def processed = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler()).processLibraries(original, context)
+
+		then:
+		// Test to make sure that we compile against the original version
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.3"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.3"
+		// And at runtime we have the new version.
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.4"
+
+		// Test to make sure that the natives were upgraded.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.3"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.4"
+
+		// Test to make sure that the natives were added.
+		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-linux"
+		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-linux-riscv64"
+	}
+
 	def "runtime log4j"() {
 		when:
 		def platform = PlatformTestUtils.WINDOWS_X64

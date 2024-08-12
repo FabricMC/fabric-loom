@@ -91,6 +91,7 @@ class ArmNativesLibraryProcessorTest extends LibraryProcessorTest {
 		"1.17.1" | PlatformTestUtils.MAC_OS_X64
 		"1.16.5" | PlatformTestUtils.MAC_OS_X64
 		"1.15.2" | PlatformTestUtils.LINUX_X64
+		"1.20"   | PlatformTestUtils.LINUX_RISCV
 		"1.14.4" | PlatformTestUtils.MAC_OS_X64
 		"1.12.2" | PlatformTestUtils.WINDOWS_X64
 	}

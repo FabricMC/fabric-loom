@@ -39,12 +39,14 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LW
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LegacyASMLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.LoomNativeSupportLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ObjcBridgeUpgradeLibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RiscVNativesLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 public class LibraryProcessorManager {
 	public static final List<LibraryProcessorFactory> DEFAULT_LIBRARY_PROCESSORS = List.of(
 			ArmNativesLibraryProcessor::new,
+			RiscVNativesLibraryProcessor::new,
 			LegacyASMLibraryProcessor::new,
 			LoomNativeSupportLibraryProcessor::new,
 			LWJGL2MavenLibraryProcessor::new,

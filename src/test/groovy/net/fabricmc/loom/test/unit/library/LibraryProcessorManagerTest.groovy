@@ -78,7 +78,7 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
 	}
 
-	// A test to ensure that we can add linux ARM64 support on an unsupported version
+	// A test to ensure that we can add linux RISC-V support on an unsupported version
 	def "Linux riscv"() {
 		when:
 		def platform = PlatformTestUtils.LINUX_RISCV

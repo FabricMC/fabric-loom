@@ -39,7 +39,7 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 	private static final String LWJGL_GROUP = "org.lwjgl";
 	// Version used to support ARM64 macOS, or Java 19 on all platforms
 	private static final String LWJGL_VERSION = "3.3.2";
-	// Version used to support RiscV Linux
+	// Version used to support RISC-V Linux
 	private static final String LWJGL_VERSION_RISCV = "3.3.4";
 
 	public LWJGL3UpgradeLibraryProcessor(Platform platform, LibraryContext context) {
@@ -65,11 +65,11 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 
 		if (upgradeLinuxRiscV()) {
 			if (!context.hasClasspathNatives()) {
-				// Don't support upgrading versions not using classpath natives to support RiscV
+				// Don't support upgrading versions not using classpath natives to support RISC-V
 				return ApplicationResult.DONT_APPLY;
 			}
 
-			// Update LWJGL when RiscV Linux is not supported
+			// Update LWJGL when RISC-V Linux is not supported
 			return ApplicationResult.MUST_APPLY;
 		}
 
@@ -106,7 +106,7 @@ public class LWJGL3UpgradeLibraryProcessor extends LibraryProcessor {
 				&& !context.hasClasspathNatives();
 	}
 
-	// Add support for Linux RiscV
+	// Add support for Linux RISC-V
 	private boolean upgradeLinuxRiscV() {
 		return platform.getOperatingSystem().isLinux()
 				&& platform.getArchitecture().isRiscV()

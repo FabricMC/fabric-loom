@@ -36,7 +36,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProces
 import net.fabricmc.loom.util.Platform;
 
 /**
- * A processor to add support for RiscV.
+ * A processor to add support for RISC-V.
  */
 public class RiscVNativesLibraryProcessor extends LibraryProcessor {
 	private static final String LWJGL_GROUP = "org.lwjgl";
@@ -53,12 +53,12 @@ public class RiscVNativesLibraryProcessor extends LibraryProcessor {
 		}
 
 		if (!platform.getArchitecture().isRiscV() || !platform.getArchitecture().is64Bit()) {
-			// Not an RiscV platform, can never apply this.
+			// Not an RISC-V platform, can never apply this.
 			return ApplicationResult.DONT_APPLY;
 		}
 
 		if (!platform.getOperatingSystem().isLinux()) {
-			// Only linux supports RiscV
+			// Only linux supports RISC-V
 			return ApplicationResult.DONT_APPLY;
 		}
 
@@ -73,9 +73,9 @@ public class RiscVNativesLibraryProcessor extends LibraryProcessor {
 	@Override
 	public Predicate<Library> apply(Consumer<Library> dependencyConsumer) {
 		return library -> {
-			// Add additional riscv64 natives for LWJGL, alongside the existing x64 linux natives.
+			// Add additional RISC-V natives for LWJGL, alongside the existing x64 linux natives.
 			if (library.is(LWJGL_GROUP) && library.target() == Library.Target.NATIVES && (library.classifier() != null && library.classifier().equals("natives-linux"))) {
-				// Add the riscv64 natives.
+				// Add the RISC-V natives.
 				dependencyConsumer.accept(library.withClassifier(library.classifier() + "-riscv64"));
 			}
 

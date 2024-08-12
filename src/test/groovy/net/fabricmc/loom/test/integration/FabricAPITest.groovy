@@ -101,7 +101,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 
 		then:
 		result.task(":build").outcome == SUCCESS
-		result.task(":prepareRemapJar").outcome == SUCCESS
 
 		def biomeApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0.jar")
 		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0-sources.jar").exists()

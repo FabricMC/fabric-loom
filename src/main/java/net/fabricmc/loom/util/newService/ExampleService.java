@@ -37,7 +37,7 @@ import org.gradle.api.tasks.Nested;
 // Services are classes that wrap expensive to create objects, such as mappings or tiny remapper.
 // Services can be reused multiple times within a given scope, such as configuration or a single task action.
 // Services need to have serializable inputs, used as a cache key and serialised to be passed between Gradle contexts. E.g task inputs, or work action params.
-public abstract class ExampleService extends Service<ExampleService.Options> implements Closeable {
+public final class ExampleService extends Service<ExampleService.Options> implements Closeable {
 	// Options use Gradle's Property's thus can be used in task inputs.
 	public interface Options extends Service.Options {
 		@Nested
@@ -59,9 +59,13 @@ public abstract class ExampleService extends Service<ExampleService.Options> imp
 		exampleService.doSomething();
 	}
 
+	public ExampleService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+	}
+
 	public void doSomething() {
 		// The service factory used to the creation the current service can be used to get or create other services based on the current service's options.
-		AnotherService another = serviceFactory().get(options().nested());
+		AnotherService another = getServiceFactory().get(getOptions().nested());
 		System.out.println("ExampleService: " + another.getExample());
 	}
 
@@ -70,7 +74,7 @@ public abstract class ExampleService extends Service<ExampleService.Options> imp
 		// Anything that needs to be cleaned up when the service is no longer needed.
 	}
 
-	public abstract static class AnotherService extends Service<AnotherService.Options> {
+	public static final class AnotherService extends Service<AnotherService.Options> {
 		public interface Options extends Service.Options {
 			@Input
 			Property<String> example();
@@ -82,9 +86,13 @@ public abstract class ExampleService extends Service<ExampleService.Options> imp
 			});
 		}
 
+		public AnotherService(Options options, ServiceFactory serviceFactory) {
+			super(options, serviceFactory);
+		}
+
 		// Services can expose any methods they wish, either to return data or do a job.
 		public String getExample() {
-			return options().example().get();
+			return getOptions().example().get();
 		}
 	}
 }

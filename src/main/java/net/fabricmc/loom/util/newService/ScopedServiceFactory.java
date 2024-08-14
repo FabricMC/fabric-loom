@@ -26,6 +26,7 @@ package net.fabricmc.loom.util.newService;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -73,8 +74,11 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 		}
 
 		// Generate the implementation class and instantiate it
-		service = new ServiceClassGenerator<>(serviceClass)
-				.generateAndInstantiate(this, options);
+		try {
+			service = serviceClass.getDeclaredConstructor(options.getClass(), ServiceFactory.class).newInstance(options, this);
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			throw new RuntimeException("Failed to create service instance", e);
+		}
 
 		servicesIdentityMap.put(options, service);
 		servicesJsonMap.put(key, service);

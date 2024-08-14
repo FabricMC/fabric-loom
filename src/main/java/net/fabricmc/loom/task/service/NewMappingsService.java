@@ -40,6 +40,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.newService.Service;
+import net.fabricmc.loom.util.newService.ServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -47,7 +48,7 @@ import net.fabricmc.tinyremapper.IMappingProvider;
 /**
  * A service that provides mappings for remapping.
  */
-public abstract class NewMappingsService extends Service<NewMappingsService.Options> implements Closeable {
+public final class NewMappingsService extends Service<NewMappingsService.Options> implements Closeable {
 	public interface Options extends Service.Options {
 		@InputFile
 		RegularFileProperty getMappingsFile();
@@ -79,6 +80,10 @@ public abstract class NewMappingsService extends Service<NewMappingsService.Opti
 		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
 	}
 
+	public NewMappingsService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+	}
+
 	private IMappingProvider mappingProvider = null;
 	private MemoryMappingTree memoryMappingTree = null;
 
@@ -89,7 +94,7 @@ public abstract class NewMappingsService extends Service<NewMappingsService.Opti
 						getMappingsPath(),
 						getFrom(),
 						getTo(),
-						options().getRemapLocals().get()
+						getOptions().getRemapLocals().get()
 				);
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to read mappings from: " + getMappingsPath(), e);
@@ -114,15 +119,15 @@ public abstract class NewMappingsService extends Service<NewMappingsService.Opti
 	}
 
 	public String getFrom() {
-		return options().getFrom().get();
+		return getOptions().getFrom().get();
 	}
 
 	public String getTo() {
-		return options().getTo().get();
+		return getOptions().getTo().get();
 	}
 
 	public Path getMappingsPath() {
-		return options().getMappingsFile().get().getAsFile().toPath();
+		return getOptions().getMappingsFile().get().getAsFile().toPath();
 	}
 
 	@Override

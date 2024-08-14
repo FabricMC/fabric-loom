@@ -46,9 +46,10 @@ import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.newService.Service;
+import net.fabricmc.loom.util.newService.ServiceFactory;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 
-public abstract class SourceRemapperService extends Service<SourceRemapperService.Options> {
+public final class SourceRemapperService extends Service<SourceRemapperService.Options> {
 	public interface Options extends Service.Options {
 		@Nested
 		Property<NewMappingsService.Options> getMappings();
@@ -71,6 +72,10 @@ public abstract class SourceRemapperService extends Service<SourceRemapperServic
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceRemapperService.class);
+
+	public SourceRemapperService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+	}
 
 	public void remapSourcesJar(Path source, Path destination) throws IOException {
 		if (source.equals(destination)) {
@@ -113,13 +118,13 @@ public abstract class SourceRemapperService extends Service<SourceRemapperServic
 	private Mercury createMercury() throws IOException {
 		var mercury = new Mercury();
 		mercury.setGracefulClasspathChecks(true);
-		mercury.setSourceCompatibilityFromRelease(options().getJavaCompileRelease().get());
+		mercury.setSourceCompatibilityFromRelease(getOptions().getJavaCompileRelease().get());
 
-		NewMappingsService mappingsService = serviceFactory().get(options().getMappings());
+		NewMappingsService mappingsService = getServiceFactory().get(getOptions().getMappings());
 		var tinyMappingsReader = new TinyMappingsReader(mappingsService.getMemoryMappingTree(), mappingsService.getFrom(), mappingsService.getTo()).read();
 		mercury.getProcessors().add(MercuryRemapper.create(tinyMappingsReader));
 
-		for (File file : options().getClasspath().getFiles()) {
+		for (File file : getOptions().getClasspath().getFiles()) {
 			if (file.exists()) {
 				mercury.getClassPath().add(file.toPath());
 			}

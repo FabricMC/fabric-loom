@@ -39,7 +39,7 @@ import org.gradle.internal.remote.internal.inet.InetAddressFactory
 import org.gradle.internal.service.ServiceRegistry
 import org.gradle.invocation.DefaultGradle
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.launcher.daemon.configuration.DaemonParameters
+import org.gradle.launcher.daemon.configuration.DaemonPriority
 import org.gradle.launcher.daemon.context.DefaultDaemonContext
 import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer
 import org.gradle.launcher.daemon.protocol.Finished
@@ -52,7 +52,7 @@ import org.gradle.launcher.daemon.server.DaemonTcpServerConnector
 import org.gradle.launcher.daemon.server.DefaultDaemonConnection
 import org.gradle.launcher.daemon.server.IncomingConnectionHandler
 import org.gradle.launcher.daemon.server.SynchronizedDispatchConnection
-import org.gradle.launcher.daemon.server.api.DaemonStateControl
+import org.gradle.launcher.daemon.server.api.DaemonState
 import org.gradle.util.GradleVersion
 
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils
@@ -78,7 +78,7 @@ class TestPlugin implements Plugin<Project> {
 
 		// Write it in the registry
 		def registry = new PersistentDaemonRegistry(registryBin.toFile(), services.get(FileLockManager.class), services.get(Chmod.class))
-		def daemonInfo = new DaemonInfo(address, createDaemonContext(), "token".bytes, DaemonStateControl.State.Busy)
+		def daemonInfo = new DaemonInfo(address, createDaemonContext(), "token".bytes, DaemonState.Busy)
 		registry.store(daemonInfo)
 
 		// When we get a connection, wait for a stop message and process it by responding with a success message
@@ -99,36 +99,19 @@ class TestPlugin implements Plugin<Project> {
 		}
 	}
 
-	// Thanks groovy for allowing me to do this :D
 	static DefaultDaemonContext createDaemonContext() {
-		int constructorArgsCount = DefaultDaemonContext.class.getConstructors()[0].getParameterCount()
-
-		if (constructorArgsCount == 10) {
-			// Gradle 8.9+ adds a JavaVersion and NativeServicesMode parameter to the constructor
-			//noinspection GroovyAssignabilityCheck
-			return new DefaultDaemonContext(
-					UUID.randomUUID().toString(),
-					new File("."),
-					JavaLanguageVersion.current(),
-					new File("."),
-					ProcessHandle.current().pid(),
-					0,
-					List.of(),
-					false,
-					NativeServices.NativeServicesMode.NOT_SET,
-					DaemonParameters.Priority.NORMAL
-					)
-		}
-
 		return new DefaultDaemonContext(
 				UUID.randomUUID().toString(),
 				new File("."),
+				JavaLanguageVersion.current(),
+				"",
 				new File("."),
 				ProcessHandle.current().pid(),
 				0,
 				List.of(),
 				false,
-				DaemonParameters.Priority.NORMAL
+				NativeServices.NativeServicesMode.NOT_SET,
+				DaemonPriority.NORMAL
 				)
 	}
 

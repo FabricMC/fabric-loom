@@ -6,7 +6,7 @@ mockito = "5.12.0"
 java-debug = "0.52.0"
 mixin = "0.12.5+mixin.0.8.5"
 
-gradle-nightly = "8.10-20240613003017+0000"
+gradle-nightly = "8.11-20240814172604+0000"
 fabric-loader = "0.15.11"
 fabric-installer = "1.0.1"
 

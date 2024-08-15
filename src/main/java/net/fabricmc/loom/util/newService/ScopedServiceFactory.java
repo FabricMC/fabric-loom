@@ -75,8 +75,14 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 
 		// Generate the implementation class and instantiate it
 		try {
-			service = serviceClass.getDeclaredConstructor(options.getClass(), ServiceFactory.class).newInstance(options, this);
-		} catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+			// Check there is only 1 constructor
+			if (serviceClass.getDeclaredConstructors().length != 1) {
+				throw new RuntimeException("Service class must have exactly 1 constructor");
+			}
+
+			//noinspection unchecked
+			service = (S) serviceClass.getDeclaredConstructors()[0].newInstance(options, this);
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
 			throw new RuntimeException("Failed to create service instance", e);
 		}
 

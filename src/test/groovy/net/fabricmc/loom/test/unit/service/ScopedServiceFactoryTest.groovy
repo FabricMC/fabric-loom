@@ -31,9 +31,9 @@ import org.gradle.api.tasks.Input
 import spock.lang.Specification
 
 import net.fabricmc.loom.test.util.GradleTestUtil
-import net.fabricmc.loom.util.newService.ScopedServiceFactory
-import net.fabricmc.loom.util.newService.Service
-import net.fabricmc.loom.util.newService.ServiceType
+import net.fabricmc.loom.util.service.ScopedServiceFactory
+import net.fabricmc.loom.util.service.Service
+import net.fabricmc.loom.util.service.ServiceType
 
 class ScopedServiceFactoryTest extends Specification {
 	def "create service"() {

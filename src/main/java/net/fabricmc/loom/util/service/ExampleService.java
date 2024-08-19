@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.util.service;
 
 import java.io.Closeable;
 import java.io.IOException;

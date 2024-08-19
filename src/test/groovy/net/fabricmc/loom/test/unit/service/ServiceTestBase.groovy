@@ -28,9 +28,9 @@ import org.gradle.api.provider.Property
 import spock.lang.Specification
 
 import net.fabricmc.loom.test.util.GradleTestUtil
-import net.fabricmc.loom.util.newService.ScopedServiceFactory
-import net.fabricmc.loom.util.newService.Service
-import net.fabricmc.loom.util.newService.ServiceType
+import net.fabricmc.loom.util.service.ScopedServiceFactory
+import net.fabricmc.loom.util.service.Service
+import net.fabricmc.loom.util.service.ServiceType
 
 abstract class ServiceTestBase extends Specification {
 	ScopedServiceFactory factory

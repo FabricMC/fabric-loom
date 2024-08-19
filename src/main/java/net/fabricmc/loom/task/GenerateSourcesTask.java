@@ -105,7 +105,7 @@ import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 import net.fabricmc.loom.util.gradle.WorkerDaemonClientsManagerHelper;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
-import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
@@ -431,8 +431,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private MinecraftJar rebuildInputJar() {
 		final List<MinecraftJar> minecraftJars;
 
-		try (var serviceManager = new ScopedSharedServiceManager()) {
-			final var configContext = new ConfigContextImpl(getProject(), serviceManager, getExtension());
+		try (var serviceFactory = new ScopedServiceFactory()) {
+			final var configContext = new ConfigContextImpl(getProject(), serviceFactory, getExtension());
 			final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, true, configContext);
 			minecraftJars = getExtension().getNamedMinecraftProvider().provide(provideContext);
 		} catch (Exception e) {
@@ -676,9 +676,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		if (minecraftJarProcessorManager != null) {
 			mappingsProcessors.add(mappings -> {
-				try (var serviceManager = new ScopedSharedServiceManager()) {
-					final var configContext = new ConfigContextImpl(getProject(), serviceManager, getExtension());
+				try (var serviceFactory = new ScopedServiceFactory()) {
+					final var configContext = new ConfigContextImpl(getProject(), serviceFactory, getExtension());
 					return minecraftJarProcessorManager.processMappings(mappings, new MappingProcessorContextImpl(configContext));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
 				}
 			});
 		}

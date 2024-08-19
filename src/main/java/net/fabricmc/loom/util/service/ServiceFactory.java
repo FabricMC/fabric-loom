@@ -22,9 +22,10 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.util.service;
 
-import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A factory for creating {@link Service} instances.
@@ -38,8 +39,24 @@ public interface ServiceFactory {
 	 * @param <S> The service type.
 	 * @return The service instance.
 	 */
-	default <O extends Service.Options, S extends Service<O>> S get(Property<O> options) {
+	default <O extends Service.Options, S extends Service<O>> S get(Provider<O> options) {
 		return get(options.get());
+	}
+
+	/**
+	 * Gets or creates a service instance with the given options, or returns null if the options are not present.
+	 * @param options The options to use.
+	 * @param <O> The options type.
+	 * @param <S> The service type.
+	 * @return The service instance, or null if the options are not present.
+	 */
+	@Nullable
+	default <O extends Service.Options, S extends Service<O>> S getOrNull(Provider<O> options) {
+		if (options.isPresent()) {
+			return get(options);
+		} else {
+			return null;
+		}
 	}
 
 	/**

@@ -30,6 +30,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 
 import net.fabricmc.loom.util.gradle.GradleTypeAdapter
@@ -47,6 +48,7 @@ class GradleTypeAdapterTest extends Specification {
 		json == "\"value\""
 	}
 
+	@IgnoreIf({ os.windows })
 	def "FileCollection"() {
 		given:
 		def file1 = new File("file1")
@@ -61,6 +63,7 @@ class GradleTypeAdapterTest extends Specification {
 		json == "[\"${file1.getAbsolutePath()}\",\"${file2.getAbsolutePath()}\"]"
 	}
 
+	@IgnoreIf({ os.windows })
 	def "RegularFileProperty"() {
 		given:
 		def file = new File("file")

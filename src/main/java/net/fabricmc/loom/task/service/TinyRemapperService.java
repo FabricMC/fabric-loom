@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
+import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -83,8 +84,8 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		ConfigurableFileCollection getClasspath();
 		@Input
 		ListProperty<String> getKnownIndyBsms();
-
-		// TODO Remapper extensions somehow
+		@Input
+		ListProperty<RemapperExtensionHolder> getRemapperExtensions();
 	}
 
 	public static Provider<Options> createOptions(AbstractRemapJarTask remapJarTask) {
@@ -110,6 +111,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getKotlinClasspathService().set(KotlinClasspathService.createOptions(project));
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms());
+			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 		});
 	}
 
@@ -130,12 +132,15 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			for (SourceSet sourceSet : SourceSetHelper.getSourceSets(project)) {
 				final File mixinMappings = AnnotationProcessorInvoker.getMixinMappingsForSourceSet(project, sourceSet);
 
-				// TODO this is likely too early now, maybe allow mapping services to do nothing in the mappings dont exist?
-				if (!mixinMappings.exists()) {
-					continue;
-				}
-
-				mappings.add(MappingsService.createOptions(thisProject, mixinMappings.toPath(), from, to, false));
+				// TODO need to somehow setup task dependencies here, the remap task needs to depend on the compile task :thinking:
+				mappings.add(MappingsService.createOptions(
+						thisProject,
+						mixinMappings.toPath(),
+						from,
+						to,
+						false,
+						true
+				));
 			}
 		});
 
@@ -161,7 +166,10 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 		for (MappingsService.Options options : getOptions().getMappings().get()) {
 			MappingsService mappingsService = getServiceFactory().get(options);
-			builder.withMappings(mappingsService.getMappingsProvider());
+
+			if (!mappingsService.isEmpty()) {
+				builder.withMappings(mappingsService.getMappingsProvider());
+			}
 		}
 
 		if (!getOptions().getUselegacyMixinAP().get()) {
@@ -174,10 +182,9 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
-		// TODO fix me
-		// for (RemapperExtensionHolder holder : remapperExtensions) {
-		//     holder.apply(builder, sourceNamespace, targetNamespace, objectFactory);
-		// }
+		for (RemapperExtensionHolder holder : getOptions().getRemapperExtensions().get()) {
+			holder.apply(builder, getOptions().getFrom().get(), getOptions().getTo().get());
+		}
 
 		return builder.build();
 	}

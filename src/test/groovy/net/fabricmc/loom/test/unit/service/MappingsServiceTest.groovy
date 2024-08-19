@@ -54,6 +54,7 @@ class MappingsServiceTest extends ServiceTestBase {
 		Property<String> from
 		Property<String> to
 		Property<Boolean> remapLocals = GradleTestUtil.mockProperty(false)
+		Property<Boolean> AllowNoneExistent = GradleTestUtil.mockProperty(false)
 		Property<String> serviceClass = serviceClassProperty(MappingsService.TYPE)
 	}
 }

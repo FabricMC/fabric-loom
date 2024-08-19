@@ -24,12 +24,12 @@
 
 package net.fabricmc.loom.extension;
 
+import java.lang.reflect.Constructor;
+
 import javax.inject.Inject;
 
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassVisitor;
@@ -43,25 +43,19 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrClass;
 
 public abstract class RemapperExtensionHolder {
-	// Null when RemapperParameters.None.class
-	private final RemapperParameters remapperParameters;
-
 	@Inject
 	public RemapperExtensionHolder(RemapperParameters remapperParameters) {
-		this.remapperParameters = remapperParameters;
+		this.getRemapperParameters().set(remapperParameters);
 	}
 
 	@Input
-	public abstract Property<Class<? extends RemapperExtension<?>>> getRemapperExtensionClass();
+	public abstract Property<String> getRemapperExtensionClass();
 
-	@Nested
 	@Optional
-	public RemapperParameters getRemapperParameters() {
-		return remapperParameters;
-	}
+	public abstract Property<RemapperParameters> getRemapperParameters();
 
-	public void apply(TinyRemapper.Builder tinyRemapperBuilder, String sourceNamespace, String targetNamespace, ObjectFactory objectFactory) {
-		final RemapperExtension<?> remapperExtension = newInstance(objectFactory);
+	public void apply(TinyRemapper.Builder tinyRemapperBuilder, String sourceNamespace, String targetNamespace) {
+		final RemapperExtension<?> remapperExtension = newInstance();
 
 		tinyRemapperBuilder.extraPostApplyVisitor(new RemapperExtensionImpl(remapperExtension, sourceNamespace, targetNamespace));
 
@@ -86,18 +80,39 @@ public abstract class RemapperExtensionHolder {
 		}
 	}
 
-	private RemapperExtension<?> newInstance(ObjectFactory objectFactory) {
+	private RemapperExtension<?> newInstance() {
 		try {
-			Class<? extends RemapperExtension<?>> remapperExtensionClass = getRemapperExtensionClass().get();
+			//noinspection unchecked
+			final Class<? extends RemapperExtension<?>> remapperExtensionClass = (Class<? extends RemapperExtension<?>>) Class.forName(getRemapperExtensionClass().get());
+			final Constructor<?> constructor = getInjectedConstructor(remapperExtensionClass);
 
-			if (remapperParameters == RemapperParameters.None.INSTANCE) {
-				return objectFactory.newInstance(remapperExtensionClass);
+			if (getRemapperParameters().get() instanceof RemapperParameters.None) {
+				return (RemapperExtension<?>) constructor.newInstance();
 			}
 
-			return objectFactory.newInstance(remapperExtensionClass, remapperParameters);
+			return (RemapperExtension<?>) constructor.newInstance(getRemapperParameters().get());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to create remapper extension", e);
+			throw new RuntimeException("Failed to create remapper extension for class: " + getRemapperExtensionClass().get(), e);
 		}
+	}
+
+	private static Constructor<?> getInjectedConstructor(Class<?> clazz) {
+		Constructor<?>[] constructors = clazz.getConstructors();
+		Constructor<?> injectedConstructor = null;
+
+		for (Constructor<?> constructor : constructors) {
+			if (injectedConstructor != null) {
+				throw new RuntimeException("RemapperExtension class " + clazz.getName() + " has more than one constructor");
+			}
+
+			injectedConstructor = constructor;
+		}
+
+		if (injectedConstructor == null) {
+			throw new RuntimeException("RemapperExtension class " + clazz.getName() + " does not have a constructor");
+		}
+
+		return injectedConstructor;
 	}
 
 	private static final class RemapperExtensionImpl implements TinyRemapper.ApplyVisitorProvider {

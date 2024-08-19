@@ -34,7 +34,7 @@ import net.fabricmc.loom.api.remapping.RemapperExtension
 import net.fabricmc.loom.api.remapping.RemapperParameters
 import net.fabricmc.loom.util.Constants
 
-abstract class TestRemapperExtension implements RemapperExtension<Params> {
+class TestRemapperExtension implements RemapperExtension<Params> {
 	final Params parameters
 
 	@Inject

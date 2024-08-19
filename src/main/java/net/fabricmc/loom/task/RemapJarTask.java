@@ -40,9 +40,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 import com.google.gson.JsonObject;
-
-import net.fabricmc.loom.util.service.ScopedServiceFactory;
-
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -78,6 +75,7 @@ import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonUtils;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -206,7 +204,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		private @Nullable TinyRemapper tinyRemapper;
 
 		public RemapAction() {
-
 		}
 
 		@Override

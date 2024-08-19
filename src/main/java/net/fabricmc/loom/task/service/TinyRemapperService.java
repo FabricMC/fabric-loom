@@ -113,7 +113,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		});
 	}
 
-
 	private static List<MappingsService.Options> getLegacyMixinMappings(Project thisProject, String from, String to) {
 		final LoomGradleExtension thisExtension = LoomGradleExtension.get(thisProject);
 		String mappingId = thisExtension.getMappingConfiguration().mappingsIdentifier;
@@ -176,9 +175,9 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		}
 
 		// TODO fix me
-//		for (RemapperExtensionHolder holder : remapperExtensions) {
-//			holder.apply(builder, sourceNamespace, targetNamespace, objectFactory);
-//		}
+		// for (RemapperExtensionHolder holder : remapperExtensions) {
+		//     holder.apply(builder, sourceNamespace, targetNamespace, objectFactory);
+		// }
 
 		return builder.build();
 	}

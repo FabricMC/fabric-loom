@@ -27,7 +27,6 @@ package net.fabricmc.loom.task.service;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.gradle.api.Project;
@@ -36,7 +35,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Optional;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
@@ -57,7 +55,6 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	// TODO use a nested TinyMappingsService instead of duplicating it
 	public interface Options extends Service.Options {
 		@InputFile
-		@Optional // Must be optional to allow for non-existent mappings files
 		RegularFileProperty getMappingsFile();
 		@Input
 		Property<String> getFrom();
@@ -65,28 +62,17 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		Property<String> getTo();
 		@Input
 		Property<Boolean> getRemapLocals();
-		@Input
-		Property<Boolean> getAllowNoneExistent();
 	}
 
 	/**
 	 * Returns options for creating a new mappings service, with a given mappings file.
 	 */
 	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to, boolean remapLocals) {
-		return createOptions(project, mappingsFile, from, to, remapLocals, false);
-	}
-
-	/**
-	 * Returns options for creating a new mappings service, with a given mappings file.
-	 */
-	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to, boolean remapLocals, boolean allowNoneExistent) {
 		return TYPE.create(project, o -> {
-			// This mess works around https://github.com/gradle/gradle/issues/2016
-			o.getMappingsFile().set(project.provider(() -> !allowNoneExistent || Files.exists(mappingsFile) ? project.getLayout().file(project.provider(mappingsFile::toFile)).get() : null));
+			o.getMappingsFile().set(mappingsFile.toFile());
 			o.getFrom().set(from);
 			o.getTo().set(to);
 			o.getRemapLocals().set(remapLocals);
-			o.getAllowNoneExistent().set(allowNoneExistent);
 		});
 	}
 
@@ -108,10 +94,6 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	public IMappingProvider getMappingsProvider() {
 		if (mappingProvider == null) {
 			try {
-				if (isEmpty()) {
-					return mappingProvider = TinyRemapperHelper.create(new MemoryMappingTree(), getFrom(), getTo(), getOptions().getRemapLocals().get());
-				}
-
 				mappingProvider = TinyRemapperHelper.create(
 						getMappingsPath(),
 						getFrom(),
@@ -130,10 +112,6 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		if (memoryMappingTree == null) {
 			memoryMappingTree = new MemoryMappingTree();
 
-			if (isEmpty()) {
-				return memoryMappingTree;
-			}
-
 			try {
 				MappingReader.read(getMappingsPath(), memoryMappingTree);
 			} catch (IOException e) {
@@ -142,10 +120,6 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		}
 
 		return memoryMappingTree;
-	}
-
-	public boolean isEmpty() {
-		return getOptions().getAllowNoneExistent().get() && !getOptions().getMappingsFile().isPresent();
 	}
 
 	public String getFrom() {

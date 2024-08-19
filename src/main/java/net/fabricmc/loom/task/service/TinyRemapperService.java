@@ -25,7 +25,6 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,21 +46,18 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
+import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -77,6 +73,8 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		ListProperty<MappingsService.Options> getMappings();
 		@Input
 		Property<Boolean> getUselegacyMixinAP();
+		@Nested
+		ListProperty<MixinAPMappingService.Options> getMixinApMappings();
 		@Nested
 		@Optional
 		Property<KotlinClasspathService.Options> getKotlinClasspathService();
@@ -104,7 +102,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom().get(), options.getTo().get()));
 
 			if (legacyMixin) {
-				options.getMappings().addAll(project.provider(() -> getLegacyMixinMappings(project, options.getFrom().get(), options.getTo().get())));
+				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom().get(), options.getTo().get()));
 			}
 
 			options.getUselegacyMixinAP().set(legacyMixin);
@@ -113,38 +111,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 		});
-	}
-
-	private static List<MappingsService.Options> getLegacyMixinMappings(Project thisProject, String from, String to) {
-		final LoomGradleExtension thisExtension = LoomGradleExtension.get(thisProject);
-		String mappingId = thisExtension.getMappingConfiguration().mappingsIdentifier;
-
-		var mappings = new ArrayList<Provider<MappingsService.Options>>();
-
-		GradleUtils.allLoomProjects(thisProject.getGradle(), project -> {
-			final LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-			if (!mappingId.equals(extension.getMappingConfiguration().mappingsIdentifier)) {
-				// Only find mixin mappings that are from other projects with the same mapping id.
-				return;
-			}
-
-			for (SourceSet sourceSet : SourceSetHelper.getSourceSets(project)) {
-				final File mixinMappings = AnnotationProcessorInvoker.getMixinMappingsForSourceSet(project, sourceSet);
-
-				// TODO need to somehow setup task dependencies here, the remap task needs to depend on the compile task :thinking:
-				mappings.add(MappingsService.createOptions(
-						thisProject,
-						mixinMappings.toPath(),
-						from,
-						to,
-						false,
-						true
-				));
-			}
-		});
-
-		return mappings.stream().map(Provider::get).toList();
 	}
 
 	private TinyRemapper tinyRemapper;
@@ -166,10 +132,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 		for (MappingsService.Options options : getOptions().getMappings().get()) {
 			MappingsService mappingsService = getServiceFactory().get(options);
-
-			if (!mappingsService.isEmpty()) {
-				builder.withMappings(mappingsService.getMappingsProvider());
-			}
+			builder.withMappings(mappingsService.getMappingsProvider());
 		}
 
 		if (!getOptions().getUselegacyMixinAP().get()) {
@@ -184,6 +147,17 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 		for (RemapperExtensionHolder holder : getOptions().getRemapperExtensions().get()) {
 			holder.apply(builder, getOptions().getFrom().get(), getOptions().getTo().get());
+		}
+
+		if (getOptions().getUselegacyMixinAP().get()) {
+			for (MixinAPMappingService.Options options : getOptions().getMixinApMappings().get()) {
+				MixinAPMappingService mixinAPMappingService = getServiceFactory().get(options);
+				IMappingProvider provider = mixinAPMappingService.getMappingsProvider();
+
+				if (provider != null) {
+					builder.withMappings(provider);
+				}
+			}
 		}
 
 		return builder.build();

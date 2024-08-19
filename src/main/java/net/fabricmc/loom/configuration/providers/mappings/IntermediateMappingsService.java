@@ -41,6 +41,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
@@ -55,6 +57,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class IntermediateMappingsService extends Service<IntermediateMappingsService.Options> {
 	public static final ServiceType<Options, IntermediateMappingsService> TYPE = new ServiceType<>(Options.class, IntermediateMappingsService.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(IntermediateMappingsService.class);
 
 	public interface Options extends Service.Options {
 		@InputFile
@@ -71,7 +74,6 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		super(options, serviceFactory);
 	}
 
-	@VisibleForTesting
 	public static Provider<Options> createOptions(Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
@@ -87,7 +89,7 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 			try {
 				Files.deleteIfExists(intermediaryTiny);
 			} catch (IOException ex) {
-				ex.printStackTrace();
+				LOGGER.warn("Failed to delete intermediary mappings file", ex);
 			}
 
 			throw new UncheckedIOException("Failed to provide intermediate mappings", e);
@@ -113,19 +115,22 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 	}
 
 	private MemoryMappingTree createMemoryMappingTree() {
+		return createMemoryMappingTree(getIntermediaryTiny(), getOptions().getExpectedSrcNs().get());
+	}
+
+	@VisibleForTesting
+	public static MemoryMappingTree createMemoryMappingTree(Path mappingFile, String expectedSrcNs) {
 		final MemoryMappingTree tree = new MemoryMappingTree();
 
 		try {
 			MappingNsCompleter nsCompleter = new MappingNsCompleter(tree, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
-			try (BufferedReader reader = Files.newBufferedReader(getIntermediaryTiny(), StandardCharsets.UTF_8)) {
+			try (BufferedReader reader = Files.newBufferedReader(mappingFile, StandardCharsets.UTF_8)) {
 				Tiny2FileReader.read(reader, nsCompleter);
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read intermediary mappings", e);
 		}
-
-		String expectedSrcNs = getOptions().getExpectedSrcNs().get();
 
 		if (!expectedSrcNs.equals(tree.getSrcNamespace())) {
 			throw new RuntimeException("Invalid intermediate mappings: expected source namespace '" + expectedSrcNs + "' but found '" + tree.getSrcNamespace() + "\'");

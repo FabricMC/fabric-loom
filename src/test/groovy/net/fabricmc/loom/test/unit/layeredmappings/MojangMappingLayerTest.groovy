@@ -32,6 +32,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_17_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
 		when:
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
@@ -52,6 +53,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_17_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
 		when:
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),

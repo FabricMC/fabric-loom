@@ -38,6 +38,7 @@ class LoomMocks {
 		def minecraftVersionProperty = GradleTestUtil.mockProperty(minecraftVersion)
 		def intermediaryUrlProperty = GradleTestUtil.mockProperty(intermediaryUrl)
 		def downloaderProperty = GradleTestUtil.mockProperty(Download.&create as Function)
+		def refreshDeps = GradleTestUtil.mockProperty(false)
 
 		Objects.requireNonNull(minecraftVersionProperty.get())
 
@@ -45,6 +46,7 @@ class LoomMocks {
 		when(mock.getMinecraftVersion()).thenReturn(minecraftVersionProperty)
 		when(mock.getIntermediaryUrl()).thenReturn(intermediaryUrlProperty)
 		when(mock.getDownloader()).thenReturn(downloaderProperty)
+		when(mock.getRefreshDeps()).thenReturn(refreshDeps)
 		return mock
 	}
 }

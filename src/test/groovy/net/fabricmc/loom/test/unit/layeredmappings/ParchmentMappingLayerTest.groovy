@@ -34,6 +34,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_16_5_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
+		mockMinecraftProvider.minecraftVersion() >> "1.16.5"
 		when:
 		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
 		def mappings = getLayeredMappings(
@@ -58,6 +59,7 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_16_5_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
+		mockMinecraftProvider.minecraftVersion() >> "1.16.5"
 		when:
 		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
 		def mappings = getLayeredMappings(

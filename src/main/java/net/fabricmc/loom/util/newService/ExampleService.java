@@ -38,16 +38,18 @@ import org.gradle.api.tasks.Nested;
 // Services can be reused multiple times within a given scope, such as configuration or a single task action.
 // Services need to have serializable inputs, used as a cache key and serialised to be passed between Gradle contexts. E.g task inputs, or work action params.
 public final class ExampleService extends Service<ExampleService.Options> implements Closeable {
+	public static ServiceType<Options, ExampleService> TYPE = new ServiceType<>(Options.class, ExampleService.class);
+
 	// Options use Gradle's Property's thus can be used in task inputs.
 	public interface Options extends Service.Options {
 		@Nested
-		Property<AnotherService.Options> nested();
+		Property<AnotherService.Options> getNested();
 	}
 
 	// Options can be created using data from the Project
 	static Provider<Options> createOptions(Project project) {
-		return Service.createOptions(project, ExampleService.class, ExampleService.Options.class, o -> {
-			o.nested().set(AnotherService.createOptions(project, "example"));
+		return TYPE.create(project, o -> {
+			o.getNested().set(AnotherService.createOptions(project, "example"));
 		});
 	}
 
@@ -65,7 +67,7 @@ public final class ExampleService extends Service<ExampleService.Options> implem
 
 	public void doSomething() {
 		// The service factory used to the creation the current service can be used to get or create other services based on the current service's options.
-		AnotherService another = getServiceFactory().get(getOptions().nested());
+		AnotherService another = getServiceFactory().get(getOptions().getNested());
 		System.out.println("ExampleService: " + another.getExample());
 	}
 
@@ -75,14 +77,16 @@ public final class ExampleService extends Service<ExampleService.Options> implem
 	}
 
 	public static final class AnotherService extends Service<AnotherService.Options> {
+		public static ServiceType<Options, AnotherService> TYPE = new ServiceType<>(Options.class, AnotherService.class);
+
 		public interface Options extends Service.Options {
 			@Input
-			Property<String> example();
+			Property<String> getExample();
 		}
 
 		static Provider<AnotherService.Options> createOptions(Project project, String example) {
-			return Service.createOptions(project, AnotherService.class, AnotherService.Options.class, o -> {
-				o.example().set(example);
+			return TYPE.create(project, o -> {
+				o.getExample().set(example);
 			});
 		}
 
@@ -92,7 +96,7 @@ public final class ExampleService extends Service<ExampleService.Options> implem
 
 		// Services can expose any methods they wish, either to return data or do a job.
 		public String getExample() {
-			return getOptions().example().get();
+			return getOptions().getExample().get();
 		}
 	}
 }

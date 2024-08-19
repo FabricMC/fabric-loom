@@ -62,6 +62,15 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 			return service;
 		}
 
+		service = createService(options, this);
+
+		servicesIdentityMap.put(options, service);
+		servicesJsonMap.put(key, service);
+
+		return service;
+	}
+
+	private static <O extends Service.Options, S extends Service<O>> S createService(O options, ServiceFactory serviceFactory) {
 		// We need to create the service from the provided options
 		final Class<? extends S> serviceClass;
 
@@ -73,23 +82,24 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 			throw new RuntimeException("Failed to find service class: " + options.getServiceClass().get(), e);
 		}
 
-		// Generate the implementation class and instantiate it
 		try {
 			// Check there is only 1 constructor
 			if (serviceClass.getDeclaredConstructors().length != 1) {
 				throw new RuntimeException("Service class must have exactly 1 constructor");
 			}
 
+			// Check the constructor takes the correct types, the options class and a ScopedServiceFactory
+			Class<?>[] parameterTypes = serviceClass.getDeclaredConstructors()[0].getParameterTypes();
+
+			if (parameterTypes.length != 2 || !parameterTypes[0].isAssignableFrom(options.getClass()) || !parameterTypes[1].isAssignableFrom(ServiceFactory.class)) {
+				throw new RuntimeException("Service class constructor must take the options class and a ScopedServiceFactory");
+			}
+
 			//noinspection unchecked
-			service = (S) serviceClass.getDeclaredConstructors()[0].newInstance(options, this);
+			return (S) serviceClass.getDeclaredConstructors()[0].newInstance(options, serviceFactory);
 		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
 			throw new RuntimeException("Failed to create service instance", e);
 		}
-
-		servicesIdentityMap.put(options, service);
-		servicesJsonMap.put(key, service);
-
-		return service;
 	}
 
 	private String getOptionsCacheKey(Service.Options options) {

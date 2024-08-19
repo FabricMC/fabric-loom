@@ -24,48 +24,29 @@
 
 package net.fabricmc.loom.util.newService;
 
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.jetbrains.annotations.ApiStatus;
+import org.gradle.api.Action;
+import org.gradle.api.Project;
+import org.gradle.api.provider.Provider;
 
 /**
- * A service is used to manage a set of data or a task that may be reused multiple times.
- *
- * @param <O> The options type.
+ * A record to hold the options and service class for a service.
+ * @param optionsClass The options class for the service.
+ * @param serviceClass The service class.
  */
-public abstract class Service<O extends Service.Options> {
-	private final O options;
-	private final ServiceFactory serviceFactory;
-
-	public Service(O options, ServiceFactory serviceFactory) {
-		this.options = options;
-		this.serviceFactory = serviceFactory;
-	}
-
+public record ServiceType<O extends Service.Options, S extends Service<O>>(Class<O> optionsClass, Class<S> serviceClass) {
 	/**
-	 * Gets the options for this service.
-	 *
-	 * @return The options.
+	 * Create an instance of the options class for the given service class.
+	 * @param project The {@link Project} to create the options for.
+	 * @param action An action to configure the options.
+	 * @return The created options instance.
 	 */
-	protected final O getOptions() {
-		return options;
-	}
-
-	/**
-	 * Return the factory that created this service, this can be used to get nested services.
-	 *
-	 * @return The {@link ServiceFactory} instance.
-	 */
-	protected ServiceFactory getServiceFactory() {
-		return serviceFactory;
-	}
-
-	/**
-	 * The base type of options class for a service.
-	 */
-	public interface Options {
-		@Input
-		@ApiStatus.Internal
-		Property<String> getServiceClass();
+	public Provider<O> create(Project project, Action<O> action) {
+		return project.provider(() -> {
+			O options = project.getObjects().newInstance(optionsClass);
+			options.getServiceClass().set(serviceClass.getName());
+			options.getServiceClass().finalizeValue();
+			action.execute(options);
+			return options;
+		});
 	}
 }

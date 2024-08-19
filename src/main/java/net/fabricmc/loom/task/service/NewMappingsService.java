@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.newService.Service;
 import net.fabricmc.loom.util.newService.ServiceFactory;
+import net.fabricmc.loom.util.newService.ServiceType;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -49,6 +50,8 @@ import net.fabricmc.tinyremapper.IMappingProvider;
  * A service that provides mappings for remapping.
  */
 public final class NewMappingsService extends Service<NewMappingsService.Options> implements Closeable {
+	public static ServiceType<Options, NewMappingsService> TYPE = new ServiceType<>(Options.class, NewMappingsService.class);
+
 	public interface Options extends Service.Options {
 		@InputFile
 		RegularFileProperty getMappingsFile();
@@ -64,7 +67,7 @@ public final class NewMappingsService extends Service<NewMappingsService.Options
 	 * Returns options for creating a new mappings service, with a given mappings file.
 	 */
 	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to, boolean remapLocals) {
-		return Service.createOptions(project, NewMappingsService.class, NewMappingsService.Options.class, o -> {
+		return TYPE.create(project, o -> {
 			o.getMappingsFile().set(project.file(mappingsFile));
 			o.getFrom().set(from);
 			o.getTo().set(to);

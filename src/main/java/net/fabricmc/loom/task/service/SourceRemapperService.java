@@ -47,9 +47,12 @@ import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.newService.Service;
 import net.fabricmc.loom.util.newService.ServiceFactory;
+import net.fabricmc.loom.util.newService.ServiceType;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 
 public final class SourceRemapperService extends Service<SourceRemapperService.Options> {
+	public static ServiceType<Options, SourceRemapperService> TYPE = new ServiceType<>(Options.class, SourceRemapperService.class);
+
 	public interface Options extends Service.Options {
 		@Nested
 		Property<NewMappingsService.Options> getMappings();
@@ -60,7 +63,7 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 	}
 
 	public static Provider<Options> createOptions(RemapSourcesJarTask task) {
-		return Service.createOptions(task.getProject(), SourceRemapperService.class, SourceRemapperService.Options.class, o -> {
+		return TYPE.create(task.getProject(), o -> {
 			o.getMappings().set(NewMappingsService.createOptionsWithProjectMappings(
 					task.getProject(),
 					task.getSourceNamespace().get(),

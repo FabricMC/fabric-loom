@@ -22,50 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.test.unit.service
 
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.jetbrains.annotations.ApiStatus;
+import org.gradle.api.provider.Property
+import spock.lang.Specification
 
-/**
- * A service is used to manage a set of data or a task that may be reused multiple times.
- *
- * @param <O> The options type.
- */
-public abstract class Service<O extends Service.Options> {
-	private final O options;
-	private final ServiceFactory serviceFactory;
+import net.fabricmc.loom.test.util.GradleTestUtil
+import net.fabricmc.loom.util.newService.ScopedServiceFactory
+import net.fabricmc.loom.util.newService.Service
+import net.fabricmc.loom.util.newService.ServiceType
 
-	public Service(O options, ServiceFactory serviceFactory) {
-		this.options = options;
-		this.serviceFactory = serviceFactory;
+abstract class ServiceTestBase extends Specification {
+	ScopedServiceFactory factory
+
+	def setup() {
+		factory = new ScopedServiceFactory()
 	}
 
-	/**
-	 * Gets the options for this service.
-	 *
-	 * @return The options.
-	 */
-	protected final O getOptions() {
-		return options;
+	def cleanup() {
+		factory.close()
+		factory = null
 	}
 
-	/**
-	 * Return the factory that created this service, this can be used to get nested services.
-	 *
-	 * @return The {@link ServiceFactory} instance.
-	 */
-	protected ServiceFactory getServiceFactory() {
-		return serviceFactory;
-	}
-
-	/**
-	 * The base type of options class for a service.
-	 */
-	public interface Options {
-		@Input
-		@ApiStatus.Internal
-		Property<String> getServiceClass();
+	static Property<String> serviceClassProperty(ServiceType<? extends Service.Options, ? extends Service> type) {
+		return GradleTestUtil.mockProperty(type.serviceClass().name)
 	}
 }

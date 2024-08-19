@@ -22,50 +22,39 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.test.unit.service
 
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.jetbrains.annotations.ApiStatus;
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 
-/**
- * A service is used to manage a set of data or a task that may be reused multiple times.
- *
- * @param <O> The options type.
- */
-public abstract class Service<O extends Service.Options> {
-	private final O options;
-	private final ServiceFactory serviceFactory;
+import net.fabricmc.loom.task.service.NewMappingsService
+import net.fabricmc.loom.test.util.GradleTestUtil
 
-	public Service(O options, ServiceFactory serviceFactory) {
-		this.options = options;
-		this.serviceFactory = serviceFactory;
+class MappingsServiceTest extends ServiceTestBase {
+	def "get mapping tree"() {
+		given:
+		NewMappingsService service = factory.get(new TestOptions(
+				mappingsFile: GradleTestUtil.mockRegularFileProperty(new File("src/test/resources/mappings/PosInChunk.mappings")),
+				from: GradleTestUtil.mockProperty("intermediary"),
+				to: GradleTestUtil.mockProperty("named"),
+				remapLocals: GradleTestUtil.mockProperty(false)
+				))
+
+		when:
+		def mappingTree = service.memoryMappingTree
+
+		then:
+		mappingTree.getClasses().size() == 2
+
+		service.from == "intermediary"
+		service.to == "named"
 	}
 
-	/**
-	 * Gets the options for this service.
-	 *
-	 * @return The options.
-	 */
-	protected final O getOptions() {
-		return options;
-	}
-
-	/**
-	 * Return the factory that created this service, this can be used to get nested services.
-	 *
-	 * @return The {@link ServiceFactory} instance.
-	 */
-	protected ServiceFactory getServiceFactory() {
-		return serviceFactory;
-	}
-
-	/**
-	 * The base type of options class for a service.
-	 */
-	public interface Options {
-		@Input
-		@ApiStatus.Internal
-		Property<String> getServiceClass();
+	static class TestOptions implements NewMappingsService.Options {
+		RegularFileProperty mappingsFile
+		Property<String> from
+		Property<String> to
+		Property<Boolean> remapLocals
+		Property<String> serviceClass = serviceClassProperty(NewMappingsService.TYPE)
 	}
 }

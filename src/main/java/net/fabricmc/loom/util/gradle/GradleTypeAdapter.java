@@ -86,8 +86,13 @@ public class GradleTypeAdapter implements TypeAdapterFactory {
 		public void write(JsonWriter out, T fileCollection) throws IOException {
 			out.beginArray();
 
-			for (File file : fileCollection.getFiles()) {
-				out.value(file.getAbsolutePath());
+			final List<String> files = fileCollection.getFiles().stream()
+					.map(File::getAbsolutePath)
+					.sorted()
+					.toList();
+
+			for (String file : files) {
+				out.value(file);
 			}
 
 			out.endArray();

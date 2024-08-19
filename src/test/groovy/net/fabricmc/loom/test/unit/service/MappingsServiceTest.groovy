@@ -37,7 +37,6 @@ class MappingsServiceTest extends ServiceTestBase {
 				mappingsFile: GradleTestUtil.mockRegularFileProperty(new File("src/test/resources/mappings/PosInChunk.mappings")),
 				from: GradleTestUtil.mockProperty("intermediary"),
 				to: GradleTestUtil.mockProperty("named"),
-				remapLocals: GradleTestUtil.mockProperty(false)
 				))
 
 		when:
@@ -54,7 +53,7 @@ class MappingsServiceTest extends ServiceTestBase {
 		RegularFileProperty mappingsFile
 		Property<String> from
 		Property<String> to
-		Property<Boolean> remapLocals
+		Property<Boolean> remapLocals = GradleTestUtil.mockProperty(false)
 		Property<String> serviceClass = serviceClassProperty(NewMappingsService.TYPE)
 	}
 }

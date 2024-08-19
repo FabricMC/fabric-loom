@@ -92,7 +92,7 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 			Class<?>[] parameterTypes = serviceClass.getDeclaredConstructors()[0].getParameterTypes();
 
 			if (parameterTypes.length != 2 || !parameterTypes[0].isAssignableFrom(options.getClass()) || !parameterTypes[1].isAssignableFrom(ServiceFactory.class)) {
-				throw new RuntimeException("Service class constructor must take the options class and a ScopedServiceFactory");
+				throw new RuntimeException("Service class" + serviceClass.getName() + " constructor must take the options class and a ScopedServiceFactory");
 			}
 
 			//noinspection unchecked

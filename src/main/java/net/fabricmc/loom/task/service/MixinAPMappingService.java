@@ -200,5 +200,4 @@ public class MixinAPMappingService extends Service<MixinAPMappingService.Options
 
 		throw new RuntimeException("Failed to find mixin mappings file: " + getOptions().getMixinMappingFileName().get());
 	}
-
 }

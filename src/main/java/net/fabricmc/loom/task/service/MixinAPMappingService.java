@@ -76,7 +76,7 @@ public class MixinAPMappingService extends Service<MixinAPMappingService.Options
 		Property<String> getTo();
 	}
 
-	public static Provider<List<Options>> createOptions(Project thisProject, String from, String to) {
+	public static Provider<List<Options>> createOptions(Project thisProject, Provider<String> from, Provider<String> to) {
 		final LoomGradleExtension thisExtension = LoomGradleExtension.get(thisProject);
 		String mappingId = thisExtension.getMappingConfiguration().mappingsIdentifier;
 
@@ -124,7 +124,7 @@ public class MixinAPMappingService extends Service<MixinAPMappingService.Options
 	}
 
 	@Nullable
-	public static Provider<Options> createOptions(Project project, SourceSet sourceSet, String from, String to) {
+	public static Provider<Options> createOptions(Project project, SourceSet sourceSet, Provider<String> from, Provider<String> to) {
 		final File mixinMappings = AnnotationProcessorInvoker.getMixinMappingsForSourceSet(project, sourceSet);
 		final Task compileTask = project.getTasks().findByName(sourceSet.getCompileJavaTaskName()); // TODO what about other languages?
 

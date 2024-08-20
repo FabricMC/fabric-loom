@@ -66,8 +66,8 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 		return TYPE.create(task.getProject(), o -> {
 			o.getMappings().set(MappingsService.createOptionsWithProjectMappings(
 					task.getProject(),
-					task.getSourceNamespace().get(),
-					task.getTargetNamespace().get()
+					task.getSourceNamespace(),
+					task.getTargetNamespace()
 			));
 			o.getJavaCompileRelease().set(SourceRemapper.getJavaCompileRelease(task.getProject()));
 			o.getClasspath().from(task.getClasspath());

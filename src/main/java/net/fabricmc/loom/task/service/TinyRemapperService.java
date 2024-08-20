@@ -25,7 +25,9 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +62,7 @@ import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public class TinyRemapperService extends Service<TinyRemapperService.Options> implements Closeable {
 	public static final ServiceType<Options, TinyRemapperService> TYPE = new ServiceType<>(Options.class, TinyRemapperService.class);
@@ -88,21 +91,20 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 	public static Provider<Options> createOptions(AbstractRemapJarTask remapJarTask) {
 		final Project project = remapJarTask.getProject();
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
-		final ConfigurationContainer configurations = project.getConfigurations();
-		final FileCollection classpath = remapJarTask.getClasspath()
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
-
 		return TYPE.create(project, options -> {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			final ConfigurationContainer configurations = project.getConfigurations();
+			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+			final FileCollection classpath = remapJarTask.getClasspath()
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+
 			options.getFrom().set(remapJarTask.getSourceNamespace());
 			options.getTo().set(remapJarTask.getTargetNamespace());
-			// TODO pass the namespaces through as providers?
-			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom().get(), options.getTo().get()));
+			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom(), options.getTo()));
 
 			if (legacyMixin) {
-				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom().get(), options.getTo().get()));
+				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom(), options.getTo()));
 			}
 
 			options.getUselegacyMixinAP().set(legacyMixin);
@@ -124,6 +126,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 	public TinyRemapperService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);
 		tinyRemapper = createTinyRemapper();
+		readClasspath();
 	}
 
 	private TinyRemapper createTinyRemapper() {
@@ -136,7 +139,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		}
 
 		if (!getOptions().getUselegacyMixinAP().get()) {
-			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
+			builder.extension(new MixinExtension());
 		}
 
 		if (getOptions().getKotlinClasspathService().isPresent()) {
@@ -187,11 +190,13 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		return tinyRemapper;
 	}
 
-	void readClasspath(List<Path> paths) {
+	private void readClasspath() {
 		List<Path> toRead = new ArrayList<>();
 
-		for (Path path: paths) {
-			if (classpath.contains(path)) {
+		for (File file : getOptions().getClasspath().getFiles()) {
+			Path path = file.toPath();
+
+			if (classpath.contains(path) || Files.notExists(path)) {
 				continue;
 			}
 

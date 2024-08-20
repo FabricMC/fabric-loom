@@ -68,6 +68,13 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	 * Returns options for creating a new mappings service, with a given mappings file.
 	 */
 	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to, boolean remapLocals) {
+		return createOptions(project, mappingsFile, project.provider(() -> from), project.provider(() -> to), remapLocals);
+	}
+
+	/**
+	 * Returns options for creating a new mappings service, with a given mappings file.
+	 */
+	public static Provider<Options> createOptions(Project project, Path mappingsFile, Provider<String> from, Provider<String> to, boolean remapLocals) {
 		return TYPE.create(project, o -> {
 			o.getMappingsFile().set(mappingsFile.toFile());
 			o.getFrom().set(from);
@@ -79,7 +86,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	/**
 	 * Returns options for creating a new mappings service, using the mappings as specified in the project's mapping configuration.
 	 */
-	public static Provider<Options> createOptionsWithProjectMappings(Project project, String from, String to) {
+	public static Provider<Options> createOptionsWithProjectMappings(Project project, Provider<String> from, Provider<String> to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
 		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
 	}

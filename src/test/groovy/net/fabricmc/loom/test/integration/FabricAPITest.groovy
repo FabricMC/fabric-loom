@@ -63,7 +63,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 
 		// Test that the dependent mod can be built against the previously built fabric-api
-		def dependentMod = gradleProject(project: "minimalBase", version: version)
+		def dependentMod = gradleProject(project: "minimalBase", version: version, configurationCache: false)
 		dependentMod.buildGradle << """
 				repositories {
 					mavenLocal()

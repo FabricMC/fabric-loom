@@ -30,30 +30,26 @@ base {
 	archivesName = "fabric-example-mod"
 }
 
-task checkClasspaths {
+afterEvaluate {
 	// Check that only compileClasspath contains the biome API and only runtimeClasspath contains the command API.
 	// See https://github.com/FabricMC/fabric-loom/issues/801.
 
-	doLast {
-		def compile = configurations.compileClasspath.resolve().collect { it.name }
-		def runtime = configurations.runtimeClasspath.resolve().collect { it.name }
+	def compile = configurations.compileClasspath.resolve().collect { it.name }
+	def runtime = configurations.runtimeClasspath.resolve().collect { it.name }
 
-		if (!compile.any { it.contains('biome-api') }) {
-			throw new RuntimeException('No biome API on compile classpath')
-		}
+	if (!compile.any { it.contains('biome-api') }) {
+		throw new RuntimeException('No biome API on compile classpath')
+	}
 
-		if (compile.any { it.contains('command-api') }) {
-			throw new RuntimeException('Command API on compile classpath')
-		}
+	if (compile.any { it.contains('command-api') }) {
+		throw new RuntimeException('Command API on compile classpath')
+	}
 
-		if (!runtime.any { it.contains('command-api') }) {
-			throw new RuntimeException('No command API on runtime classpath')
-		}
+	if (!runtime.any { it.contains('command-api') }) {
+		throw new RuntimeException('No command API on runtime classpath')
+	}
 
-		if (runtime.any { it.contains('biome-api') }) {
-			throw new RuntimeException('Biome API on runtime classpath')
-		}
+	if (runtime.any { it.contains('biome-api') }) {
+		throw new RuntimeException('Biome API on runtime classpath')
 	}
 }
-
-check.dependsOn checkClasspaths

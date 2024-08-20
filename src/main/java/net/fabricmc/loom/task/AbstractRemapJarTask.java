@@ -229,7 +229,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		return getInputFile();
 	}
 
-	protected static List<String> getRootPaths(Set<File> files) {
+	public static List<String> getRootPaths(Set<File> files) {
 		return files.stream()
 				.map(root -> {
 					String rootPath = root.getAbsolutePath().replace("\\", "/");
@@ -242,7 +242,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 				}).toList();
 	}
 
-	protected static Function<File, String> relativePath(List<String> rootPaths) {
+	public static Function<File, String> relativePath(List<String> rootPaths) {
 		return file -> {
 			String s = file.getAbsolutePath().replace("\\", "/");
 

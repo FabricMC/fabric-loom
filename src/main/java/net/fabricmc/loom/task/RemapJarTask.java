@@ -25,16 +25,13 @@
 package net.fabricmc.loom.task;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -65,17 +62,17 @@ import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
-import net.fabricmc.loom.extension.MixinExtension;
+import net.fabricmc.loom.task.service.MixinRefmapService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -99,6 +96,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	public abstract Property<Boolean> getUseMixinAP();
 	@Nested
 	public abstract Property<TinyRemapperService.Options> getTinyRemapperServiceOptions();
+	@Nested
+	public abstract ListProperty<MixinRefmapService.Options> getMixinRefmapServiceOptions();
 
 	@Inject
 	public RemapJarTask() {
@@ -121,6 +120,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getJarType().set("classes");
 
 		getTinyRemapperServiceOptions().set(TinyRemapperService.createOptions(this));
+		getMixinRefmapServiceOptions().set(MixinRefmapService.createOptions(this));
 	}
 
 	@TaskAction
@@ -132,14 +132,12 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			if (!params.namespacesMatch()) {
 				params.getTinyRemapperServiceOptions().set(getTinyRemapperServiceOptions());
+				params.getMixinRefmapServiceOptions().set(getMixinRefmapServiceOptions());
+
 				params.getRemapClasspath().from(getClasspath());
 
 				final boolean mixinAp = getUseMixinAP().get();
 				params.getUseMixinExtension().set(!mixinAp);
-
-				if (mixinAp) {
-					setupLegacyMixinRefmapRemapping(params);
-				}
 
 				// Add the mixin refmap remap type to the manifest
 				// This is used by the mod dependency remapper to determine if it should remap the refmap
@@ -152,38 +150,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		});
 	}
 
-	private void setupLegacyMixinRefmapRemapping(RemapParams params) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final MixinExtension mixinExtension = extension.getMixin();
-
-		final FabricModJson fabricModJson = FabricModJsonFactory.createFromZipNullable(getInputFile().getAsFile().get().toPath());
-
-		if (fabricModJson == null) {
-			return;
-		}
-
-		final Collection<String> allMixinConfigs = fabricModJson.getMixinConfigurations();
-
-		for (SourceSet sourceSet : mixinExtension.getMixinSourceSets()) {
-			MixinExtension.MixinInformationContainer container = Objects.requireNonNull(
-					MixinExtension.getMixinInformationContainer(sourceSet)
-			);
-
-			final List<String> rootPaths = getRootPaths(sourceSet.getResources().getSrcDirs());
-
-			final String refmapName = container.refmapNameProvider().get();
-			final List<String> mixinConfigs = container.sourceSet().getResources()
-					.matching(container.mixinConfigPattern())
-					.getFiles()
-					.stream()
-					.map(relativePath(rootPaths))
-					.filter(allMixinConfigs::contains)
-					.toList();
-
-			params.getMixinData().add(new RemapParams.RefmapData(mixinConfigs, refmapName));
-		}
-	}
-
 	public interface RemapParams extends AbstractRemapParams {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getRemapClasspath();
@@ -191,10 +157,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		Property<Boolean> getUseMixinExtension();
 		Property<Boolean> getOptimizeFmj();
 
-		record RefmapData(List<String> mixinConfigs, String refmapName) implements Serializable { }
-		ListProperty<RefmapData> getMixinData();
-
 		Property<TinyRemapperService.Options> getTinyRemapperServiceOptions();
+		ListProperty<MixinRefmapService.Options> getMixinRefmapServiceOptions();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
@@ -230,7 +194,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				}
 
 				remapAccessWidener();
-				addRefmaps();
+				addRefmaps(serviceFactory);
 				addNestedJars();
 				modifyJarManifest();
 				rewriteJar();
@@ -328,21 +292,14 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile(), LOGGER);
 		}
 
-		private void addRefmaps() throws IOException {
+		private void addRefmaps(ServiceFactory serviceFactory) throws IOException {
 			if (getParameters().getUseMixinExtension().getOrElse(false)) {
 				return;
 			}
 
-			for (RemapParams.RefmapData refmapData : getParameters().getMixinData().get()) {
-				if (ZipUtils.contains(outputFile, refmapData.refmapName())) {
-					int transformed = ZipUtils.transformJson(JsonObject.class, outputFile, refmapData.mixinConfigs().stream().collect(Collectors.toMap(s -> s, s -> json -> {
-						if (!json.has("refmap")) {
-							json.addProperty("refmap", refmapData.refmapName());
-						}
-
-						return json;
-					})));
-				}
+			for (MixinRefmapService.Options options : getParameters().getMixinRefmapServiceOptions().get()) {
+				MixinRefmapService mixinRefmapService = serviceFactory.get(options);
+				mixinRefmapService.applyToJar(outputFile);
 			}
 		}
 

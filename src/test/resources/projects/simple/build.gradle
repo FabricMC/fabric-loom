@@ -65,8 +65,9 @@ java {
 }
 
 jar {
+	def archivesName = base.archivesName.get()
 	from("LICENSE") {
-		rename { "${it}_${base.archivesName.get()}"}
+		rename { "${it}_${archivesName}"}
 	}
 }
 

@@ -31,7 +31,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.intellij.lang.annotations.Language
 
-import net.fabricmc.loom.task.service.NewMappingsService
+import net.fabricmc.loom.task.service.MappingsService
 import net.fabricmc.loom.task.service.SourceRemapperService
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.DeletingFileVisitor
@@ -87,7 +87,7 @@ class SourceRemapperServiceTest extends ServiceTestBase {
     """.trim()
 
 	static class TestOptions implements SourceRemapperService.Options {
-		Property<NewMappingsService.Options> mappings
+		Property<MappingsService.Options> mappings
 		Property<Integer> javaCompileRelease = GradleTestUtil.mockProperty(17)
 		ConfigurableFileCollection classpath = GradleTestUtil.mockConfigurableFileCollection()
 		Property<String> serviceClass = serviceClassProperty(SourceRemapperService.TYPE)

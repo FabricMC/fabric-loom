@@ -41,7 +41,7 @@ public final class ContextImplHelper {
 	public static LazyCloseable<TinyRemapper> createRemapper(ConfigContext configContext, MappingsNamespace from, MappingsNamespace to) {
 		return new LazyCloseable<>(() -> {
 			try {
-				TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext.project(), configContext.serviceManager(), from.toString(), to.toString());
+				TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext.project(), configContext.serviceFactory(), from.toString(), to.toString());
 
 				for (Path minecraftJar : configContext.extension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
 					tinyRemapper.readClassPath(minecraftJar);

@@ -42,6 +42,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_17_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
 		setupType.setup.delegate = this
 		def mappingFile = setupType.setup.call()
 		when:
@@ -71,6 +72,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 		setup:
 		intermediaryUrl = INTERMEDIARY_1_17_URL
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
 		def mappingsDownload = VERSION_META_1_17.download('client_mappings')
 		def mappingsFile = new File(tempDir, 'mappings.txt')
 		Download.create(mappingsDownload.url())

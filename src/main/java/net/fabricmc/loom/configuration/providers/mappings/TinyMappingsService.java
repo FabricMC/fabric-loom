@@ -27,29 +27,47 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
-import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import com.google.common.base.Suppliers;
+import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.InputFile;
+
+import net.fabricmc.loom.util.service.Service;
+import net.fabricmc.loom.util.service.ServiceFactory;
+import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public final class TinyMappingsService implements SharedService {
-	private final MemoryMappingTree mappingTree;
+public final class TinyMappingsService extends Service<TinyMappingsService.Options> {
+	public static final ServiceType<Options, TinyMappingsService> TYPE = new ServiceType<>(Options.class, TinyMappingsService.class);
 
-	public TinyMappingsService(Path tinyMappings) {
+	public interface Options extends Service.Options {
+		@InputFile
+		RegularFileProperty getMappings();
+	}
+
+	public static Provider<Options> createOptions(Project project, Path mappings) {
+		return TYPE.create(project, options -> options.getMappings().set(project.file(mappings)));
+	}
+
+	public TinyMappingsService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+	}
+
+	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(() -> {
 		try {
-			this.mappingTree = new MemoryMappingTree();
-			MappingReader.read(tinyMappings, mappingTree);
+			MemoryMappingTree mappingTree = new MemoryMappingTree();
+			MappingReader.read(getOptions().getMappings().get().getAsFile().toPath(), mappingTree);
+			return mappingTree;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read mappings", e);
 		}
-	}
-
-	public static synchronized TinyMappingsService create(SharedServiceManager serviceManager, Path tinyMappings) {
-		return serviceManager.getOrCreateService("TinyMappingsService:" + tinyMappings.toAbsolutePath(), () -> new TinyMappingsService(tinyMappings));
-	}
+	});
 
 	public MemoryMappingTree getMappingTree() {
-		return mappingTree;
+		return mappingTree.get();
 	}
 }

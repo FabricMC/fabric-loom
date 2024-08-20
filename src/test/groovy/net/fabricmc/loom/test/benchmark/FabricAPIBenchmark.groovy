@@ -44,7 +44,7 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 				allowExistingRepo: true,
 
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "efa5891941a32589207dc58c2e77183d599465b8",
+				commit: "41bc64cd617f03d49ecc4a4f7788cb65d465415c",
 				patch: "fabric_api"
 				)
 

@@ -56,7 +56,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 		Property<MixinVersion> getMixinVersion();
 	}
 
-	public static synchronized Provider<JarManifestService> get(Project project) {
+	public static Provider<JarManifestService> get(Project project) {
 		return project.getGradle().getSharedServices().registerIfAbsent("LoomJarManifestService:" + project.getName(), JarManifestService.class, spec -> {
 			spec.parameters(params -> {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);

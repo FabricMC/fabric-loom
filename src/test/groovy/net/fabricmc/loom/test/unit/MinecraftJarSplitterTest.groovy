@@ -28,13 +28,15 @@ import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.BundleMetadata
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarSplitter
+import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleTestUtil
+import net.fabricmc.loom.util.download.Download
 
 class MinecraftJarSplitterTest extends Specification {
 	public static final String CLIENT_JAR_URL = "https://launcher.mojang.com/v1/objects/7e46fb47609401970e2818989fa584fd467cd036/client.jar"
 	public static final String SERVER_BUNDLE_JAR_URL = "https://launcher.mojang.com/v1/objects/125e5adf40c659fd3bce3e66e67a16bb49ecc1b9/server.jar"
 
-	public static final File mcJarDir = File.createTempDir()
+	public static final File mcJarDir = new File(LoomTestConstants.TEST_DIR, "jar-splitter")
 
 	def "split jars"() {
 		given:
@@ -63,7 +65,9 @@ class MinecraftJarSplitterTest extends Specification {
 
 		if (!dst.exists()) {
 			dst.parentFile.mkdirs()
-			dst << new URL(url).newInputStream()
+			Download.create(url)
+					.defaultCache()
+					.downloadPath(dst.toPath())
 		}
 
 		return dst

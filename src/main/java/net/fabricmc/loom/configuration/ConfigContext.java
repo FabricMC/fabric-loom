@@ -27,10 +27,10 @@ package net.fabricmc.loom.configuration;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.loom.util.service.ServiceFactory;
 
 public interface ConfigContext {
 	Project project();
-	SharedServiceManager serviceManager();
+	ServiceFactory serviceFactory();
 	LoomGradleExtension extension();
 }

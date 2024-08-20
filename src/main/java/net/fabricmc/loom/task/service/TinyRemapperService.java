@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task.service;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,105 +36,82 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.invocation.Gradle;
-import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.mixin.AnnotationProcessorInvoker;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
-import net.fabricmc.loom.util.kotlin.KotlinClasspath;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
-import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.loom.util.service.Service;
+import net.fabricmc.loom.util.service.ServiceFactory;
+import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
-public class TinyRemapperService implements SharedService {
-	public static synchronized TinyRemapperService getOrCreate(SharedServiceManager serviceManager, AbstractRemapJarTask remapJarTask) {
-		final Project project = remapJarTask.getProject();
-		final String to = remapJarTask.getTargetNamespace().get();
-		final String from = remapJarTask.getSourceNamespace().get();
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
-		final @Nullable KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
+public class TinyRemapperService extends Service<TinyRemapperService.Options> implements Closeable {
+	public static final ServiceType<Options, TinyRemapperService> TYPE = new ServiceType<>(Options.class, TinyRemapperService.class);
 
-		// Generates an id that is used to share the remapper across projects. This tasks in the remap jar task name to handle custom remap jar tasks separately.
-		final var joiner = new StringJoiner(":");
-		joiner.add(extension.getMappingConfiguration().getBuildServiceName("remapJarService", from, to));
-		joiner.add(remapJarTask.getName());
-
-		if (kotlinClasspathService != null) {
-			joiner.add("kotlin-" + kotlinClasspathService.version());
-		}
-
-		// TODO remove this when removing shared service manager.
-		joiner.add(project.getPath());
-
-		extension.getKnownIndyBsms().get().stream().sorted().forEach(joiner::add);
-
-		final String id = joiner.toString();
-
-		TinyRemapperService service = serviceManager.getOrCreateService(id, () -> {
-			List<IMappingProvider> mappings = new ArrayList<>();
-			mappings.add(MappingsService.createDefault(project, serviceManager, from, to).getMappingsProvider());
-
-			if (legacyMixin) {
-				mappings.add(gradleMixinMappingProvider(serviceManager, project.getGradle(), extension.getMappingConfiguration().mappingsIdentifier, from, to));
-			}
-
-			return new TinyRemapperService(mappings, !legacyMixin, kotlinClasspathService, extension.getKnownIndyBsms().get(), extension.getRemapperExtensions().get(), from, to, project.getObjects());
-		});
-
-		final ConfigurationContainer configurations = project.getConfigurations();
-		ConfigurableFileCollection excludedMinecraftJars = project.files();
-
-		List<Path> classPath = remapJarTask.getClasspath()
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES))
-				.minus(excludedMinecraftJars)
-				.getFiles()
-				.stream()
-				.map(File::toPath)
-				.filter(Files::exists)
-				.toList();
-
-		service.readClasspath(classPath);
-		return service;
+	public interface Options extends Service.Options {
+		@Input
+		Property<String> getFrom();
+		@Input
+		Property<String> getTo();
+		@Nested
+		ListProperty<MappingsService.Options> getMappings();
+		@Input
+		Property<Boolean> getUselegacyMixinAP();
+		@Nested
+		ListProperty<MixinAPMappingService.Options> getMixinApMappings();
+		@Nested
+		@Optional
+		Property<KotlinClasspathService.Options> getKotlinClasspathService();
+		@InputFiles
+		ConfigurableFileCollection getClasspath();
+		@Input
+		ListProperty<String> getKnownIndyBsms();
+		@Input
+		ListProperty<RemapperExtensionHolder> getRemapperExtensions();
 	}
 
-	// Add all of the mixin mappings from all loom projects.
-	private static IMappingProvider gradleMixinMappingProvider(SharedServiceManager serviceManager, Gradle gradle, String mappingId, String from, String to) {
-		return out -> GradleUtils.allLoomProjects(gradle, project -> {
+	public static Provider<Options> createOptions(AbstractRemapJarTask remapJarTask) {
+		final Project project = remapJarTask.getProject();
+		return TYPE.create(project, options -> {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			final ConfigurationContainer configurations = project.getConfigurations();
+			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
+			final FileCollection classpath = remapJarTask.getClasspath()
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
 
-			if (!mappingId.equals(extension.getMappingConfiguration().mappingsIdentifier)) {
-				// Only find mixin mappings that are from other projects with the same mapping id.
-				return;
+			options.getFrom().set(remapJarTask.getSourceNamespace());
+			options.getTo().set(remapJarTask.getTargetNamespace());
+			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom(), options.getTo()));
+
+			if (legacyMixin) {
+				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom(), options.getTo()));
 			}
 
-			for (SourceSet sourceSet : SourceSetHelper.getSourceSets(project)) {
-				final File mixinMappings = AnnotationProcessorInvoker.getMixinMappingsForSourceSet(project, sourceSet);
-
-				if (!mixinMappings.exists()) {
-					continue;
-				}
-
-				MappingsService service = MappingsService.create(serviceManager, mixinMappings.getAbsolutePath(), mixinMappings.toPath(), from, to, false);
-				service.getMappingsProvider().load(out);
-			}
+			options.getUselegacyMixinAP().set(legacyMixin);
+			options.getKotlinClasspathService().set(KotlinClasspathService.createOptions(project));
+			options.getClasspath().from(classpath);
+			options.getKnownIndyBsms().set(extension.getKnownIndyBsms());
+			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 		});
 	}
 
@@ -145,30 +123,50 @@ public class TinyRemapperService implements SharedService {
 	// Set to true once remapping has started, once set no inputs can be read.
 	private boolean isRemapping = false;
 
-	private TinyRemapperService(List<IMappingProvider> mappings, boolean useMixinExtension, @Nullable KotlinClasspath kotlinClasspath, Set<String> knownIndyBsms, List<RemapperExtensionHolder> remapperExtensions, String sourceNamespace, String targetNamespace, ObjectFactory objectFactory) {
-		TinyRemapper.Builder builder = TinyRemapper.newRemapper().withKnownIndyBsm(knownIndyBsms);
+	public TinyRemapperService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+		tinyRemapper = createTinyRemapper();
+		readClasspath();
+	}
 
-		for (IMappingProvider provider : mappings) {
-			builder.withMappings(provider);
+	private TinyRemapper createTinyRemapper() {
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
+				.withKnownIndyBsm(Set.copyOf(getOptions().getKnownIndyBsms().get()));
+
+		for (MappingsService.Options options : getOptions().getMappings().get()) {
+			MappingsService mappingsService = getServiceFactory().get(options);
+			builder.withMappings(mappingsService.getMappingsProvider());
 		}
 
-		if (useMixinExtension) {
-			builder.extension(new net.fabricmc.tinyremapper.extension.mixin.MixinExtension());
+		if (!getOptions().getUselegacyMixinAP().get()) {
+			builder.extension(new MixinExtension());
 		}
 
-		if (kotlinClasspath != null) {
-			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspath);
+		if (getOptions().getKotlinClasspathService().isPresent()) {
+			KotlinClasspathService kotlinClasspathService = getServiceFactory().get(getOptions().getKotlinClasspathService());
+			kotlinRemapperClassloader = KotlinRemapperClassloader.create(kotlinClasspathService);
 			builder.extension(kotlinRemapperClassloader.getTinyRemapperExtension());
 		}
 
-		for (RemapperExtensionHolder holder : remapperExtensions) {
-			holder.apply(builder, sourceNamespace, targetNamespace, objectFactory);
+		for (RemapperExtensionHolder holder : getOptions().getRemapperExtensions().get()) {
+			holder.apply(builder, getOptions().getFrom().get(), getOptions().getTo().get());
 		}
 
-		tinyRemapper = builder.build();
+		if (getOptions().getUselegacyMixinAP().get()) {
+			for (MixinAPMappingService.Options options : getOptions().getMixinApMappings().get()) {
+				MixinAPMappingService mixinAPMappingService = getServiceFactory().get(options);
+				IMappingProvider provider = mixinAPMappingService.getMappingsProvider();
+
+				if (provider != null) {
+					builder.withMappings(provider);
+				}
+			}
+		}
+
+		return builder.build();
 	}
 
-	public synchronized InputTag getOrCreateTag(Path file) {
+	public InputTag getOrCreateTag(Path file) {
 		InputTag tag = inputTagMap.get(file.toAbsolutePath().toString());
 
 		if (tag == null) {
@@ -180,34 +178,30 @@ public class TinyRemapperService implements SharedService {
 	}
 
 	public TinyRemapper getTinyRemapperForRemapping() {
-		synchronized (this) {
-			isRemapping = true;
-			return Objects.requireNonNull(tinyRemapper, "Tiny remapper has not been setup");
-		}
+		isRemapping = true;
+		return Objects.requireNonNull(tinyRemapper, "Tiny remapper has not been setup");
 	}
 
-	public synchronized TinyRemapper getTinyRemapperForInputs() {
-		synchronized (this) {
-			if (isRemapping) {
-				throw new IllegalStateException("Cannot read inputs as remapping has already started");
-			}
-
-			return tinyRemapper;
+	public TinyRemapper getTinyRemapperForInputs() {
+		if (isRemapping) {
+			throw new IllegalStateException("Cannot read inputs as remapping has already started");
 		}
+
+		return tinyRemapper;
 	}
 
-	void readClasspath(List<Path> paths) {
+	private void readClasspath() {
 		List<Path> toRead = new ArrayList<>();
 
-		synchronized (classpath) {
-			for (Path path: paths) {
-				if (classpath.contains(path)) {
-					continue;
-				}
+		for (File file : getOptions().getClasspath().getFiles()) {
+			Path path = file.toPath();
 
-				toRead.add(path);
-				classpath.add(path);
+			if (classpath.contains(path) || Files.notExists(path)) {
+				continue;
 			}
+
+			toRead.add(path);
+			classpath.add(path);
 		}
 
 		if (toRead.isEmpty()) {

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.util.service;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -50,8 +50,6 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 		if (service != null) {
 			return service;
 		}
-
-		// TODO skip serialization if we know there is no service with the same type
 
 		// If the service is not already created, serialize the options and check the json map as it may be an equivalent service
 		String key = getOptionsCacheKey(options);

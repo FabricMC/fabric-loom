@@ -52,6 +52,7 @@ class GradleTestUtil {
 	static <T> Property<T> mockProperty(T value) {
 		def mock = mock(Property.class)
 		when(mock.get()).thenReturn(Objects.requireNonNull(value))
+		when(mock.isPresent()).thenReturn(true)
 		return mock
 	}
 

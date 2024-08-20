@@ -61,6 +61,7 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		"jar"                     | _
 		"check"                   | _
 		"remapSourcesJar"         | _
+		"build"                   | _
 	}
 
 	// Test GradleUtils.configurationInputFile invalidates the cache when the file changes

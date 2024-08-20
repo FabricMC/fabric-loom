@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.util.kotlin;
 
+import java.io.File;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -32,27 +33,40 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.jetbrains.annotations.Nullable;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 
-import net.fabricmc.loom.util.service.SharedService;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.loom.util.service.Service;
+import net.fabricmc.loom.util.service.ServiceFactory;
+import net.fabricmc.loom.util.service.ServiceType;
 
-public record KotlinClasspathService(Set<URL> classpath, String version) implements KotlinClasspath, SharedService {
-	@Nullable
-	public static KotlinClasspathService getOrCreateIfRequired(SharedServiceManager sharedServiceManager, Project project) {
+public final class KotlinClasspathService extends Service<KotlinClasspathService.Options> implements KotlinClasspath {
+	public static ServiceType<Options, KotlinClasspathService> TYPE = new ServiceType<>(Options.class, KotlinClasspathService.class);
+
+	public interface Options extends Service.Options {
+		@InputFiles
+		ConfigurableFileCollection getClasspath();
+		@Input
+		Property<String> getKotlinVersion();
+	}
+
+	public static Provider<Options> createOptions(Project project) {
 		if (!KotlinPluginUtils.hasKotlinPlugin(project)) {
-			return null;
+			// Return an empty provider
+			return project.getObjects().property(Options.class);
 		}
 
-		return getOrCreate(sharedServiceManager, project, KotlinPluginUtils.getKotlinPluginVersion(project), KotlinPluginUtils.getKotlinMetadataVersion());
+		return createOptions(
+				project,
+				KotlinPluginUtils.getKotlinPluginVersion(project),
+				KotlinPluginUtils.getKotlinMetadataVersion()
+		);
 	}
 
-	public static synchronized KotlinClasspathService getOrCreate(SharedServiceManager sharedServiceManager, Project project, String kotlinVersion, String kotlinMetadataVersion) {
-		final String id = "kotlinclasspath:%s:%s".formatted(kotlinVersion, kotlinMetadataVersion);
-		return sharedServiceManager.getOrCreateService(id, () -> create(project, kotlinVersion, kotlinMetadataVersion));
-	}
-
-	private static KotlinClasspathService create(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+	private static Provider<Options> createOptions(Project project, String kotlinVersion, String kotlinMetadataVersion) {
 		// Create a detached config to resolve the kotlin std lib for the provided version.
 		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
 				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
@@ -60,15 +74,36 @@ public record KotlinClasspathService(Set<URL> classpath, String version) impleme
 				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
 		);
 
-		Set<URL> classpath = detachedConfiguration.getFiles().stream()
-				.map(file -> {
-					try {
-						return file.toURI().toURL();
-					} catch (MalformedURLException e) {
-						throw new UncheckedIOException(e);
-					}
-				}).collect(Collectors.toSet());;
+		return TYPE.create(project, options -> {
+			options.getClasspath().from(detachedConfiguration);
+			options.getKotlinVersion().set(kotlinVersion);
+		});
+	}
 
-		return new KotlinClasspathService(classpath, kotlinVersion);
+	public KotlinClasspathService(Options options, ServiceFactory serviceFactory) {
+		super(options, serviceFactory);
+	}
+
+	@Override
+	public String version() {
+		return getOptions().getKotlinVersion().get();
+	}
+
+	@Override
+	public Set<URL> classpath() {
+		return getOptions()
+				.getClasspath()
+				.getFiles()
+				.stream()
+				.map(KotlinClasspathService::fileToUrl)
+				.collect(Collectors.toSet());
+	}
+
+	private static URL fileToUrl(File file) {
+		try {
+			return file.toURI().toURL();
+		} catch (MalformedURLException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

@@ -45,9 +45,9 @@ import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.SourceRemapper;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.newService.Service;
-import net.fabricmc.loom.util.newService.ServiceFactory;
-import net.fabricmc.loom.util.newService.ServiceType;
+import net.fabricmc.loom.util.service.Service;
+import net.fabricmc.loom.util.service.ServiceFactory;
+import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.lorenztiny.TinyMappingsReader;
 
 public final class SourceRemapperService extends Service<SourceRemapperService.Options> {
@@ -55,7 +55,7 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 
 	public interface Options extends Service.Options {
 		@Nested
-		Property<NewMappingsService.Options> getMappings();
+		Property<MappingsService.Options> getMappings();
 		@Input
 		Property<Integer> getJavaCompileRelease();
 		@InputFiles
@@ -64,10 +64,10 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 
 	public static Provider<Options> createOptions(RemapSourcesJarTask task) {
 		return TYPE.create(task.getProject(), o -> {
-			o.getMappings().set(NewMappingsService.createOptionsWithProjectMappings(
+			o.getMappings().set(MappingsService.createOptionsWithProjectMappings(
 					task.getProject(),
-					task.getSourceNamespace().get(),
-					task.getTargetNamespace().get()
+					task.getSourceNamespace(),
+					task.getTargetNamespace()
 			));
 			o.getJavaCompileRelease().set(SourceRemapper.getJavaCompileRelease(task.getProject()));
 			o.getClasspath().from(task.getClasspath());
@@ -123,7 +123,7 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 		mercury.setGracefulClasspathChecks(true);
 		mercury.setSourceCompatibilityFromRelease(getOptions().getJavaCompileRelease().get());
 
-		NewMappingsService mappingsService = getServiceFactory().get(getOptions().getMappings());
+		MappingsService mappingsService = getServiceFactory().get(getOptions().getMappings());
 		var tinyMappingsReader = new TinyMappingsReader(mappingsService.getMemoryMappingTree(), mappingsService.getFrom(), mappingsService.getTo()).read();
 		mercury.getProcessors().add(MercuryRemapper.create(tinyMappingsReader));
 

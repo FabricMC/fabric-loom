@@ -44,8 +44,21 @@ class GradleTypeAdapterTest extends Specification {
 		def json = GradleTypeAdapter.GSON.toJson(property)
 
 		then:
+		1 * property.isPresent() >> true
 		1 * property.get() >> "value"
 		json == "\"value\""
+	}
+
+	def "Empty Property"() {
+		given:
+		def property = Mock(Property)
+
+		when:
+		def json = GradleTypeAdapter.GSON.toJson(property)
+
+		then:
+		1 * property.isPresent() >> false
+		json == "null"
 	}
 
 	@IgnoreIf({ os.windows })
@@ -74,9 +87,22 @@ class GradleTypeAdapterTest extends Specification {
 		def json = GradleTypeAdapter.GSON.toJson(regularFileProperty)
 
 		then:
+		1 * regularFileProperty.isPresent() >> true
 		1 * regularFileProperty.get() >> regularFile
 		1 * regularFile.getAsFile() >> file
 		json == "\"${file.getAbsolutePath()}\""
+	}
+
+	def "Empty RegularFileProperty"() {
+		given:
+		def regularFileProperty = Mock(RegularFileProperty)
+
+		when:
+		def json = GradleTypeAdapter.GSON.toJson(regularFileProperty)
+
+		then:
+		1 * regularFileProperty.isPresent() >> false
+		json == "null"
 	}
 
 	def "ListProperty"() {

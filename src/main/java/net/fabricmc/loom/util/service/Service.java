@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.newService;
+package net.fabricmc.loom.util.service;
 
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;

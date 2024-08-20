@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.api.remapping;
 
+import java.io.Serializable;
+
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -31,7 +33,7 @@ import org.jetbrains.annotations.ApiStatus;
  *
  * <p>Design based off of Gradle's {@link org.gradle.workers.WorkParameters}.
  */
-public interface RemapperParameters {
+public interface RemapperParameters extends Serializable {
 	final class None implements RemapperParameters {
 		@ApiStatus.Internal
 		public static None INSTANCE = new None();

@@ -42,6 +42,7 @@ import java.util.Objects;
 import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Provider;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.stitch.Command;
@@ -89,7 +90,7 @@ public class MappingConfiguration {
 		this.unpickDefinitions = mappingsWorkingDir.resolve("mappings.unpick");
 	}
 
-	public static MappingConfiguration create(Project project, SharedServiceManager serviceManager, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
+	public static MappingConfiguration create(Project project, ServiceFactory serviceFactory, DependencyInfo dependency, MinecraftProvider minecraftProvider) {
 		final String version = dependency.getResolvedVersion();
 		final Path inputJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not resolve mappings: " + dependency)).toPath();
 		final String mappingsName = StringUtils.removeSuffix(dependency.getDependency().getGroup() + "." + dependency.getDependency().getName(), "-unmerged");
@@ -107,7 +108,7 @@ public class MappingConfiguration {
 		var mappingProvider = new MappingConfiguration(mappingsIdentifier, workingDir);
 
 		try {
-			mappingProvider.setup(project, serviceManager, minecraftProvider, inputJar);
+			mappingProvider.setup(project, serviceFactory, minecraftProvider, inputJar);
 		} catch (IOException e) {
 			cleanWorkingDirectory(workingDir);
 			throw new UncheckedIOException("Failed to setup mappings: " + dependency.getDepString(), e);
@@ -116,17 +117,21 @@ public class MappingConfiguration {
 		return mappingProvider;
 	}
 
-	public TinyMappingsService getMappingsService(SharedServiceManager serviceManager) {
-		return TinyMappingsService.create(serviceManager, Objects.requireNonNull(tinyMappings));
+	public Provider<TinyMappingsService.Options> getMappingsServiceOptions(Project project) {
+		return TinyMappingsService.createOptions(project, Objects.requireNonNull(tinyMappings));
 	}
 
-	private void setup(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
+	public TinyMappingsService getMappingsService(Project project, ServiceFactory serviceFactory) {
+		return serviceFactory.get(getMappingsServiceOptions(project));
+	}
+
+	private void setup(Project project, ServiceFactory serviceFactory, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
 		if (minecraftProvider.refreshDeps()) {
 			cleanWorkingDirectory(mappingsWorkingDir);
 		}
 
 		if (Files.notExists(tinyMappings) || minecraftProvider.refreshDeps()) {
-			storeMappings(project, serviceManager, minecraftProvider, inputJar);
+			storeMappings(project, serviceFactory, minecraftProvider, inputJar);
 		} else {
 			try (FileSystem fileSystem = FileSystems.newFileSystem(inputJar, (ClassLoader) null)) {
 				extractExtras(fileSystem);
@@ -164,7 +169,7 @@ public class MappingConfiguration {
 		return isV2 ? "-v2" : "";
 	}
 
-	private void storeMappings(Project project, SharedServiceManager serviceManager, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
+	private void storeMappings(Project project, ServiceFactory serviceFactory, MinecraftProvider minecraftProvider, Path inputJar) throws IOException {
 		LOGGER.info(":extracting " + inputJar.getFileName());
 
 		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(inputJar)) {
@@ -174,7 +179,7 @@ public class MappingConfiguration {
 
 		if (areMappingsV2(baseTinyMappings)) {
 			// These are unmerged v2 mappings
-			IntermediateMappingsService intermediateMappingsService = IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider);
+			IntermediateMappingsService intermediateMappingsService = serviceFactory.get(IntermediateMappingsService.createOptions(project, minecraftProvider));
 
 			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, minecraftProvider, intermediateMappingsService);
 		} else {

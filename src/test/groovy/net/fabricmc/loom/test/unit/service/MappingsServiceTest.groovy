@@ -27,13 +27,13 @@ package net.fabricmc.loom.test.unit.service
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
-import net.fabricmc.loom.task.service.NewMappingsService
+import net.fabricmc.loom.task.service.MappingsService
 import net.fabricmc.loom.test.util.GradleTestUtil
 
 class MappingsServiceTest extends ServiceTestBase {
 	def "get mapping tree"() {
 		given:
-		NewMappingsService service = factory.get(new TestOptions(
+		MappingsService service = factory.get(new TestOptions(
 				mappingsFile: GradleTestUtil.mockRegularFileProperty(new File("src/test/resources/mappings/PosInChunk.mappings")),
 				from: GradleTestUtil.mockProperty("intermediary"),
 				to: GradleTestUtil.mockProperty("named"),
@@ -49,11 +49,12 @@ class MappingsServiceTest extends ServiceTestBase {
 		service.to == "named"
 	}
 
-	static class TestOptions implements NewMappingsService.Options {
+	static class TestOptions implements MappingsService.Options {
 		RegularFileProperty mappingsFile
 		Property<String> from
 		Property<String> to
 		Property<Boolean> remapLocals = GradleTestUtil.mockProperty(false)
-		Property<String> serviceClass = serviceClassProperty(NewMappingsService.TYPE)
+		Property<Boolean> AllowNoneExistent = GradleTestUtil.mockProperty(false)
+		Property<String> serviceClass = serviceClassProperty(MappingsService.TYPE)
 	}
 }

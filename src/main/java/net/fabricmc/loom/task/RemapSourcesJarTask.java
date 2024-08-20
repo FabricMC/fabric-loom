@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.task.service.SourceRemapperService;
-import net.fabricmc.loom.util.newService.ScopedServiceFactory;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Nested

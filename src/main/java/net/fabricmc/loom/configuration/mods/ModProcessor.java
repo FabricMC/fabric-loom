@@ -58,7 +58,7 @@ import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
-import net.fabricmc.loom.util.service.SharedServiceManager;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -73,12 +73,12 @@ public class ModProcessor {
 
 	private final Project project;
 	private final Configuration sourceConfiguration;
-	private final SharedServiceManager serviceManager;
+	private final ServiceFactory serviceFactory;
 
-	public ModProcessor(Project project, Configuration sourceConfiguration, SharedServiceManager serviceManager) {
+	public ModProcessor(Project project, Configuration sourceConfiguration, ServiceFactory serviceFactory) {
 		this.project = project;
 		this.sourceConfiguration = sourceConfiguration;
-		this.serviceManager = serviceManager;
+		this.serviceFactory = serviceFactory;
 	}
 
 	public void processMods(List<ModDependency> remapList) throws IOException {
@@ -141,11 +141,11 @@ public class ModProcessor {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
 				.withKnownIndyBsm(knownIndyBsms)
-				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(serviceManager).getMappingTree(), fromM, toM, false))
+				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(project, serviceFactory).getMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false)
 				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));
 
-		final KotlinClasspathService kotlinClasspathService = KotlinClasspathService.getOrCreateIfRequired(serviceManager, project);
+		final KotlinClasspathService kotlinClasspathService = serviceFactory.getOrNull(KotlinClasspathService.createOptions(project));
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;
 
 		if (kotlinClasspathService != null) {
@@ -163,7 +163,7 @@ public class ModProcessor {
 		}
 
 		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
-			holder.apply(builder, fromM, toM, project.getObjects());
+			holder.apply(builder, fromM, toM);
 		}
 
 		final TinyRemapper remapper = builder.build();

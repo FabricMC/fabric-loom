@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.zip.ZipFile
@@ -45,6 +46,7 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLa
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
+import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadBuilder
@@ -60,7 +62,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 	String intermediaryUrl
 	MappingContext mappingContext = new TestMappingContext()
 
-	File tempDir = File.createTempDir()
+	File tempDir = new File(LoomTestConstants.TEST_DIR, "layered/${getClass().name}")
 
 	Map<String, File> mavenFiles = [:]
 
@@ -70,8 +72,11 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	File downloadFile(String url, String name) {
 		File dst = new File(tempDir, name)
-		dst.parentFile.mkdirs()
-		dst << new URL(url).newInputStream()
+		if (!dst.exists()) {
+			Download.create(url)
+					.defaultCache()
+					.downloadPath(dst.toPath())
+		}
 		return dst
 	}
 
@@ -148,7 +153,15 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		@Override
 		Supplier<MemoryMappingTree> intermediaryTree() {
 			return {
-				IntermediateMappingsService.create(LoomMocks.intermediaryMappingsProviderMock("test", intermediaryUrl), minecraftProvider(), null).memoryMappingTree
+				def path = LoomTestConstants.TEST_DIR.toPath().resolve("intermediary").resolve(Objects.requireNonNull(minecraftVersion()) + ".tiny")
+
+				if (!Files.exists(path)) {
+					Files.createDirectories(path.parent)
+					def provider = LoomMocks.intermediaryMappingsProviderMock(minecraftVersion(), intermediaryUrl)
+					provider.provide(path, null)
+				}
+
+				return IntermediateMappingsService.createMemoryMappingTree(path, MappingsNamespace.OFFICIAL.toString())
 			}
 		}
 

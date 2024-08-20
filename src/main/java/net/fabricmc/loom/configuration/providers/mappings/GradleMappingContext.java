@@ -25,6 +25,8 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
@@ -39,7 +41,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.download.DownloadBuilder;
-import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class GradleMappingContext implements MappingContext {
@@ -74,8 +76,11 @@ public class GradleMappingContext implements MappingContext {
 	@Override
 	public Supplier<MemoryMappingTree> intermediaryTree() {
 		return () -> {
-			try (var serviceManager = new ScopedSharedServiceManager()) {
-				return IntermediateMappingsService.getInstance(serviceManager, project, minecraftProvider()).getMemoryMappingTree();
+			try (var serviceFactory = new ScopedServiceFactory()) {
+				IntermediateMappingsService intermediateMappingsService = serviceFactory.get(IntermediateMappingsService.createOptions(project, minecraftProvider()));
+				return intermediateMappingsService.getMemoryMappingTree();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
 		};
 	}

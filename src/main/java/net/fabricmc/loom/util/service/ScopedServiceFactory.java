@@ -51,8 +51,6 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 			return service;
 		}
 
-		// TODO skip serialization if we know there is no service with the same type
-
 		// If the service is not already created, serialize the options and check the json map as it may be an equivalent service
 		String key = getOptionsCacheKey(options);
 		//noinspection unchecked

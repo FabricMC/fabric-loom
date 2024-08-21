@@ -74,6 +74,8 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 
 		// Ensure we resolve the classpath inputs before running the task.
 		getCompileClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+
+		notCompatibleWithConfigurationCache("Not yet supported.");
 	}
 
 	@Option(option = "input", description = "Java source file directory")

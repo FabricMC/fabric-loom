@@ -194,6 +194,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getUseCache().convention(true);
 		getResetCache().convention(extension.refreshDeps());
+
+		doNotTrackState("Cannot rebuild input jar without project.");
+		notCompatibleWithConfigurationCache("Cannot rebuild input jar without project.");
 	}
 
 	@TaskAction

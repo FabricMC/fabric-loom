@@ -16,7 +16,7 @@ import org.gradle.util.GradleVersion;
 public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final String MIN_SUPPORTED_GRADLE_VERSION = "8.10";
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 17;
-	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2021;
+	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2022;
 
 	private static final String PLUGIN_CLASS_NAME = "net.fabricmc.loom.LoomGradlePlugin";
 	private static final String IDEA_VERSION_PROP_KEY = "idea.version";

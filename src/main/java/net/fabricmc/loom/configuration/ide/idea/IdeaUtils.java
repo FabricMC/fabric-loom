@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.configuration.ide.idea;
 
-import java.util.Objects;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.util.gradle.SourceSetReference;
@@ -33,18 +31,6 @@ import net.fabricmc.loom.util.gradle.SourceSetReference;
 public class IdeaUtils {
 	public static boolean isIdeaSync() {
 		return Boolean.parseBoolean(System.getProperty("idea.sync.active", "false"));
-	}
-
-	public static String getIdeaVersion() {
-		return Objects.requireNonNull(System.getProperty("idea.version"), "Could not get idea version");
-	}
-
-	// 2021.3 or newer
-	public static boolean supportsCustomizableClasspath() {
-		final String[] split = getIdeaVersion().split("\\.");
-		final int major = Integer.parseInt(split[0]);
-		final int minor = Integer.parseInt(split[1]);
-		return major > 2021 || (major == 2021 && minor >= 3);
 	}
 
 	public static String getIdeaModuleName(SourceSetReference reference) {

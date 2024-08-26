@@ -114,10 +114,6 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 	}
 
 	private void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
-		if (!IdeaUtils.supportsCustomizableClasspath()) {
-			return;
-		}
-
 		final String inputXml = Files.readString(runConfig, StandardCharsets.UTF_8);
 		final String outputXml;
 

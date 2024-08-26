@@ -63,7 +63,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 
 		// Test that the dependent mod can be built against the previously built fabric-api
-		def dependentMod = gradleProject(project: "minimalBase", version: version, configurationCache: false)
+		def dependentMod = gradleProject(project: "minimalBase", version: version)
 		dependentMod.buildGradle << """
 				repositories {
 					mavenLocal()
@@ -93,7 +93,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			"runDatagen",
 			"-x",
 			"runGametest"
-		]) // Note: checkstyle does not appear to like being ran in a test runner
+		], configurationCache: false) // Note: checkstyle does not appear to like being ran in a test runner
 		gradle.printOutputFiles()
 
 		def serverResult = server.run()

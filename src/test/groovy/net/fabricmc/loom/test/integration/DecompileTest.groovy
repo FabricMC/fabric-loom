@@ -63,7 +63,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 		when:
-		def result = gradle.run(task: "genSourcesWithCustom")
+		def result = gradle.run(task: "genSourcesWithCustom", configurationCache: false)
 
 		then:
 		result.task(":genSourcesWithCustom").outcome == SUCCESS
@@ -87,7 +87,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		'''
 
 		when:
-		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
 
 		// Add fabric API to the project, this introduces some transitive access wideners
 		gradle.buildGradle << '''

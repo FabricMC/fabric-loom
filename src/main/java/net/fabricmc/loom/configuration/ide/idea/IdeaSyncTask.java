@@ -63,6 +63,8 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		// Always re-run this task.
 		getOutputs().upToDateWhen(element -> false);
 		setGroup(Constants.TaskGroup.IDE);
+
+		notCompatibleWithConfigurationCache("Not yet supported");
 	}
 
 	@TaskAction

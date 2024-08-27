@@ -26,15 +26,12 @@ package net.fabricmc.loom.task;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
@@ -51,10 +48,10 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.ZipEntryCompression;
-import org.gradle.build.event.BuildEventsListenerRegistry;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
@@ -64,11 +61,13 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 public abstract class AbstractRemapJarTask extends Jar {
 	@InputFile
@@ -86,9 +85,6 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Inject
 	protected abstract WorkerExecutor getWorkerExecutor();
 
-	@Inject
-	protected abstract BuildEventsListenerRegistry getBuildEventsListenerRegistry();
-
 	@Input
 	public abstract Property<Boolean> getIncludesClientOnlyClasses();
 
@@ -104,6 +100,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@ApiStatus.Internal
 	public abstract Property<String> getJarType();
 
+	@Nested
+	@Optional
+	protected abstract Property<ClientEntriesService.Options> getClientEntriesServiceOptions();
+
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
 	@Inject
@@ -112,6 +112,15 @@ public abstract class AbstractRemapJarTask extends Jar {
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
 		getJarType().finalizeValueOnRead();
+
+		getClientEntriesServiceOptions().set(getIncludesClientOnlyClasses().flatMap(clientOnlyEntries -> {
+			if (clientOnlyEntries) {
+				return getClientOnlyEntriesOptionsProvider(getClientSourceSet());
+			}
+
+			// Empty
+			return getProject().getObjects().property(ClientEntriesService.Options.class);
+		}));
 
 		jarManifestServiceProvider = JarManifestService.get(getProject());
 		usesService(jarManifestServiceProvider);
@@ -134,7 +143,15 @@ public abstract class AbstractRemapJarTask extends Jar {
 			params.getEntryCompression().set(getEntryCompression());
 
 			if (getIncludesClientOnlyClasses().get()) {
-				final List<String> clientOnlyEntries = new ArrayList<>(getClientOnlyEntries(getClientSourceSet()));
+				final List<String> clientOnlyEntries;
+
+				try (var serviceFactory = new ScopedServiceFactory()) {
+					ClientEntriesService<ClientEntriesService.Options> service = serviceFactory.get(getClientEntriesServiceOptions());
+					clientOnlyEntries = new ArrayList<>(service.getClientOnlyEntries());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+
 				clientOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
 				Collections.sort(clientOnlyEntries);
 				applyClientOnlyManifestAttributes(params, clientOnlyEntries);
@@ -149,7 +166,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		});
 	}
 
-	protected abstract List<String> getClientOnlyEntries(SourceSet sourceSet);
+	protected abstract Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet);
 
 	public interface AbstractRemapParams extends WorkParameters {
 		RegularFileProperty getInputFile();
@@ -227,33 +244,6 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@InputFile
 	public RegularFileProperty getInput() {
 		return getInputFile();
-	}
-
-	public static List<String> getRootPaths(Set<File> files) {
-		return files.stream()
-				.map(root -> {
-					String rootPath = root.getAbsolutePath().replace("\\", "/");
-
-					if (rootPath.charAt(rootPath.length() - 1) != '/') {
-						rootPath += '/';
-					}
-
-					return rootPath;
-				}).toList();
-	}
-
-	public static Function<File, String> relativePath(List<String> rootPaths) {
-		return file -> {
-			String s = file.getAbsolutePath().replace("\\", "/");
-
-			for (String rootPath : rootPaths) {
-				if (s.startsWith(rootPath)) {
-					s = s.substring(rootPath.length());
-				}
-			}
-
-			return s;
-		};
 	}
 
 	@ApiStatus.Internal

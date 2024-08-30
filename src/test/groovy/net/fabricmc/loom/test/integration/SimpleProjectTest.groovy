@@ -72,14 +72,14 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		setup:
 		def gradle = gradleProject(project: "simple", sharedFiles: true)
 		when:
-		def result = gradle.run(task: ide, configurationCache: false)
+		def result = gradle.run(task: ide)
 		then:
 		result.task(":${ide}").outcome == SUCCESS
 		where:
-		ide 		| _
-		'idea' 		| _
-		'eclipse'	| _
-		'vscode'	| _
+		ide 				| _
+		'ideaSyncTask' 		| _
+		'genEclipseRuns'	| _
+		'vscode'			| _
 	}
 
 	@Unroll

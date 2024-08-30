@@ -67,8 +67,7 @@ public abstract class LoomTasks implements Runnable {
 			t.setDescription("Generate the DevLaunchInjector config file");
 
 			// Must allow these IDE files to be generated first
-			t.mustRunAfter(getTasks().named("eclipse"));
-			t.mustRunAfter(getTasks().named("idea"));
+			t.mustRunAfter("eclipse");
 
 			t.dependsOn(generateLog4jConfig);
 			t.getRemapClasspathFile().set(generateRemapClasspath.get().getRemapClasspathFile());
@@ -114,20 +113,9 @@ public abstract class LoomTasks implements Runnable {
 	}
 
 	private void registerIDETasks() {
-		getTasks().register("genIdeaWorkspace", GenIdeaProjectTask.class, t -> {
-			t.setDescription("Generates an IntelliJ IDEA workspace from this project.");
-			t.dependsOn("idea", getIDELaunchConfigureTaskName(getProject()));
-			t.setGroup(Constants.TaskGroup.IDE);
-		});
-
 		getTasks().register("genEclipseRuns", GenEclipseRunsTask.class, t -> {
 			t.setDescription("Generates Eclipse run configurations for this project.");
 			t.dependsOn(getIDELaunchConfigureTaskName(getProject()));
-			t.setGroup(Constants.TaskGroup.IDE);
-		});
-
-		getTasks().register("cleanEclipseRuns", CleanEclipseRunsTask.class, t -> {
-			t.setDescription("Removes Eclipse run configurations for this project.");
 			t.setGroup(Constants.TaskGroup.IDE);
 		});
 

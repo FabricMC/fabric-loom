@@ -27,18 +27,19 @@ package net.fabricmc.loom.task;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 
 import javax.inject.Inject;
 
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.SourceRemapperService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
@@ -65,10 +66,8 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	@Override
-	protected List<String> getClientOnlyEntries(SourceSet clientSourceSet) {
-		return clientSourceSet.getAllSource().getFiles().stream()
-				.map(relativePath(getRootPaths(clientSourceSet.getAllSource().getSrcDirs())))
-				.toList();
+	protected Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet) {
+		return ClientEntriesService.Source.createOptions(getProject(), clientSourceSet);
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {

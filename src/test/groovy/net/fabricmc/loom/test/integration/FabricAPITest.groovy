@@ -93,7 +93,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			"runDatagen",
 			"-x",
 			"runGametest"
-		]) // Note: checkstyle does not appear to like being ran in a test runner
+		], configurationCache: false) // Note: checkstyle does not appear to like being ran in a test runner
 		gradle.printOutputFiles()
 
 		def serverResult = server.run()

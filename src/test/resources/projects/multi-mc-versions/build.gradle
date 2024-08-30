@@ -46,10 +46,16 @@ subprojects {
 
 	processResources {
 		from(rootProject.sourceSets.main.resources)
-		inputs.property 'version', project.version
+		def version = project.version
+		def mcVersion = minecraft_version
+		def loaderVersion = project.loader_version
+
+		inputs.property 'version', version
+		inputs.property 'minecraft_version', mcVersion
+		inputs.property 'loader_version', loaderVersion
 
 		filesMatching("fabric.mod.json") {
-			expand 'version': project.version, 'minecraft_version': minecraft_version, 'loader_version': project.loader_version
+			expand 'version': version, 'minecraft_version': mcVersion, 'loader_version': loaderVersion
 		}
 	}
 }

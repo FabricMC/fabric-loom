@@ -63,6 +63,8 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		// Always re-run this task.
 		getOutputs().upToDateWhen(element -> false);
 		setGroup(Constants.TaskGroup.IDE);
+
+		notCompatibleWithConfigurationCache("Not yet supported");
 	}
 
 	@TaskAction
@@ -112,10 +114,6 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 	}
 
 	private void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
-		if (!IdeaUtils.supportsCustomizableClasspath()) {
-			return;
-		}
-
 		final String inputXml = Files.readString(runConfig, StandardCharsets.UTF_8);
 		final String outputXml;
 

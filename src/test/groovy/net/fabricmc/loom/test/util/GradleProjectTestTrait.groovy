@@ -166,7 +166,13 @@ trait GradleProjectTestTrait {
 				args << options.task
 			}
 
-			if (options.configurationCache || System.getenv("LOOM_TEST_CONFIGURATION_CACHE") != null) {
+			boolean configurationCache = true
+
+			if (options.containsKey("configurationCache")) {
+				configurationCache = options.configurationCache
+			}
+
+			if (configurationCache) {
 				args << "--configuration-cache"
 			}
 

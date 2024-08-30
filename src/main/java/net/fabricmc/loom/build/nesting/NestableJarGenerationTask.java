@@ -234,7 +234,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 		}
 	}
 
-	protected record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
+	public record Metadata(String group, String name, String version, @Nullable String classifier) implements Serializable {
 		@Override
 		public String classifier() {
 			if (classifier == null) {

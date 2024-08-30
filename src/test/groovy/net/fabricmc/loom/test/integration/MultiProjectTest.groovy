@@ -44,7 +44,7 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 			"eclipse",
 			"vscode",
 			"idea"
-		])
+		], configurationCache: false)
 
 		then:
 		result.task(":build").outcome == SUCCESS

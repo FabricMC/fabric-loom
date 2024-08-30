@@ -86,7 +86,6 @@ public abstract class AbstractRunTask extends JavaExec {
 		final Provider<RunConfig> config = getProject().provider(() -> configProvider.apply(getProject()));
 
 		getInternalClasspath().from(config.map(runConfig -> runConfig.sourceSet.getRuntimeClasspath()
-				.filter(File::exists)
 				.filter(new LibraryFilter(
 						config.get().getExcludedLibraryPaths(getProject()),
 						config.get().configName)

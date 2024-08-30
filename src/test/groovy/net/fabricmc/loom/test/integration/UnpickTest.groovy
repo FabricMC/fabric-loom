@@ -42,7 +42,7 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 		def gradle = gradleProject(project: "unpick", version: version)
 
 		when:
-		def result = gradle.run(task: "genSources")
+		def result = gradle.run(task: "genSources", configurationCache: false)
 		then:
 		result.task(":genSources").outcome == SUCCESS
 		getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")

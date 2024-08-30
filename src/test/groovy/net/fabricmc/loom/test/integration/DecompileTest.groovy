@@ -39,7 +39,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		def gradle = gradleProject(project: "decompile", version: version)
 
 		when:
-		def result = gradle.run(task: task)
+		def result = gradle.run(task: task, configurationCache: false)
 
 		then:
 		result.task(":${task}").outcome == SUCCESS
@@ -96,10 +96,10 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
                 }
 		'''
 
-		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
 
 		// And run again, with no changes
-		def result3 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
+		def result3 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
 
 		then:
 		result.task(":genSourcesWithVineflower").outcome == SUCCESS

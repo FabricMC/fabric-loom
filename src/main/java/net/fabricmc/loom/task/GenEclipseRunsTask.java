@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,22 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.commons.io.FileUtils;
+import javax.inject.Inject;
+
+import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
@@ -36,28 +49,68 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
-public class GenEclipseRunsTask extends AbstractLoomTask {
+public abstract class GenEclipseRunsTask extends AbstractLoomTask {
+	@Nested
+	protected abstract ListProperty<EclipseRunConfig> getEclipseRunConfigs();
+
+	@Inject
+	public GenEclipseRunsTask() {
+		getEclipseRunConfigs().set(getProject().provider(() -> getRunConfigs(getProject())));
+	}
+
 	@TaskAction
 	public void genRuns() throws IOException {
-		EclipseModel eclipseModel = getProject().getExtensions().getByType(EclipseModel.class);
-		LoomGradleExtension extension = getExtension();
+		for (EclipseRunConfig runConfig : getEclipseRunConfigs().get()) {
+			runConfig.writeLaunchFile();
+		}
+	}
+
+	private static List<EclipseRunConfig> getRunConfigs(Project project) {
+		EclipseModel eclipseModel = project.getExtensions().getByType(EclipseModel.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		List<EclipseRunConfig> runConfigs = new ArrayList<>();
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
 				continue;
 			}
 
-			String name = settings.getName();
+			final String name = settings.getName();
+			final File configs = new File(project.getProjectDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
+			final RunConfig configInst = RunConfig.runConfig(project, settings);
+			final String config;
 
-			File configs = new File(getProject().getProjectDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
-			RunConfig configInst = RunConfig.runConfig(getProject(), settings);
-			String config = configInst.fromDummy("eclipse_run_config_template.xml", false, getProject());
-
-			if (!configs.exists()) {
-				FileUtils.writeStringToFile(configs, config, StandardCharsets.UTF_8);
+			try {
+				config = configInst.fromDummy("eclipse_run_config_template.xml", false, project);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to generate Eclipse run configuration", e);
 			}
 
+			EclipseRunConfig eclipseRunConfig = project.getObjects().newInstance(EclipseRunConfig.class);
+			eclipseRunConfig.getLaunchContent().set(config);
+			eclipseRunConfig.getLaunchFile().set(project.file(configs));
+			runConfigs.add(eclipseRunConfig);
+
 			settings.makeRunDir();
+		}
+
+		return runConfigs;
+	}
+
+	public interface EclipseRunConfig {
+		@Input
+		Property<String> getLaunchContent();
+
+		@OutputFile
+		RegularFileProperty getLaunchFile();
+
+		default void writeLaunchFile() throws IOException {
+			Path launchFile = getLaunchFile().get().getAsFile().toPath();
+
+			if (Files.notExists(launchFile)) {
+				Files.writeString(launchFile, getLaunchContent().get(), StandardCharsets.UTF_8);
+			}
 		}
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,11 @@
 package net.fabricmc.loom.task;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,8 +41,13 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -55,20 +62,43 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 	@ServiceReference(SyncTaskBuildService.NAME)
 	abstract Property<SyncTaskBuildService> getSyncTask();
 
+	@Input
+	protected abstract ListProperty<VsCodeConfiguration> getLaunchConfigurations();
+
+	@OutputFile
+	protected abstract RegularFileProperty getLaunchJson();
+
 	@Inject
 	public GenVsCodeProjectTask() {
+		getLaunchConfigurations().set(getProject().provider(this::getConfigurations));
+		getLaunchJson().convention(getProject().getRootProject().getLayout().getProjectDirectory().file("vscode/launch.json"));
+
 		notCompatibleWithConfigurationCache("Not yet supported");
+	}
+
+	private List<VsCodeConfiguration> getConfigurations() {
+		List<VsCodeConfiguration> configurations = new ArrayList<>();
+
+		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
+			if (!settings.isIdeConfigGenerated()) {
+				continue;
+			}
+
+			final VsCodeConfiguration configuration = VsCodeConfiguration.fromRunConfig(getProject(), RunConfig.runConfig(getProject(), settings));
+			configurations.add(configuration);
+		}
+
+		return configurations;
 	}
 
 	@TaskAction
 	public void genRuns() throws IOException {
-		final Path projectDir = getProject().getRootDir().toPath().resolve(".vscode");
+		final Path launchJson = getLaunchJson().get().getAsFile().toPath();
 
-		if (Files.notExists(projectDir)) {
-			Files.createDirectories(projectDir);
+		if (Files.notExists(launchJson.getParent())) {
+			Files.createDirectories(launchJson.getParent());
 		}
 
-		final Path launchJson = projectDir.resolve("launch.json");
 		final JsonObject root;
 
 		if (Files.exists(launchJson)) {
@@ -87,12 +117,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			root.add("configurations", configurations);
 		}
 
-		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
-			if (!settings.isIdeConfigGenerated()) {
-				continue;
-			}
-
-			final VsCodeConfiguration configuration = new VsCodeConfiguration(RunConfig.runConfig(getProject(), settings));
+		for (VsCodeConfiguration configuration : getLaunchConfigurations().get()) {
 			final JsonElement configurationJson = LoomGradlePlugin.GSON.toJsonTree(configuration);
 
 			final List<JsonElement> toRemove = new LinkedList<>();
@@ -113,54 +138,43 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			}
 
 			toRemove.forEach(configurations::remove);
-
 			configurations.add(configurationJson);
-			settings.makeRunDir();
+
+			Files.createDirectories(Paths.get(configuration.runDir));
 		}
 
 		final String json = LoomGradlePlugin.GSON.toJson(root);
 		Files.writeString(launchJson, json, StandardCharsets.UTF_8);
 	}
 
-	private class VsCodeLaunch {
-		public String version = "0.2.0";
-		public List<VsCodeConfiguration> configurations = new ArrayList<>();
-
-		public void add(RunConfig runConfig) {
-			configurations.add(new VsCodeConfiguration(runConfig));
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private class VsCodeConfiguration {
-		public String type = "java";
-		public String name;
-		public String request = "launch";
-		public String cwd;
-		public String console = "integratedTerminal";
-		public boolean stopOnEntry = false;
-		public String mainClass;
-		public String vmArgs;
-		public String args;
-		public Map<String, Object> env;
-		public String projectName;
-
-		VsCodeConfiguration(RunConfig runConfig) {
-			this.name = runConfig.configName;
-			this.mainClass = runConfig.mainClass;
-			this.vmArgs = RunConfig.joinArguments(runConfig.vmArgs);
-			this.args = RunConfig.joinArguments(runConfig.programArgs);
-			this.cwd = "${workspaceFolder}/" + runConfig.runDir;
-			this.env = new HashMap<>(runConfig.environmentVariables);
-			this.projectName = runConfig.projectName;
-
-			if (getProject().getRootProject() != getProject()) {
-				Path rootPath = getProject().getRootDir().toPath();
-				Path projectPath = getProject().getProjectDir().toPath();
-				String relativePath = rootPath.relativize(projectPath).toString();
-
-				this.cwd = "${workspaceFolder}/%s/%s".formatted(relativePath, runConfig.runDir);
-			}
+	public record VsCodeConfiguration(
+			String type,
+			String name,
+			String request,
+			String cwd,
+			String console,
+			boolean stopOnEntry,
+			String mainClass,
+			String vmArgs,
+			String args,
+			Map<String, Object> env,
+			String projectName,
+			String runDir) implements Serializable {
+		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
+			return new VsCodeConfiguration(
+				"java",
+				runConfig.configName,
+				"launch",
+				"${workspaceFolder}/" + runConfig.runDir,
+				"integratedTerminal",
+				false,
+				runConfig.mainClass,
+				RunConfig.joinArguments(runConfig.vmArgs),
+				RunConfig.joinArguments(runConfig.programArgs),
+				new HashMap<>(runConfig.environmentVariables),
+				runConfig.projectName,
+				project.getProjectDir().toPath().resolve(runConfig.runDir).toAbsolutePath().toString()
+			);
 		}
 	}
 }

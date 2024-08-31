@@ -41,10 +41,9 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 		when:
 		def result = gradle.run(tasks: [
 			"build",
-			"eclipse",
+			"genEclipseRuns",
 			"vscode",
-			"idea"
-		], configurationCache: false)
+		])
 
 		then:
 		result.task(":build").outcome == SUCCESS

@@ -131,9 +131,7 @@ public abstract class CompileConfiguration implements Runnable {
 			configureDecompileTasks(configContext);
 		});
 
-		finalizedBy("idea", "genIdeaWorkspace");
 		finalizedBy("eclipse", "genEclipseRuns");
-		finalizedBy("cleanEclipse", "cleanEclipseRuns");
 
 		// Add the "dev" jar to the "namedElements" configuration
 		getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));

@@ -49,6 +49,8 @@ import java.util.stream.Stream;
 
 import org.gradle.api.JavaVersion;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InnerClassNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,13 +90,12 @@ public final class JarWalker {
 					continue;
 				}
 
-				boolean isInnerClass = fileName.contains("$");
+				String outerClass = findOuterClass(fs, fileName);
 
-				if (isInnerClass) {
-					String outerClassName = fileName.substring(0, fileName.indexOf('$')) + ".class";
-					innerClasses.computeIfAbsent(outerClassName, k -> new ArrayList<>()).add(fileName);
-				} else {
+				if (outerClass == null) {
 					outerClasses.add(fileName);
+				} else {
+					innerClasses.computeIfAbsent(outerClass + ".class", k -> new ArrayList<>()).add(fileName);
 				}
 			}
 		}
@@ -125,6 +126,45 @@ public final class JarWalker {
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			throw new RuntimeException("Failed to get class entries", e);
 		}
+	}
+
+	/**
+	 * Check if the given class file denotes and inner class and find the corresponding outer class name.
+	 */
+	private static String findOuterClass(FileSystemUtil.Delegate fs, String classFile) throws IOException {
+		// this check can speed things up quite a bit, even if it does not follow the JVM spec
+		if (classFile.indexOf('$') < 0) {
+			return null;
+		}
+
+		try (InputStream is = Files.newInputStream(fs.getPath(classFile))) {
+			final ClassReader reader = new ClassReader(is);
+			final ClassNode classNode = new ClassNode();
+
+			reader.accept(classNode, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
+			for (InnerClassNode innerClass : classNode.innerClasses) {
+				// a class file also contains references to enclosed inner classes
+				if (innerClass.name.equals(classNode.name)) {
+					// only regular inner classes have the outer class in the inner class attribute
+					if (innerClass.outerName != null) {
+						return innerClass.outerName;
+					}
+
+					// local and anonymous classes have the outer class in the enclosing method attribute
+					// we check for both attributes because both should be present for decompilers to
+					// recognize a class as an inner class
+					if (classNode.outerClass != null) {
+						return classNode.outerClass;
+					}
+
+					// there are some Minecraft versions with one attribute stripped but not the other
+					LOGGER.debug("inner class attribute is present for " + classNode.name + " but no outer class could be found, weird!");
+				}
+			}
+		}
+
+		return null;
 	}
 
 	private static CompletableFuture<ClassEntry> getClassEntry(String outerClass, List<String> innerClasses, FileSystemUtil.Delegate fs, Executor executor) {

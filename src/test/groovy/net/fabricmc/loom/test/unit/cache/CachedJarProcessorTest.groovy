@@ -45,12 +45,12 @@ class CachedJarProcessorTest extends Specification {
 	static Map<String, byte[]> jarEntries = [
 		"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
 		"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-		"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner"),
-		"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+		"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+		"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 	]
 
 	static String ExampleHash = "abc123/db5c3a2d04e0c6ea03aef0d217517aa0233f9b8198753d3c96574fe5825a13c4"
-	static String TestHash = "abc123/06f9f4c7dbca9baa037fbea007298ee15277d97de594bbf6e4a1ee346c079e65"
+	static String TestHash = "abc123/b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330"
 
 	static CachedData ExampleCachedData = new CachedData("net/fabricmc/Example", "Example sources", lineNumber("net/fabricmc/Example"))
 	static CachedData TestCachedData = new CachedData("net/fabricmc/other/Test", "Test sources", lineNumber("net/fabricmc/other/Test"))
@@ -247,8 +247,8 @@ class CachedJarProcessorTest extends Specification {
 				[
 					"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
 					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
-					"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner", ["net/fabricmc/Example"] as String[]),
-					"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
+					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
 				)
 		// The second jar changes Example, so we would expect Test to be invalidated, thus causing a full decompile in this case
@@ -256,8 +256,8 @@ class CachedJarProcessorTest extends Specification {
 				[
 					"net/fabricmc/Example.class": newClass("net/fabricmc/Example", ["java/lang/Runnable"] as String[]),
 					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
-					"net/fabricmc/other/Test\$Inner.class": newClass("net/fabricmc/other/Test\$Inner", ["net/fabricmc/Example"] as String[]),
-					"net/fabricmc/other/Test\$1.class": newClass("net/fabricmc/other/Test\$1"),
+					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
+					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
 				)
 
@@ -301,6 +301,16 @@ class CachedJarProcessorTest extends Specification {
 	private static byte[] newClass(String name, String[] interfaces = null, String superName = "java/lang/Object") {
 		def writer = new ClassWriter(0)
 		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		return writer.toByteArray()
+	}
+
+	private static byte[] newInnerClass(String name, String outerClass, String innerName = null, String[] interfaces = null, String superName = "java/lang/Object") {
+		def writer = new ClassWriter(0)
+		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		writer.visitInnerClass(name, outerClass, innerName, 0)
+		if (innerName == null) {
+			writer.visitOuterClass(outerClass, null, null)
+		}
 		return writer.toByteArray()
 	}
 }

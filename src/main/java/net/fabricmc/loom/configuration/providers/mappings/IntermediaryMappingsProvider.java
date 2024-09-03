@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
+import net.fabricmc.loom.util.Checksum;
 
 @ApiStatus.Internal
 public abstract class IntermediaryMappingsProvider extends IntermediateMappingsProviderInternal {
@@ -107,6 +109,15 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 	@Override
 	public @NotNull String getName() {
+		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
+		final String urlRaw = getIntermediaryUrl().get();
+
+		if (!LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL.equals(urlRaw)) {
+			final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
+
+			return NAME + "-" + Checksum.sha1Hex(url.getBytes(StandardCharsets.UTF_8));
+		}
+
 		return NAME;
 	}
 }

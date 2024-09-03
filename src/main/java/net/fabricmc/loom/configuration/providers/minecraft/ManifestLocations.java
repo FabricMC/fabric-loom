@@ -25,29 +25,26 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Set;
 
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations.ManifestLocation;
 
 public class ManifestLocations implements VersionsManifestsAPI, Iterable<ManifestLocation> {
-	private static final String FILE_EXTENSION = ".json";
 	private final Queue<ManifestLocation> locations = new PriorityQueue<>();
-	private final String baseFileName;
-
-	public ManifestLocations(String baseFileName) {
-		this.baseFileName = baseFileName;
-	}
-
-	public void addBuiltIn(int priority, String url, String fileName) {
-		locations.add(new ManifestLocation(priority, url, fileName));
-	}
+	private final Set<String> manifestNames = new HashSet<>();
 
 	@Override
-	public void add(String url, int priority) {
-		locations.add(new ManifestLocation(priority, url));
+	public void add(String name, String url, int priority) {
+		if (manifestNames.add(name)) {
+			locations.add(new ManifestLocation(name, url, priority));
+		} else {
+			throw new IllegalStateException("cannot add multiple versions manifests with the same name!");
+		}
 	}
 
 	@Override
@@ -56,22 +53,18 @@ public class ManifestLocations implements VersionsManifestsAPI, Iterable<Manifes
 	}
 
 	public class ManifestLocation implements Comparable<ManifestLocation> {
-		private final int priority;
+		private final String name;
 		private final String url;
-		private final String builtInFileName;
+		private final int priority;
 
-		private ManifestLocation(int priority, String url) {
-			this(priority, url, null);
-		}
-
-		private ManifestLocation(int priority, String url, String builtInFileName) {
-			this.priority = priority;
+		private ManifestLocation(String name, String url, int priority) {
+			this.name = name;
 			this.url = url;
-			this.builtInFileName = builtInFileName;
+			this.priority = priority;
 		}
 
-		public boolean isBuiltIn() {
-			return builtInFileName != null;
+		public String name() {
+			return name;
 		}
 
 		public String url() {
@@ -79,10 +72,7 @@ public class ManifestLocations implements VersionsManifestsAPI, Iterable<Manifes
 		}
 
 		public Path cacheFile(Path dir) {
-			String fileName = (builtInFileName != null)
-					? builtInFileName + FILE_EXTENSION
-					: baseFileName + "-" + Integer.toHexString(url.hashCode()) + FILE_EXTENSION;
-			return dir.resolve(fileName);
+			return dir.resolve(name + "_versions_manifest.json");
 		}
 
 		@Override

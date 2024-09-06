@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,20 +34,125 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class MigrateMappingsTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "Migrate mappings (gradle #version)"() {
+	def "Migrate mappings yarn short hand (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "java16", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:24w36a'
+                mappings 'net.fabricmc:yarn:24w36a+build.2:v2'
+            }
+            """.stripIndent()
+
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		sourceFile.text = """
+		package example;
+
+		import net.minecraft.class_10184;
+
+		public class Test {
+			public static void main(String[] args) {
+			    class_10184 cls = null;
+			}
+		}
+		"""
 
 		when:
 		def result = gradle.run(tasks: [
 			"migrateMappings",
 			"--mappings",
-			"21w38a+build.10"
+			"24w36a+build.6"
 		])
+		def remapped = new File(gradle.projectDir, "remappedSrc/example/Test.java").text
 
 		then:
 		result.task(":migrateMappings").outcome == SUCCESS
-		// TODO check it actually did something
+		remapped.contains("import net.minecraft.predicate.entity.InputPredicate;")
+		remapped.contains("InputPredicate cls = null;")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "Migrate mappings maven complete (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:24w36a'
+                mappings 'net.fabricmc:yarn:24w36a+build.2:v2'
+            }
+            """.stripIndent()
+
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		sourceFile.text = """
+		package example;
+
+		import net.minecraft.class_10184;
+
+		public class Test {
+			public static void main(String[] args) {
+			    class_10184 cls = null;
+			}
+		}
+		"""
+
+		when:
+		def result = gradle.run(tasks: [
+			"migrateMappings",
+			"--mappings",
+			"net.fabricmc:yarn:24w36a+build.6:v2"
+		])
+		def remapped = new File(gradle.projectDir, "remappedSrc/example/Test.java").text
+
+		then:
+		result.task(":migrateMappings").outcome == SUCCESS
+		remapped.contains("import net.minecraft.predicate.entity.InputPredicate;")
+		remapped.contains("InputPredicate cls = null;")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "Migrate mappings to mojmap (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:24w36a'
+                mappings 'net.fabricmc:yarn:24w36a+build.6:v2'
+            }
+            """.stripIndent()
+
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		sourceFile.text = """
+		package example;
+
+		import net.minecraft.predicate.entity.InputPredicate;
+
+		public class Test {
+			public static void main(String[] args) {
+			    InputPredicate cls = null;
+			}
+		}
+		"""
+
+		when:
+		def result = gradle.run(tasks: [
+			"migrateMappings",
+			"--mappings",
+			"net.minecraft:mappings:24w36a"
+		])
+		def remapped = new File(gradle.projectDir, "remappedSrc/example/Test.java").text
+
+		then:
+		result.task(":migrateMappings").outcome == SUCCESS
+		remapped.contains("import net.minecraft.advancements.critereon.InputPredicate;")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

@@ -47,7 +47,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
@@ -244,12 +243,6 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@InputFile
 	public RegularFileProperty getInput() {
 		return getInputFile();
-	}
-
-	@ApiStatus.Internal
-	@Internal
-	protected LoomGradleExtension getLoomExtension() {
-		return LoomGradleExtension.get(getProject());
 	}
 
 	private SourceSet getClientSourceSet() {

@@ -53,6 +53,7 @@ import org.gradle.api.tasks.TaskAction;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 // Recommended vscode plugin pack:
@@ -70,10 +71,9 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 
 	@Inject
 	public GenVsCodeProjectTask() {
+		setGroup(Constants.TaskGroup.IDE);
 		getLaunchConfigurations().set(getProject().provider(this::getConfigurations));
 		getLaunchJson().convention(getProject().getRootProject().getLayout().getProjectDirectory().file("vscode/launch.json"));
-
-		notCompatibleWithConfigurationCache("Not yet supported");
 	}
 
 	private List<VsCodeConfiguration> getConfigurations() {

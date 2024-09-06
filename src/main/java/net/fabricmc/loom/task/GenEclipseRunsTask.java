@@ -48,6 +48,7 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.util.Constants;
 
 public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 	@Nested
@@ -55,6 +56,7 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 
 	@Inject
 	public GenEclipseRunsTask() {
+		setGroup(Constants.TaskGroup.IDE);
 		getEclipseRunConfigs().set(getProject().provider(() -> getRunConfigs(getProject())));
 	}
 

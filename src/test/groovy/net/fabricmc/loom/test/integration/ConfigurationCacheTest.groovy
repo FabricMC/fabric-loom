@@ -47,8 +47,8 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
             }
             """.stripIndent()
 		when:
-		def result = gradle.run(task: task, configurationCache: true, isloatedProjects: false)
-		def result2 = gradle.run(task: task, configurationCache: true, isloatedProjects: false)
+		def result = gradle.run(task: task, isloatedProjects: false)
+		def result2 = gradle.run(task: task, isloatedProjects: false)
 
 		then:
 		result.task(":${task}").outcome != FAILED
@@ -97,10 +97,10 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		fabricModJson.text = fmj("1.0.0")
 
 		when:
-		def result = gradle.run(task: "testTask", configurationCache: true)
-		def result2 = gradle.run(task: "testTask", configurationCache: true)
+		def result = gradle.run(task: "testTask")
+		def result2 = gradle.run(task: "testTask")
 		fabricModJson.text = fmj("2.0.0")
-		def result3 = gradle.run(task: "testTask", configurationCache: true)
+		def result3 = gradle.run(task: "testTask")
 
 		then:
 		// Test that the cache is created

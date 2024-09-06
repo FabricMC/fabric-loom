@@ -31,6 +31,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -42,10 +43,17 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -58,33 +66,32 @@ import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
 public abstract class IdeaSyncTask extends AbstractLoomTask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(IdeaSyncTask.class);
+
+	@Nested
+	protected abstract ListProperty<IntelijRunConfig> getIdeaRunConfigs();
+
 	@Inject
 	public IdeaSyncTask() {
-		// Always re-run this task.
-		getOutputs().upToDateWhen(element -> false);
 		setGroup(Constants.TaskGroup.IDE);
-
-		notCompatibleWithConfigurationCache("Not yet supported");
+		getIdeaRunConfigs().set(getProject().provider(this::getRunConfigs));
 	}
 
 	@TaskAction
 	public void runTask() throws IOException {
-		File projectDir = getProject().getRootProject().file(".idea");
-		projectDir.mkdirs();
-
-		generateRunConfigs();
+		for (IntelijRunConfig config : getIdeaRunConfigs().get()) {
+			config.writeLaunchFile();
+		}
 	}
 
 	// See: https://github.com/FabricMC/fabric-loom/pull/206#issuecomment-986054254 for the reason why XML's are still used to provide the run configs
-	private void generateRunConfigs() throws IOException {
+	private List<IntelijRunConfig> getRunConfigs() throws IOException {
 		Project rootProject = getProject().getRootProject();
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		String projectPath = getProject() == rootProject ? "" : getProject().getPath().replace(':', '_');
 		File runConfigsDir = new File(rootProject.file(".idea"), "runConfigurations");
 
-		if (!runConfigsDir.exists()) {
-			runConfigsDir.mkdirs();
-		}
+		List<IntelijRunConfig> configs = new ArrayList<>();
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
@@ -94,33 +101,53 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			RunConfig config = RunConfig.runConfig(getProject(), settings);
 			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
 
-			File runConfigs = new File(runConfigsDir, name + projectPath + ".xml");
+			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
 			String runConfigXml = config.fromDummy("idea_run_config_template.xml", true, getProject());
-
-			if (!runConfigs.exists()) {
-				FileUtils.writeStringToFile(runConfigs, runConfigXml, StandardCharsets.UTF_8);
-			}
-
-			settings.makeRunDir();
-
 			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
 
+			IntelijRunConfig irc = getProject().getObjects().newInstance(IntelijRunConfig.class);
+			irc.getRunConfigXml().set(runConfigXml);
+			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
+			irc.getLaunchFile().set(runConfigFile);
+		}
+
+		return configs;
+	}
+
+	public interface IntelijRunConfig {
+		@Input
+		Property<String> getRunConfigXml();
+
+		@Input
+		ListProperty<String> getExcludedLibraryPaths();
+
+		@OutputFile
+		RegularFileProperty getLaunchFile();
+
+		default void writeLaunchFile() throws IOException {
+			Path launchFile = getLaunchFile().get().getAsFile().toPath();
+
+			if (Files.notExists(launchFile)) {
+				Files.createDirectories(launchFile.getParent());
+				Files.writeString(launchFile, getRunConfigXml().get(), StandardCharsets.UTF_8);
+			}
+
 			try {
-				setClasspathModifications(runConfigs.toPath(), excludedLibraryPaths);
+				setClasspathModifications(launchFile, getExcludedLibraryPaths().get());
 			} catch (Exception e) {
-				getProject().getLogger().error("Failed to modify run configuration xml", e);
+				LOGGER.error("Failed to modify run configuration xml", e);
 			}
 		}
 	}
 
-	private void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
+	private static void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
 		final String inputXml = Files.readString(runConfig, StandardCharsets.UTF_8);
 		final String outputXml;
 
 		try {
 			outputXml = setClasspathModificationsInXml(inputXml, exclusions);
 		} catch (Exception e) {
-			getLogger().error("Failed to modify idea xml", e);
+			LOGGER.error("Failed to modify idea xml", e);
 
 			return;
 		}

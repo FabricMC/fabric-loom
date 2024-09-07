@@ -124,7 +124,7 @@ class ArtifactMetadataTest extends Specification {
 	// Test that a mod with the same or older version of loom can be read
 	def "Valid loom version"() {
 		given:
-		def zip = createModWithRemapType(modLoomVersion, "mixin")
+		def zip = createModWithRemapType(modLoomVersion, "static")
 		when:
 		def metadata = createMetadata(zip, loomVersion)
 		then:

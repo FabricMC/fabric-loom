@@ -117,8 +117,8 @@ class ArtifactMetadataTest extends Specification {
 		MIXIN       | ["hello.json": "{}"]       // None Mod jar
 		MIXIN       | ["fabric.mod.json": "{}"]  // Fabric mod without manfiest file
 		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]              // Fabric mod without remap type entry
-		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")] 	// Fabric mod with remap type entry "mixin"
-		STATIC      | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod with remap type entry "static"
+		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")]  // Fabric mod with remap type entry "mixin"
+		STATIC      | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")] // Fabric mod with remap type entry "static"
 	}
 
 	// Test that a mod with the same or older version of loom can be read

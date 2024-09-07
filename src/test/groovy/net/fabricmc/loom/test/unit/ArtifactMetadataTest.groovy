@@ -114,11 +114,11 @@ class ArtifactMetadataTest extends Specification {
 		result == type
 		where:
 		type | entries
-		MIXIN       | ["hello.json": "{}"] 												// None Mod jar
-		MIXIN       | ["fabric.mod.json": "{}"] 										// Fabric mod without manfiest file
+		MIXIN       | ["hello.json": "{}"]       // None Mod jar
+		MIXIN       | ["fabric.mod.json": "{}"]  // Fabric mod without manfiest file
 		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]              // Fabric mod without remap type entry
 		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")] 	// Fabric mod with remap type entry "mixin"
-		STATIC  	| ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod with remap type entry "static"
+		STATIC      | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod with remap type entry "static"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
@@ -138,8 +138,8 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "1.4.1"
 		"1.4"       | "1.4.99"
 		"1.4"       | "1.4.local"
-		"1.5"		| "1.4.99"
-		"2.0"		| "1.4.99"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
@@ -176,8 +176,8 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "1.4.1"
 		"1.4"       | "1.4.99"
 		"1.4"       | "1.4.local"
-		"1.5"		| "1.4.99"
-		"2.0"		| "1.4.99"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
 		// Usually invalid
 		"1.4"       | "1.5"
 		"1.4"       | "1.5.00"
@@ -202,8 +202,8 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "1.4.1"
 		"1.4"       | "1.4.99"
 		"1.4"       | "1.4.local"
-		"1.5"		| "1.4.99"
-		"2.0"		| "1.4.99"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
 		// Usually invalid
 		"1.4"       | "1.5"
 		"1.4"       | "1.5.00"

@@ -31,10 +31,16 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -45,12 +51,29 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 	public static final ServiceType<Options, TinyMappingsService> TYPE = new ServiceType<>(Options.class, TinyMappingsService.class);
 
 	public interface Options extends Service.Options {
-		@InputFile
-		RegularFileProperty getMappings();
+		@InputFiles
+		ConfigurableFileCollection getMappings(); // Only a single file
+
+		/**
+		 * When present, the mappings will be read from the specified zip entry path.
+		 */
+		@Optional
+		@Input
+		Property<String> getZipEntryPath();
 	}
 
 	public static Provider<Options> createOptions(Project project, Path mappings) {
-		return TYPE.create(project, options -> options.getMappings().set(project.file(mappings)));
+		return TYPE.create(project, options -> {
+			options.getMappings().from(project.file(mappings));
+			options.getZipEntryPath().unset();
+		});
+	}
+
+	public static Provider<Options> createOptions(Project project, FileCollection mappings, @Nullable String zipEntryPath) {
+		return TYPE.create(project, options -> {
+			options.getMappings().from(mappings);
+			options.getZipEntryPath().set(zipEntryPath);
+		});
 	}
 
 	public TinyMappingsService(Options options, ServiceFactory serviceFactory) {
@@ -58,14 +81,28 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 	}
 
 	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(() -> {
+		Path mappings = getOptions().getMappings().getSingleFile().toPath();
+
+		if (getOptions().getZipEntryPath().isPresent()) {
+			try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(mappings)) {
+				return readMappings(delegate.fs().getPath(getOptions().getZipEntryPath().get()));
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read mappings from zip", e);
+			}
+		}
+
+		return readMappings(mappings);
+	});
+
+	private MemoryMappingTree readMappings(Path mappings) {
 		try {
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingReader.read(getOptions().getMappings().get().getAsFile().toPath(), mappingTree);
+			MappingReader.read(mappings, mappingTree);
 			return mappingTree;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read mappings", e);
 		}
-	});
+	}
 
 	public MemoryMappingTree getMappingTree() {
 		return mappingTree.get();

@@ -114,16 +114,17 @@ class ArtifactMetadataTest extends Specification {
 		result == type
 		where:
 		type | entries
-		MIXIN       | ["hello.json": "{}"] 												// None Mod jar
-		MIXIN       | ["fabric.mod.json": "{}"] 										// Fabric mod without manfiest file
-		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")] 	// Fabric mod without remap type entry
-		STATIC  	| ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")]	// Fabric mod opt-in
+		MIXIN       | ["hello.json": "{}"]       // None Mod jar
+		MIXIN       | ["fabric.mod.json": "{}"]  // Fabric mod without manfiest file
+		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]              // Fabric mod without remap type entry
+		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")]  // Fabric mod with remap type entry "mixin"
+		STATIC      | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")] // Fabric mod with remap type entry "static"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
 	def "Valid loom version"() {
 		given:
-		def zip = createMod(modLoomVersion, "mixin")
+		def zip = createModWithRemapType(modLoomVersion, "static")
 		when:
 		def metadata = createMetadata(zip, loomVersion)
 		then:
@@ -137,14 +138,14 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "1.4.1"
 		"1.4"       | "1.4.99"
 		"1.4"       | "1.4.local"
-		"1.5"		| "1.4.99"
-		"2.0"		| "1.4.99"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
 	def "Invalid loom version"() {
 		given:
-		def zip = createMod(modLoomVersion, "mixin")
+		def zip = createModWithRemapType(modLoomVersion, "static")
 		when:
 		def metadata = createMetadata(zip, loomVersion)
 		then:
@@ -158,9 +159,9 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "2.4"
 	}
 
-	def "Accepts all Loom versions"() {
+	def "Accepts all Loom versions for remap 'false'"() {
 		given:
-		def zip = createMod(modLoomVersion, "static")
+		def zip = createModWithRemap(modLoomVersion, false)
 		when:
 		def metadata = createMetadata(zip, loomVersion)
 		then:
@@ -175,8 +176,34 @@ class ArtifactMetadataTest extends Specification {
 		"1.4"       | "1.4.1"
 		"1.4"       | "1.4.99"
 		"1.4"       | "1.4.local"
-		"1.5"		| "1.4.99"
-		"2.0"		| "1.4.99"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
+		// Usually invalid
+		"1.4"       | "1.5"
+		"1.4"       | "1.5.00"
+		"1.4"       | "2.0"
+		"1.4"       | "2.4"
+	}
+
+	def "Accepts all Loom versions for remap 'true'"() {
+		given:
+		def zip = createModWithRemap(modLoomVersion, true)
+		when:
+		def metadata = createMetadata(zip, loomVersion)
+		then:
+		metadata != null
+		where:
+		loomVersion | modLoomVersion
+		// Valid
+		"1.4"       | "1.0.1"
+		"1.4"       | "1.0.99"
+		"1.4"       | "1.4"
+		"1.4"       | "1.4.0"
+		"1.4"       | "1.4.1"
+		"1.4"       | "1.4.99"
+		"1.4"       | "1.4.local"
+		"1.5"       | "1.4.99"
+		"2.0"       | "1.4.99"
 		// Usually invalid
 		"1.4"       | "1.5"
 		"1.4"       | "1.5.00"
@@ -201,8 +228,12 @@ class ArtifactMetadataTest extends Specification {
 		] | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Known-Indy-BSMS", "com/example/Class,com/example/Another")] // two bsms
 	}
 
-	private static Path createMod(String loomVersion, String remapType) {
+	private static Path createModWithRemapType(String loomVersion, String remapType) {
 		return createZip(["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest(["Fabric-Loom-Version": loomVersion, "Fabric-Loom-Mixin-Remap-Type": remapType])])
+	}
+
+	private static Path createModWithRemap(String loomVersion, boolean remap) {
+		return createZip(["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest(["Fabric-Loom-Version": loomVersion, "Fabric-Loom-Mixin-Remap": remap ? "true" : "false"])])
 	}
 
 	private static ArtifactMetadata createMetadata(Path zip, String loomVersion = "1.4") {

@@ -31,13 +31,14 @@ import java.util.function.Consumer;
 
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
+import org.gradle.api.logging.Logger;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 
 public class ThreadedProgressLoggerConsumer implements Consumer<String>, AutoCloseable {
 	public static final String CLOSE_LOGGERS = "LOOM_CLOSE_LOGGERS";
 
-	private final Project project;
+	private final Logger logger;
 	private final String name;
 	private final String desc;
 
@@ -46,7 +47,7 @@ public class ThreadedProgressLoggerConsumer implements Consumer<String>, AutoClo
 	private final Map<String, ProgressLogger> loggers = Collections.synchronizedMap(new HashMap<>());
 
 	public ThreadedProgressLoggerConsumer(Project project, String name, String desc) {
-		this.project = project;
+		this.logger = project.getLogger();
 		this.name = name;
 		this.desc = desc;
 
@@ -55,10 +56,19 @@ public class ThreadedProgressLoggerConsumer implements Consumer<String>, AutoClo
 		progressGroup.started();
 	}
 
+	public ThreadedProgressLoggerConsumer(Logger logger, ProgressLoggerFactory progressLoggerFactory, String name, String desc) {
+		this.logger = logger;
+		this.name = name;
+		this.desc = desc;
+		this.progressLoggerFactory = progressLoggerFactory;
+		this.progressGroup = this.progressLoggerFactory.newOperation(name).setDescription(desc);
+		progressGroup.started();
+	}
+
 	@Override
 	public void accept(String line) {
 		if (!line.contains("::")) {
-			project.getLogger().debug("Malformed threaded IPC log message: " + line);
+			logger.debug("Malformed threaded IPC log message: " + line);
 			return;
 		}
 

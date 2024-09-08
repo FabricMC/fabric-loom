@@ -58,17 +58,20 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 
 	@Override
 	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+		final List<MinecraftJar> parentMinecraftJars = parentMinecraftProvider.getMinecraftJars();
+		final Map<MinecraftJar, MinecraftJar> minecraftJarOutputMap = parentMinecraftJars.stream()
+				.collect(Collectors.toMap(Function.identity(), this::getProcessedJar));
+		final List<MinecraftJar> minecraftJars = List.copyOf(minecraftJarOutputMap.values());
+
 		parentMinecraftProvider.provide(context.withApplyDependencies(false));
 
-		boolean requiresProcessing = context.refreshOutputs() || parentMinecraftProvider.getMinecraftJars().stream()
+		boolean requiresProcessing = context.refreshOutputs() || !hasBackupJars(minecraftJars) || parentMinecraftJars.stream()
 				.map(this::getProcessedPath)
 				.anyMatch(jarProcessorManager::requiresProcessingJar);
 
-		final Map<MinecraftJar, MinecraftJar> minecraftJarOutputMap = parentMinecraftProvider.getMinecraftJars().stream()
-				.collect(Collectors.toMap(Function.identity(), this::getProcessedJar));
-
 		if (requiresProcessing) {
 			processJars(minecraftJarOutputMap, context.configContext());
+			createBackupJars(minecraftJars);
 		}
 
 		if (context.applyDependencies()) {

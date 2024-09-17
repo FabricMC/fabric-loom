@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -127,7 +128,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	protected void createBackupJars(List<MinecraftJar> minecraftJars) throws IOException {
 		for (MinecraftJar minecraftJar : minecraftJars) {
-			Files.copy(minecraftJar.getPath(), getBackupJarPath(minecraftJar));
+			Files.copy(minecraftJar.getPath(), getBackupJarPath(minecraftJar), StandardCopyOption.REPLACE_EXISTING);
 		}
 	}
 
@@ -261,6 +262,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	private void cleanOutputs(List<RemappedJars> remappedJars) throws IOException {
 		for (RemappedJars remappedJar : remappedJars) {
 			Files.deleteIfExists(remappedJar.outputJarPath());
+			Files.deleteIfExists(getBackupJarPath(remappedJar.outputJar()));
 		}
 	}
 

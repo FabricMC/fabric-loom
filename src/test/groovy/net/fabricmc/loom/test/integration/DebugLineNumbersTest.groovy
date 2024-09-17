@@ -142,6 +142,11 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 
 	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
 		File sourcesJar = gradle.getGeneratedSources(mappings, MinecraftJar.Type.SERVER.toString())
+
+		if (!sourcesJar.exists()) {
+			throw new IllegalStateException("Sources jar not found: $sourcesJar")
+		}
+
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 

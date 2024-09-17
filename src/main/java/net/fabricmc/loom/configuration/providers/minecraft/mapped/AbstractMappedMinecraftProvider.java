@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -76,11 +77,18 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	public List<MinecraftJar> provide(ProvideContext context) throws Exception {
 		final List<RemappedJars> remappedJars = getRemappedJars();
-		assert !remappedJars.isEmpty();
+		final List<MinecraftJar> minecraftJars = remappedJars.stream()
+				.map(RemappedJars::outputJar)
+				.toList();
 
-		if (!areOutputsValid(remappedJars) || context.refreshOutputs()) {
+		if (remappedJars.isEmpty()) {
+			throw new IllegalStateException("No remapped jars provided");
+		}
+
+		if (!areOutputsValid(remappedJars) || context.refreshOutputs() || !hasBackupJars(minecraftJars)) {
 			try {
 				remapInputs(remappedJars, context.configContext());
+				createBackupJars(minecraftJars);
 			} catch (Throwable t) {
 				cleanOutputs(remappedJars);
 
@@ -99,9 +107,29 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 			}
 		}
 
-		return remappedJars.stream()
-				.map(RemappedJars::outputJar)
-				.toList();
+		return minecraftJars;
+	}
+
+	// Create two copies of the remapped jar, the backup jar is used as the input of genSources
+	public static Path getBackupJarPath(MinecraftJar minecraftJar) {
+		final Path outputJarPath = minecraftJar.getPath();
+		return outputJarPath.resolveSibling(outputJarPath.getFileName() + ".backup");
+	}
+
+	protected boolean hasBackupJars(List<MinecraftJar> minecraftJars) {
+		for (MinecraftJar minecraftJar : minecraftJars) {
+			if (!Files.exists(getBackupJarPath(minecraftJar))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	protected void createBackupJars(List<MinecraftJar> minecraftJars) throws IOException {
+		for (MinecraftJar minecraftJar : minecraftJars) {
+			Files.copy(minecraftJar.getPath(), getBackupJarPath(minecraftJar), StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	public record ProvideContext(boolean applyDependencies, boolean refreshOutputs, ConfigContext configContext) {
@@ -234,6 +262,7 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	private void cleanOutputs(List<RemappedJars> remappedJars) throws IOException {
 		for (RemappedJars remappedJar : remappedJars) {
 			Files.deleteIfExists(remappedJar.outputJarPath());
+			Files.deleteIfExists(getBackupJarPath(remappedJar.outputJar()));
 		}
 	}
 

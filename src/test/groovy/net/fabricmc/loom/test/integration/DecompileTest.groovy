@@ -39,7 +39,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		def gradle = gradleProject(project: "decompile", version: version)
 
 		when:
-		def result = gradle.run(task: task, configurationCache: false)
+		def result = gradle.run(task: task)
 
 		then:
 		result.task(":${task}").outcome == SUCCESS
@@ -63,7 +63,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
                 }
             '''
 		when:
-		def result = gradle.run(task: "genSourcesWithCustom", configurationCache: false)
+		def result = gradle.run(task: "genSourcesWithCustom")
 
 		then:
 		result.task(":genSourcesWithCustom").outcome == SUCCESS
@@ -87,7 +87,7 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		'''
 
 		when:
-		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
+		def result = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
 
 		// Add fabric API to the project, this introduces some transitive access wideners
 		gradle.buildGradle << '''
@@ -96,10 +96,10 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
                 }
 		'''
 
-		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
+		def result2 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
 
 		// And run again, with no changes
-		def result3 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"], configurationCache: false)
+		def result3 = gradle.run(tasks: ["genSourcesWithVineflower"], args: ["--use-cache", "--info"])
 
 		then:
 		result.task(":genSourcesWithVineflower").outcome == SUCCESS

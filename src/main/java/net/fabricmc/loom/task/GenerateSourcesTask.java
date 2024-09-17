@@ -127,7 +127,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	// Contains the remapped linenumbers
 	@OutputFile
-	protected abstract RegularFileProperty getClassesOutputJar();
+	protected abstract ConfigurableFileCollection getClassesOutputJar(); // Single jar
 
 	// Unpick
 	@InputFile
@@ -206,9 +206,18 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 						throw new IllegalStateException("Input minecraft jar not found at: " + backupJarPath);
 					}
 
-					getClassesOutputJar().set(minecraftJar.toFile());
-
 					return backupJarPath.toFile();
+				}
+			}
+
+			throw new IllegalStateException("Input minecraft jar not found: " + getInputJarName().get());
+		}));
+		getClassesOutputJar().setFrom(getInputJarName().map(minecraftJarName -> {
+			final List<MinecraftJar> minecraftJars = getExtension().getNamedMinecraftProvider().getMinecraftJars();
+
+			for (MinecraftJar minecraftJar : minecraftJars) {
+				if (minecraftJar.getName().equals(minecraftJarName)) {
+					return minecraftJar.toFile();
 				}
 			}
 
@@ -275,7 +284,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private void runWithCache(Path cacheRoot) throws IOException {
 		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
 		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
-		final Path classesOutputJar = getClassesOutputJar().get().getAsFile().toPath();
+		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90));
 		final var decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
 		final String cacheKey = getCacheKey();

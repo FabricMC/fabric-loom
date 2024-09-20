@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,8 @@ public final class MappingsMerger {
 		LOGGER.info(":merged mappings in " + stopwatch.stop());
 	}
 
-	private static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	@VisibleForTesting
+	public static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
@@ -82,7 +84,8 @@ public final class MappingsMerger {
 		}
 	}
 
-	private static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	@VisibleForTesting
+	public static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(intermediaryTree);
 

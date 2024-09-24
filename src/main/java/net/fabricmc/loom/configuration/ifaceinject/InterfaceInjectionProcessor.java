@@ -242,7 +242,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 						name = ifaceInfo.substring(0, ifaceInfo.indexOf("<"));
 						generics = ifaceInfo.substring(ifaceInfo.indexOf("<"));
 
-						// First Generics Check, if there are generics, are them correctly written?
+						// First Generics Check, if there are generics, are they correctly written?
 						SignatureReader reader = new SignatureReader("Ljava/lang/Object" + generics + ";");
 						CheckSignatureAdapter checker = new CheckSignatureAdapter(CheckSignatureAdapter.CLASS_SIGNATURE, null);
 						reader.accept(checker);
@@ -313,6 +313,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				// Second Generics Check, if there are passed generics, are all of them present in the target class?
 				GenericsChecker checker = new GenericsChecker(Constants.ASM_VERSION, injectedInterfaces);
 				reader.accept(checker);
+				checker.check();
 
 				var resultingSignature = new StringBuilder(signature);
 
@@ -345,7 +346,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		@Override
 		public void visitEnd() {
 			// inject any necessary inner class entries
-			// this may produce technically incorrect bytecode cuz we don't know the actual access flags for inner class entries
+			// this may produce technically incorrect bytecode cuz we don't know the actual access flags for inner class entries,
 			// but it's hopefully enough to quiet some IDE errors
 			for (final InjectedInterface itf : injectedInterfaces) {
 				if (this.knownInnerClasses.contains(itf.ifaceName())) {
@@ -402,8 +403,8 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			super.visitFormalTypeParameter(name);
 		}
 
-		@Override
-		public void visitEnd() {
+		// Ensures that injected interfaces only use collected type parameters from the target class
+		public void check() {
 			for (InjectedInterface injectedInterface : this.injectedInterfaces) {
 				if (injectedInterface.generics() != null) {
 					SignatureReader reader = new SignatureReader("Ljava/lang/Object" + injectedInterface.generics() + ";");
@@ -416,8 +417,6 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 					reader.accept(confirm);
 				}
 			}
-
-			super.visitEnd();
 		}
 
 		public static class GenericsConfirm extends SignatureVisitor {

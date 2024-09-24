@@ -39,6 +39,8 @@ import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor
 import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.DoubleGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericInterface
+import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.FirstGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.GenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass
@@ -137,6 +139,12 @@ class InterfaceInjectionProcessorTest extends Specification {
 			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/proessor/classes/SelfGenericInterface"
 			loadedClass.constructors.first().newInstance().selfGenericInjectedMethod() == null
 		}
+
+		// Class using double generics and passing them to the interface
+		"class_9" | "net/fabricmc/loom/test/unit/processor/classes/DoublePassingGenericInterface<TF;TS;>" | DoublePassingGenericTargetClass.class | { Class<?> loadedClass ->
+			loadedClass.interfaces.first().name == "net/fabricmc/loom/test/unit/processor/classes/DoublePassingGenericTargetClass"
+			loadedClass.constructors.first().newInstance().doublePassingGenericInjectedMethod().getClass() == DoublePassingGenericTargetClass.Pair.class
+		}
 	}
 
 	def "nothing to inject"() {
@@ -230,7 +238,10 @@ class InterfaceInjectionProcessorTest extends Specification {
 		FirstGenericInterface.class,
 		SecondGenericInterface.class,
 		SelfGenericTargetClass.class,
-		SelfGenericInterface.class
+		SelfGenericInterface.class,
+		DoublePassingGenericTargetClass.class,
+		DoublePassingGenericTargetClass.Pair.class,
+		DoublePassingGenericInterface.class
 	]
 
 	private static final String MAPPINGS = """
@@ -243,5 +254,7 @@ c\tclass_5\tnet/fabricmc/loom/test/unit/processor/classes/AdvancedGenericTargetC
 c\tclass_5\$class_6\tnet/fabricmc/loom/test/unit/processor/classes/AdvancedGenericTargetClass\$Pair
 c\tclass_7\tnet/fabricmc/loom/test/unit/processor/classes/DoubleGenericTargetClass
 c\tclass_8\tnet/fabricmc/loom/test/unit/processor/classes/SelfGenericTargetClass
+c\tclass_9\tnet/fabricmc/loom/test/unit/processor/classes/DoublePassingGenericTargetClass
+c\tclass_9\$class_10\tnet/fabricmc/loom/test/unit/processor/classes/DoublePassingGenericTargetClass\$Pair
 """.trim()
 }

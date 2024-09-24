@@ -24,9 +24,6 @@
 
 package net.fabricmc.loom.test.unit.processor
 
-import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericInterface
-import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericTargetClass
-
 import java.nio.file.Path
 import java.util.function.Consumer
 
@@ -42,6 +39,8 @@ import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor
 import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.AdvancedGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.DoubleGenericTargetClass
+import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericInterface
+import net.fabricmc.loom.test.unit.processor.classes.DoublePassingGenericTargetClass
 import net.fabricmc.loom.test.unit.processor.classes.FirstGenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.GenericInterface
 import net.fabricmc.loom.test.unit.processor.classes.GenericTargetClass

@@ -111,22 +111,51 @@ public final class TinyRemapperHelper {
 
 			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
 				String className = classDef.getName(fromId);
-				String dstName = classDef.getName(toId);
 
-				if (dstName == null) {
-					// Unsure if this is correct, should be better than crashing tho.
-					dstName = className;
+				if (className == null) {
+					continue;
 				}
 
-				acceptor.acceptClass(className, dstName);
+				String dstClassName = classDef.getName(toId);
+
+				if (dstClassName == null) {
+					// Unsure if this is correct, should be better than crashing tho.
+					dstClassName = className;
+				}
+
+				acceptor.acceptClass(className, dstClassName);
 
 				for (MappingTree.FieldMapping field : classDef.getFields()) {
-					acceptor.acceptField(memberOf(className, field.getName(fromId), field.getDesc(fromId)), field.getName(toId));
+					String fieldName = field.getName(fromId);
+
+					if (fieldName == null) {
+						continue;
+					}
+
+					String dstFieldName = field.getName(toId);
+
+					if (dstFieldName == null) {
+						dstFieldName = fieldName;
+					}
+
+					acceptor.acceptField(memberOf(className, fieldName, field.getDesc(fromId)), dstFieldName);
 				}
 
 				for (MappingTree.MethodMapping method : classDef.getMethods()) {
-					IMappingProvider.Member methodIdentifier = memberOf(className, method.getName(fromId), method.getDesc(fromId));
-					acceptor.acceptMethod(methodIdentifier, method.getName(toId));
+					String methodName = method.getName(fromId);
+
+					if (methodName == null) {
+						continue;
+					}
+
+					String dstMethodName = method.getName(toId);
+
+					if (dstMethodName == null) {
+						dstMethodName = methodName;
+					}
+
+					IMappingProvider.Member methodIdentifier = memberOf(className, methodName, method.getDesc(fromId));
+					acceptor.acceptMethod(methodIdentifier, dstMethodName);
 
 					if (remapLocalVariables) {
 						for (MappingTree.MethodArgMapping parameter : method.getArgs()) {

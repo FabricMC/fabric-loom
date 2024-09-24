@@ -34,13 +34,13 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
@@ -63,7 +63,8 @@ public final class MappingsMerger {
 		LOGGER.info(":merged mappings in " + stopwatch.stop());
 	}
 
-	private static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	@VisibleForTesting
+	public static void mergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(new MappingSourceNsSwitch(intermediaryTree, MappingsNamespace.INTERMEDIARY.toString()));
 
@@ -72,7 +73,7 @@ public final class MappingsMerger {
 		}
 
 		MemoryMappingTree officialTree = new MemoryMappingTree();
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
+		UnobfuscatedMappingNsCompleter nsCompleter = new UnobfuscatedMappingNsCompleter(officialTree, MappingsNamespace.NAMED.toString(), Map.of(MappingsNamespace.OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsCompleter, MappingsNamespace.OFFICIAL.toString());
 		intermediaryTree.accept(nsSwitch);
 
@@ -83,7 +84,8 @@ public final class MappingsMerger {
 		}
 	}
 
-	private static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	@VisibleForTesting
+	public static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(intermediaryTree);
 
@@ -92,7 +94,7 @@ public final class MappingsMerger {
 		}
 
 		MemoryMappingTree officialTree = new MemoryMappingTree();
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(officialTree, Map.of(MappingsNamespace.CLIENT_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.SERVER_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
+		UnobfuscatedMappingNsCompleter nsCompleter = new UnobfuscatedMappingNsCompleter(officialTree, MappingsNamespace.NAMED.toString(), Map.of(MappingsNamespace.CLIENT_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString(), MappingsNamespace.SERVER_OFFICIAL.toString(), MappingsNamespace.INTERMEDIARY.toString()));
 		intermediaryTree.accept(nsCompleter);
 
 		// versions this old strip inner class attributes

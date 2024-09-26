@@ -105,10 +105,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		configurationCacheActive = getBuildFeatures().getConfigurationCache().getActive().get();
 		isolatedProjectsActive = getBuildFeatures().getIsolatedProjects().getActive().get();
 
-		if (configurationCacheActive) {
-			project.getLogger().warn("Loom support for the Gradle configuration cache is highly experimental and may not work as expected. Please report any issues you encounter.");
-		}
-
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}

@@ -73,7 +73,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private InstallerData installerData;
 	private boolean refreshDeps;
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
-	private final LoomProblemReporter problemReporter;
 	private final boolean configurationCacheActive;
 	private final boolean isolatedProjectsActive;
 
@@ -113,8 +112,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
 		}
-
-		problemReporter = project.getObjects().newInstance(LoomProblemReporter.class);
 	}
 
 	@Override
@@ -286,11 +283,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 		provider.getIsLegacyMinecraft().set(getProject().provider(() -> getMinecraftProvider().isLegacyVersion()));
 		provider.getIsLegacyMinecraft().disallowChanges();
-	}
-
-	@Override
-	public LoomProblemReporter getProblemReporter() {
-		return problemReporter;
 	}
 
 	@Override

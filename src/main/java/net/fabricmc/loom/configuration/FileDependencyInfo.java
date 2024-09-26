@@ -46,7 +46,6 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.FileCollectionDependency;
 
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
 
 public class FileDependencyInfo extends DependencyInfo {
 	protected final Map<String, File> classifierToFile = new HashMap<>();
@@ -129,15 +128,6 @@ public class FileDependencyInfo extends DependencyInfo {
 				throw new UncheckedIOException("Failed to read input file: " + root, e);
 			}
 		}
-	}
-
-	@Deprecated // Remove in Gradle 9
-	public static FileDependencyInfo createForDeprecatedSRD(Project project, Dependency dependency, Configuration configuration) {
-		if (!SelfResolvingDependencyUtils.isExplicitSRD(dependency)) {
-			throw new IllegalArgumentException("Dependency is a FileCollectionDependency");
-		}
-
-		return new FileDependencyInfo(project, dependency, configuration, SelfResolvingDependencyUtils.resolve(dependency));
 	}
 
 	@Override

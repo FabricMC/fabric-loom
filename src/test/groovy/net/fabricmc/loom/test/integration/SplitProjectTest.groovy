@@ -43,6 +43,7 @@ class SplitProjectTest extends Specification implements GradleProjectTestTrait {
 
 		then:
 		result.task(":build").outcome == SUCCESS
+		result.task(":test").outcome == SUCCESS
 
 		where:
 		version << STANDARD_TEST_VERSIONS

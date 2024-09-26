@@ -119,8 +119,21 @@ public class MinecraftLibraryProvider {
 	}
 
 	private List<Library> processLibraries(List<Library> libraries) {
-		final LibraryContext libraryContext = new LibraryContext(minecraftProvider.getVersionInfo(), JavaVersion.current());
+		final LibraryContext libraryContext = new LibraryContext(minecraftProvider.getVersionInfo(), getTargetRuntimeJavaVersion());
 		return processorManager.processLibraries(libraries, libraryContext);
+	}
+
+	private JavaVersion getTargetRuntimeJavaVersion() {
+		final Object property = project.findProperty(Constants.Properties.RUNTIME_JAVA_COMPATIBILITY_VERSION);
+
+		if (property != null) {
+			// This is very much a last ditch effort to allow users to set the runtime java version
+			// It's not recommended and will likely cause support confusion if it has been changed without good reason.
+			project.getLogger().warn("Runtime java compatibility version has manually been set to: %s".formatted(property));
+			return JavaVersion.toVersion(property);
+		}
+
+		return JavaVersion.current();
 	}
 
 	private void applyClientLibrary(Library library) {

@@ -37,9 +37,6 @@ import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
 
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.util.gradle.SelfResolvingDependencyUtils;
-
 public class DependencyInfo {
 	final Project project;
 	final Dependency dependency;
@@ -66,10 +63,7 @@ public class DependencyInfo {
 	}
 
 	public static DependencyInfo create(Project project, Dependency dependency, Configuration sourceConfiguration) {
-		if (SelfResolvingDependencyUtils.isExplicitSRD(dependency)) {
-			LoomGradleExtension.get(project).getProblemReporter().reportSelfResolvingDependencyUsage();
-			return FileDependencyInfo.createForDeprecatedSRD(project, dependency, sourceConfiguration);
-		} else if (dependency instanceof FileCollectionDependency fileCollectionDependency) {
+		if (dependency instanceof FileCollectionDependency fileCollectionDependency) {
 			return new FileDependencyInfo(project, fileCollectionDependency, sourceConfiguration);
 		} else {
 			return new DependencyInfo(project, dependency, sourceConfiguration);

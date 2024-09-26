@@ -166,7 +166,7 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 		return configuration.getAllDependencies()
 				.withType(ProjectDependency.class)
 				.stream()
-				.map(ProjectDependency::getDependencyProject)
+				.map(GradleUtils::getDependencyProject)
 				.filter(GradleUtils::isLoomProject);
 	}
 

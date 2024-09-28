@@ -237,6 +237,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getResetCache().convention(getExtension().refreshDeps());
 
 		getMappings().set(SourceMappingsService.create(getProject()));
+
+		mustRunAfter(getProject().getTasks().withType(AbstractRemapJarTask.class));
 	}
 
 	@TaskAction

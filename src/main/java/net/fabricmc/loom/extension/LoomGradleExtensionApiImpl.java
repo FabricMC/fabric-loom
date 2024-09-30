@@ -68,8 +68,10 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuil
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -151,7 +153,23 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.minecraftJarProcessors.finalizeValueOnRead();
 
 		//noinspection unchecked
-		this.minecraftJarConfiguration = project.getObjects().property((Class<MinecraftJarConfiguration<?, ?, ?>>) (Class<?>) MinecraftJarConfiguration.class).convention(MinecraftJarConfiguration.MERGED);
+		this.minecraftJarConfiguration = project.getObjects().property((Class<MinecraftJarConfiguration<?, ?, ?>>) (Class<?>) MinecraftJarConfiguration.class)
+				.convention(project.provider(() -> {
+					final LoomGradleExtension extension = LoomGradleExtension.get(project);
+					final MinecraftMetadataProvider metadataProvider = extension.getMetadataProvider();
+
+					// if no configuration is selected by the user, attempt to select one
+					// based on the mc version and which sides are present for it
+					if (!metadataProvider.getVersionMeta().downloads().containsKey("server")) {
+						return MinecraftJarConfiguration.CLIENT_ONLY;
+					} else if (!metadataProvider.getVersionMeta().downloads().containsKey("client")) {
+						return MinecraftJarConfiguration.SERVER_ONLY;
+					} else if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+						return MinecraftJarConfiguration.MERGED;
+					} else {
+						return MinecraftJarConfiguration.LEGACY_MERGED;
+					}
+				}));
 		this.minecraftJarConfiguration.finalizeValueOnRead();
 
 		this.accessWidener.finalizeValueOnRead();

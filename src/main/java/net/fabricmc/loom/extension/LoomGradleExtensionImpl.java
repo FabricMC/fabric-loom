@@ -50,6 +50,7 @@ import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsPr
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -66,6 +67,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private final List<AccessWidenerFile> transitiveAccessWideners = new ArrayList<>();
 
 	private LoomDependencyManager dependencyManager;
+	private MinecraftMetadataProvider metadataProvider;
 	private MinecraftProvider minecraftProvider;
 	private MappingConfiguration mappingConfiguration;
 	private NamedMinecraftProvider<?> namedMinecraftProvider;
@@ -128,6 +130,16 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public LoomDependencyManager getDependencyManager() {
 		return Objects.requireNonNull(dependencyManager, "Cannot get LoomDependencyManager before it has been setup");
+	}
+
+	@Override
+	public MinecraftMetadataProvider getMetadataProvider() {
+		return Objects.requireNonNull(metadataProvider, "Cannot get MinecraftMetadataProvider before it has been setup");
+	}
+
+	@Override
+	public void setMetadataProvider(MinecraftMetadataProvider metadataProvider) {
+		this.metadataProvider = metadataProvider;
 	}
 
 	@Override

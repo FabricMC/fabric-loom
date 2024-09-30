@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
@@ -67,6 +68,10 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	void setDependencyManager(LoomDependencyManager dependencyManager);
 
 	LoomDependencyManager getDependencyManager();
+
+	MinecraftMetadataProvider getMetadataProvider();
+
+	void setMetadataProvider(MinecraftMetadataProvider metadataProvider);
 
 	MinecraftProvider getMinecraftProvider();
 

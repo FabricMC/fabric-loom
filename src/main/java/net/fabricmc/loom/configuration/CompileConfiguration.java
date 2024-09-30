@@ -157,8 +157,16 @@ public abstract class CompileConfiguration implements Runnable {
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
-		if (jarConfiguration == MinecraftJarConfiguration.MERGED && !metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
-			jarConfiguration = MinecraftJarConfiguration.LEGACY_MERGED;
+		if (jarConfiguration == MinecraftJarConfiguration.MERGED) {
+			// if no configuration is selected by the user, attempt to select one
+			// based on the mc version and which sides are present for it
+			if (!metadataProvider.getVersionMeta().downloads().containsKey("server")) {
+				jarConfiguration = MinecraftJarConfiguration.CLIENT_ONLY;
+			} else if (!metadataProvider.getVersionMeta().downloads().containsKey("client")) {
+				jarConfiguration = MinecraftJarConfiguration.SERVER_ONLY;
+			} else if (!metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+				jarConfiguration = MinecraftJarConfiguration.LEGACY_MERGED;
+			}
 		}
 
 		// Provide the vanilla mc jars

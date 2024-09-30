@@ -37,17 +37,27 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 class UnpickTest extends Specification implements GradleProjectTestTrait {
 	static final String MAPPINGS = "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
 
-	def "unpick decompile"() {
+	def "unpick decompile #version #useCache"() {
 		setup:
 		def gradle = gradleProject(project: "unpick", version: version)
 
 		when:
-		def result = gradle.run(task: "genSources")
+		def result = gradle.run(tasks: useCache ? [
+			"genSourcesWithVineflower",
+			"--info"
+		] : [
+			"genSourcesWithVineflower",
+			"--no-use-cache",
+			"--info"
+		])
 		then:
-		result.task(":genSources").outcome == SUCCESS
+		result.task(":genSourcesWithVineflower").outcome == SUCCESS
 		getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+		result.output.contains(useCache ? "Using decompile cache." : "Not using decompile cache.")
+
 		where:
 		version << STANDARD_TEST_VERSIONS
+		useCache << [true, false]
 	}
 
 	def "unpick build"() {

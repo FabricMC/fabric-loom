@@ -250,6 +250,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		if (!getUseCache().get()) {
+			getLogger().info("Not using decompile cache.");
+
 			try (var timer = new Timer("Decompiled sources")) {
 				runWithoutCache();
 			} catch (Exception e) {
@@ -340,19 +342,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final ClassLineNumbers existingLinenumbers = workRequest.lineNumbers();
 		final ClassLineNumbers lineNumbers = ClassLineNumbers.merge(existingLinenumbers, outputLineNumbers);
 
-		if (lineNumbers == null) {
-			getLogger().info("No line numbers to remap, skipping remapping");
-			return;
-		}
-
-		Path tempJar = Files.createTempFile("loom", "linenumber-remap.jar");
-		Files.delete(tempJar);
-
-		try (var timer = new Timer("Remap line numbers")) {
-			remapLineNumbers(lineNumbers, classesInputJar, tempJar);
-		}
-
-		Files.move(tempJar, classesOutputJar, StandardCopyOption.REPLACE_EXISTING);
+		applyLineNumbers(lineNumbers, classesInputJar, classesOutputJar);
 
 		try (var timer = new Timer("Prune cache")) {
 			decompileCache.prune();
@@ -360,29 +350,34 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void runWithoutCache() throws IOException {
-		Path inputJar = getClassesInputJar().getSingleFile().toPath();
-		final Path outputJar = getSourcesOutputJar().get().getAsFile().toPath();
+		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
+		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
+		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
 
-		// The final output sources jar
+		Path workClassesJar = classesInputJar;
 
 		if (getUnpickDefinitions().isPresent()) {
 			try (var timer = new Timer("Unpick")) {
-				inputJar = unpickJar(inputJar, null);
+				workClassesJar = unpickJar(workClassesJar, null);
 			}
 		}
 
 		ClassLineNumbers lineNumbers;
 
 		try (var timer = new Timer("Decompile")) {
-			lineNumbers = runDecompileJob(inputJar, outputJar, null);
+			lineNumbers = runDecompileJob(workClassesJar, sourcesOutputJar, null);
 		}
 
-		if (Files.notExists(outputJar)) {
+		if (Files.notExists(sourcesOutputJar)) {
 			throw new RuntimeException("Failed to decompile sources");
 		}
 
-		getLogger().info("Decompiled sources written to {}", outputJar);
+		getLogger().info("Decompiled sources written to {}", sourcesOutputJar);
 
+		applyLineNumbers(lineNumbers, classesInputJar, classesOutputJar);
+	}
+
+	private void applyLineNumbers(@Nullable ClassLineNumbers lineNumbers, Path classesInputJar, Path classesOutputJar) throws IOException {
 		if (lineNumbers == null) {
 			getLogger().info("No line numbers to remap, skipping remapping");
 			return;
@@ -392,10 +387,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.delete(tempJar);
 
 		try (var timer = new Timer("Remap line numbers")) {
-			remapLineNumbers(lineNumbers, inputJar, tempJar);
+			remapLineNumbers(lineNumbers, classesInputJar, tempJar);
 		}
 
-		Files.move(tempJar, outputJar, StandardCopyOption.REPLACE_EXISTING);
+		Files.move(tempJar, classesOutputJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	private String getCacheKey() {

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.gradle.api.Transformer;
+import org.gradle.process.internal.JvmOptions;
 import org.gradle.workers.internal.DaemonForkOptions;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
 
@@ -45,7 +46,7 @@ public class WorkerDaemonClientsManagerHelper {
 		Transformer<List<Object>, List<Object>> transformer = workerDaemonClients -> {
 			for (Object /* WorkerDaemonClient */ client : workerDaemonClients) {
 				DaemonForkOptions forkOptions = getForkOptions(client);
-				Map<String, Object> systemProperties = forkOptions.getJavaForkOptions().getSystemProperties();
+				Map<String, Object> systemProperties = getSystemProperties(forkOptions);
 
 				if (systemProperties == null || !jvmMarkerValue.equals(systemProperties.get(MARKER_PROP))) {
 					// Not the JVM we are looking for
@@ -68,6 +69,30 @@ public class WorkerDaemonClientsManagerHelper {
 		}
 
 		return stopped.get();
+	}
+
+	private static Map<String, Object> getSystemProperties(DaemonForkOptions forkOptions) {
+		try {
+			Method getJavaForkOptionsMethod = forkOptions.getClass().getDeclaredMethod("getJavaForkOptions");
+			getJavaForkOptionsMethod.setAccessible(true);
+			Object /* JavaForkOptions */ javaForkOptions = getJavaForkOptionsMethod.invoke(forkOptions);
+			Method getSystemPropertiesMethod = javaForkOptions.getClass().getDeclaredMethod("getSystemProperties");
+			getSystemPropertiesMethod.setAccessible(true);
+			//noinspection unchecked
+			return (Map<String, Object>) getSystemPropertiesMethod.invoke(javaForkOptions);
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+			// Gradle 8.11 and below
+		}
+
+		// Gradle 8.12+
+		try {
+			Method getJvmOptions = forkOptions.getClass().getDeclaredMethod("getJvmOptions");
+			getJvmOptions.setAccessible(true);
+			JvmOptions jvmOptions = (JvmOptions) getJvmOptions.invoke(forkOptions);
+			return jvmOptions.getMutableSystemProperties();
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+			throw new RuntimeException("Failed to daemon system properties", e);
+		}
 	}
 
 	private static DaemonForkOptions getForkOptions(Object /* WorkerDaemonClient */ client) {

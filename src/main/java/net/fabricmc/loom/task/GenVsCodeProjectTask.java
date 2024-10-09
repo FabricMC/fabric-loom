@@ -73,7 +73,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 	public GenVsCodeProjectTask() {
 		setGroup(Constants.TaskGroup.IDE);
 		getLaunchConfigurations().set(getProject().provider(this::getConfigurations));
-		getLaunchJson().convention(getProject().getRootProject().getLayout().getProjectDirectory().file("vscode/launch.json"));
+		getLaunchJson().convention(getProject().getRootProject().getLayout().getProjectDirectory().file(".vscode/launch.json"));
 	}
 
 	private List<VsCodeConfiguration> getConfigurations() {

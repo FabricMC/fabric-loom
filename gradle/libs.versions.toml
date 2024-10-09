@@ -1,6 +1,6 @@
 [versions]
 kotlin = "1.9.24"
-asm = "9.6"
+asm = "9.7.1"
 commons-io = "2.15.1"
 gson = "2.10.1"
 guava = "33.0.0-jre"

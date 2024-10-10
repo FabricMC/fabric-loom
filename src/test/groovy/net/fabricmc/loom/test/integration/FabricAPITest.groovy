@@ -39,12 +39,14 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
 class FabricAPITest extends Specification implements GradleProjectTestTrait {
+	public static final String COMMIT = "41bc64cd617f03d49ecc4a4f7788cb65d465415c"
+
 	@Unroll
 	def "build and run (gradle #version, mixin ap disabled: #disableMixinAp)"() {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "41bc64cd617f03d49ecc4a4f7788cb65d465415c",
+				commit: COMMIT,
 				version: version,
 				patch: "fabric_api"
 				)
@@ -126,5 +128,35 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 			[PRE_RELEASE_GRADLE],
 			[false, true].shuffled()
 		].combinations()
+	}
+
+	@Unroll
+	def "configure on demand (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(
+				repo: "https://github.com/FabricMC/fabric.git",
+				commit: COMMIT,
+				version: version,
+				patch: "fabric_api"
+				)
+
+		when:
+		def result = gradle.run(
+				tasks: [
+					"fabric-resource-loader-v0:clean",
+					"fabric-resource-loader-v0:build"
+				],
+				args: [
+					"--parallel",
+					"--configure-on-demand",
+				],
+				configurationCache: false
+				)
+
+		then:
+		result.task(":fabric-resource-loader-v0:build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
 	}
 }

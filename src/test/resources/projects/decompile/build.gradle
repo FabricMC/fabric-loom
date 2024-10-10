@@ -3,9 +3,9 @@ plugins {
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:21w38a"
-	mappings "net.fabricmc:yarn:21w38a+build.11:v2"
-	modImplementation "net.fabricmc:fabric-loader:0.11.7"
+	minecraft "com.mojang:minecraft:1.21.1"
+	mappings "net.fabricmc:yarn:1.21.1+build.3:v2"
+	modImplementation "net.fabricmc:fabric-loader:0.16.6"
 }
 
 loom {

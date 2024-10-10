@@ -195,10 +195,13 @@ public final class JarWalker {
 			String superName = reader.getSuperName();
 
 			if (superName != null) {
-				parentClasses.add(superName);
+				parentClasses.add(superName + ".class");
 			}
 
-			Collections.addAll(parentClasses, reader.getInterfaces());
+			for (String iface : reader.getInterfaces()) {
+				parentClasses.add(iface + ".class");
+			}
+
 			return Collections.unmodifiableList(parentClasses);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read class file: " + classFile, e);

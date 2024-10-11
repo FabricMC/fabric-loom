@@ -109,6 +109,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			irc.getRunConfigXml().set(runConfigXml);
 			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
 			irc.getLaunchFile().set(runConfigFile);
+			configs.add(irc);
 		}
 
 		return configs;

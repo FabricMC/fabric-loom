@@ -57,4 +57,19 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "configure on demand (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "multiproject", version: version)
+
+		when:
+		def result = gradle.run(tasks: [":core:build"], args: ["--configure-on-demand"])
+
+		then:
+		result.task(":core:build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

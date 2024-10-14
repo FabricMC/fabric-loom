@@ -10,7 +10,7 @@ tiny-remapper = "0.10.4"
 access-widener = "2.1.0"
 mapping-io = "0.6.1"
 lorenz-tiny = "4.0.2"
-mercury = "0.4.1"
+mercury = "0.4.2"
 kotlinx-metadata = "0.9.0"
 loom-native = "0.2.0"
 

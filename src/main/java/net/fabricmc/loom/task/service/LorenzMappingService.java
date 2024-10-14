@@ -55,8 +55,8 @@ public final class LorenzMappingService extends Service<LorenzMappingService.Opt
 			MappingsService.createOptions(
 				project,
 				mappingConfiguration.tinyMappings,
-				to.toString(),
 				from.toString(),
+				to.toString(),
 				false)
 		));
 	}

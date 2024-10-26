@@ -128,6 +128,7 @@ public final class SourceSetHelper {
 		final List<File> classpath = getGradleClasspath(reference, project);
 
 		classpath.addAll(getIdeaClasspath(reference, project));
+		classpath.addAll(getIdeaModuleCompileOutput(reference));
 		classpath.addAll(getEclipseClasspath(reference, project));
 		classpath.addAll(getVscodeClasspath(reference, project));
 
@@ -190,6 +191,25 @@ public final class SourceSetHelper {
 		final File outputDir = new File(productionDir, IdeaUtils.getIdeaModuleName(reference));
 
 		return Collections.singletonList(outputDir);
+	}
+
+	private static List<File> getIdeaModuleCompileOutput(SourceSetReference reference) {
+		final File dotIdea = new File(reference.project().getRootDir(), ".idea");
+
+		if (!dotIdea.exists()) {
+			// Not an intellij project
+			return Collections.emptyList();
+		}
+
+		final String name = reference.sourceSet().getName();
+		final File projectDir = reference.project().getProjectDir();
+		final File outDir = new File(projectDir, "out");
+		final File sourceSetOutDir = new File(outDir, name.equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "production" : name);
+
+		return List.of(
+				new File(sourceSetOutDir, "classes"),
+				new File(sourceSetOutDir, "resources")
+		);
 	}
 
 	@Nullable

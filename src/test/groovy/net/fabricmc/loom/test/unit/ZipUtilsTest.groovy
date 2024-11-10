@@ -242,6 +242,39 @@ class ZipUtilsTest extends Specification {
 		thrown FileSystemUtil.UnrecoverableZipException
 	}
 
+	// Also see: ClosedZipFSReproducer
+	def "interrupted thread"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "test.json").text = """
+		{
+			"test": "This is a test of transforming"
+		}
+		"""
+		ZipUtils.pack(dir.toPath(), zip)
+
+		when:
+
+		ZipUtils.transformJson(JsonObject.class, zip, "test.json") { json ->
+			Thread.currentThread().interrupt()
+
+			json
+		}
+
+		then:
+		thrown FileSystemUtil.UnrecoverableZipException
+
+		// Reset the interrupt status
+		Thread.currentThread().isInterrupted()
+		Thread.interrupted()
+		!Thread.currentThread().isInterrupted()
+
+		cleanup:
+		// Cleanup after the mess we made.
+		FileSystemUtil.getJarFileSystem(zip, false).close()
+	}
+
 	def "reprocess uncompressed"() {
 		given:
 		// Create a reproducible input zip

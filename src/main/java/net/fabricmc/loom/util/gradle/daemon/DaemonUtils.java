@@ -73,6 +73,11 @@ public final class DaemonUtils {
 
 	@VisibleForTesting
 	public static boolean stopWhenIdle(Project project) {
+		// Clear the interrupted flag if set.
+		if (Thread.currentThread().isInterrupted()) {
+			assert Thread.interrupted();
+		}
+
 		DaemonInfo daemonInfo = findCurrentDaemon(project);
 
 		if (daemonInfo == null) {

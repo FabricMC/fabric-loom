@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.unit
 
+import java.nio.channels.ClosedChannelException
 import java.nio.file.FileSystem
 import java.nio.file.FileSystemAlreadyExistsException
 import java.nio.file.FileSystemException
@@ -34,7 +35,7 @@ import java.nio.file.Path
 
 import spock.lang.Specification
 
-// Test to prove https://bugs.openjdk.org/browse/JDK-8291712
+// Test to prove https://bugs.openjdk.org/browse/JDK-8291712 and https://bugs.openjdk.org/browse/JDK-8316882
 // If this test starts failing on a new JDK, it is likely that the bug has been fixed!
 class ClosedZipFSReproducer extends Specification {
 	def "JDK-8291712"() {
@@ -68,6 +69,33 @@ class ClosedZipFSReproducer extends Specification {
 
 		then:
 		!fs.isOpen()
+	}
+
+	def "JDK-8316882"() {
+		when:
+		Path tempDir = Files.createTempDirectory("test")
+		Path zipFile = tempDir.resolve("example.zip")
+
+		// Create a new ZipFileSystem, and write a file to it
+		openZipFS(zipFile, true).withCloseable {
+			Files.writeString(it.getPath("test.txt"), "Hello, World!")
+		}
+
+		// Open the existing ZipFileSystem, interrupt the thread before reading the file
+		def fs = openZipFS(zipFile, false)
+
+		Thread.currentThread().interrupt()
+		Files.readString(fs.getPath("test.txt"))
+
+		// Close then unexpectedly throws ClosedChannelException
+		fs.close()
+
+		then:
+		thrown(ClosedChannelException)
+
+		// Reset the interrupt status
+		Thread.interrupted()
+		!Thread.currentThread().isInterrupted()
 	}
 
 	private static FileSystem openZipFS(Path path, boolean create) throws IOException {

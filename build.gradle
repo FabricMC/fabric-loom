@@ -7,36 +7,10 @@ plugins {
 	id 'groovy'
 	id 'checkstyle'
 	id 'codenarc'
-	alias(libs.plugins.kotlin) apply false // Delay this so we can perform magic 🪄 first.
+	alias(libs.plugins.kotlin)
 	alias(libs.plugins.spotless)
 	alias(libs.plugins.retry)
 }
-
-/**
- * Haha this is fun :) The Kotlin gradle plugin triggers deprecation warnings for custom configurations (https://youtrack.jetbrains.com/issue/KT-60879)
- * We need to make DefaultConfiguration.isSpecialCaseOfChangingUsage think that our configurstion is a special case and not deprecated.
- * We do this by setting DefaultConfiguration.roleAtCreation to LEGACY, thus isInLegacyRole will now return true.
- *
- * Yeah I know we can just ignore the deprecation warning, but doing so wouldn't alert us to issues when testing against pre-release Gradle versions. Also this is more fun :)
- */
-def brokenConfigurations = [
-	"commonDecompilerRuntimeClasspath",
-	"fernflowerRuntimeClasspath",
-	"cfrRuntimeClasspath",
-	"vineflowerRuntimeClasspath"
-]
-
-configurations.configureEach {
-	if (brokenConfigurations.contains(it.name)) {
-		// For some reason Gradle stops us from using Groovy magic to do this, so lets do it the boring way.
-		def field = org.gradle.api.internal.artifacts.configurations.DefaultConfiguration.class.getDeclaredField("roleAtCreation")
-		field.setAccessible(true)
-		field.set(it, ConfigurationRoles.LEGACY)
-	}
-}
-
-// Ensure we apply the Kotlin plugin after, to allow for the above configuration to take place first
-apply plugin: libs.plugins.kotlin.get().pluginId
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
@@ -49,7 +23,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 group = 'net.fabricmc'
-def baseVersion = '1.8'
+def baseVersion = '1.9'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {

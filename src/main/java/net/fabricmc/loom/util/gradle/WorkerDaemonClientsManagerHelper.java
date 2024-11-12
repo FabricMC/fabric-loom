@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.gradle.api.Transformer;
-import org.gradle.process.internal.JvmOptions;
 import org.gradle.workers.internal.DaemonForkOptions;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
 
@@ -88,8 +87,11 @@ public class WorkerDaemonClientsManagerHelper {
 		try {
 			Method getJvmOptions = forkOptions.getClass().getDeclaredMethod("getJvmOptions");
 			getJvmOptions.setAccessible(true);
-			JvmOptions jvmOptions = (JvmOptions) getJvmOptions.invoke(forkOptions);
-			return jvmOptions.getMutableSystemProperties();
+			Object jvmOptions = getJvmOptions.invoke(forkOptions);
+			Method getMutableSystemProperties = jvmOptions.getClass().getDeclaredMethod("getMutableSystemProperties");
+			getMutableSystemProperties.setAccessible(true);
+			//noinspection unchecked
+			return (Map<String, Object>) getMutableSystemProperties.invoke(jvmOptions);
 		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
 			throw new RuntimeException("Failed to daemon system properties", e);
 		}

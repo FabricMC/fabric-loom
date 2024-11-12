@@ -48,7 +48,7 @@ public class FabricModJsonHelpers {
 		}
 
 		try {
-			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(sourceSets.toArray(SourceSet[]::new));
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets.toArray(SourceSet[]::new));
 
 			if (fabricModJson != null) {
 				return List.of(fabricModJson);

@@ -3,9 +3,12 @@ package net.fabricmc.loom.bootstrap;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.configuration.BuildFeatures;
 import org.gradle.api.plugins.PluginAware;
 import org.gradle.util.GradleVersion;
 
@@ -13,7 +16,7 @@ import org.gradle.util.GradleVersion;
  * This bootstrap is compiled against a minimal gradle API and java 8, this allows us to show a nice error to users who run on unsupported configurations.
  */
 @SuppressWarnings("unused")
-public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
+public abstract class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final String MIN_SUPPORTED_GRADLE_VERSION = "8.11";
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 17;
 	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2022;
@@ -21,12 +24,15 @@ public class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
 	private static final String PLUGIN_CLASS_NAME = "net.fabricmc.loom.LoomGradlePlugin";
 	private static final String IDEA_VERSION_PROP_KEY = "idea.version";
 
+	@Inject
+	protected abstract BuildFeatures getBuildFeatures();
+
 	@Override
 	public void apply(PluginAware pluginAware) {
 		if (pluginAware instanceof Project) {
 			Project project = (Project) pluginAware;
 
-			if (project.findProperty("fabric.loom.skip-env-validation") == null) {
+			if (getBuildFeatures().getIsolatedProjects().getActive().get() || project.findProperty("fabric.loom.skip-env-validation") == null) {
 				validateEnvironment();
 			} else {
 				project.getLogger().lifecycle("Loom environment validation disabled. Please re-enable before reporting any issues.");

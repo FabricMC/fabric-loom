@@ -59,6 +59,13 @@ public abstract class SandboxConfiguration implements Runnable {
 
 	@Override
 	public void run() {
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		if (extension.isProjectIsolationActive()) {
+			LOGGER.debug("Skipping sandbox configuration as project isolation is enabled.");
+			return;
+		}
+
 		if (getProject().findProperty(Constants.Properties.SANDBOX) == null) {
 			LOGGER.debug("No fabric sandbox property set");
 			return;

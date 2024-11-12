@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2023 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,51 +22,26 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.integration.buildSrc.multiMcVersions
 
-import spock.lang.Specification
-import spock.lang.Unroll
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.plugins.BasePluginExtension
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+class TestPlugin implements Plugin<Project> {
+	@Override
+	void apply(Project project) {
+		project.group = "com.example"
+		project.version = "1.0.0"
 
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-
-class MultiMcVersionTest extends Specification implements GradleProjectTestTrait {
-	static List<String> versions = [
-		'fabric-1.14.4',
-		'fabric-1.15',
-		'fabric-1.15.2',
-		'fabric-1.16',
-		'fabric-1.16.5',
-		'fabric-1.17',
-		'fabric-1.17.1',
-		'fabric-1.18',
-		'fabric-1.18.2',
-		'fabric-1.19',
-		'fabric-1.19.3'
-	]
-
-	@Unroll
-	def "build (gradle #version)"() {
-		setup:
-		def gradle = gradleProject(project: "multi-mc-versions", version: version)
-		gradle.buildSrc("multiMcVersions", false)
-
-		versions.forEach {
-			// Make dir as its now required by Gradle
-			new File(gradle.projectDir, it).mkdir()
+		project.getExtensions().configure(BasePluginExtension.class) {
+			it.archivesName = project.rootProject.isolated.name + "-" + project.name
 		}
 
-		when:
-		def result = gradle.run(tasks: "build", isloatedProjects: true, configureOnDemand: true)
+		def minecraftVersion = project.name.substring(7)
 
-		then:
-		versions.forEach {
-			result.task(":$it:build").outcome == SUCCESS
-		}
-
-		where:
-		version << STANDARD_TEST_VERSIONS
+		project.getDependencies().add("minecraft", "com.mojang:minecraft:$minecraftVersion")
+		project.getDependencies().add("mappings", "net.fabricmc:yarn:$minecraftVersion+build.1:v2")
+		project.getDependencies().add("modImplementation", "net.fabricmc:fabric-loader:0.16.9")
 	}
 }

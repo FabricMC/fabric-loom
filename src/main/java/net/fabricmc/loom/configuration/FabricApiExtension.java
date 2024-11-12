@@ -159,7 +159,7 @@ public abstract class FabricApiExtension {
 
 			settings.getModId().convention(getProject().provider(() -> {
 				try {
-					final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(dataGenSourceSet);
+					final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), dataGenSourceSet);
 
 					if (fabricModJson == null) {
 						throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");

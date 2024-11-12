@@ -59,8 +59,6 @@ import net.fabricmc.tinyremapper.IMappingProvider;
 public class MixinAPMappingService extends Service<MixinAPMappingService.Options> {
 	public static final ServiceType<Options, MixinAPMappingService> TYPE = new ServiceType<>(Options.class, MixinAPMappingService.class);
 
-	// TODO look into seeing if we can make this an option, it likely breaks project isolation.
-	private static final boolean INCLUDE_CROSS_PROJECT_MAPPINGS = true;
 	// Again look into what the result of changing this would be.
 	private static final boolean USE_ALL_SOURCE_SETS = true;
 	private static final Logger LOGGER = LoggerFactory.getLogger(MixinAPMappingService.class);
@@ -105,7 +103,8 @@ public class MixinAPMappingService extends Service<MixinAPMappingService.Options
 			}
 		};
 
-		if (!INCLUDE_CROSS_PROJECT_MAPPINGS) {
+		if (thisExtension.isProjectIsolationActive()) {
+			// TODO provide a project isolated way of remapping with dependency mixin mapping
 			processProject.accept(thisProject);
 		} else {
 			GradleUtils.allLoomProjects(thisProject.getGradle(), project -> {

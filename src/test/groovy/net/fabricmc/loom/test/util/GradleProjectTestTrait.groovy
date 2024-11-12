@@ -180,6 +180,10 @@ trait GradleProjectTestTrait {
 				args << "-Dorg.gradle.unsafe.isolated-projects=true"
 			}
 
+			if (options.configureOnDemand) {
+				args << "--configure-on-demand"
+			}
+
 			args.addAll(options.tasks ?: [])
 
 			args << "--stacktrace"
@@ -278,7 +282,7 @@ trait GradleProjectTestTrait {
 			return file
 		}
 
-		void buildSrc(String name) {
+		void buildSrc(String name, boolean apply = true) {
 			useBuildSrc = true
 
 			def buildSrcDir = new File(projectDir, "buildSrc")
@@ -305,24 +309,26 @@ trait GradleProjectTestTrait {
                 rootProject.name='loom-test-plugin'
             '''
 
-			// Patch the new plugin into the end of the plugins block
-			def matcher = buildGradle.text =~ /(?s)plugins \{(?<ids>.*?)}/
-			assert matcher.find()
-			def ids = matcher.group("ids")
-
-			def pluginBlock = """
-                plugins {
-                    ${ids}
-                    id 'loom-test-plugin'
-                }
-            """
-
-			buildGradle.text = buildGradle.text.replaceAll("(?s)(plugins \\{.*?})", pluginBlock)
-
 			def sourceSrc = new File("src/test/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)
 			def targetSrc = new File(buildSrcDir, "src/main/groovy/net/fabricmc/loom/test/integration/buildSrc/" + name)
 
 			FileUtils.copyDirectory(sourceSrc, targetSrc)
+
+			if (apply) {
+				// Patch the new plugin into the end of the plugins block
+				def matcher = buildGradle.text =~ /(?s)plugins \{(?<ids>.*?)}/
+				assert matcher.find()
+				def ids = matcher.group("ids")
+
+				def pluginBlock = """
+					plugins {
+						${ids}
+						id 'loom-test-plugin'
+					}
+				"""
+
+				buildGradle.text = buildGradle.text.replaceAll("(?s)(plugins \\{.*?})", pluginBlock)
+			}
 		}
 
 		void writeBuildSrcDeps(GradleRunner runner) {

@@ -268,11 +268,11 @@ public final class SourceSetHelper {
 	}
 
 	@Nullable
-	public static File findFileInResource(SourceSet sourceSet, String path) {
+	public static File findFileInResource(Project project, SourceSet sourceSet, String path) {
+		Objects.requireNonNull(project);
 		Objects.requireNonNull(sourceSet);
 		Objects.requireNonNull(path);
 
-		final Project project = getSourceSetProject(sourceSet);
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.isConfigurationCacheActive()) {
@@ -298,9 +298,9 @@ public final class SourceSetHelper {
 	}
 
 	@Nullable
-	public static File findFirstFileInResource(String path, SourceSet... sourceSets) {
+	public static File findFirstFileInResource(String path, Project project, SourceSet... sourceSets) {
 		for (SourceSet sourceSet : sourceSets) {
-			File file = findFileInResource(sourceSet, path);
+			File file = findFileInResource(project, sourceSet, path);
 
 			if (file != null) {
 				return file;

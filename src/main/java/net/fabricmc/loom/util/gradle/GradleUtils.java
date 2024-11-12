@@ -32,6 +32,8 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
+import net.fabricmc.loom.LoomGradleExtension;
+
 public final class GradleUtils {
 	private GradleUtils() {
 	}
@@ -61,6 +63,13 @@ public final class GradleUtils {
 	}
 
 	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.isProjectIsolationActive()) {
+			// TODO write a custom property parser for isolated projects
+			return project.provider(() -> false);
+		}
+
 		// Works around https://github.com/gradle/gradle/issues/23572
 		return project.provider(() -> {
 			final Object value = project.findProperty(key);
@@ -79,6 +88,17 @@ public final class GradleUtils {
 
 	public static boolean getBooleanProperty(Project project, String key) {
 		return getBooleanPropertyProvider(project, key).getOrElse(false);
+	}
+
+	public static Object getProperty(Project project, String key) {
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.isProjectIsolationActive()) {
+			// TODO write a custom property parser for isolated projects
+			return null;
+		}
+
+		return project.findProperty(key);
 	}
 
 	// A hack to include the given file in the configuration cache input

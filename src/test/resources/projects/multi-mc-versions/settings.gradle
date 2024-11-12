@@ -1,3 +1,14 @@
+plugins {
+	id 'fabric-loom' apply false
+}
+
+gradle.lifecycle.beforeProject {
+	if (it.rootProject == it) return
+
+		apply plugin: 'fabric-loom'
+	apply plugin: 'loom-test-plugin'
+}
+
 rootProject.name = "multi-mc-versions"
 
 // Yes lot of mc version

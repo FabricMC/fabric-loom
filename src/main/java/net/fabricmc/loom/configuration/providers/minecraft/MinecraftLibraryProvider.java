@@ -45,6 +45,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibr
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public class MinecraftLibraryProvider {
 	private static final Platform platform = Platform.CURRENT;
@@ -124,7 +125,7 @@ public class MinecraftLibraryProvider {
 	}
 
 	private JavaVersion getTargetRuntimeJavaVersion() {
-		final Object property = project.findProperty(Constants.Properties.RUNTIME_JAVA_COMPATIBILITY_VERSION);
+		final Object property = GradleUtils.getProperty(project, Constants.Properties.RUNTIME_JAVA_COMPATIBILITY_VERSION);
 
 		if (property != null) {
 			// This is very much a last ditch effort to allow users to set the runtime java version

@@ -69,4 +69,35 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "configure on demand (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "multi-mc-versions", version: version)
+		gradle.buildSrc("multiMcVersions", false)
+
+		versions.forEach {
+			// Make dir as its now required by Gradle
+			new File(gradle.projectDir, it).mkdir()
+		}
+
+		when:
+		def result = gradle.run(
+				tasks: ":fabric-1.19.3:build",
+				isloatedProjects: true,
+				configureOnDemand: true,
+				// See: https://github.com/gradle/gradle/issues/30401
+				// By default parallel configuration of all projects is preferred.
+				args: [
+					"-Dorg.gradle.internal.isolated-projects.configure-on-demand.tasks=true"
+				])
+
+		then:
+		result.task(":fabric-1.19.3:build").outcome == SUCCESS
+		// Ensure that loom is only loaded once.
+		result.output.count("Fabric Loom:") == 1
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

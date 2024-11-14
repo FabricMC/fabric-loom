@@ -3,7 +3,9 @@ plugins {
 }
 
 gradle.lifecycle.beforeProject {
-	if (it.rootProject == it) return
+	if (it.rootProject == it) {
+		return
+	}
 
 	apply plugin: 'fabric-loom'
 	apply plugin: 'loom-test-plugin'

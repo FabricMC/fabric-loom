@@ -86,6 +86,22 @@ public final class GradleUtils {
 		});
 	}
 
+	public static Provider<Integer> getIntegerPropertyProvider(Project project, String key) {
+		return project.provider(() -> {
+			final Object value = project.findProperty(key);
+
+			if (value == null) {
+				return null;
+			}
+
+			try {
+				return Integer.parseInt(value.toString());
+			} catch (final NumberFormatException ex) {
+				throw new IllegalArgumentException("Property " + key + " must be an integer", ex);
+			}
+		});
+	}
+
 	public static boolean getBooleanProperty(Project project, String key) {
 		return getBooleanPropertyProvider(project, key).getOrElse(false);
 	}

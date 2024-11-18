@@ -139,6 +139,8 @@ public class Constants {
 		 * Only set this when you have a good reason to do so, the default should be fine for almost all cases.
 		 */
 		public static final String RUNTIME_JAVA_COMPATIBILITY_VERSION = "fabric.loom.runtimeJavaCompatibilityVersion";
+		public static final String DECOMPILE_CACHE_MAX_FILES = "fabric.loom.decompileCacheMaxFiles";
+		public static final String DECOMPILE_CACHE_MAX_AGE = "fabric.loom.decompileCacheMaxAge";
 	}
 
 	public static final class Manifest {

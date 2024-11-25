@@ -116,6 +116,10 @@ public final class MinecraftJarProcessorManager {
 		return Checksum.sha1Hex(getCacheValue().getBytes(StandardCharsets.UTF_8)).substring(0, 10);
 	}
 
+	public String getSourceMappingsHash() {
+		return Checksum.sha1Hex(getCacheValue().getBytes(StandardCharsets.UTF_8));
+	}
+
 	public boolean requiresProcessingJar(Path jar) {
 		Objects.requireNonNull(jar);
 

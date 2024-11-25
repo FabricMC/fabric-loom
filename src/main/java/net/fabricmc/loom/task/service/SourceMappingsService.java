@@ -31,13 +31,13 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFiles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -56,6 +56,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class SourceMappingsService extends Service<SourceMappingsService.Options> {
 	public static final ServiceType<Options, SourceMappingsService> TYPE = new ServiceType<>(Options.class, SourceMappingsService.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SourceMappingsService.class);
 
 	public interface Options extends Service.Options {
 		@InputFiles
@@ -71,64 +72,63 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 	}
 
 	private static Path getMappings(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final MinecraftJarProcessorManager jarProcessor = MinecraftJarProcessorManager.create(project);
+
+		if (jarProcessor == null) {
+			LOGGER.info("No jar processor found, not creating source mappings, using project mappings");
+			return extension.getMappingConfiguration().tinyMappings;
+		}
+
+		final Path dir = extension.getFiles().getProjectPersistentCache().toPath().resolve("source_mappings");
+		final Path path = dir.resolve(jarProcessor.getSourceMappingsHash() + ".tiny");
+
+		if (Files.exists(path) && !extension.refreshDeps()) {
+			LOGGER.debug("Using cached source mappings");
+			return path;
+		}
+
+		LOGGER.info("Creating source mappings for hash {}", jarProcessor.getSourceMappingsHash());
+
+		try {
+			Files.createDirectories(dir);
+			Files.deleteIfExists(path);
+			createMappings(project, jarProcessor, path);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create source mappings", e);
+		}
+
+		return path;
+	}
+
+	private static void createMappings(Project project, MinecraftJarProcessorManager jarProcessor, Path outputMappings) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		Path inputMappings = extension.getMappingConfiguration().tinyMappings;
-
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
 		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
 			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString()));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to read mappings", e);
 		}
 
-		final List<GenerateSourcesTask.MappingsProcessor> mappingsProcessors = new ArrayList<>();
-
-		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(project);
-
-		if (minecraftJarProcessorManager != null) {
-			mappingsProcessors.add(mappings -> {
-				try (var serviceFactory = new ScopedServiceFactory()) {
-					final var configContext = new ConfigContextImpl(project, serviceFactory, extension);
-					return minecraftJarProcessorManager.processMappings(mappings, new MappingProcessorContextImpl(configContext));
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
-				}
-			});
-		}
-
-		if (mappingsProcessors.isEmpty()) {
-			return inputMappings;
-		}
-
-		boolean transformed = false;
-
-		for (GenerateSourcesTask.MappingsProcessor mappingsProcessor : mappingsProcessors) {
-			if (mappingsProcessor.transform(mappingTree)) {
-				transformed = true;
+		GenerateSourcesTask.MappingsProcessor mappingsProcessor = mappings -> {
+			try (var serviceFactory = new ScopedServiceFactory()) {
+				final var configContext = new ConfigContextImpl(project, serviceFactory, extension);
+				return jarProcessor.processMappings(mappings, new MappingProcessorContextImpl(configContext));
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
 			}
-		}
+		};
+
+		boolean transformed = mappingsProcessor.transform(mappingTree);
 
 		if (!transformed) {
-			return inputMappings;
-		}
-
-		final Path outputMappings;
-
-		try {
-			outputMappings = Files.createTempFile("loom-transitive-mappings", ".tiny");
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to create temp file", e);
+			LOGGER.info("No mappings processors transformed the mappings");
 		}
 
 		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
 			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, MappingsNamespace.NAMED.toString()));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to write mappings", e);
 		}
-
-		return outputMappings;
 	}
 
 	public SourceMappingsService(Options options, ServiceFactory serviceFactory) {

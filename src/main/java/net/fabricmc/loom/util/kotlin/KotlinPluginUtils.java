@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Properties;
 
-import kotlin.metadata.jvm.KotlinClassMetadata;
 import org.gradle.api.Project;
 
 public class KotlinPluginUtils {
@@ -55,9 +54,5 @@ public class KotlinPluginUtils {
 		}
 
 		return props.getProperty(property);
-	}
-
-	public static String getKotlinMetadataVersion() {
-		return KotlinClassMetadata.class.getPackage().getImplementationVersion().split("-")[0];
 	}
 }

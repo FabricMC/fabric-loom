@@ -61,17 +61,16 @@ public final class KotlinClasspathService extends Service<KotlinClasspathService
 
 		return createOptions(
 				project,
-				KotlinPluginUtils.getKotlinPluginVersion(project),
-				KotlinPluginUtils.getKotlinMetadataVersion()
+				KotlinPluginUtils.getKotlinPluginVersion(project)
 		);
 	}
 
-	private static Provider<Options> createOptions(Project project, String kotlinVersion, String kotlinMetadataVersion) {
+	private static Provider<Options> createOptions(Project project, String kotlinVersion) {
 		// Create a detached config to resolve the kotlin std lib for the provided version.
 		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
 				project.getDependencies().create("org.jetbrains.kotlin:kotlin-stdlib:" + kotlinVersion),
 				// Load kotlinx-metadata-jvm like this to work around: https://github.com/gradle/gradle/issues/14727
-				project.getDependencies().create("org.jetbrains.kotlinx:kotlinx-metadata-jvm:" + kotlinMetadataVersion)
+				project.getDependencies().create("org.jetbrains.kotlin:kotlin-metadata-jvm:" + kotlinVersion)
 		);
 
 		return TYPE.create(project, options -> {

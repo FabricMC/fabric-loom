@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
+import org.objectweb.asm.commons.Remapper
 import kotlin.metadata.ClassName
 import kotlin.metadata.ExperimentalContextReceivers
 import kotlin.metadata.KmAnnotation
@@ -52,7 +53,6 @@ import kotlin.metadata.jvm.signature
 import kotlin.metadata.jvm.syntheticMethodForAnnotations
 import kotlin.metadata.jvm.syntheticMethodForDelegate
 import kotlin.metadata.jvm.toJvmInternalName
-import org.objectweb.asm.commons.Remapper
 
 @OptIn(ExperimentalContextReceivers::class)
 class KotlinClassRemapper(private val remapper: Remapper) {

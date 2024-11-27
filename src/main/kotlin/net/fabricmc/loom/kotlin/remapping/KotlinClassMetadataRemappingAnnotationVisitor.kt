@@ -24,13 +24,13 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import kotlin.metadata.jvm.KotlinClassMetadata
-import kotlin.metadata.jvm.Metadata
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.Remapper
 import org.objectweb.asm.tree.AnnotationNode
 import org.slf4j.LoggerFactory
+import kotlin.metadata.jvm.KotlinClassMetadata
+import kotlin.metadata.jvm.Metadata
 
 class KotlinClassMetadataRemappingAnnotationVisitor(
     private val remapper: Remapper,

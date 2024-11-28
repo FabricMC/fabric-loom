@@ -110,7 +110,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getUselegacyMixinAP().set(legacyMixin);
 			options.getKotlinClasspathService().set(KotlinClasspathService.createOptions(project));
 			options.getClasspath().from(classpath);
-			options.getKnownIndyBsms().set(extension.getKnownIndyBsms());
+			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 		});
 	}

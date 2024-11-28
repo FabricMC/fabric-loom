@@ -24,8 +24,9 @@
 
 package net.fabricmc.loom.test.unit
 
-import net.fabricmc.loom.util.ProcessUtil
 import spock.lang.Specification
+
+import net.fabricmc.loom.util.ProcessUtil
 
 class ProcessUtilTest extends Specification {
 	def "print process info"() {

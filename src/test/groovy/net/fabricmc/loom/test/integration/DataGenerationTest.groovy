@@ -29,10 +29,20 @@ import spock.lang.Unroll
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class DataGenerationTest extends Specification implements GradleProjectTestTrait {
+	private static String DEPENDENCIES = """
+		dependencies {
+			minecraft "com.mojang:minecraft:1.20.2"
+			mappings "net.fabricmc:yarn:1.20.2+build.4:v2"
+			modImplementation "net.fabricmc:fabric-loader:0.14.23"
+			modImplementation "net.fabricmc.fabric-api:fabric-api:0.90.0+1.20.2"
+		}
+	"""
+
 	@Unroll
 	def "dataGeneration (gradle #version)"() {
 		setup:
@@ -41,14 +51,7 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
                 fabricApi {
                     configureDataGeneration()
                 }
-
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.20.2"
-                    mappings "net.fabricmc:yarn:1.20.2+build.4:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.14.23"
-                    modImplementation "net.fabricmc.fabric-api:fabric-api:0.90.0+1.20.2"
-                }
-            '''
+            ''' + DEPENDENCIES
 		when:
 		def result = gradle.run(task: "runDatagen")
 
@@ -80,17 +83,8 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
                     }
                 }
 
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.20.2"
-                    mappings "net.fabricmc:yarn:1.20.2+build.4:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.14.23"
-                    modImplementation "net.fabricmc.fabric-api:fabric-api:0.90.0+1.20.2"
-
-                    modDatagenImplementation fabricApi.module("fabric-data-generation-api-v1", "0.90.0+1.20.2")
-                }
-
                 println("%%" + loom.runs.datagen.configName + "%%")
-            '''
+            ''' + DEPENDENCIES
 		when:
 		def result = gradle.run(task: "runDatagen")
 
@@ -100,5 +94,112 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
 
 		where:
 		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "client dataGeneration (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
+                fabricApi {
+                    configureDataGeneration {
+                    	client = true
+					}
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runDatagen")
+
+		then:
+		result.task(":runDatagen").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "client dataGeneration sourceset (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
+                // Must configure the main mod
+                loom.mods {
+                    "example" {
+                        sourceSet sourceSets.main
+                    }
+                }
+
+                fabricApi {
+                    configureDataGeneration {
+                        createSourceSet = true
+                        createRunConfiguration = true
+                        modId = "example-datagen"
+                        strictValidation = true
+                        client = true
+                    }
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runDatagen")
+
+		then:
+		result.task(":runDatagen").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "split client dataGeneration (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
+				loom {
+					splitEnvironmentSourceSets()
+					mods {
+						"example" {
+							sourceSet sourceSets.main
+							sourceSet sourceSets.client
+						}
+					}
+                }
+
+                fabricApi {
+                    configureDataGeneration {
+                    	client = true
+					}
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runDatagen")
+
+		then:
+		result.task(":runDatagen").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "split client dataGeneration sourceset (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
+                loom {
+					splitEnvironmentSourceSets()
+					mods {
+						"example" {
+							sourceSet sourceSets.main
+							sourceSet sourceSets.client
+						}
+					}
+                }
+
+                fabricApi {
+                    configureDataGeneration {
+                        createSourceSet = true
+                        createRunConfiguration = true
+                        modId = "example-datagen"
+                        strictValidation = true
+                        client = true
+                    }
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runDatagen")
+
+		then:
+		result.task(":runDatagen").outcome == SUCCESS
 	}
 }

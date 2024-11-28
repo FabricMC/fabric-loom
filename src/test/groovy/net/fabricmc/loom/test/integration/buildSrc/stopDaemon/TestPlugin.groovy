@@ -85,7 +85,7 @@ class TestPlugin implements Plugin<Project> {
 		def future = handler.daemonConnection.thenAccept { it.waitForAndProcessStop() }
 
 		// Stop the daemon
-		def result = DaemonUtils.stopWhenIdle(project)
+		def result = DaemonUtils.stopWhenIdle(DaemonUtils.Context.fromProject(project))
 
 		// Wait for the connection to be processed, this should have already happened, as the above call is blocking
 		future.join()

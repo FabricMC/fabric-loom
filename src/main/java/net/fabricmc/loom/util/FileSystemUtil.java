@@ -72,6 +72,16 @@ public final class FileSystemUtil {
 
 		@Override
 		public void close() throws IOException {
+			// JDK-8316882, a separate JDK bug where a zip FS cannot be closed on an interrupted thread
+			// Doing so will fail, after a stack trace is printed for each entry of the zip
+			// TODO is there a better way to know if the underlying file channel is closed?
+			if (Thread.currentThread().isInterrupted()) {
+				// We leak here as we never actually free the zip FS, but this is the best we can do
+				// Lets assume the JVM effectively fucked here, so throw a UnrecoverableZipException forcing it to exit
+				// When a build is canceled a new Gradle daemon will be started, so this is not a big deal
+				throw new UnrecoverableZipException("Cannot close zip FS on interrupted thread", new InterruptedException());
+			}
+
 			try {
 				reference.close();
 			} catch (IOException e) {

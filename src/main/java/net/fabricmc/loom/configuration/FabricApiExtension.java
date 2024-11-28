@@ -205,6 +205,11 @@ public abstract class FabricApiExtension {
 					run.source(DATAGEN_SOURCESET_NAME);
 				}
 			});
+
+			// Add the output directory as an output allowing the task to be skipped.
+			getProject().getTasks().named("runDatagen", task -> {
+				task.getOutputs().file(outputDirectory);
+			});
 		}
 	}
 

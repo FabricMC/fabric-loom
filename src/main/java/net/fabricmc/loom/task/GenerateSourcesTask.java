@@ -98,6 +98,7 @@ import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 import net.fabricmc.loom.util.gradle.ThreadedProgressLoggerConsumer;
 import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 import net.fabricmc.loom.util.gradle.WorkerDaemonClientsManagerHelper;
+import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -196,6 +197,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Inject
 	protected abstract ProgressLoggerFactory getProgressLoggerFactory();
 
+	@Nested
+	protected abstract Property<DaemonUtils.Context> getDaemonUtilsContext();
+
 	// Prevent Gradle from running two gen sources tasks in parallel
 	@ServiceReference(SyncTaskBuildService.NAME)
 	abstract Property<SyncTaskBuildService> getSyncTask();
@@ -250,6 +254,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getMaxCachedFiles().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_FILES).orElse(50_000));
 		getMaxCacheFileAge().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_AGE).orElse(90));
 
+		getDaemonUtilsContext().set(getProject().getObjects().newInstance(DaemonUtils.Context.class, getProject()));
+
 		mustRunAfter(getProject().getTasks().withType(AbstractRemapJarTask.class));
 	}
 
@@ -267,7 +273,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			try (var timer = new Timer("Decompiled sources")) {
 				runWithoutCache();
 			} catch (Exception e) {
-				ExceptionUtil.processException(e, getProject());
+				ExceptionUtil.processException(e, getDaemonUtilsContext().get());
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 			}
 
@@ -300,7 +306,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 				runWithCache(fs.getRoot());
 			}
 		} catch (Exception e) {
-			ExceptionUtil.processException(e, getProject());
+			ExceptionUtil.processException(e, getDaemonUtilsContext().get());
 			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 		}
 	}

@@ -37,18 +37,22 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
 import net.fabricmc.loom.nativeplatform.LoomNativePlatformException;
 
-public record ProcessUtil(LogLevel logLevel) {
+public record ProcessUtil(ArgumentVisibility argumentVisibility) {
 	private static final String EXPLORER_COMMAND = "C:\\Windows\\explorer.exe";
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessUtil.class);
 
 	public static ProcessUtil create(Project project) {
-		return new ProcessUtil(project.getGradle().getStartParameter().getLogLevel());
+		return create(ArgumentVisibility.get(project));
+	}
+
+	public static ProcessUtil create(ArgumentVisibility argumentVisibility) {
+		return new ProcessUtil(argumentVisibility);
 	}
 
 	public String printWithParents(ProcessHandle handle) {
 		String result = printWithParents(handle, 0).trim();
 
-		if (logLevel != LogLevel.INFO && logLevel != LogLevel.DEBUG) {
+		if (argumentVisibility == ArgumentVisibility.HIDE) {
 			return "Run with --info or --debug to show arguments, may reveal sensitive info\n" + result;
 		}
 
@@ -75,7 +79,7 @@ public record ProcessUtil(LogLevel logLevel) {
 	}
 
 	private Optional<String> getProcessArguments(ProcessHandle handle) {
-		if (logLevel != LogLevel.INFO && logLevel != LogLevel.DEBUG) {
+		if (argumentVisibility != ArgumentVisibility.SHOW_SENSITIVE) {
 			return Optional.empty();
 		}
 
@@ -116,5 +120,15 @@ public record ProcessUtil(LogLevel logLevel) {
 		}
 
 		return Optional.of(joiner.toString());
+	}
+
+	public enum ArgumentVisibility {
+		HIDE,
+		SHOW_SENSITIVE;
+
+		static ArgumentVisibility get(Project project) {
+			final LogLevel logLevel = project.getGradle().getStartParameter().getLogLevel();
+			return (logLevel == LogLevel.INFO || logLevel == LogLevel.DEBUG) ? SHOW_SENSITIVE : HIDE;
+		}
 	}
 }

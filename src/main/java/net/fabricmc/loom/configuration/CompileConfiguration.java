@@ -72,6 +72,7 @@ import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
@@ -112,7 +113,7 @@ public abstract class CompileConfiguration implements Runnable {
 				extension.setDependencyManager(dependencyManager);
 				dependencyManager.handleDependencies(getProject(), serviceFactory);
 			} catch (Exception e) {
-				ExceptionUtil.processException(e, getProject());
+				ExceptionUtil.processException(e, DaemonUtils.Context.fromProject(getProject()));
 				disownLock();
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}

@@ -28,14 +28,16 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.cache.FileLockManager;
 import org.gradle.internal.file.Chmod;
 import org.gradle.internal.remote.internal.RemoteConnection;
 import org.gradle.internal.remote.internal.inet.TcpOutgoingConnector;
 import org.gradle.internal.serialize.Serializers;
-import org.gradle.internal.service.ServiceRegistry;
-import org.gradle.invocation.DefaultGradle;
 import org.gradle.launcher.daemon.client.DaemonClientConnection;
 import org.gradle.launcher.daemon.client.StopDispatcher;
 import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer;
@@ -63,17 +65,17 @@ public final class DaemonUtils {
 	/**
 	 * Request the Gradle daemon to stop when it becomes idle.
 	 */
-	public static void tryStopGradleDaemon(Project project) {
+	public static void tryStopGradleDaemon(DaemonUtils.Context context) {
 		try {
-			stopWhenIdle(project);
+			stopWhenIdle(context);
 		} catch (Throwable t) {
 			LOGGER.error("Failed to request the Gradle demon to stop", t);
 		}
 	}
 
 	@VisibleForTesting
-	public static boolean stopWhenIdle(Project project) {
-		DaemonInfo daemonInfo = findCurrentDaemon(project);
+	public static boolean stopWhenIdle(DaemonUtils.Context context) {
+		DaemonInfo daemonInfo = findCurrentDaemon(context);
 
 		if (daemonInfo == null) {
 			return false;
@@ -98,14 +100,13 @@ public final class DaemonUtils {
 	}
 
 	@Nullable
-	private static DaemonInfo findCurrentDaemon(Project project) {
+	private static DaemonInfo findCurrentDaemon(DaemonUtils.Context context) {
 		// Gradle maintains a list of running daemons in a registry.bin file.
-		final Path registryBin = project.getGradle().getGradleUserHomeDir().toPath().resolve("daemon").resolve(GradleVersion.current().getVersion()).resolve("registry.bin");
-		project.getLogger().lifecycle("Looking for daemon in: " + registryBin);
+		final Path registryBin = Path.of(context.getRegistryBin().get());
+		LOGGER.info("Looking for daemon in: {}", registryBin);
 
 		// We can use a PersistentDaemonRegistry to read this
-		final ServiceRegistry services = ((DefaultGradle) project.getGradle()).getServices();
-		final DaemonRegistry registry = new PersistentDaemonRegistry(registryBin.toFile(), services.get(FileLockManager.class), services.get(Chmod.class));
+		final DaemonRegistry registry = new PersistentDaemonRegistry(registryBin.toFile(), context.getFileLockManager(), context.getChmod());
 
 		final long pid = ProcessHandle.current().pid();
 		final List<DaemonInfo> runningDaemons = registry.getAll();
@@ -120,5 +121,34 @@ public final class DaemonUtils {
 
 		LOGGER.warn("Could not find current process in daemon registry: {}", registryBin);
 		return null;
+	}
+
+	public abstract static class Context {
+		@Input
+		protected abstract Property<String> getRegistryBin();
+
+		@Inject
+		protected abstract FileLockManager getFileLockManager();
+
+		@Inject
+		protected abstract Chmod getChmod();
+
+		@SuppressWarnings("unused")
+		@Inject
+		public Context(Project project) {
+			getRegistryBin().set(Context.getRegistryBinPathName(project));
+		}
+
+		public static Context fromProject(Project project) {
+			return project.getObjects().newInstance(Context.class, project);
+		}
+
+		private static String getRegistryBinPathName(Project project) {
+			return project.getGradle().getGradleUserHomeDir().toPath()
+					.resolve("daemon")
+					.resolve(GradleVersion.current().getVersion())
+					.resolve("registry.bin")
+					.toAbsolutePath().toString();
+		}
 	}
 }

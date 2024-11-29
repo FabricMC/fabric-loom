@@ -75,7 +75,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 
 				dependencies {
                     minecraft "com.mojang:minecraft:${minecraftVersion}"
-                    mappings "net.fabricmc:yarn:${minecraftVersion}+build.1:v2"
+                    mappings "net.fabricmc:yarn:${minecraftVersion}+build.2:v2"
 
 					modImplementation "net.fabricmc.fabric-api:fabric-api:999.0.0"
                 }

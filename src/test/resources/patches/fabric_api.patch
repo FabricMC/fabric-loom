@@ -1,6 +1,15 @@
 diff --git a/build.gradle b/build.gradle
 --- a/build.gradle	(revision 70277babddfaf52ee30013af94764da19473b3b1)
-+++ b/build.gradle	(date 1732874605816)
++++ b/build.gradle	(date 1732875235843)
+@@ -13,7 +13,7 @@
+
+ def ENV = System.getenv()
+
+-version = project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()
++version = "999.0.0"
+ logger.lifecycle("Building Fabric: " + version)
+
+ def metaProjects = [
 @@ -34,24 +34,7 @@
  import org.apache.commons.codec.digest.DigestUtils
 

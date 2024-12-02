@@ -142,24 +142,16 @@ public abstract class FabricApiExtension {
 
 		if (settings.getCreateSourceSet().get()) {
 			final boolean isClientAndSplit = extension.areEnvironmentSourceSetsSplit() && settings.getClient().get();
-			final SourceSet targetSourceSet = isClientAndSplit ? SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()) : mainSourceSet;
 
 			SourceSetContainer sourceSets = SourceSetHelper.getSourceSets(getProject());
 
 			// Create the new datagen sourceset, depend on the main or client sourceset.
 			SourceSet dataGenSourceSet = sourceSets.create(DATAGEN_SOURCESET_NAME, sourceSet -> {
-				sourceSet.setCompileClasspath(
-							sourceSet.getCompileClasspath()
-								.plus(targetSourceSet.getOutput())
-				);
+				dependsOn(sourceSet, mainSourceSet);
 
-				sourceSet.setRuntimeClasspath(
-							sourceSet.getRuntimeClasspath()
-									.plus(targetSourceSet.getOutput())
-				);
-
-				extendsFrom(getProject(), sourceSet.getCompileClasspathConfigurationName(), targetSourceSet.getCompileClasspathConfigurationName());
-				extendsFrom(getProject(), sourceSet.getRuntimeClasspathConfigurationName(), targetSourceSet.getRuntimeClasspathConfigurationName());
+				if (isClientAndSplit) {
+					dependsOn(sourceSet, SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
+				}
 			});
 
 			settings.getModId().convention(getProject().provider(() -> {
@@ -340,5 +332,20 @@ public abstract class FabricApiExtension {
 		configurations.named(name, configuration -> {
 			configuration.extendsFrom(configurations.getByName(extendsFrom));
 		});
+	}
+
+	private void dependsOn(SourceSet sourceSet, SourceSet other) {
+		sourceSet.setCompileClasspath(
+				sourceSet.getCompileClasspath()
+						.plus(other.getOutput())
+		);
+
+		sourceSet.setRuntimeClasspath(
+				sourceSet.getRuntimeClasspath()
+						.plus(other.getOutput())
+		);
+
+		extendsFrom(getProject(), sourceSet.getCompileClasspathConfigurationName(), other.getCompileClasspathConfigurationName());
+		extendsFrom(getProject(), sourceSet.getRuntimeClasspathConfigurationName(), other.getRuntimeClasspathConfigurationName());
 	}
 }

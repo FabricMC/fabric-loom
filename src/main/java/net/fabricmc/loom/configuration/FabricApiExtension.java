@@ -135,11 +135,6 @@ public abstract class FabricApiExtension {
 			jar.exclude(".cache/**");
 		});
 
-		taskContainer.getByName(LifecycleBasePlugin.CLEAN_TASK_NAME, task -> {
-			Delete clean = (Delete) task;
-			clean.delete(outputDirectory);
-		});
-
 		if (settings.getCreateSourceSet().get()) {
 			final boolean isClientAndSplit = extension.areEnvironmentSourceSetsSplit() && settings.getClient().get();
 

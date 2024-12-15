@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableMap;
@@ -43,6 +44,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.MutableVersionConstraint;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.query.ArtifactResolutionQuery;
 import org.gradle.api.artifacts.result.ArtifactResult;
@@ -243,7 +246,10 @@ public class ModConfigurationRemapper {
 	private static List<ArtifactRef> resolveArtifacts(Project project, Configuration configuration) {
 		final List<ArtifactRef> artifacts = new ArrayList<>();
 
-		for (ResolvedArtifact artifact : configuration.getResolvedConfiguration().getResolvedArtifacts()) {
+		final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedConfiguration().getResolvedArtifacts();
+		downloadAllSources(project, resolvedArtifacts);
+
+		for (ResolvedArtifact artifact : resolvedArtifacts) {
 			final Path sources = findSources(project, artifact);
 			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
 		}
@@ -268,6 +274,27 @@ public class ModConfigurationRemapper {
 		final String fileName = file.getFileName().toString();
 		final int dotIndex = fileName.lastIndexOf('.');
 		return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
+	}
+
+	private static void downloadAllSources(Project project, Set<ResolvedArtifact> resolvedArtifacts) {
+		if (isCIBuild()) {
+			return;
+		}
+
+		final DependencyHandler dependencies = project.getDependencies();
+
+		List<ComponentIdentifier> componentIdentifiers = resolvedArtifacts.stream()
+				.map(ResolvedArtifact::getId)
+				.map(ComponentArtifactIdentifier::getComponentIdentifier)
+				.toList();
+
+		//noinspection unchecked
+		ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()
+				.forComponents(componentIdentifiers)
+				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
+
+		// Run a single query for all of the artifacts, this will allow them to be resolved in parallel before they are queried individually
+		query.execute();
 	}
 
 	@Nullable

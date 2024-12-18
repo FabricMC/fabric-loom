@@ -37,14 +37,14 @@ publishing {
 			from components.java
 
 			artifact(remapJar) {
-				classifier "classifier"
+				classifier = "classifier"
 			}
 		}
 	}
 
 	repositories {
 		maven {
-			url "http://localhost:${System.getProperty("loom.test.mavenPort")}/"
+			url = "http://localhost:${System.getProperty("loom.test.mavenPort")}/"
 			allowInsecureProtocol = true
 		}
 	}

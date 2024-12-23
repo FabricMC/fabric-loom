@@ -120,4 +120,30 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "mojang mappings via lazy provider (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18-pre5"
+                    mappings project.provider {
+						loom.layered() {
+							officialMojangMappings()
+						}
+					}
+                }
+            '''
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

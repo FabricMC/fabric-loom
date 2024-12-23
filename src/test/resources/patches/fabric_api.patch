@@ -1,6 +1,6 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision 70277babddfaf52ee30013af94764da19473b3b1)
-+++ b/build.gradle	(date 1732875235843)
+--- a/build.gradle	(revision d70d2c06bb8fafdb72c6778b29fb050618015ab3)
++++ b/build.gradle	(date 1734958436644)
 @@ -13,7 +13,7 @@
 
  def ENV = System.getenv()
@@ -36,23 +36,17 @@ diff --git a/build.gradle b/build.gradle
  }
 
  def getBranch() {
-@@ -247,19 +230,6 @@
-
- 	test {
- 		useJUnitPlatform()
--
--		afterEvaluate {
--			// See: https://github.com/FabricMC/fabric-loader/pull/585
--			def classPathGroups = loom.mods.stream()
--					.map { modSettings ->
--						SourceSetHelper.getClasspath(modSettings, getProject()).stream()
--								.map(File.&getAbsolutePath)
--								.collect(Collectors.joining(File.pathSeparator))
--					}
--					.collect(Collectors.joining(File.pathSeparator+File.pathSeparator))
--
--			systemProperty("fabric.classPathGroups", classPathGroups)
--		}
+@@ -250,10 +233,11 @@
  	}
 
  	tasks.withType(ProcessResources).configureEach {
+-		inputs.property "version", project.version
++		def version = project.version
++		inputs.property "version", version
+
+ 		filesMatching("fabric.mod.json") {
+-			expand "version": project.version
++			expand "version": version
+ 		}
+ 	}
+

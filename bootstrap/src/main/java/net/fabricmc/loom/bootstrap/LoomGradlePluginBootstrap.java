@@ -17,7 +17,7 @@ import org.gradle.util.GradleVersion;
  */
 @SuppressWarnings("unused")
 public abstract class LoomGradlePluginBootstrap implements Plugin<PluginAware> {
-	private static final String MIN_SUPPORTED_GRADLE_VERSION = "8.11";
+	private static final String MIN_SUPPORTED_GRADLE_VERSION = "8.12";
 	private static final int MIN_SUPPORTED_MAJOR_JAVA_VERSION = 17;
 	private static final int MIN_SUPPORTED_MAJOR_IDEA_VERSION = 2022;
 

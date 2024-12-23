@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.20"
+kotlin = "2.0.21"
 asm = "9.7.1"
 commons-io = "2.15.1"
 gson = "2.10.1"

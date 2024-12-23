@@ -56,7 +56,7 @@ repositories {
 
 configurations {
 	bootstrap {
-		transitive false
+		transitive = false
 	}
 	compileClasspath.extendsFrom bootstrap
 	runtimeClasspath.extendsFrom bootstrap
@@ -294,18 +294,18 @@ publishing {
 		if (!ENV.EXPERIMENTAL) {
 			// Also publish a snapshot so people can use the latest version if they wish
 			snapshot(MavenPublication) { publication ->
-				groupId project.group
-				artifactId project.base.archivesName.get()
-				version baseVersion + '-SNAPSHOT'
+				groupId = project.group
+				artifactId = project.base.archivesName.get()
+				version = baseVersion + '-SNAPSHOT'
 
 				from components.java
 			}
 
 			// Manually crate the plugin marker for snapshot versions
 			snapshotPlugin(MavenPublication) { publication ->
-				groupId 'fabric-loom'
-				artifactId 'fabric-loom.gradle.plugin'
-				version baseVersion + '-SNAPSHOT'
+				groupId = 'fabric-loom'
+				artifactId = 'fabric-loom.gradle.plugin'
+				version = baseVersion + '-SNAPSHOT'
 
 				pom.withXml({
 					// Based off org.gradle.plugin.devel.plugins.MavenPluginPublishPlugin

@@ -27,13 +27,13 @@ package net.fabricmc.loom.test.unit
 import org.gradle.api.Project
 import spock.lang.Specification
 
-import net.fabricmc.loom.configuration.FabricApiExtension
+import net.fabricmc.loom.configuration.fabricapi.FabricApiVersions
 import net.fabricmc.loom.test.util.GradleTestUtil
 
 class FabricApiExtensionTest extends Specification {
 	def "get module version"() {
 		when:
-		def fabricApi = new FabricApiExtension() {
+		def fabricApi = new FabricApiVersions() {
 					Project project = GradleTestUtil.mockProject()
 				}
 		def version = fabricApi.moduleVersion(moduleName, apiVersion)
@@ -51,7 +51,7 @@ class FabricApiExtensionTest extends Specification {
 
 	def "unknown module"() {
 		when:
-		def fabricApi = new FabricApiExtension() {
+		def fabricApi = new FabricApiVersions() {
 					Project project = GradleTestUtil.mockProject()
 				}
 		fabricApi.moduleVersion("fabric-api-unknown", apiVersion)

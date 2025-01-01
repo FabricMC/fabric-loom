@@ -126,7 +126,7 @@ public abstract class LoomTasks implements Runnable {
 		});
 	}
 
-	private static String getRunConfigTaskName(RunConfigSettings config) {
+	public static String getRunConfigTaskName(RunConfigSettings config) {
 		String configName = config.getName();
 		return "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 	}

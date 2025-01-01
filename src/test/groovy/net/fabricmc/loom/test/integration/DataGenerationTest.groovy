@@ -243,7 +243,7 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
             ''' + DEPENDENCIES
 		when:
 		def result = gradle.run(task: "runClientGameTest")
-		def eula = new File(gradle.projectDir, "build/gametest/eula.txt")
+		def eula = new File(gradle.projectDir, "build/run/clientGameTest/eula.txt")
 
 		then:
 		result.task(":runClientGameTest").outcome == SUCCESS

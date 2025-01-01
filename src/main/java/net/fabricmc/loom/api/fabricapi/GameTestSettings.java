@@ -41,11 +41,6 @@ public interface GameTestSettings {
 	Property<Boolean> getCreateSourceSet();
 
 	/**
-	 * Contains a boolean indicating whether a run configuration should be created for the tests.
-	 */
-	Property<Boolean> getCreateRunConfigurations();
-
-	/**
 	 * Contains a string property representing the mod ID associated with the tests.
 	 *
 	 * <p>This must be set when {@link #getCreateSourceSet()} is set.
@@ -70,9 +65,18 @@ public interface GameTestSettings {
 	/**
 	 * Contains a boolean property indicating whether the eula has been accepted. By enabling this you agree to the Minecraft EULA located at <a href="https://aka.ms/MinecraftEULA">https://aka.ms/MinecraftEULA</a>.
 	 *
-	 * <p>This only works when {@link #getCreateRunConfigurations()} is enabled.
+	 * <p>This only works when {@link #getEnableClientGameTests()} is enabled.
 	 *
 	 * <p>Default: false
 	 */
 	Property<Boolean> getEula();
+
+	/**
+	 * Contains a boolean property indicating whether the run directories should be cleared before running the tests.
+	 *
+	 * <p>This only works when {@link #getEnableClientGameTests()} is enabled.
+	 *
+	 * <p>Default: true
+	 */
+	Property<Boolean> getClearRunDirectory();
 }

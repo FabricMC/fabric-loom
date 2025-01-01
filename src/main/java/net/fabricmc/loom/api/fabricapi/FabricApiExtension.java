@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package net.fabricmc.loom.api.fabricapi;
 
 import org.gradle.api.Action;
 import org.gradle.api.artifacts.Dependency;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * A gradle extension with specific functionality related to Fabric API.
@@ -58,4 +59,17 @@ public interface FabricApiExtension {
 	 * @param action An action to configure specific data generation settings. See {@link DataGenerationSettings} for more information.
 	 */
 	void configureDataGeneration(Action<DataGenerationSettings> action);
+
+	/**
+	 * Configuration of game and client tests using the default settings.
+	 */
+	@ApiStatus.Experimental
+	void configureTests();
+
+	/**
+	 * Configuration of game and/or client tests using the specified settings.
+	 * @param action An action to configure specific game test settings. See {@link GameTestSettings} for more information.
+	 */
+	@ApiStatus.Experimental
+	void configureTests(Action<GameTestSettings> action);
 }

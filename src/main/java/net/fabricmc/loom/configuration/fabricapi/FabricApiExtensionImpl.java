@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2020-2023 FabricMC
+ * Copyright (c) 2020-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import org.gradle.api.model.ObjectFactory;
 
 import net.fabricmc.loom.api.fabricapi.DataGenerationSettings;
 import net.fabricmc.loom.api.fabricapi.FabricApiExtension;
+import net.fabricmc.loom.api.fabricapi.GameTestSettings;
 
 public abstract class FabricApiExtensionImpl implements FabricApiExtension {
 	@Inject
@@ -39,10 +40,12 @@ public abstract class FabricApiExtensionImpl implements FabricApiExtension {
 
 	private final FabricApiVersions versions;
 	private final FabricApiDataGeneration dataGeneration;
+	private final FabricApiTesting testing;
 
 	public FabricApiExtensionImpl() {
 		versions = getObjectFactory().newInstance(FabricApiVersions.class);
 		dataGeneration = getObjectFactory().newInstance(FabricApiDataGeneration.class);
+		testing = getObjectFactory().newInstance(FabricApiTesting.class);
 	}
 
 	@Override
@@ -63,5 +66,15 @@ public abstract class FabricApiExtensionImpl implements FabricApiExtension {
 	@Override
 	public void configureDataGeneration(Action<DataGenerationSettings> action) {
 		dataGeneration.configureDataGeneration(action);
+	}
+
+	@Override
+	public void configureTests() {
+		configureTests(gameTestSettings -> { });
+	}
+
+	@Override
+	public void configureTests(Action<GameTestSettings> action) {
+		testing.configureTests(action);
 	}
 }

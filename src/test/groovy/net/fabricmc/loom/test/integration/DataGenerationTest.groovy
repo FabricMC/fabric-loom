@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2023 FabricMC
+ * Copyright (c) 2023-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -31,15 +32,16 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class DataGenerationTest extends Specification implements GradleProjectTestTrait {
 	private static String DEPENDENCIES = """
 		dependencies {
-			minecraft "com.mojang:minecraft:1.20.2"
-			mappings "net.fabricmc:yarn:1.20.2+build.4:v2"
-			modImplementation "net.fabricmc:fabric-loader:0.14.23"
-			modImplementation "net.fabricmc.fabric-api:fabric-api:0.90.0+1.20.2"
+			minecraft "com.mojang:minecraft:1.21.4"
+			mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
+			modImplementation "net.fabricmc:fabric-loader:0.16.9"
+			modImplementation "net.fabricmc.fabric-api:fabric-api:0.114.0+1.21.4"
 		}
 	"""
 
@@ -201,5 +203,53 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
 
 		then:
 		result.task(":runDatagen").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "game tests (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
+                fabricApi {
+                    configureTests()
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runGameTest", expectFailure: true)
+
+		then:
+		// We expect this to fail because there is nothing to test
+		// At least we know that Fabric API is attempting to run the tests
+		result.task(":runGameTest").outcome == FAILED
+		result.output.contains("No test functions were given!")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	@IgnoreIf({ System.getenv("CI") != null }) // This test is disabled on CI because it launches a real client and cannot run headless.
+	def "client game tests (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
+                fabricApi {
+                    configureTests {
+                    	createSourceSet = true
+                    	modId = "example-test"
+                    	eula = true
+                    }
+                }
+            ''' + DEPENDENCIES
+		when:
+		def result = gradle.run(task: "runClientGameTest")
+		def eula = new File(gradle.projectDir, "build/gametest/eula.txt")
+
+		then:
+		result.task(":runClientGameTest").outcome == SUCCESS
+		eula.text.contains("eula=true")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
 	}
 }

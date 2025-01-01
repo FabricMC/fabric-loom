@@ -54,7 +54,7 @@ abstract class FabricApiDataGeneration {
 	protected abstract Project getProject();
 
 	@Inject
-	public FabricApiDataGeneration() {
+	FabricApiDataGeneration() {
 	}
 
 	void configureDataGeneration(Action<DataGenerationSettings> action) {

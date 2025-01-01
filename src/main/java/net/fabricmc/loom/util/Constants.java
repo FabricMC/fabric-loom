@@ -82,6 +82,10 @@ public class Constants {
 		 */
 		public static final String LOCAL_RUNTIME = "localRuntime";
 		public static final String NAMED_ELEMENTS = "namedElements";
+		/**
+		 * The configuration that contains the Minecraft client and loader runtime libraries, as used by the production run tasks.
+		 */
+		public static final String MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES = "minecraftTestClientRuntimeLibraries";
 
 		private Configurations() {
 		}

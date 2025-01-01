@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2023 FabricMC
+ * Copyright (c) 2018-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
@@ -126,6 +127,55 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 
 		then:
 		result.task(":downloadAssets").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "prod server (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.21.4"
+                    mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.16.9"
+                }
+                
+                tasks.register("prodServer", net.fabricmc.loom.task.prod.ServerProductionRunTask) {
+                    installerVersion = "1.0.1"
+                }
+            '''
+		when:
+		def result = gradle.run(task: "prodServer")
+
+		then:
+		result.task(":prodServer").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	@IgnoreIf({ System.getenv("CI") != null }) // This test is disabled on CI because it launches a real client and cannot run headless.
+	def "prod client (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.21.4"
+                    mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.16.9"
+                }
+                
+                tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask)
+            '''
+		when:
+		def result = gradle.run(task: "prodClient")
+
+		then:
+		result.task(":prodClient").outcome == SUCCESS
 
 		where:
 		version << STANDARD_TEST_VERSIONS

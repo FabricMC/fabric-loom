@@ -142,7 +142,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                     mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
                     modImplementation "net.fabricmc:fabric-loader:0.16.9"
                 }
-                
+
                 tasks.register("prodServer", net.fabricmc.loom.task.prod.ServerProductionRunTask) {
                     installerVersion = "1.0.1"
                 }
@@ -168,7 +168,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                     mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
                     modImplementation "net.fabricmc:fabric-loader:0.16.9"
                 }
-                
+
                 tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask)
             '''
 		when:

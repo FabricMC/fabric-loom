@@ -53,6 +53,10 @@ abstract class FabricApiDataGeneration {
 	@Inject
 	protected abstract Project getProject();
 
+	@Inject
+	public FabricApiDataGeneration() {
+	}
+
 	void configureDataGeneration(Action<DataGenerationSettings> action) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final TaskContainer taskContainer = getProject().getTasks();

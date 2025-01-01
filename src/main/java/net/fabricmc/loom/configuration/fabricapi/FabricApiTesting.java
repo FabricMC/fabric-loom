@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.OutputFile;
@@ -42,6 +41,7 @@ import org.gradle.api.tasks.TaskContainer;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.fabricapi.GameTestSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.task.AbstractLoomTask;
 
 public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 	@Inject
@@ -104,14 +104,9 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		}
 	}
 
-	public abstract static class AcceptEulaTask extends DefaultTask {
+	public abstract static class AcceptEulaTask extends AbstractLoomTask {
 		@OutputFile
 		public abstract RegularFileProperty getEulaFile();
-
-		@Inject
-		public AcceptEulaTask() {
-			setGroup("fabric");
-		}
 
 		@TaskAction
 		public void acceptEula() throws IOException {

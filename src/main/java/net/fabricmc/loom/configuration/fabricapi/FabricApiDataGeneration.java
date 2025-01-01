@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.fabricapi;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,25 +35,24 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.fabricapi.DataGenerationSettings;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
-import net.fabricmc.loom.util.fmj.FabricModJson;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-abstract class FabricApiDataGeneration {
-	private static final String DATAGEN_SOURCESET_NAME = "datagen";
-
+public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet {
 	@Inject
 	protected abstract Project getProject();
 
 	@Inject
-	FabricApiDataGeneration() {
+	public FabricApiDataGeneration() {
+	}
+
+	@Override
+	protected String getSourceSetName() {
+		return "datagen";
 	}
 
 	void configureDataGeneration(Action<DataGenerationSettings> action) {
@@ -90,39 +88,7 @@ abstract class FabricApiDataGeneration {
 		});
 
 		if (settings.getCreateSourceSet().get()) {
-			final boolean isClientAndSplit = extension.areEnvironmentSourceSetsSplit() && settings.getClient().get();
-
-			SourceSetContainer sourceSets = SourceSetHelper.getSourceSets(getProject());
-
-			// Create the new datagen sourceset, depend on the main or client sourceset.
-			SourceSet dataGenSourceSet = sourceSets.create(DATAGEN_SOURCESET_NAME, sourceSet -> {
-				dependsOn(sourceSet, mainSourceSet);
-
-				if (isClientAndSplit) {
-					dependsOn(sourceSet, SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
-				}
-			});
-
-			settings.getModId().convention(getProject().provider(() -> {
-				try {
-					final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), dataGenSourceSet);
-
-					if (fabricModJson == null) {
-						throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
-					}
-
-					return fabricModJson.getId();
-				} catch (IOException e) {
-					throw new org.gradle.api.UncheckedIOException("Failed to read mod id from the datagen source set.", e);
-				}
-			}));
-
-			extension.getMods().create(settings.getModId().get(), mod -> {
-				// Create a classpath group for this mod. Assume that the main sourceset is already in a group.
-				mod.sourceSet(DATAGEN_SOURCESET_NAME);
-			});
-
-			extension.createRemapConfigurations(sourceSets.getByName(DATAGEN_SOURCESET_NAME));
+			configureSourceSet(settings.getModId(), settings.getClient().get());
 		}
 
 		if (settings.getCreateRunConfiguration().get()) {
@@ -143,7 +109,7 @@ abstract class FabricApiDataGeneration {
 				}
 
 				if (settings.getCreateSourceSet().get()) {
-					run.source(DATAGEN_SOURCESET_NAME);
+					run.source(getSourceSetName());
 				}
 			});
 

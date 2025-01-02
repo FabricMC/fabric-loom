@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.integration
 
 import java.util.concurrent.TimeUnit
 
+import spock.lang.IgnoreIf
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
@@ -161,7 +162,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 
 	@Timeout(value = 10, unit = TimeUnit.MINUTES)
 	@Unroll
-	// XVFB is installed on the CI for this test
+	@IgnoreIf({ !os.linux }) // XVFB is installed on the CI for this test
 	def "prod client (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)

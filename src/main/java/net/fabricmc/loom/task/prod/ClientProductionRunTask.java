@@ -43,6 +43,16 @@ import net.fabricmc.loom.util.Platform;
  */
 @ApiStatus.Experimental
 public abstract non-sealed class ClientProductionRunTask extends AbstractProductionRunTask {
+	/**
+	 * Whether to use XVFB to run the game, using a virtual framebuffer. This is useful for CI environments that don't have a display server.
+	 *
+	 * <p>Defaults to true only on Linux and when the "CI" environment variable is set.
+	 *
+	 * <p>XVFB must be installed, on Debian-based systems you can install it with: <code>apt install -y xvfb</code>
+	 */
+	@Input
+	public abstract Property<Boolean> getUseXVFB();
+
 	// Internal options
 	@Input
 	protected abstract Property<String> getAssetsIndex();
@@ -52,6 +62,11 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 
 	@Inject
 	public ClientProductionRunTask() {
+		getUseXVFB().convention(getProject().getProviders().environmentVariable("CI")
+				.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
+				.orElse(false)
+		);
+
 		getAssetsIndex().set(getExtension().getMinecraftVersion()
 				.map(minecraftVersion -> getExtension()
 						.getMinecraftProvider()
@@ -69,6 +84,19 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 		getClasspath().from(getProject().getConfigurations().named(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES));
 
 		dependsOn("downloadAssets");
+	}
+
+	@Override
+	protected void configureCommand(ExecSpec exec) {
+		if (getUseXVFB().get()) {
+			if (!Platform.CURRENT.getOperatingSystem().isLinux()) {
+				throw new UnsupportedOperationException("XVFB is only supported on Linux");
+			}
+
+			exec.commandLine("/usr/bin/xvfb-run", "-a");
+		}
+
+		super.configureCommand(exec);
 	}
 
 	@Override

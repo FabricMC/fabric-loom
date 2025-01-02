@@ -32,20 +32,24 @@ import spock.lang.Timeout
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
+import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.download.Download
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 // This test runs a mod that exits on mod init
 class RunConfigTest extends Specification implements GradleProjectTestTrait {
-	private static List<String> tasks = [
+	private static final List<String> tasks = [
 		"runClient",
 		"runServer",
 		"runTestmodClient",
 		"runTestmodServer",
 		"runAutoTestServer"
 	]
+	private static final String TRACY_CAPTURE_LINUX = "https://github.com/modmuss50/tracy-utils/releases/download/0.0.1/linux-x86_64-tracy-capture"
+
 	@Unroll
 	def "Run config #task (gradle #version)"() {
 		setup:
@@ -165,6 +169,9 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 	@IgnoreIf({ !os.linux }) // XVFB is installed on the CI for this test
 	def "prod client (gradle #version)"() {
 		setup:
+		def tracyCapture = new File(LoomTestConstants.TEST_DIR, "tracy-capture")
+		Download.create(TRACY_CAPTURE_LINUX).defaultCache().downloadPath(tracyCapture.toPath())
+
 		def gradle = gradleProject(project: "minimalBase", version: version)
 		gradle.buildGradle << '''
 				configurations {
@@ -183,13 +190,23 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                 tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
                 	mods.from(configurations.productionMods)
                 	jvmArgs.add("-Dfabric.client.gametest")
+
+                	tracy {
+                		tracyCapture = file("tracy-capture")
+                		output = file("profile.tracy")
+                	}
                 }
             '''
+
+		// Copy tracy into the project
+		new File(gradle.projectDir, "tracy-capture").bytes = tracyCapture.bytes
+
 		when:
 		def result = gradle.run(task: "prodClient")
 
 		then:
 		result.task(":prodClient").outcome == SUCCESS
+		new File(gradle.projectDir, "profile.tracy").exists()
 
 		where:
 		version << STANDARD_TEST_VERSIONS

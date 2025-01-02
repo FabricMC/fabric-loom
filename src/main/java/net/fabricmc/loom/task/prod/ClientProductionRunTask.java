@@ -25,13 +25,17 @@
 package net.fabricmc.loom.task.prod;
 
 import java.io.File;
+import java.io.IOException;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.process.ExecSpec;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -52,6 +56,21 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 	 */
 	@Input
 	public abstract Property<Boolean> getUseXVFB();
+
+	@Nested
+	@Optional
+	public abstract Property<TracyCapture> getTracyCapture();
+
+	/**
+	 * Configures the tracy profiler to run alongside the game. See @{@link TracyCapture} for more information.
+	 *
+	 * @param action The configuration action.
+	 */
+	public void tracy(Action<? super TracyCapture> action) {
+		getTracyCapture().set(getProject().getObjects().newInstance(TracyCapture.class));
+		getTracyCapture().finalizeValue();
+		action.execute(getTracyCapture().get());
+	}
 
 	// Internal options
 	@Input
@@ -84,6 +103,16 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 		getClasspath().from(getProject().getConfigurations().named(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES));
 
 		dependsOn("downloadAssets");
+	}
+
+	@Override
+	public void run() throws IOException {
+		if (getTracyCapture().isPresent()) {
+			getTracyCapture().get().runWithTracy(super::run);
+			return;
+		}
+
+		super.run();
 	}
 
 	@Override
@@ -120,5 +149,9 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 				"--assetsDir", getAssetsDir().get().getAsFile().getAbsolutePath(),
 				"--gameDir", getRunDir().get().getAsFile().getAbsolutePath()
 		);
+
+		if (getTracyCapture().isPresent()) {
+			exec.args("--tracy");
+		}
 	}
 }

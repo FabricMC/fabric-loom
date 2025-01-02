@@ -62,22 +62,47 @@ import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
+/**
+ * This is the base task for running the game in a "production" like environment. Using intermediary names, and not enabling development only features.
+ *
+ * <p>Do not use this task directly, use {@link ClientProductionRunTask} or {@link ServerProductionRunTask} instead.
+ */
 @ApiStatus.Experimental
-public abstract class AbstractProductionRunTask extends AbstractLoomTask {
+public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask permits ClientProductionRunTask, ServerProductionRunTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProductionRunTask.class);
 
+	/**
+	 * A collection of mods that will be used when running the game. The mods must be remapped to run with intermediary names.
+	 *
+	 * <p>By default this includes the remapped jar.
+	 */
 	@Classpath
 	public abstract ConfigurableFileCollection getMods();
 
+	/**
+	 * A list of additional JVM arguments to pass to the game.
+	 */
 	@Input
 	public abstract ListProperty<String> getJvmArgs();
 
+	/**
+	 * A list of additional program arguments to pass to the game.
+	 */
 	@Input
 	public abstract ListProperty<String> getProgramArgs();
 
+	/**
+	 * The directory to run the game in.
+	 */
 	@OutputDirectory
 	public abstract DirectoryProperty getRunDir();
 
+	/**
+	 * The {@link JavaLauncher} to use when running the game, this can be used to specify a specific Java version to use.
+	 *
+	 * <p>See: <a href="https://docs.gradle.org/current/userguide/toolchains.html#sec:plugins_toolchains">Java Toolchains</a>
+	 * @return
+	 */
 	@Nested
 	public abstract Property<JavaLauncher> getJavaLauncher();
 

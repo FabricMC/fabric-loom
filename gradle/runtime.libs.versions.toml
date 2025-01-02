@@ -10,6 +10,7 @@ dev-launch-injector = "0.2.1+build.8"
 terminal-console-appender = "1.3.0"
 jetbrains-annotations = "25.0.0"
 native-support = "1.0.1"
+fabric-installer = "1.0.1"
 
 [libraries]
 # Decompilers
@@ -23,3 +24,4 @@ dev-launch-injector = { module = "net.fabricmc:dev-launch-injector", version.ref
 terminal-console-appender = { module = "net.minecrell:terminalconsoleappender", version.ref = "terminal-console-appender" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 native-support = { module = "net.fabricmc:fabric-loom-native-support", version.ref = "native-support" }
+fabric-installer = { module = "net.fabricmc:fabric-installer", version.ref = "fabric-installer" }

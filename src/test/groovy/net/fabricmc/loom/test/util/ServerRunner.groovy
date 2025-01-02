@@ -29,11 +29,12 @@ import java.util.concurrent.TimeUnit
 import groovy.transform.Immutable
 
 import net.fabricmc.loom.test.LoomTestVersions
+import net.fabricmc.loom.util.LoomVersions
 import net.fabricmc.loom.util.download.Download
 
 class ServerRunner {
 	static final String LOADER_VERSION = LoomTestVersions.FABRIC_LOADER.version()
-	static final String INSTALLER_VERSION = LoomTestVersions.FABRIC_INSTALLER.version()
+	static final String INSTALLER_VERSION = LoomVersions.FABRIC_INSTALLER.version()
 	static final Map<String, String> FABRIC_API_URLS = [
 		"1.16.5": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.16/fabric-api-0.37.1+1.16.jar",
 		"1.17.1": "https://github.com/FabricMC/fabric/releases/download/0.37.1%2B1.17/fabric-api-0.37.1+1.17.jar"

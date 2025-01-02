@@ -8,7 +8,6 @@ mixin = "0.15.3+mixin.0.8.7"
 
 gradle-nightly = "8.13-20241222002427+0000"
 fabric-loader = "0.16.9"
-fabric-installer = "1.0.1"
 
 [libraries]
 spock = { module = "org.spockframework:spock-core", version.ref = "spock" }
@@ -20,4 +19,3 @@ java-debug = { module = "com.microsoft.java:com.microsoft.java.debug.core", vers
 mixin = { module = "net.fabricmc:sponge-mixin", version.ref = "mixin" }
 gradle-nightly = { module = "org.gradle:dummy", version.ref = "gradle-nightly" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
-fabric-installer = { module = "net.fabricmc:fabric-installer", version.ref = "fabric-installer" }

@@ -36,16 +36,35 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.ZipUtils;
 
+/**
+ * A task that runs the server using the production server launcher. You must manually register a task of this type to use it.
+ */
 @ApiStatus.Experimental
-public abstract class ServerProductionRunTask extends AbstractProductionRunTask {
+public abstract non-sealed class ServerProductionRunTask extends AbstractProductionRunTask {
+	/**
+	 * The version of Fabric Loader to use.
+	 *
+	 * <p>Defaults to the version of Fabric Loader that the project is using.
+	 */
 	@Input
 	public abstract Property<String> getLoaderVersion();
 
+	/**
+	 * The version of Minecraft to use.
+	 *
+	 * <p>Defaults to the version of Minecraft that the project is using.
+	 */
 	@Input
 	public abstract Property<String> getMinecraftVersion();
 
+	/**
+	 * The version of the Fabric Installer to use.
+	 *
+	 * <p>Defaults to a version provided by Loom.
+	 */
 	@Input
 	public abstract Property<String> getInstallerVersion();
 
@@ -60,6 +79,7 @@ public abstract class ServerProductionRunTask extends AbstractProductionRunTask 
 		getLoaderVersion().convention(getProjectLoaderVersion());
 		getMinecraftVersion().convention(getExtension().getMinecraftVersion());
 		getInstallPropertiesJar().convention(getProject().getLayout().getBuildDirectory().file("server_properties.jar"));
+		getInstallerVersion().convention(LoomVersions.FABRIC_INSTALLER.version());
 
 		getMainClass().convention("net.fabricmc.installer.ServerLauncher");
 		getClasspath().from(detachedConfigurationProvider("net.fabricmc:fabric-installer:%s:server", getInstallerVersion()));

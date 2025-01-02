@@ -38,8 +38,11 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
+/**
+ * A task that runs the Minecraft client in a similar way to a production launcher. You must manually register a task of this type to use it.
+ */
 @ApiStatus.Experimental
-public abstract class ClientProductionRunTask extends AbstractProductionRunTask {
+public abstract non-sealed class ClientProductionRunTask extends AbstractProductionRunTask {
 	// Internal options
 	@Input
 	protected abstract Property<String> getAssetsIndex();

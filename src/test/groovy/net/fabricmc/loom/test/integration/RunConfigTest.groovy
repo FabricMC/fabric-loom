@@ -24,7 +24,10 @@
 
 package net.fabricmc.loom.test.integration
 
+import java.util.concurrent.TimeUnit
+
 import spock.lang.Specification
+import spock.lang.Timeout
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
@@ -156,6 +159,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
 	@Unroll
 	// XVFB is installed on the CI for this test
 	def "prod client (gradle #version)"() {

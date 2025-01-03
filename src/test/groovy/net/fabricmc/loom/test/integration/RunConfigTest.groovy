@@ -199,7 +199,9 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
             '''
 
 		// Copy tracy into the project
-		new File(gradle.projectDir, "tracy-capture").bytes = tracyCapture.bytes
+		def projectTracyCapture = new File(gradle.projectDir, "tracy-capture")
+		projectTracyCapture.bytes = tracyCapture.bytes
+		projectTracyCapture.setExecutable(true)
 
 		when:
 		def result = gradle.run(task: "prodClient")

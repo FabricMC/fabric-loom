@@ -48,7 +48,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		"runTestmodServer",
 		"runAutoTestServer"
 	]
-	private static final String TRACY_CAPTURE_LINUX = "https://github.com/modmuss50/tracy-utils/releases/download/0.0.1/linux-x86_64-tracy-capture"
+	private static final String TRACY_CAPTURE_LINUX = "https://github.com/modmuss50/tracy-utils/releases/download/0.0.2/linux-x86_64-tracy-capture"
 
 	@Unroll
 	def "Run config #task (gradle #version)"() {

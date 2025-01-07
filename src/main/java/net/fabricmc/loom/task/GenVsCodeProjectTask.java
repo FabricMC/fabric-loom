@@ -29,7 +29,6 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -140,7 +139,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			toRemove.forEach(configurations::remove);
 			configurations.add(configurationJson);
 
-			Files.createDirectories(Paths.get(configuration.runDir));
+			Files.createDirectories(configuration.absoluteRunDirPath(getProject()));
 		}
 
 		final String json = LoomGradlePlugin.GSON.toJson(root);
@@ -158,23 +157,28 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			String vmArgs,
 			String args,
 			Map<String, Object> env,
-			String projectName,
-			String runDir) implements Serializable {
+			String projectName) implements Serializable {
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
+			Path rootPath = project.getRootDir().toPath();
+			Path projectPath = project.getProjectDir().toPath();
+			Path relativeProjectPath = rootPath.relativize(projectPath);
 			return new VsCodeConfiguration(
 				"java",
 				runConfig.configName,
 				"launch",
-				"${workspaceFolder}/" + runConfig.runDir,
+				"${workspaceFolder}/" + relativeProjectPath.resolve(runConfig.runDir).toString(),
 				"integratedTerminal",
 				false,
 				runConfig.mainClass,
 				RunConfig.joinArguments(runConfig.vmArgs),
 				RunConfig.joinArguments(runConfig.programArgs),
 				new HashMap<>(runConfig.environmentVariables),
-				runConfig.projectName,
-				project.getProjectDir().toPath().resolve(runConfig.runDir).toAbsolutePath().toString()
+				runConfig.projectName
 			);
+		}
+
+		Path absoluteRunDirPath(Project project) {
+			return project.getRootDir().toPath().resolve(this.cwd.replace("${workspaceFolder}/", ""));
 		}
 	}
 }

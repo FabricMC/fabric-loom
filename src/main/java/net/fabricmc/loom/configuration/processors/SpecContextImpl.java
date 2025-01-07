@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
@@ -42,6 +43,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
@@ -121,25 +123,35 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
 	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project, Map<String, List<FabricModJson>> fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final List<Path> runtimeEntries = extension.getRuntimeRemapConfigurations().stream()
+		final Set<String> runtimeModIds = extension.getRuntimeRemapConfigurations().stream()
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
 				.flatMap(resolveArtifacts(project, true))
-				.toList();
+				.map(modFromZip(fmjCache))
+				.filter(Objects::nonNull)
+				.map(FabricModJson::getId)
+				.collect(Collectors.toSet());
 
 		return extension.getCompileRemapConfigurations().stream()
 				.filter(settings -> settings.getApplyDependencyTransforms().get())
-				.flatMap(resolveArtifacts(project, false))
-				.filter(runtimeEntries::contains) // Use the intersection of the two configurations.
-				.map(zipPath -> {
-					final List<FabricModJson> list = fmjCache.computeIfAbsent(zipPath.toAbsolutePath().toString(), $ -> {
-						return FabricModJsonFactory.createFromZipOptional(zipPath)
-								.map(List::of)
-								.orElseGet(List::of);
-					});
-					return list.isEmpty() ? null : list.get(0);
-				})
+				.flatMap(resolveArtifacts(project, false))// Use the intersection of the two configurations.
+				.map(modFromZip(fmjCache))
 				.filter(Objects::nonNull)
+				// Only check based on the modid, as there may be differing versions used between the compile and runtime classpath.
+				// We assume that the version used at runtime will be binary compatible with the version used to compile against.
+				// It's not perfect but better than silently not supplying the mod, and this could happen with regular API that you compile against anyway.
+				.filter(fabricModJson -> runtimeModIds.contains(fabricModJson.getId()))
 				.sorted(Comparator.comparing(FabricModJson::getId));
+	}
+
+	private static Function<Path, @Nullable FabricModJson> modFromZip(Map<String, List<FabricModJson>> fmjCache) {
+		return zipPath -> {
+			final List<FabricModJson> list = fmjCache.computeIfAbsent(zipPath.toAbsolutePath().toString(), $ -> {
+				return FabricModJsonFactory.createFromZipOptional(zipPath)
+						.map(List::of)
+						.orElseGet(List::of);
+			});
+			return list.isEmpty() ? null : list.get(0);
+		};
 	}
 
 	private static Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(Project project, boolean runtime) {

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.fabricapi;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskContainer;
 
@@ -45,6 +47,7 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 	@Inject
@@ -62,6 +65,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 	void configureTests(Action<GameTestSettings> action) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final TaskContainer tasks = getProject().getTasks();
+		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 
 		GameTestSettings settings = getProject().getObjects().newInstance(GameTestSettings.class);
 		settings.getCreateSourceSet().convention(false);
@@ -69,6 +73,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		settings.getEnableClientGameTests().convention(true);
 		settings.getEula().convention(false);
 		settings.getClearRunDirectory().convention(true);
+		settings.getUsername().convention("Player0");
 
 		action.execute(settings);
 
@@ -94,10 +99,23 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		}
 
 		if (settings.getEnableClientGameTests().get()) {
+			// Not ideal as there may be multiple resources directories, if this isnt correct the mod will need to override this.
+			final File resourcesDir = mainSourceSet.getResources().getFiles().stream().findAny().orElse(null);
+
 			RunConfigSettings clientGameTest = extension.getRunConfigs().create("clientGameTest", run -> {
 				run.inherit(extension.getRunConfigs().getByName("client"));
 				run.property("fabric.client.gametest");
+
+				if (resourcesDir != null) {
+					run.property("fabric.client.gametest.testModResourcesPath", resourcesDir.getAbsolutePath());
+				}
+
 				run.runDir("build/run/clientGameTest");
+
+				if (settings.getUsername().isPresent()) {
+					run.programArgs("--username", settings.getUsername().get());
+				}
+
 				configureBase.accept(run);
 			});
 

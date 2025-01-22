@@ -79,4 +79,14 @@ public interface GameTestSettings {
 	 * <p>Default: true
 	 */
 	Property<Boolean> getClearRunDirectory();
+
+	/**
+	 * Contains a string property representing the username to use for the client side game tests.
+	 *
+	 * <p>This only works when {@link #getEnableClientGameTests()} is enabled.
+	 *
+	 * <p>Default: Player0
+	 */
+	@Optional
+	Property<String> getUsername();
 }

@@ -96,6 +96,7 @@ sourceSets {
 			srcDir("src/decompilers/vineflower")
 		}
 	}
+	devLaunchInjector
 }
 
 dependencies {
@@ -143,6 +144,8 @@ dependencies {
 	implementation sourceSets.cfr.output
 	implementation sourceSets.vineflower.output
 
+	runtimeOnly sourceSets.devLaunchInjector.output
+
 	// source code remapping
 	implementation libs.fabric.mercury
 
@@ -185,6 +188,7 @@ jar {
 	from sourceSets.cfr.output.classesDirs
 	from sourceSets.fernflower.output.classesDirs
 	from sourceSets.vineflower.output.classesDirs
+	from sourceSets.devLaunchInjector.output.classesDirs
 }
 
 base {
@@ -192,7 +196,7 @@ base {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+	it.options.release = it.name.contains("devLaunchInjector") ? 8 : 17
 }
 
 java {

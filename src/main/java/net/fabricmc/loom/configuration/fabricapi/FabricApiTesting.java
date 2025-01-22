@@ -65,7 +65,6 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 	void configureTests(Action<GameTestSettings> action) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final TaskContainer tasks = getProject().getTasks();
-		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 
 		GameTestSettings settings = getProject().getObjects().newInstance(GameTestSettings.class);
 		settings.getCreateSourceSet().convention(false);
@@ -77,8 +76,12 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 		action.execute(settings);
 
+		final SourceSet testSourceSet;
+
 		if (settings.getCreateSourceSet().get()) {
-			configureSourceSet(settings.getModId(), true);
+			testSourceSet = configureSourceSet(settings.getModId(), true);
+		} else {
+			testSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 		}
 
 		Consumer<RunConfigSettings> configureBase = run -> {
@@ -100,7 +103,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 		if (settings.getEnableClientGameTests().get()) {
 			// Not ideal as there may be multiple resources directories, if this isnt correct the mod will need to override this.
-			final File resourcesDir = mainSourceSet.getResources().getFiles().stream().findAny().orElse(null);
+			final File resourcesDir = testSourceSet.getResources().getFiles().stream().findAny().orElse(null);
 
 			RunConfigSettings clientGameTest = extension.getRunConfigs().create("clientGameTest", run -> {
 				run.inherit(extension.getRunConfigs().getByName("client"));

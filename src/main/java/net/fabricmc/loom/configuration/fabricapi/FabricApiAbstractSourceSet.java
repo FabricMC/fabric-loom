@@ -46,7 +46,7 @@ abstract class FabricApiAbstractSourceSet {
 
 	protected abstract String getSourceSetName();
 
-	protected void configureSourceSet(Property<String> modId, boolean isClient) {
+	protected SourceSet configureSourceSet(Property<String> modId, boolean isClient) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 
@@ -54,18 +54,18 @@ abstract class FabricApiAbstractSourceSet {
 
 		SourceSetContainer sourceSets = SourceSetHelper.getSourceSets(getProject());
 
-		// Create the new datagen sourceset, depend on the main or client sourceset.
-		SourceSet dataGenSourceSet = sourceSets.create(getSourceSetName(), sourceSet -> {
-			dependsOn(sourceSet, mainSourceSet);
+		// Create the new sourceset, depend on the main or client sourceset.
+		SourceSet sourceSet = sourceSets.create(getSourceSetName(), ss -> {
+			dependsOn(ss, mainSourceSet);
 
 			if (isClientAndSplit) {
-				dependsOn(sourceSet, SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
+				dependsOn(ss, SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
 			}
 		});
 
 		modId.convention(getProject().provider(() -> {
 			try {
-				final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), dataGenSourceSet);
+				final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), sourceSet);
 
 				if (fabricModJson == null) {
 					throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
@@ -83,6 +83,8 @@ abstract class FabricApiAbstractSourceSet {
 		});
 
 		extension.createRemapConfigurations(sourceSets.getByName(getSourceSetName()));
+
+		return sourceSet;
 	}
 
 	private static void extendsFrom(Project project, String name, String extendsFrom) {

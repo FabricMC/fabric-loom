@@ -168,6 +168,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 			action.execute(params);
 		});
+
+		workQueue.await();
 	}
 
 	protected abstract Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet);

@@ -93,6 +93,8 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 			params.getInputClasses().from(getSource().matching(pattern -> pattern.include("**/*.class")));
 			params.getSoftFailures().set(getSoftFailures());
 		});
+
+		workQueue.await();
 	}
 
 	public interface ValidateMixinsParams extends WorkParameters {

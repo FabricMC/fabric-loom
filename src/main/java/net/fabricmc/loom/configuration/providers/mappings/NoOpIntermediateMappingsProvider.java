@@ -38,7 +38,7 @@ import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
  */
 public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappingsProvider {
 	private static final String HEADER_OFFICIAL_MERGED = "tiny\t2\t0\tofficial\tintermediary";
-	private static final String HEADER_OFFICIAL_LEGACY_MERGED = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial\t";
+	private static final String HEADER_OFFICIAL_LEGACY_MERGED = "tiny\t2\t0\tintermediary\tclientOfficial\tserverOfficial";
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {

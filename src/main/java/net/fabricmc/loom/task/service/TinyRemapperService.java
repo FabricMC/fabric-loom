@@ -54,6 +54,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
 import net.fabricmc.loom.util.service.Service;
@@ -130,7 +131,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 	}
 
 	private TinyRemapper createTinyRemapper() {
-		TinyRemapper.Builder builder = TinyRemapper.newRemapper()
+		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withKnownIndyBsm(Set.copyOf(getOptions().getKnownIndyBsms().get()));
 
 		for (MappingsService.Options options : getOptions().getMappings().get()) {

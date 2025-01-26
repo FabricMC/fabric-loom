@@ -46,6 +46,7 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrEnvironment;
 
@@ -70,7 +71,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 
 	@TaskAction
 	public void run() {
-		final TinyRemapper tinyRemapper = TinyRemapper.newRemapper().build();
+		final TinyRemapper tinyRemapper = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE).build();
 
 		for (File file : getTargetJars().getFiles()) {
 			tinyRemapper.readClassPath(file.toPath());

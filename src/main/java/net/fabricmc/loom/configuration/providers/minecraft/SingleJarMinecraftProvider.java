@@ -32,6 +32,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -94,7 +95,7 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		TinyRemapper remapper = null;
 
 		try {
-			remapper = TinyRemapper.newRemapper().build();
+			remapper = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE).build();
 
 			Files.deleteIfExists(minecraftEnvOnlyJar);
 

@@ -79,7 +79,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		});
 
 		Action<RemapJarTask> remapJarTaskAction = task -> {
-			final AbstractArchiveTask jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).get();
+			final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
 
 			// Basic task setup
 			task.dependsOn(jarTask);
@@ -89,7 +89,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
 
 			// Setup the input file and the nested deps
-			task.getInputFile().convention(jarTask.getArchiveFile());
+			task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
 			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
 			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		};

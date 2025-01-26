@@ -58,6 +58,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 		this.isDefault = true;
 		this.defaultRefmapName = project.getObjects().property(String.class)
 				.convention(project.provider(this::getDefaultMixinRefmapName));
+		this.defaultRefmapName.finalizeValueOnRead();
 	}
 
 	@Override

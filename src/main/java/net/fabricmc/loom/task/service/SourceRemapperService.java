@@ -28,15 +28,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
+import org.gradle.api.JavaVersion;
+import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.compile.JavaCompile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +73,7 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 					task.getSourceNamespace(),
 					task.getTargetNamespace()
 			));
-			o.getJavaCompileRelease().set(SourceRemapper.getJavaCompileRelease(task.getProject()));
+			o.getJavaCompileRelease().set(getJavaCompileRelease(task.getProject()));
 			o.getClasspath().from(task.getClasspath());
 		});
 	}
@@ -134,5 +138,29 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 		}
 
 		return mercury;
+	}
+
+	public static int getJavaCompileRelease(Project project) {
+		AtomicInteger release = new AtomicInteger(-1);
+
+		project.getTasks().withType(JavaCompile.class, javaCompile -> {
+			Property<Integer> releaseProperty = javaCompile.getOptions().getRelease();
+
+			if (!releaseProperty.isPresent()) {
+				return;
+			}
+
+			int compileRelease = releaseProperty.get();
+			release.set(Math.max(release.get(), compileRelease));
+		});
+
+		final int i = release.get();
+
+		if (i < 0) {
+			// Unable to find the release used to compile with, default to the current version
+			return Integer.parseInt(JavaVersion.current().getMajorVersion());
+		}
+
+		return i;
 	}
 }

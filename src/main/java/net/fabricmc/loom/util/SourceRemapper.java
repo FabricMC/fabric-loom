@@ -31,17 +31,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
-import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.internal.project.ProjectInternal;
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.internal.logging.progress.ProgressLogger;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.slf4j.Logger;
@@ -174,7 +170,8 @@ public class SourceRemapper {
 		MappingSet mappings = lorenzMappingService.getMappings();
 
 		Mercury mercury = createMercuryWithClassPath(project, toNamed);
-		mercury.setSourceCompatibilityFromRelease(getJavaCompileRelease(project));
+		// Always use the latest version
+		mercury.setSourceCompatibilityFromRelease(Integer.MAX_VALUE);
 
 		for (File file : extension.getUnmappedModCollection()) {
 			Path path = file.toPath();
@@ -204,30 +201,6 @@ public class SourceRemapper {
 
 		this.mercury = mercury;
 		return this.mercury;
-	}
-
-	public static int getJavaCompileRelease(Project project) {
-		AtomicInteger release = new AtomicInteger(-1);
-
-		project.getTasks().withType(JavaCompile.class, javaCompile -> {
-			Property<Integer> releaseProperty = javaCompile.getOptions().getRelease();
-
-			if (!releaseProperty.isPresent()) {
-				return;
-			}
-
-			int compileRelease = releaseProperty.get();
-			release.set(Math.max(release.get(), compileRelease));
-		});
-
-		final int i = release.get();
-
-		if (i < 0) {
-			// Unable to find the release used to compile with, default to the current version
-			return Integer.parseInt(JavaVersion.current().getMajorVersion());
-		}
-
-		return i;
 	}
 
 	public static void copyNonJavaFiles(Path from, Path to, Logger logger, Path source) throws IOException {

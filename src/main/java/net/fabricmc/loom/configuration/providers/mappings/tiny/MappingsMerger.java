@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -40,9 +42,9 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
-import net.fabricmc.mappingio.adapter.OuterClassNamePropagator;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
+import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class MappingsMerger {
@@ -75,9 +77,10 @@ public final class MappingsMerger {
 		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsCompleter, MappingsNamespace.OFFICIAL.toString());
 		intermediaryTree.accept(nsSwitch);
 
+		inheritMappedNamesOfEnclosingClasses(officialTree);
+
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
-			var classNamePropagator = new OuterClassNamePropagator(writer);
-			officialTree.accept(classNamePropagator);
+			officialTree.accept(writer);
 		}
 	}
 
@@ -100,6 +103,40 @@ public final class MappingsMerger {
 
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			officialTree.accept(writer);
+		}
+	}
+
+	/**
+	 * Searches the mapping tree for inner classes with no mapped name, whose enclosing classes have mapped names.
+	 * Currently, Yarn does not export mappings for these inner classes.
+	 */
+	private static void inheritMappedNamesOfEnclosingClasses(MemoryMappingTree tree) {
+		int intermediaryIdx = tree.getNamespaceId("intermediary");
+		int namedIdx = tree.getNamespaceId("named");
+
+		// The tree does not have an index by intermediary names by default
+		tree.setIndexByDstNames(true);
+
+		for (MappingTree.ClassMapping classEntry : tree.getClasses()) {
+			String intermediaryName = classEntry.getDstName(intermediaryIdx);
+			String namedName = classEntry.getDstName(namedIdx);
+
+			if (intermediaryName.equals(namedName) && intermediaryName.contains("$")) {
+				String[] path = intermediaryName.split(Pattern.quote("$"));
+				int parts = path.length;
+
+				for (int i = parts - 2; i >= 0; i--) {
+					String currentPath = String.join("$", Arrays.copyOfRange(path, 0, i + 1));
+					String namedParentClass = tree.mapClassName(currentPath, intermediaryIdx, namedIdx);
+
+					if (!namedParentClass.equals(currentPath)) {
+						classEntry.setDstName(namedParentClass
+										+ "$" + String.join("$", Arrays.copyOfRange(path, i + 1, path.length)),
+								namedIdx);
+						break;
+					}
+				}
+			}
 		}
 	}
 }

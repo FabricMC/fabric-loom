@@ -63,11 +63,11 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.process.ExecOperations;
 import org.gradle.process.ExecResult;
-import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
@@ -104,7 +104,7 @@ import net.fabricmc.loom.util.ipc.IPCServer;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-@DisableCachingByDefault
+@UntrackedTask(because = "Manually invoked, has internal caching")
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private static final String CACHE_VERSION = "v1";
 	private final DecompilerOptions decompilerOptions;
@@ -237,7 +237,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new IllegalStateException("Input minecraft jar not found: " + getInputJarName().get());
 		}));
 
-		getOutputs().upToDateWhen((o) -> false);
 		getClasspath().from(decompilerOptions.getClasspath()).finalizeValueOnRead();
 		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
 

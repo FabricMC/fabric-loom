@@ -54,7 +54,6 @@ public abstract class LoomTasks implements Runnable {
 	public void run() {
 		getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
 			t.setDescription("Migrates mappings to a new version.");
-			t.getOutputs().upToDateWhen(o -> false);
 		});
 
 		var generateLog4jConfig = getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {

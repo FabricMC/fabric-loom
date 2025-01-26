@@ -31,13 +31,13 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
-import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.task.service.MigrateMappingsService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
-@DisableCachingByDefault(because = "Always rerun this task.")
+@UntrackedTask(because = "Always rerun this task.")
 public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	@Input
 	@Option(option = "mappings", description = "Target mappings")

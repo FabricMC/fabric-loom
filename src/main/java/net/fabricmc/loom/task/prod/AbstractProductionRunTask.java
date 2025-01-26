@@ -46,6 +46,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
@@ -68,6 +69,7 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
  * <p>Do not use this task directly, use {@link ClientProductionRunTask} or {@link ServerProductionRunTask} instead.
  */
 @ApiStatus.Experimental
+@UntrackedTask(because = "Always rerun this task.")
 public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask permits ClientProductionRunTask, ServerProductionRunTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProductionRunTask.class);
 

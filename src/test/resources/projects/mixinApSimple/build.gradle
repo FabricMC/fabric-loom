@@ -73,7 +73,10 @@ loom {
 	mixin {
 		useLegacyMixinAp = true
 
-		defaultRefmapName = "default-refmap0000.json"
+		// After evaluate block only to test for https://github.com/FabricMC/fabric-loom/issues/1249
+		afterEvaluate {
+			defaultRefmapName = "default-refmap0000.json"
+		}
 		add(sourceSets["main"], "main-refmap0000.json")
 		add(sourceSets["mixin"])
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -100,11 +101,11 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	@NotNull
-	public Stream<Map.Entry<SourceSet, Task>> getInvokerTasksStream(String compileTaskLanguage) {
+	public <T extends Task> Stream<Map.Entry<SourceSet, TaskProvider<T>>> getInvokerTasksStream(String compileTaskLanguage, Class<T> taskType) {
 		return getMixinSourceSetsStream()
 				.flatMap(sourceSet -> {
 					try {
-						Task task = project.getTasks().getByName(sourceSet.getCompileTaskName(compileTaskLanguage));
+						TaskProvider<T> task = project.getTasks().named(sourceSet.getCompileTaskName(compileTaskLanguage), taskType);
 						return Stream.of(new AbstractMap.SimpleEntry<>(sourceSet, task));
 					} catch (UnknownTaskException ignored) {
 						return Stream.empty();
@@ -133,7 +134,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 			if (sourceSet.getName().equals("main")) {
 				add(sourceSet);
 			} else {
-				add(sourceSet, sourceSet.getName() + "-" + getDefaultRefmapName().get());
+				add(sourceSet, getDefaultRefmapName().map(defaultRefmapName -> "%s-%s".formatted(sourceSet.getName(), defaultRefmapName)), x -> { });
 			}
 		});
 	}

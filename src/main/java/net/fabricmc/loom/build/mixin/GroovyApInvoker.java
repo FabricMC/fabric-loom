@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,12 @@ package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.GroovyCompile;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -46,11 +46,10 @@ public class GroovyApInvoker extends AnnotationProcessorInvoker<GroovyCompile> {
 				AnnotationProcessorInvoker.GROOVY);
 	}
 
-	private static Map<SourceSet, GroovyCompile> getInvokerTasks(Project project) {
+	private static Map<SourceSet, TaskProvider<GroovyCompile>> getInvokerTasks(Project project) {
 		MixinExtension mixin = LoomGradleExtension.get(project).getMixin();
-		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.GROOVY).collect(
-				Collectors.toMap(Map.Entry::getKey,
-						entry -> Objects.requireNonNull((GroovyCompile) entry.getValue())));
+		return mixin.getInvokerTasksStream(AnnotationProcessorInvoker.GROOVY, GroovyCompile.class).collect(
+				Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	@Override

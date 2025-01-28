@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2022 FabricMC
+ * Copyright (c) 2018-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,15 +24,69 @@
 
 package net.fabricmc.loom.test.integration
 
+import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
-
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import static net.fabricmc.loom.test.LoomTestConstants.DEFAULT_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MojangMappingsProjectTest extends Specification implements GradleProjectTestTrait {
+class LayeredMappingsTest extends Specification implements GradleProjectTestTrait {
+	def "build #layer"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE)
+		gradle.buildGradle << """
+            repositories {
+                maven {
+                    name = 'ParchmentMC'
+                    url = 'https://maven.parchmentmc.org'
+                }
+            }
+            dependencies {
+                minecraft "com.mojang:minecraft:1.21.4"
+                mappings loom.layered {
+                    $layer
+                }
+            }
+        """
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		layer << [
+				// Only mojang mappings
+				"""
+                officialMojangMappings()
+            """,
+				// Yarn on top of Mojmap
+				"""
+                officialMojangMappings()
+                mappings("net.fabricmc:yarn:1.21.4+build.8:v2")
+            """,
+				// Mojmap on top of yarn
+				"""
+                mappings("net.fabricmc:yarn:1.21.4+build.8:v2")
+                officialMojangMappings()
+            """,
+				//  Mojmap with parchment
+				"""
+                officialMojangMappings()
+                parchment("org.parchmentmc.data:parchment-1.21.4:2025.01.19@zip")
+            """,
+				// Yarn on top of Mojmap with parchment
+				"""
+                officialMojangMappings()
+                parchment("org.parchmentmc.data:parchment-1.21.4:2025.01.19@zip")
+                mappings("net.fabricmc:yarn:1.21.4+build.8:v2")
+            """,
+		]
+	}
+
 	@Unroll
 	def "build (gradle #version)"() {
 		setup:
@@ -136,6 +190,21 @@ class MojangMappingsProjectTest extends Specification implements GradleProjectTe
 					}
                 }
             '''
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "parchment #version"() {
+		setup:
+		def gradle = gradleProject(project: "parchment", version: version)
 
 		when:
 		def result = gradle.run(task: "build")

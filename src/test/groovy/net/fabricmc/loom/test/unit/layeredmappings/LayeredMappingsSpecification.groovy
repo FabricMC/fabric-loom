@@ -60,7 +60,6 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 	Logger mockLogger = Mock(Logger)
 	MinecraftProvider mockMinecraftProvider = Mock(MinecraftProvider)
 	String intermediaryUrl
-	MappingContext mappingContext = new TestMappingContext()
 
 	File tempDir = new File(LoomTestConstants.TEST_DIR, "layered/${getClass().name}")
 
@@ -92,18 +91,18 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	MemoryMappingTree getSingleMapping(MappingsSpec<? extends MappingLayer> spec) {
 		MemoryMappingTree mappingTree = new MemoryMappingTree()
-		spec.createLayer(mappingContext).visit(mappingTree)
+		spec.createLayer(new TestMappingContext([spec])).visit(mappingTree)
 		return mappingTree
 	}
 
 	MemoryMappingTree getLayeredMappings(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
-		return processor.getMappings(processor.resolveLayers(mappingContext))
+		return processor.getMappings(processor.resolveLayers(new TestMappingContext(specs.toList())))
 	}
 
 	UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
-		return processor.getUnpickData(processor.resolveLayers(mappingContext))
+		return processor.getUnpickData(processor.resolveLayers(new TestMappingContext(specs.toList())))
 	}
 
 	private static LayeredMappingsProcessor createLayeredMappingsProcessor(MappingsSpec<? extends MappingLayer>... specs) {
@@ -134,6 +133,12 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 	}
 
 	class TestMappingContext implements MappingContext {
+		private final List<MappingsSpec<? extends MappingLayer>> specs
+
+		TestMappingContext(List<MappingsSpec<? extends MappingLayer>> specs) {
+			this.specs = specs
+		}
+
 		@Override
 		Path resolveDependency(Dependency dependency) {
 			throw new UnsupportedOperationException("TODO")
@@ -163,6 +168,11 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 				return IntermediateMappingsService.createMemoryMappingTree(path, MappingsNamespace.OFFICIAL.toString())
 			}
+		}
+
+		@Override
+		boolean isUsingIntermediateMappings() {
+			return !specs.any { it instanceof NoIntermediateMappingsSpec }
 		}
 
 		@Override

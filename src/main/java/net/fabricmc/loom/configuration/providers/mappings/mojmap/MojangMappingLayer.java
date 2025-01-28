@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.gradle.api.logging.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -41,21 +43,42 @@ import net.fabricmc.loom.configuration.providers.mappings.utils.DstNameFilterMap
 import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.proguard.ProGuardFileReader;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public record MojangMappingLayer(Path clientMappings, Path serverMappings, boolean nameSyntheticMembers,
-									Logger logger) implements MappingLayer {
+									@Nullable Supplier<MemoryMappingTree> intermediarySupplier, Logger logger) implements MappingLayer {
 	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile("^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
 
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		printMappingsLicense(clientMappings);
 
+		if (intermediarySupplier == null) {
+			// Using no-op intermediary mappings
+			readMappings(mappingVisitor);
+			return;
+		}
+
+		// Create a mapping tree with src: official dst: named, intermediary
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		intermediarySupplier.get().accept(mappingTree);
+		readMappings(mappingTree);
+
+		// The following code first switches the src namespace to intermediary dropping any entries that don't have an intermediary name
+		// This removes any none root methods before switching it back to official
+		var officialSwitch = new MappingSourceNsSwitch(mappingVisitor, getSourceNamespace().toString(), false);
+		var intermediarySwitch = new MappingSourceNsSwitch(officialSwitch, MappingsNamespace.INTERMEDIARY.toString(), true);
+		mappingTree.accept(intermediarySwitch);
+	}
+
+	private void readMappings(MappingVisitor mappingVisitor) throws IOException {
 		// Filter out field names matching the pattern
-		DstNameFilterMappingVisitor nameFilter = new DstNameFilterMappingVisitor(mappingVisitor, SYNTHETIC_NAME_PATTERN);
+		var nameFilter = new DstNameFilterMappingVisitor(mappingVisitor, SYNTHETIC_NAME_PATTERN);
 
 		// Make official the source namespace
-		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nameSyntheticMembers() ? mappingVisitor : nameFilter, MappingsNamespace.OFFICIAL.toString());
+		var nsSwitch = new MappingSourceNsSwitch(nameSyntheticMembers() ? mappingVisitor : nameFilter, MappingsNamespace.OFFICIAL.toString());
 
+		// Read both server and client mappings
 		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8);
 				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings, StandardCharsets.UTF_8)) {
 			ProGuardFileReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);

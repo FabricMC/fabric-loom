@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -83,6 +83,11 @@ public class GradleMappingContext implements MappingContext {
 				throw new UncheckedIOException(e);
 			}
 		};
+	}
+
+	@Override
+	public boolean isUsingIntermediateMappings() {
+		return !(extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider);
 	}
 
 	@Override

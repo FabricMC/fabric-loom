@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		then:
 		mappings.srcNamespace == "named"
 		mappings.dstNamespaces == ["intermediary", "official"]
-		mappings.classes.size() == 6113
+		mappings.classes.size() == 6107
 		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
 		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
 		mappings.classes[0].methods[0].args.size() == 0 // No Args
@@ -63,7 +63,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		then:
 		mappings.srcNamespace == "named"
 		mappings.dstNamespaces == ["intermediary", "official"]
-		mappings.classes.size() == 6113
+		mappings.classes.size() == 6107
 		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
 		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
 		mappings.classes[0].methods[0].args.size() == 0 // No Args

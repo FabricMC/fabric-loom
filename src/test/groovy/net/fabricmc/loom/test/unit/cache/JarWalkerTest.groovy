@@ -123,7 +123,7 @@ class JarWalkerTest extends Specification {
 		classes.size() == 1
 		classes[0].name() == "net/fabricmc/Example.class"
 		classes[0].innerClasses() == []
-		classes[0].superClasses() == ["java/lang/Runnable"]
+		classes[0].superClasses() == ["java/lang/Runnable.class"]
 	}
 
 	def "inner classes"() {
@@ -146,8 +146,8 @@ class JarWalkerTest extends Specification {
 			"net/fabricmc/other/Test\$Inner.class"
 		]
 		classes[0].superClasses() == [
-			"java/lang/Runnable",
-			"net/fabricmc/other/Super"
+			"java/lang/Runnable.class",
+			"net/fabricmc/other/Super.class"
 		]
 	}
 

@@ -194,7 +194,7 @@ public final class JarWalker {
 			List<String> parentClasses = new ArrayList<>();
 			String superName = reader.getSuperName();
 
-			if (superName != null) {
+			if (superName != null && !superName.equals("java/lang/Object")) {
 				parentClasses.add(superName + ".class");
 			}
 

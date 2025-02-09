@@ -4,10 +4,6 @@ fernflower = "2.0.0"
 cfr = "0.2.2"
 vineflower = "1.10.1"
 
-# Miniumum supported versions
-intelij = "2022"
-gradle = "8.12"
-
 # Runtime depedencies
 mixin-compile-extensions = "0.6.0"
 dev-launch-injector = "0.2.1+build.8"
@@ -29,7 +25,3 @@ terminal-console-appender = { module = "net.minecrell:terminalconsoleappender", 
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 native-support = { module = "net.fabricmc:fabric-loom-native-support", version.ref = "native-support" }
 fabric-installer = { module = "net.fabricmc:fabric-installer", version.ref = "fabric-installer" }
-
-# Miniumum versions
-minimum-intellij = { module = "com.jetbrains:intellij", version.ref = "intelij" }
-minimum-gradle = { module = "com.gradle:gradle", version.ref = "gradle" }

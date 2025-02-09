@@ -24,20 +24,15 @@
 
 package net.fabricmc.loom;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.inject.Inject;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.configuration.BuildFeatures;
 import org.gradle.api.plugins.PluginAware;
-import org.gradle.util.GradleVersion;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.fabricapi.FabricApiExtension;
@@ -53,9 +48,8 @@ import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.LibraryLocationLogger;
-import net.fabricmc.loom.util.LoomVersions;
 
-public abstract class LoomGradlePlugin implements Plugin<PluginAware> {
+public class LoomGradlePlugin implements Plugin<PluginAware> {
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
@@ -73,9 +67,6 @@ public abstract class LoomGradlePlugin implements Plugin<PluginAware> {
 			SandboxConfiguration.class
 	);
 
-	@Inject
-	protected abstract BuildFeatures getBuildFeatures();
-
 	@Override
 	public void apply(PluginAware target) {
 		target.getPlugins().apply(LoomRepositoryPlugin.class);
@@ -87,12 +78,6 @@ public abstract class LoomGradlePlugin implements Plugin<PluginAware> {
 
 	private void apply(Project project) {
 		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
-
-		if (getBuildFeatures().getIsolatedProjects().getActive().get() || project.findProperty("fabric.loom.skip-env-validation") == null) {
-			validateEnvironment();
-		} else {
-			project.getLogger().lifecycle("Loom environment validation disabled. Please re-enable before reporting any issues.");
-		}
 
 		LibraryLocationLogger.logLibraryVersions();
 
@@ -107,36 +92,5 @@ public abstract class LoomGradlePlugin implements Plugin<PluginAware> {
 		for (Class<? extends Runnable> jobClass : SETUP_JOBS) {
 			project.getObjects().newInstance(jobClass).run();
 		}
-	}
-
-	private static void validateEnvironment() {
-		List<String> errors = new ArrayList<>();
-
-		if (!isValidGradleRuntime()) {
-			errors.add(String.format("You are using an outdated version of Gradle (%s). Gradle %s or higher is required.", GradleVersion.current().getVersion(), LoomVersions.MINIMUM_GRADLE.version()));
-		}
-
-		if (!isValidIdeaRuntime()) {
-			errors.add(String.format("You are using an outdated version of intellij idea (%s). Intellij idea %s or higher is required.", System.getProperty("idea.version"), LoomVersions.MINIMUM_INTELLIJ.version()));
-		}
-
-		if (!errors.isEmpty()) {
-			throw new UnsupportedOperationException(String.join("\n", errors));
-		}
-	}
-
-	private static boolean isValidGradleRuntime() {
-		return GradleVersion.current().compareTo(GradleVersion.version(LoomVersions.MINIMUM_GRADLE.version())) >= 0;
-	}
-
-	private static boolean isValidIdeaRuntime() {
-		String version = System.getProperty("idea.version");
-
-		if (version == null) {
-			return true;
-		}
-
-		int ideaYear = Integer.parseInt(version.substring(0, version.indexOf(".")));
-		return ideaYear >= Integer.parseInt(LoomVersions.MINIMUM_INTELLIJ.version());
 	}
 }

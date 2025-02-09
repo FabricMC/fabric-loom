@@ -54,15 +54,6 @@ repositories {
 	mavenCentral()
 }
 
-configurations {
-	bootstrap {
-		transitive = false
-	}
-	compileClasspath.extendsFrom bootstrap
-	runtimeClasspath.extendsFrom bootstrap
-	testRuntimeClasspath.extendsFrom bootstrap
-}
-
 configurations.configureEach {
 	resolutionStrategy {
 		failOnNonReproducibleResolution()
@@ -100,8 +91,6 @@ sourceSets {
 
 dependencies {
 	implementation gradleApi()
-
-	bootstrap project(":bootstrap")
 
 	// libraries
 	implementation libs.commons.io
@@ -180,7 +169,6 @@ jar {
 		attributes 'Implementation-Version': project.version
 	}
 
-	from configurations.bootstrap.collect { it.isDirectory() ? it : zipTree(it) }
 	from sourceSets.commonDecompiler.output.classesDirs
 	from sourceSets.cfr.output.classesDirs
 	from sourceSets.fernflower.output.classesDirs
@@ -249,7 +237,7 @@ gradlePlugin {
 	plugins {
 		fabricLoom {
 			id = 'fabric-loom'
-			implementationClass = 'net.fabricmc.loom.bootstrap.LoomGradlePluginBootstrap'
+			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 	}
 }
@@ -338,21 +326,6 @@ publishing {
 				}
 			}
 		}
-	}
-}
-
-// Need to tweak this file to pretend we are compatible with j8 so the bootstrap will run.
-tasks.withType(GenerateModuleMetadata).configureEach {
-	doLast {
-		def file = outputFile.get().asFile
-
-		def metadata = new groovy.json.JsonSlurper().parseText(file.text)
-
-		metadata.variants.each {
-			it.attributes["org.gradle.jvm.version"] = 8
-		}
-
-		file.text = groovy.json.JsonOutput.toJson(metadata)
 	}
 }
 

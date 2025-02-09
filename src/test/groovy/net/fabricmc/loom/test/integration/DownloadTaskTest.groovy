@@ -95,4 +95,36 @@ class DownloadTaskTest extends DownloadTest implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "download max age (gradle #version)"() {
+		setup:
+		server.get("/simpleFile") {
+			it.result("Hello World")
+		}
+
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.21.4"
+                    mappings "net.fabricmc:yarn:1.21.4+build.8:v2"
+                }
+
+                tasks.register("download", net.fabricmc.loom.task.DownloadTask) {
+                    url = "${PATH}/simpleFile"
+                    maxAge = Duration.ofDays(1)
+                    output = file("out.txt")
+                }
+            """
+		when:
+		def result = gradle.run(task: "download")
+		def output = new File(gradle.projectDir, "out.txt")
+
+		then:
+		result.task(":download").outcome == SUCCESS
+		output.text == "Hello World"
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

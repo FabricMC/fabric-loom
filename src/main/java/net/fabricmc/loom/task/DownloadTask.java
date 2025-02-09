@@ -69,7 +69,7 @@ public abstract class DownloadTask extends DefaultTask {
 	 */
 	@Optional
 	@Input
-	public abstract Property<Integer> getMaxAge();
+	public abstract Property<Duration> getMaxAge();
 
 	/**
 	 * The file to download to.
@@ -107,7 +107,7 @@ public abstract class DownloadTask extends DefaultTask {
 	public interface DownloadWorkParameters extends WorkParameters {
 		Property<String> getUrl();
 		Property<String> getSha1();
-		Property<Integer> getMaxAge();
+		Property<Duration> getMaxAge();
 		RegularFileProperty getOutputFile();
 		Property<Boolean> getIsOffline();
 	}
@@ -124,7 +124,7 @@ public abstract class DownloadTask extends DefaultTask {
 			}
 
 			if (getParameters().getMaxAge().isPresent()) {
-				builder.maxAge(Duration.ofDays(getParameters().getMaxAge().get()));
+				builder.maxAge(getParameters().getMaxAge().get());
 			}
 
 			if (getParameters().getSha1().isPresent()) {

@@ -118,7 +118,7 @@ public abstract class DownloadTask extends DefaultTask {
 			DownloadBuilder builder;
 
 			try {
-				builder = Download.create(getParameters().getUrl().get());
+				builder = Download.create(getParameters().getUrl().get()).defaultCache();
 			} catch (URISyntaxException e) {
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Invalid URL", e);
 			}

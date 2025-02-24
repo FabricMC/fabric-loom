@@ -31,9 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.google.common.collect.ImmutableMap;
-import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
-import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
@@ -61,7 +59,6 @@ import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
-import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 
 public class MigrateMappingsService extends Service<MigrateMappingsService.Options> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MigrateMappingsService.class);
@@ -100,7 +97,7 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 
 		return TYPE.create(project, (o) -> {
 			FileCollection targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
-			o.getSourceMappings().set(MappingsService.createOptionsWithProjectMappings(project, from, to));
+			o.getSourceMappings().set(MappingsService.createOptions(project, from, to));
 			o.getTargetMappings().set(TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny"));
 			o.getSourceCompatibility().set(javaVersion.toString());
 			o.getInputDir().set(inputDir);
@@ -127,13 +124,13 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		final MappingsService sourceMappingsService = getServiceFactory().get(getOptions().getSourceMappings().get());
 		final TinyMappingsService targetMappingsService = getServiceFactory().get(getOptions().getTargetMappings().get());
 
-		final MappingSet mappingSet = new TinyMappingsJoiner(
-				sourceMappingsService.getMemoryMappingTree(), MappingsNamespace.NAMED.toString(),
-				targetMappingsService.getMappingTree(), MappingsNamespace.NAMED.toString(),
-				MappingsNamespace.INTERMEDIARY.toString()
-		).read();
-
-		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+//		final MappingSet mappingSet = new TinyMappingsJoiner(
+//				sourceMappingsService.getMemoryMappingTree(), MappingsNamespace.NAMED.toString(),
+//				targetMappingsService.getMappingTree(), MappingsNamespace.NAMED.toString(),
+//				MappingsNamespace.INTERMEDIARY.toString()
+//		).read();
+//
+//		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 
 		for (File file : getOptions().getClasspath().getFiles()) {
 			mercury.getClassPath().add(file.toPath());

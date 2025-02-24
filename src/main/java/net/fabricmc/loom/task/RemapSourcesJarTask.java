@@ -36,24 +36,26 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.task.service.ClientEntriesService;
-import net.fabricmc.loom.task.service.SourceRemapperService;
+import net.fabricmc.loom.task.service.SourceJarRemapperService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Nested
-	abstract Property<SourceRemapperService.Options> getSourcesRemapperServiceOptions();
+	abstract Property<SourceJarRemapperService.Options> getSourcesRemapperServiceOptions();
 
 	@Inject
 	public RemapSourcesJarTask() {
 		super();
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getClasspath().from(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).map(Jar::getArchiveFile));
 		getJarType().set("sources");
 
-		getSourcesRemapperServiceOptions().set(SourceRemapperService.createOptions(this));
+		getSourcesRemapperServiceOptions().set(SourceJarRemapperService.createOptions(this));
 	}
 
 	@TaskAction
@@ -71,7 +73,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {
-		Property<SourceRemapperService.Options> getSourcesRemapperServiceOptions();
+		Property<SourceJarRemapperService.Options> getSourcesRemapperServiceOptions();
 	}
 
 	public abstract static class RemapSourcesAction extends AbstractRemapAction<RemapSourcesParams> {
@@ -86,8 +88,8 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 			try {
 				if (!getParameters().namespacesMatch()) {
 					try (var serviceFactory = new ScopedServiceFactory()) {
-						SourceRemapperService sourceRemapperService = serviceFactory.get(getParameters().getSourcesRemapperServiceOptions());
-						sourceRemapperService.remapSourcesJar(inputFile, outputFile);
+						SourceJarRemapperService sourceJarRemapperService = serviceFactory.get(getParameters().getSourcesRemapperServiceOptions());
+						sourceJarRemapperService.remapSourcesJar(inputFile, outputFile);
 					}
 				} else {
 					Files.copy(inputFile, outputFile, StandardCopyOption.REPLACE_EXISTING);

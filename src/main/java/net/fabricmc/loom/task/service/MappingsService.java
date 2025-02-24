@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -86,9 +88,16 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	/**
 	 * Returns options for creating a new mappings service, using the mappings as specified in the project's mapping configuration.
 	 */
-	public static Provider<Options> createOptionsWithProjectMappings(Project project, Provider<String> from, Provider<String> to) {
+	public static Provider<Options> createOptions(Project project, Provider<String> from, Provider<String> to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
 		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
+	}
+
+	/**
+	 * Returns options for creating a new mappings service, using the mappings as specified in the project's mapping configuration.
+	 */
+	public static Provider<Options> createOptions(Project project, MappingsNamespace from, MappingsNamespace to) {
+		return createOptions(project, project.provider(from::toString), project.provider(to::toString));
 	}
 
 	public MappingsService(Options options, ServiceFactory serviceFactory) {

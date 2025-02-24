@@ -102,7 +102,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 			options.getFrom().set(remapJarTask.getSourceNamespace());
 			options.getTo().set(remapJarTask.getTargetNamespace());
-			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom(), options.getTo()));
+			options.getMappings().add(MappingsService.createOptions(project, options.getFrom(), options.getTo()));
 
 			if (legacyMixin) {
 				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom(), options.getTo()));
@@ -113,6 +113,22 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
+		});
+	}
+
+	public static Provider<Options> createOptions(Project project,
+												  Provider<MappingsService.Options> mappings,
+												  FileCollection classpath,
+												  Provider<String> from,
+												  Provider<String> to) {
+		return TYPE.create(project, options -> {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			options.getFrom().set(from);
+			options.getTo().set(to);
+			options.getMappings().add(mappings);
+			options.getClasspath().from(classpath);
+			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
+			options.getUselegacyMixinAP().set(false);
 		});
 	}
 

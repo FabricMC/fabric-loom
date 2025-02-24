@@ -25,20 +25,19 @@
 package net.fabricmc.loom.test.unit.service
 
 import groovy.transform.InheritConstructors
-import groovy.transform.TupleConstructor
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import spock.lang.Specification
 
-import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.service.ScopedServiceFactory
 import net.fabricmc.loom.util.service.Service
 import net.fabricmc.loom.util.service.ServiceType
 
-class ScopedServiceFactoryTest extends Specification {
+class ScopedServiceFactoryTest extends ServiceTestBase {
 	def "create service"() {
 		given:
-		def options = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
+		def options = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
 		def factory = new ScopedServiceFactory()
 
 		when:
@@ -53,7 +52,9 @@ class ScopedServiceFactoryTest extends Specification {
 
 	def "reuse service"() {
 		given:
-		def options = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
+		def options = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
 		def factory = new ScopedServiceFactory()
 
 		when:
@@ -69,8 +70,12 @@ class ScopedServiceFactoryTest extends Specification {
 
 	def "reuse service different options instance"() {
 		given:
-		def options = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
-		def options2 = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
+		def options = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
+		def options2 = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
 		def factory = new ScopedServiceFactory()
 
 		when:
@@ -86,8 +91,12 @@ class ScopedServiceFactoryTest extends Specification {
 
 	def "Separate instances"() {
 		given:
-		def options = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
-		def options2 = new TestServiceOptions(GradleTestUtil.mockProperty("world"))
+		def options = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
+		def options2 = TestService.TYPE.create(project) {
+			it.example.set("world")
+		}
 		def factory = new ScopedServiceFactory()
 
 		when:
@@ -105,7 +114,9 @@ class ScopedServiceFactoryTest extends Specification {
 
 	def "close service"() {
 		given:
-		def options = new TestServiceOptions(GradleTestUtil.mockProperty("hello"))
+		def options = TestService.TYPE.create(project) {
+			it.example.set("hello")
+		}
 		def factory = new ScopedServiceFactory()
 
 		when:
@@ -117,10 +128,10 @@ class ScopedServiceFactoryTest extends Specification {
 	}
 
 	@InheritConstructors
-	static class TestService extends Service<Options> implements Closeable {
-		static ServiceType<TestService.Options, TestService> TYPE = new ServiceType(TestService.Options.class, TestService.class)
+	static class TestService extends Service<TestOptions> implements Closeable {
+		static ServiceType<TestOptions, TestService> TYPE = new ServiceType(TestOptions, TestService)
 
-		interface Options extends Service.Options {
+		static interface TestOptions extends Service.Options {
 			@Input
 			Property<String> getExample();
 		}
@@ -135,11 +146,5 @@ class ScopedServiceFactoryTest extends Specification {
 		void close() throws Exception {
 			closed = true
 		}
-	}
-
-	@TupleConstructor
-	static class TestServiceOptions implements TestService.Options {
-		Property<String> example
-		Property<String> serviceClass = ServiceTestBase.serviceClassProperty(TestService.TYPE)
 	}
 }

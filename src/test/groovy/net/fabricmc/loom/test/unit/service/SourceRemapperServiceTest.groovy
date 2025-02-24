@@ -27,13 +27,10 @@ package net.fabricmc.loom.test.unit.service
 import java.nio.file.Files
 import java.nio.file.Path
 
-import org.gradle.api.file.ConfigurableFileCollection
-import org.gradle.api.provider.Property
 import org.intellij.lang.annotations.Language
 
 import net.fabricmc.loom.task.service.MappingsService
 import net.fabricmc.loom.task.service.SourceRemapperService
-import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.DeletingFileVisitor
 
 class SourceRemapperServiceTest extends ServiceTestBase {
@@ -49,15 +46,16 @@ class SourceRemapperServiceTest extends ServiceTestBase {
 		Files.writeString(sourceDirectory.resolve("Source.java"), SOURCE)
 		Files.writeString(mappings, MAPPINGS)
 
-		SourceRemapperService service = factory.get(new TestOptions(
-				mappings: GradleTestUtil.mockProperty(
-				new MappingsServiceTest.TestOptions(
-				mappingsFile: GradleTestUtil.mockRegularFileProperty(mappings.toFile()),
-				from: GradleTestUtil.mockProperty("named"),
-				to: GradleTestUtil.mockProperty("intermediary"),
-				)
-				),
-				))
+		def options = SourceRemapperService.TYPE.create(project) {
+			it.mappings.set(MappingsService.TYPE.create(project) {
+				it.mappingsFile.set(mappings.toFile())
+				it.from.set("named")
+				it.to.set("intermediary")
+			})
+			it.javaCompileRelease.set(17)
+		}
+
+		SourceRemapperService service = factory.get(options)
 
 		when:
 		service.remapSourcesJar(sourceDirectory, destDirectory)
@@ -85,11 +83,4 @@ class SourceRemapperServiceTest extends ServiceTestBase {
     c	Source Source
     	m	()V	println	test
     """.trim()
-
-	static class TestOptions implements SourceRemapperService.Options {
-		Property<MappingsService.Options> mappings
-		Property<Integer> javaCompileRelease = GradleTestUtil.mockProperty(17)
-		ConfigurableFileCollection classpath = GradleTestUtil.mockConfigurableFileCollection()
-		Property<String> serviceClass = serviceClassProperty(SourceRemapperService.TYPE)
-	}
 }

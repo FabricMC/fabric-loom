@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util.service;
 
+import java.lang.reflect.Method;
+
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
@@ -43,6 +45,13 @@ public record ServiceType<O extends Service.Options, S extends Service<O>>(Class
 	public Provider<O> create(Project project, Action<O> action) {
 		return project.provider(() -> {
 			O options = project.getObjects().newInstance(optionsClass);
+
+			for (Method method : optionsClass.getDeclaredMethods()) {
+				// Gradle property values are lazily initialized, ensure that all of the values are not null
+				// Before we try to serialize the options as json
+				method.invoke(options);
+			}
+
 			options.getServiceClass().set(serviceClass.getName());
 			options.getServiceClass().finalizeValue();
 			action.execute(options);

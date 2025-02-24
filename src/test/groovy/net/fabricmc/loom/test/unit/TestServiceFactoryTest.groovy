@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit.service
+package net.fabricmc.loom.test.unit
 
-import org.gradle.api.Project
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.provider.Property
 import spock.lang.Specification
 
-import net.fabricmc.loom.test.util.GradleTestUtil
-import net.fabricmc.loom.util.service.ScopedServiceFactory
+import net.fabricmc.loom.test.util.TestServiceFactory
 
-abstract class ServiceTestBase extends Specification {
-	ScopedServiceFactory factory
-	Project project = GradleTestUtil.mockProject()
-
-	def setup() {
-		factory = new ScopedServiceFactory()
+class TestServiceFactoryTest extends Specification {
+	def "property"() {
+		setup:
+		def test = TestServiceFactory.objectFactory.newInstance(PropertyTest)
+		when:
+		test.example.set("hello")
+		then:
+		test.example.isPresent()
+		test.example.get() == "hello"
 	}
 
-	def cleanup() {
-		factory.close()
-		factory = null
+	def "file property"() {
+		setup:
+		def test = TestServiceFactory.objectFactory.newInstance(FileTest)
+		when:
+		test.example.from(new File("test"))
+		then:
+		test.example.files.size() == 1
+		test.example.singleFile != null
+	}
+
+	interface PropertyTest {
+		Property<String> getExample()
+	}
+
+	interface FileTest {
+		ConfigurableFileCollection getExample()
 	}
 }

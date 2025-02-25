@@ -30,10 +30,12 @@ import java.nio.file.Path
 import org.intellij.lang.annotations.Language
 
 import net.fabricmc.loom.task.service.MappingsService
-import net.fabricmc.loom.task.service.SourceRemapperService
+import net.fabricmc.loom.task.service.MercuryService
+import net.fabricmc.loom.task.service.SourceJarRemapperService
+import net.fabricmc.loom.task.service.TinyRemapperService
 import net.fabricmc.loom.util.DeletingFileVisitor
 
-class SourceRemapperServiceTest extends ServiceTestBase {
+class SourceJarRemapperServiceTest extends ServiceTestBase {
 	def "remap sources"() {
 		given:
 		Path tempDirectory = Files.createTempDirectory("test")
@@ -46,16 +48,24 @@ class SourceRemapperServiceTest extends ServiceTestBase {
 		Files.writeString(sourceDirectory.resolve("Source.java"), SOURCE)
 		Files.writeString(mappings, MAPPINGS)
 
-		def options = SourceRemapperService.TYPE.create(project) {
-			it.mappings.set(MappingsService.TYPE.create(project) {
-				it.mappingsFile.set(mappings.toFile())
-				it.from.set("named")
-				it.to.set("intermediary")
+		def options = SourceJarRemapperService.TYPE.create(project) {
+			it.mercury.set(MercuryService.TYPE.create(project) {
+				it.tinyRemapper.set(TinyRemapperService.TYPE.create(project) {
+					it.mappings.add(MappingsService.TYPE.create(project) {
+						it.mappingsFile.set(mappings.toFile())
+						it.from.set("named")
+						it.to.set("intermediary")
+						it.remapLocals.set(true)
+					})
+					it.from.set("named")
+					it.to.set("intermediary")
+					it.uselegacyMixinAP.set(false)
+				})
+				it.sourceCompatibility.set(17)
 			})
-			it.javaCompileRelease.set(17)
 		}
 
-		SourceRemapperService service = factory.get(options)
+		SourceJarRemapperService service = factory.get(options)
 
 		when:
 		service.remapSourcesJar(sourceDirectory, destDirectory)

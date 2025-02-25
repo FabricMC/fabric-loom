@@ -57,11 +57,11 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 	}
 
 	public static Provider<Options> createOptions(Project project,
-												  Provider<MappingsService.Options> mappings,
-												  FileCollection classpath,
-												  Provider<String> from,
-												  Provider<String> to,
-												  int sourceCompatibility) {
+													Provider<MappingsService.Options> mappings,
+													FileCollection classpath,
+													Provider<String> from,
+													Provider<String> to,
+													int sourceCompatibility) {
 		Provider<TinyRemapperService.Options> tinyRemapper = TinyRemapperService.createOptions(
 				project,
 				mappings,

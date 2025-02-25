@@ -157,15 +157,15 @@ public class SourceRemapper {
 		MappingsNamespace to = toNamed ? MappingsNamespace.NAMED : MappingsNamespace.INTERMEDIARY;
 
 		MercuryService mercuryService = serviceFactory.get(
-			// TODO save these options, no need to recreate them every time
-			MercuryService.createOptions(
-				project,
-				MappingsService.createOptions(project, from, to),
-				getClassPath(),
-				project.provider(from::toString),
-				project.provider(to::toString),
-				Integer.MAX_VALUE
-			)
+				// TODO save these options, no need to recreate them every time
+				MercuryService.createOptions(
+					project,
+					MappingsService.createOptions(project, from, to),
+					getClassPath(),
+					project.provider(from::toString),
+					project.provider(to::toString),
+					Integer.MAX_VALUE
+				)
 		);
 
 		return mercuryService.getMercury();

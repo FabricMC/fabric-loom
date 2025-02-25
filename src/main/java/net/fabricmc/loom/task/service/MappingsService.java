@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -39,6 +37,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.service.Service;

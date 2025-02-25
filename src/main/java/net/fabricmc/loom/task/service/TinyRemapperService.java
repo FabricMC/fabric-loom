@@ -117,10 +117,10 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 	}
 
 	public static Provider<Options> createOptions(Project project,
-												  Provider<MappingsService.Options> mappings,
-												  FileCollection classpath,
-												  Provider<String> from,
-												  Provider<String> to) {
+													Provider<MappingsService.Options> mappings,
+													FileCollection classpath,
+													Provider<String> from,
+													Provider<String> to) {
 		return TYPE.create(project, options -> {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 			options.getFrom().set(from);

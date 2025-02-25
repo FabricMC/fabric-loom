@@ -22,14 +22,12 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings;
+package net.fabricmc.loom.task.service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -41,16 +39,15 @@ import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.util.FileSystemUtil;
-import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public final class TinyMappingsService extends Service<TinyMappingsService.Options> {
+public final class TinyMappingsService extends AbstractMappingsService<TinyMappingsService.Options> {
 	public static final ServiceType<Options, TinyMappingsService> TYPE = new ServiceType<>(Options.class, TinyMappingsService.class);
 
-	public interface Options extends Service.Options {
+	public interface Options extends AbstractMappingsService.Options {
 		@InputFiles
 		ConfigurableFileCollection getMappings(); // Only a single file
 
@@ -80,7 +77,8 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 		super(options, serviceFactory);
 	}
 
-	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(() -> {
+	@Override
+	protected MemoryMappingTree buildMemoryMappingTree() {
 		Path mappings = getOptions().getMappings().getSingleFile().toPath();
 
 		if (getOptions().getZipEntryPath().isPresent()) {
@@ -92,7 +90,7 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 		}
 
 		return readMappings(mappings);
-	});
+	}
 
 	private MemoryMappingTree readMappings(Path mappings) {
 		try {
@@ -102,9 +100,5 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read mappings", e);
 		}
-	}
-
-	public MemoryMappingTree getMappingTree() {
-		return mappingTree.get();
 	}
 }

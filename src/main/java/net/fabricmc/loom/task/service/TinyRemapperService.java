@@ -54,6 +54,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.loom.util.kotlin.KotlinClasspathService;
 import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
@@ -74,7 +75,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		@Input
 		Property<String> getTo();
 		@Nested
-		ListProperty<MappingsService.Options> getMappings();
+		ListProperty<AbstractMappingsService.Options> getMappings();
 		@Input
 		Property<Boolean> getUselegacyMixinAP();
 		@Nested
@@ -88,6 +89,8 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		ListProperty<String> getKnownIndyBsms();
 		@Input
 		ListProperty<RemapperExtensionHolder> getRemapperExtensions();
+		@Input
+		Property<Boolean> getRemapLocals();
 	}
 
 	public static Provider<Options> createOptions(AbstractRemapJarTask remapJarTask) {
@@ -113,11 +116,12 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
+			options.getRemapLocals().set(true);
 		});
 	}
 
 	public static Provider<Options> createOptions(Project project,
-													Provider<MappingsService.Options> mappings,
+													Provider<? extends AbstractMappingsService.Options> mappings,
 													FileCollection classpath,
 													Provider<String> from,
 													Provider<String> to) {
@@ -129,6 +133,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getUselegacyMixinAP().set(false);
+			options.getRemapLocals().set(true);
 		});
 	}
 
@@ -150,9 +155,16 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withKnownIndyBsm(Set.copyOf(getOptions().getKnownIndyBsms().get()));
 
-		for (MappingsService.Options options : getOptions().getMappings().get()) {
-			MappingsService mappingsService = getServiceFactory().get(options);
-			builder.withMappings(mappingsService.getMappingsProvider());
+		for (AbstractMappingsService.Options mappingOptions : getOptions().getMappings().get()) {
+			final AbstractMappingsService<?> mappingsService = (AbstractMappingsService<?>) getServiceFactory().get(mappingOptions);
+
+			final IMappingProvider mappingProvider = TinyRemapperHelper.create(
+					mappingsService.getMemoryMappingTree(),
+					getOptions().getFrom().get(),
+					getOptions().getTo().get(),
+					getOptions().getRemapLocals().get()
+			);
+			builder.withMappings(mappingProvider);
 		}
 
 		if (!getOptions().getUselegacyMixinAP().get()) {

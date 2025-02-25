@@ -142,7 +142,7 @@ public class ModProcessor {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withKnownIndyBsm(knownIndyBsms)
-				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(project, serviceFactory).getMappingTree(), fromM, toM, false))
+				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(project, serviceFactory).getMemoryMappingTree(), fromM, toM, false))
 				.renameInvalidLocals(false)
 				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));
 

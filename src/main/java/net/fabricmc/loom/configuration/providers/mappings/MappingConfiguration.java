@@ -53,6 +53,7 @@ import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.task.service.TinyMappingsService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.FileSystemUtil;

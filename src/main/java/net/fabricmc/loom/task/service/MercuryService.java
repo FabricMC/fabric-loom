@@ -57,7 +57,7 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 	}
 
 	public static Provider<Options> createOptions(Project project,
-													Provider<MappingsService.Options> mappings,
+													Provider<? extends AbstractMappingsService.Options> mappings,
 													FileCollection classpath,
 													Provider<String> from,
 													Provider<String> to,

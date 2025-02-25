@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.task.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -43,9 +42,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.slf4j.Logger;
@@ -55,7 +52,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
-import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -70,15 +66,9 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 
 	public interface Options extends Service.Options {
 		@Nested
-		Property<MappingsService.Options> getSourceMappings();
-		@Nested
-		Property<TinyMappingsService.Options> getTargetMappings();
+		Property<MercuryService.Options> getMercury();
 		@InputDirectory
 		DirectoryProperty getInputDir();
-		@Input
-		Property<String> getSourceCompatibility();
-		@InputFiles
-		ConfigurableFileCollection getClasspath();
 		@OutputDirectory
 		DirectoryProperty getOutputDir();
 	}
@@ -97,11 +87,24 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 
 		return TYPE.create(project, (o) -> {
 			FileCollection targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
-			o.getSourceMappings().set(MappingsService.createOptions(project, from, to));
-			o.getTargetMappings().set(TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny"));
-			o.getSourceCompatibility().set(javaVersion.toString());
+			Provider<MappingsService.Options> sourceMappingsService = MappingsService.createOptions(project, from, to);
+			Provider<TinyMappingsService.Options> targetMappingsService = TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny");
+			Provider<MercuryService.Options> mercuryOptions = MercuryService.createOptions(
+					project,
+					JoinedMappingsService.createOptions(
+							project,
+							"intermediary",
+							sourceMappingsService,
+							targetMappingsService
+					),
+					classpath,
+					from,
+					to,
+					javaVersion.ordinal() + 1
+			);
+
+			o.getMercury().set(mercuryOptions);
 			o.getInputDir().set(inputDir);
-			o.getClasspath().from(classpath);
 			o.getOutputDir().set(outputDir);
 		});
 	}
@@ -117,24 +120,8 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		Files.deleteIfExists(outputDir);
 		Files.createDirectories(outputDir);
 
-		Mercury mercury = new Mercury();
-		mercury.setGracefulClasspathChecks(true);
-		mercury.setSourceCompatibility(getOptions().getSourceCompatibility().get());
-
-		final MappingsService sourceMappingsService = getServiceFactory().get(getOptions().getSourceMappings().get());
-		final TinyMappingsService targetMappingsService = getServiceFactory().get(getOptions().getTargetMappings().get());
-
-//		final MappingSet mappingSet = new TinyMappingsJoiner(
-//				sourceMappingsService.getMemoryMappingTree(), MappingsNamespace.NAMED.toString(),
-//				targetMappingsService.getMappingTree(), MappingsNamespace.NAMED.toString(),
-//				MappingsNamespace.INTERMEDIARY.toString()
-//		).read();
-//
-//		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
-
-		for (File file : getOptions().getClasspath().getFiles()) {
-			mercury.getClassPath().add(file.toPath());
-		}
+		final MercuryService mercuryService = getServiceFactory().get(getOptions().getMercury());
+		final Mercury mercury = mercuryService.getMercury();
 
 		try {
 			mercury.rewrite(
@@ -144,9 +131,6 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		} catch (Exception e) {
 			LOGGER.warn("Could not remap fully!", e);
 		}
-
-		// clean file descriptors
-		System.gc();
 	}
 
 	/**

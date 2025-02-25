@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.task.service;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -39,48 +38,42 @@ import org.gradle.api.tasks.InputFile;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.util.TinyRemapperHelper;
-import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
 
 /**
  * A service that provides mappings for remapping.
  */
-public final class MappingsService extends Service<MappingsService.Options> implements Closeable {
+public final class MappingsService extends AbstractMappingsService<MappingsService.Options> {
 	public static ServiceType<Options, MappingsService> TYPE = new ServiceType<>(Options.class, MappingsService.class);
 
 	// TODO use a nested TinyMappingsService instead of duplicating it
-	public interface Options extends Service.Options {
+	public interface Options extends AbstractMappingsService.Options {
 		@InputFile
 		RegularFileProperty getMappingsFile();
 		@Input
 		Property<String> getFrom();
 		@Input
 		Property<String> getTo();
-		@Input
-		Property<Boolean> getRemapLocals();
 	}
 
 	/**
 	 * Returns options for creating a new mappings service, with a given mappings file.
 	 */
-	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to, boolean remapLocals) {
-		return createOptions(project, mappingsFile, project.provider(() -> from), project.provider(() -> to), remapLocals);
+	public static Provider<Options> createOptions(Project project, Path mappingsFile, String from, String to) {
+		return createOptions(project, mappingsFile, project.provider(() -> from), project.provider(() -> to));
 	}
 
 	/**
 	 * Returns options for creating a new mappings service, with a given mappings file.
 	 */
-	public static Provider<Options> createOptions(Project project, Path mappingsFile, Provider<String> from, Provider<String> to, boolean remapLocals) {
+	public static Provider<Options> createOptions(Project project, Path mappingsFile, Provider<String> from, Provider<String> to) {
 		return TYPE.create(project, o -> {
 			o.getMappingsFile().set(mappingsFile.toFile());
 			o.getFrom().set(from);
 			o.getTo().set(to);
-			o.getRemapLocals().set(remapLocals);
 		});
 	}
 
@@ -89,7 +82,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	 */
 	public static Provider<Options> createOptions(Project project, Provider<String> from, Provider<String> to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
-		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
+		return createOptions(project, mappingConfiguration.tinyMappings, from, to);
 	}
 
 	/**
@@ -103,38 +96,17 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		super(options, serviceFactory);
 	}
 
-	private IMappingProvider mappingProvider = null;
-	private MemoryMappingTree memoryMappingTree = null;
+	@Override
+	public MemoryMappingTree buildMemoryMappingTree() {
+		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
-	public IMappingProvider getMappingsProvider() {
-		if (mappingProvider == null) {
-			try {
-				mappingProvider = TinyRemapperHelper.create(
-						getMappingsPath(),
-						getFrom(),
-						getTo(),
-						getOptions().getRemapLocals().get()
-				);
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + getMappingsPath(), e);
-			}
+		try {
+			MappingReader.read(getMappingsPath(), mappingTree);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to read mappings from: " + getMappingsPath(), e);
 		}
 
-		return mappingProvider;
-	}
-
-	public MemoryMappingTree getMemoryMappingTree() {
-		if (memoryMappingTree == null) {
-			memoryMappingTree = new MemoryMappingTree();
-
-			try {
-				MappingReader.read(getMappingsPath(), memoryMappingTree);
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to read mappings from: " + getMappingsPath(), e);
-			}
-		}
-
-		return memoryMappingTree;
+		return mappingTree;
 	}
 
 	public String getFrom() {
@@ -147,10 +119,5 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 
 	public Path getMappingsPath() {
 		return getOptions().getMappingsFile().get().getAsFile().toPath();
-	}
-
-	@Override
-	public void close() {
-		mappingProvider = null;
 	}
 }

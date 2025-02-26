@@ -52,6 +52,8 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 		Property<TinyRemapperService.Options> getTinyRemapper();
 		@InputFiles
 		ConfigurableFileCollection getClasspath();
+		@InputFiles
+		ConfigurableFileCollection getInputClasspath();
 		@Input
 		Property<Integer> getSourceCompatibility();
 	}
@@ -59,10 +61,11 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 	public static Provider<Options> createOptions(Project project,
 													Provider<? extends AbstractMappingsService.Options> mappings,
 													FileCollection classpath,
+													FileCollection inputClasspath,
 													Provider<String> from,
 													Provider<String> to,
 													int sourceCompatibility) {
-		Provider<TinyRemapperService.Options> tinyRemapper = TinyRemapperService.createOptions(
+		Provider<TinyRemapperService.Options> tinyRemapper = TinyRemapperService.createSourceRemappingOptions(
 				project,
 				mappings,
 				classpath,
@@ -73,6 +76,7 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 		return TYPE.create(project, options -> {
 			options.getTinyRemapper().set(tinyRemapper);
 			options.getClasspath().from(classpath);
+			options.getInputClasspath().from(inputClasspath);
 			options.getSourceCompatibility().set(sourceCompatibility);
 		});
 	}
@@ -94,6 +98,10 @@ public class MercuryService extends Service<MercuryService.Options> implements A
 		}
 
 		TinyRemapperService tinyRemapperService = serviceFactory.get(options.getTinyRemapper());
+
+		Path[] inputs = getOptions().getInputClasspath().getFiles().stream().map(File::toPath).toArray(Path[]::new);
+		tinyRemapperService.getTinyRemapperForInputs().readInputsAsync(inputs);
+
 		mercury.getProcessors().add(MercuryRemapper.create(tinyRemapperService.getTinyRemapperForRemapping().getEnvironment()));
 	}
 

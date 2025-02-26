@@ -30,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 
 import javax.inject.Inject;
 
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -51,11 +52,13 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Inject
 	public RemapSourcesJarTask() {
 		super();
+
+		final Provider<RegularFile> jarArchive = getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile);
 		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
-		getClasspath().from(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).map(Jar::getArchiveFile));
+		getClasspath().from(jarArchive);
 		getJarType().set("sources");
 
-		getSourcesRemapperServiceOptions().set(SourceJarRemapperService.createOptions(this));
+		getSourcesRemapperServiceOptions().set(SourceJarRemapperService.createOptions(this, jarArchive));
 	}
 
 	@TaskAction

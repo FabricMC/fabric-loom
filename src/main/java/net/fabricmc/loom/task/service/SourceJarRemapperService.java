@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
@@ -55,7 +56,7 @@ public final class SourceJarRemapperService extends Service<SourceJarRemapperSer
 		Property<MercuryService.Options> getMercury();
 	}
 
-	public static Provider<Options> createOptions(RemapSourcesJarTask task) {
+	public static Provider<Options> createOptions(RemapSourcesJarTask task, Provider<RegularFile> jarArchive) {
 		return TYPE.create(task.getProject(), o -> {
 			Provider<MercuryService.Options> mercuryOptions = MercuryService.createOptions(
 					task.getProject(),
@@ -65,6 +66,7 @@ public final class SourceJarRemapperService extends Service<SourceJarRemapperSer
 							task.getTargetNamespace()
 					),
 					task.getClasspath(),
+					task.getProject().files(jarArchive),
 					task.getSourceNamespace(),
 					task.getTargetNamespace(),
 					getJavaCompileRelease(task.getProject())

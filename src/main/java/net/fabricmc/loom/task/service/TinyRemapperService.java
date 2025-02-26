@@ -91,6 +91,8 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		ListProperty<RemapperExtensionHolder> getRemapperExtensions();
 		@Input
 		Property<Boolean> getRemapLocals();
+		@Input
+		Property<Boolean> getPropagateBridges();
 	}
 
 	public static Provider<Options> createOptions(AbstractRemapJarTask remapJarTask) {
@@ -117,10 +119,11 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 			options.getRemapLocals().set(true);
+			options.getPropagateBridges().set(false);
 		});
 	}
 
-	public static Provider<Options> createOptions(Project project,
+	public static Provider<Options> createSourceRemappingOptions(Project project,
 													Provider<? extends AbstractMappingsService.Options> mappings,
 													FileCollection classpath,
 													Provider<String> from,
@@ -134,6 +137,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getUselegacyMixinAP().set(false);
 			options.getRemapLocals().set(true);
+			options.getPropagateBridges().set(true);
 		});
 	}
 
@@ -190,6 +194,10 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 					builder.withMappings(provider);
 				}
 			}
+		}
+
+		if (getOptions().getPropagateBridges().get()) {
+			builder.propagateBridges(TinyRemapper.LinkedMethodPropagation.ENABLED);
 		}
 
 		return builder.build();

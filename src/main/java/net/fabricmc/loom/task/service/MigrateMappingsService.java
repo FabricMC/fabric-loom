@@ -98,6 +98,7 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 							targetMappingsService
 					),
 					classpath,
+					project.files(), // TODO
 					from,
 					to,
 					javaVersion.ordinal() + 1

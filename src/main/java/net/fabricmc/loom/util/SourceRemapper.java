@@ -162,6 +162,7 @@ public class SourceRemapper {
 					project,
 					MappingsService.createOptions(project, from, to),
 					getClassPath(),
+					project.files(), // TODO
 					project.provider(from::toString),
 					project.provider(to::toString),
 					Integer.MAX_VALUE

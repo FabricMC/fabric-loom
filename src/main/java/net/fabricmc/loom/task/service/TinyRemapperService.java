@@ -197,7 +197,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		}
 
 		if (getOptions().getPropagateBridges().get()) {
-			builder.propagateBridges(TinyRemapper.LinkedMethodPropagation.ENABLED);
+			builder.propagateBridges(TinyRemapper.LinkedMethodPropagation.COMPATIBLE);
 		}
 
 		return builder.build();

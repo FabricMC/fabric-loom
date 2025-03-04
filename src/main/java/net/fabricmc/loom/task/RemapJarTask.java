@@ -230,6 +230,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			Objects.requireNonNull(tinyRemapperService, "tinyRemapperService");
 			Objects.requireNonNull(tinyRemapper, "tinyRemapper");
 
+			// Delete the old file to prevent deleted contents from sticking around in the jar.
+			Files.deleteIfExists(outputFile);
+
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(outputFile).build()) {
 				outputConsumer.addNonClassFiles(inputFile);
 				tinyRemapper.apply(outputConsumer, tinyRemapperService.getOrCreateTag(inputFile));

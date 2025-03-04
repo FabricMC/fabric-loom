@@ -50,6 +50,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinReferenceRemapper;
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinRefmapInliner;
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinRefmapInlinerApplyVisitorProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.util.Constants;
@@ -75,6 +78,8 @@ public class ModProcessor {
 	private final Project project;
 	private final Configuration sourceConfiguration;
 	private final ServiceFactory serviceFactory;
+
+	private final boolean inlineMixinRefmaps = true;
 
 	public ModProcessor(Project project, Configuration sourceConfiguration, ServiceFactory serviceFactory) {
 		this.project = project;
@@ -157,6 +162,11 @@ public class ModProcessor {
 		final Set<InputTag> remapMixins = new HashSet<>();
 		final boolean requiresStaticMixinRemap = remapList.stream()
 				.anyMatch(modDependency -> modDependency.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC);
+
+		if (inlineMixinRefmaps) {
+			MixinReferenceRemapper refmapRemapper = MixinRefmapInliner.createRemapper(fromM, toM, remapList);
+			builder.extension(new MixinRefmapInlinerApplyVisitorProvider(refmapRemapper, remapMixins::contains));
+		}
 
 		if (requiresStaticMixinRemap) {
 			// Configure the mixin extension to remap mixins from mod jars that were remapped with the mixin extension.
@@ -245,6 +255,10 @@ public class ModProcessor {
 
 			if (accessWidener != null) {
 				ZipUtils.replace(output, accessWidener.right(), accessWidener.left());
+			}
+
+			if (inlineMixinRefmaps) {
+				MixinRefmapInliner.removeRefmap(dependency, output);
 			}
 
 			stripNestedJars(output);

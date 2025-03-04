@@ -61,7 +61,7 @@ public abstract sealed class FabricModJson permits FabricModJsonV0, FabricModJso
 
 	public abstract Map<String, ModEnvironment> getClassTweakers();
 
-	public final FabricModJsonSource getSource() {
+	public FabricModJsonSource getSource() {
 		return source;
 	}
 

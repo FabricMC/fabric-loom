@@ -383,8 +383,8 @@ public abstract class RunConfigSettings implements Named {
 
 	/**
 	 * Group this run config under the given folder.
-	 * <p>
-	 * This is currently only supported on IntelliJ IDEA.
+	 *
+	 * <p>This is currently only supported on IntelliJ IDEA.
 	 *
 	 * @return The property used to set the config folder.
 	 */

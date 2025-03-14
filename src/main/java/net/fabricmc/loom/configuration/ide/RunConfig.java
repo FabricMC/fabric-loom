@@ -38,10 +38,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import groovy.xml.XmlUtil;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
@@ -60,6 +62,8 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
+	private static final Pattern VARIABLE = Pattern.compile("%[A-Z_]+%");
+
 	public String configName;
 	public String eclipseProjectName;
 	public String ideaModuleName;
@@ -72,6 +76,7 @@ public class RunConfig {
 	public transient SourceSet sourceSet;
 	public Map<String, Object> environmentVariables;
 	public String projectName;
+	public String folderName;
 
 	// Turns camelCase/PascalCase into Capital Case
 	// caseConversionExample -> Case Conversion Example
@@ -151,6 +156,7 @@ public class RunConfig {
 		runConfig.environmentVariables = new HashMap<>();
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
 		runConfig.projectName = project.getName();
+		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 
 		return runConfig;
 	}
@@ -172,17 +178,20 @@ public class RunConfig {
 			runDir = relativePath + "/" + runDir;
 		}
 
-		dummyConfig = dummyConfig.replace("%NAME%", configName);
-		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
-		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
-		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
-		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
-		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", joinArguments(programArgs).replaceAll("\"", "&quot;"));
-		dummyConfig = dummyConfig.replace("%VM_ARGS%", joinArguments(vmArgs).replaceAll("\"", "&quot;"));
-		dummyConfig = dummyConfig.replace("%IDEA_ENV_VARS%", getEnvVars("<env name=\"%s\" value=\"%s\"/>"));
-		dummyConfig = dummyConfig.replace("%ECLIPSE_ENV_VARS%", getEnvVars("<mapEntry key=\"%s\" value=\"%s\"/>"));
+		var replacements = Map.of(
+				"%NAME%", configName,
+				"%MAIN_CLASS%", mainClass,
+				"%ECLIPSE_PROJECT%", eclipseProjectName,
+				"%IDEA_MODULE%", ideaModuleName,
+				"%RUN_DIRECTORY%", runDir,
+				"%PROGRAM_ARGS%", joinArguments(programArgs).replaceAll("\"", "&quot;"),
+				"%VM_ARGS%", joinArguments(vmArgs).replaceAll("\"", "&quot;"),
+				"%IDEA_ENV_VARS%", getEnvVars("<env name=\"%s\" value=\"%s\"/>"),
+				"%ECLIPSE_ENV_VARS%", getEnvVars("<mapEntry key=\"%s\" value=\"%s\"/>"),
+				"%IDEA_FOLDER_NAME%", folderName == null ? "" : "folderName=\"" + XmlUtil.escapeXml(folderName) + "\""
+		);
 
-		return dummyConfig;
+		return VARIABLE.matcher(dummyConfig).replaceAll(x -> replacements.getOrDefault(x.group(), ""));
 	}
 
 	private String getEnvVars(String pattern) {

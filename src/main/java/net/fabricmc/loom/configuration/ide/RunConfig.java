@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.JavaVersion;
@@ -50,9 +49,6 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.InstallerData;
@@ -76,42 +72,6 @@ public class RunConfig {
 	public transient SourceSet sourceSet;
 	public Map<String, Object> environmentVariables;
 	public String projectName;
-
-	public Element genRuns(Element doc) {
-		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
-		root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
-
-		this.addXml(root, "module", ImmutableMap.of("name", ideaModuleName));
-		this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
-		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDirIdeaUrl));
-
-		if (!vmArgs.isEmpty()) {
-			this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", joinArguments(vmArgs)));
-		}
-
-		if (!programArgs.isEmpty()) {
-			this.addXml(root, "option", ImmutableMap.of("name", "PROGRAM_PARAMETERS", "value", joinArguments(programArgs)));
-		}
-
-		return root;
-	}
-
-	public Element addXml(Node parent, String name, Map<String, String> values) {
-		Document doc = parent.getOwnerDocument();
-
-		if (doc == null) {
-			doc = (Document) parent;
-		}
-
-		Element e = doc.createElement(name);
-
-		for (Map.Entry<String, String> entry : values.entrySet()) {
-			e.setAttribute(entry.getKey(), entry.getValue());
-		}
-
-		parent.appendChild(e);
-		return e;
-	}
 
 	// Turns camelCase/PascalCase into Capital Case
 	// caseConversionExample -> Case Conversion Example

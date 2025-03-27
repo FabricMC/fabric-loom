@@ -44,6 +44,6 @@ class ModDependencyOptionsTest extends Specification {
 
 		then:
 		json == '{"__mappings__":"testMappings"}'
-		cacheKey == "c97692d372"
+		cacheKey == "c97692d3"
 	}
 }

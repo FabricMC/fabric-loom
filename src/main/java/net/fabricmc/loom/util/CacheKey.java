@@ -38,7 +38,7 @@ import net.fabricmc.loom.util.gradle.GradleTypeAdapter;
  * A simple base class for creating cache keys. Extend this class and create abstract properties to be included in the cache key.
  */
 public abstract class CacheKey {
-	private static final int CHECKSUM_LENGTH = 10;
+	private static final int CHECKSUM_LENGTH = 8;
 	private final transient Supplier<String> jsonSupplier = Suppliers.memoize(() -> GradleTypeAdapter.GSON.toJson(this));
 	private final transient Supplier<String> cacheKeySupplier = Suppliers.memoize(() -> Checksum.sha1Hex(jsonSupplier.get().getBytes(StandardCharsets.UTF_8)).substring(0, CHECKSUM_LENGTH));
 

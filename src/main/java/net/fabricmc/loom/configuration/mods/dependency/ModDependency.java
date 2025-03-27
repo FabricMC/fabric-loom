@@ -89,11 +89,11 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	}
 
 	protected String getName() {
-		return "%s-remapped-%s".formatted(name, options.getCacheKey());
+		return "%s-%s".formatted(name, options.getCacheKey());
 	}
 
 	protected String getGroup() {
-		return group;
+		return "remapped.%s".formatted(group);
 	}
 
 	protected String getVersion() {

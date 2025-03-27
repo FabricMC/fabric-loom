@@ -48,13 +48,13 @@ public final class SplitModDependency extends ModDependency {
 	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, String mappingsSuffix, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
-		super(artifact, metadata, mappingsSuffix, project);
+	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
+		super(artifact, metadata, options);
 		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig);
 		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
 		this.target = Objects.requireNonNull(target);
-		this.commonMaven = target.common() ? createMaven(name + "-common") : null;
-		this.clientMaven = target.client() ? createMaven(name + "-client") : null;
+		this.commonMaven = target.common() ? createMavenHelper(project, "common") : null;
+		this.clientMaven = target.client() ? createMavenHelper(project, "client") : null;
 	}
 
 	@Override
@@ -86,8 +86,8 @@ public final class SplitModDependency extends ModDependency {
 		// Split the jar into 2
 		case SPLIT -> {
 			final String suffix = variant == null ? "" : "-" + variant;
-			final Path commonTempJar = getWorkingFile("common" + suffix);
-			final Path clientTempJar = getWorkingFile("client" + suffix);
+			final Path commonTempJar = getWorkingFile(project, "common" + suffix);
+			final Path clientTempJar = getWorkingFile(project, "client" + suffix);
 
 			final JarSplitter splitter = new JarSplitter(path);
 			splitter.split(commonTempJar, clientTempJar);
@@ -114,15 +114,16 @@ public final class SplitModDependency extends ModDependency {
 
 		if (target == JarSplitter.Target.SPLIT) {
 			createModGroup(
+					project,
 					getCommonMaven().getOutputFile(null),
 					getClientMaven().getOutputFile(null)
 			);
 		}
 	}
 
-	private void createModGroup(Path commonJar, Path clientJar) {
+	private void createModGroup(Project project, Path commonJar, Path clientJar) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final ModSettings modSettings = extension.getMods().maybeCreate(String.format("%s-%s-%s", getRemappedGroup(), name, version));
+		final ModSettings modSettings = extension.getMods().maybeCreate(String.format("%s-%s-%s", getGroup(), getName(), getVersion()));
 		modSettings.getModFiles().from(
 				commonJar.toFile(),
 				clientJar.toFile()

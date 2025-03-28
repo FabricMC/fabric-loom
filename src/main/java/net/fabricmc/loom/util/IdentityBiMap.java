@@ -22,17 +22,28 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.mods.dependency;
+package net.fabricmc.loom.util;
 
-import org.gradle.api.provider.Property;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
-import net.fabricmc.loom.util.CacheKey;
+public final class IdentityBiMap<K, V> {
+	private final Map<K, V> keyToValue = new IdentityHashMap<>();
+	private final Map<V, K> valueToKey = new IdentityHashMap<>();
 
-/**
- * Inputs used to process a mod dependency. The output jar is cached based on these properties.
- */
-public abstract class ModDependencyOptions extends CacheKey {
-	public abstract Property<String> getMappings();
+	public IdentityBiMap() {
+	}
 
-	public abstract Property<Boolean> getInlineRefmap();
+	public void put(K key, V value) {
+		keyToValue.put(key, value);
+		valueToKey.put(value, key);
+	}
+
+	public V getByKey(K key) {
+		return keyToValue.get(key);
+	}
+
+	public K getByValue(V value) {
+		return valueToKey.get(value);
+	}
 }

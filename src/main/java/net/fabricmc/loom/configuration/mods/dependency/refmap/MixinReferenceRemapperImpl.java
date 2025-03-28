@@ -24,15 +24,15 @@
 
 package net.fabricmc.loom.configuration.mods.dependency.refmap;
 
-import net.fabricmc.loom.util.fmj.mixin.MixinRefmap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.fabricmc.loom.util.fmj.mixin.MixinRefmap;
 
 public record MixinReferenceRemapperImpl(Map<String, MixinRefmap.ReferenceMappingData> data) implements MixinReferenceRemapper {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MixinReferenceRemapperImpl.class);

@@ -29,8 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.fabricmc.loom.util.fmj.mixin.MixinConfiguration;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +37,14 @@ import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.fmj.mixin.MixinConfiguration;
 
 public class MixinRefmapInliner {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MixinRefmapInliner.class);
 
 	public static MixinReferenceRemapper createRemapper(String from, String to, List<ModDependency> mods) throws IOException {
 		List<MixinConfiguration> mixinConfigurations = new ArrayList<>();
+
 		for (ModDependency mod : mods) {
 			if (mod.getMetadata().mixinRemapType() != ArtifactMetadata.MixinRemapType.MIXIN) {
 				continue;
@@ -68,6 +68,5 @@ public class MixinRefmapInliner {
 	}
 
 	public static void removeRefmap(ModDependency modDependency, Path ouputPath) {
-
 	}
 }

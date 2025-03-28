@@ -22,17 +22,37 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.mods.dependency;
+package net.fabricmc.loom.configuration.mods.extension;
 
-import org.gradle.api.provider.Property;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.function.Predicate;
 
-import net.fabricmc.loom.util.CacheKey;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
+import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinRefmapInliner;
+import net.fabricmc.tinyremapper.InputTag;
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
-/**
- * Inputs used to process a mod dependency. The output jar is cached based on these properties.
- */
-public abstract class ModDependencyOptions extends CacheKey {
-	public abstract Property<String> getMappings();
+final class MixinRemap implements ModProcessorExtension {
+	static final MixinRemap INSTANCE = new MixinRemap();
 
-	public abstract Property<Boolean> getInlineRefmap();
+	private MixinRemap() {
+	}
+
+	@Override
+	public boolean appliesTo(ModDependency modDependency) {
+		return modDependency.getMetadata().mixinRemapType() == ArtifactMetadata.MixinRemapType.STATIC;
+	}
+
+	@Override
+	public TinyRemapper.Extension createExtension(Context ctx, Predicate<InputTag> applyPredicate) {
+		return new MixinExtension(applyPredicate);
+	}
+
+	@Override
+	public void finalise(ModDependency modDependency, Path path) throws IOException {
+		MixinRefmapInliner.removeRefmap(modDependency, path);
+	}
 }

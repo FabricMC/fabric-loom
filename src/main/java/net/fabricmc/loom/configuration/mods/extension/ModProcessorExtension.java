@@ -22,17 +22,40 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.mods.dependency;
+package net.fabricmc.loom.configuration.mods.extension;
 
-import org.gradle.api.provider.Property;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Predicate;
 
-import net.fabricmc.loom.util.CacheKey;
+import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
+import net.fabricmc.tinyremapper.InputTag;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 /**
- * Inputs used to process a mod dependency. The output jar is cached based on these properties.
+ * An interface to aid with applying mod-specific remapping extensions.
  */
-public abstract class ModDependencyOptions extends CacheKey {
-	public abstract Property<String> getMappings();
+public interface ModProcessorExtension {
+	List<ModProcessorExtension> EXTENSIONS = List.of(
+			MixinRemap.INSTANCE,
+			InlineRefmap.INSTANCE
+	);
 
-	public abstract Property<Boolean> getInlineRefmap();
+	/**
+	 * Return true if the extension applies to the given mod dependency.
+	 */
+	boolean appliesTo(ModDependency modDependency);
+
+	/**
+	 * Create a TinyRemapper extension that uses the predicate to only apply to mods that match appliesTo.
+	 */
+	TinyRemapper.Extension createExtension(Context ctx, Predicate<InputTag> applyPredicate) throws IOException;
+
+	void finalise(ModDependency modDependency, Path path) throws IOException;
+
+	record Context(
+			String from,
+			String to,
+			List<ModDependency> mods) { }
 }

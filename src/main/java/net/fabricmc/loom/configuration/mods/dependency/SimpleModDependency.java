@@ -40,10 +40,10 @@ public final class SimpleModDependency extends ModDependency {
 	private final Configuration targetConfig;
 	private final LocalMavenHelper maven;
 
-	public SimpleModDependency(ArtifactRef artifact, ArtifactMetadata metadata, String mappingsSuffix, Configuration targetConfig, Project project) {
-		super(artifact, metadata, mappingsSuffix, project);
+	public SimpleModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Configuration targetConfig, Project project) {
+		super(artifact, metadata, options);
 		this.targetConfig = Objects.requireNonNull(targetConfig);
-		this.maven = createMaven(name);
+		this.maven = createMavenHelper(project, null);
 	}
 
 	@Override

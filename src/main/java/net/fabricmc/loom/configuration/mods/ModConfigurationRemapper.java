@@ -58,6 +58,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -65,6 +67,7 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
+import net.fabricmc.loom.configuration.mods.dependency.ModDependencyOptions;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
@@ -78,6 +81,8 @@ public class ModConfigurationRemapper {
 	// This is a placeholder that is used when the actual group is missing (null or empty).
 	// This can happen when the dependency is a FileCollectionDependency or from a flatDir repository.
 	public static final String MISSING_GROUP = "unspecified";
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ModConfigurationRemapper.class);
 
 	public static void supplyModConfigurations(Project project, ServiceFactory serviceFactory, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		final DependencyHandler dependencies = project.getDependencies();
@@ -135,6 +140,14 @@ public class ModConfigurationRemapper {
 			}
 		}
 
+		final ModDependencyOptions modDependencyOptions = ModDependencyOptions.create(project, ModDependencyOptions.class, options -> {
+			options.getMappings().set(mappingsSuffix);
+		});
+
+		if (LOGGER.isInfoEnabled()) {
+			LOGGER.info("Mod dependency options: {}", modDependencyOptions.getJson());
+		}
+
 		// Round 1: Discovery
 		// Go through all the configs to find artifacts to remap and
 		// the installer data. The installer data has to be added before
@@ -176,7 +189,7 @@ public class ModConfigurationRemapper {
 					continue;
 				}
 
-				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, mappingsSuffix, project);
+				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, modDependencyOptions, project);
 				scheduleSourcesRemapping(project, sourceRemapper, modDependency);
 				modDependencies.add(modDependency);
 			}
@@ -332,7 +345,7 @@ public class ModConfigurationRemapper {
 		}
 
 		if (dependency.isCacheInvalid(project, "sources")) {
-			final Path output = dependency.getWorkingFile("sources");
+			final Path output = dependency.getWorkingFile(project, "sources");
 
 			sourceRemapper.scheduleRemapSources(sourcesInput.toFile(), output.toFile(), false, true, () -> {
 				try {

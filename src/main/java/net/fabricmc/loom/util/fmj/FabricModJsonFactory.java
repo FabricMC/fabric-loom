@@ -120,7 +120,8 @@ public final class FabricModJsonFactory {
 
 			if (modJson == null) {
 				// fromJson returns null if the file is empty
-				throw new RuntimeException("Failed to read empty fabric.mod.json file: " + file.getAbsolutePath());
+				LOGGER.warn("Failed to parse empty fabric.mod.json: {}", file.getAbsolutePath());
+				return null;
 			}
 
 			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));

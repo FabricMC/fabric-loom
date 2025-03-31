@@ -116,7 +116,14 @@ public final class FabricModJsonFactory {
 		}
 
 		try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
-			return create(LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class), new FabricModJsonSource.SourceSetSource(project, sourceSets));
+			final JsonObject modJson = LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
+
+			if (modJson == null) {
+				// fromJson returns null if the file is empty
+				throw new RuntimeException("Failed to read empty fabric.mod.json file: " + file.getAbsolutePath());
+			}
+
+			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
 		} catch (JsonSyntaxException e) {
 			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());
 			return null;

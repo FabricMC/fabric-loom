@@ -138,7 +138,8 @@ public abstract class MinecraftProvider {
 			verifyJarSignature(minecraftClientJar.toPath());
 		}
 
-		if (provideServer()) {
+		if (provideServer() && false) {
+			// 1.16.5 and lower server jars dont appear to be signed!?!?
 			verifyJarSignature(minecraftServerJar.toPath());
 		}
 	}
@@ -151,7 +152,7 @@ public abstract class MinecraftProvider {
 			revocationList.verify(chain);
 			JarVerifier.verify(path, chain);
 		} catch (SignatureVerificationFailure e) {
-			LOGGER.error("Verification of Minecraft jar signature failed: {}", e.getMessage());
+			LOGGER.error("Verification of Minecraft {} signature failed: {}", path.getFileName(), e.getMessage());
 			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to verify Minecraft jar signature", e);
 		}
 	}
@@ -167,6 +168,8 @@ public abstract class MinecraftProvider {
 		}
 
 		getServerBundleMetadata().versions().get(0).unpackEntry(minecraftServerJar.toPath(), getMinecraftExtractedServerJar().toPath(), configContext.project());
+
+		verifyJarSignature(getMinecraftExtractedServerJar().toPath());
 	}
 
 	public File workingDir() {

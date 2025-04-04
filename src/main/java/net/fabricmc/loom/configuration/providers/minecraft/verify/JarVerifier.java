@@ -60,6 +60,7 @@ public final class JarVerifier {
 		try (JarFile jarFile = new JarFile(jarPath.toFile(), true)) {
 			for (JarEntry jarEntry : Collections.list(jarFile.entries())) {
 				if (ZipReprocessorUtil.isSpecialFile(jarEntry.getName())
+						|| jarEntry.getName().equals("META-INF/MANIFEST.MF")
 						|| jarEntry.isDirectory()) {
 					continue;
 				}

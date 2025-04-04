@@ -138,10 +138,10 @@ public abstract class MinecraftProvider {
 			verifyJarSignature(minecraftClientJar.toPath());
 		}
 
-		if (provideServer() && false) {
-			// 1.16.5 and lower server jars dont appear to be signed!?!?
-			verifyJarSignature(minecraftServerJar.toPath());
-		}
+		// 1.16.5 and lower server jars dont appear to be signed!?!?
+		// if (provideServer()) {
+		// verifyJarSignature(minecraftServerJar.toPath());
+		// }
 	}
 
 	private void verifyJarSignature(Path path) throws IOException {

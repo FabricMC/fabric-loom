@@ -5,6 +5,7 @@ javalin = "6.3.0"
 mockito = "5.14.2"
 java-debug = "0.52.0"
 mixin = "0.15.3+mixin.0.8.7"
+bouncycastle = "1.80"
 
 gradle-nightly = "8.14-20250225001625+0000"
 fabric-loader = "0.16.9"
@@ -19,3 +20,6 @@ java-debug = { module = "com.microsoft.java:com.microsoft.java.debug.core", vers
 mixin = { module = "net.fabricmc:sponge-mixin", version.ref = "mixin" }
 gradle-nightly = { module = "org.gradle:dummy", version.ref = "gradle-nightly" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
+bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+bcutil = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastle" }

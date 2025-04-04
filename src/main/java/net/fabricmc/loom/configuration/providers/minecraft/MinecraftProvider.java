@@ -41,7 +41,12 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.CertificateChain;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.CertificateRevocationList;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.JarVerifier;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerificationFailure;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
@@ -127,6 +132,27 @@ public abstract class MinecraftProvider {
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
 						.downloadPathAsync(minecraftServerJar.toPath(), executor);
 			}
+		}
+
+		if (provideClient()) {
+			verifyJarSignature(minecraftClientJar.toPath());
+		}
+
+		if (provideServer()) {
+			verifyJarSignature(minecraftServerJar.toPath());
+		}
+	}
+
+	private void verifyJarSignature(Path path) throws IOException {
+		CertificateChain chain = CertificateChain.getRoot("mojangcs");
+		CertificateRevocationList revocationList = CertificateRevocationList.create(getProject(), CertificateRevocationList.CSC3_2010);
+
+		try {
+			revocationList.verify(chain);
+			JarVerifier.verify(path, chain);
+		} catch (SignatureVerificationFailure e) {
+			LOGGER.error("Verification of Minecraft jar signature failed: {}", e.getMessage());
+			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to verify Minecraft jar signature", e);
 		}
 	}
 

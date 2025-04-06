@@ -31,6 +31,7 @@ import java.security.cert.X509Certificate
 
 import org.bouncycastle.asn1.DERIA5String
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.CRLDistPoint
 import org.bouncycastle.asn1.x509.CRLNumber
 import org.bouncycastle.asn1.x509.CRLReason
 import org.bouncycastle.asn1.x509.DistributionPointName
@@ -117,7 +118,7 @@ class CertificateUtils {
 			return []
 		}
 
-		return org.bouncycastle.asn1.x509.CRLDistPoint
+		return CRLDistPoint
 				.getInstance(JcaX509ExtensionUtils.parseExtensionValue(crlDistributionPointsValue))
 				.getDistributionPoints()
 				.findAll { it.getDistributionPoint().type == DistributionPointName.FULL_NAME }

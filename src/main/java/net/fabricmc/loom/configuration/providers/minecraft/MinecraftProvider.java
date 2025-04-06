@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.JavaVersion;
@@ -137,6 +138,8 @@ public abstract class MinecraftProvider {
 
 	// Returns true when a file was downloaded
 	private boolean downloadJars() throws IOException {
+		AtomicBoolean didDownload = new AtomicBoolean(false);
+
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
 				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
@@ -144,7 +147,12 @@ public abstract class MinecraftProvider {
 				getExtension().download(client.url())
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftClientJar.toPath(), executor);
+						.downloadPathAsync(minecraftClientJar.toPath(), executor)
+						.thenAccept(downloadResult -> {
+							if (downloadResult.didDownload()) {
+								didDownload.set(true);
+							}
+						});
 			}
 
 			if (provideServer()) {
@@ -152,12 +160,22 @@ public abstract class MinecraftProvider {
 				getExtension().download(server.url())
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftServerJar.toPath(), executor);
+						.downloadPathAsync(minecraftServerJar.toPath(), executor)
+						.thenAccept(downloadResult -> {
+							if (downloadResult.didDownload()) {
+								didDownload.set(true);
+							}
+						});
 			}
 		}
 
-		// TODO implement me!!
-		return true;
+		if (didDownload.get()) {
+			LOGGER.info("Downloaded new Minecraft jars");
+			return true;
+		}
+
+		LOGGER.info("Using cached Minecraft jars");
+		return false;
 	}
 
 	protected final void extractBundledServerJar() throws IOException {

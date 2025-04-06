@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerif
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
 
 public abstract class MinecraftProvider {
@@ -117,6 +118,10 @@ public abstract class MinecraftProvider {
 	}
 
 	private void verifyJars() throws IOException, SignatureVerificationFailure {
+		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_MINECRAFT_VERIFICATION)) {
+			LOGGER.info("Skipping Minecraft jar verification!");
+		}
+
 		LOGGER.info("Verifying Minecraft jars");
 
 		MinecraftJarVerification verification = getProject().getObjects().newInstance(MinecraftJarVerification.class, minecraftVersion());

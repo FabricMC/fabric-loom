@@ -96,4 +96,15 @@ class CertificateRevocationListTest extends Specification {
 		!crl.downloadFailure()
 		crl.verify(cert)
 	}
+
+	def "Invalid URL"() {
+		given:
+		def project = GradleTestUtil.mockProject()
+		def cert = CertificateChain.getRoot("mojangcs")
+		when:
+		def crl = CertificateRevocationList.create(project, ["http://invalid.url"])
+		then:
+		crl.downloadFailure()
+		crl.verify(cert)
+	}
 }

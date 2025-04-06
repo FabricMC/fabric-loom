@@ -41,12 +41,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.configuration.providers.minecraft.verify.CertificateChain;
-import net.fabricmc.loom.configuration.providers.minecraft.verify.CertificateRevocationList;
-import net.fabricmc.loom.configuration.providers.minecraft.verify.JarVerifier;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.MinecraftJarVerification;
 import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerificationFailure;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
@@ -93,10 +90,14 @@ public abstract class MinecraftProvider {
 			}
 		}
 
-		downloadJars();
+		boolean didDownload = downloadJars();
 
 		if (provideServer()) {
 			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
+		}
+
+		if (didDownload) {
+			verifyJars();
 		}
 
 		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
@@ -114,7 +115,28 @@ public abstract class MinecraftProvider {
 		}
 	}
 
-	private void downloadJars() throws IOException {
+	private void verifyJars() throws IOException, SignatureVerificationFailure {
+		LOGGER.info("Verifying Minecraft jars");
+
+		MinecraftJarVerification verification = getProject().getObjects().newInstance(MinecraftJarVerification.class, minecraftVersion());
+
+		if (provideClient()) {
+			verification.verifyClientJar(minecraftClientJar.toPath());
+		}
+
+		if (provideServer()) {
+			if (serverBundleMetadata == null) {
+				verification.verifyServerJar(minecraftServerJar.toPath());
+			} else {
+				verification.verifyServerJar(getMinecraftExtractedServerJar().toPath());
+			}
+		}
+
+		LOGGER.info("Jar verification complete");
+	}
+
+	// Returns true when a file was downloaded
+	private boolean downloadJars() throws IOException {
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
 				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
@@ -134,27 +156,8 @@ public abstract class MinecraftProvider {
 			}
 		}
 
-		if (provideClient()) {
-			verifyJarSignature(minecraftClientJar.toPath());
-		}
-
-		// 1.16.5 and lower server jars dont appear to be signed!?!?
-		// if (provideServer()) {
-		// verifyJarSignature(minecraftServerJar.toPath());
-		// }
-	}
-
-	private void verifyJarSignature(Path path) throws IOException {
-		CertificateChain chain = CertificateChain.getRoot("mojangcs");
-		CertificateRevocationList revocationList = CertificateRevocationList.create(getProject(), CertificateRevocationList.CSC3_2010);
-
-		try {
-			revocationList.verify(chain);
-			JarVerifier.verify(path, chain);
-		} catch (SignatureVerificationFailure e) {
-			LOGGER.error("Verification of Minecraft {} signature failed: {}", path.getFileName(), e.getMessage());
-			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to verify Minecraft jar signature", e);
-		}
+		// TODO implement me!!
+		return true;
 	}
 
 	protected final void extractBundledServerJar() throws IOException {
@@ -168,8 +171,6 @@ public abstract class MinecraftProvider {
 		}
 
 		getServerBundleMetadata().versions().get(0).unpackEntry(minecraftServerJar.toPath(), getMinecraftExtractedServerJar().toPath(), configContext.project());
-
-		verifyJarSignature(getMinecraftExtractedServerJar().toPath());
 	}
 
 	public File workingDir() {

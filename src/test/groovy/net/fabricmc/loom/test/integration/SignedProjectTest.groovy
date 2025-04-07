@@ -78,7 +78,12 @@ class SignedProjectTest extends Specification implements MockMavenServerTrait, G
 		verificationMetadata.text = METADATA_TEMPLATE
 
 		when:
-		def setupResult = gradle.run(tasks: ["--write-verification-metadata", "pgp,sha256", "dependencies", "--refresh-keys"])
+		def setupResult = gradle.run(tasks: [
+			"--write-verification-metadata",
+			"pgp,sha256",
+			"dependencies",
+			"--refresh-keys"
+		])
 		def checkResult = gradle.run(tasks: ["dependencies"])
 
 		def result = verificationMetadata.text

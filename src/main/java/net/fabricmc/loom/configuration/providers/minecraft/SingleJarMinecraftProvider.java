@@ -139,14 +139,13 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 		}
 
 		@Override
-		public Path getInputJar(SingleJarMinecraftProvider provider) throws Exception {
+		public Path getInputJar(SingleJarMinecraftProvider provider) {
 			BundleMetadata serverBundleMetadata = provider.getServerBundleMetadata();
 
 			if (serverBundleMetadata == null) {
 				return provider.getMinecraftServerJar().toPath();
 			}
 
-			provider.extractBundledServerJar();
 			return provider.getMinecraftExtractedServerJar().toPath();
 		}
 

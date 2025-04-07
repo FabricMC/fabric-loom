@@ -96,6 +96,10 @@ public abstract class MinecraftProvider {
 
 		if (provideServer()) {
 			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
+
+			if (serverBundleMetadata != null) {
+				extractBundledServerJar();
+			}
 		}
 
 		if (didDownload) {
@@ -183,7 +187,7 @@ public abstract class MinecraftProvider {
 		return false;
 	}
 
-	protected final void extractBundledServerJar() throws IOException {
+	private void extractBundledServerJar() throws IOException {
 		Preconditions.checkArgument(provideServer(), "Not configured to provide server jar");
 		Objects.requireNonNull(getServerBundleMetadata(), "Cannot bundled mc jar from none bundled server jar");
 

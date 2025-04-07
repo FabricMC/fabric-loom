@@ -68,6 +68,18 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			repo.setUrl(MirrorUtil.getFabricRepository(target));
 		});
 
+		repositories.exclusiveContent(exclusiveContent -> {
+			exclusiveContent.forRepositories(repositories.maven(repo -> {
+				repo.setName("FabricExclusive");
+				repo.setUrl(MirrorUtil.getFabricRepository(target));
+			}));
+
+			exclusiveContent.filter(filter -> {
+				filter.includeGroup("net.fabricmc");
+				filter.includeGroupByRegex("net.fabricmc.*");
+			});
+		});
+
 		MavenArtifactRepository mojangRepo = repositories.maven(repo -> {
 			repo.setName("Mojang");
 			repo.setUrl(MirrorUtil.getLibrariesBase(target));
@@ -82,6 +94,17 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			// Fallback to maven central for artifacts such as sources or javadocs that are not mirrored on Mojang's repo.
 			// See: https://github.com/FabricMC/fabric-loom/issues/1032
 			repo.artifactUrls(ArtifactRepositoryContainer.MAVEN_CENTRAL_URL);
+		});
+
+		repositories.exclusiveContent(exclusiveContent -> {
+			exclusiveContent.forRepositories(repositories.maven(repo -> {
+				repo.setName("MojangExclusive");
+				repo.setUrl(MirrorUtil.getLibrariesBase(target));
+			}));
+
+			exclusiveContent.filter(filter -> {
+				filter.includeGroup("com.mojang");
+			});
 		});
 
 		// If a mavenCentral repo is already defined, remove the mojang repo and add it back before the mavenCentral repo so that it will be checked first.

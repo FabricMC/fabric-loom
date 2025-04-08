@@ -40,6 +40,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
+
 /**
  * A {@link Named} object for configuring "proxy" configurations that remap artifacts.
  */
@@ -140,7 +142,7 @@ public abstract class RemapConfigurationSettings implements Named {
 	}
 
 	private Provider<Boolean> defaultDependencyTransforms() {
-		return getSourceSet().map(sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) || sourceSet.getName().equals("client"));
+		return getSourceSet().map(sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) || sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME));
 	}
 
 	@Override

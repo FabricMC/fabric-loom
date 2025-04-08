@@ -34,8 +34,15 @@ public interface SpecContext {
 
 	List<FabricModJson> localMods();
 
-	// Returns mods that are both on the compile and runtime classpath
+	/**
+	 * Return a set of mods that should be used for transforms, that target EITHER the common or client.
+	 */
 	List<FabricModJson> modDependenciesCompileRuntime();
+
+	/**
+	 * Return a set of mods that should be used for transforms, that target ONLY the client.
+	 */
+	List<FabricModJson> modDependenciesCompileRuntimeClient();
 
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();

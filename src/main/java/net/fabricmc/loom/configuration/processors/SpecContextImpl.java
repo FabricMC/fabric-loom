@@ -48,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
@@ -59,10 +60,17 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
  * @param localMods Mods found in the current project.
  * @param compileRuntimeMods Dependent mods found in both the compile and runtime classpath.
  */
-public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricModJson> localMods, List<FabricModJson> compileRuntimeMods) implements SpecContext {
+public record SpecContextImpl(
+		List<FabricModJson> modDependencies,
+		List<FabricModJson> localMods,
+		List<ModHolder> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
 		final Map<String, List<FabricModJson>> fmjCache = new HashMap<>();
-		return new SpecContextImpl(getDependentMods(project, fmjCache), FabricModJsonHelpers.getModsInProject(project), getCompileRuntimeMods(project, fmjCache));
+		return new SpecContextImpl(
+				getDependentMods(project, fmjCache),
+				FabricModJsonHelpers.getModsInProject(project),
+				getCompileRuntimeMods(project, fmjCache)
+		);
 	}
 
 	// Reruns a list of mods found on both the compile and/or runtime classpaths
@@ -108,39 +116,68 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<FabricModJson> getCompileRuntimeMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
-		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project, fmjCache).toList());
+	private static List<ModHolder> getCompileRuntimeMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
+		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project, fmjCache));
 
 		for (Project dependentProject : getCompileRuntimeProjectDependencies(project).toList()) {
-			mods.addAll(fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
+			List<FabricModJson> projectMods = fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
 				return FabricModJsonHelpers.getModsInProject(dependentProject);
-			}));
+			});
+
+			for (FabricModJson mod : projectMods) {
+				mods.add(new ModHolder(mod));
+			}
 		}
 
 		return Collections.unmodifiableList(mods);
 	}
 
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
-	private static Stream<FabricModJson> getCompileRuntimeModsFromRemapConfigs(Project project, Map<String, List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(Project project, Map<String, List<FabricModJson>> fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final Set<String> runtimeModIds = extension.getRuntimeRemapConfigurations().stream()
-				.filter(settings -> settings.getApplyDependencyTransforms().get())
-				.flatMap(resolveArtifacts(project, true))
-				.map(modFromZip(fmjCache))
-				.filter(Objects::nonNull)
-				.map(FabricModJson::getId)
-				.collect(Collectors.toSet());
 
-		return extension.getCompileRemapConfigurations().stream()
-				.filter(settings -> settings.getApplyDependencyTransforms().get())
-				.flatMap(resolveArtifacts(project, false))// Use the intersection of the two configurations.
-				.map(modFromZip(fmjCache))
-				.filter(Objects::nonNull)
+		// A set of mod ids from all remap configurations that are considered for dependency transforms.
+		final Set<String> runtimeModIds = getModIds(
+				project,
+				fmjCache,
+				extension.getRuntimeRemapConfigurations().stream()
+						.filter(settings -> settings.getApplyDependencyTransforms().get())
+		);
+
+		// A set of mod ids that are found on one or more remap configurations that target the common source set.
+		// Null when split source sets are not enabled, meaning all mods are common.
+		final Set<String> commonModIds = extension.areEnvironmentSourceSetsSplit() ? getModIds(
+				project,
+				fmjCache,
+				extension.getRuntimeRemapConfigurations().stream()
+						.filter(settings -> settings.getSourceSet().map(sourceSet -> !sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME)).get())
+						.filter(settings -> settings.getApplyDependencyTransforms().get()))
+				: null;
+
+		return getMods(
+				project,
+				fmjCache,
+				extension.getCompileRemapConfigurations().stream()
+					.filter(settings -> settings.getApplyDependencyTransforms().get()))
 				// Only check based on the modid, as there may be differing versions used between the compile and runtime classpath.
 				// We assume that the version used at runtime will be binary compatible with the version used to compile against.
 				// It's not perfect but better than silently not supplying the mod, and this could happen with regular API that you compile against anyway.
 				.filter(fabricModJson -> runtimeModIds.contains(fabricModJson.getId()))
-				.sorted(Comparator.comparing(FabricModJson::getId));
+				.sorted(Comparator.comparing(FabricModJson::getId))
+				.map(fabricModJson -> new ModHolder(fabricModJson, commonModIds == null || commonModIds.contains(fabricModJson.getId())))
+				.toList();
+	}
+
+	private static Stream<FabricModJson> getMods(Project project, Map<String, List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return stream.flatMap(resolveArtifacts(project, true))
+				.map(modFromZip(fmjCache))
+				.filter(Objects::nonNull);
+	}
+
+	private static Set<String> getModIds(Project project, Map<String, List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return getMods(project, fmjCache, stream)
+				.map(FabricModJson::getId)
+				.collect(Collectors.toSet());
 	}
 
 	private static Function<Path, @Nullable FabricModJson> modFromZip(Map<String, List<FabricModJson>> fmjCache) {
@@ -190,6 +227,22 @@ public record SpecContextImpl(List<FabricModJson> modDependencies, List<FabricMo
 
 	@Override
 	public List<FabricModJson> modDependenciesCompileRuntime() {
-		return compileRuntimeMods;
+		return compileRuntimeMods.stream()
+				.map(ModHolder::mod)
+				.toList();
+	}
+
+	@Override
+	public List<FabricModJson> modDependenciesCompileRuntimeClient() {
+		return compileRuntimeMods.stream()
+				.filter(modHolder -> !modHolder.common())
+				.map(ModHolder::mod)
+				.toList();
+	}
+
+	private record ModHolder(FabricModJson mod, boolean common) {
+		ModHolder(FabricModJson mod) {
+			this(mod, true);
+		}
 	}
 }

@@ -93,7 +93,6 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 		File minecraftServerJar = getMinecraftServerJar();
 
 		if (getServerBundleMetadata() != null) {
-			extractBundledServerJar();
 			minecraftServerJar = getMinecraftExtractedServerJar();
 		}
 

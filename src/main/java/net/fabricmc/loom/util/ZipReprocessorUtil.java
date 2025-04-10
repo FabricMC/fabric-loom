@@ -46,7 +46,7 @@ public class ZipReprocessorUtil {
 	private static final String META_INF = "META-INF/";
 
 	// See https://docs.oracle.com/en/java/javase/20/docs/specs/jar/jar.html#signed-jar-file
-	private static boolean isSpecialFile(String zipEntryName) {
+	public static boolean isSpecialFile(String zipEntryName) {
 		if (!zipEntryName.startsWith(META_INF)) {
 			return false;
 		}

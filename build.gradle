@@ -155,6 +155,9 @@ dependencies {
 	}
 	testImplementation testLibs.mockito
 	testImplementation testLibs.java.debug
+	testImplementation testLibs.bcprov
+	testImplementation testLibs.bcutil
+	testImplementation testLibs.bcpkix
 
 	compileOnly runtimeLibs.jetbrains.annotations
 	testCompileOnly runtimeLibs.jetbrains.annotations

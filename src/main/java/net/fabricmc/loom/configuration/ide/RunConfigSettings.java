@@ -48,7 +48,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public class RunConfigSettings implements Named {
+public abstract class RunConfigSettings implements Named {
 	/**
 	 * Arguments for the JVM, such as system properties.
 	 */
@@ -362,6 +362,7 @@ public class RunConfigSettings implements Named {
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
 		ideConfigGenerated = parent.ideConfigGenerated;
+		getIdeConfigFolder().set(parent.getIdeConfigFolder());
 	}
 
 	public void makeRunDir() {
@@ -379,6 +380,15 @@ public class RunConfigSettings implements Named {
 	public void setIdeConfigGenerated(boolean ideConfigGenerated) {
 		this.ideConfigGenerated = ideConfigGenerated;
 	}
+
+	/**
+	 * Group this run config under the given folder.
+	 *
+	 * <p>This is currently only supported on IntelliJ IDEA.
+	 *
+	 * @return The property used to set the config folder.
+	 */
+	public abstract Property<String> getIdeConfigFolder();
 
 	@ApiStatus.Internal
 	@ApiStatus.Experimental

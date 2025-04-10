@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 import spock.lang.Stepwise
 import spock.lang.Unroll
@@ -57,6 +58,71 @@ class SignedProjectTest extends Specification implements MockMavenServerTrait, G
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "dependency verification #version"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:1.21.5'
+                mappings 'net.fabricmc:yarn:1.21.5+build.1:v2'
+                modImplementation 'net.fabricmc:fabric-loader:0.16.12'
+                modImplementation 'net.fabricmc.fabric-api:fabric-api:0.119.9+1.21.5'
+            }
+        """
+
+		def gradleDir = new File(gradle.projectDir, "gradle")
+		def verificationMetadata = new File(gradleDir, "verification-metadata.xml")
+		gradleDir.mkdirs()
+		verificationMetadata.text = METADATA_TEMPLATE
+
+		when:
+		def setupResult = gradle.run(tasks: [
+			"--write-verification-metadata",
+			"pgp,sha256",
+			"dependencies",
+			"--refresh-keys"
+		])
+		def checkResult = gradle.run(tasks: ["dependencies"])
+
+		def result = verificationMetadata.text
+		println(result)
+
+		then:
+		setupResult.task(":dependencies").outcome == SUCCESS
+		checkResult.task(":dependencies").outcome == SUCCESS
+
+		// A quick test to make sure that natives for all platforms are included in the verification metadata
+		result.contains("jtracy-1.0.29-natives-linux")
+		result.contains("jtracy-1.0.29-natives-macos")
+		result.contains("jtracy-1.0.29-natives-windows")
+
+		// Test that the Fabric PGP key is included in the verification metadata
+		result.contains("9E2B2198D20DC6E4B02C703111B891CFE51C003E")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Language("xml")
+	static final String METADATA_TEMPLATE = """
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">
+   <configuration>
+      <verify-metadata>true</verify-metadata>
+      <verify-signatures>true</verify-signatures>
+      <key-servers>
+         <key-server uri="https://keyserver.ubuntu.com"/>
+         <key-server uri="https://keys.openpgp.org"/>
+      </key-servers>
+      <trusted-artifacts>
+         <trust group="net.minecraft" regex="true" reason="Generated via loom"/>
+         <trust group="remapped.*" regex="true" reason="Generated via loom"/>
+      </trusted-artifacts>
+   </configuration>
+</verification-metadata>
+""".trim()
 
 	static final String PRIVATE_KEY = """
 -----BEGIN PGP PRIVATE KEY BLOCK-----

@@ -38,6 +38,7 @@ import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
+import net.fabricmc.loom.util.download.DownloadResult
 
 class DownloadFileTest extends DownloadTest {
 	@IgnoreIf({ os.windows }) // Requires admin on windows.
@@ -115,16 +116,20 @@ class DownloadFileTest extends DownloadTest {
 		}
 
 		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def results = [] as List<DownloadResult>
 
 		when:
 		for (i in 0..<2) {
-			Download.create("$PATH/sha1.txt")
+			def result = Download.create("$PATH/sha1.txt")
 					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
 					.downloadPath(output)
+			results << result
 		}
 
 		then:
 		requestCount == 1
+		results[0].didDownload()
+		!results[1].didDownload()
 	}
 
 	def "Invalid Sha1"() {
@@ -363,6 +368,28 @@ class DownloadFileTest extends DownloadTest {
 
 		then:
 		Files.readString(dir.resolve("4.txt")) == "Hello World"
+	}
+
+	def "File: Async result"() {
+		setup:
+		server.get("/async1") {
+			it.result("Hello World")
+		}
+
+		def dir = File.createTempDir().toPath()
+
+		when:
+		boolean didDownload = false
+		new DownloadExecutor(2).withCloseable {
+			Download.create("$PATH/async1")
+					.downloadPathAsync(dir.resolve("1.txt"), it)
+					.thenAccept {
+						didDownload = it.didDownload()
+					}
+		}
+
+		then:
+		didDownload
 	}
 
 	def "File: Async Error"() {

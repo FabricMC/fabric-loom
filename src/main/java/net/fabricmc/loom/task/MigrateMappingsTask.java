@@ -24,15 +24,20 @@
 
 package net.fabricmc.loom.task;
 
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
+import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.task.service.MigrateMappingsService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -47,6 +52,9 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	@Option(option = "input", description = "Java source file directory")
 	public abstract DirectoryProperty getInputDir();
 
+	@InputFiles
+	public abstract ConfigurableFileCollection getInputClasspath();
+
 	@OutputDirectory
 	@Option(option = "output", description = "Remapped source output directory")
 	public abstract DirectoryProperty getOutputDir();
@@ -57,7 +65,10 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	public MigrateMappingsTask() {
 		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
-		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
+
+		getInputClasspath().from(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).map(AbstractArchiveTask::getArchiveFile));
+
+		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings(), getInputClasspath(), getInputDir(), getOutputDir()));
 	}
 
 	@TaskAction

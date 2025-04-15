@@ -100,7 +100,7 @@ public class SourceRemapper {
 
 	private void remapSourcesInner(File source, File destination) throws Exception {
 		project.getLogger().info(":remapping source jar");
-		Mercury mercury = getMercuryInstance();
+		Mercury mercury = getMercuryInstance(source);
 
 		if (source.equals(destination)) {
 			if (source.isDirectory()) {
@@ -152,17 +152,16 @@ public class SourceRemapper {
 		}
 	}
 
-	private Mercury getMercuryInstance() {
+	private Mercury getMercuryInstance(File sourceJar) {
 		MappingsNamespace from = toNamed ? MappingsNamespace.INTERMEDIARY : MappingsNamespace.NAMED;
 		MappingsNamespace to = toNamed ? MappingsNamespace.NAMED : MappingsNamespace.INTERMEDIARY;
 
 		MercuryService mercuryService = serviceFactory.get(
-				// TODO save these options, no need to recreate them every time
 				MercuryService.createOptions(
 					project,
 					MappingsService.createOptions(project, from, to),
 					getClassPath(),
-					project.files(), // TODO
+					project.files(sourceJar),
 					project.provider(from::toString),
 					project.provider(to::toString),
 					Integer.MAX_VALUE

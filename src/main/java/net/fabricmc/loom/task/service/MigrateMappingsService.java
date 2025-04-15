@@ -73,7 +73,11 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		DirectoryProperty getOutputDir();
 	}
 
-	public static Provider<Options> createOptions(Project project, Provider<String> targetMappings, DirectoryProperty inputDir, DirectoryProperty outputDir) {
+	public static Provider<Options> createOptions(Project project,
+												Provider<String> targetMappings,
+												FileCollection inputClasspath,
+												DirectoryProperty inputDir,
+												DirectoryProperty outputDir) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final Provider<String> from = project.provider(() -> "intermediary");
 		final Provider<String> to = project.provider(() -> "named");
@@ -82,7 +86,6 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		ConfigurableFileCollection classpath = project.getObjects().fileCollection();
 		classpath.from(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		// Question: why are both of these needed?
-		classpath.from(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.NAMED));
 
 		return TYPE.create(project, (o) -> {
@@ -98,7 +101,7 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 							targetMappingsService
 					),
 					classpath,
-					project.files(), // TODO
+					inputClasspath,
 					from,
 					to,
 					javaVersion.ordinal() + 1

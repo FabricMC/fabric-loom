@@ -73,6 +73,7 @@ class InterfaceInjectionProcessorTest extends Specification {
 		def specContext = Mock(SpecContext)
 		specContext.localMods() >> [fmj]
 		specContext.modDependenciesCompileRuntime() >> []
+		specContext.modDependenciesCompileRuntimeClient() >> []
 
 		def processorContext = Mock(ProcessorContext)
 		processorContext.getMappings() >> createMappings()

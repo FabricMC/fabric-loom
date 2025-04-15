@@ -120,7 +120,6 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
 					.filter(injectedInterface -> {
 						return context.includesClient() // The client jar depends on the server, so always apply all to it
-								|| context.isMerged() // Always apply all to merged jars
 								|| !spec.clientOnlyModIds.contains(injectedInterface.modId()); // Or the mod is NOT only found on the client classpath, so we can apply it to the server jar
 					})
 					.map(injectedInterface -> remap(

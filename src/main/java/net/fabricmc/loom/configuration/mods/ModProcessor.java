@@ -253,8 +253,8 @@ public class ModProcessor {
 		}
 	}
 
-	private static Path getRemappedOutput(ModDependency dependency) {
-		return dependency.getWorkingFile(null);
+	private Path getRemappedOutput(ModDependency dependency) {
+		return dependency.getWorkingFile(project, null);
 	}
 
 	private void remapJarManifestEntries(Path jar) throws IOException {

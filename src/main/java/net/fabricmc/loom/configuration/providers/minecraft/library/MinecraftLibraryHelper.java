@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.providers.minecraft.library;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +67,35 @@ public class MinecraftLibraryHelper {
 				if (download != null) {
 					libraries.add(downloadToLibrary(download));
 				}
+			}
+		}
+
+		return Collections.unmodifiableList(libraries);
+	}
+
+	public static List<Library> getAllLibraries(MinecraftVersionMeta versionMeta) {
+		var libraries = new ArrayList<Library>();
+
+		for (MinecraftVersionMeta.Library library : versionMeta.libraries()) {
+			if (library.artifact() != null) {
+				Library mavenLib = Library.fromMaven(library.name(), Library.Target.COMPILE);
+
+				// Versions that have the natives on the classpath, attempt to target them as natives.
+				if (mavenLib.classifier() != null && mavenLib.classifier().startsWith("natives-")) {
+					mavenLib = mavenLib.withTarget(Library.Target.NATIVES);
+				}
+
+				libraries.add(mavenLib);
+			}
+
+			Map<String, MinecraftVersionMeta.Download> classifiers = library.downloads().classifiers();
+
+			if (classifiers == null) {
+				continue;
+			}
+
+			for (MinecraftVersionMeta.Download download : classifiers.values()) {
+				libraries.add(downloadToLibrary(download));
 			}
 		}
 

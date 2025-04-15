@@ -33,6 +33,7 @@ import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionContainer
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
 import org.jetbrains.annotations.Nullable
@@ -63,9 +64,10 @@ class GradleTestUtil {
 	}
 
 	static Project mockProject() {
-		def objectFactory = TestServiceFactory.objectFactory
-		def providerFactory = TestServiceFactory.providerFactory
 		def mock = mock(Project.class)
+		def serviceRegistry = TestServiceFactory.createServiceRegistry(mock)
+		def objectFactory = serviceRegistry.get(ObjectFactory)
+		def providerFactory = serviceRegistry.get(ProviderFactory)
 		def extensions = mockExtensionContainer()
 		when(mock.getExtensions()).thenReturn(extensions)
 		when(mock.getObjects()).thenReturn(objectFactory)

@@ -76,4 +76,13 @@ class MinecraftLibraryHelperTest extends Specification {
 		then:
 		libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
 	}
+
+	def "get all libraries"() {
+		when:
+		def meta = MinecraftTestUtils.getVersionMeta("1.21.5")
+		def libraries = MinecraftLibraryHelper.getAllLibraries(meta)
+
+		then:
+		libraries.size() > 0
+	}
 }

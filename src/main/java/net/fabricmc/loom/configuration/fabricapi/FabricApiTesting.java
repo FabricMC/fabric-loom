@@ -103,7 +103,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 		if (settings.getEnableClientGameTests().get()) {
 			// Not ideal as there may be multiple resources directories, if this isnt correct the mod will need to override this.
-			final File resourcesDir = testSourceSet.getResources().getFiles().stream().findAny().orElse(null);
+			final File resourcesDir = testSourceSet.getResources().getSrcDirs().stream().findFirst().orElse(null);
 
 			RunConfigSettings clientGameTest = extension.getRunConfigs().create("clientGameTest", run -> {
 				run.inherit(extension.getRunConfigs().getByName("client"));

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.util
 
 import groovy.transform.CompileStatic
+import org.gradle.api.Project
 import org.gradle.api.internal.CollectionCallbackActionDecorator
 import org.gradle.api.internal.MutationGuard
 import org.gradle.api.internal.MutationGuards
@@ -71,7 +72,7 @@ class TestServiceFactory {
 	public static final ObjectFactory objectFactory = serviceRegistry.get(ObjectFactory)
 	public static final ProviderFactory providerFactory = serviceRegistry.get(ProviderFactory)
 
-	private static ServiceRegistry createServiceRegistry() {
+	static ServiceRegistry createServiceRegistry(Project project = null) {
 		def services = new DefaultServiceRegistry()
 		services.register {
 			it.add(DefaultPropertyFactory)
@@ -83,6 +84,11 @@ class TestServiceFactory {
 			it.add(FileCollectionFactory, fileCollectionFactory())
 			it.add(DefaultDomainObjectCollectionFactory)
 			it.add(CrossBuildInMemoryCacheFactory, new DefaultCrossBuildInMemoryCacheFactory(mock(ListenerManager)))
+
+			if (project != null) {
+				it.add(Project, project)
+			}
+
 			//noinspection unused
 			it.addProvider(new ServiceRegistrationProvider() {
 						@Provides

@@ -31,6 +31,7 @@ import java.util.List;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
@@ -94,6 +95,10 @@ public class MinecraftLibraryProvider {
 		if (provideServer) {
 			provideServerLibraries();
 		}
+
+		if (extension.isCollectingDependencyVerificationMetadata()) {
+			resolveAllLibraries();
+		}
 	}
 
 	private void provideClientLibraries() {
@@ -112,6 +117,22 @@ public class MinecraftLibraryProvider {
 		final List<Library> libraries = serverBundleMetadata != null ? MinecraftLibraryHelper.getServerLibraries(serverBundleMetadata) : Collections.emptyList();
 		final List<Library> processLibraries = processLibraries(libraries);
 		processLibraries.forEach(this::applyServerLibrary);
+	}
+
+	/**
+	 * When Gradle is writing dependency verification metadata, we need to resolve all libraries across all platforms,
+	 * to ensure that they are captured.
+	 */
+	private void resolveAllLibraries() {
+		project.getLogger().info("Resolving all libraries for dependency verification metadata generation");
+
+		final List<Library> libraries = MinecraftLibraryHelper.getAllLibraries(minecraftProvider.getVersionInfo());
+		Configuration detachedConfiguration = project.getConfigurations().detachedConfiguration(
+				libraries.stream()
+					.map(library -> project.getDependencies().create(library.mavenNotation()))
+					.toArray(Dependency[]::new)
+		);
+		detachedConfiguration.getFiles();
 	}
 
 	private List<Library> processLibraries(List<Library> libraries) {

@@ -1,5 +1,6 @@
-[*.{gradle,java,kotlin}]
+[*.{gradle,groovy,java,kotlin}]
 indent_style = tab
 ij_continuation_indent_size = 8
 ij_java_imports_layout = $*,|,java.**,|,javax.**,|,*,|,net.fabricmc.**
 ij_java_class_count_to_use_import_on_demand = 999
+ij_groovy_imports_layout = java.**,|,javax.**,|,*,|,net.fabricmc.**,|,$*

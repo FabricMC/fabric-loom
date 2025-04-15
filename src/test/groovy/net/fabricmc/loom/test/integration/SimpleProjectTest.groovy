@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -99,5 +99,32 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		result.task(":build").outcome == SUCCESS
 		!result.output.contains("[WARN]  [MIXIN]") // Assert that tiny remapper didnt not have any warnings when remapping
 		gradle.getOutputZipEntry("fabric-example-mod-1.0.0.jar", "META-INF/MANIFEST.MF").contains("Fabric-Loom-Version: 0.0.0+unknown")
+	}
+
+	// Tests that deleted files don't remain in built jars after a rebuild.
+	// See https://github.com/FabricMC/fabric-loom/issues/1270.
+	@Unroll
+	def "deleted files disappear from jars (gradle #version)"() {
+		// Initial conditions: a project with a resource file to delete.
+		setup:
+		def gradle = gradleProject(project: "simple", version: version)
+		def deletedFile = new File(gradle.projectDir, "src/main/resources/foo.txt")
+		deletedFile.text = "hello, world!"
+		gradle.run(task: "build")
+
+		when:
+		// Delete the resource, then run another build.
+		deletedFile.delete()
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+		!gradle.hasOutputZipEntry("fabric-example-mod-1.0.0.jar", "foo.txt")
+		!gradle.hasOutputZipEntry("fabric-example-mod-1.0.0-sources.jar", "foo.txt")
+		!gradle.hasOutputZipEntry("fabric-example-mod-1.0.0-no-remap.jar", "foo.txt")
+		!gradle.hasOutputZipEntry("fabric-example-mod-1.0.0-no-remap-sources.jar", "foo.txt")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
 	}
 }

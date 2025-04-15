@@ -69,6 +69,7 @@ class IdeaClasspathModificationsTest extends Specification {
 		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", ".run")
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", RunConfig.joinArguments([]).replaceAll("\"", "&quot;"))
+		dummyConfig = dummyConfig.replace("%IDEA_FOLDER_NAME%", "")
 
 		return dummyConfig
 	}

@@ -77,6 +77,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private final ListProperty<LibraryProcessorManager.LibraryProcessorFactory> libraryProcessorFactories;
 	private final boolean configurationCacheActive;
 	private final boolean isolatedProjectsActive;
+	private final boolean isCollectingDependencyVerificationMetadata;
 
 	@Inject
 	protected abstract BuildFeatures getBuildFeatures();
@@ -106,6 +107,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 		configurationCacheActive = getBuildFeatures().getConfigurationCache().getActive().get();
 		isolatedProjectsActive = getBuildFeatures().getIsolatedProjects().getActive().get();
+		isCollectingDependencyVerificationMetadata = !project.getGradle().getStartParameter().getWriteDependencyVerifications().isEmpty();
 
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
@@ -305,5 +307,10 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public boolean isProjectIsolationActive() {
 		return isolatedProjectsActive;
+	}
+
+	@Override
+	public boolean isCollectingDependencyVerificationMetadata() {
+		return isCollectingDependencyVerificationMetadata;
 	}
 }

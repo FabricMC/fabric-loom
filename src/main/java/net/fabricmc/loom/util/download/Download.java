@@ -145,13 +145,13 @@ public final class Download {
 		}
 	}
 
-	void downloadPath(Path output) throws DownloadException {
+	DownloadResult downloadPath(Path output) throws DownloadException {
 		boolean downloadRequired = requiresDownload(output);
 
 		if (!downloadRequired) {
 			// Does not require download, we are done here.
 			progressListener.onEnd();
-			return;
+			return new DownloadResultImpl(false);
 		}
 
 		try {
@@ -162,6 +162,8 @@ public final class Download {
 		} finally {
 			progressListener.onEnd();
 		}
+
+		return new DownloadResultImpl(true);
 	}
 
 	private void doDownload(Path output) throws DownloadException {
@@ -483,4 +485,6 @@ public final class Download {
 	private DownloadException error(Throwable throwable, String message, Object... args) {
 		return new DownloadException(message.formatted(args), throwable);
 	}
+
+	private record DownloadResultImpl(boolean didDownload) implements DownloadResult { }
 }

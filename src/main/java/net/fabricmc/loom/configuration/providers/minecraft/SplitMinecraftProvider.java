@@ -74,8 +74,6 @@ public final class SplitMinecraftProvider extends MinecraftProvider {
 			throw new UnsupportedOperationException("Only Minecraft versions using a bundled server jar can be split, please use a merged jar setup for this version of minecraft");
 		}
 
-		extractBundledServerJar();
-
 		final Path clientJar = getMinecraftClientJar().toPath();
 		final Path serverJar = getMinecraftExtractedServerJar().toPath();
 

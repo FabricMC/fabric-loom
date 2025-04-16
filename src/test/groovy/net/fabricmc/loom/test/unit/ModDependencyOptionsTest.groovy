@@ -36,6 +36,7 @@ class ModDependencyOptionsTest extends Specification {
 		def project = GradleTestUtil.mockProject()
 		def modDependencyOptions = CacheKey.create(project, ModDependencyOptions) {
 			it.getMappings().set("testMappings")
+			it.getInlineRefmap().set(false)
 		}
 
 		when:
@@ -43,7 +44,7 @@ class ModDependencyOptionsTest extends Specification {
 		def cacheKey = modDependencyOptions.getCacheKey()
 
 		then:
-		json == '{"__mappings__":"testMappings"}'
-		cacheKey == "c97692d3"
+		json == '{"__inlineRefmap__":false,"__mappings__":"testMappings"}'
+		cacheKey == "1b04231e"
 	}
 }

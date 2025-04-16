@@ -24,16 +24,15 @@
 
 package net.fabricmc.loom.test.unit.service
 
-import org.gradle.api.provider.Property
+import org.gradle.api.Project
 import spock.lang.Specification
 
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.service.ScopedServiceFactory
-import net.fabricmc.loom.util.service.Service
-import net.fabricmc.loom.util.service.ServiceType
 
 abstract class ServiceTestBase extends Specification {
 	ScopedServiceFactory factory
+	Project project = GradleTestUtil.mockProject()
 
 	def setup() {
 		factory = new ScopedServiceFactory()
@@ -42,9 +41,5 @@ abstract class ServiceTestBase extends Specification {
 	def cleanup() {
 		factory.close()
 		factory = null
-	}
-
-	static Property<String> serviceClassProperty(ServiceType<? extends Service.Options, ? extends Service> type) {
-		return GradleTestUtil.mockProperty(type.serviceClass().name)
 	}
 }

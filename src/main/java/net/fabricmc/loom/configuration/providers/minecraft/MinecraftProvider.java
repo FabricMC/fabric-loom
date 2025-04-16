@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.JavaVersion;
@@ -41,9 +42,12 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.MinecraftJarVerification;
+import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerificationFailure;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.DownloadExecutor;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
 
 public abstract class MinecraftProvider {
@@ -88,10 +92,18 @@ public abstract class MinecraftProvider {
 			}
 		}
 
-		downloadJars();
+		boolean didDownload = downloadJars();
 
 		if (provideServer()) {
 			serverBundleMetadata = BundleMetadata.fromJar(minecraftServerJar.toPath());
+
+			if (serverBundleMetadata != null) {
+				extractBundledServerJar();
+			}
+		}
+
+		if (didDownload) {
+			verifyJars();
 		}
 
 		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
@@ -109,7 +121,34 @@ public abstract class MinecraftProvider {
 		}
 	}
 
-	private void downloadJars() throws IOException {
+	private void verifyJars() throws IOException, SignatureVerificationFailure {
+		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_MINECRAFT_VERIFICATION)) {
+			LOGGER.info("Skipping Minecraft jar verification!");
+		}
+
+		LOGGER.info("Verifying Minecraft jars");
+
+		MinecraftJarVerification verification = getProject().getObjects().newInstance(MinecraftJarVerification.class, minecraftVersion());
+
+		if (provideClient()) {
+			verification.verifyClientJar(minecraftClientJar.toPath());
+		}
+
+		if (provideServer()) {
+			if (serverBundleMetadata == null) {
+				verification.verifyServerJar(minecraftServerJar.toPath());
+			} else {
+				verification.verifyServerJar(getMinecraftExtractedServerJar().toPath());
+			}
+		}
+
+		LOGGER.info("Jar verification complete");
+	}
+
+	// Returns true when a file was downloaded
+	private boolean downloadJars() throws IOException {
+		AtomicBoolean didDownload = new AtomicBoolean(false);
+
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
 				DownloadExecutor executor = new DownloadExecutor(2)) {
 			if (provideClient()) {
@@ -117,7 +156,12 @@ public abstract class MinecraftProvider {
 				getExtension().download(client.url())
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftClientJar.toPath(), executor);
+						.downloadPathAsync(minecraftClientJar.toPath(), executor)
+						.thenAccept(downloadResult -> {
+							if (downloadResult.didDownload()) {
+								didDownload.set(true);
+							}
+						});
 			}
 
 			if (provideServer()) {
@@ -125,12 +169,25 @@ public abstract class MinecraftProvider {
 				getExtension().download(server.url())
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
-						.downloadPathAsync(minecraftServerJar.toPath(), executor);
+						.downloadPathAsync(minecraftServerJar.toPath(), executor)
+						.thenAccept(downloadResult -> {
+							if (downloadResult.didDownload()) {
+								didDownload.set(true);
+							}
+						});
 			}
 		}
+
+		if (didDownload.get()) {
+			LOGGER.info("Downloaded new Minecraft jars");
+			return true;
+		}
+
+		LOGGER.info("Using cached Minecraft jars");
+		return false;
 	}
 
-	protected final void extractBundledServerJar() throws IOException {
+	private void extractBundledServerJar() throws IOException {
 		Preconditions.checkArgument(provideServer(), "Not configured to provide server jar");
 		Objects.requireNonNull(getServerBundleMetadata(), "Cannot bundled mc jar from none bundled server jar");
 

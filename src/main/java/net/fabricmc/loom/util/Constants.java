@@ -149,6 +149,10 @@ public class Constants {
 		public static final String RUNTIME_JAVA_COMPATIBILITY_VERSION = "fabric.loom.runtimeJavaCompatibilityVersion";
 		public static final String DECOMPILE_CACHE_MAX_FILES = "fabric.loom.decompileCacheMaxFiles";
 		public static final String DECOMPILE_CACHE_MAX_AGE = "fabric.loom.decompileCacheMaxAge";
+		/**
+		 * Skip the signature verification of the Minecraft jar after downloading it.
+		 */
+		public static final String DISABLE_MINECRAFT_VERIFICATION = "fabric.loom.disableMinecraftVerification";
 	}
 
 	public static final class Manifest {

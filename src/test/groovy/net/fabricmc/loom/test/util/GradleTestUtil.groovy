@@ -26,7 +26,6 @@ package net.fabricmc.loom.test.util
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
-import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.file.SourceDirectorySet
@@ -34,6 +33,7 @@ import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionContainer
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
 import org.jetbrains.annotations.Nullable
@@ -65,8 +65,15 @@ class GradleTestUtil {
 
 	static Project mockProject() {
 		def mock = mock(Project.class)
+		def serviceRegistry = TestServiceFactory.createServiceRegistry(mock)
+		def objectFactory = serviceRegistry.get(ObjectFactory)
+		def providerFactory = serviceRegistry.get(ProviderFactory)
 		def extensions = mockExtensionContainer()
 		when(mock.getExtensions()).thenReturn(extensions)
+		when(mock.getObjects()).thenReturn(objectFactory)
+		when(mock.provider(any())).thenAnswer {
+			providerFactory.provider(it.getArgument(0))
+		}
 		return mock
 	}
 
@@ -131,12 +138,6 @@ class GradleTestUtil {
 		def mock = mock(RegularFileProperty.class)
 		when(mock.get()).thenReturn(regularFile)
 		when(mock.isPresent()).thenReturn(true)
-		return mock
-	}
-
-	static ConfigurableFileCollection mockConfigurableFileCollection(File... files) {
-		def mock = mock(ConfigurableFileCollection.class)
-		when(mock.getFiles()).thenReturn(Set.of(files))
 		return mock
 	}
 

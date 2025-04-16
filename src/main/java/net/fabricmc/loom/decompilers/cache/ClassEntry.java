@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,6 +45,34 @@ import net.fabricmc.loom.util.Checksum;
 public record ClassEntry(String name, List<String> innerClasses, List<String> superClasses) {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClassEntry.class);
 
+	public ClassEntry {
+		if (!name.endsWith(".class")) {
+			throw new IllegalArgumentException("Class name must end with '.class': " + name);
+		}
+
+		if (!name.contains("/")) {
+			throw new IllegalArgumentException("Class name must be in a package: " + name);
+		}
+
+		String className = name.replace(".class", "");
+
+		for (String innerClass : innerClasses) {
+			if (!innerClass.endsWith(".class")) {
+				throw new IllegalArgumentException("Inner class name must end with '.class': " + name);
+			}
+
+			if (!innerClass.startsWith(className)) {
+				throw new IllegalArgumentException("Inner class (" + innerClass + ") does not have the parent class name as a prefix: " + name);
+			}
+		}
+
+		for (String superClass : superClasses) {
+			if (!superClass.endsWith(".class")) {
+				throw new IllegalArgumentException("Super class name must end with '.class': " + superClass);
+			}
+		}
+	}
+
 	/**
 	 * Copy the class and its inner classes to the target root.
 	 * @param sourceRoot The root of the source jar
@@ -55,11 +83,16 @@ public record ClassEntry(String name, List<String> innerClasses, List<String> su
 	public void copyTo(Path sourceRoot, Path targetRoot) throws IOException {
 		Path targetPath = targetRoot.resolve(name);
 		Files.createDirectories(targetPath.getParent());
-		Files.copy(sourceRoot.resolve(name), targetPath);
+		copy(sourceRoot.resolve(name), targetPath);
 
 		for (String innerClass : innerClasses) {
-			Files.copy(sourceRoot.resolve(innerClass), targetRoot.resolve(innerClass));
+			copy(sourceRoot.resolve(innerClass), targetRoot.resolve(innerClass));
 		}
+	}
+
+	private void copy(Path source, Path target) throws IOException {
+		LOGGER.debug("Copying class entry `{}` from `{}` to `{}`", name, source, target);
+		Files.copy(source, target);
 	}
 
 	/**
@@ -95,7 +128,7 @@ public record ClassEntry(String name, List<String> innerClasses, List<String> su
 		joiner.add(selfHash);
 
 		for (String superClass : superClasses) {
-			final String superHash = hashes.get(superClass + ".class");
+			final String superHash = hashes.get(superClass);
 
 			if (superHash != null) {
 				joiner.add(superHash);

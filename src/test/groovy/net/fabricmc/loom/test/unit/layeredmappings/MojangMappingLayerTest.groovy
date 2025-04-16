@@ -42,7 +42,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		then:
 		mappings.srcNamespace == "named"
 		mappings.dstNamespaces == ["intermediary", "official"]
-		mappings.classes.size() == 6107
+		mappings.classes.size() == 6113
 		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
 		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
 		mappings.classes[0].methods[0].args.size() == 0 // No Args
@@ -56,6 +56,48 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		mockMinecraftProvider.minecraftVersion() >> "1.17"
 		when:
 		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				buildMojangMappingsSpec(false)
+				)
+		def tiny = getTiny(mappings)
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 6113
+		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+		mappings.classes[0].methods[0].args.size() == 0 // No Args
+		!tiny.contains('this$0')
+	}
+
+	def "Read mojang mappings with synthetic field names drop roots" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
+		when:
+		def mappings = getLayeredMappingsDropNoneIntermediaryRoots(
+				new IntermediaryMappingsSpec(),
+				buildMojangMappingsSpec(true)
+				)
+		def tiny = getTiny(mappings)
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.classes.size() == 6107
+		mappings.classes[0].srcName.hashCode() == 1869546970 // MojMap name, just check the hash
+		mappings.classes[0].getDstName(0) == "net/minecraft/class_2354"
+		mappings.classes[0].methods[0].args.size() == 0 // No Args
+		tiny.contains('this$0')
+	}
+
+	def "Read mojang mappings without synthetic field names drop roots" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_17_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
+		mockMinecraftProvider.minecraftVersion() >> "1.17"
+		when:
+		def mappings = getLayeredMappingsDropNoneIntermediaryRoots(
 				new IntermediaryMappingsSpec(),
 				buildMojangMappingsSpec(false)
 				)

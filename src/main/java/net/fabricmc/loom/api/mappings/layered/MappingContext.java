@@ -64,4 +64,6 @@ public interface MappingContext {
 	DownloadBuilder download(String url);
 
 	boolean refreshDeps();
+
+	boolean hasProperty(String property);
 }

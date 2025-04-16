@@ -41,6 +41,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -113,6 +114,11 @@ public class GradleMappingContext implements MappingContext {
 	@Override
 	public boolean refreshDeps() {
 		return extension.refreshDeps();
+	}
+
+	@Override
+	public boolean hasProperty(String property) {
+		return GradleUtils.getBooleanProperty(project, property);
 	}
 
 	public Project getProject() {

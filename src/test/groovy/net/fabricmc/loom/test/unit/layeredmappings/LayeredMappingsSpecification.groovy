@@ -48,6 +48,7 @@ import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMa
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.LoomMocks
+import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadBuilder
 import net.fabricmc.mappingio.MappingReader
@@ -100,6 +101,13 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		return processor.getMappings(processor.resolveLayers(new TestMappingContext(specs.toList())))
 	}
 
+	MemoryMappingTree getLayeredMappingsDropNoneIntermediaryRoots(MappingsSpec<? extends MappingLayer>... specs) {
+		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
+		return processor.getMappings(processor.resolveLayers(new TestMappingContext(specs.toList(), [
+			Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS
+		])))
+	}
+
 	UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
 		return processor.getUnpickData(processor.resolveLayers(new TestMappingContext(specs.toList())))
@@ -134,9 +142,11 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	class TestMappingContext implements MappingContext {
 		private final List<MappingsSpec<? extends MappingLayer>> specs
+		private final List<String> enabledProperties
 
-		TestMappingContext(List<MappingsSpec<? extends MappingLayer>> specs) {
+		TestMappingContext(List<MappingsSpec<? extends MappingLayer>> specs, List<String> enabledProperties = []) {
 			this.specs = specs
+			this.enabledProperties = enabledProperties
 		}
 
 		@Override
@@ -198,6 +208,11 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		@Override
 		boolean refreshDeps() {
 			return false
+		}
+
+		@Override
+		boolean hasProperty(String property) {
+			return enabledProperties.contains(property)
 		}
 	}
 

@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.DownloadException;
 
 public record MojangMappingsSpec(boolean nameSyntheticMembers) implements MappingsSpec<MojangMappingLayer> {
@@ -66,6 +67,7 @@ public record MojangMappingsSpec(boolean nameSyntheticMembers) implements Mappin
 				clientMappings,
 				serverMappings,
 				nameSyntheticMembers(),
+				context.hasProperty(Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS),
 				context.isUsingIntermediateMappings() ? context.intermediaryTree() : null,
 				context.getLogger()
 		);

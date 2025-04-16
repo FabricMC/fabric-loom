@@ -28,6 +28,7 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.Constants
 
 import static net.fabricmc.loom.test.LoomTestConstants.DEFAULT_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
@@ -52,6 +53,10 @@ class LayeredMappingsTest extends Specification implements GradleProjectTestTrai
             }
         """
 
+		if (layer.contains("// Drop none roots")) {
+			new File(gradle.projectDir, "gradle.properties").text = "${Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS}=true"
+		}
+
 		when:
 		def result = gradle.run(task: "build")
 
@@ -66,6 +71,7 @@ class LayeredMappingsTest extends Specification implements GradleProjectTestTrai
             """,
 			// Yarn on top of Mojmap
 			"""
+				// Drop none roots
                 officialMojangMappings()
                 mappings("net.fabricmc:yarn:1.21.4+build.8:v2")
             """,
@@ -81,6 +87,7 @@ class LayeredMappingsTest extends Specification implements GradleProjectTestTrai
             """,
 			// Yarn on top of Mojmap with parchment
 			"""
+				// Drop none roots
                 officialMojangMappings()
                 parchment("org.parchmentmc.data:parchment-1.21.4:2025.01.19@zip")
                 mappings("net.fabricmc:yarn:1.21.4+build.8:v2")

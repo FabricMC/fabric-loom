@@ -153,6 +153,10 @@ public class Constants {
 		 * Skip the signature verification of the Minecraft jar after downloading it.
 		 */
 		public static final String DISABLE_MINECRAFT_VERIFICATION = "fabric.loom.disableMinecraftVerification";
+		/**
+		 * When using the MojangMappingLayer this will remove names for none root methods by using the intermediary mappings.
+		 */
+		public static final String DROP_NONE_INTERMEDIATE_ROOT_METHODS = "fabric.loom.dropNoneIntermediateRootMethods";
 	}
 
 	public static final class Manifest {

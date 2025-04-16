@@ -33,6 +33,7 @@ import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.plugins.ExtraPropertiesExtension;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
@@ -89,4 +90,6 @@ public interface MixinExtension extends MixinExtensionAPI {
 	Collection<SourceSet> getMixinSourceSets();
 
 	void init();
+
+	Property<Boolean> getInlineDependencyRefmaps();
 }

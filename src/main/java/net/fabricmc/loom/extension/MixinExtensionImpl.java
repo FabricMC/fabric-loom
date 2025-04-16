@@ -46,11 +46,13 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternSet;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
 	private final Property<String> defaultRefmapName;
+	private final Property<Boolean> inlineDependencyRefmaps;
 
 	@Inject
 	public MixinExtensionImpl(Project project) {
@@ -59,6 +61,9 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 		this.defaultRefmapName = project.getObjects().property(String.class)
 				.convention(project.provider(this::getDefaultMixinRefmapName));
 		this.defaultRefmapName.finalizeValueOnRead();
+		this.inlineDependencyRefmaps = project.getObjects().property(Boolean.class)
+				.convention(false);
+		this.inlineDependencyRefmaps.finalizeValueOnRead();
 	}
 
 	@Override
@@ -138,5 +143,11 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 				add(sourceSet, getDefaultRefmapName().map(defaultRefmapName -> "%s-%s".formatted(sourceSet.getName(), defaultRefmapName)), x -> { });
 			}
 		});
+	}
+
+	@ApiStatus.Experimental
+	@Override
+	public Property<Boolean> getInlineDependencyRefmaps() {
+		return inlineDependencyRefmaps;
 	}
 }

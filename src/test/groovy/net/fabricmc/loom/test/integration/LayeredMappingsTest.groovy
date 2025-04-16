@@ -54,7 +54,7 @@ class LayeredMappingsTest extends Specification implements GradleProjectTestTrai
         """
 
 		if (layer.contains("// Drop none roots")) {
-			new File(gradle.projectDir, "gradle.properties").text = "${Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS}=true"
+			new File(gradle.projectDir, "gradle.properties").text = "${Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS}=true"
 		}
 
 		when:

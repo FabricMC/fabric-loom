@@ -104,7 +104,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 	MemoryMappingTree getLayeredMappingsDropNoneIntermediaryRoots(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
 		return processor.getMappings(processor.resolveLayers(new TestMappingContext(specs.toList(), [
-			Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS
+			Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS
 		])))
 	}
 

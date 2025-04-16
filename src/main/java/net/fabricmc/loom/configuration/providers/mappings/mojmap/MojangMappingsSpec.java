@@ -67,7 +67,7 @@ public record MojangMappingsSpec(boolean nameSyntheticMembers) implements Mappin
 				clientMappings,
 				serverMappings,
 				nameSyntheticMembers(),
-				context.hasProperty(Constants.Properties.DROP_NONE_INTERMEDIATE_ROOT_METHODS),
+				context.hasProperty(Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS),
 				context.isUsingIntermediateMappings() ? context.intermediaryTree() : null,
 				context.getLogger()
 		);

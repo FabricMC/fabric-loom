@@ -24,13 +24,18 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
+
 import javax.inject.Inject;
 
 import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -41,6 +46,8 @@ import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.LoomVersions;
+import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public abstract class LoomTasks implements Runnable {
@@ -132,16 +139,27 @@ public abstract class LoomTasks implements Runnable {
 
 	private void registerRunTasks() {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		final boolean renderDocSupported = RenderDocRunTask.isSupported(Platform.CURRENT);
 
 		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
 
 		extension.getRunConfigs().whenObjectAdded(config -> {
-			getTasks().register(getRunConfigTaskName(config), RunGameTask.class, config).configure(t -> {
+			var runTask = getTasks().register(getRunConfigTaskName(config), RunGameTask.class, config);
+
+			runTask.configure(t -> {
 				t.setDescription("Starts the '" + config.getConfigName() + "' run configuration");
 
 				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
+
+			if (renderDocSupported && config.getEnvironment().equals("client")) {
+				getTasks().register(runTask.getName() + "RenderDoc", RenderDocRunTask.class, runTask);
+			}
 		});
+
+		if (renderDocSupported) {
+			configureRenderDocTasks();
+		}
 
 		extension.getRunConfigs().whenObjectRemoved(runConfigSettings -> {
 			getTasks().named(getRunConfigTaskName(runConfigSettings), task -> {
@@ -171,6 +189,56 @@ public abstract class LoomTasks implements Runnable {
 			}
 
 			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
+		});
+	}
+
+	private void configureRenderDocTasks() {
+		final Platform.OperatingSystem operatingSystem = Platform.CURRENT.getOperatingSystem();
+		final String renderDocVersion = LoomVersions.RENDERDOC.version();
+		final String renderDocBaseName = operatingSystem.isWindows()
+				? "RenderDoc_%s".formatted(renderDocVersion)
+				: "renderdoc_%s".formatted(renderDocVersion);
+		final String renderDocFilename = operatingSystem.isWindows()
+				? "%s.zip".formatted(renderDocBaseName)
+				: "%s.tar.gz".formatted(renderDocBaseName);
+		final String renderDocUrl = "https://renderdoc.org/stable/%s/%s".formatted(renderDocVersion, renderDocFilename);
+		final String executableExt = operatingSystem.isWindows() ? ".exe" : "";
+
+		var downloadRenderDoc = getTasks().register("downloadRenderDoc", DownloadTask.class, task -> {
+			task.setGroup(Constants.TaskGroup.RENDERDOC);
+
+			task.getUrl().set(renderDocUrl);
+			task.getOutput().set(getProject().getLayout().getBuildDirectory().file(renderDocFilename));
+		});
+
+		var extractRenderDoc = getTasks().register("extractRenderDoc", Sync.class, task -> {
+			task.setGroup(Constants.TaskGroup.RENDERDOC);
+
+			if (operatingSystem.isWindows()) {
+				task.from(getProject().zipTree(downloadRenderDoc.map(DownloadTask::getOutput)));
+			} else {
+				task.from(getProject().tarTree(downloadRenderDoc.map(DownloadTask::getOutput)));
+			}
+
+			task.into(getProject().getLayout().getBuildDirectory().dir("renderdoc"));
+		});
+
+		Provider<File> renderDocDir = extractRenderDoc.map(Sync::getOutputs)
+				.map(TaskOutputs::getFiles)
+				.map(FileCollection::getSingleFile)
+				.map(dir -> new File(dir, renderDocBaseName));
+
+		if (operatingSystem.isLinux()) {
+			renderDocDir = renderDocDir.map(dir -> new File(dir, "bin"));
+		}
+
+		Provider<File> renderDocCMD = renderDocDir.map(dir -> new File(dir, "renderdoccmd" + executableExt));
+		Provider<File> renderDocUI = renderDocDir.map(dir -> new File(dir, "qrenderdoc" + executableExt));
+
+		getTasks().register("startRenderDocUI", RenderDocRunUITask.class, task -> task.getRenderDocExecutable().fileProvider(renderDocUI));
+
+		getTasks().withType(RenderDocRunTask.class).configureEach(task -> {
+			task.getRenderDocExecutable().fileProvider(renderDocCMD);
 		});
 	}
 

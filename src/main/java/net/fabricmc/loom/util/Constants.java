@@ -118,7 +118,6 @@ public class Constants {
 	public static final class TaskGroup {
 		public static final String FABRIC = "fabric";
 		public static final String IDE = "ide";
-		public static final String RENDERDOC = "renderdoc";
 
 		private TaskGroup() {
 		}

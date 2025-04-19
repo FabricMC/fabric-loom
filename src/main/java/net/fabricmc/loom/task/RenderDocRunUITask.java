@@ -24,13 +24,12 @@
 
 package net.fabricmc.loom.task;
 
-import javax.inject.Inject;
+import java.io.IOException;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.process.ExecOperations;
 
 import net.fabricmc.loom.util.Constants;
 
@@ -38,18 +37,15 @@ public abstract class RenderDocRunUITask extends DefaultTask {
 	@InputFile
 	public abstract RegularFileProperty getRenderDocExecutable();
 
-	@Inject
-	protected abstract ExecOperations getExecOperations();
-
 	public RenderDocRunUITask() {
-		setGroup(Constants.TaskGroup.RENDERDOC);
+		setGroup(Constants.TaskGroup.FABRIC);
 	}
 
 	@TaskAction
-	public void run() {
-		getExecOperations().exec(execSpec -> {
-			execSpec.executable(getRenderDocExecutable());
-			execSpec.setIgnoreExitValue(true);
-		});
+	public void run() throws IOException {
+		ProcessBuilder builder = new ProcessBuilder()
+				.command(getRenderDocExecutable().getAsFile().get().getAbsolutePath());
+		builder.start();
+		// Allow to run in the background.
 	}
 }

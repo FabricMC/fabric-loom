@@ -152,8 +152,8 @@ public abstract class LoomTasks implements Runnable {
 				t.dependsOn(config.getEnvironment().equals("client") ? "configureClientLaunch" : "configureLaunch");
 			});
 
-			if (renderDocSupported && config.getEnvironment().equals("client")) {
-				getTasks().register(runTask.getName() + "RenderDoc", RenderDocRunTask.class, runTask);
+			if (config.getName().equals("client") && renderDocSupported) {
+				getTasks().register("runClientRenderDoc", RenderDocRunTask.class, config);
 			}
 		});
 
@@ -188,7 +188,8 @@ public abstract class LoomTasks implements Runnable {
 				return;
 			}
 
-			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName));
+			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName)
+					|| settings.getName().equals(taskName + "RenderDoc"));
 		});
 	}
 
@@ -196,7 +197,7 @@ public abstract class LoomTasks implements Runnable {
 		final Platform.OperatingSystem operatingSystem = Platform.CURRENT.getOperatingSystem();
 		final String renderDocVersion = LoomVersions.RENDERDOC.version();
 		final String renderDocBaseName = operatingSystem.isWindows()
-				? "RenderDoc_%s".formatted(renderDocVersion)
+				? "RenderDoc_%s_64".formatted(renderDocVersion)
 				: "renderdoc_%s".formatted(renderDocVersion);
 		final String renderDocFilename = operatingSystem.isWindows()
 				? "%s.zip".formatted(renderDocBaseName)
@@ -205,14 +206,14 @@ public abstract class LoomTasks implements Runnable {
 		final String executableExt = operatingSystem.isWindows() ? ".exe" : "";
 
 		var downloadRenderDoc = getTasks().register("downloadRenderDoc", DownloadTask.class, task -> {
-			task.setGroup(Constants.TaskGroup.RENDERDOC);
+			task.setGroup(Constants.TaskGroup.FABRIC);
 
 			task.getUrl().set(renderDocUrl);
 			task.getOutput().set(getProject().getLayout().getBuildDirectory().file(renderDocFilename));
 		});
 
 		var extractRenderDoc = getTasks().register("extractRenderDoc", Sync.class, task -> {
-			task.setGroup(Constants.TaskGroup.RENDERDOC);
+			task.setGroup(Constants.TaskGroup.FABRIC);
 
 			if (operatingSystem.isWindows()) {
 				task.from(getProject().zipTree(downloadRenderDoc.map(DownloadTask::getOutput)));

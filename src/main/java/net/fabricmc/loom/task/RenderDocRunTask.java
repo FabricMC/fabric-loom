@@ -24,52 +24,92 @@
 
 package net.fabricmc.loom.task;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
-import com.google.common.collect.Streams;
+import javax.inject.Inject;
+
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.tasks.Exec;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.Nested;
+import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.jvm.toolchain.JavaToolchainService;
+import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.jetbrains.annotations.NotNull;
 
+import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
-public abstract class RenderDocRunTask extends Exec {
+public abstract class RenderDocRunTask extends RunGameTask {
 	@InputFile
 	public abstract RegularFileProperty getRenderDocExecutable();
 
 	@Input
 	public abstract ListProperty<String> getRenderDocArgs();
 
-	public RenderDocRunTask(TaskProvider<RunGameTask> runGameTask) {
-		setGroup(Constants.TaskGroup.RENDERDOC);
+	/**
+	 * The {@link JavaLauncher} to use when running the game, this can be used to specify a specific Java version to use.
+	 *
+	 * <p>See: <a href="https://docs.gradle.org/current/userguide/toolchains.html#sec:plugins_toolchains">Java Toolchains</a>
+	 * @return
+	 */
+	@Nested
+	public abstract Property<JavaLauncher> getRenderDocJavaLauncher();
 
-		getInputs().files(runGameTask.map(RunGameTask::getClasspath));
+	@Inject
+	protected abstract @NotNull JavaToolchainService getJavaToolchainService();
 
-		getRenderDocArgs().add("--wait-for-exit");
+	@Inject
+	public RenderDocRunTask(RunConfigSettings settings) {
+		super(settings);
+		setGroup(Constants.TaskGroup.FABRIC);
+		dependsOn("configureClientLaunch");
+		getRenderDocArgs().addAll("capture", "--wait-for-exit", "--working-dir", getWorkingDir().getAbsolutePath());
 
-		args(getRenderDocExecutable());
-		args("capture");
-		args(getRenderDocArgs());
-		args("--working-dir",
-				runGameTask.map(RunGameTask::getWorkingDir),
-				runGameTask.flatMap(RunGameTask::getJavaLauncher).map(JavaLauncher::getExecutablePath)
-		);
-		args(runGameTask.map(RunGameTask::getJvmArguments));
-		args(runGameTask.map(RunGameTask::getMainClass));
-		args(runGameTask.map(RunGameTask::getArgumentProviders)
-				.map(List::stream)
-				.map(providers -> providers.flatMap(provider -> Streams.stream(provider.asArguments())))
-				.map(Stream::toList)
-		);
+		JavaToolchainSpec defaultToolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
+		getRenderDocJavaLauncher().convention(getJavaToolchainService().launcherFor(defaultToolchain));
 
-		// No way to get or set this lazily?
-		environment(runGameTask.get().getEnvironment());
+		// Replace the default java launcher with one that runs the RenderDoc executable instead.
+		super.getJavaLauncher().set(new JavaLauncher() {
+			@Override
+			public @NotNull JavaInstallationMetadata getMetadata() {
+				return getRenderDocJavaLauncher().get().getMetadata();
+			}
+
+			@Override
+			public @NotNull RegularFile getExecutablePath() {
+				return getRenderDocExecutable().get();
+			}
+		});
+	}
+
+	@Override
+	public void exec() {
+		preExec();
+
+		// Pre-append the RenderDoc arguments to the JVM arguments.
+		List<String> args = new ArrayList<>(getRenderDocArgs().get());
+		args.add(getRenderDocJavaLauncher().get().getExecutablePath().toString());
+		args.addAll(getGameJvmArgs());
+		getJvmArguments().set(args);
+
+		super.exec();
+	}
+
+	/**
+	 * @deprecated Use {@link #getRenderDocJavaLauncher()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	public @NotNull Property<JavaLauncher> getJavaLauncher() {
+		return super.getJavaLauncher();
 	}
 
 	public static boolean isSupported(Platform platform) {

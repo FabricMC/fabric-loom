@@ -1,5 +1,17 @@
 name: Run Tests
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      extended_tests:
+        description: 'Extended tests'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}
@@ -19,6 +31,8 @@ jobs:
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
   build_windows:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.extended_tests == 'true' }}
+
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -86,6 +100,8 @@ jobs:
           path: "*.hprof"
 
   run_tests_windows:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.extended_tests == 'true' }}
+
     needs: prepare_test_matrix
 
     strategy:
@@ -93,7 +109,7 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
-    runs-on: windows-2022
+    runs-on: windows-2025
 
     steps:
       - uses: actions/checkout@v4
@@ -126,7 +142,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 17, 21 ]
-        os: [ windows-2022, ubuntu-24.04, macos-14 ]
+        os: [ windows-2025, ubuntu-24.04, macos-15 ]
 
     runs-on: ${{ matrix.os }}
     steps:

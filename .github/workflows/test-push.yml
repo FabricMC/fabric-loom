@@ -86,6 +86,7 @@ jobs:
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
+          EXTENDED_TESTS: ${{ github.event.inputs.extended_tests }}
         id: test
 
       - uses: actions/upload-artifact@v4

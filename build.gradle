@@ -336,6 +336,7 @@ publishing {
 tasks.register('writeActionsTestMatrix') {
 	doLast {
 		def testMatrix = []
+		def extendedTests = Boolean.parseBoolean(System.getenv('EXTENDED_TESTS') ?: 'false')
 		file('src/test/groovy/net/fabricmc/loom/test/integration').eachFile {
 			if (it.name.endsWith("Test.groovy")) {
 				if (it.name.endsWith("ReproducibleBuildTest.groovy")) {
@@ -343,7 +344,7 @@ tasks.register('writeActionsTestMatrix') {
 					return
 				}
 
-				if (it.name.endsWith("DebugLineNumbersTest.groovy")) {
+				if (it.name.endsWith("DebugLineNumbersTest.groovy") && !extendedTests) {
 					// Known flakey test
 					return
 				}

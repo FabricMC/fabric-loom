@@ -31,12 +31,7 @@ import org.gradle.api.internal.MutationGuard
 import org.gradle.api.internal.MutationGuards
 import org.gradle.api.internal.collections.DefaultDomainObjectCollectionFactory
 import org.gradle.api.internal.collections.DomainObjectCollectionFactory
-import org.gradle.api.internal.file.DefaultFileCollectionFactory
-import org.gradle.api.internal.file.DefaultFileLookup
-import org.gradle.api.internal.file.DefaultFilePropertyFactory
-import org.gradle.api.internal.file.FileCollectionFactory
-import org.gradle.api.internal.file.FilePropertyFactory
-import org.gradle.api.internal.file.FileResolver
+import org.gradle.api.internal.file.*
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory
 import org.gradle.api.internal.model.DefaultObjectFactory
 import org.gradle.api.internal.model.NamedObjectInstantiator
@@ -49,6 +44,7 @@ import org.gradle.api.internal.tasks.properties.annotations.OutputPropertyRoleAn
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.util.PatternSet
+import org.gradle.api.tasks.util.internal.PatternSetFactory
 import org.gradle.cache.internal.CrossBuildInMemoryCacheFactory
 import org.gradle.cache.internal.DefaultCrossBuildInMemoryCacheFactory
 import org.gradle.internal.Factory
@@ -123,7 +119,7 @@ class TestServiceFactory {
 									instantiatorFactory.decorate(services),
 									namedObjectInstantiator,
 									mock(DirectoryFileTreeFactory),
-									mock(Factory) as Factory<PatternSet>,
+									mock(PatternSetFactory),
 									propertyFactory,
 									filePropertyFactory,
 									DefaultTaskDependencyFactory.withNoAssociatedProject(),
@@ -145,7 +141,7 @@ class TestServiceFactory {
 				fileResolver(),
 				DefaultTaskDependencyFactory.withNoAssociatedProject(),
 				mock(DirectoryFileTreeFactory),
-				mock(Factory) as Factory<PatternSet>,
+				mock(PatternSetFactory),
 				PropertyHost.NO_OP,
 				mock(FileSystem))
 	}

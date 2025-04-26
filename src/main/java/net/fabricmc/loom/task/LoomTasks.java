@@ -202,7 +202,7 @@ public abstract class LoomTasks implements Runnable {
 		final String renderDocFilename = operatingSystem.isWindows()
 				? "%s.zip".formatted(renderDocBaseName)
 				: "%s.tar.gz".formatted(renderDocBaseName);
-		final String renderDocUrl = "https://renderdoc.org/stable/%s/%s".formatted(renderDocVersion, renderDocFilename);
+		final String renderDocUrl = "https://maven.fabricmc.net/org/renderdoc/%s".formatted(renderDocFilename);
 		final String executableExt = operatingSystem.isWindows() ? ".exe" : "";
 
 		var downloadRenderDoc = getTasks().register("downloadRenderDoc", DownloadTask.class, task -> {

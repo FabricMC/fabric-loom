@@ -17,7 +17,7 @@ jobs:
           java-version: 21
           distribution: 'temurin'
       - uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v2
+      - uses: gradle/actions/wrapper-validation@v4
 
       # Generate the build number based on tags to allow per branch build numbers, not something github provides by default.
       - name: Generate build number

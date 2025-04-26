@@ -52,9 +52,9 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 class DebugLineNumbersTest extends Specification implements GradleProjectTestTrait {
 	static final String MAPPINGS = "1.20.1-net.fabricmc.yarn.1_20_1.1.20.1+build.1-v2"
 	static final Map<String, Integer> BREAKPOINTS = [
-		"net.minecraft.server.dedicated.ServerPropertiesLoader": 16,
-		"net.minecraft.server.dedicated.MinecraftDedicatedServer": 107,
-		"net.minecraft.registry.RegistryOps": 67
+		"net.minecraft.server.dedicated.ServerPropertiesLoader": 12,
+		"net.minecraft.server.dedicated.MinecraftDedicatedServer": 105,
+		"net.minecraft.registry.RegistryOps": 44
 	]
 
 	def "Debug test"() {

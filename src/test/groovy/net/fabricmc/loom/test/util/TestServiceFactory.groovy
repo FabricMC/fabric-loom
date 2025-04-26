@@ -48,10 +48,9 @@ import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory
 import org.gradle.api.internal.tasks.properties.annotations.OutputPropertyRoleAnnotationHandler
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ProviderFactory
-import org.gradle.api.tasks.util.PatternSet
+import org.gradle.api.tasks.util.internal.PatternSetFactory
 import org.gradle.cache.internal.CrossBuildInMemoryCacheFactory
 import org.gradle.cache.internal.DefaultCrossBuildInMemoryCacheFactory
-import org.gradle.internal.Factory
 import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.instantiation.InstantiatorFactory
 import org.gradle.internal.instantiation.generator.DefaultInstantiatorFactory
@@ -123,7 +122,7 @@ class TestServiceFactory {
 									instantiatorFactory.decorate(services),
 									namedObjectInstantiator,
 									mock(DirectoryFileTreeFactory),
-									mock(Factory) as Factory<PatternSet>,
+									mock(PatternSetFactory),
 									propertyFactory,
 									filePropertyFactory,
 									DefaultTaskDependencyFactory.withNoAssociatedProject(),
@@ -145,7 +144,7 @@ class TestServiceFactory {
 				fileResolver(),
 				DefaultTaskDependencyFactory.withNoAssociatedProject(),
 				mock(DirectoryFileTreeFactory),
-				mock(Factory) as Factory<PatternSet>,
+				mock(PatternSetFactory),
 				PropertyHost.NO_OP,
 				mock(FileSystem))
 	}

@@ -32,8 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -47,7 +47,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.JavaExec;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -121,7 +120,8 @@ public abstract class AbstractRunTask extends JavaExec {
 				&& ASCII_ENCODER.canEncode(getProject().getGradle().getGradleUserHomeDir().getAbsolutePath());
 	}
 
-	protected void preExec() {
+	@Override
+	public void exec() {
 		if (getUseArgFile().get()) {
 			LOGGER.debug("Using arg file for {}", getName());
 			// We're using an arg file, pass an empty classpath to the super JavaExec.
@@ -134,11 +134,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
-	}
 
-	@Override
-	public void exec() {
-		preExec();
 		super.exec();
 	}
 
@@ -151,33 +147,27 @@ public abstract class AbstractRunTask extends JavaExec {
 		super.setWorkingDir(dir);
 	}
 
-	@Internal
-	protected List<String> getGameJvmArgs() {
+	private List<String> getGameJvmArgs() {
+		final List<String> args = new ArrayList<>();
+
 		if (getUseArgFile().get()) {
-			StringJoiner sj = new StringJoiner("\n");
-			sj.add("-classpath");
-			sj.add(this.getInternalClasspath().getFiles().stream()
+			final String content = "-classpath\n" + this.getInternalClasspath().getFiles().stream()
 					.map(File::getAbsolutePath)
 					.map(AbstractRunTask::quoteArg)
-					.collect(Collectors.joining(File.pathSeparator)));
-
-			for (String s : getInternalJvmArgs().get()) {
-				sj.add(s);
-			}
-
-			final Path argsFile = Paths.get(getArgFilePath().get());
+					.collect(Collectors.joining(File.pathSeparator));
 
 			try {
+				final Path argsFile = Paths.get(getArgFilePath().get());
 				Files.createDirectories(argsFile.getParent());
-				Files.writeString(argsFile, sj.toString(), StandardCharsets.UTF_8);
+				Files.writeString(argsFile, content, StandardCharsets.UTF_8);
+				args.add("@" + argsFile.toAbsolutePath());
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to create args file", e);
+				throw new UncheckedIOException("Failed to create classpath file", e);
 			}
-
-			return List.of("@" + argsFile.toAbsolutePath());
 		}
 
-		return getInternalJvmArgs().get();
+		args.addAll(getInternalJvmArgs().get());
+		return args;
 	}
 
 	// Based off https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/src/com/intellij/execution/CommandLineWrapperUtil.java#L87

@@ -24,47 +24,35 @@
 
 package net.fabricmc.loom.task;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 
 import javax.inject.Inject;
 
-import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.Nested;
-import org.gradle.jvm.toolchain.JavaInstallationMetadata;
-import org.gradle.jvm.toolchain.JavaLauncher;
-import org.gradle.jvm.toolchain.JavaToolchainService;
-import org.gradle.jvm.toolchain.JavaToolchainSpec;
-import org.jetbrains.annotations.NotNull;
+import org.gradle.process.CommandLineArgumentProvider;
+import org.gradle.process.ExecOperations;
+import org.gradle.process.ExecResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
 public abstract class RenderDocRunTask extends RunGameTask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RenderDocRunTask.class);
+
 	@InputFile
 	public abstract RegularFileProperty getRenderDocExecutable();
 
 	@Input
 	public abstract ListProperty<String> getRenderDocArgs();
 
-	/**
-	 * The {@link JavaLauncher} to use when running the game, this can be used to specify a specific Java version to use.
-	 *
-	 * <p>See: <a href="https://docs.gradle.org/current/userguide/toolchains.html#sec:plugins_toolchains">Java Toolchains</a>
-	 * @return
-	 */
-	@Nested
-	public abstract Property<JavaLauncher> getRenderDocJavaLauncher();
-
 	@Inject
-	protected abstract @NotNull JavaToolchainService getJavaToolchainService();
+	protected abstract ExecOperations getExecOperations();
 
 	@Inject
 	public RenderDocRunTask(RunConfigSettings settings) {
@@ -72,44 +60,28 @@ public abstract class RenderDocRunTask extends RunGameTask {
 		setGroup(Constants.TaskGroup.FABRIC);
 		dependsOn("configureClientLaunch");
 		getRenderDocArgs().addAll("capture", "--wait-for-exit", "--working-dir", getWorkingDir().getAbsolutePath());
-
-		JavaToolchainSpec defaultToolchain = getProject().getExtensions().getByType(JavaPluginExtension.class).getToolchain();
-		getRenderDocJavaLauncher().convention(getJavaToolchainService().launcherFor(defaultToolchain));
-
-		// Replace the default java launcher with one that runs the RenderDoc executable instead.
-		super.getJavaLauncher().set(new JavaLauncher() {
-			@Override
-			public @NotNull JavaInstallationMetadata getMetadata() {
-				return getRenderDocJavaLauncher().get().getMetadata();
-			}
-
-			@Override
-			public @NotNull RegularFile getExecutablePath() {
-				return getRenderDocExecutable().get();
-			}
-		});
 	}
 
 	@Override
 	public void exec() {
-		preExec();
+		ExecResult result = getExecOperations().exec(exec -> {
+			exec.workingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
+			exec.environment(getInternalEnvironmentVars().get());
 
-		// Pre-append the RenderDoc arguments to the JVM arguments.
-		List<String> args = new ArrayList<>(getRenderDocArgs().get());
-		args.add(getRenderDocJavaLauncher().get().getExecutablePath().toString());
-		args.addAll(getGameJvmArgs());
-		getJvmArguments().set(args);
+			exec.commandLine(getRenderDocExecutable().get().getAsFile());
+			exec.args(getRenderDocArgs().get());
+			exec.args(getJavaLauncher().get().getExecutablePath());
+			exec.args(getJvmArgs());
+			exec.args(getGameJvmArgs());
+			exec.args(getMainClass().get());
 
-		super.exec();
-	}
+			for (CommandLineArgumentProvider provider : getArgumentProviders()) {
+				exec.args(provider.asArguments());
+			}
 
-	/**
-	 * @deprecated Use {@link #getRenderDocJavaLauncher()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	public @NotNull Property<JavaLauncher> getJavaLauncher() {
-		return super.getJavaLauncher();
+			LOGGER.info("Running command: {}", exec.getCommandLine());
+		});
+		result.assertNormalExitValue();
 	}
 
 	public static boolean isSupported(Platform platform) {

@@ -141,7 +141,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 				dependencies {
 					mojangMappings loom.officialMojangMappings()
 				}
-				
+
 				tasks.register("remapMojmap", net.fabricmc.loom.task.RemapJarTask) {
 					sourceNamespace = "intermediary"
 					targetNamespace = "named"

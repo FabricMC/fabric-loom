@@ -94,6 +94,14 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
+	/**
+	 * Optionally supply a single mapping file or jar file containing mappings to be used for remapping.
+	 */
+	@ApiStatus.Experimental
+	@InputFiles
+	@Optional
+	public abstract ConfigurableFileCollection getCustomMappings();
+
 	@Input
 	@Optional
 	@ApiStatus.Internal

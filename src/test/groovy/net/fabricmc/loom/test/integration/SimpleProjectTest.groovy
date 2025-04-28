@@ -127,4 +127,39 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "custom remap mappings (gradle #version)"() {
+		// Initial conditions: a project with a resource file to delete.
+		setup:
+		def gradle = gradleProject(project: "simple", version: version)
+		gradle.buildGradle << """
+				configurations {
+					mojangMappings
+				}
+
+				dependencies {
+					mojangMappings loom.officialMojangMappings()
+				}
+				
+				tasks.register("remapMojmap", net.fabricmc.loom.task.RemapJarTask) {
+					sourceNamespace = "intermediary"
+					targetNamespace = "named"
+					inputFile = tasks.remapJar.archiveFile
+					customMappings.from(configurations.mojangMappings)
+					archiveClassifier = "mojmap"
+
+					addNestedDependencies = false // Jars have already been included in the remapJar task
+				}
+				"""
+
+		when:
+		def result = gradle.run(task: "remapMojmap")
+
+		then:
+		result.task(":remapMojmap").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

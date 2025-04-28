@@ -15,5 +15,7 @@ public class ExampleMod implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Hello simple Fabric mod!");
 		LOGGER.info("Hello World!");
+
+		net.minecraft.util.Identifier id = null;
 	}
 }

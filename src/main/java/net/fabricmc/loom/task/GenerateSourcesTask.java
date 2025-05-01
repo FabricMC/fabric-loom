@@ -109,7 +109,6 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 @UntrackedTask(because = "Manually invoked, has internal caching")
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private static final String CACHE_VERSION = "v1";
-	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GenerateSourcesTask.class);
 	private final DecompilerOptions decompilerOptions;
 
 	/**

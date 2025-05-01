@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -53,6 +52,7 @@ import javax.inject.Inject;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Input;
@@ -67,7 +67,6 @@ import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.process.ExecOperations;
-import org.gradle.process.ExecResult;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
@@ -75,6 +74,8 @@ import org.gradle.workers.WorkerExecutor;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -93,6 +94,7 @@ import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.IOStringConsumer;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.SLF4JAdapterHandler;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 import net.fabricmc.loom.util.gradle.ThreadedProgressLoggerConsumer;
@@ -107,6 +109,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 @UntrackedTask(because = "Manually invoked, has internal caching")
 public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private static final String CACHE_VERSION = "v1";
+	private static final org.slf4j.Logger log = LoggerFactory.getLogger(GenerateSourcesTask.class);
 	private final DecompilerOptions decompilerOptions;
 
 	/**
@@ -152,9 +155,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@OutputFile
 	@Optional
 	public abstract RegularFileProperty getUnpickOutputJar();
-
-	@OutputFile
-	protected abstract RegularFileProperty getUnpickLogConfig();
 
 	@Input
 	@Option(option = "use-cache", description = "Use the decompile cache")
@@ -243,7 +243,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getMinecraftCompileLibraries().from(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 		getDecompileCacheFile().set(getExtension().getFiles().getDecompileCache(CACHE_VERSION));
 		getUnpickRuntimeClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
-		getUnpickLogConfig().set(getExtension().getFiles().getUnpickLoggingConfigFile());
 
 		getUseCache().convention(true);
 		getResetCache().convention(getExtension().refreshDeps());
@@ -491,14 +490,16 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		final Path outputJar = getUnpickOutputJar().get().getAsFile().toPath();
 		final List<String> args = getUnpickArgs(inputJar, outputJar, existingClasses);
 
-		ExecResult result = getExecOperations().javaexec(spec -> {
-			spec.getMainClass().set("daomephsta.unpick.cli.Main");
-			spec.classpath(getUnpickRuntimeClasspath());
-			spec.args(args);
-			spec.systemProperty("java.util.logging.config.file", writeUnpickLogConfig().getAbsolutePath());
+		WorkQueue workQueue = getWorkerExecutor().classLoaderIsolation(spec -> {
+			spec.getClasspath().from(getUnpickRuntimeClasspath());
 		});
 
-		result.rethrowFailure();
+		workQueue.submit(UnpickAction.class, params -> {
+			params.getMainClass().set("daomephsta.unpick.cli.Main");
+			params.getArgs().set(args);
+		});
+
+		workQueue.await();
 
 		return outputJar;
 	}
@@ -522,18 +523,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return fileArgs.stream()
 				.map(File::getAbsolutePath)
 				.toList();
-	}
-
-	private File writeUnpickLogConfig() {
-		final File unpickLoggingConfigFile = getUnpickLogConfig().getAsFile().get();
-
-		try (InputStream is = GenerateSourcesTask.class.getClassLoader().getResourceAsStream("unpick-logging.properties")) {
-			Files.copy(Objects.requireNonNull(is), unpickLoggingConfigFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to copy unpick logging config", e);
-		}
-
-		return unpickLoggingConfigFile;
 	}
 
 	private void remapLineNumbers(ClassLineNumbers lineNumbers, Path inputJar, Path outputJar) throws IOException {
@@ -606,6 +595,30 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private boolean useProcessIsolation() {
 		// Useful if you want to debug the decompiler, make sure you run gradle with enough memory.
 		return !Boolean.getBoolean("fabric.loom.genSources.debug");
+	}
+
+	public interface UnpickParams extends WorkParameters {
+		Property<String> getMainClass();
+		ListProperty<String> getArgs();
+	}
+
+	public abstract static class UnpickAction implements WorkAction<UnpickParams> {
+		private static final Logger LOGGER = LoggerFactory.getLogger(UnpickAction.class);
+
+		@Override
+		public void execute() {
+			java.util.logging.Logger logger = java.util.logging.Logger.getLogger("unpick");
+			logger.setUseParentHandlers(false);
+			logger.addHandler(new SLF4JAdapterHandler(LOGGER, true));
+
+			try {
+				Class<?> unpickEntrypoint = Class.forName(getParameters().getMainClass().get());
+				unpickEntrypoint.getMethod("main", String[].class)
+						.invoke(null, (Object) getParameters().getArgs().get().toArray(String[]::new));
+			} catch (ClassNotFoundException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+				throw new RuntimeException("Failed to run unpick", e);
+			}
+		}
 	}
 
 	public interface DecompileParams extends WorkParameters {

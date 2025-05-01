@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,32 +22,41 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.extension;
+package net.fabricmc.loom.util;
 
-import java.io.File;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
-import org.gradle.api.Project;
-import org.gradle.api.initialization.Settings;
+import org.slf4j.Logger;
 
-public interface LoomFiles {
-	static LoomFiles create(Project project) {
-		return new LoomFilesProjectImpl(project);
+public class SLF4JAdapterHandler extends Handler {
+	private final Logger logger;
+	private final boolean suppressWarnings;
+
+	public SLF4JAdapterHandler(Logger logger, boolean suppressWarnings) {
+		this.logger = logger;
+		this.suppressWarnings = suppressWarnings;
 	}
 
-	static LoomFiles create(Settings settings) {
-		return new LoomFilesSettingsImpl(settings);
+	@Override
+	public void publish(LogRecord record) {
+		if (record.getLevel().intValue() >= Level.SEVERE.intValue()) {
+			logger.error(record.getMessage(), record.getThrown());
+		} else if (record.getLevel().intValue() >= Level.WARNING.intValue() && !suppressWarnings) {
+			logger.warn(record.getMessage(), record.getThrown());
+		} else if (record.getLevel().intValue() >= Level.INFO.intValue()) {
+			logger.info(record.getMessage(), record.getThrown());
+		} else {
+			logger.debug(record.getMessage(), record.getThrown());
+		}
 	}
 
-	File getUserCache();
-	File getRootProjectPersistentCache();
-	File getProjectPersistentCache();
-	File getProjectBuildCache();
-	File getRemappedModCache();
-	File getNativesDirectory(Project project);
-	File getDefaultLog4jConfigFile();
-	File getDevLauncherConfig();
-	File getRemapClasspathFile();
-	File getGlobalMinecraftRepo();
-	File getLocalMinecraftRepo();
-	File getDecompileCache(String version);
+	@Override
+	public void flush() {
+	}
+
+	@Override
+	public void close() throws SecurityException {
+	}
 }

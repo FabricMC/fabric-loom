@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.ide.idea;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,8 +46,11 @@ public abstract class IdeaConfiguration implements Runnable {
 
 	public void run() {
 		getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
+			final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+			if (extension.getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
 				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(getProject()));
+				task.getRunConfigListFile().set(new File(extension.getFiles().getProjectPersistentCache(), "idea_run_configs.json"));
 			} else {
 				task.setEnabled(false);
 			}

@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.layeredmappings
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec
 import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata
 
 class UnpickLayerTest extends LayeredMappingsSpecification {
 	def "read unpick data from yarn"() {
@@ -41,7 +42,7 @@ class UnpickLayerTest extends LayeredMappingsSpecification {
 				)
 		def metadata = unpickData.metadata()
 		then:
-		metadata.version() == 1
+		metadata instanceof UnpickMetadata.V1
 		metadata.unpickGroup() == "net.fabricmc.unpick"
 		metadata.unpickVersion() == "2.2.0"
 

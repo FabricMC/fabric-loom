@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.gson.JsonObject;
 import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
@@ -52,6 +51,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
@@ -76,7 +76,7 @@ public class MappingConfiguration {
 	public final Path tinyMappingsJar;
 	private final Path unpickDefinitions;
 
-	private boolean hasUnpickDefinitions;
+	@Nullable
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
 
@@ -145,14 +145,17 @@ public class MappingConfiguration {
 	}
 
 	public void applyToProject(Project project, DependencyInfo dependency) {
-		if (hasUnpickDefinitions()) {
-			String notation = String.format("%s:%s:%s:constants",
-					dependency.getDependency().getGroup(),
-					dependency.getDependency().getName(),
-					dependency.getDependency().getVersion()
-			);
+		if (unpickMetadata != null) {
+			if (unpickMetadata.hasConstants()) {
+				String notation = String.format("%s:%s:%s:constants",
+						dependency.getDependency().getGroup(),
+						dependency.getDependency().getName(),
+						dependency.getDependency().getVersion()
+				);
 
-			project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+				project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
+			}
+
 			populateUnpickClasspath(project);
 		}
 
@@ -218,8 +221,8 @@ public class MappingConfiguration {
 	}
 
 	private void extractUnpickDefinitions(FileSystem jar) throws IOException {
-		Path unpickPath = jar.getPath("extras/definitions.unpick");
-		Path unpickMetadataPath = jar.getPath("extras/unpick.json");
+		Path unpickPath = jar.getPath(UnpickMetadata.UNPICK_DEFINITIONS_PATH);
+		Path unpickMetadataPath = jar.getPath(UnpickMetadata.UNPICK_METADATA_PATH);
 
 		if (!Files.exists(unpickPath) || !Files.exists(unpickMetadataPath)) {
 			return;
@@ -227,8 +230,7 @@ public class MappingConfiguration {
 
 		Files.copy(unpickPath, unpickDefinitions, StandardCopyOption.REPLACE_EXISTING);
 
-		unpickMetadata = parseUnpickMetadata(unpickMetadataPath);
-		hasUnpickDefinitions = true;
+		unpickMetadata = UnpickMetadata.parse(unpickMetadataPath);
 	}
 
 	private void extractSignatureFixes(FileSystem jar) throws IOException {
@@ -244,23 +246,14 @@ public class MappingConfiguration {
 		}
 	}
 
-	private UnpickMetadata parseUnpickMetadata(Path input) throws IOException {
-		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(input, StandardCharsets.UTF_8), JsonObject.class);
-
-		if (!jsonObject.has("version") || jsonObject.get("version").getAsInt() != 1) {
-			throw new UnsupportedOperationException("Unsupported unpick version");
-		}
-
-		return new UnpickMetadata(
-				jsonObject.get("unpickGroup").getAsString(),
-				jsonObject.get("unpickVersion").getAsString()
-		);
-	}
-
 	private void populateUnpickClasspath(Project project) {
+		// TODO remove when adding support for V2
+		// This wont be added as we will ignore the unpick version in V1 metadata's
+		UnpickMetadata.V1 metadata = (UnpickMetadata.V1) unpickMetadata;
+
 		String unpickCliName = "unpick-cli";
 		project.getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
-				String.format("%s:%s:%s", unpickMetadata.unpickGroup, unpickCliName, unpickMetadata.unpickVersion)
+				String.format("%s:%s:%s", metadata.unpickGroup(), unpickCliName, metadata.unpickVersion())
 		);
 
 		// Unpick ships with a slightly older version of asm, ensure it runs with at least the same version as loom.
@@ -324,18 +317,11 @@ public class MappingConfiguration {
 	}
 
 	public boolean hasUnpickDefinitions() {
-		return hasUnpickDefinitions;
+		return unpickMetadata != null;
 	}
 
 	@Nullable
 	public Map<String, String> getSignatureFixes() {
 		return signatureFixes;
-	}
-
-	public String getBuildServiceName(String name, String from, String to) {
-		return "%s:%s:%s>%S".formatted(name, mappingsIdentifier(), from, to);
-	}
-
-	public record UnpickMetadata(String unpickGroup, String unpickVersion) {
 	}
 }

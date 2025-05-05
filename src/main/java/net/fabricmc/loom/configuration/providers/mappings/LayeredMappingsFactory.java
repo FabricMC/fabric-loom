@@ -47,6 +47,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
@@ -148,7 +149,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return;
 		}
 
-		ZipUtils.add(mappingsFile, "extras/definitions.unpick", unpickData.definitions());
-		ZipUtils.add(mappingsFile, "extras/unpick.json", unpickData.metadata().asJson());
+		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_DEFINITIONS_PATH, unpickData.definitions());
+		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_METADATA_PATH, unpickData.rawMetadata());
 	}
 }

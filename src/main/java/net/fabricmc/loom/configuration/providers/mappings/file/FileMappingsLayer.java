@@ -36,6 +36,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingReader;
@@ -52,9 +53,6 @@ public record FileMappingsLayer(
 		boolean unpick,
 		String mergeNamespace
 ) implements MappingLayer, UnpickLayer {
-	private static final String UNPICK_METADATA_PATH = "extras/unpick.json";
-	private static final String UNPICK_DEFINITIONS_PATH = "extras/definitions.unpick";
-
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		// Bare file
@@ -102,8 +100,8 @@ public record FileMappingsLayer(
 		}
 
 		try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
-			final Path unpickMetadata = fileSystem.get().getPath(UNPICK_METADATA_PATH);
-			final Path unpickDefinitions = fileSystem.get().getPath(UNPICK_DEFINITIONS_PATH);
+			final Path unpickMetadata = fileSystem.get().getPath(UnpickMetadata.UNPICK_METADATA_PATH);
+			final Path unpickDefinitions = fileSystem.get().getPath(UnpickMetadata.UNPICK_DEFINITIONS_PATH);
 
 			if (!Files.exists(unpickMetadata)) {
 				// No unpick in this zip

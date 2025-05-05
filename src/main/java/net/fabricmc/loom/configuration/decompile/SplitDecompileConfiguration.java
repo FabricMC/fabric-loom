@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.configuration.decompile;
 
-import java.io.File;
-
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -56,21 +54,11 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		final TaskProvider<Task> commonDecompileTask = createDecompileTasks("Common", task -> {
 			task.getInputJarName().set(commonJar.getName());
 			task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", commonJar.getPath()));
-
-			if (mappingConfiguration.hasUnpickDefinitions()) {
-				File unpickJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-common-unpicked.jar");
-				configureUnpick(task, unpickJar);
-			}
 		});
 
 		final TaskProvider<Task> clientOnlyDecompileTask = createDecompileTasks("ClientOnly", task -> {
 			task.getInputJarName().set(clientOnlyJar.getName());
 			task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", clientOnlyJar.getPath()));
-
-			if (mappingConfiguration.hasUnpickDefinitions()) {
-				File unpickJar = new File(extension.getMappingConfiguration().mappingsWorkingDir().toFile(), "minecraft-clientonly-unpicked.jar");
-				configureUnpick(task, unpickJar);
-			}
 
 			// Don't allow them to run at the same time.
 			task.mustRunAfter(commonDecompileTask);

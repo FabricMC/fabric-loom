@@ -74,6 +74,7 @@ public class Constants {
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";
 		public static final String MAPPING_CONSTANTS = "mappingsConstants";
+		@Deprecated // TODO: Remove when replacing the unpick cli
 		public static final String UNPICK_CLASSPATH = "unpick";
 		/**
 		 * A configuration that behaves like {@code runtimeOnly} but is not

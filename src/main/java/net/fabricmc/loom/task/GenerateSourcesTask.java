@@ -36,9 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,13 +48,10 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
@@ -74,8 +69,6 @@ import org.gradle.workers.WorkerExecutor;
 import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -88,13 +81,13 @@ import net.fabricmc.loom.decompilers.cache.CachedData;
 import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl;
 import net.fabricmc.loom.decompilers.cache.CachedJarProcessor;
 import net.fabricmc.loom.task.service.SourceMappingsService;
+import net.fabricmc.loom.task.service.UnpickService;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.IOStringConsumer;
 import net.fabricmc.loom.util.Platform;
-import net.fabricmc.loom.util.SLF4JAdapterHandler;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 import net.fabricmc.loom.util.gradle.ThreadedProgressLoggerConsumer;
@@ -104,6 +97,7 @@ import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.ipc.IPCClient;
 import net.fabricmc.loom.util.ipc.IPCServer;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
+import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 @UntrackedTask(because = "Manually invoked, has internal caching")
@@ -132,28 +126,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	// Contains the remapped linenumbers
 	@OutputFile
 	protected abstract ConfigurableFileCollection getClassesOutputJar(); // Single jar
-
-	// Unpick
-	@InputFile
-	@Optional
-	public abstract RegularFileProperty getUnpickDefinitions();
-
-	@InputFiles
-	@Optional
-	public abstract ConfigurableFileCollection getUnpickConstantJar();
-
-	@InputFiles
-	@Optional
-	public abstract ConfigurableFileCollection getUnpickClasspath();
-
-	@InputFiles
-	@Optional
-	@ApiStatus.Internal
-	public abstract ConfigurableFileCollection getUnpickRuntimeClasspath();
-
-	@OutputFile
-	@Optional
-	public abstract RegularFileProperty getUnpickOutputJar();
 
 	@Input
 	@Option(option = "use-cache", description = "Use the decompile cache")
@@ -199,6 +171,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Nested
 	protected abstract Property<DaemonUtils.Context> getDaemonUtilsContext();
 
+	@Nested
+	@Optional
+	protected abstract Property<UnpickService.Options> getUnpickOptions();
+
 	// Prevent Gradle from running two gen sources tasks in parallel
 	@ServiceReference(SyncTaskBuildService.NAME)
 	abstract Property<SyncTaskBuildService> getSyncTask();
@@ -241,7 +217,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getMinecraftCompileLibraries().from(getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 		getDecompileCacheFile().set(getExtension().getFiles().getDecompileCache(CACHE_VERSION));
-		getUnpickRuntimeClasspath().from(getProject().getConfigurations().getByName(Constants.Configurations.UNPICK_CLASSPATH));
 
 		getUseCache().convention(true);
 		getResetCache().convention(getExtension().refreshDeps());
@@ -252,6 +227,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getMaxCacheFileAge().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_AGE).orElse(90));
 
 		getDaemonUtilsContext().set(getProject().getObjects().newInstance(DaemonUtils.Context.class, getProject()));
+
+		getUnpickOptions().set(UnpickService.createOptions(this));
 
 		mustRunAfter(getProject().getTasks().withType(AbstractRemapJarTask.class));
 	}
@@ -264,57 +241,59 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			throw new UnsupportedOperationException("GenSources task requires a 64bit JVM to run due to the memory requirements.");
 		}
 
-		if (!getUseCache().get()) {
-			getLogger().info("Not using decompile cache.");
+		try (ScopedServiceFactory serviceFactory = new ScopedServiceFactory()) {
+			if (!getUseCache().get()) {
+				getLogger().info("Not using decompile cache.");
 
-			try (var timer = new Timer("Decompiled sources")) {
-				runWithoutCache();
+				try (var timer = new Timer("Decompiled sources")) {
+					runWithoutCache(serviceFactory);
+				} catch (Exception e) {
+					ExceptionUtil.processException(e, getDaemonUtilsContext().get());
+					throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
+				}
+
+				return;
+			}
+
+			getLogger().info("Using decompile cache.");
+
+			try (var timer = new Timer("Decompiled sources with cache")) {
+				final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
+
+				if (getResetCache().get()) {
+					getLogger().warn("Resetting decompile cache");
+					Files.deleteIfExists(cacheFile);
+				}
+
+				// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
+				Files.createDirectories(cacheFile.getParent());
+
+				if (Files.exists(cacheFile)) {
+					try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
+						// Success, cache exists and can be read
+					} catch (IOException e) {
+						getLogger().warn("Discarding invalid decompile cache file: {}", cacheFile, e);
+						Files.delete(cacheFile);
+					}
+				}
+
+				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
+					runWithCache(serviceFactory, fs.getRoot());
+				}
 			} catch (Exception e) {
 				ExceptionUtil.processException(e, getDaemonUtilsContext().get());
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 			}
-
-			return;
-		}
-
-		getLogger().info("Using decompile cache.");
-
-		try (var timer = new Timer("Decompiled sources with cache")) {
-			final Path cacheFile = getDecompileCacheFile().getAsFile().get().toPath();
-
-			if (getResetCache().get()) {
-				getLogger().warn("Resetting decompile cache");
-				Files.deleteIfExists(cacheFile);
-			}
-
-			// TODO ensure we have a lock on this file to prevent multiple tasks from running at the same time
-			Files.createDirectories(cacheFile.getParent());
-
-			if (Files.exists(cacheFile)) {
-				try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
-					// Success, cache exists and can be read
-				} catch (IOException e) {
-					getLogger().warn("Discarding invalid decompile cache file: {}", cacheFile, e);
-					Files.delete(cacheFile);
-				}
-			}
-
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(cacheFile, true)) {
-				runWithCache(fs.getRoot());
-			}
-		} catch (Exception e) {
-			ExceptionUtil.processException(e, getDaemonUtilsContext().get());
-			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to decompile", e);
 		}
 	}
 
-	private void runWithCache(Path cacheRoot) throws IOException {
+	private void runWithCache(ServiceFactory serviceFactory, Path cacheRoot) throws IOException {
 		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
 		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
 		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(getMaxCachedFiles().get(), Duration.ofDays(getMaxCacheFileAge().get()));
 		final var decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
-		final String cacheKey = getCacheKey();
+		final String cacheKey = getCacheKey(serviceFactory);
 		final CachedJarProcessor cachedJarProcessor = new CachedJarProcessor(decompileCache, cacheKey);
 		final CachedJarProcessor.WorkRequest workRequest;
 
@@ -336,9 +315,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			Path workInputJar = workToDoJob.incomplete();
 			@Nullable Path existingClasses = (job instanceof CachedJarProcessor.PartialWorkJob partialWorkJob) ? partialWorkJob.existingClasses() : null;
 
-			if (getUnpickDefinitions().isPresent()) {
+			if (usingUnpick()) {
 				try (var timer = new Timer("Unpick")) {
-					workInputJar = unpickJar(workInputJar, existingClasses);
+					UnpickService unpick = serviceFactory.get(getUnpickOptions());
+					workInputJar = unpick.unpickJar(getWorkerExecutor(), workInputJar, existingClasses);
 				}
 			}
 
@@ -373,16 +353,17 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 	}
 
-	private void runWithoutCache() throws IOException {
+	private void runWithoutCache(ServiceFactory serviceFactory) throws IOException {
 		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
 		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
 		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
 
 		Path workClassesJar = classesInputJar;
 
-		if (getUnpickDefinitions().isPresent()) {
+		if (usingUnpick()) {
 			try (var timer = new Timer("Unpick")) {
-				workClassesJar = unpickJar(workClassesJar, null);
+				UnpickService unpick = serviceFactory.get(getUnpickOptions());
+				workClassesJar = unpick.unpickJar(getWorkerExecutor(), workClassesJar, null);
 			}
 		}
 
@@ -417,10 +398,14 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		Files.move(tempJar, classesOutputJar, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	private String getCacheKey() {
+	private String getCacheKey(ServiceFactory serviceFactory) {
 		var sj = new StringJoiner(",");
 		sj.add(getDecompilerCheckKey());
-		sj.add(getUnpickCacheKey());
+
+		if (usingUnpick()) {
+			UnpickService unpick = serviceFactory.get(getUnpickOptions());
+			sj.add(unpick.getUnpickCacheKey());
+		}
 
 		getLogger().info("Decompile cache data: {}", sj);
 
@@ -434,24 +419,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	private String getDecompilerCheckKey() {
 		var sj = new StringJoiner(",");
 		sj.add(decompilerOptions.getDecompilerClassName().get());
-		sj.add(fileCollectionHash(decompilerOptions.getClasspath()));
+		sj.add(Checksum.fileCollectionHash(decompilerOptions.getClasspath()));
 
 		for (Map.Entry<String, String> entry : decompilerOptions.getOptions().get().entrySet()) {
 			sj.add(entry.getKey() + "=" + entry.getValue());
 		}
-
-		return sj.toString();
-	}
-
-	private String getUnpickCacheKey() {
-		if (!getUnpickDefinitions().isPresent()) {
-			return "";
-		}
-
-		var sj = new StringJoiner(",");
-		sj.add(fileHash(getUnpickDefinitions().getAsFile().get()));
-		sj.add(fileCollectionHash(getUnpickConstantJar()));
-		sj.add(fileCollectionHash(getUnpickRuntimeClasspath()));
 
 		return sj.toString();
 	}
@@ -483,45 +455,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		return readLineNumbers(lineMapFile);
-	}
-
-	private Path unpickJar(Path inputJar, @Nullable Path existingClasses) {
-		final Path outputJar = getUnpickOutputJar().get().getAsFile().toPath();
-		final List<String> args = getUnpickArgs(inputJar, outputJar, existingClasses);
-
-		WorkQueue workQueue = getWorkerExecutor().classLoaderIsolation(spec -> {
-			spec.getClasspath().from(getUnpickRuntimeClasspath());
-		});
-
-		workQueue.submit(UnpickAction.class, params -> {
-			params.getMainClass().set("daomephsta.unpick.cli.Main");
-			params.getArgs().set(args);
-		});
-
-		workQueue.await();
-
-		return outputJar;
-	}
-
-	private List<String> getUnpickArgs(Path inputJar, Path outputJar, @Nullable Path existingClasses) {
-		var fileArgs = new ArrayList<File>();
-
-		fileArgs.add(inputJar.toFile());
-		fileArgs.add(outputJar.toFile());
-		fileArgs.add(getUnpickDefinitions().get().getAsFile());
-		fileArgs.add(getUnpickConstantJar().getSingleFile());
-
-		for (File file : getUnpickClasspath()) {
-			fileArgs.add(file);
-		}
-
-		if (existingClasses != null) {
-			fileArgs.add(existingClasses.toFile());
-		}
-
-		return fileArgs.stream()
-				.map(File::getAbsolutePath)
-				.toList();
 	}
 
 	private void remapLineNumbers(ClassLineNumbers lineNumbers, Path inputJar, Path outputJar) throws IOException {
@@ -596,28 +529,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		return !Boolean.getBoolean("fabric.loom.genSources.debug");
 	}
 
-	public interface UnpickParams extends WorkParameters {
-		Property<String> getMainClass();
-		ListProperty<String> getArgs();
-	}
-
-	public abstract static class UnpickAction implements WorkAction<UnpickParams> {
-		private static final Logger LOGGER = LoggerFactory.getLogger(UnpickAction.class);
-
-		@Override
-		public void execute() {
-			java.util.logging.Logger logger = java.util.logging.Logger.getLogger("unpick");
-			logger.setUseParentHandlers(false);
-			logger.addHandler(new SLF4JAdapterHandler(LOGGER, true));
-
-			try {
-				Class<?> unpickEntrypoint = Class.forName(getParameters().getMainClass().get());
-				unpickEntrypoint.getMethod("main", String[].class)
-						.invoke(null, (Object) getParameters().getArgs().get().toArray(String[]::new));
-			} catch (ClassNotFoundException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-				throw new RuntimeException("Failed to run unpick", e);
-			}
-		}
+	private boolean usingUnpick() {
+		return getUnpickOptions().isPresent();
 	}
 
 	public interface DecompileParams extends WorkParameters {
@@ -734,26 +647,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private static String fileHash(File file) {
-		try {
-			return Checksum.sha256Hex(Files.readAllBytes(file.toPath()));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	private static String fileCollectionHash(FileCollection files) {
-		var sj = new StringJoiner(",");
-
-		files.getFiles()
-				.stream()
-				.sorted(Comparator.comparing(File::getAbsolutePath))
-				.map(GenerateSourcesTask::fileHash)
-				.forEach(sj::add);
-
-		return sj.toString();
 	}
 
 	public interface MappingsProcessor {

@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.StringJoiner;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
@@ -36,6 +38,7 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 
@@ -103,5 +106,25 @@ public class Checksum {
 		String str = project.getProjectDir().getAbsolutePath() + ":" + project.getPath();
 		String hex = sha1Hex(str.getBytes(StandardCharsets.UTF_8));
 		return hex.substring(hex.length() - 16);
+	}
+
+	public static String fileHash(File file) {
+		try {
+			return Checksum.sha256Hex(java.nio.file.Files.readAllBytes(file.toPath()));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	public static String fileCollectionHash(FileCollection files) {
+		var sj = new StringJoiner(",");
+
+		files.getFiles()
+				.stream()
+				.sorted(Comparator.comparing(File::getAbsolutePath))
+				.map(Checksum::fileHash)
+				.forEach(sj::add);
+
+		return sj.toString();
 	}
 }

@@ -42,6 +42,7 @@ public sealed interface GameTestIPCMessage permits
 
 	enum TestResult {
 		SUCCEEDED,
-		FAILED
+		FAILED,
+		SKIPPED
 	}
 }

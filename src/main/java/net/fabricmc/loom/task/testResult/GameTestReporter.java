@@ -37,11 +37,9 @@ import javax.inject.Inject;
 import org.gradle.api.Project;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.OutputDirectory;
-import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.testing.GroupTestEventReporter;
 import org.gradle.api.tasks.testing.TestEventReporter;
 import org.gradle.api.tasks.testing.TestEventReporterFactory;
@@ -62,35 +60,35 @@ public abstract class GameTestReporter {
 	@OutputDirectory
 	protected abstract DirectoryProperty getHtmlReportDirectory();
 
-	@OutputFile
-	protected abstract RegularFileProperty getIPCDomainSocketFile();
-
 	@Inject
 	protected abstract TestEventReporterFactory getTestEventReporterFactory();
 
 	@Inject
 	protected abstract Project getProject();
 
+	private final Path socketPath;
+
 	@Inject
 	public GameTestReporter(String name) {
 		ReportingExtension reporting = getProject().getExtensions().getByType(ReportingExtension.class);
-		LoomGradleExtension extension = getProject().getExtensions().getByType(LoomGradleExtension.class);
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		getBinaryResultsDirectory().convention(getProject().getLayout().getBuildDirectory().dir("test-results/" + name));
 		getHtmlReportDirectory().convention(reporting.getBaseDirectory().dir("tests/" + name));
-		getIPCDomainSocketFile().set(new File(extension.getFiles().getProjectBuildCache(), "ipc/%s.sock".formatted(name)));
+
+		socketPath = new File(extension.getFiles().getProjectBuildCache(), "%s.sock".formatted(name)).getAbsoluteFile().toPath();
 	}
 
 	@Internal
 	public String getJvmArgumentForTestProcess() {
-		return "-Dfabric.gameTest.reporting.ipcPath=" + getIPCDomainSocketFile().get().getAsFile().getAbsolutePath();
+		return "-Dfabric.gameTest.reporting.ipcPath=" + socketPath;
 	}
 
 	public Runner run() {
 		return new Runner(getTestEventReporterFactory(),
 				getBinaryResultsDirectory().get(),
 				getHtmlReportDirectory().get(),
-				getIPCDomainSocketFile().get().getAsFile().toPath()
+				socketPath
 		);
 	}
 
@@ -108,6 +106,8 @@ public abstract class GameTestReporter {
 					binaryResultsDirectory,
 					htmlReportDirectory
 			);
+			root.started(now());
+
 			messageConsumer = new MessageConsumer(root);
 			ipcServer = new IPCServer(ipcDomainSocketFile, new GameTestIPCMessageDeserializer(messageConsumer));
 		}

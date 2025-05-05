@@ -45,25 +45,31 @@ public record GameTestIPCMessageDeserializer(Consumer<GameTestIPCMessage> messag
 
 	@Override
 	public void accept(String message) {
-		LOGGER.debug("Received IPC message: {}", message);
+		LOGGER.warn("Received IPC message: {}", message);
 
-		JsonObject json = LoomGradlePlugin.GSON.fromJson(message, JsonObject.class);
-		int version = getInt(json, "version");
+		try {
+			JsonObject json = LoomGradlePlugin.GSON.fromJson(message, JsonObject.class);
+			int version = getInt(json, "version");
 
-		if (version != 1) {
-			throw new GameTestMessageException("Unsupported IPC message version: %d. Try updating Loom.".formatted(version));
+			if (version != 1) {
+				throw new GameTestMessageException("Unsupported IPC message version: %d. Try updating Loom.".formatted(version));
+			}
+
+			String type = getString(json, "type");
+
+			if (!MESSAGE_TYPES.containsKey(type)) {
+				throw new GameTestMessageException("Unknown IPC message type: %s.".formatted(type));
+			}
+
+			LOGGER.warn("Processing IPC message type: {}", type);
+
+			GameTestIPCMessage messageObject = MESSAGE_TYPES.get(type).apply(json);
+			messageConsumer.accept(messageObject);
+
+			LOGGER.warn("Processed IPC message: {}", messageObject);
+		} catch (Exception e) {
+			LOGGER.error("Failed to process IPC message", e);
 		}
-
-		String type = getString(json, "type");
-
-		if (!MESSAGE_TYPES.containsKey(type)) {
-			throw new GameTestMessageException("Unknown IPC message type: %s.".formatted(type));
-		}
-
-		GameTestIPCMessage messageObject = MESSAGE_TYPES.get(type).apply(json);
-		messageConsumer.accept(messageObject);
-
-		LOGGER.debug("Processed IPC message: {}", messageObject);
 	}
 
 	private static GameTestIPCMessage.PushGroup pushGroup(JsonObject json) {
@@ -87,6 +93,7 @@ public record GameTestIPCMessageDeserializer(Consumer<GameTestIPCMessage> messag
 		return switch (result) {
 		case "succeeded" -> GameTestIPCMessage.TestResult.SUCCEEDED;
 		case "failed" -> GameTestIPCMessage.TestResult.FAILED;
+		case "skipped" -> GameTestIPCMessage.TestResult.SKIPPED;
 		default -> throw new GameTestMessageException("Unknown test result: %s.".formatted(result));
 		};
 	}

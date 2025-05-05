@@ -48,13 +48,16 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.Nested;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.task.testResult.GameTestReporter;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Platform;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
@@ -77,6 +80,9 @@ public abstract class AbstractRunTask extends JavaExec {
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	@InputFiles
 	protected abstract ConfigurableFileCollection getInternalClasspath();
+
+	@Nested
+	protected abstract Property<GameTestReporter> getGameTestReporter();
 
 	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
 		super();
@@ -103,6 +109,22 @@ public abstract class AbstractRunTask extends JavaExec {
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();
 		File argFile = new File(buildCache, "argFiles/" + getName());
 		getArgFilePath().set(argFile.getAbsolutePath());
+	}
+
+	public void captureTestResults() {
+		if (!Platform.CURRENT.supportsUnixDomainSockets()) {
+			if (Platform.CURRENT.getOperatingSystem().isWindows()) {
+				throw new UnsupportedOperationException("Capturing test results is only supported on Windows 10 17063 or later.");
+			}
+
+			throw new UnsupportedOperationException("Capturing test results is only supported on systems that support Unix domain sockets.");
+		}
+
+		getGameTestReporter().set(getProject().getObjects().newInstance(GameTestReporter.class, getName()));
+		getGameTestReporter().finalizeValue();
+
+		// This is how its documented...
+		getExtensions().getExtraProperties().set("idea.internal.test", true);
 	}
 
 	private boolean canUseArgFile() {
@@ -135,7 +157,21 @@ public abstract class AbstractRunTask extends JavaExec {
 		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
 
+		if (getGameTestReporter().isPresent()) {
+			execWithTestResult();
+			return;
+		}
+
 		super.exec();
+	}
+
+	private void execWithTestResult() {
+		GameTestReporter gameTestReporter = getGameTestReporter().get();
+		jvmArgs(gameTestReporter.getJvmArgumentForTestProcess());
+
+		try (GameTestReporter.Runner runner = gameTestReporter.run()) {
+			super.exec();
+		}
 	}
 
 	@Override

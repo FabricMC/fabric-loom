@@ -45,8 +45,10 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.fabricapi.GameTestSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.task.AbstractRunTask;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
@@ -99,6 +101,8 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 			});
 
 			tasks.named("test", task -> task.dependsOn(LoomTasks.getRunConfigTaskName(gameTest)));
+
+			captureTestResult(gameTest);
 		}
 
 		if (settings.getEnableClientGameTests().get()) {
@@ -122,6 +126,8 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 				configureBase.accept(run);
 			});
 
+			captureTestResult(clientGameTest);
+
 			if (settings.getClearRunDirectory().get()) {
 				var deleteGameTestRunDir = tasks.register("deleteGameTestRunDir", Delete.class, task -> {
 					task.setGroup(Constants.TaskGroup.FABRIC);
@@ -144,6 +150,15 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 				tasks.named("configureLaunch", task -> task.dependsOn(acceptEula));
 			}
 		}
+	}
+
+	private void captureTestResult(RunConfigSettings runConfig) {
+		if (!Platform.CURRENT.supportsUnixDomainSockets()) {
+			return;
+		}
+
+		final TaskContainer tasks = getProject().getTasks();
+		tasks.named(LoomTasks.getRunConfigTaskName(runConfig), AbstractRunTask.class, AbstractRunTask::captureTestResults);
 	}
 
 	public abstract static class AcceptEulaTask extends AbstractLoomTask {

@@ -61,7 +61,7 @@ public class IPCServer implements AutoCloseable {
 		}
 	}
 
-	public void run() {
+	private void run() {
 		UnixDomainSocketAddress address = UnixDomainSocketAddress.of(path);
 
 		try (ServerSocketChannel serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX)) {

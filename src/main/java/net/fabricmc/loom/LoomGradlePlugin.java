@@ -33,6 +33,7 @@ import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.PluginAware;
+import org.gradle.api.plugins.ReportingBasePlugin;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.fabricapi.FabricApiExtension;
@@ -84,6 +85,7 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		// Apply default plugins
 		project.apply(ImmutableMap.of("plugin", "java-library"));
 		project.apply(ImmutableMap.of("plugin", "eclipse"));
+		project.getPluginManager().apply(ReportingBasePlugin.class);
 
 		// Setup extensions
 		project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, LoomFiles.create(project));

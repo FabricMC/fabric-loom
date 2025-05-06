@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 package net.fabricmc.loom.util.service;
 
 import java.lang.reflect.Method;
+import java.util.function.Function;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -40,9 +41,22 @@ public record ServiceType<O extends Service.Options, S extends Service<O>>(Class
 	 * Create an instance of the options class for the given service class.
 	 * @param project The {@link Project} to create the options for.
 	 * @param action An action to configure the options.
-	 * @return The created options instance.
+	 * @return The created options provider.
 	 */
 	public Provider<O> create(Project project, Action<O> action) {
+		return maybeCreate(project, o -> {
+			action.execute(o);
+			return true;
+		});
+	}
+
+	/**
+	 * Maybe create an instance of the options class for the given service class.
+	 * @param project The {@link Project} to create the options for.
+	 * @param function A function to configure the options, returning true if the options should be created.
+	 * @return The created options provider.
+	 */
+	public Provider<O> maybeCreate(Project project, Function<O, Boolean> function) {
 		return project.provider(() -> {
 			O options = project.getObjects().newInstance(optionsClass);
 
@@ -54,8 +68,12 @@ public record ServiceType<O extends Service.Options, S extends Service<O>>(Class
 
 			options.getServiceClass().set(serviceClass.getName());
 			options.getServiceClass().finalizeValue();
-			action.execute(options);
-			return options;
+
+			if (function.apply(options)) {
+				return options;
+			}
+
+			return null;
 		});
 	}
 }

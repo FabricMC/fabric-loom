@@ -82,16 +82,16 @@ public class UnpickService extends Service<UnpickService.Options> {
 
 	public static Provider<Options> createOptions(GenerateSourcesTask task) {
 		final Project project = task.getProject();
-
-		return TYPE.create(project, options -> {
-			ConfigurationContainer configurations = project.getConfigurations();
+		return TYPE.maybeCreate(project, options -> {
 			LoomGradleExtension extension = LoomGradleExtension.get(project);
 			MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
-			File mappingsWorkingDir = mappingConfiguration.mappingsWorkingDir().toFile();
 
 			if (!mappingConfiguration.hasUnpickDefinitions()) {
-				throw new IllegalStateException("Unpick definitions not set");
+				return false;
 			}
+
+			ConfigurationContainer configurations = project.getConfigurations();
+			File mappingsWorkingDir = mappingConfiguration.mappingsWorkingDir().toFile();
 
 			options.getUnpickRuntimeClasspath().from(configurations.getByName(Constants.Configurations.UNPICK_CLASSPATH));
 			options.getUnpickDefinitions().set(mappingConfiguration.getUnpickDefinitionsFile());
@@ -101,6 +101,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 			options.getUnpickClasspath().setFrom(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 			options.getUnpickClasspath().from(configurations.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED));
 			extension.getMinecraftJars(MappingsNamespace.NAMED).forEach(options.getUnpickClasspath()::from);
+			return true;
 		});
 	}
 

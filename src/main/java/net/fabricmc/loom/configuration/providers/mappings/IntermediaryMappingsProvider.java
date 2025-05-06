@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -115,7 +114,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 		if (!LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL.equals(urlRaw)) {
 			final String url = getIntermediaryUrl().get().formatted(encodedMcVersion);
 
-			return NAME + "-" + Checksum.sha1Hex(url.getBytes(StandardCharsets.UTF_8));
+			return NAME + "-" + Checksum.of(url).sha1().hex();
 		}
 
 		return NAME;

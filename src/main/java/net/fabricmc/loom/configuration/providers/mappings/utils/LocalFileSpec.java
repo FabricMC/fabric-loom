@@ -29,8 +29,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
 import net.fabricmc.loom.util.Checksum;
 
 public class LocalFileSpec implements FileSpec {
@@ -48,7 +48,7 @@ public class LocalFileSpec implements FileSpec {
 		}
 
 		// Use the file hash as part of the spec, this means if the input file changes the mappings will be re-generated.
-		return Objects.hash(Arrays.hashCode(Checksum.sha256(file)), file.getAbsolutePath());
+		return Objects.hash(Arrays.hashCode(Checksum.of(file).sha256().digest()), file.getAbsolutePath());
 	}
 
 	@Override

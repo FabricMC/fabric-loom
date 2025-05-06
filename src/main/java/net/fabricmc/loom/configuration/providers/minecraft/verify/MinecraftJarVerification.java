@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.minecraft.verify;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -86,9 +85,9 @@ public abstract class MinecraftJarVerification {
 		}
 
 		LOGGER.info("Found executed hash ({}) for known version: {}", expectedHash, version);
-		String hash = Checksum.sha256Hex(Files.readAllBytes(path));
+		Checksum.Result hash = Checksum.of(path).sha256();
 
-		if (hash.equalsIgnoreCase(expectedHash)) {
+		if (hash.equals(expectedHash)) {
 			LOGGER.info("Minecraft {} hash matches known version", path.getFileName());
 			return true;
 		}

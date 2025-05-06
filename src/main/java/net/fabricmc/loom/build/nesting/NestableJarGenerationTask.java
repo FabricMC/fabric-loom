@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.hash.Hashing;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.artifacts.ArtifactView;
@@ -61,6 +60,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
@@ -170,9 +170,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 
 		// Fabric Loader can't handle modIds longer than 64 characters
 		if (modId.length() > 64) {
-			String hash = Hashing.sha256()
-					.hashString(modId, StandardCharsets.UTF_8)
-					.toString();
+			String hash = Checksum.of(modId).sha256().hex();
 			modId = modId.substring(0, 50) + hash.substring(0, 14);
 		}
 

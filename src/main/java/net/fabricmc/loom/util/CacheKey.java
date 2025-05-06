@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
@@ -40,7 +39,7 @@ import net.fabricmc.loom.util.gradle.GradleTypeAdapter;
 public abstract class CacheKey {
 	private static final int CHECKSUM_LENGTH = 8;
 	private final transient Supplier<String> jsonSupplier = Suppliers.memoize(() -> GradleTypeAdapter.GSON.toJson(this));
-	private final transient Supplier<String> cacheKeySupplier = Suppliers.memoize(() -> Checksum.sha1Hex(jsonSupplier.get().getBytes(StandardCharsets.UTF_8)).substring(0, CHECKSUM_LENGTH));
+	private final transient Supplier<String> cacheKeySupplier = Suppliers.memoize(() -> Checksum.of(jsonSupplier.get()).sha1().hex(CHECKSUM_LENGTH));
 
 	public static <T> T create(Project project, Class<T> clazz, Action<T> action) {
 		T instance = project.getObjects().newInstance(clazz);

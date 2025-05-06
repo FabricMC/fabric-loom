@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -40,11 +39,7 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record LocalAccessWidenerEntry(Path path, String hash) implements AccessWidenerEntry {
 	public static LocalAccessWidenerEntry create(Path path) {
-		try {
-			return new LocalAccessWidenerEntry(path, Checksum.sha1Hex(path));
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to create LocalAccessWidenerEntry", e);
-		}
+		return new LocalAccessWidenerEntry(path, Checksum.of(path).sha1().hex());
 	}
 
 	@Override

@@ -69,7 +69,7 @@ public interface ArtifactRef {
 		}
 
 		public String version() {
-			return replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.truncatedSha256(artifact.getFile()));
+			return replaceIfNullOrEmpty(artifact.getModuleVersion().getId().getVersion(), () -> Checksum.of(artifact.getFile()).sha256().hex(10));
 		}
 
 		public String classifier() {

@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.processors;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -113,11 +112,11 @@ public final class MinecraftJarProcessorManager {
 
 	public String getJarHash() {
 		//fabric-loom:mod-javadoc:-1289977000
-		return Checksum.sha1Hex(getCacheValue().getBytes(StandardCharsets.UTF_8)).substring(0, 10);
+		return Checksum.of(getCacheValue()).sha1().hex(10);
 	}
 
 	public String getSourceMappingsHash() {
-		return Checksum.sha1Hex(getCacheValue().getBytes(StandardCharsets.UTF_8));
+		return Checksum.of(getCacheValue()).sha1().hex();
 	}
 
 	public boolean requiresProcessingJar(Path jar) {

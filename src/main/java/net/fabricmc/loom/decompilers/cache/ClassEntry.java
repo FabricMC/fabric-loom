@@ -27,6 +27,7 @@ package net.fabricmc.loom.decompilers.cache;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -103,15 +104,15 @@ public record ClassEntry(String name, List<String> innerClasses, List<String> su
 	 * @throws IOException If an error occurs while hashing the files
 	 */
 	public String hash(Path root) throws IOException {
-		StringJoiner joiner = new StringJoiner(",");
+		List<Checksum> entries = new ArrayList<>();
 
-		joiner.add(Checksum.sha256Hex(Files.readAllBytes(root.resolve(name))));
+		entries.add(Checksum.of(root.resolve(name)));
 
 		for (String innerClass : innerClasses) {
-			joiner.add(Checksum.sha256Hex(Files.readAllBytes(root.resolve(innerClass))));
+			entries.add(Checksum.of(root.resolve(innerClass)));
 		}
 
-		return Checksum.sha256Hex(joiner.toString().getBytes());
+		return Checksum.of(entries).sha256().hex();
 	}
 
 	/**
@@ -138,7 +139,7 @@ public record ClassEntry(String name, List<String> innerClasses, List<String> su
 			}
 		}
 
-		return Checksum.sha256Hex(joiner.toString().getBytes());
+		return Checksum.of(joiner.toString()).sha256().hex();
 	}
 
 	public String sourcesFileName() {

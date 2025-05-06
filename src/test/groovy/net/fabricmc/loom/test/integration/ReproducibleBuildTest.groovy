@@ -24,17 +24,16 @@
 
 package net.fabricmc.loom.test.integration
 
-import com.google.common.hash.HashCode
-import com.google.common.hash.Hashing
-import com.google.common.io.Files
 import spock.lang.Specification
 import spock.lang.Unroll
 import spock.util.environment.RestoreSystemProperties
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.Checksum
 
 import static java.lang.System.setProperty
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import static net.fabricmc.loom.test.LoomTestConstants.DEFAULT_GRADLE
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ReproducibleBuildTest extends Specification implements GradleProjectTestTrait {
@@ -60,7 +59,6 @@ class ReproducibleBuildTest extends Specification implements GradleProjectTestTr
 	}
 
 	String generateMD5(File file) {
-		HashCode hash = Files.asByteSource(file).hash(Hashing.md5())
-		return hash.asBytes().encodeHex() as String
+		return Checksum.of(file).md5().hex()
 	}
 }

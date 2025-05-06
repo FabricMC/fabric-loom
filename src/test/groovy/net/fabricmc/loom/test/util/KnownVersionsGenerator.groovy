@@ -25,7 +25,6 @@
 package net.fabricmc.loom.test.util
 
 import java.nio.file.Path
-import java.security.MessageDigest
 
 import net.fabricmc.loom.LoomGradlePlugin
 import net.fabricmc.loom.configuration.providers.BundleMetadata
@@ -35,6 +34,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.verify.CertificateCha
 import net.fabricmc.loom.configuration.providers.minecraft.verify.JarVerifier
 import net.fabricmc.loom.configuration.providers.minecraft.verify.KnownVersions
 import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerificationFailure
+import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadExecutor
@@ -109,13 +109,13 @@ class KnownVersionsGenerator {
 		def clientJar = dir.resolve(client.sha1() + ".jar")
 
 		if (!isSigned(clientJar)) {
-			unsignedClientVersions.put(version.id, sha256(clientJar))
+			unsignedClientVersions.put(version.id, Checksum.of(clientJar).sha256().hex())
 		}
 
 		if (server != null) {
 			def serverJar = dir.resolve(server.sha1() + ".jar")
 			if (BundleMetadata.fromJar(serverJar) == null) {
-				unsignedServerVersions.put(version.id, sha256(serverJar))
+				unsignedServerVersions.put(version.id, Checksum.of(serverJar).sha256().hex())
 			}
 		}
 	}
@@ -127,17 +127,5 @@ class KnownVersionsGenerator {
 		} catch (SignatureVerificationFailure ignored) {
 			return false
 		}
-	}
-
-	static String sha256(Path path) {
-		MessageDigest md = MessageDigest.getInstance("SHA-256")
-		path.withInputStream { inputStream ->
-			byte[] buffer = new byte[8192]
-			int bytesRead
-			while ((bytesRead = inputStream.read(buffer)) != -1) {
-				md.update(buffer, 0, bytesRead)
-			}
-		}
-		return md.digest().encodeHex().toString()
 	}
 }

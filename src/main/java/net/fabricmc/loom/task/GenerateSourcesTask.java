@@ -409,17 +409,13 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		getLogger().info("Decompile cache data: {}", sj);
 
-		try {
-			return Checksum.sha256Hex(sj.toString().getBytes(StandardCharsets.UTF_8));
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		return Checksum.of(sj.toString()).sha256().hex();
 	}
 
 	private String getDecompilerCheckKey() {
 		var sj = new StringJoiner(",");
 		sj.add(decompilerOptions.getDecompilerClassName().get());
-		sj.add(Checksum.fileCollectionHash(decompilerOptions.getClasspath()));
+		sj.add(Checksum.of(decompilerOptions.getClasspath()).sha256().hex());
 
 		for (Map.Entry<String, String> entry : decompilerOptions.getOptions().get().entrySet()) {
 			sj.add(entry.getKey() + "=" + entry.getValue());

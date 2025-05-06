@@ -124,7 +124,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 			try {
 				final byte[] data = fabricModJson.getSource().read(javaDocPath);
-				mappingsHash = Checksum.sha1Hex(data);
+				mappingsHash = Checksum.of(data).sha1().hex();
 
 				try (Reader reader = new InputStreamReader(new ByteArrayInputStream(data))) {
 					MappingReader.read(reader, mappings);

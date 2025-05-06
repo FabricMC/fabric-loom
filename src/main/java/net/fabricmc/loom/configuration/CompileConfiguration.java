@@ -275,7 +275,7 @@ public abstract class CompileConfiguration implements Runnable {
 	private LockFile getLockFile() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
-		final String pathHash = Checksum.projectHash(getProject());
+		final String pathHash = Checksum.of(getProject()).sha1().hex();
 		return new LockFile(
 				cacheDirectory.resolve("." + pathHash + ".lock"),
 				"Lock for cache='%s', project='%s'".formatted(

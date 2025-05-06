@@ -224,7 +224,7 @@ public final class Download {
 				String downloadedHash;
 
 				try {
-					downloadedHash = Checksum.sha1Hex(output);
+					downloadedHash = Checksum.of(output).sha1().hex();
 					Files.deleteIfExists(output);
 				} catch (IOException e) {
 					downloadedHash = "unknown hash";
@@ -359,12 +359,12 @@ public final class Download {
 		String hash = expectedHash.substring(i + 1);
 
 		try {
-			String computedHash = switch (algorithm) {
-			case "sha1" -> Checksum.sha1Hex(path);
+			Checksum.Result computedHash = switch (algorithm) {
+			case "sha1" -> Checksum.of(path).sha1();
 			default -> throw error("Unsupported hash algorithm (%s)", algorithm);
 			};
 
-			return computedHash.equalsIgnoreCase(hash);
+			return computedHash.equals(hash);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

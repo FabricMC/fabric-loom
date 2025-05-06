@@ -276,7 +276,7 @@ public class ModConfigurationRemapper {
 
 			for (File artifact : files) {
 				final String name = getNameWithoutExtension(artifact.toPath());
-				final String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.truncatedSha256(artifact));
+				final String version = replaceIfNullOrEmpty(dependency.getVersion(), () -> Checksum.of(artifact).sha256().hex(10));
 				artifacts.add(new ArtifactRef.FileArtifactRef(artifact.toPath(), group, name, version));
 			}
 		}

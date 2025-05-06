@@ -154,9 +154,9 @@ public class UnpickService extends Service<UnpickService.Options> {
 		}
 
 		var sj = new StringJoiner(",");
-		sj.add(Checksum.fileHash(getOptions().getUnpickDefinitions().getAsFile().get()));
-		sj.add(Checksum.fileCollectionHash(getOptions().getUnpickConstantJar()));
-		sj.add(Checksum.fileCollectionHash(getOptions().getUnpickRuntimeClasspath()));
+		sj.add(Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()).sha256().hex());
+		sj.add(Checksum.of(getOptions().getUnpickConstantJar()).sha256().hex());
+		sj.add(Checksum.of(getOptions().getUnpickRuntimeClasspath()).sha256().hex());
 
 		return sj.toString();
 	}

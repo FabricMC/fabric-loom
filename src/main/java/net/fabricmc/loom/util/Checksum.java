@@ -129,7 +129,7 @@ public final class Checksum {
 			return hex().substring(0, length);
 		}
 
-		public boolean equals(String other) {
+		public boolean matchesStr(String other) {
 			return hex().equalsIgnoreCase(other);
 		}
 	}

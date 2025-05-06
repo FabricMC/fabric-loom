@@ -364,7 +364,7 @@ public final class Download {
 			default -> throw error("Unsupported hash algorithm (%s)", algorithm);
 			};
 
-			return computedHash.equals(hash);
+			return computedHash.matchesStr(hash);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

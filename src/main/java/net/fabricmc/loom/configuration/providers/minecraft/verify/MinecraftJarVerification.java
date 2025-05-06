@@ -87,7 +87,7 @@ public abstract class MinecraftJarVerification {
 		LOGGER.info("Found executed hash ({}) for known version: {}", expectedHash, version);
 		Checksum.Result hash = Checksum.of(path).sha256();
 
-		if (hash.equals(expectedHash)) {
+		if (hash.matchesStr(expectedHash)) {
 			LOGGER.info("Minecraft {} hash matches known version", path.getFileName());
 			return true;
 		}

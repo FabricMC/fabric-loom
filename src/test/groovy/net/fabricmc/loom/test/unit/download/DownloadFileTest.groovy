@@ -34,11 +34,7 @@ import io.javalin.http.HttpStatus
 import spock.lang.IgnoreIf
 
 import net.fabricmc.loom.util.Checksum
-import net.fabricmc.loom.util.download.Download
-import net.fabricmc.loom.util.download.DownloadException
-import net.fabricmc.loom.util.download.DownloadExecutor
-import net.fabricmc.loom.util.download.DownloadProgressListener
-import net.fabricmc.loom.util.download.DownloadResult
+import net.fabricmc.loom.util.download.*
 
 class DownloadFileTest extends DownloadTest {
 	@IgnoreIf({ os.windows }) // Requires admin on windows.
@@ -452,6 +448,6 @@ class DownloadFileTest extends DownloadTest {
 				.downloadPath(file)
 
 		then:
-		Checksum.sha1Hex(file) == "8e8c9be5dc27802caba47053d4fdea328f7f89bd"
+		Checksum.of(file).sha1().hex() == "8e8c9be5dc27802caba47053d4fdea328f7f89bd"
 	}
 }

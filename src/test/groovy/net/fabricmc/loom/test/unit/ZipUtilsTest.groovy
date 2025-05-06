@@ -180,7 +180,7 @@ class ZipUtilsTest extends Specification {
 		then:
 		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
 		ZipUtils.unpack(zip, "fabric.mod.json") == "Some text".bytes
-		Checksum.sha1Hex(zip) == "1b06cc0aaa65ab2b0d423fe33431ff5bd14bf9c8"
+		Checksum.of(zip).sha1().hex() == "1b06cc0aaa65ab2b0d423fe33431ff5bd14bf9c8"
 
 		where:
 		timezone 			| _
@@ -256,6 +256,6 @@ class ZipUtilsTest extends Specification {
 
 		then:
 		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
-		Checksum.sha1Hex(zip) == "e699fa52a520553241aac798f72255ac0a912b05"
+		Checksum.of(zip).sha1().hex() == "e699fa52a520553241aac798f72255ac0a912b05"
 	}
 }

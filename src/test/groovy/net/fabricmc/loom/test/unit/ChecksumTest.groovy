@@ -37,7 +37,7 @@ class ChecksumTest extends Specification {
 		project.getProjectDir() >> new File(dir)
 
 		when:
-		def hash = Checksum.projectHash(project)
+		def hash = Checksum.of(project).sha256().hex()
 
 		then:
 		!hash.empty

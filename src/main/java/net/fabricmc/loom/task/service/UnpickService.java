@@ -29,7 +29,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -149,16 +148,11 @@ public class UnpickService extends Service<UnpickService.Options> {
 	}
 
 	public String getUnpickCacheKey() {
-		if (!getOptions().getUnpickDefinitions().isPresent()) {
-			return "";
-		}
-
-		var sj = new StringJoiner(",");
-		sj.add(Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()).sha256().hex());
-		sj.add(Checksum.of(getOptions().getUnpickConstantJar()).sha256().hex());
-		sj.add(Checksum.of(getOptions().getUnpickRuntimeClasspath()).sha256().hex());
-
-		return sj.toString();
+		return Checksum.of(List.of(
+				Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()),
+				Checksum.of(getOptions().getUnpickConstantJar()),
+				Checksum.of(getOptions().getUnpickRuntimeClasspath())
+		)).sha256().hex();
 	}
 
 	public interface UnpickParams extends WorkParameters {

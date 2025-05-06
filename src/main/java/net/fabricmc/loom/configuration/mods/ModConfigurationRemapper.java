@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableMap;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.FileCollectionDependency;
@@ -103,7 +102,7 @@ public class ModConfigurationRemapper {
 
 		for (RemapConfigurationSettings entry : remapConfigurationSettings) {
 			// key: true if runtime, false if compile
-			final Map<Boolean, Boolean> envToEnabled = ImmutableMap.of(
+			final Map<Boolean, Boolean> envToEnabled = Map.of(
 					false, entry.getOnCompileClasspath().get(),
 					true, entry.getOnRuntimeClasspath().get()
 			);

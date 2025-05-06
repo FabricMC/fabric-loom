@@ -112,7 +112,7 @@ public class SourceRemapper {
 			source = new File(destination.getAbsolutePath().substring(0, destination.getAbsolutePath().lastIndexOf('.')) + "-dev.jar");
 
 			try {
-				com.google.common.io.Files.move(destination, source);
+				Files.move(destination.toPath(), source.toPath());
 			} catch (IOException e) {
 				throw new RuntimeException("Could not rename " + destination.getName() + "!", e);
 			}

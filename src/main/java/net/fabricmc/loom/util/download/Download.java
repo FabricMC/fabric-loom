@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.util.download;
 
-import static com.google.common.io.Files.createParentDirs;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -174,7 +172,7 @@ public final class Download {
 		}
 
 		try {
-			createParentDirs(output.toFile());
+			Files.createDirectories(output.getParent());
 		} catch (IOException e) {
 			throw error(e, "Failed to create parent directories");
 		}

@@ -25,9 +25,9 @@
 package net.fabricmc.loom;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.gradle.api.Plugin;
@@ -82,8 +82,8 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		LibraryLocationLogger.logLibraryVersions();
 
 		// Apply default plugins
-		project.apply(ImmutableMap.of("plugin", "java-library"));
-		project.apply(ImmutableMap.of("plugin", "eclipse"));
+		project.apply(Map.of("plugin", "java-library"));
+		project.apply(Map.of("plugin", "eclipse"));
 
 		// Setup extensions
 		project.getExtensions().create(LoomGradleExtensionAPI.class, "loom", LoomGradleExtensionImpl.class, project, LoomFiles.create(project));

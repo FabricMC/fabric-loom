@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
@@ -174,7 +174,7 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 			}
 		} catch (IllegalDependencyNotation ignored) {
 			LOGGER.info("Could not locate mappings, presuming V2 Yarn");
-			return project.getConfigurations().detachedConfiguration(project.getDependencies().create(ImmutableMap.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2")));
+			return project.getConfigurations().detachedConfiguration(project.getDependencies().create(Map.of("group", "net.fabricmc", "name", "yarn", "version", mappings, "classifier", "v2")));
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to resolve mappings", e);
 		}

@@ -37,8 +37,6 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
-import com.google.common.collect.Sets;
-
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 
@@ -79,7 +77,7 @@ public class MinecraftJarSplitter implements AutoCloseable {
 	}
 
 	private Set<String> getJarEntries(Path input) throws IOException {
-		Set<String> entries = Sets.newHashSet();
+		Set<String> entries = new HashSet<>();
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(input);
 				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
@@ -154,17 +152,17 @@ public class MinecraftJarSplitter implements AutoCloseable {
 			this.clientEntries = clientEntries;
 			this.serverEntries = serverEntries;
 
-			this.commonEntries = Sets.newHashSet(clientEntries);
+			this.commonEntries = new HashSet<>(clientEntries);
 			this.commonEntries.retainAll(serverEntries);
 			this.commonEntries.addAll(sharedEntries);
 			this.commonEntries.removeAll(forcedClientEntries);
 
-			this.clientOnlyEntries = Sets.newHashSet(clientEntries);
+			this.clientOnlyEntries = new HashSet<>(clientEntries);
 			this.clientOnlyEntries.removeAll(serverEntries);
 			this.clientOnlyEntries.addAll(sharedEntries);
 			this.clientOnlyEntries.addAll(forcedClientEntries);
 
-			this.serverOnlyEntries = Sets.newHashSet(serverEntries);
+			this.serverOnlyEntries = new HashSet<>(serverEntries);
 			this.serverOnlyEntries.removeAll(clientEntries);
 		}
 	}

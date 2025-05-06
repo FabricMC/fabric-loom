@@ -25,10 +25,10 @@
 package net.fabricmc.loom.build.mixin;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
@@ -42,7 +42,7 @@ public class ScalaApInvoker extends AnnotationProcessorInvoker<ScalaCompile> {
 		super(
 				project,
 				// Scala just uses the java AP configuration afaik. This of course assumes the java AP also gets configured.
-				ImmutableList.of(),
+				List.of(),
 				getInvokerTasks(project),
 				AnnotationProcessorInvoker.SCALA);
 	}

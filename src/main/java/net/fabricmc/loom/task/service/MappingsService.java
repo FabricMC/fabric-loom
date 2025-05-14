@@ -113,7 +113,6 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 			// Custom mappings:
 			File mappingsFile = remapJarTask.getCustomMappings().getSingleFile();
 
-			// TODO possibly move this to MappingsService
 			if (mappingsFile.getName().endsWith(".zip") || mappingsFile.getName().endsWith(".jar")) {
 				mappingsFile = project.zipTree(mappingsFile).matching(patternFilterable -> patternFilterable.include("mappings/mappings.tiny")).getSingleFile();
 			}

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -35,9 +36,12 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -51,6 +55,8 @@ import net.fabricmc.tinyremapper.IMappingProvider;
  */
 public final class MappingsService extends Service<MappingsService.Options> implements Closeable {
 	public static ServiceType<Options, MappingsService> TYPE = new ServiceType<>(Options.class, MappingsService.class);
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TinyRemapperService.class);
 
 	// TODO use a nested TinyMappingsService instead of duplicating it
 	public interface Options extends Service.Options {
@@ -89,6 +95,37 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	public static Provider<Options> createOptionsWithProjectMappings(Project project, Provider<String> from, Provider<String> to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
 		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
+	}
+
+	public static Provider<MappingsService.Options> createForRemapTask(AbstractRemapJarTask remapJarTask) {
+		final Project project = remapJarTask.getProject();
+
+		return project.provider(() -> {
+			if (remapJarTask.getCustomMappings().isEmpty()) {
+				LOGGER.debug("Using default project mappings for remapping");
+				return MappingsService.createOptionsWithProjectMappings(
+						project,
+						remapJarTask.getSourceNamespace(),
+						remapJarTask.getTargetNamespace()
+				).get();
+			}
+
+			// Custom mappings:
+			File mappingsFile = remapJarTask.getCustomMappings().getSingleFile();
+
+			// TODO possibly move this to MappingsService
+			if (mappingsFile.getName().endsWith(".zip") || mappingsFile.getName().endsWith(".jar")) {
+				mappingsFile = project.zipTree(mappingsFile).matching(patternFilterable -> patternFilterable.include("mappings/mappings.tiny")).getSingleFile();
+			}
+
+			LOGGER.info("Using custom mappings for remap task: {}", mappingsFile);
+			return MappingsService.createOptions(
+							project,
+							mappingsFile.toPath(),
+							remapJarTask.getSourceNamespace(), remapJarTask.getTargetNamespace(),
+							false)
+					.get();
+		});
 	}
 
 	public MappingsService(Options options, ServiceFactory serviceFactory) {

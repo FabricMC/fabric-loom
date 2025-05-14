@@ -49,8 +49,6 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
@@ -69,8 +67,6 @@ import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
 public class TinyRemapperService extends Service<TinyRemapperService.Options> implements Closeable {
 	public static final ServiceType<Options, TinyRemapperService> TYPE = new ServiceType<>(Options.class, TinyRemapperService.class);
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(TinyRemapperService.class);
 
 	public interface Options extends Service.Options {
 		@Input
@@ -106,7 +102,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 			options.getFrom().set(remapJarTask.getSourceNamespace());
 			options.getTo().set(remapJarTask.getTargetNamespace());
-			options.getMappings().add(createMappingsOptions(remapJarTask));
+			options.getMappings().add(MappingsService.createForRemapTask(remapJarTask));
 
 			if (legacyMixin) {
 				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom(), options.getTo()));
@@ -117,37 +113,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
-		});
-	}
-
-	private static Provider<MappingsService.Options> createMappingsOptions(AbstractRemapJarTask remapJarTask) {
-		final Project project = remapJarTask.getProject();
-
-		return project.provider(() -> {
-			if (remapJarTask.getCustomMappings().isEmpty()) {
-				LOGGER.debug("Using default project mappings for remapping");
-				return MappingsService.createOptionsWithProjectMappings(
-						project,
-						remapJarTask.getSourceNamespace(),
-						remapJarTask.getTargetNamespace()
-				).get();
-			}
-
-			// Custom mappings:
-			File mappingsFile = remapJarTask.getCustomMappings().getSingleFile();
-
-			// TODO possibly move this to MappingsService
-			if (mappingsFile.getName().endsWith(".zip") || mappingsFile.getName().endsWith(".jar")) {
-				mappingsFile = project.zipTree(mappingsFile).matching(patternFilterable -> patternFilterable.include("mappings/mappings.tiny")).getSingleFile();
-			}
-
-			LOGGER.info("Using custom mappings for remap task: {}", mappingsFile);
-			return MappingsService.createOptions(
-							project,
-							mappingsFile.toPath(),
-							remapJarTask.getSourceNamespace(), remapJarTask.getTargetNamespace(),
-							false)
-					.get();
 		});
 	}
 

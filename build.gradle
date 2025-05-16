@@ -135,6 +135,8 @@ dependencies {
 	// source code remapping
 	implementation libs.fabric.mercury
 
+	implementation libs.fabric.unpick
+
 	// Kotlin
 	implementation(libs.kotlin.metadata) {
 		transitive = false

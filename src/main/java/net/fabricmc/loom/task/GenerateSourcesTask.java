@@ -318,7 +318,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			if (usingUnpick()) {
 				try (var timer = new Timer("Unpick")) {
 					UnpickService unpick = serviceFactory.get(getUnpickOptions());
-					workInputJar = unpick.unpickJar(getWorkerExecutor(), workInputJar, existingClasses);
+					workInputJar = unpick.unpickJar(workInputJar, existingClasses);
 				}
 			}
 
@@ -363,7 +363,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		if (usingUnpick()) {
 			try (var timer = new Timer("Unpick")) {
 				UnpickService unpick = serviceFactory.get(getUnpickOptions());
-				workClassesJar = unpick.unpickJar(getWorkerExecutor(), workClassesJar, null);
+				workClassesJar = unpick.unpickJar(workClassesJar, null);
 			}
 		}
 

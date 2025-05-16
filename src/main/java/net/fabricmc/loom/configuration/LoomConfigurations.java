@@ -137,7 +137,6 @@ public abstract class LoomConfigurations implements Runnable {
 		register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
 		register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
 		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Role.RESOLVABLE);
-		register(Constants.Configurations.UNPICK_CLASSPATH, Role.RESOLVABLE);
 		register(Constants.Configurations.LOCAL_RUNTIME, Role.RESOLVABLE);
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME);
 

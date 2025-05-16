@@ -12,6 +12,7 @@ mapping-io = "0.7.1"
 lorenz-tiny = "4.0.2"
 mercury = "0.4.2"
 loom-native = "0.2.0"
+unpick = "3.0.0-beta.1"
 
 # Plugins
 spotless = "6.25.0"
@@ -38,6 +39,7 @@ fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping
 fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
 fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
+fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
 
 # Misc
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

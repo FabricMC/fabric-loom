@@ -43,7 +43,6 @@ import org.apache.tools.ant.util.StringUtils;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,16 +146,17 @@ public class MappingConfiguration {
 	public void applyToProject(Project project, DependencyInfo dependency) {
 		if (unpickMetadata != null) {
 			if (unpickMetadata.hasConstants()) {
-				String notation = String.format("%s:%s:%s:constants",
+				String notation = switch (unpickMetadata) {
+				case UnpickMetadata.V1 v1 -> String.format("%s:%s:%s:constants",
 						dependency.getDependency().getGroup(),
 						dependency.getDependency().getName(),
 						dependency.getDependency().getVersion()
 				);
+				case UnpickMetadata.V2 v2 -> Objects.requireNonNull(v2.constants());
+				};
 
 				project.getDependencies().add(Constants.Configurations.MAPPING_CONSTANTS, notation);
 			}
-
-			populateUnpickClasspath(project);
 		}
 
 		project.getDependencies().add(Constants.Configurations.MAPPINGS_FINAL, project.files(tinyMappingsJar.toFile()));
@@ -246,31 +246,6 @@ public class MappingConfiguration {
 		}
 	}
 
-	private void populateUnpickClasspath(Project project) {
-		// TODO remove when adding support for V2
-		// This wont be added as we will ignore the unpick version in V1 metadata's
-		UnpickMetadata.V1 metadata = (UnpickMetadata.V1) unpickMetadata;
-
-		String unpickCliName = "unpick-cli";
-		project.getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
-				String.format("%s:%s:%s", metadata.unpickGroup(), unpickCliName, metadata.unpickVersion())
-		);
-
-		// Unpick ships with a slightly older version of asm, ensure it runs with at least the same version as loom.
-		String[] asmDeps = new String[] {
-				"org.ow2.asm:asm:%s",
-				"org.ow2.asm:asm-tree:%s",
-				"org.ow2.asm:asm-commons:%s",
-				"org.ow2.asm:asm-util:%s"
-		};
-
-		for (String asm : asmDeps) {
-			project.getDependencies().add(Constants.Configurations.UNPICK_CLASSPATH,
-					asm.formatted(Opcodes.class.getPackage().getImplementationVersion())
-			);
-		}
-	}
-
 	private void suggestFieldNames(Path inputJar, Path oldMappings, Path newMappings) {
 		Command command = new CommandProposeFieldNames();
 		runCommand(command, inputJar.toFile().getAbsolutePath(),
@@ -318,6 +293,10 @@ public class MappingConfiguration {
 
 	public boolean hasUnpickDefinitions() {
 		return unpickMetadata != null;
+	}
+
+	public UnpickMetadata getUnpickMetadata() {
+		return Objects.requireNonNull(unpickMetadata, "Unpick metadata is not available");
 	}
 
 	@Nullable

@@ -142,7 +142,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 					mojangMappings loom.officialMojangMappings()
 				}
 
-				tasks.register("remapMojmap", net.fabricmc.loom.task.RemapJarTask) {
+				def remapMojmap = tasks.register("remapMojmap", net.fabricmc.loom.task.RemapJarTask) {
 					sourceNamespace = "intermediary"
 					targetNamespace = "named"
 					inputFile = tasks.remapJar.archiveFile
@@ -151,13 +151,30 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 
 					addNestedDependencies = false // Jars have already been included in the remapJar task
 				}
+				
+				def remapMojmapSources = tasks.register("remapMojmapSources", net.fabricmc.loom.task.RemapSourcesJarTask) {
+					sourceNamespace = "intermediary"
+					targetNamespace = "named"
+					inputFile = tasks.remapSourcesJar.archiveFile
+					customMappings.from(configurations.mojangMappings)
+					archiveClassifier = "mojmap-sources"
+				}
+				
+				// Ensure that the remap classpath has intermediary jars
+				for (task in [remapMojmap, remapMojmapSources]) {
+					task.configure {
+						classpath.setFrom(loom.getMinecraftJars(net.fabricmc.loom.api.mappings.layered.MappingsNamespace.INTERMEDIARY))
+						classpath.from(tasks.remapJar.archiveFile)
+					}
+				}
 				"""
 
 		when:
-		def result = gradle.run(task: "remapMojmap")
+		def result = gradle.run(tasks: ["remapMojmap", "remapMojmapSources"])
 
 		then:
 		result.task(":remapMojmap").outcome == SUCCESS
+		result.task(":remapMojmapSources").outcome == SUCCESS
 
 		where:
 		version << STANDARD_TEST_VERSIONS

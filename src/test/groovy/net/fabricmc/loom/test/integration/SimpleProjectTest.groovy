@@ -26,12 +26,16 @@ package net.fabricmc.loom.test.integration
 
 import java.util.concurrent.TimeUnit
 
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.util.Textifier
+import org.objectweb.asm.util.TraceClassVisitor
 import spock.lang.Specification
 import spock.lang.Timeout
 import spock.lang.Unroll
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.ServerRunner
+import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
@@ -151,7 +155,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 
 					addNestedDependencies = false // Jars have already been included in the remapJar task
 				}
-				
+
 				def remapMojmapSources = tasks.register("remapMojmapSources", net.fabricmc.loom.task.RemapSourcesJarTask) {
 					sourceNamespace = "intermediary"
 					targetNamespace = "named"
@@ -159,7 +163,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 					customMappings.from(configurations.mojangMappings)
 					archiveClassifier = "mojmap-sources"
 				}
-				
+
 				// Ensure that the remap classpath has intermediary jars
 				for (task in [remapMojmap, remapMojmapSources]) {
 					task.configure {
@@ -170,13 +174,31 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 				"""
 
 		when:
-		def result = gradle.run(tasks: ["remapMojmap", "remapMojmapSources"])
+		def result = gradle.run(tasks: [
+			"remapMojmap",
+			"remapMojmapSources"
+		])
+		def sourcesJar = gradle.getOutputFile("fabric-example-mod-1.0.0-mojmap-sources.jar").toPath()
+		def classesJar = gradle.getOutputFile("fabric-example-mod-1.0.0-mojmap.jar").toPath()
 
 		then:
 		result.task(":remapMojmap").outcome == SUCCESS
 		result.task(":remapMojmapSources").outcome == SUCCESS
 
+		new String(ZipUtils.unpack(sourcesJar, "/net/fabricmc/example/ExampleMod.java")).contains("ResourceLocation")
+		textify(ZipUtils.unpack(classesJar, "/net/fabricmc/example/ExampleMod.class")).contains("ResourceLocation")
+
 		where:
 		version << STANDARD_TEST_VERSIONS
+	}
+
+	private static String textify(byte[] classData) {
+		def stringWriter = new StringWriter()
+		def printWriter = new PrintWriter(stringWriter)
+		def textifier = new Textifier()
+		def traceClassVisitor = new TraceClassVisitor(null, textifier, printWriter)
+		def classReader = new ClassReader(classData)
+		classReader.accept(traceClassVisitor, 0)
+		return stringWriter.toString()
 	}
 }

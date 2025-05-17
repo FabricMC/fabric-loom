@@ -31,10 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 
 public record LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root) {
+	// https://github.com/gradle/gradle/blob/f65ba071aebbdbcebd1cafc0ee4cfa9e423d7b4c/build-logic/performance-testing/src/main/groovy/gradlebuild/performance/generator/MavenModule.groovy#L70-L75
+	private static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(?<version>.*)-(?<timestamp>\\b\\d{8}\\.\\d{6}\\b)-(?<publishCount>\\d+)");
+
 	public Path copyToMaven(Path artifact, @Nullable String classifier) throws IOException {
 		if (!artifact.getFileName().toString().endsWith(".jar")) {
 			throw new UnsupportedOperationException();
@@ -77,6 +82,14 @@ public record LocalMavenHelper(String group, String name, String version, @Nulla
 	}
 
 	private Path getDirectory() {
+		String version = this.version;
+		Matcher matcher = SNAPSHOT_VERSION_PATTERN.matcher(version);
+
+		// Handle depending on specific snapshot versions by removing the timestamp and publish count from the version used for the directory
+		if (matcher.matches()) {
+			version = matcher.group("version") + "-SNAPSHOT";
+		}
+
 		return root.resolve("%s/%s/%s".formatted(group.replace(".", "/"), name, version));
 	}
 

@@ -86,4 +86,10 @@ trait MockMavenServerTrait {
 	String port() {
 		"${mavenServerPort}"
 	}
+
+	String getLatestSnapshotVersion(String group, String artifact, String version) {
+		File file = new File(getMavenDirectory(), "${group.replace('.', '/')}/${artifact}/${version}/maven-metadata.xml")
+		def root = new groovy.xml.XmlSlurper().parseText(file.text)
+		return root.versioning.snapshotVersions.snapshotVersion.value[0].text()
+	}
 }

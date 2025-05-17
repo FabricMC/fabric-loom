@@ -95,5 +95,6 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Gr
 		'1.2.0+meta:classifier'      | DEFAULT_GRADLE
 		'2.0.0-SNAPSHOT:classifier'  | DEFAULT_GRADLE
 		'master-SNAPSHOT:classifier' | DEFAULT_GRADLE
+		getLatestSnapshotVersion("com.example", "fabric-example-lib", "2.0.0-SNAPSHOT") | DEFAULT_GRADLE
 	}
 }

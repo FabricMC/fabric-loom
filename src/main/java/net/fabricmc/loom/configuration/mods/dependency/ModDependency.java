@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.component.ComponentIdentifier;
+import org.gradle.api.internal.artifacts.repositories.resolver.MavenUniqueSnapshotComponentIdentifier;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -77,7 +79,19 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final Path root = extension.getFiles().getRemappedModCache().toPath();
 		final String fullName = getName() + (type != null ? "-" + type : "");
-		return new LocalMavenHelper(getGroup(), fullName, this.version, this.classifier, root);
+		return new LocalMavenHelper(getGroup(), fullName, this.version, this.classifier, root, getSnapshotVersion());
+	}
+
+	private @Nullable String getSnapshotVersion() {
+		if (artifact instanceof ArtifactRef.ResolvedArtifactRef resolvedArtifactRef) {
+			ComponentIdentifier componentIdentifier = resolvedArtifactRef.artifact().getId().getComponentIdentifier();
+
+			if (componentIdentifier instanceof MavenUniqueSnapshotComponentIdentifier mavenUniqueId) {
+				return mavenUniqueId.getSnapshotVersion();
+			}
+		}
+
+		return null;
 	}
 
 	public ArtifactRef getInputArtifact() {

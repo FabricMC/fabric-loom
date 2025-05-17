@@ -31,14 +31,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 
-public record LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root) {
-	// https://github.com/gradle/gradle/blob/f65ba071aebbdbcebd1cafc0ee4cfa9e423d7b4c/platforms/software/dependency-management/src/main/java/org/gradle/api/internal/artifacts/repositories/resolver/MavenResolver.java#L57
-	private static final Pattern SNAPSHOT_VERSION_PATTERN = Pattern.compile("(?:.+)-(\\d{8}\\.\\d{6}-\\d+)");
+public record LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root, @Nullable String snapshotVersion) {
+	public LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root) {
+		this(group, name, version, baseClassifier, root, null);
+	}
 
 	public Path copyToMaven(Path artifact, @Nullable String classifier) throws IOException {
 		if (!artifact.getFileName().toString().endsWith(".jar")) {
@@ -82,12 +81,11 @@ public record LocalMavenHelper(String group, String name, String version, @Nulla
 	}
 
 	private Path getDirectory() {
-		String version = this.version;
-		Matcher matcher = SNAPSHOT_VERSION_PATTERN.matcher(version);
+		String version = this.version();
 
-		// Handle depending on specific snapshot versions by removing the timestamp and publish count from the version used for the directory
-		if (matcher.matches()) {
-			version = matcher.group("version") + "-SNAPSHOT";
+		// When using a specific snapshot version the directory name should be the 1.0.0-SNAPSHOT version
+		if (this.snapshotVersion() != null) {
+			version = this.snapshotVersion();
 		}
 
 		return root.resolve("%s/%s/%s".formatted(group.replace(".", "/"), name, version));

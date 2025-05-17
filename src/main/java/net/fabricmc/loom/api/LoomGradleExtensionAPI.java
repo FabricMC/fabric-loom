@@ -253,7 +253,12 @@ public interface LoomGradleExtensionAPI {
 	Provider<String> getMinecraftVersion();
 
 	/**
-	 * @return A lazily evaluated {@link FileCollection} containing the named minecraft jars.
+	 * @return A {@link FileCollection} containing the named minecraft jars.
 	 */
 	FileCollection getNamedMinecraftJars();
+
+	/**
+	 * @return A {@link FileCollection} containing the intermediary minecraft jars.
+	 */
+	FileCollection getIntermediaryMinecraftJars();
 }

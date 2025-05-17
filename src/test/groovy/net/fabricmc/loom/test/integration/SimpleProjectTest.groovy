@@ -167,7 +167,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 				// Ensure that the remap classpath has intermediary jars
 				for (task in [remapMojmap, remapMojmapSources]) {
 					task.configure {
-						classpath.setFrom(loom.getMinecraftJars(net.fabricmc.loom.api.mappings.layered.MappingsNamespace.INTERMEDIARY))
+						classpath.setFrom(loom.intermediaryMinecraftJars)
 						classpath.from(tasks.remapJar.archiveFile)
 					}
 				}

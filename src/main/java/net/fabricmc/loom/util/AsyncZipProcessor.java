@@ -40,17 +40,17 @@ import java.util.concurrent.Executors;
 public interface AsyncZipProcessor {
 	static void processEntries(Path inputZip, Path outputZip, AsyncZipProcessor processor) throws IOException {
 		try (FileSystemUtil.Delegate inFs = FileSystemUtil.getJarFileSystem(inputZip, false);
-				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputZip, true)) {
+				FileSystemUtil.Delegate outFs = FileSystemUtil.getJarFileSystem(outputZip, true);
+				ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
 			final Path inRoot = inFs.get().getPath("/");
 			final Path outRoot = outFs.get().getPath("/");
 
 			List<CompletableFuture<Void>> futures = new ArrayList<>();
-			final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 			Files.walkFileTree(inRoot, new SimpleFileVisitor<>() {
 				@Override
-				public FileVisitResult visitFile(Path inputFile, BasicFileAttributes attrs) throws IOException {
-					final CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+				public FileVisitResult visitFile(Path inputFile, BasicFileAttributes attrs) {
+					final CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 						try {
 							final String rel = inRoot.relativize(inputFile).toString();
 							final Path outputFile = outRoot.resolve(rel);
@@ -58,8 +58,6 @@ public interface AsyncZipProcessor {
 						} catch (IOException e) {
 							throw new CompletionException(e);
 						}
-
-						return null;
 					}, executor);
 
 					futures.add(future);
@@ -67,7 +65,7 @@ public interface AsyncZipProcessor {
 				}
 			});
 
-			// Wait for all futures to complete
+			// Wait for all futures to complete, throwing the first exception if any
 			for (CompletableFuture<Void> future : futures) {
 				try {
 					future.join();
@@ -79,8 +77,6 @@ public interface AsyncZipProcessor {
 					throw new RuntimeException("Failed to process zip", e.getCause());
 				}
 			}
-
-			executor.shutdown();
 		}
 	}
 

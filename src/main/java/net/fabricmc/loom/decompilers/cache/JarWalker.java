@@ -27,8 +27,6 @@ package net.fabricmc.loom.decompilers.cache;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,12 +40,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.gradle.api.JavaVersion;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InnerClassNode;
@@ -104,27 +100,28 @@ public final class JarWalker {
 
 		Collections.sort(outerClasses);
 
-		final Executor executor = getExecutor();
-		List<CompletableFuture<ClassEntry>> classEntries = new ArrayList<>();
+		try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+			List<CompletableFuture<ClassEntry>> classEntries = new ArrayList<>();
 
-		for (String outerClass : outerClasses) {
-			List<String> innerClasList = innerClasses.get(outerClass);
+			for (String outerClass : outerClasses) {
+				List<String> innerClasList = innerClasses.get(outerClass);
 
-			if (innerClasList == null) {
-				innerClasList = Collections.emptyList();
-			} else {
-				Collections.sort(innerClasList);
+				if (innerClasList == null) {
+					innerClasList = Collections.emptyList();
+				} else {
+					Collections.sort(innerClasList);
+				}
+
+				classEntries.add(getClassEntry(outerClass, innerClasList, fs, executor));
 			}
 
-			classEntries.add(getClassEntry(outerClass, innerClasList, fs, executor));
-		}
-
-		try {
-			return classEntries.stream()
-					.collect(CompletableFutureCollector.allOf())
-					.get(10, TimeUnit.MINUTES);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			throw new RuntimeException("Failed to get class entries", e);
+			try {
+				return classEntries.stream()
+						.collect(CompletableFutureCollector.allOf())
+						.get(10, TimeUnit.MINUTES);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+				throw new RuntimeException("Failed to get class entries", e);
+			}
 		}
 	}
 
@@ -206,19 +203,6 @@ public final class JarWalker {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read class file: " + classFile, e);
 		}
-	}
-
-	private static Executor getExecutor() {
-		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
-			try {
-				Method m = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
-				return (ExecutorService) m.invoke(null);
-			} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-				throw new RuntimeException("Failed to create virtual thread executor", e);
-			}
-		}
-
-		return ForkJoinPool.commonPool();
 	}
 
 	// Slight optimization, if we skip over Object

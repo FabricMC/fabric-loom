@@ -85,8 +85,7 @@ public class IPCServer implements AutoCloseable {
 
 	@Override
 	public void close() throws InterruptedException {
-		loggerReceiverService.shutdownNow();
-		loggerReceiverService.awaitTermination(10, TimeUnit.SECONDS);
+		loggerReceiverService.close();
 	}
 
 	public boolean hasReceivedMessage() {

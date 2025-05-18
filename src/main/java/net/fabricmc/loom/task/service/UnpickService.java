@@ -142,12 +142,18 @@ public class UnpickService extends Service<UnpickService.Options> {
 		final Path unpickDefinitionsPath = getOptions().getUnpickDefinitions().getAsFile().get().toPath();
 		final Path outputJar = getOptions().getUnpickOutputJar().get().getAsFile().toPath();
 
+		Files.deleteIfExists(outputJar);
+
 		try (ZipFsClassResolver classResolver = ZipFsClassResolver.create(classpath);
 				InputStream unpickDefinitions = Files.newInputStream(unpickDefinitionsPath)) {
 			ConstantUninliner uninliner = ConstantUninliner.builder()
 					.logger(JAVA_LOGGER)
 					.classResolver(classResolver)
-					.grouper(ConstantGroupers.dataDriven(classResolver, unpickDefinitions))
+					.grouper(ConstantGroupers.dataDriven()
+							.logger(JAVA_LOGGER)
+							.classResolver(classResolver)
+							.mappingSource(unpickDefinitions)
+							.build())
 					.build();
 
 			AsyncZipProcessor.processEntries(inputJar, outputJar, new UnpickZipProcessor(uninliner));
@@ -166,6 +172,8 @@ public class UnpickService extends Service<UnpickService.Options> {
 	private record UnpickZipProcessor(ConstantUninliner uninliner) implements AsyncZipProcessor {
 		@Override
 		public void processEntryAsync(Path input, Path output) throws IOException {
+			Files.createDirectories(output.getParent());
+
 			String fileName = input.toAbsolutePath().toString();
 
 			if (!fileName.endsWith(".class")) {
@@ -184,7 +192,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 			LOGGER.debug("Unpick class: {}", classNode.name);
 			uninliner.transform(classNode);
 
-			ClassWriter writer = new ClassWriter(0);
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			classNode.accept(writer);
 
 			Files.write(output, writer.toByteArray());

@@ -40,7 +40,6 @@ import daomephsta.unpick.api.ConstantUninliner;
 import daomephsta.unpick.api.classresolvers.ClassResolvers;
 import daomephsta.unpick.api.classresolvers.IClassResolver;
 import daomephsta.unpick.api.constantgroupers.ConstantGroupers;
-import daomephsta.unpick.impl.classresolvers.ChainClassResolver;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -199,12 +198,28 @@ public class UnpickService extends Service<UnpickService.Options> {
 		}
 	}
 
-	private static class ZipFsClassResolver extends ChainClassResolver implements Closeable {
+	private static class ZipFsClassResolver implements IClassResolver, Closeable {
 		private final List<FileSystemUtil.Delegate> fileSystems;
+		private final IClassResolver classResolverChain;
 
 		private ZipFsClassResolver(IClassResolver[] resolvers, List<FileSystemUtil.Delegate> fileSystems) {
-			super(resolvers);
+			if (resolvers.length == 0) {
+				throw new IllegalArgumentException("No resolvers provided");
+			}
+
+			if (resolvers.length != fileSystems.size()) {
+				throw new IllegalArgumentException("Mismatch between resolvers and file systems");
+			}
+
 			this.fileSystems = fileSystems;
+
+			IClassResolver chain = resolvers[0];
+
+			for (int i = 1; i < resolvers.length; i++) {
+				chain = chain.chain(resolvers[i]);
+			}
+
+			this.classResolverChain = chain;
 		}
 
 		public static ZipFsClassResolver create(List<Path> classpath) throws IOException {
@@ -221,6 +236,11 @@ public class UnpickService extends Service<UnpickService.Options> {
 					roots.stream().map(ClassResolvers::fromDirectory).toArray(IClassResolver[]::new),
 					fileSystems
 			);
+		}
+
+		@Override
+		public @Nullable ClassReader resolveClass(String s) {
+			return classResolverChain.resolveClass(s);
 		}
 
 		@Override

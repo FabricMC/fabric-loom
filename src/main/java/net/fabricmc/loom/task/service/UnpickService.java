@@ -143,8 +143,9 @@ public class UnpickService extends Service<UnpickService.Options> {
 
 		Files.deleteIfExists(outputJar);
 
-		try (ZipFsClassResolver classResolver = ZipFsClassResolver.create(classpath);
+		try (ZipFsClasspath zipFsClasspath = ZipFsClasspath.create(classpath);
 				InputStream unpickDefinitions = Files.newInputStream(unpickDefinitionsPath)) {
+			IClassResolver classResolver = zipFsClasspath.createClassResolver().chain(ClassResolvers.classpath());
 			ConstantUninliner uninliner = ConstantUninliner.builder()
 					.logger(JAVA_LOGGER)
 					.classResolver(classResolver)
@@ -198,49 +199,32 @@ public class UnpickService extends Service<UnpickService.Options> {
 		}
 	}
 
-	private static class ZipFsClassResolver implements IClassResolver, Closeable {
-		private final List<FileSystemUtil.Delegate> fileSystems;
-		private final IClassResolver classResolverChain;
-
-		private ZipFsClassResolver(IClassResolver[] resolvers, List<FileSystemUtil.Delegate> fileSystems) {
-			if (resolvers.length == 0) {
+	private record ZipFsClasspath(List<FileSystemUtil.Delegate> fileSystems) implements Closeable {
+		private ZipFsClasspath {
+			if (fileSystems.isEmpty()) {
 				throw new IllegalArgumentException("No resolvers provided");
 			}
-
-			if (resolvers.length != fileSystems.size()) {
-				throw new IllegalArgumentException("Mismatch between resolvers and file systems");
-			}
-
-			this.fileSystems = fileSystems;
-
-			IClassResolver chain = resolvers[0];
-
-			for (int i = 1; i < resolvers.length; i++) {
-				chain = chain.chain(resolvers[i]);
-			}
-
-			this.classResolverChain = chain;
 		}
 
-		public static ZipFsClassResolver create(List<Path> classpath) throws IOException {
+		public static ZipFsClasspath create(List<Path> classpath) throws IOException {
 			var fileSystems = new ArrayList<FileSystemUtil.Delegate>();
-			var roots = new ArrayList<Path>();
 
 			for (Path path : classpath) {
 				FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(path, false);
 				fileSystems.add(fs);
-				roots.add(fs.getRoot());
 			}
 
-			return new ZipFsClassResolver(
-					roots.stream().map(ClassResolvers::fromDirectory).toArray(IClassResolver[]::new),
-					fileSystems
-			);
+			return new ZipFsClasspath(fileSystems);
 		}
 
-		@Override
-		public @Nullable ClassReader resolveClass(String s) {
-			return classResolverChain.resolveClass(s);
+		public IClassResolver createClassResolver() {
+			IClassResolver resolver = ClassResolvers.fromDirectory(fileSystems.getFirst().getRoot());
+
+			for (int i = 1; i < fileSystems.size(); i++) {
+				resolver = resolver.chain(ClassResolvers.fromDirectory(fileSystems.get(i).getRoot()));
+			}
+
+			return resolver;
 		}
 
 		@Override

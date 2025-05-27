@@ -44,7 +44,9 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
@@ -92,6 +94,9 @@ public class UnpickService extends Service<UnpickService.Options> {
 
 		@OutputFile
 		RegularFileProperty getUnpickOutputJar();
+
+		@Input
+		Property<Boolean> getLenient();
 	}
 
 	public static Provider<Options> createOptions(GenerateSourcesTask task) {
@@ -122,6 +127,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 			options.getUnpickConstantJar().setFrom(configurations.getByName(Constants.Configurations.MAPPING_CONSTANTS));
 			options.getUnpickClasspath().setFrom(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 			options.getUnpickClasspath().from(configurations.getByName(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED));
+			options.getLenient().set(unpickMetadata instanceof UnpickMetadata.V1);
 			extension.getMinecraftJars(MappingsNamespace.NAMED).forEach(options.getUnpickClasspath()::from);
 			return true;
 		});
@@ -151,6 +157,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 					.classResolver(classResolver)
 					.grouper(ConstantGroupers.dataDriven()
 							.logger(JAVA_LOGGER)
+							.lenient(getOptions().getLenient().get())
 							.classResolver(classResolver)
 							.mappingSource(unpickDefinitions)
 							.build())

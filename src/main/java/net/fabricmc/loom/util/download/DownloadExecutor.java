@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DownloadExecutor implements AutoCloseable {
 	private final ExecutorService executorService;
@@ -58,7 +59,13 @@ public class DownloadExecutor implements AutoCloseable {
 
 	@Override
 	public void close() throws DownloadException {
-		executorService.close();
+		executorService.shutdown();
+
+		try {
+			executorService.awaitTermination(1, TimeUnit.DAYS);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 
 		if (!downloadExceptions.isEmpty()) {
 			DownloadException downloadException = new DownloadException("Failed to download");

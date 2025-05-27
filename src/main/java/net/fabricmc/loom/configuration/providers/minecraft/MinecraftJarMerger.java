@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -165,9 +166,15 @@ public class MinecraftJarMerger implements AutoCloseable {
 	}
 
 	public void merge() throws IOException {
-		try (ExecutorService service = Executors.newFixedThreadPool(2)) {
-			service.submit(() -> readToMap(entriesClient, inputClient));
-			service.submit(() -> readToMap(entriesServer, inputServer));
+		ExecutorService service = Executors.newFixedThreadPool(2);
+		service.submit(() -> readToMap(entriesClient, inputClient));
+		service.submit(() -> readToMap(entriesServer, inputServer));
+		service.shutdown();
+
+		try {
+			service.awaitTermination(1, TimeUnit.HOURS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 		entriesAll.addAll(entriesClient.keySet());

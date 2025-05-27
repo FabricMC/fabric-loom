@@ -47,8 +47,10 @@ public class SLF4JAdapterHandler extends Handler {
 			logger.warn(record.getMessage(), record.getThrown());
 		} else if (record.getLevel().intValue() >= Level.INFO.intValue()) {
 			logger.info(record.getMessage(), record.getThrown());
-		} else {
+		} else if (record.getLevel().intValue() >= Level.FINER.intValue()) {
 			logger.debug(record.getMessage(), record.getThrown());
+		} else {
+			logger.trace(record.getMessage(), record.getThrown());
 		}
 	}
 

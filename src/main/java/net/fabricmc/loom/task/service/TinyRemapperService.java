@@ -41,6 +41,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -65,7 +66,7 @@ import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 
-public class TinyRemapperService extends Service<TinyRemapperService.Options> implements Closeable {
+public class TinyRemapperService extends Service<TinyRemapperService.Options> implements TinyRemapperServiceInterface, Closeable {
 	public static final ServiceType<Options, TinyRemapperService> TYPE = new ServiceType<>(Options.class, TinyRemapperService.class);
 
 	public interface Options extends Service.Options {
@@ -110,6 +111,24 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 			options.getUselegacyMixinAP().set(legacyMixin);
 			options.getKotlinClasspathService().set(KotlinClasspathService.createOptions(project));
+			options.getClasspath().from(classpath);
+			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
+			options.getRemapperExtensions().set(extension.getRemapperExtensions());
+		});
+	}
+
+	public static Provider<Options> createSimple(Project project, Provider<String> from, Provider<String> to) {
+		return TYPE.create(project, options -> {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			final ConfigurationContainer configurations = project.getConfigurations();
+			final FileCollection classpath = configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+
+			options.getFrom().set(from);
+			options.getTo().set(to);
+			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom(), options.getTo()));
+			options.getUselegacyMixinAP().set(true);
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
@@ -178,11 +197,13 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		return tag;
 	}
 
+	@Override
 	public TinyRemapper getTinyRemapperForRemapping() {
 		isRemapping = true;
 		return Objects.requireNonNull(tinyRemapper, "Tiny remapper has not been setup");
 	}
 
+	@Override
 	public TinyRemapper getTinyRemapperForInputs() {
 		if (isRemapping) {
 			throw new IllegalStateException("Cannot read inputs as remapping has already started");

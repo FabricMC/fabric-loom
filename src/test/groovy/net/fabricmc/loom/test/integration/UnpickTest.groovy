@@ -56,7 +56,10 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 		result.output.contains(useCache ? "Using decompile cache." : "Not using decompile cache.")
 
 		where:
-		[version, useCache] << [STANDARD_TEST_VERSIONS, [true, false]].combinations()
+		[version, useCache] << [
+			STANDARD_TEST_VERSIONS,
+			[true, false]
+		].combinations()
 	}
 
 	def "unpick build"() {

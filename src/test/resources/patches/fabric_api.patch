@@ -1,19 +1,20 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision d70d2c06bb8fafdb72c6778b29fb050618015ab3)
-+++ b/build.gradle	(date 1734958436644)
-@@ -13,7 +13,7 @@
+--- a/build.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
++++ b/build.gradle	(date 1749475915352)
+@@ -9,7 +9,7 @@
+ }
 
- def ENV = System.getenv()
-
--version = project.version + "+" + (ENV.GITHUB_RUN_NUMBER ? "" : "local-") + getBranch()
+ def branchProvider = providers.of(GitBranchValueSource.class) {}
+-version = project.version + "+" + (providers.environmentVariable("CI").present ? branchProvider.get().replace("/", "_") : "local")
 +version = "999.0.0"
  logger.lifecycle("Building Fabric: " + version)
 
  def metaProjects = [
-@@ -34,24 +34,7 @@
- import org.apache.commons.codec.digest.DigestUtils
+@@ -33,22 +33,8 @@
+ import java.net.http.HttpRequest
+ import java.net.http.HttpResponse
 
- def getSubprojectVersion(project) {
+-def getSubprojectVersion(Project project) {
 -	// Get the version from the gradle.properties file
 -	def version = project.properties["${project.name}-version"]
 -
@@ -21,32 +22,42 @@ diff --git a/build.gradle b/build.gradle
 -		throw new NullPointerException("Could not find version for " + project.name)
 -	}
 -
--	if (grgit == null) {
--		return version + "+nogit"
+-	if (!project.providers.environmentVariable("CI").present) {
+-		return version + "+local"
 -	}
 -
--	def latestCommits = grgit.log(paths: [project.name], maxCommits: 1)
--
--	if (latestCommits.isEmpty()) {
--		return version + "+uncommited"
+-	def hashProvider = project.providers.of(CommitHashValueSource.class) {
+-		parameters.directory = project.name
 -	}
--
--	return version + "+" + latestCommits.get(0).id.substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
+-	return version + "+" + hashProvider.get().substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
++def getSubprojectVersion(project) {
 +	return "999.0.0"
  }
 
- def getBranch() {
-@@ -250,10 +233,11 @@
- 	}
+ def moduleDependencies(project, List<String> depNames) {
+@@ -771,7 +757,7 @@
+ tasks.register('checkVersion') {
+ 	doFirst {
+ 		def xml = new URL("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml").text
+-		def metadata = new XmlSlurper().parseText(xml)
++		def metadata = new groovy.xml.XmlSlurper().parseText(xml)
+ 		def versions = metadata.versioning.versions.version*.text();
+ 		if (versions.contains(version)) {
+ 			throw new RuntimeException("${version} has already been released!")
+Index: gradle/validate-annotations.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/gradle/validate-annotations.gradle b/gradle/validate-annotations.gradle
+--- a/gradle/validate-annotations.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
++++ b/gradle/validate-annotations.gradle	(date 1749476043862)
+@@ -13,7 +13,7 @@
 
- 	tasks.withType(ProcessResources).configureEach {
--		inputs.property "version", project.version
-+		def version = project.version
-+		inputs.property "version", version
+ tasks.check.dependsOn "validateAnnotations"
 
- 		filesMatching("fabric.mod.json") {
--			expand "version": project.version
-+			expand "version": version
- 		}
- 	}
+-class ValidateAnnotations extends SourceTask {
++abstract class ValidateAnnotations extends SourceTask {
+ 	private static final def API_STATUS_INTERNAL = ~/@ApiStatus\.Internal/
+ 	private static final def ENVIRONMENT = ~/@Environment/
 

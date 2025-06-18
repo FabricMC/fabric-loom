@@ -96,6 +96,74 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		public int unobfuscatedCount;
 	}
 	
+	private static final class FieldEntry implements MappingTree.FieldMapping {
+		private final MappingTree tree;
+		private final MappingTree.ClassMapping owner;
+		private final String desc;
+		private final String name;
+		private final String comment;
+
+		private FieldEntry(
+				MappingTree tree,
+				MappingTree.ClassMapping owner,
+				String desc,
+				String name,
+				List<String> javadoc
+		) {
+			this.tree = tree;
+			this.owner = owner;
+			this.desc = desc;
+			this.name = name;
+			if (javadoc != null && !javadoc.isEmpty()) {
+				this.comment = String.join("\n", javadoc);
+			} else {
+				this.comment = null;
+			}
+		}
+
+		@Override
+		public MappingTree.ClassMapping getOwner() {
+			return owner;
+		}
+
+		@Override
+		public @Nullable String getSrcDesc() {
+			return desc;
+		}
+
+		@Override
+		public MappingTree getTree() {
+			return tree;
+		}
+
+		@Override
+		public String getSrcName() {
+			return name;
+		}
+
+		@Override
+		public @Nullable String getDstName(int namespace) {
+			return name;
+		}
+
+		@Override
+		public @Nullable String getComment() {
+			return comment;
+		}
+
+		@Override
+		public void setSrcDesc(String desc) {
+		}
+
+		@Override
+		public void setDstName(String name, int namespace) {
+		}
+
+		@Override
+		public void setComment(String comment) {
+		}
+	}
+	
 	private static final class MethodArgEntry implements MappingTree.MethodArgMapping {
 		private final MappingTree tree;
 		private MethodEntry method;
@@ -333,6 +401,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 	
 	private static final class ClassEntry implements MappingTree.ClassMapping {
 		private final MappingTree tree;
+		private final Collection<MappingTree.FieldMapping> fields = new ArrayList<>();
 		private final Collection<MappingTree.MethodMapping> methods = new ArrayList<>();
 		private final String name;
 		private final @Nullable String comment;
@@ -346,12 +415,29 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 				this.comment = null;
 			}
 			
+			if (cls.fields() != null) {
+				for (ParchmentTreeV1.Field field : cls.fields()) {
+					fields.add(new FieldEntry(
+							tree,
+							this,
+							field.descriptor(),
+							field.name(),
+							field.javadoc()
+					));
+				}
+			}
+			
 			if (cls.methods() != null) {
 				for (ParchmentTreeV1.Method method : cls.methods()) {
 					var args = new ArrayList<MethodArgEntry>();
 					if (method.parameters() != null) {
 						for (ParchmentTreeV1.Parameter parameter : method.parameters()) {
-							args.add(new MethodArgEntry(tree, parameter.index(), parameter.index(), parameter.name()));
+							args.add(new MethodArgEntry(
+									tree,
+									parameter.index(),
+									parameter.index(),
+									parameter.name()
+							));
 						}
 					}
 					
@@ -369,7 +455,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		
 		@Override
 		public Collection<? extends MappingTree.FieldMapping> getFields() {
-			return List.of();
+			return fields;
 		}
 
 		@Override
@@ -377,6 +463,12 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 				String srcName,
 				@Nullable String srcDesc
 		) {
+			for (MappingTree.FieldMapping field : fields) {
+				if (srcName.equals(field.getSrcName())) {
+					return field;
+				}
+			}
+			
 			return null;
 		}
 

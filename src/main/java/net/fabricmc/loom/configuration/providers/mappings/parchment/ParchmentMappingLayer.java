@@ -177,7 +177,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		private final List<MethodArgEntry> args;
 		private final String name;
 		private final String desc;
-		private final String comment;
+		private final @Nullable String comment;
 
 		private MethodEntry(
 				MappingTree tree,
@@ -192,10 +192,10 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 			this.args = args;
 			this.name = name;
 			this.desc = desc;
-			if (javadoc != null) {
+			if (javadoc != null && !javadoc.isEmpty()) {
 				this.comment = String.join("\n", javadoc);
 			} else {
-				this.comment = "";
+				this.comment = null;
 			}
 			
 			for (MethodArgEntry arg : args) {
@@ -314,7 +314,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		}
 
 		@Override
-		public @NotNull String getComment() {
+		public @Nullable String getComment() {
 			return comment;
 		}
 
@@ -335,15 +335,15 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		private final MappingTree tree;
 		private final Collection<MappingTree.MethodMapping> methods = new ArrayList<>();
 		private final String name;
-		private final String comment;
+		private final @Nullable String comment;
 		
 		public ClassEntry(MappingTree tree, ParchmentTreeV1.Class cls) {
 			this.tree = tree;
 			this.name = cls.name();
-			if (cls.javadoc() != null) {
+			if (cls.javadoc() != null && !cls.javadoc().isEmpty()) {
 				this.comment = String.join("\n", cls.javadoc());
 			} else {
-				this.comment = "";
+				this.comment = null;
 			}
 			
 			if (cls.methods() != null) {

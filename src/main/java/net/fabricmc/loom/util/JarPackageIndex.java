@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,7 +47,7 @@ public record JarPackageIndex(Map<String, List<String>> packages) {
 					} catch (IOException e) {
 						throw new RuntimeException(e);
 					}
-				}))
+				}, Executors.newVirtualThreadPerTaskExecutor()))
 				.map(CompletableFuture::join)
 				.flatMap(map -> map.entrySet().stream())
 				.collect(Collectors.toMap(

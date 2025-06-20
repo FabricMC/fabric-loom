@@ -194,7 +194,11 @@ public class UnpickService extends Service<UnpickService.Options> {
 	public String getUnpickCacheKey() {
 		return Checksum.of(List.of(
 				Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()),
-				Checksum.of(getOptions().getUnpickConstantJar())
+				Checksum.of(getOptions().getUnpickConstantJar()),
+				Checksum.of(getOptions().getUnpickRemapperService()
+						.flatMap(options -> options.getTinyRemapper()
+								.flatMap(TinyRemapperService.Options::getFrom))
+						.getOrElse("named"))
 		)).sha256().hex();
 	}
 

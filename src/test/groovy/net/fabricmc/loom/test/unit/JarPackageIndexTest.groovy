@@ -51,8 +51,8 @@ class JarPackageIndexTest extends Specification {
 
 		then:
 		index.packages().size() == 2
-		index.packages()["com/example"] == ["Bar", "Foo"]
-		index.packages()["com/example/subpackage"] == ["Baz"]
+		index.packages()["com.example"] == ["Bar", "Foo"]
+		index.packages()["com.example.subpackage"] == ["Baz"]
 	}
 
 	def "Create JarPackageIndex from multiple JARs"() {
@@ -71,9 +71,9 @@ class JarPackageIndexTest extends Specification {
 
 		then:
 		index.packages().size() == 3
-		index.packages()["com/example"] == ["Bar", "Foo"]
-		index.packages()["com/example/subpackage"] == ["Baz"]
-		index.packages()["com/another"] == ["Example"]
+		index.packages()["com.example"] == ["Bar", "Foo"]
+		index.packages()["com.example.subpackage"] == ["Baz"]
+		index.packages()["com.another"] == ["Example"]
 	}
 
 	def "Handle empty JAR"() {

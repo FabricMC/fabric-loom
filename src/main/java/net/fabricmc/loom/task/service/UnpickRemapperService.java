@@ -75,7 +75,7 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 	}
 
 	/**
-	 * Return the remapped definitions
+	 * Return the remapped definitions.
 	 */
 	public String remap(File input) throws IOException {
 		TinyRemapperServiceInterface tinyRemapperService = getServiceFactory().get(getOptions().getTinyRemapper());
@@ -126,7 +126,10 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 		// Return all classes in the given package, not recursively.
 		@Override
 		protected List<String> getClassesInPackage(String pkg) {
-			return jarPackageIndex.packages().getOrDefault(pkg, Collections.emptyList());
+			return jarPackageIndex.packages().getOrDefault(pkg, Collections.emptyList())
+					.stream()
+					.map(className -> pkg + "." + className)
+					.toList();
 		}
 
 		@Override

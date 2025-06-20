@@ -61,17 +61,17 @@ public record JarPackageIndex(Map<String, List<String>> packages) {
 		return new JarPackageIndex(packages);
 	}
 
-		private static List<String> getClasses(Path jar) throws IOException {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar, false);
-				 Stream<Path> walk = Files.walk(fs.getRoot())) {
-				return walk
-						.filter(Files::isRegularFile)
-						.map(Path::toString)
-						.filter(className -> className.endsWith(".class"))
-						.map(className -> className.startsWith("/") ? className.substring(1) : className)
-						.toList();
-			}
+	private static List<String> getClasses(Path jar) throws IOException {
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(jar, false);
+				Stream<Path> walk = Files.walk(fs.getRoot())) {
+			return walk
+					.filter(Files::isRegularFile)
+					.map(Path::toString)
+					.filter(className -> className.endsWith(".class"))
+					.map(className -> className.startsWith("/") ? className.substring(1) : className)
+					.toList();
 		}
+	}
 
 	private static Map<String, List<String>> groupClassesByPackage(List<String> classes) {
 		return classes.stream()
@@ -85,9 +85,10 @@ public record JarPackageIndex(Map<String, List<String>> packages) {
 				));
 	}
 
+	// Returns the package name from a class name, e.g., "com/example/MyClass.class" -> "com.example"
 	private static String extractPackageName(String className) {
 		int lastSlashIndex = className.lastIndexOf('/');
-		return lastSlashIndex == -1 ? "" : className.substring(0, lastSlashIndex);
+		return lastSlashIndex == -1 ? "" : className.substring(0, lastSlashIndex).replace("/", ".");
 	}
 
 	private static String extractClassName(String className) {

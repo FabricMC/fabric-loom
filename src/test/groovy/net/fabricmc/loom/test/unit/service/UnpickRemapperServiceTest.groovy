@@ -24,31 +24,61 @@
 
 package net.fabricmc.loom.test.unit.service
 
+import java.nio.file.Files
 import java.nio.file.Path
 
+import groovy.transform.Immutable
 import spock.lang.TempDir
 
 import net.fabricmc.loom.task.service.TinyRemapperServiceInterface
 import net.fabricmc.loom.task.service.UnpickRemapperService
 import net.fabricmc.loom.test.unit.service.mocks.MockTinyRemapper
 import net.fabricmc.loom.test.unit.service.mocks.MockTinyRemapperService
+import net.fabricmc.loom.util.Pair
+import net.fabricmc.loom.util.ZipUtils
 
 import static org.mockito.Mockito.when
 
+// Based on https://github.com/Earthcomputer/unpick-v3-parser/blob/68b11c50a7c97a75218f70f5ec1291a38b178ad7/src/test/java/net/earthcomputer/unpickv3parser/remapper/TestRemapper.java
 class UnpickRemapperServiceTest extends ServiceTestBase {
+	private static final Map<String, List<String>> PACKAGES = [
+		"unmapped.foo": [
+			"unmapped.foo.A",
+			"unmapped.foo.B"
+		],
+		"unmapped.bar": ["unmapped.bar.C"]
+	]
+
+	private static final Map<String, String> CLASSES = [
+		"unmapped.foo.A": "mapped.foo.X",
+		"unmapped.foo.B": "mapped.bar.Y",
+		"unmapped.bar.C": "mapped.bar.Z"
+	]
+
+	private static final Map<MemberKey, String> FIELDS = [
+		(new MemberKey("unmapped.foo.B", "baz", "I")): "quux"
+	]
+
+	private static final Map<MemberKey, String> METHODS = [
+		(new MemberKey("unmapped.foo.B", "foo2", "(Lunmapped/foo/A;)V")): "bar2"
+	]
+
 	@TempDir
 	Path tempDir
 
 	def "remap unpick"() {
 		given:
+		def classpath = zip(PACKAGES.values().flatten())
+
 		def tinyRemapperOptions = mockService(MockTinyRemapperService.TYPE)
+		tinyRemapperOptions.classpath.from(classpath)
 		TinyRemapperServiceInterface tinyRemapperService = factory.get(tinyRemapperOptions)
 
 		def mockTr = new MockTinyRemapper()
 		when(tinyRemapperService.tinyRemapperForRemapping).thenReturn(mockTr.tinyRemapper)
 
 		def inputFile = tempDir.resolve("input.unpick")
-		inputFile.text = INPUT
+		inputFile.text = testFile("input")
 
 		def options = UnpickRemapperService.TYPE.create(project) {
 			it.tinyRemapper.set(tinyRemapperOptions)
@@ -56,27 +86,46 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 
 		UnpickRemapperService unpickRemapper = factory.get(options)
 
-		when(mockTr.remapper.map("net.example.ExampleClass"))
-				.thenReturn("com.remapped.NewClass")
+		CLASSES.each { unmapped, mapped ->
+			when(mockTr.remapper.map(unmapped)).thenReturn(mapped)
+		}
 
-		when(mockTr.remapper.mapFieldName("net.example.ExampleClass", "FIELD", null))
-				.thenReturn("DLEIF")
+		FIELDS.each { key, mapped ->
+			when(mockTr.remapper.mapFieldName(key.owner, key.name, key.descriptor)).thenReturn(mapped)
+		}
+
+		METHODS.each { key, mapped ->
+			when(mockTr.remapper.mapMethodName(key.owner, key.name, key.descriptor)).thenReturn(mapped)
+		}
+
 		when:
 		def remapped = unpickRemapper.remap(inputFile.toFile())
 
 		then:
-		remapped == """
-			unpick v3
-
-			group int Example
-			\tcom.remapped.NewClass.DLEIF
-			""".stripIndent().trim() + "\n"
+		remapped == testFile("remapped")
 	}
 
-	// TODO move to a file
-	String INPUT = """
-unpick v3
-group int Example
-    net.example.ExampleClass.FIELD
-""".trim()
+	// Load the given name from resources
+	private static String testFile(String name) {
+		return UnpickRemapperServiceTest.class.getResource("/unpick/${name}.unpick").text
+	}
+
+	private Path zip(List<String> entries) {
+		def zip = Files.createTempFile(tempDir, "loom", ".zip")
+		Files.delete(zip)
+
+		def files = entries.stream().map {
+			new Pair<>(it.replace(".", "/") + ".class", new byte[0])
+		}.toList()
+
+		ZipUtils.add(zip, files)
+		return zip
+	}
+
+	@Immutable
+	static class MemberKey {
+		final String owner
+		final String name
+		final String descriptor
+	}
 }

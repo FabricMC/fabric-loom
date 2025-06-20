@@ -1,0 +1,28 @@
+unpick v3
+
+target_field mapped.bar.Y quux I g
+
+target_field mapped.bar.Z null Lmapped/foo/X; g
+
+target_method mapped.bar.Y bar2 (Lmapped/foo/X;)V
+
+group int
+	mapped.bar.Y.*
+
+group float
+	mapped.bar.Y.quux:int
+
+group float
+	mapped.bar.Y.*:float
+
+group int
+	@scope class mapped.bar.Y
+	@scope class mapped.foo.X
+	0
+	1
+
+group int
+	@scope class mapped.foo.X
+
+group int
+	@scope method mapped.bar.Y bar2 (Lmapped/foo/X;)V

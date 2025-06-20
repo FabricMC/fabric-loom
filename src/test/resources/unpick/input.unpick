@@ -1,0 +1,18 @@
+unpick v3
+target_field unmapped.foo.B baz I g
+target_field unmapped.bar.C foo Lunmapped/foo/A; g
+target_method unmapped.foo.B foo2 (Lunmapped/foo/A;)V
+group int
+    unmapped.foo.B.baz
+group float
+    unmapped.foo.B.baz:int
+group float
+    unmapped.foo.B.baz:float
+group int
+    @scope package unmapped.foo
+    0
+    1
+group int
+    @scope class unmapped.foo.A
+group int
+    @scope method unmapped.foo.B foo2 (Lunmapped/foo/A;)V

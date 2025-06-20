@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Reader;
@@ -36,15 +38,14 @@ import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Remapper;
 import daomephsta.unpick.constantmappers.datadriven.parser.v3.UnpickV3Writer;
 import daomephsta.unpick.constantmappers.datadriven.tree.UnpickV3Visitor;
 import org.gradle.api.Project;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
+import net.fabricmc.loom.util.JarPackageIndex;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -56,16 +57,12 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 	public static final ServiceType<Options, UnpickRemapperService> TYPE = new ServiceType<>(Options.class, UnpickRemapperService.class);
 
 	public interface Options extends Service.Options {
-		@InputFile
-		RegularFileProperty getUnpickDefinitions();
-
 		@Nested
 		Property<TinyRemapperService.Options> getTinyRemapper();
 	}
 
-	public static Provider<Options> createOptions(Project project, File unpickDefinitionsFile, UnpickMetadata.V2 metadata) {
+	public static Provider<Options> createOptions(Project project, UnpickMetadata.V2 metadata) {
 		return TYPE.create(project, options -> {
-			options.getUnpickDefinitions().set(unpickDefinitionsFile);
 			options.getTinyRemapper().set(TinyRemapperService.createSimple(project,
 					project.provider(metadata::namespace),
 					project.provider(MappingsNamespace.NAMED::toString)
@@ -77,17 +74,24 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 		super(options, serviceFactory);
 	}
 
-	public String getDefinitions() throws IOException {
+	/**
+	 * Return the remapped definitions
+	 */
+	public String remap(File input) throws IOException {
 		TinyRemapperServiceInterface tinyRemapperService = getServiceFactory().get(getOptions().getTinyRemapper());
 		TinyRemapper tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
-		return doRemap(getOptions().getUnpickDefinitions().get().getAsFile(), tinyRemapper);
+
+		List<Path> classpath = getOptions().getTinyRemapper().get().getClasspath().getFiles().stream().map(File::toPath).toList();
+		JarPackageIndex packageIndex = JarPackageIndex.create(classpath);
+
+		return doRemap(input, tinyRemapper, packageIndex);
 	}
 
-	private String doRemap(File input, TinyRemapper remapper) throws IOException {
+	private String doRemap(File input, TinyRemapper remapper, JarPackageIndex packageIndex) throws IOException {
 		try (Reader fileReader = new BufferedReader(new FileReader(input));
 				var reader = new UnpickV3Reader(fileReader)) {
 			var writer = new UnpickV3Writer();
-			reader.accept(new UnpickRemapper(writer, remapper));
+			reader.accept(new UnpickRemapper(writer, remapper, packageIndex));
 			return writer.getOutput().replace(System.lineSeparator(), "\n");
 		}
 	}
@@ -95,11 +99,13 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 	private static final class UnpickRemapper extends UnpickV3Remapper {
 		private final TinyRemapper tinyRemapper;
 		private final Remapper remapper;
+		private final JarPackageIndex jarPackageIndex;
 
-		private UnpickRemapper(UnpickV3Visitor downstream, TinyRemapper tinyRemapper) {
+		private UnpickRemapper(UnpickV3Visitor downstream, TinyRemapper tinyRemapper, JarPackageIndex jarPackageIndex) {
 			super(downstream);
 			this.tinyRemapper = tinyRemapper;
 			this.remapper = tinyRemapper.getEnvironment().getRemapper();
+			this.jarPackageIndex = jarPackageIndex;
 		}
 
 		@Override
@@ -117,9 +123,10 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 			return remapper.mapMethodName(className, methodName, methodDesc);
 		}
 
+		// Return all classes in the given package, not recursively.
 		@Override
 		protected List<String> getClassesInPackage(String pkg) {
-			throw new UnsupportedOperationException("todo!");
+			return jarPackageIndex.packages().getOrDefault(pkg, Collections.emptyList());
 		}
 
 		@Override

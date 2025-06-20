@@ -52,7 +52,6 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 
 		def options = UnpickRemapperService.TYPE.create(project) {
 			it.tinyRemapper.set(tinyRemapperOptions)
-			it.unpickDefinitions.set(inputFile.toFile())
 		}
 
 		UnpickRemapperService unpickRemapper = factory.get(options)
@@ -63,7 +62,7 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 		when(mockTr.remapper.mapFieldName("net.example.ExampleClass", "FIELD", null))
 				.thenReturn("DLEIF")
 		when:
-		def remapped = unpickRemapper.definitions
+		def remapped = unpickRemapper.remap(inputFile.toFile())
 
 		then:
 		remapped == """

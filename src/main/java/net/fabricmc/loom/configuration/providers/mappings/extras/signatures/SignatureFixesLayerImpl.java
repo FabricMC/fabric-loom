@@ -28,18 +28,19 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
+
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.mappingio.MappingVisitor;
 
 @ApiStatus.Experimental
 public record SignatureFixesLayerImpl(Path mappingsFile) implements MappingLayer, SignatureFixesLayer {
 	private static final String SIGNATURE_FIXES_PATH = "extras/record_signatures.json";
 
 	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
+	public void visit(VisitableMappingTree mappingTree) throws IOException {
 		// Nothing to do here
 	}
 

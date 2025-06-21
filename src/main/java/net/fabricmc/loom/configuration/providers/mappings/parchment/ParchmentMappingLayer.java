@@ -25,7 +25,6 @@
 package net.fabricmc.loom.configuration.providers.mappings.parchment;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,8 +34,9 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.mappingio.MappingVisitor;
-import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
 import net.fabricmc.mappingio.tree.MappingTree;
+
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,44 +48,29 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 	private static final Logger LOGGER = LoggerFactory.getLogger(ParchmentMappingLayer.class);
 
 	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
+	public void visit(VisitableMappingTree mappingTree) throws IOException {
 		ParchmentTreeV1 parchmentData = getParchmentData();
-
-		if (removePrefix()) {
-			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingVisitor);
-		}
 		
-		// Dirty hack to allow classes marked @DontObfuscate to be mapped
+		// Hack to allow classes marked @DontObfuscate to be mapped
 		Stats stats = new Stats();
-		visitorHack(mappingVisitor, parchmentData, stats);
+		assert parchmentData.classes() != null;
+		for (ParchmentTreeV1.Class clazz : parchmentData.classes()) {
+			if (mappingTree.getClass(clazz.name()) == null) {
+				mappingTree.addClass(new ClassEntry(mappingTree, clazz));
+				stats.unobfuscatedCount++;
+			}
+		}
 		LOGGER.info(
 				"Remapped {} unobfuscated classes with Parchment",
 				stats.unobfuscatedCount
 		);
 
-		parchmentData.visit(mappingVisitor, MappingsNamespace.NAMED.toString());
-	}
-	
-	private static void visitorHack(MappingVisitor mappingVisitor, ParchmentTreeV1 parchmentData, Stats stats) {
-		if (mappingVisitor instanceof MappingTree tree) {
-			assert parchmentData.classes() != null;
-			for (ParchmentTreeV1.Class clazz : parchmentData.classes()) {
-				if (tree.getClass(clazz.name()) == null) {
-					tree.addClass(new ClassEntry(tree, clazz));
-					stats.unobfuscatedCount++;
-				}
-			}
-		} else if (mappingVisitor instanceof ForwardingMappingVisitor visitor) {
-			try {
-				Field field = ForwardingMappingVisitor.class.getDeclaredField("next");
-				field.setAccessible(true); // spooky!
-				
-				visitorHack((MappingVisitor) field.get(visitor), parchmentData, stats);
-			} catch (NoSuchFieldException | IllegalAccessException e) {
-				// Fail safely :)
-				LOGGER.error("Failed to apply Parchment's unobfuscated class mapping hack", e);
-			}
+		MappingVisitor mappingVisitor = mappingTree;
+		if (removePrefix()) {
+			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingTree);
 		}
+
+		parchmentData.visit(mappingVisitor, MappingsNamespace.NAMED.toString());
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {

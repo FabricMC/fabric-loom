@@ -30,9 +30,9 @@ import java.util.function.Supplier;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 public record IntermediaryMappingLayer(Supplier<MemoryMappingTree> memoryMappingTree) implements MappingLayer {
 	@Override
@@ -41,9 +41,9 @@ public record IntermediaryMappingLayer(Supplier<MemoryMappingTree> memoryMapping
 	}
 
 	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
+	public void visit(VisitableMappingTree mappingTree) throws IOException {
 		// Populate named with intermediary and add Add a "named" namespace
-		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingVisitor, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
+		MappingNsCompleter nsCompleter = new MappingNsCompleter(mappingTree, Collections.singletonMap(MappingsNamespace.NAMED.toString(), MappingsNamespace.INTERMEDIARY.toString()), true);
 
 		memoryMappingTree.get().accept(nsCompleter);
 	}

@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
+
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -54,13 +56,13 @@ public record FileMappingsLayer(
 		String mergeNamespace
 ) implements MappingLayer, UnpickLayer {
 	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
+	public void visit(VisitableMappingTree mappingTree) throws IOException {
 		// Bare file
 		if (!ZipUtils.isZip(path)) {
-			visit(path, mappingVisitor);
+			visit(path, mappingTree);
 		} else {
 			try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
-				visit(fileSystem.get().getPath(mappingPath), mappingVisitor);
+				visit(fileSystem.get().getPath(mappingPath), mappingTree);
 			}
 		}
 	}

@@ -28,13 +28,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.jetbrains.annotations.ApiStatus;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
-import net.fabricmc.mappingio.MappingVisitor;
+import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Experimental
 public interface MappingLayer {
-	void visit(MappingVisitor mappingVisitor) throws IOException;
+	void visit(VisitableMappingTree mappingTree) throws IOException;
 
 	default MappingsNamespace getSourceNamespace() {
 		return MappingsNamespace.NAMED;

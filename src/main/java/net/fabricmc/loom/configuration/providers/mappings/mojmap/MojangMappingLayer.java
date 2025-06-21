@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
+
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +52,7 @@ public record MojangMappingLayer(Path clientMappings, Path serverMappings, boole
 	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile("^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
 
 	@Override
-	public void visit(MappingVisitor mappingVisitor) throws IOException {
+	public void visit(VisitableMappingTree mappingVisitor) throws IOException {
 		printMappingsLicense(clientMappings);
 
 		if (!dropNoneIntermediaryRoots) {

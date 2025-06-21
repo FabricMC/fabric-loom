@@ -28,15 +28,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
-import net.fabricmc.mappingio.tree.VisitableMappingTree;
-
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 @ApiStatus.Experimental
-public record SignatureFixesLayerImpl(Path mappingsFile) implements MappingLayer, SignatureFixesLayer {
+public record SignatureFixesLayerImpl(
+		Path mappingsFile) implements MappingLayer, SignatureFixesLayer {
 	private static final String SIGNATURE_FIXES_PATH = "extras/record_signatures.json";
 
 	@Override
@@ -48,7 +48,11 @@ public record SignatureFixesLayerImpl(Path mappingsFile) implements MappingLayer
 	public Map<String, String> getSignatureFixes() {
 		try {
 			//noinspection unchecked
-			return ZipUtils.unpackJson(mappingsFile(), SIGNATURE_FIXES_PATH, Map.class);
+			return ZipUtils.unpackJson(
+					mappingsFile(),
+					SIGNATURE_FIXES_PATH,
+					Map.class
+			);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to extract signature fixes", e);
 		}

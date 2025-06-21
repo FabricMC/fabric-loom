@@ -30,57 +30,66 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import net.fabricmc.loom.api.mappings.layered.MappingLayer;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.mappingio.MappingVisitor;
-import net.fabricmc.mappingio.tree.MappingTree;
-
-import net.fabricmc.mappingio.tree.VisitableMappingTree;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) implements MappingLayer {
+import net.fabricmc.loom.api.mappings.layered.MappingLayer;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
+
+public record ParchmentMappingLayer(
+		Path parchmentFile,
+		boolean removePrefix
+) implements MappingLayer {
 	private static final String PARCHMENT_DATA_FILE_NAME = "parchment.json";
-	private static final Logger LOGGER = LoggerFactory.getLogger(ParchmentMappingLayer.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(
+			ParchmentMappingLayer.class);
 
 	@Override
 	public void visit(VisitableMappingTree mappingTree) throws IOException {
 		ParchmentTreeV1 parchmentData = getParchmentData();
-		
+
 		// Hack to allow classes marked @DontObfuscate to be mapped
 		Stats stats = new Stats();
-		assert parchmentData.classes() != null;
-		for (ParchmentTreeV1.Class clazz : parchmentData.classes()) {
-			if (mappingTree.getClass(clazz.name()) == null) {
-				mappingTree.addClass(new ClassEntry(mappingTree, clazz));
-				stats.unobfuscatedCount++;
+
+		if (parchmentData.classes() != null) {
+			for (ParchmentTreeV1.Class clazz : parchmentData.classes()) {
+				if (mappingTree.getClass(clazz.name()) == null) {
+					mappingTree.addClass(new ClassEntry(mappingTree, clazz));
+					stats.unobfuscatedCount++;
+				}
 			}
 		}
-		LOGGER.info(
-				"Remapped {} unobfuscated classes with Parchment",
-				stats.unobfuscatedCount
-		);
+
+		LOGGER.info("Remapped {} unobfuscated classes with Parchment", stats.unobfuscatedCount);
 
 		MappingVisitor mappingVisitor = mappingTree;
+
 		if (removePrefix()) {
-			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(mappingTree);
+			mappingVisitor = new ParchmentPrefixStripingMappingVisitor(
+					mappingTree);
 		}
 
 		parchmentData.visit(mappingVisitor, MappingsNamespace.NAMED.toString());
 	}
 
 	private ParchmentTreeV1 getParchmentData() throws IOException {
-		return ZipUtils.unpackJson(parchmentFile, PARCHMENT_DATA_FILE_NAME, ParchmentTreeV1.class);
+		return ZipUtils.unpackJson(
+				parchmentFile,
+				PARCHMENT_DATA_FILE_NAME,
+				ParchmentTreeV1.class
+		);
 	}
-	
+
 	private static final class Stats {
 		public int unobfuscatedCount;
 	}
-	
+
 	private static final class FieldEntry implements MappingTree.FieldMapping {
 		private final MappingTree tree;
 		private final MappingTree.ClassMapping owner;
@@ -99,6 +108,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 			this.owner = owner;
 			this.desc = desc;
 			this.name = name;
+
 			if (javadoc != null && !javadoc.isEmpty()) {
 				this.comment = String.join("\n", javadoc);
 			} else {
@@ -148,7 +158,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		public void setComment(String comment) {
 		}
 	}
-	
+
 	private static final class MethodArgEntry implements MappingTree.MethodArgMapping {
 		private final MappingTree tree;
 		private MethodEntry method;
@@ -167,7 +177,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 			this.lvIndex = lvIndex;
 			this.name = name;
 		}
-		
+
 		public void setMethod(MethodEntry method) {
 			this.method = method;
 		}
@@ -245,12 +255,13 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 			this.args = args;
 			this.name = name;
 			this.desc = desc;
+
 			if (javadoc != null && !javadoc.isEmpty()) {
 				this.comment = String.join("\n", javadoc);
 			} else {
 				this.comment = null;
 			}
-			
+
 			for (MethodArgEntry arg : args) {
 				arg.setMethod(this);
 			}
@@ -272,11 +283,12 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 
 			if (argPosition >= 0 || lvIndex >= 0) {
 				for (MethodArgEntry entry : args) {
-					if (argPosition >= 0 && entry.argPosition == argPosition
-							|| lvIndex >= 0 && entry.lvIndex == lvIndex) {
+					if (argPosition >= 0 && entry.argPosition == argPosition || lvIndex >= 0 && entry.lvIndex == lvIndex) {
 						if (srcName != null && entry.getSrcName() != null && !srcName.equals(
-								entry.getSrcName()))
+								entry.getSrcName())) {
 							continue; // both srcNames are present but not equal
+						}
+
 						return entry;
 					}
 				}
@@ -284,9 +296,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 
 			if (srcName != null) {
 				for (MethodArgEntry entry : args) {
-					if (srcName.equals(entry.getSrcName())
-							&& (argPosition < 0 || entry.argPosition < 0)
-							&& (lvIndex < 0 || entry.lvIndex < 0)) {
+					if (srcName.equals(entry.getSrcName()) && (argPosition < 0 || entry.argPosition < 0) && (lvIndex < 0 || entry.lvIndex < 0)) {
 						return entry;
 					}
 				}
@@ -383,23 +393,24 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		public void setComment(String comment) {
 		}
 	}
-	
+
 	private static final class ClassEntry implements MappingTree.ClassMapping {
 		private final MappingTree tree;
 		private final Collection<MappingTree.FieldMapping> fields = new ArrayList<>();
 		private final Collection<MappingTree.MethodMapping> methods = new ArrayList<>();
 		private final String name;
 		private final @Nullable String comment;
-		
-		public ClassEntry(MappingTree tree, ParchmentTreeV1.Class cls) {
+
+		ClassEntry(MappingTree tree, ParchmentTreeV1.Class cls) {
 			this.tree = tree;
 			this.name = cls.name();
+
 			if (cls.javadoc() != null && !cls.javadoc().isEmpty()) {
 				this.comment = String.join("\n", cls.javadoc());
 			} else {
 				this.comment = null;
 			}
-			
+
 			if (cls.fields() != null) {
 				for (ParchmentTreeV1.Field field : cls.fields()) {
 					fields.add(new FieldEntry(
@@ -411,10 +422,11 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 					));
 				}
 			}
-			
+
 			if (cls.methods() != null) {
 				for (ParchmentTreeV1.Method method : cls.methods()) {
 					var args = new ArrayList<MethodArgEntry>();
+
 					if (method.parameters() != null) {
 						for (ParchmentTreeV1.Parameter parameter : method.parameters()) {
 							args.add(new MethodArgEntry(
@@ -425,7 +437,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 							));
 						}
 					}
-					
+
 					methods.add(new MethodEntry(
 							tree,
 							this,
@@ -437,7 +449,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 				}
 			}
 		}
-		
+
 		@Override
 		public Collection<? extends MappingTree.FieldMapping> getFields() {
 			return fields;
@@ -453,7 +465,7 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 					return field;
 				}
 			}
-			
+
 			return null;
 		}
 
@@ -482,12 +494,15 @@ public record ParchmentMappingLayer(Path parchmentFile, boolean removePrefix) im
 		) {
 			for (MappingTree.MethodMapping method : methods) {
 				if (method.getSrcName().equals(srcName)) {
-					if (method.getSrcDesc() == null || !method.getSrcDesc().equals(srcDesc)) continue;
-					
+					if (method.getSrcDesc() == null || !method.getSrcDesc().equals(
+							srcDesc)) {
+						continue;
+					}
+
 					return method;
 				}
 			}
-			
+
 			return null;
 		}
 

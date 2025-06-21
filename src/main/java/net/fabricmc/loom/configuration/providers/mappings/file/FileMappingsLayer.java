@@ -30,8 +30,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import net.fabricmc.mappingio.tree.VisitableMappingTree;
-
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -47,11 +45,13 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsRenamer;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.MappingFormat;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 public record FileMappingsLayer(
 		Path path, String mappingPath,
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, // Enigma cannot be automatically detected since it's stored in a directory.
+		boolean enigma,
+		// Enigma cannot be automatically detected since it's stored in a directory.
 		boolean unpick,
 		String mergeNamespace
 ) implements MappingLayer, UnpickLayer {
@@ -61,14 +61,21 @@ public record FileMappingsLayer(
 		if (!ZipUtils.isZip(path)) {
 			visit(path, mappingTree);
 		} else {
-			try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
+			try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(
+					path)) {
 				visit(fileSystem.get().getPath(mappingPath), mappingTree);
 			}
 		}
 	}
 
-	private void visit(Path path, MappingVisitor mappingVisitor) throws IOException {
-		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingVisitor, mergeNamespace.toString());
+	private void visit(
+			Path path,
+			MappingVisitor mappingVisitor
+	) throws IOException {
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(
+				mappingVisitor,
+				mergeNamespace.toString()
+		);
 
 		// Replace the default fallback namespaces with
 		// our fallback namespaces if potentially needed.
@@ -76,9 +83,16 @@ public record FileMappingsLayer(
 				MappingUtil.NS_SOURCE_FALLBACK, fallbackSourceNamespace,
 				MappingUtil.NS_TARGET_FALLBACK, fallbackTargetNamespace
 		);
-		MappingNsRenamer renamer = new MappingNsRenamer(nsSwitch, fallbackNamespaceReplacements);
+		MappingNsRenamer renamer = new MappingNsRenamer(
+				nsSwitch,
+				fallbackNamespaceReplacements
+		);
 
-		MappingReader.read(path, enigma ? MappingFormat.ENIGMA_DIR : null, renamer);
+		MappingReader.read(
+				path,
+				enigma ? MappingFormat.ENIGMA_DIR : null,
+				renamer
+		);
 	}
 
 	@Override
@@ -98,12 +112,15 @@ public record FileMappingsLayer(
 		}
 
 		if (!ZipUtils.isZip(path)) {
-			throw new UnsupportedOperationException("Unpick is only supported for zip file mapping layers.");
+			throw new UnsupportedOperationException(
+					"Unpick is only supported for zip file mapping layers.");
 		}
 
-		try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
+		try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(
+				path)) {
 			final Path unpickMetadata = fileSystem.get().getPath(UnpickMetadata.UNPICK_METADATA_PATH);
-			final Path unpickDefinitions = fileSystem.get().getPath(UnpickMetadata.UNPICK_DEFINITIONS_PATH);
+			final Path unpickDefinitions = fileSystem.get().getPath(
+					UnpickMetadata.UNPICK_DEFINITIONS_PATH);
 
 			if (!Files.exists(unpickMetadata)) {
 				// No unpick in this zip

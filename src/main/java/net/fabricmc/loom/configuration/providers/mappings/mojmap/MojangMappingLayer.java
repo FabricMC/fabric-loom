@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import net.fabricmc.mappingio.tree.VisitableMappingTree;
-
 import org.gradle.api.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,10 +44,18 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.proguard.ProGuardFileReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
-public record MojangMappingLayer(Path clientMappings, Path serverMappings, boolean nameSyntheticMembers, boolean dropNoneIntermediaryRoots,
-									@Nullable Supplier<MemoryMappingTree> intermediarySupplier, Logger logger) implements MappingLayer {
-	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile("^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
+public record MojangMappingLayer(
+		Path clientMappings,
+		Path serverMappings,
+		boolean nameSyntheticMembers,
+		boolean dropNoneIntermediaryRoots,
+		@Nullable Supplier<MemoryMappingTree> intermediarySupplier,
+		Logger logger
+) implements MappingLayer {
+	private static final Pattern SYNTHETIC_NAME_PATTERN = Pattern.compile(
+			"^(access|this|val\\$this|lambda\\$.*)\\$[0-9]+$");
 
 	@Override
 	public void visit(VisitableMappingTree mappingVisitor) throws IOException {
@@ -77,39 +83,74 @@ public record MojangMappingLayer(Path clientMappings, Path serverMappings, boole
 
 		// The following code first switches the src namespace to intermediary dropping any entries that don't have an intermediary name
 		// This removes any none root methods before switching it back to official
-		var officialSwitch = new MappingSourceNsSwitch(mappingVisitor, getSourceNamespace().toString(), false);
-		var intermediarySwitch = new MappingSourceNsSwitch(officialSwitch, MappingsNamespace.INTERMEDIARY.toString(), true);
+		var officialSwitch = new MappingSourceNsSwitch(
+				mappingVisitor,
+				getSourceNamespace().toString(),
+				false
+		);
+		var intermediarySwitch = new MappingSourceNsSwitch(
+				officialSwitch,
+				MappingsNamespace.INTERMEDIARY.toString(),
+				true
+		);
 		mappingTree.accept(intermediarySwitch);
 	}
 
 	private void readMappings(MappingVisitor mappingVisitor) throws IOException {
 		// Filter out field names matching the pattern
-		var nameFilter = new DstNameFilterMappingVisitor(mappingVisitor, SYNTHETIC_NAME_PATTERN);
+		var nameFilter = new DstNameFilterMappingVisitor(
+				mappingVisitor,
+				SYNTHETIC_NAME_PATTERN
+		);
 
 		// Make official the source namespace
-		var nsSwitch = new MappingSourceNsSwitch(nameSyntheticMembers() ? mappingVisitor : nameFilter, MappingsNamespace.OFFICIAL.toString());
+		var nsSwitch = new MappingSourceNsSwitch(
+				nameSyntheticMembers() ? mappingVisitor : nameFilter,
+				MappingsNamespace.OFFICIAL.toString()
+		);
 
 		// Read both server and client mappings
-		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8);
-				BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings, StandardCharsets.UTF_8)) {
-			ProGuardFileReader.read(clientBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
-			ProGuardFileReader.read(serverBufferedReader, MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString(), nsSwitch);
+		try (BufferedReader clientBufferedReader = Files.newBufferedReader(
+				clientMappings,
+				StandardCharsets.UTF_8
+		); BufferedReader serverBufferedReader = Files.newBufferedReader(serverMappings,
+				StandardCharsets.UTF_8
+		)) {
+			ProGuardFileReader.read(
+					clientBufferedReader,
+					MappingsNamespace.NAMED.toString(),
+					MappingsNamespace.OFFICIAL.toString(),
+					nsSwitch
+			);
+			ProGuardFileReader.read(
+					serverBufferedReader,
+					MappingsNamespace.NAMED.toString(),
+					MappingsNamespace.OFFICIAL.toString(),
+					nsSwitch
+			);
 		}
 	}
 
 	private void printMappingsLicense(Path clientMappings) {
-		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings, StandardCharsets.UTF_8)) {
-			logger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-			logger().warn("Using of the official minecraft mappings is at your own risk!");
-			logger().warn("Please make sure to read and understand the following license:");
-			logger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		try (BufferedReader clientBufferedReader = Files.newBufferedReader(clientMappings,
+				StandardCharsets.UTF_8
+		)) {
+			logger().warn(
+					"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			logger().warn(
+					"Using of the official minecraft mappings is at your own risk!");
+			logger().warn(
+					"Please make sure to read and understand the following license:");
+			logger().warn(
+					"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 			String line;
 
 			while ((line = clientBufferedReader.readLine()).startsWith("#")) {
 				logger().warn(line);
 			}
 
-			logger().warn("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+			logger().warn(
+					"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read client mappings", e);
 		}

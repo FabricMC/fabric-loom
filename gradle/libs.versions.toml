@@ -40,6 +40,7 @@ fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "loren
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
 fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
 fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
+fabric-unpick-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }
 
 # Misc
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

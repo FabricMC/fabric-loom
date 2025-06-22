@@ -24,22 +24,57 @@
 
 package net.fabricmc.loom.test.unit.service
 
+import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.mockito.Mockito
 import spock.lang.Specification
 
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.service.ScopedServiceFactory
+import net.fabricmc.loom.util.service.Service
+import net.fabricmc.loom.util.service.ServiceFactory
+import net.fabricmc.loom.util.service.ServiceType
 
+@CompileStatic
 abstract class ServiceTestBase extends Specification {
-	ScopedServiceFactory factory
+	ServiceFactory factory
 	Project project = GradleTestUtil.mockProject()
 
+	private Map<Service.Options, Service> mockedServices = new IdentityHashMap<>()
+	private ScopedServiceFactory scopedServiceFactory = new ScopedServiceFactory()
+
 	def setup() {
-		factory = new ScopedServiceFactory()
+		this.scopedServiceFactory = new ScopedServiceFactory() {
+					@Override
+					protected ServiceFactory getEffectiveServiceFactory() {
+						return factory
+					}
+				}
+		this.factory = new ServiceFactory() {
+					@Override
+					<O extends Service.Options, S extends Service<O>> S get(O options) {
+						def self = ServiceTestBase.this
+						return mockedServices.get(options) as S ?: scopedServiceFactory.get(options) as S
+					}
+				}
+	}
+
+	Service.Options mockService(ServiceType type) {
+		Service.Options options = project.getObjects().newInstance(type.optionsClass())
+
+		for (def method : type.optionsClass().getDeclaredMethods()) {
+			method.invoke(options)
+		}
+
+		options.serviceClass.set(type.serviceClass().name)
+
+		Service mocked = Mockito.mock(type.serviceClass())
+		mockedServices.put(options, mocked)
+		return options
 	}
 
 	def cleanup() {
-		factory.close()
-		factory = null
+		scopedServiceFactory.close()
+		scopedServiceFactory = null
 	}
 }

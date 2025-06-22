@@ -31,13 +31,15 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.VisibleForTesting;
+
 import net.fabricmc.loom.util.gradle.GradleTypeAdapter;
 
 /**
  * An implementation of {@link ServiceFactory} that creates services scoped to the factory instance.
  * When the factory is closed, all services created by it are closed and discarded.
  */
-public final class ScopedServiceFactory implements ServiceFactory, Closeable {
+public class ScopedServiceFactory implements ServiceFactory, Closeable {
 	private final Map<Service.Options, Service<?>> servicesIdentityMap = new IdentityHashMap<>();
 	private final Map<String, Service<?>> servicesJsonMap = new HashMap<>();
 
@@ -60,12 +62,17 @@ public final class ScopedServiceFactory implements ServiceFactory, Closeable {
 			return service;
 		}
 
-		service = createService(options, this);
+		service = createService(options, getEffectiveServiceFactory());
 
 		servicesIdentityMap.put(options, service);
 		servicesJsonMap.put(key, service);
 
 		return service;
+	}
+
+	@VisibleForTesting
+	protected ServiceFactory getEffectiveServiceFactory() {
+		return this;
 	}
 
 	private static <O extends Service.Options, S extends Service<O>> S createService(O options, ServiceFactory serviceFactory) {

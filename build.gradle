@@ -136,6 +136,7 @@ dependencies {
 	implementation libs.fabric.mercury
 
 	implementation libs.fabric.unpick
+	implementation libs.fabric.unpick.utils
 
 	// Kotlin
 	implementation(libs.kotlin.metadata) {

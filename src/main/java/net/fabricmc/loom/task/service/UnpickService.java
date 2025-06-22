@@ -24,10 +24,12 @@
 
 package net.fabricmc.loom.task.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,6 +51,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
@@ -86,6 +90,10 @@ public class UnpickService extends Service<UnpickService.Options> {
 		@InputFile
 		RegularFileProperty getUnpickDefinitions();
 
+		@Optional
+		@Nested
+		Property<UnpickRemapperService.Options> getUnpickRemapperService();
+
 		@InputFiles
 		ConfigurableFileCollection getUnpickConstantJar();
 
@@ -113,8 +121,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 
 			if (unpickMetadata instanceof UnpickMetadata.V2 v2) {
 				if (!Objects.equals(v2.namespace(), MappingsNamespace.NAMED.toString())) {
-					// TODO!
-					throw new IllegalStateException("Unpick metadata with a namespace other than named is not yet supported");
+					options.getUnpickRemapperService().set(UnpickRemapperService.createOptions(project, v2));
 				}
 			}
 
@@ -144,13 +151,11 @@ public class UnpickService extends Service<UnpickService.Options> {
 				Stream.of(inputJar),
 				Stream.ofNullable(existingClasses)
 			).flatMap(Function.identity()).toList();
-		final Path unpickDefinitionsPath = getOptions().getUnpickDefinitions().getAsFile().get().toPath();
 		final Path outputJar = getOptions().getUnpickOutputJar().get().getAsFile().toPath();
-
 		Files.deleteIfExists(outputJar);
 
 		try (ZipFsClasspath zipFsClasspath = ZipFsClasspath.create(classpath);
-				InputStream unpickDefinitions = Files.newInputStream(unpickDefinitionsPath)) {
+				InputStream unpickDefinitions = getUnpickDefinitionsInputStream()) {
 			IClassResolver classResolver = zipFsClasspath.createClassResolver().chain(ClassResolvers.classpath());
 			ConstantUninliner uninliner = ConstantUninliner.builder()
 					.logger(JAVA_LOGGER)
@@ -169,10 +174,31 @@ public class UnpickService extends Service<UnpickService.Options> {
 		return outputJar;
 	}
 
+	private InputStream getUnpickDefinitionsInputStream() throws IOException {
+		final Path unpickDefinitionsPath = getOptions().getUnpickDefinitions().getAsFile().get().toPath();
+
+		if (getOptions().getUnpickRemapperService().isPresent()) {
+			LOGGER.info("Remapping unpick definitions: {}", unpickDefinitionsPath);
+
+			UnpickRemapperService unpickRemapperService = getServiceFactory().get(getOptions().getUnpickRemapperService());
+			String remapped = unpickRemapperService.remap(unpickDefinitionsPath.toFile());
+
+			return new ByteArrayInputStream(remapped.getBytes(StandardCharsets.UTF_8));
+		}
+
+		LOGGER.debug("Using unpick definitions: {}", unpickDefinitionsPath);
+
+		return Files.newInputStream(unpickDefinitionsPath);
+	}
+
 	public String getUnpickCacheKey() {
 		return Checksum.of(List.of(
 				Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()),
-				Checksum.of(getOptions().getUnpickConstantJar())
+				Checksum.of(getOptions().getUnpickConstantJar()),
+				Checksum.of(getOptions().getUnpickRemapperService()
+						.flatMap(options -> options.getTinyRemapper()
+								.flatMap(TinyRemapperService.Options::getFrom))
+						.getOrElse("named"))
 		)).sha256().hex();
 	}
 

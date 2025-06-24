@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,17 @@ package net.fabricmc.loom.configuration.ide.idea;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilder;
@@ -48,9 +52,11 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,9 +66,11 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 
 public abstract class IdeaSyncTask extends AbstractLoomTask {
@@ -70,6 +78,9 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 	@Nested
 	protected abstract ListProperty<IntelijRunConfig> getIdeaRunConfigs();
+
+	@Internal
+	public abstract RegularFileProperty getRunConfigListFile();
 
 	@Inject
 	public IdeaSyncTask() {
@@ -79,8 +90,29 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 	@TaskAction
 	public void runTask() throws IOException {
+		final Path runConfigListFile = getRunConfigListFile().get().getAsFile().toPath();
+		@Nullable RunConfigList runConfigList = null;
+
+		if (Files.exists(runConfigListFile)) {
+			try (Reader reader = Files.newBufferedReader(runConfigListFile)) {
+				runConfigList = LoomGradlePlugin.GSON.fromJson(reader, RunConfigList.class);
+			}
+		}
+
+		Map<String, RunConfigMetadata> newMetadata = new HashMap<>();
+
 		for (IntelijRunConfig config : getIdeaRunConfigs().get()) {
-			config.writeLaunchFile();
+			config.writeLaunchFile(runConfigList);
+
+			// Store the updated metadata for the run config
+			final Path runConfigPath = config.getLaunchFile().get().getAsFile().toPath();
+			final String hash = Checksum.sha256Hex(Files.readAllBytes(runConfigPath));
+			final RunConfigMetadata metadata = new RunConfigMetadata(hash);
+			newMetadata.put(config.getName().get(), metadata);
+		}
+
+		try (Writer writer = Files.newBufferedWriter(runConfigListFile)) {
+			LoomGradlePlugin.GSON.toJson(new RunConfigList(newMetadata), RunConfigList.class, writer);
 		}
 	}
 
@@ -106,6 +138,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
 
 			IntelijRunConfig irc = getProject().getObjects().newInstance(IntelijRunConfig.class);
+			irc.getName().set(settings.getName());
 			irc.getRunConfigXml().set(runConfigXml);
 			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
 			irc.getLaunchFile().set(runConfigFile);
@@ -119,6 +152,9 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 	public interface IntelijRunConfig {
 		@Input
+		Property<String> getName();
+
+		@Input
 		Property<String> getRunConfigXml();
 
 		@Input
@@ -127,10 +163,10 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		@OutputFile
 		RegularFileProperty getLaunchFile();
 
-		default void writeLaunchFile() throws IOException {
+		default void writeLaunchFile(@Nullable RunConfigList runConfigList) throws IOException {
 			Path launchFile = getLaunchFile().get().getAsFile().toPath();
 
-			if (Files.notExists(launchFile)) {
+			if (shouldGenerate(runConfigList)) {
 				Files.createDirectories(launchFile.getParent());
 				Files.writeString(launchFile, getRunConfigXml().get(), StandardCharsets.UTF_8);
 			}
@@ -140,6 +176,29 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			} catch (Exception e) {
 				LOGGER.error("Failed to modify run configuration xml", e);
 			}
+		}
+
+		private boolean shouldGenerate(@Nullable RunConfigList runConfigList) throws IOException {
+			Path launchFile = getLaunchFile().get().getAsFile().toPath();
+
+			// The file doesn't exist yet, so it needs to be created
+			if (Files.notExists(launchFile)) return true;
+
+			if (runConfigList != null) {
+				final RunConfigMetadata metadata = runConfigList.runConfigs.get(getName().get());
+
+				if (metadata != null) {
+					final String expectedHash = metadata.hash;
+					final String actualHash = Checksum.sha256Hex(Files.readAllBytes(launchFile));
+					// Generate if it's untouched.
+					// Note: this code could also check if the output to be written equals the existing content
+					// and not generate in that case, but the runConfigXml property lacks the cp modifications.
+					return expectedHash.equals(actualHash);
+				}
+			}
+
+			// The run config file already exists and wasn't guaranteed untouched in the metadata
+			return false;
 		}
 	}
 
@@ -201,5 +260,11 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		transformer.transform(source, new StreamResult(writer));
 
 		return writer.toString().replace("\r", "");
+	}
+
+	public record RunConfigList(Map<String, RunConfigMetadata> runConfigs) {
+	}
+
+	public record RunConfigMetadata(String hash) {
 	}
 }

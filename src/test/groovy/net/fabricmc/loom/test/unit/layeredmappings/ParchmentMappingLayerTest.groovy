@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,11 +36,11 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
 		mockMinecraftProvider.minecraftVersion() >> "1.16.5"
 		when:
-		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
+		withMavenFile(PARCHMENT_1_16_NOTATION, downloadFile(PARCHMENT_1_16_URL, "parchment.zip"))
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
 				new MojangMappingsSpec(true),
-				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), false)
+				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_1_16_NOTATION), false)
 				)
 		def tiny = getTiny(mappings)
 		def reorderedMappings = reorder(mappings)
@@ -61,11 +61,11 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_16_5
 		mockMinecraftProvider.minecraftVersion() >> "1.16.5"
 		when:
-		withMavenFile(PARCHMENT_NOTATION, downloadFile(PARCHMENT_URL, "parchment.zip"))
+		withMavenFile(PARCHMENT_1_16_NOTATION, downloadFile(PARCHMENT_1_16_URL, "parchment.zip"))
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
 				new MojangMappingsSpec(true),
-				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_NOTATION), true)
+				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_1_16_NOTATION), true)
 				)
 		def tiny = getTiny(mappings)
 		def reorderedMappings = reorder(mappings)
@@ -77,5 +77,28 @@ class ParchmentMappingLayerTest extends LayeredMappingsSpecification {
 		mappings.classes[0].getDstName(0) == "net/minecraft/class_2573"
 		mappings.classes[0].methods[0].args[0].srcName.hashCode() == 109757064
 		reorderedMappings.getClass("net/minecraft/class_2573").getMethod("method_10913", "(Lnet/minecraft/class_1799;Lnet/minecraft/class_1767;)V").args.size() > 0
+	}
+
+	def "Read 1.21.5 parchment mappings" () {
+		setup:
+		intermediaryUrl = INTERMEDIARY_1_21_5_URL
+		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_21_5
+		mockMinecraftProvider.minecraftVersion() >> "1.21.5"
+		when:
+		withMavenFile(PARCHMENT_1_21_5_NOTATION, downloadFile(PARCHMENT_1_21_5_URL, "parchment-1.21.5.zip"))
+		def mappings = getLayeredMappings(
+				new IntermediaryMappingsSpec(),
+				new MojangMappingsSpec(true),
+				new ParchmentMappingsSpec(FileSpec.create(PARCHMENT_1_21_5_NOTATION), true)
+				)
+		def reorderedMappings = reorder(mappings)
+		def named = reorderedMappings.getNamespaceId("named")
+		then:
+		mappings.srcNamespace == "named"
+		mappings.dstNamespaces == ["intermediary", "official"]
+		reorderedMappings.getClass("com/mojang/blaze3d/platform/GlStateManager", named)
+				.getMethod("_activeTexture", "(I)V", named)
+				.getArg(0, 0, null)
+				.getDstName(named) == "textureIn"
 	}
 }

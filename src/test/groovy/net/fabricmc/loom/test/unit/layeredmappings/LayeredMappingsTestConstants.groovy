@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta
 interface LayeredMappingsTestConstants {
 	public static final String INTERMEDIARY_1_17_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.17/intermediary-1.17-v2.jar"
 	public static final String INTERMEDIARY_1_16_5_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.16.5/intermediary-1.16.5-v2.jar"
+	public static final String INTERMEDIARY_1_21_5_URL = "https://maven.fabricmc.net/net/fabricmc/intermediary/1.21.5/intermediary-1.21.5-v2.jar"
 
 	public static final Map<String, MinecraftVersionMeta.Download> DOWNLOADS_1_17 = [
 		client_mappings: new MinecraftVersionMeta.Download(null, "227d16f520848747a59bef6f490ae19dc290a804", 6431705, "https://launcher.mojang.com/v1/objects/227d16f520848747a59bef6f490ae19dc290a804/client.txt"),
@@ -42,7 +43,16 @@ interface LayeredMappingsTestConstants {
 	]
 	public static final MinecraftVersionMeta VERSION_META_1_16_5 = new MinecraftVersionMeta(null, null, null, 0, DOWNLOADS_1_16_5, null, null, null, null, 0, "2021-01-14T16:05:32+00:00", null, null, null)
 
-	public static final String PARCHMENT_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"
-	public static final String PARCHMENT_URL = "https://maven.parchmentmc.net/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
+	public static final Map<String, MinecraftVersionMeta.Download> DOWNLOADS_1_21_5 = [
+		client_mappings: new MinecraftVersionMeta.Download(null, "57669731d542f98646772e91a0d68628f9827a5c", 10670987, "https://piston-data.mojang.com/v1/objects/57669731d542f98646772e91a0d68628f9827a5c/client.txt"),
+		server_mappings: new MinecraftVersionMeta.Download(null, "f4812c1d66d0098a94616b19c21829e591d0af3a", 8027211, "https://piston-data.mojang.com/v1/objects/f4812c1d66d0098a94616b19c21829e591d0af3a/server.txt")
+	]
+	public static final MinecraftVersionMeta VERSION_META_1_21_5 = new MinecraftVersionMeta(null, null, null, 0, DOWNLOADS_1_21_5, null, null, null, null, 0, "2025-03-25T12:14:58+00:00", null, null, null)
+
+	public static final String PARCHMENT_1_16_NOTATION = "org.parchmentmc.data:parchment-1.16.5:20210608-SNAPSHOT@zip"
+	public static final String PARCHMENT_1_16_URL = "https://maven.parchmentmc.net/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
+	public static final String PARCHMENT_1_21_5_NOTATION = "org.parchmentmc.data:parchment-1.21.5:2025.04.19@zip"
+	public static final String PARCHMENT_1_21_5_URL = "https://maven.parchmentmc.net/org/parchmentmc/data/parchment-1.16.5/20210608-SNAPSHOT/parchment-1.16.5-20210608-SNAPSHOT.zip"
+
 	public static final String YARN_1_17_URL = "https://maven.fabricmc.net/net/fabricmc/yarn/1.17%2Bbuild.13/yarn-1.17%2Bbuild.13-v2.jar"
 }

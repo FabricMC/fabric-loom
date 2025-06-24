@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +51,12 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLa
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
+import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	private static final String GROUP = "loom";
@@ -120,14 +123,19 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 		try (Writer writer = new StringWriter()) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
 
-			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()));
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
-			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
-			mappings.accept(addConstructor);
+			processMappings(mappings, tiny2Writer);
 
 			Files.deleteIfExists(mappingsFile);
 			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));
 		}
+	}
+
+	@VisibleForTesting
+	public static void processMappings(VisitableMappingTree mappings, MappingVisitor visitor) throws IOException {
+		MappingDstNsReorder nsReorder = new MappingDstNsReorder(visitor, List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()));
+		MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), false);
+		AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
+		mappings.accept(addConstructor);
 	}
 
 	private void writeSignatureFixes(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {

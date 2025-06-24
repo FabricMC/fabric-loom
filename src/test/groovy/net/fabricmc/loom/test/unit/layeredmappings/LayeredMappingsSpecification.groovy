@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,10 +41,10 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
+import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer
-import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.unit.LoomMocks
@@ -52,8 +52,6 @@ import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadBuilder
 import net.fabricmc.mappingio.MappingReader
-import net.fabricmc.mappingio.adapter.MappingDstNsReorder
-import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter
 import net.fabricmc.mappingio.tree.MemoryMappingTree
 
@@ -127,10 +125,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	MemoryMappingTree reorder(MemoryMappingTree mappingTree) {
 		def reorderedMappings = new MemoryMappingTree()
-		def nsReorder = new MappingDstNsReorder(reorderedMappings, Collections.singletonList(MappingsNamespace.NAMED.toString()))
-		def nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true)
-		def addConstructor = new AddConstructorMappingVisitor(nsSwitch)
-		mappingTree.accept(addConstructor)
+		LayeredMappingsFactory.processMappings(mappingTree, reorderedMappings)
 		return reorderedMappings
 	}
 

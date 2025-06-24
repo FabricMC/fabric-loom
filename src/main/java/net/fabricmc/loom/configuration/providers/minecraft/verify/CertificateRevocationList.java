@@ -69,8 +69,8 @@ public record CertificateRevocationList(Collection<X509CRL> crls, boolean downlo
 			try {
 				crls.add(download(project, url));
 			} catch (DownloadException e) {
-				LOGGER.warn("Failed to download CRL from {}: {}", url, e.getMessage());
-				LOGGER.warn("Loom will not be able to verify the integrity of the minecraft jar");
+				LOGGER.info("Failed to download CRL from {}: {}", url, e.getMessage());
+				LOGGER.info("Loom will not be able to verify the integrity of the minecraft jar signature");
 				downloadFailure = true;
 			}
 		}

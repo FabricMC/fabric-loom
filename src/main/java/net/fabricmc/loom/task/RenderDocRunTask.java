@@ -59,7 +59,7 @@ public abstract class RenderDocRunTask extends RunGameTask {
 		super(settings);
 		setGroup(Constants.TaskGroup.FABRIC);
 		dependsOn("configureClientLaunch");
-		getRenderDocArgs().addAll("capture", "--wait-for-exit", "--working-dir", getWorkingDir().getAbsolutePath());
+		getRenderDocArgs().addAll("capture", "--wait-for-exit");
 	}
 
 	@Override
@@ -70,6 +70,7 @@ public abstract class RenderDocRunTask extends RunGameTask {
 
 			exec.commandLine(getRenderDocExecutable().get().getAsFile());
 			exec.args(getRenderDocArgs().get());
+			exec.args("--working-dir", new File(getProjectDir().get(), getInternalRunDir().get()));
 			exec.args(getJavaLauncher().get().getExecutablePath());
 			exec.args(getJvmArgs());
 			exec.args(getMainClass().get());

@@ -46,6 +46,8 @@ import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.minecraft.AnnotationsApplyVisitor;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -247,6 +249,12 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		final boolean fixRecords = javaVersion != null && javaVersion.majorVersion() >= 16;
 
 		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), configContext.serviceFactory(), fromM, toM, fixRecords, (builder) -> {
+			AnnotationsData annotationsData = mappingConfiguration.getAnnotationsData();
+
+			if (annotationsData != null) {
+				builder.extraPostApplyVisitor(new AnnotationsApplyVisitor(annotationsData));
+			}
+
 			builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));
 			configureRemapper(remappedJars, builder);
 		});

@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyInfo;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
@@ -75,6 +77,8 @@ public class MappingConfiguration {
 	public final Path tinyMappingsJar;
 	private final Path unpickDefinitions;
 
+	@Nullable
+	private AnnotationsData annotationsData;
 	@Nullable
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
@@ -216,8 +220,21 @@ public class MappingConfiguration {
 	}
 
 	private void extractExtras(FileSystem jar) throws IOException {
+		extractAnnotationsData(jar);
 		extractUnpickDefinitions(jar);
 		extractSignatureFixes(jar);
+	}
+
+	private void extractAnnotationsData(FileSystem jar) throws IOException {
+		Path annotationsPath = jar.getPath(AnnotationsLayer.ANNOTATIONS_PATH);
+
+		if (!Files.exists(annotationsPath)) {
+			return;
+		}
+
+		try (BufferedReader reader = Files.newBufferedReader(annotationsPath, StandardCharsets.UTF_8)) {
+			annotationsData = AnnotationsData.read(reader);
+		}
 	}
 
 	private void extractUnpickDefinitions(FileSystem jar) throws IOException {
@@ -293,6 +310,11 @@ public class MappingConfiguration {
 
 	public boolean hasUnpickDefinitions() {
 		return unpickMetadata != null;
+	}
+
+	@Nullable
+	public AnnotationsData getAnnotationsData() {
+		return annotationsData;
 	}
 
 	public UnpickMetadata getUnpickMetadata() {

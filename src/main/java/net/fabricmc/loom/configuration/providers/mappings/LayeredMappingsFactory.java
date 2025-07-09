@@ -46,6 +46,8 @@ import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
@@ -100,6 +102,7 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 		Files.deleteIfExists(mappingsZip);
 
 		writeMapping(processor, layers, mappingsZip);
+		writeAnnotationData(processor, layers, mappingsZip);
 		writeSignatureFixes(processor, layers, mappingsZip);
 		writeUnpickData(processor, layers, mappingsZip);
 
@@ -128,6 +131,18 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			Files.deleteIfExists(mappingsFile);
 			ZipUtils.add(mappingsFile, "mappings/mappings.tiny", writer.toString().getBytes(StandardCharsets.UTF_8));
 		}
+	}
+
+	private void writeAnnotationData(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+		AnnotationsData annotationsData = processor.getAnnotationsData(layers);
+
+		if (annotationsData == null) {
+			return;
+		}
+
+		byte[] data = AnnotationsData.GSON.toJson(annotationsData.toJson()).getBytes(StandardCharsets.UTF_8);
+
+		ZipUtils.add(mappingsFile, AnnotationsLayer.ANNOTATIONS_PATH, data);
 	}
 
 	private void writeSignatureFixes(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {

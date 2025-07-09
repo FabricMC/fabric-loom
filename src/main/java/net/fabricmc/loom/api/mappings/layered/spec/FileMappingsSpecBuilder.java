@@ -72,6 +72,13 @@ public interface FileMappingsSpecBuilder {
 	FileMappingsSpecBuilder enigmaMappings();
 
 	/**
+	 * Marks that the zip file contains annotation data.
+	 *
+	 * @return this builder
+	 */
+	FileMappingsSpecBuilder containsAnnotations();
+
+	/**
 	 * Marks that the zip file contains unpick data.
 	 *
 	 * @return this builder

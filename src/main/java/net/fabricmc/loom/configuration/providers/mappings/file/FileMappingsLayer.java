@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.file;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
@@ -51,8 +54,9 @@ public record FileMappingsLayer(
 		String fallbackSourceNamespace, String fallbackTargetNamespace,
 		boolean enigma, // Enigma cannot be automatically detected since it's stored in a directory.
 		boolean unpick,
+		boolean annotations,
 		String mergeNamespace
-) implements MappingLayer, UnpickLayer {
+) implements MappingLayer, UnpickLayer, AnnotationsLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
 		// Bare file
@@ -109,6 +113,29 @@ public record FileMappingsLayer(
 			}
 
 			return UnpickData.read(unpickMetadata, unpickDefinitions);
+		}
+	}
+
+	@Override
+	public @Nullable AnnotationsData getAnnotationsData() throws IOException {
+		if (!annotations) {
+			return null;
+		}
+
+		if (!ZipUtils.isZip(path)) {
+			throw new UnsupportedOperationException("Annotations data is only supported for zip file mapping layers.");
+		}
+
+		try (FileSystemUtil.Delegate fileSystem = FileSystemUtil.getJarFileSystem(path)) {
+			final Path annotations = fileSystem.get().getPath(AnnotationsLayer.ANNOTATIONS_PATH);
+
+			if (!Files.exists(annotations)) {
+				return null;
+			}
+
+			try (BufferedReader reader = Files.newBufferedReader(annotations)) {
+				return AnnotationsData.read(reader);
+			}
 		}
 	}
 }

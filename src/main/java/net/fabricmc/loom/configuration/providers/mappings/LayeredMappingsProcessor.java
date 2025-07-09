@@ -38,6 +38,8 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.mappingio.adapter.MappingNsCompleter;
@@ -115,6 +117,27 @@ public class LayeredMappingsProcessor {
 		}
 
 		return mappingTree;
+	}
+
+	@Nullable
+	public AnnotationsData getAnnotationsData(List<MappingLayer> layers) throws IOException {
+		AnnotationsData result = null;
+
+		for (MappingLayer layer : layers) {
+			if (layer instanceof AnnotationsLayer annotationsLayer) {
+				AnnotationsData annotationsData = annotationsLayer.getAnnotationsData();
+
+				if (annotationsData != null) {
+					if (result == null) {
+						result = annotationsData;
+					} else {
+						result = result.merge(annotationsData);
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 	@Nullable

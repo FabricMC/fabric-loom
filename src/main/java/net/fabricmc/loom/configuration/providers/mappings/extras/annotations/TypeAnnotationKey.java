@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.file;
+package net.fabricmc.loom.configuration.providers.mappings.extras.annotations;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
-import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
-
-public record FileMappingsSpec(
-		FileSpec fileSpec, String mappingPath,
-		String fallbackSourceNamespace, String fallbackTargetNamespace,
-		boolean enigma, boolean unpick, boolean annotations,
-		String mergeNamespace
-) implements MappingsSpec<FileMappingsLayer> {
-	@Override
-	public FileMappingsLayer createLayer(MappingContext context) {
-		return new FileMappingsLayer(fileSpec.get(context), mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, annotations, mergeNamespace);
-	}
+public record TypeAnnotationKey(int typeRef, String typePath, String name) {
 }

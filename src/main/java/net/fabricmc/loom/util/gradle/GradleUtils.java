@@ -109,7 +109,11 @@ public final class GradleUtils {
 	}
 
 	public static boolean getBooleanProperty(Project project, String key) {
-		return getBooleanPropertyProvider(project, key).getOrElse(false);
+		return getBooleanProperty(project, key, false);
+	}
+
+	public static boolean getBooleanProperty(Project project, String key, boolean defaultValue) {
+		return getBooleanPropertyProvider(project, key).getOrElse(defaultValue);
 	}
 
 	public static Object getProperty(Project project, String key) {

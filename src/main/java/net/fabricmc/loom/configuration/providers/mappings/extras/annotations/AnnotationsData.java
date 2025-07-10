@@ -36,16 +36,11 @@ import com.google.gson.JsonSyntaxException;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 
-public record AnnotationsData(
-		Map<String, GenericAnnotationData> classData,
-		Map<MemberKey, GenericAnnotationData> fieldData,
-		Map<MemberKey, MethodAnnotationData> methodData
-) {
+public record AnnotationsData(Map<String, ClassAnnotationData> classes) {
 	public static final Gson GSON = new GsonBuilder()
 			.disableHtmlEscaping()
 			.setFieldNamingStrategy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
 			.enableComplexMapKeySerialization()
-			.registerTypeAdapter(MemberKey.class, new MemberKey.Serializer())
 			.registerTypeAdapter(TypeAnnotationNode.class, new TypeAnnotationNodeSerializer())
 			.registerTypeAdapter(AnnotationNode.class, new AnnotationNodeSerializer())
 			.registerTypeAdapterFactory(new SkipEmptyTypeAdapterFactory())
@@ -61,7 +56,7 @@ public record AnnotationsData(
 		int version = json.getAsJsonPrimitive("version").getAsInt();
 
 		if (version != 1) {
-			throw new JsonSyntaxException("Invalid annotations version " + version);
+			throw new JsonSyntaxException("Invalid annotations version " + version + ". Try updating loom");
 		}
 
 		return GSON.fromJson(json, AnnotationsData.class);
@@ -76,12 +71,8 @@ public record AnnotationsData(
 	}
 
 	public AnnotationsData merge(AnnotationsData other) {
-		Map<String, GenericAnnotationData> newClassData = new LinkedHashMap<>(classData);
-		newClassData.putAll(classData);
-		Map<MemberKey, GenericAnnotationData> newFieldData = new LinkedHashMap<>(fieldData);
-		newFieldData.putAll(other.fieldData);
-		Map<MemberKey, MethodAnnotationData> newMethodData = new LinkedHashMap<>(methodData);
-		newMethodData.putAll(other.methodData);
-		return new AnnotationsData(newClassData, newFieldData, newMethodData);
+		Map<String, ClassAnnotationData> newClassData = new LinkedHashMap<>(classes);
+		other.classes.forEach((key, value) -> newClassData.merge(key, value, ClassAnnotationData::merge));
+		return new AnnotationsData(newClassData);
 	}
 }

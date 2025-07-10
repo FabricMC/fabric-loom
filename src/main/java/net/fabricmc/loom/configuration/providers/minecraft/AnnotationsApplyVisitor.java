@@ -35,8 +35,8 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
+import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.ClassAnnotationData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.GenericAnnotationData;
-import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.MemberKey;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.MethodAnnotationData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.TypeAnnotationKey;
 import net.fabricmc.loom.util.Constants;
@@ -50,16 +50,12 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 	}
 
 	public static class AnnotationsApplyClassVisitor extends ClassVisitor {
-		private final String className;
-		private final AnnotationsData annotationsData;
-		private final GenericAnnotationData classData;
+		private final ClassAnnotationData classData;
 		private boolean hasAddedAnnotations;
 
 		public AnnotationsApplyClassVisitor(ClassVisitor cv, String className, AnnotationsData annotationsData) {
 			super(Constants.ASM_VERSION, cv);
-			this.className = className;
-			this.annotationsData = annotationsData;
-			this.classData = annotationsData.classData().get(className);
+			this.classData = annotationsData.classes().get(className);
 			hasAddedAnnotations = false;
 		}
 
@@ -118,7 +114,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 				return null;
 			}
 
-			GenericAnnotationData fieldData = annotationsData.fieldData().get(new MemberKey(className, name, descriptor));
+			GenericAnnotationData fieldData = classData.getFieldData(name, descriptor);
 
 			if (fieldData == null) {
 				return rcv;
@@ -170,7 +166,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 			addClassAnnotations();
 
-			GenericAnnotationData fieldData = annotationsData.fieldData().get(new MemberKey(className, name, descriptor));
+			GenericAnnotationData fieldData = classData.getFieldData(name, descriptor);
 
 			if (fieldData == null) {
 				return super.visitField(access, name, descriptor, signature, value);
@@ -228,7 +224,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			addClassAnnotations();
 
-			MethodAnnotationData methodData = annotationsData.methodData().get(new MemberKey(className, name, descriptor));
+			MethodAnnotationData methodData = classData.getMethodData(name, descriptor);
 
 			if (methodData == null) {
 				return super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -263,7 +259,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 
 				@Override
 				public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
-					GenericAnnotationData parameterData = methodData.parameterData().get(parameter);
+					GenericAnnotationData parameterData = methodData.parameters().get(parameter);
 
 					if (parameterData != null && parameterData.annotationsToRemove().contains(Type.getType(descriptor).getInternalName())) {
 						return null;
@@ -307,7 +303,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 						}
 					}
 
-					methodData.parameterData().forEach((paramIndex, paramData) -> {
+					methodData.parameters().forEach((paramIndex, paramData) -> {
 						for (AnnotationNode annotation : paramData.annotationsToAdd()) {
 							AnnotationVisitor av = mv.visitParameterAnnotation(paramIndex, annotation.desc, false);
 

@@ -30,7 +30,6 @@ import org.objectweb.asm.tree.AnnotationNode
 import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData
-import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.MemberKey
 
 class AnnotationsLayerTest extends Specification {
 	def "read annotations"() {
@@ -39,22 +38,22 @@ class AnnotationsLayerTest extends Specification {
 		def annotationsData = AnnotationsData.read(reader)
 
 		then:
-		annotationsData.classData().size() == 2
-		annotationsData.classData()["pkg/Foo"].annotationsToRemove() == [
+		annotationsData.classes().size() == 2
+		annotationsData.classes()["pkg/Foo"].annotationsToRemove() == [
 			"pkg/Annotation1",
 			"pkg/Annotation2",
 			"pkg/Annotation3"
 		] as Set
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[0].desc == "pkg/Annotation4"
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[1] == 42
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[3] == Type.getType("Ljava/lang/String;")
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[5] == ["pkg/MyEnum", "VALUE"] as String[]
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[7] instanceof AnnotationNode && annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[7].desc == "pkg/Annotation6"
-		annotationsData.classData()["pkg/Foo"].annotationsToAdd()[1].values[9] == [1, 2]
-		annotationsData.classData()["pkg/Foo"].typeAnnotationsToAdd()[0].typePath.toString() == "["
-		annotationsData.fieldData().keySet().first() == new MemberKey("pkg/Foo", "bar", "Lbaz;")
-		annotationsData.methodData().keySet().first() == new MemberKey("pkg/Foo", "bar", "()V")
-		annotationsData.methodData().values().first().typeAnnotationsToAdd().isEmpty()
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[0].desc == "pkg/Annotation4"
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[1] == 42
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[3] == Type.getType("Ljava/lang/String;")
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[5] == ["pkg/MyEnum", "VALUE"] as String[]
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7] instanceof AnnotationNode && annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7].desc == "pkg/Annotation6"
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[9] == [1, 2]
+		annotationsData.classes()["pkg/Foo"].typeAnnotationsToAdd()[0].typePath.toString() == "["
+		annotationsData.classes()["pkg/Foo"].fields().keySet().first() == "bar:Lbaz;"
+		annotationsData.classes()["pkg/Foo"].methods().keySet().first() == "bar()V"
+		annotationsData.classes()["pkg/Foo"].methods().values().first().typeAnnotationsToAdd().isEmpty()
 	}
 
 	def "write annotations"() {
@@ -75,14 +74,14 @@ class AnnotationsLayerTest extends Specification {
 	private static final String ANNOTATIONS = """
 {
 	"version": 1,
-	"class_data": {
+	"classes": {
 		"pkg/Foo": {
-			"annotations_to_remove": [
+			"remove": [
 				"pkg/Annotation1",
 				"pkg/Annotation2",
 				"pkg/Annotation3"
 			],
-			"annotations_to_add": [
+			"add": [
 				{
 					"desc": "pkg/Annotation4"
 				},
@@ -122,33 +121,33 @@ class AnnotationsLayerTest extends Specification {
 					}
 				}
 			],
-			"type_annotations_to_add": [
+			"type_add": [
 				{
 					"desc": "pkg/Annotation7",
 					"type_ref": 22,
 					"type_path": "["
 				}
-			]
+			],
+			"fields": {
+				"bar:Lbaz;": {
+					"remove": [
+						"java/lang/Deprecated"
+					]
+				}
+			},
+			"methods": {
+				"bar()V": {
+					"remove": [
+						"java/lang/Deprecated"
+					]
+				}
+			}
 		},
 		"pkg/Bar": {
-			"annotations_to_add": [
+			"add": [
 				{
 					"desc": "pkg/Annotation1"
 				}
-			]
-		}
-	},
-	"field_data": {
-		"pkg/Foo.bar:Lbaz;": {
-			"annotations_to_remove": [
-				"java/lang/Deprecated"
-			]
-		}
-	},
-	"method_data": {
-		"pkg/Foo.bar()V": {
-			"annotations_to_remove": [
-				"java/lang/Deprecated"
 			]
 		}
 	}

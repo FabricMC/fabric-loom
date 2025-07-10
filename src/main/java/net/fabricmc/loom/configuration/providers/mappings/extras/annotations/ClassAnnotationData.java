@@ -32,11 +32,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.annotations.SerializedName;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 
-public record MethodAnnotationData(
+public record ClassAnnotationData(
 		@SerializedName("remove")
 		Set<String> annotationsToRemove,
 		@SerializedName("add")
@@ -45,9 +46,10 @@ public record MethodAnnotationData(
 		Set<TypeAnnotationKey> typeAnnotationsToRemove,
 		@SerializedName("type_add")
 		List<TypeAnnotationNode> typeAnnotationsToAdd,
-		Map<Integer, GenericAnnotationData> parameters
+		Map<String, GenericAnnotationData> fields,
+		Map<String, MethodAnnotationData> methods
 ) {
-	public MethodAnnotationData {
+	public ClassAnnotationData {
 		if (annotationsToRemove == null) {
 			annotationsToRemove = new LinkedHashSet<>();
 		}
@@ -64,12 +66,16 @@ public record MethodAnnotationData(
 			typeAnnotationsToAdd = new ArrayList<>();
 		}
 
-		if (parameters == null) {
-			parameters = new LinkedHashMap<>();
+		if (fields == null) {
+			fields = new LinkedHashMap<>();
+		}
+
+		if (methods == null) {
+			methods = new LinkedHashMap<>();
 		}
 	}
 
-	MethodAnnotationData merge(MethodAnnotationData other) {
+	ClassAnnotationData merge(ClassAnnotationData other) {
 		Set<String> newAnnotationsToRemove = new LinkedHashSet<>(annotationsToRemove);
 		newAnnotationsToRemove.addAll(other.annotationsToRemove);
 		List<AnnotationNode> newAnnotationsToAdd = new ArrayList<>(annotationsToAdd);
@@ -77,10 +83,11 @@ public record MethodAnnotationData(
 		Set<TypeAnnotationKey> newTypeAnnotationsToRemove = new LinkedHashSet<>(typeAnnotationsToRemove);
 		newTypeAnnotationsToRemove.addAll(other.typeAnnotationsToRemove);
 		List<TypeAnnotationNode> newTypeAnnotationsToAdd = new ArrayList<>(typeAnnotationsToAdd);
-		newTypeAnnotationsToAdd.addAll(other.typeAnnotationsToAdd);
-		Map<Integer, GenericAnnotationData> newParameters = new LinkedHashMap<>(parameters);
-		other.parameters.forEach((key, value) -> newParameters.merge(key, value, GenericAnnotationData::merge));
-		return new MethodAnnotationData(newAnnotationsToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd, newParameters);
+		Map<String, GenericAnnotationData> newFields = new LinkedHashMap<>(fields);
+		other.fields.forEach((key, value) -> newFields.merge(key, value, GenericAnnotationData::merge));
+		Map<String, MethodAnnotationData> newMethods = new LinkedHashMap<>(methods);
+		other.methods.forEach((key, value) -> newMethods.merge(key, value, MethodAnnotationData::merge));
+		return new ClassAnnotationData(newAnnotationsToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd, newFields, newMethods);
 	}
 
 	public int modifyAccessFlags(int access) {
@@ -93,5 +100,15 @@ public record MethodAnnotationData(
 		}
 
 		return access;
+	}
+
+	@Nullable
+	public GenericAnnotationData getFieldData(String fieldName, String fieldDesc) {
+		return fields.get(fieldName + ":" + fieldDesc);
+	}
+
+	@Nullable
+	public MethodAnnotationData getMethodData(String methodName, String methodDesc) {
+		return methods.get(methodName + methodDesc);
 	}
 }

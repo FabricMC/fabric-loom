@@ -29,14 +29,19 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.gson.annotations.SerializedName;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 
 public record GenericAnnotationData(
+		@SerializedName("remove")
 		Set<String> annotationsToRemove,
+		@SerializedName("add")
 		List<AnnotationNode> annotationsToAdd,
+		@SerializedName("type_remove")
 		Set<TypeAnnotationKey> typeAnnotationsToRemove,
+		@SerializedName("type_add")
 		List<TypeAnnotationNode> typeAnnotationsToAdd
 ) {
 	public GenericAnnotationData {
@@ -55,6 +60,18 @@ public record GenericAnnotationData(
 		if (typeAnnotationsToAdd == null) {
 			typeAnnotationsToAdd = new ArrayList<>();
 		}
+	}
+
+	GenericAnnotationData merge(GenericAnnotationData other) {
+		Set<String> newAnnotationToRemove = new LinkedHashSet<>(annotationsToRemove);
+		newAnnotationToRemove.addAll(other.annotationsToRemove);
+		List<AnnotationNode> newAnnotationsToAdd = new ArrayList<>(annotationsToAdd);
+		newAnnotationsToAdd.addAll(other.annotationsToAdd);
+		Set<TypeAnnotationKey> newTypeAnnotationsToRemove = new LinkedHashSet<>(typeAnnotationsToRemove);
+		newTypeAnnotationsToRemove.addAll(other.typeAnnotationsToRemove);
+		List<TypeAnnotationNode> newTypeAnnotationsToAdd = new ArrayList<>(typeAnnotationsToAdd);
+		newTypeAnnotationsToAdd.addAll(other.typeAnnotationsToAdd);
+		return new GenericAnnotationData(newAnnotationToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd);
 	}
 
 	public int modifyAccessFlags(int access) {

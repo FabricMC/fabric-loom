@@ -136,89 +136,89 @@ class AnnotationsApplyTest extends Specification {
 	private static final String ANNOTATIONS_DATA = '''
 {
 	"version": 1,
-	"class_data": {
+	"classes": {
 		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1": {
-			"annotations_to_remove": [
+			"remove": [
 				"org/jetbrains/annotations/ApiStatus$Internal"
 			],
-			"annotations_to_add": [
+			"add": [
 				{
 					"desc": "Ljava/lang/Deprecated;"
 				}
-			]
-		},
-		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass2": {
-			"annotations_to_remove": [
-				"java/lang/Deprecated"
 			],
-			"annotations_to_add": [
-				{
-					"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
-				}
-			]
-		}
-	},
-	"field_data": {
-		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1.field1:Ljava/lang/String;": {
-			"annotations_to_remove": [
-				"java/lang/Deprecated"
-			],
-			"annotations_to_add": [
-				{
-					"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
-				}
-			]
-		},
-		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1.field2:Ljava/lang/String;": {
-			"annotations_to_remove": [
-				"org/jetbrains/annotations/Nullable"
-			],
-			"annotations_to_add": [
-				{
-					"desc": "Ljava/lang/Deprecated;"
-				},
-				{
-					"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
-				}
-			]
-		}
-	},
-	"method_data": {
-		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1.method1(Ljava/lang/String;)V": {
-			"annotations_to_remove": [
-				"java/lang/Deprecated"
-			],
-			"annotations_to_add": [
-				{
-					"desc": "Lorg/jetbrains/annotations/ApiStatus$OverrideOnly;"
-				}
-			],
-			"parameter_data": {
-				"0": {
-					"annotations_to_remove": [
-						"org/jetbrains/annotations/NotNull"
+			"fields": {
+				"field1:Ljava/lang/String;": {
+					"remove": [
+						"java/lang/Deprecated"
 					],
-					"annotations_to_add": [
+					"add": [
 						{
-							"desc": "Lorg/jetbrains/annotations/UnknownNullability;"
+							"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
+						}
+					]
+				},
+				"field2:Ljava/lang/String;": {
+					"remove": [
+						"org/jetbrains/annotations/Nullable"
+					],
+					"add": [
+						{
+							"desc": "Ljava/lang/Deprecated;"
+						},
+						{
+							"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
+						}
+					]
+				}
+			},
+			"methods": {
+				"method1(Ljava/lang/String;)V": {
+					"remove": [
+						"java/lang/Deprecated"
+					],
+					"add": [
+						{
+							"desc": "Lorg/jetbrains/annotations/ApiStatus$OverrideOnly;"
+						}
+					],
+					"parameters": {
+						"0": {
+							"remove": [
+								"org/jetbrains/annotations/NotNull"
+							],
+							"add": [
+								{
+									"desc": "Lorg/jetbrains/annotations/UnknownNullability;"
+								}
+							]
+						}
+					}
+				},
+				"method2()V": {
+					"add": [
+						{
+							"desc": "Ljava/lang/Deprecated;"
+						},
+						{
+							"desc": "Lorg/jetbrains/annotations/Contract;",
+							"values": {
+								"pure": {
+									"type": "boolean",
+									"value": true
+								}
+							}
 						}
 					]
 				}
 			}
 		},
-		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1.method2()V": {
-			"annotations_to_add": [
+		"net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass2": {
+			"remove": [
+				"java/lang/Deprecated"
+			],
+			"add": [
 				{
-					"desc": "Ljava/lang/Deprecated;"
-				},
-				{
-					"desc": "Lorg/jetbrains/annotations/Contract;",
-					"values": {
-						"pure": {
-							"type": "boolean",
-							"value": true
-						}
-					}
+					"desc": "Lorg/jetbrains/annotations/ApiStatus$Internal;"
 				}
 			]
 		}

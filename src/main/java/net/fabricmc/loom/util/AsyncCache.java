@@ -73,8 +73,8 @@ public class AsyncCache<T> {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
-		//noinspection unchecked
 		throw (E) e;
 	}
 }

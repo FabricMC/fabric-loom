@@ -29,11 +29,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,6 +52,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
+import net.fabricmc.loom.util.fmj.FmjCache;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
@@ -65,7 +65,7 @@ public record SpecContextImpl(
 		List<FabricModJson> localMods,
 		List<ModHolder> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
-		final Map<String, List<FabricModJson>> fmjCache = new HashMap<>();
+		FmjCache fmjCache = new FmjCache();
 		return new SpecContextImpl(
 				getDependentMods(project, fmjCache),
 				FabricModJsonHelpers.getModsInProject(project),
@@ -74,23 +74,19 @@ public record SpecContextImpl(
 	}
 
 	// Reruns a list of mods found on both the compile and/or runtime classpaths
-	private static List<FabricModJson> getDependentMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
+	private static List<FabricModJson> getDependentMods(Project project, FmjCache fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		var mods = new ArrayList<FabricModJson>();
+		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
 		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
-				final List<FabricModJson> fabricModJson = fmjCache.computeIfAbsent(artifact.toPath().toAbsolutePath().toString(), $ -> {
+				futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {
 					return FabricModJsonFactory.createFromZipOptional(artifact.toPath())
 							.map(List::of)
 							.orElseGet(List::of);
-				});
-
-				if (!fabricModJson.isEmpty()) {
-					mods.add(fabricModJson.get(0));
-				}
+				}));
 			}
 		}
 
@@ -98,13 +94,11 @@ public record SpecContextImpl(
 		if (!extension.isProjectIsolationActive() && !GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
 			// Add all the dependent projects
 			for (Project dependentProject : getDependentProjects(project).toList()) {
-				mods.addAll(fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
-					return FabricModJsonHelpers.getModsInProject(dependentProject);
-				}));
+				futures.add(fmjCache.get(dependentProject.getPath(), () -> FabricModJsonHelpers.getModsInProject(dependentProject)));
 			}
 		}
 
-		return sorted(mods);
+		return sorted(FmjCache.joinAll(futures));
 	}
 
 	private static Stream<Project> getDependentProjects(Project project) {
@@ -116,11 +110,11 @@ public record SpecContextImpl(
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<ModHolder> getCompileRuntimeMods(Project project, Map<String, List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeMods(Project project, FmjCache fmjCache) {
 		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project, fmjCache));
 
 		for (Project dependentProject : getCompileRuntimeProjectDependencies(project).toList()) {
-			List<FabricModJson> projectMods = fmjCache.computeIfAbsent(dependentProject.getPath(), $ -> {
+			List<FabricModJson> projectMods = fmjCache.getBlocking(dependentProject.getPath(), () -> {
 				return FabricModJsonHelpers.getModsInProject(dependentProject);
 			});
 
@@ -133,7 +127,7 @@ public record SpecContextImpl(
 	}
 
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
-	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(Project project, Map<String, List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(Project project, FmjCache fmjCache) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		// A set of mod ids from all remap configurations that are considered for dependency transforms.
@@ -168,26 +162,26 @@ public record SpecContextImpl(
 				.toList();
 	}
 
-	private static Stream<FabricModJson> getMods(Project project, Map<String, List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+	private static Stream<FabricModJson> getMods(Project project, FmjCache fmjCache, Stream<RemapConfigurationSettings> stream) {
 		return stream.flatMap(resolveArtifacts(project, true))
 				.map(modFromZip(fmjCache))
 				.filter(Objects::nonNull);
 	}
 
-	private static Set<String> getModIds(Project project, Map<String, List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+	private static Set<String> getModIds(Project project, FmjCache fmjCache, Stream<RemapConfigurationSettings> stream) {
 		return getMods(project, fmjCache, stream)
 				.map(FabricModJson::getId)
 				.collect(Collectors.toSet());
 	}
 
-	private static Function<Path, @Nullable FabricModJson> modFromZip(Map<String, List<FabricModJson>> fmjCache) {
+	private static Function<Path, @Nullable FabricModJson> modFromZip(FmjCache fmjCache) {
 		return zipPath -> {
-			final List<FabricModJson> list = fmjCache.computeIfAbsent(zipPath.toAbsolutePath().toString(), $ -> {
+			final List<FabricModJson> list = fmjCache.getBlocking(zipPath.toAbsolutePath().toString(), () -> {
 				return FabricModJsonFactory.createFromZipOptional(zipPath)
 						.map(List::of)
 						.orElseGet(List::of);
 			});
-			return list.isEmpty() ? null : list.get(0);
+			return list.isEmpty() ? null : list.getFirst();
 		};
 	}
 

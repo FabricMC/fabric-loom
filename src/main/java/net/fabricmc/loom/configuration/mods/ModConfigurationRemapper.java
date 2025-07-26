@@ -35,8 +35,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -72,6 +78,7 @@ import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.SourceRemapper;
+import net.fabricmc.loom.util.fmj.FmjCache;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
@@ -82,6 +89,7 @@ public class ModConfigurationRemapper {
 	public static final String MISSING_GROUP = "unspecified";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModConfigurationRemapper.class);
+	private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
 	public static void supplyModConfigurations(Project project, ServiceFactory serviceFactory, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		final DependencyHandler dependencies = project.getDependencies();
@@ -153,25 +161,19 @@ public class ModConfigurationRemapper {
 		// the installer data. The installer data has to be added before
 		// any mods are remapped since remapping needs the dependencies provided by that data.
 		final Map<Configuration, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
-		final Map<ArtifactRef, ArtifactMetadata> metaCache = new HashMap<>();
+		final var metaCache = new ConcurrentHashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>>();
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
 			/*
 			sourceConfig - The source configuration where the intermediary named artifacts come from. i.e "modApi"
 			remappedConfig - The target configuration where the remapped artifacts go
 			 */
 			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
+			List<ArtifactRef> artifactRefs = resolveArtifacts(project, sourceConfig);
+			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache);
 			final List<ModDependency> modDependencies = new ArrayList<>();
 
-			for (ArtifactRef artifact : resolveArtifacts(project, sourceConfig)) {
-				final ArtifactMetadata artifactMetadata;
-
-				artifactMetadata = metaCache.computeIfAbsent(artifact, a -> {
-					try {
-						return ArtifactMetadata.create(a, LoomGradlePlugin.LOOM_VERSION);
-					} catch (IOException e) {
-						throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + a.path(), e);
-					}
-				});
+			for (ArtifactRef artifact : artifactRefs) {
+				final ArtifactMetadata artifactMetadata = Objects.requireNonNull(metadataMap.get(artifact), "Failed to find metadata for artifact");
 
 				if (artifactMetadata.installerData() != null) {
 					if (extension.getInstallerData() != null) {
@@ -235,6 +237,28 @@ public class ModConfigurationRemapper {
 		});
 	}
 
+	private static Map<ArtifactRef, ArtifactMetadata> getMetadata(List<ArtifactRef> artifacts, ConcurrentHashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>> cache) {
+		var futures = new HashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>>();
+
+		for (ArtifactRef artifact : artifacts) {
+			CompletableFuture<ArtifactMetadata> future = cache.computeIfAbsent(artifact, $ -> CompletableFuture.supplyAsync(() -> {
+				try {
+					return ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION);
+				} catch (IOException e) {
+					throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + artifact.path(), e);
+				}
+			}, EXECUTOR));
+
+			futures.put(artifact, future);
+		}
+
+		return futures.entrySet().stream()
+			.collect(Collectors.toMap(
+					Map.Entry::getKey,
+					entry -> FmjCache.join(entry.getValue())
+			));
+	}
+
 	private static void createConstraints(ArtifactRef artifact, Configuration targetConfig, Configuration sourceConfig, DependencyHandler dependencies) {
 		if (true) {
 			// Disabled due to the gradle module metadata causing issues. Try the MavenProject test to reproduce issue.
@@ -260,10 +284,10 @@ public class ModConfigurationRemapper {
 		final List<ArtifactRef> artifacts = new ArrayList<>();
 
 		final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedConfiguration().getResolvedArtifacts();
-		downloadAllSources(project, resolvedArtifacts);
+		Map<ResolvedArtifact, Path> sourcesMap = downloadAllSources(project, resolvedArtifacts);
 
 		for (ResolvedArtifact artifact : resolvedArtifacts) {
-			final Path sources = findSources(project, artifact);
+			@Nullable Path sources = sourcesMap.get(artifact);
 			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
 		}
 
@@ -289,9 +313,9 @@ public class ModConfigurationRemapper {
 		return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
 	}
 
-	private static void downloadAllSources(Project project, Set<ResolvedArtifact> resolvedArtifacts) {
+	private static Map<ResolvedArtifact, Path> downloadAllSources(Project project, Set<ResolvedArtifact> resolvedArtifacts) {
 		if (isCIBuild()) {
-			return;
+			return Map.of();
 		}
 
 		final DependencyHandler dependencies = project.getDependencies();
@@ -307,26 +331,28 @@ public class ModConfigurationRemapper {
 				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
 
 		// Run a single query for all of the artifacts, this will allow them to be resolved in parallel before they are queried individually
-		query.execute();
-	}
+		Set<ComponentArtifactsResult> resolvedSources = query.execute().getResolvedComponents();
+		Map<ResolvedArtifact, Path> sources = new HashMap<>();
 
-	@Nullable
-	public static Path findSources(Project project, ResolvedArtifact artifact) {
-		if (isCIBuild()) {
-			return null;
+		for (ResolvedArtifact resolvedArtifact : resolvedArtifacts) {
+			for (ComponentArtifactsResult sourceArtifact : resolvedSources) {
+				if (sourceArtifact.getId().equals(resolvedArtifact.getId().getComponentIdentifier())) {
+					Path sourcesPath = getSourcesPath(sourceArtifact);
+
+					if (sourcesPath != null) {
+						sources.put(resolvedArtifact, sourcesPath);
+					}
+				}
+			}
 		}
 
-		final DependencyHandler dependencies = project.getDependencies();
+		return sources;
+	}
 
-		@SuppressWarnings("unchecked") ArtifactResolutionQuery query = dependencies.createArtifactResolutionQuery()
-				.forComponents(artifact.getId().getComponentIdentifier())
-				.withArtifacts(JvmLibrary.class, SourcesArtifact.class);
-
-		for (ComponentArtifactsResult result : query.execute().getResolvedComponents()) {
-			for (ArtifactResult srcArtifact : result.getArtifacts(SourcesArtifact.class)) {
-				if (srcArtifact instanceof ResolvedArtifactResult) {
-					return ((ResolvedArtifactResult) srcArtifact).getFile().toPath();
-				}
+	private static Path getSourcesPath(ComponentArtifactsResult sourceArtifact) {
+		for (ArtifactResult srcArtifact : sourceArtifact.getArtifacts(SourcesArtifact.class)) {
+			if (srcArtifact instanceof ResolvedArtifactResult) {
+				return ((ResolvedArtifactResult) srcArtifact).getFile().toPath();
 			}
 		}
 

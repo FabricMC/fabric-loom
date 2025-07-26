@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.fmj;
+package net.fabricmc.loom.util;
 
 import java.util.Collection;
 import java.util.List;
@@ -33,28 +33,34 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
-import net.fabricmc.loom.util.CompletableFutureCollector;
-
-public class FmjCache {
+public class AsyncCache<T> {
 	private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+	private final Map<Object, CompletableFuture<T>> cache = new ConcurrentHashMap<>();
 
-	private final Map<String, CompletableFuture<List<FabricModJson>>> cache = new ConcurrentHashMap<>();
-
-	public CompletableFuture<List<FabricModJson>> get(String cacheKey, Supplier<List<FabricModJson>> supplier) {
+	public CompletableFuture<T> get(Object cacheKey, Supplier<T> supplier) {
 		return cache.computeIfAbsent(cacheKey, $ -> CompletableFuture.supplyAsync(supplier, EXECUTOR));
 	}
 
-	public List<FabricModJson> getBlocking(String cacheKey, Supplier<List<FabricModJson>> supplier) {
+	public T getBlocking(Object cacheKey, Supplier<T> supplier) {
 		return join(get(cacheKey, supplier));
 	}
 
-	public static List<FabricModJson> joinAll(Collection<CompletableFuture<List<FabricModJson>>> futures) {
+	public static <T> List<T> joinList(Collection<CompletableFuture<List<T>>> futures) {
 		return join(futures.stream()
 				.collect(CompletableFutureCollector.allOf()))
 				.stream()
 				.flatMap(List::stream)
 				.toList();
+	}
+
+	public static <K, V> Map<K, V> joinMap(Map<K, CompletableFuture<V>> futures) {
+		return futures.entrySet().stream()
+			.collect(Collectors.toMap(
+					Map.Entry::getKey,
+					entry -> join(entry.getValue())
+			));
 	}
 
 	// Rethrows the exception from the CompletableFuture, if it exists.

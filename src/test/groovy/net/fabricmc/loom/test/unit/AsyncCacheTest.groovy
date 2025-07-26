@@ -22,17 +22,16 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit.fmj
-
+package net.fabricmc.loom.test.unit
 
 import spock.lang.Specification
 
-import net.fabricmc.loom.util.fmj.FmjCache
+import net.fabricmc.loom.util.AsyncCache
 
-class FmjCacheTest extends Specification {
+class AsyncCacheTest extends Specification {
 	def "rethrows error"() {
 		given:
-		def cache = new FmjCache()
+		def cache = new AsyncCache()
 		def cacheKey = "testKey"
 		def supplier = { throw new RuntimeException("Test exception") }
 

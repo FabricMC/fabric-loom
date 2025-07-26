@@ -38,11 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -78,7 +74,7 @@ import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.fmj.FmjCache;
+import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
@@ -89,7 +85,6 @@ public class ModConfigurationRemapper {
 	public static final String MISSING_GROUP = "unspecified";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModConfigurationRemapper.class);
-	private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
 	public static void supplyModConfigurations(Project project, ServiceFactory serviceFactory, String mappingsSuffix, LoomGradleExtension extension, SourceRemapper sourceRemapper) {
 		final DependencyHandler dependencies = project.getDependencies();
@@ -161,7 +156,7 @@ public class ModConfigurationRemapper {
 		// the installer data. The installer data has to be added before
 		// any mods are remapped since remapping needs the dependencies provided by that data.
 		final Map<Configuration, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
-		final var metaCache = new ConcurrentHashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>>();
+		AsyncCache<ArtifactMetadata> metaCache = new AsyncCache<>();
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
 			/*
 			sourceConfig - The source configuration where the intermediary named artifacts come from. i.e "modApi"
@@ -237,26 +232,22 @@ public class ModConfigurationRemapper {
 		});
 	}
 
-	private static Map<ArtifactRef, ArtifactMetadata> getMetadata(List<ArtifactRef> artifacts, ConcurrentHashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>> cache) {
+	private static Map<ArtifactRef, ArtifactMetadata> getMetadata(List<ArtifactRef> artifacts, AsyncCache<ArtifactMetadata> cache) {
 		var futures = new HashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>>();
 
 		for (ArtifactRef artifact : artifacts) {
-			CompletableFuture<ArtifactMetadata> future = cache.computeIfAbsent(artifact, $ -> CompletableFuture.supplyAsync(() -> {
+			CompletableFuture<ArtifactMetadata> future = cache.get(artifact, () -> {
 				try {
 					return ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION);
 				} catch (IOException e) {
 					throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + artifact.path(), e);
 				}
-			}, EXECUTOR));
+			});
 
 			futures.put(artifact, future);
 		}
 
-		return futures.entrySet().stream()
-			.collect(Collectors.toMap(
-					Map.Entry::getKey,
-					entry -> FmjCache.join(entry.getValue())
-			));
+		return AsyncCache.joinMap(futures);
 	}
 
 	private static void createConstraints(ArtifactRef artifact, Configuration targetConfig, Configuration sourceConfig, DependencyHandler dependencies) {

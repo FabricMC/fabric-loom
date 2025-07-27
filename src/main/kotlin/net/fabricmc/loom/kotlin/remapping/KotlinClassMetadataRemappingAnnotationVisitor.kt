@@ -36,8 +36,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
     private val remapper: Remapper,
     val next: AnnotationVisitor,
     val className: String?,
-) :
-    AnnotationNode(Opcodes.ASM9, KotlinMetadataRemappingClassVisitor.ANNOTATION_DESCRIPTOR) {
+) : AnnotationNode(Opcodes.ASM9, KotlinMetadataRemappingClassVisitor.ANNOTATION_DESCRIPTOR) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun visit(
@@ -100,12 +99,13 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
                 var kpackage = metadata.kmPackage
                 kpackage = KotlinClassRemapper(remapper).remap(kpackage)
                 val remapped =
-                    KotlinClassMetadata.MultiFileClassPart(
-                        kpackage,
-                        metadata.facadeClassName,
-                        metadata.version,
-                        metadata.flags,
-                    ).write()
+                    KotlinClassMetadata
+                        .MultiFileClassPart(
+                            kpackage,
+                            metadata.facadeClassName,
+                            metadata.version,
+                            metadata.flags,
+                        ).write()
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }

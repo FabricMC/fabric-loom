@@ -33,9 +33,7 @@ object KotlinMetadataTinyRemapperExtensionImpl : KotlinMetadataTinyRemapperExten
     override fun insertApplyVisitor(
         cls: TrClass,
         next: ClassVisitor?,
-    ): ClassVisitor {
-        return KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
-    }
+    ): ClassVisitor = KotlinMetadataRemappingClassVisitor(cls.environment.remapper, next)
 
     override fun attach(builder: TinyRemapper.Builder) {
         builder.extraPreApplyVisitor(this)

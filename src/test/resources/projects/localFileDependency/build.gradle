@@ -29,7 +29,7 @@ dependencies {
 	// Local files
 	modImplementation files("test-data-a.jar", "test-data-b.jar") // multiple files in a bare FileCollection
 	modImplementation fileTree("myFileTree") // an entire file tree
-	modImplementation name: "test-data-e" // a flatDir dependency
+	modImplementation ":test-data-e" // a flatDir dependency
 
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.

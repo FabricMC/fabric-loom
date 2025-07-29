@@ -1,6 +1,6 @@
 import java.util.Properties
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	kotlin("jvm") version "2.0.21"
@@ -18,9 +18,9 @@ tasks {
 	withType<JavaCompile> {
 		options.release.set(8)
 	}
-	withType<KotlinCompile<KotlinJvmOptions>> {
-		kotlinOptions {
-			jvmTarget = "1.8"
+	withType<KotlinCompile> {
+		compilerOptions {
+			jvmTarget = JvmTarget.JVM_1_8
 		}
 	}
 }
@@ -29,10 +29,10 @@ group = "com.example"
 version = "0.0.1"
 
 dependencies {
-	minecraft(group = "com.mojang", name = "minecraft", version = "1.16.5")
-	mappings(group = "net.fabricmc", name = "yarn", version = "1.16.5+build.5", classifier = "v2")
+	minecraft("com.mojang:minecraft:1.16.5")
+	mappings("net.fabricmc:yarn:1.16.5+build.5:v2")
 	modImplementation("net.fabricmc:fabric-loader:0.16.9")
-	modImplementation(group = "net.fabricmc", name = "fabric-language-kotlin", version = "1.12.3+kotlin.2.0.21")
+	modImplementation("net.fabricmc:fabric-language-kotlin:1.12.3+kotlin.2.0.21")
 }
 
 publishing {

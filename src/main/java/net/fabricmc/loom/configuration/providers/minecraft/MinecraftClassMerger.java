@@ -25,15 +25,18 @@
 package net.fabricmc.loom.configuration.providers.minecraft;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -60,11 +63,18 @@ public class MinecraftClassMerger {
 			List<String> listServer = toMap(entriesServer, this.entriesServer);
 
 			this.entryNames = mergePreserveOrder(listClient, listServer);
+
+			for (String entryName : entryNames) {
+				visitEntries(this.entriesClient.get(entryName), this.entriesServer.get(entryName));
+			}
 		}
 
 		public abstract String getName(T entry);
 
 		public abstract void applySide(T entry, String side);
+
+		public void visitEntries(@Nullable T clientEntry, @Nullable T serverEntry) {
+		}
 
 		private List<String> toMap(List<T> entries, Map<String, T> map) {
 			List<String> list = new ArrayList<>(entries.size());
@@ -125,6 +135,8 @@ public class MinecraftClassMerger {
 			super.visitEnd();
 		}
 	}
+
+	public List<String> validationErrors = Collections.synchronizedList(new ArrayList<>());
 
 	public MinecraftClassMerger() {
 	}
@@ -232,6 +244,20 @@ public class MinecraftClassMerger {
 				AnnotationVisitor av = entry.visitAnnotation(SIDED_DESCRIPTOR, false);
 				visitSideAnnotation(av, side);
 			}
+
+			@Override
+			public void visitEntries(@Nullable FieldNode clientEntry, @Nullable FieldNode serverEntry) {
+				if (clientEntry == null || serverEntry == null) {
+					return;
+				}
+
+				if (clientEntry.access == serverEntry.access) {
+					return;
+				}
+
+				validationErrors.add("Field has different access modifiers: %s#%s%s, client: '%s' server: '%s'"
+						.formatted(nodeOut.name, clientEntry.name, clientEntry.desc, formatAccessFlags(clientEntry.access), formatAccessFlags(serverEntry.access)));
+			}
 		}.merge(nodeOut.fields);
 
 		new Merger<>(nodeC.methods, nodeS.methods) {
@@ -244,6 +270,20 @@ public class MinecraftClassMerger {
 			public void applySide(MethodNode entry, String side) {
 				AnnotationVisitor av = entry.visitAnnotation(SIDED_DESCRIPTOR, false);
 				visitSideAnnotation(av, side);
+			}
+
+			@Override
+			public void visitEntries(@Nullable MethodNode clientEntry, @Nullable MethodNode serverEntry) {
+				if (clientEntry == null || serverEntry == null) {
+					return;
+				}
+
+				if (clientEntry.access == serverEntry.access) {
+					return;
+				}
+
+				validationErrors.add("Method has different access modifiers: %s#%s%s, client: '%s' server: '%s'"
+										.formatted(nodeOut.name, clientEntry.name, clientEntry.desc, formatAccessFlags(clientEntry.access), formatAccessFlags(serverEntry.access)));
 			}
 		}.merge(nodeOut.methods);
 
@@ -292,5 +332,22 @@ public class MinecraftClassMerger {
 		}
 
 		return out;
+	}
+
+	private static String formatAccessFlags(int access) {
+		StringBuilder sb = new StringBuilder();
+
+		if ((access & Opcodes.ACC_PUBLIC) != 0) sb.append("public ");
+		if ((access & Opcodes.ACC_PRIVATE) != 0) sb.append("private ");
+		if ((access & Opcodes.ACC_PROTECTED) != 0) sb.append("protected ");
+		if ((access & Opcodes.ACC_FINAL) != 0) sb.append("final ");
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) sb.append("abstract ");
+		if ((access & Opcodes.ACC_INTERFACE) != 0) sb.append("interface ");
+		if ((access & Opcodes.ACC_ENUM) != 0) sb.append("enum ");
+		if ((access & Opcodes.ACC_ANNOTATION) != 0) sb.append("@interface ");
+		if ((access & Opcodes.ACC_STATIC) != 0) sb.append("static ");
+		if ((access & Opcodes.ACC_SYNTHETIC) != 0) sb.append("synthetic ");
+
+		return sb.toString().trim();
 	}
 }

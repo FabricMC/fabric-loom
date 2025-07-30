@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 public record VersionsManifest(List<Version> versions, Map<String, String> latest) {
 	public static class Version {
-		public String id, url, sha1;
+		public String type, id, url, sha1;
 	}
 
 	@Nullable

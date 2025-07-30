@@ -101,10 +101,6 @@ public class MinecraftJarMerger implements AutoCloseable {
 		offsetSyntheticsParams = true;
 	}
 
-	public List<String> getValidationErrors() {
-		return classMerger.validationErrors;
-	}
-
 	@Override
 	public void close() throws IOException {
 		inputClientFs.close();

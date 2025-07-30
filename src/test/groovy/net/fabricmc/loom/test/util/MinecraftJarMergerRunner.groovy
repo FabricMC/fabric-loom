@@ -52,6 +52,11 @@ class MinecraftJarMergerRunner {
 					continue
 				}
 
+				if (version.id == "1.2.5") {
+					// Cannot merge any version before this.
+					break
+				}
+
 				def info = downloadVersion(version, it)
 
 				if (info != null) {
@@ -77,14 +82,6 @@ class MinecraftJarMergerRunner {
 
 			def merger = new MinecraftJarMerger(info.clientJar.toFile(), serverJar, mergedJar.toFile())
 			merger.merge()
-
-			def errors = merger.getValidationErrors()
-
-			if (!errors.isEmpty()) {
-				for (def error : errors) {
-					println("  - " + error)
-				}
-			}
 		}
 	}
 

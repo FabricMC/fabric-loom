@@ -49,7 +49,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	public MixinExtensionApiImpl(Project project) {
 		this.project = Objects.requireNonNull(project);
 		this.useMixinAp = project.getObjects().property(Boolean.class)
-				.convention(true);
+				.convention(false);
 
 		this.refmapTargetNamespace = project.getObjects().property(String.class)
 				.convention(MappingsNamespace.INTERMEDIARY.toString());

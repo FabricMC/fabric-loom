@@ -87,12 +87,12 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 	}
 
 	@Unroll
-	def "remap mixins with tiny-remapper"() {
+	def "remap mixins with mixin AP"() {
 		setup:
 		def gradle = gradleProject(project: "simple", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
 				allprojects {
-					loom.mixin.useLegacyMixinAp = false
+					loom.mixin.useLegacyMixinAp = true
 				}
 				""".stripIndent()
 

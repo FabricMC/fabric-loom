@@ -7,7 +7,7 @@ target_field mapped.bar.Z null Lmapped/foo/X; g
 target_method mapped.bar.Y bar2 (Lmapped/foo/X;)V
 
 group int
-	mapped.bar.Y.*
+	mapped.bar.Y.quux
 
 group float
 	mapped.bar.Y.quux:int

@@ -36,7 +36,10 @@ import net.fabricmc.loom.test.unit.service.mocks.MockTinyRemapper
 import net.fabricmc.loom.test.unit.service.mocks.MockTinyRemapperService
 import net.fabricmc.loom.util.Pair
 import net.fabricmc.loom.util.ZipUtils
+import net.fabricmc.tinyremapper.api.TrClass
+import net.fabricmc.tinyremapper.api.TrField
 
+import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
 
 // Based on https://github.com/Earthcomputer/unpick-v3-parser/blob/68b11c50a7c97a75218f70f5ec1291a38b178ad7/src/test/java/net/earthcomputer/unpickv3parser/remapper/TestRemapper.java
@@ -50,17 +53,17 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 	]
 
 	private static final Map<String, String> CLASSES = [
-		"unmapped.foo.A": "mapped.foo.X",
-		"unmapped.foo.B": "mapped.bar.Y",
-		"unmapped.bar.C": "mapped.bar.Z"
+		"unmapped/foo/A": "mapped/foo/X",
+		"unmapped/foo/B": "mapped/bar/Y",
+		"unmapped/bar/C": "mapped/bar/Z"
 	]
 
 	private static final Map<MemberKey, String> FIELDS = [
-		(new MemberKey("unmapped.foo.B", "baz", "I")): "quux"
+		(new MemberKey("unmapped/foo/B", "baz", "I")): "quux"
 	]
 
 	private static final Map<MemberKey, String> METHODS = [
-		(new MemberKey("unmapped.foo.B", "foo2", "(Lunmapped/foo/A;)V")): "bar2"
+		(new MemberKey("unmapped/foo/B", "foo2", "(Lunmapped/foo/A;)V")): "bar2"
 	]
 
 	@TempDir
@@ -92,6 +95,18 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 
 		FIELDS.each { key, mapped ->
 			when(mockTr.remapper.mapFieldName(key.owner, key.name, key.descriptor)).thenReturn(mapped)
+		}
+
+		FIELDS.groupBy { it.key.owner }.each { owner, fields ->
+			def mockClass = mock(TrClass.class)
+			when(mockTr.trEnvironment.getClass(owner)).thenReturn(mockClass)
+			def mockFields = fields.collect { key, mapped ->
+				def mockField = mock(TrField.class)
+				when(mockField.name).thenReturn(key.name)
+				when(mockField.desc).thenReturn(key.descriptor)
+				mockField
+			}
+			when(mockClass.fields).thenReturn(mockFields)
 		}
 
 		METHODS.each { key, mapped ->

@@ -26,20 +26,40 @@ package net.fabricmc.loom.test.integration
 
 import java.nio.charset.StandardCharsets
 
+import groovy.transform.Immutable
 import spock.lang.Specification
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
+import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements GradleProjectTestTrait {
-	static final String MAPPINGS = "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2"
+	static final MappingInfo V1 = new MappingInfo(
+		minecraft: "21w13a",
+		yarn: "21w13a+build.30:v2",
+		name: "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2",
+		searchString: "Block.DEFAULT_SET_BLOCK_STATE_FLAG",
+	)
+	static final MappingInfo V2_NAMED = new MappingInfo(
+		minecraft: "25w32a",
+		yarn: "25w32a+build.8:v2",
+		name: "25w32a-net.fabricmc.yarn.25w32a.25w32a+build.8-v2",
+		searchString: "Block.NOTIFY_ALL",
+	)
 
-	def "unpick decompile #version #useCache"() {
+	// Test to make sure that constants are unpicked in the decompiled source across multiple versions.
+	def "unpick decompile #version #useCache #info"() {
 		setup:
-		def gradle = gradleProject(project: "unpick", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+			dependencies {
+				minecraft "com.mojang:minecraft:${info.minecraft}"
+				mappings "net.fabricmc:yarn:${info.yarn}"
+				modImplementation "net.fabricmc:fabric-loader:0.17.2"
+			}
+		"""
 
 		when:
 		def result = gradle.run(tasks: useCache ? [
@@ -52,17 +72,19 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 		])
 		then:
 		result.task(":genSourcesWithVineflower").outcome == SUCCESS
-		getClassSource(gradle, "net/minecraft/block/CakeBlock.java").contains("Block.DEFAULT_SET_BLOCK_STATE_FLAG")
+		getClassSource(gradle, "net/minecraft/block/CakeBlock.java", info.name).contains(info.searchString)
 		result.output.contains(useCache ? "Using decompile cache." : "Not using decompile cache.")
 
 		where:
-		[version, useCache] << [
+		[version, useCache, info] << [
 			STANDARD_TEST_VERSIONS,
-			[true, false]
+			[true, false],
+			[V1, V2_NAMED]
 		].combinations()
 	}
 
-	def "unpick build"() {
+	// Test to make sure that we can compile against constants from yarn using the v1 unpick metadata format.
+	def "unpick v1 constants"() {
 		setup:
 		def gradle = gradleProject(project: "unpick", version: version)
 
@@ -76,8 +98,16 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
-	private static String getClassSource(GradleProject gradle, String classname, String mappings = MAPPINGS) {
+	private static String getClassSource(GradleProject gradle, String classname, String mappings) {
 		File sourcesJar = gradle.getGeneratedSources(mappings)
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
+	}
+
+	@Immutable
+	private static class MappingInfo {
+		final String minecraft
+		final String yarn
+		final String name
+		final String searchString
 	}
 }

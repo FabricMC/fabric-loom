@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,16 +37,16 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class UnpickTest extends Specification implements GradleProjectTestTrait {
 	static final MappingInfo V1 = new MappingInfo(
-		minecraft: "21w13a",
-		yarn: "21w13a+build.30:v2",
-		name: "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2",
-		searchString: "Block.DEFAULT_SET_BLOCK_STATE_FLAG",
+	minecraft: "21w13a",
+	yarn: "21w13a+build.30:v2",
+	name: "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2",
+	searchString: "Block.DEFAULT_SET_BLOCK_STATE_FLAG",
 	)
 	static final MappingInfo V2_NAMED = new MappingInfo(
-		minecraft: "25w32a",
-		yarn: "25w32a+build.8:v2",
-		name: "25w32a-net.fabricmc.yarn.25w32a.25w32a+build.8-v2",
-		searchString: "Block.NOTIFY_ALL",
+	minecraft: "25w32a",
+	yarn: "25w32a+build.8:v2",
+	name: "25w32a-net.fabricmc.yarn.25w32a.25w32a+build.8-v2",
+	searchString: "Block.NOTIFY_ALL",
 	)
 
 	// Test to make sure that constants are unpicked in the decompiled source across multiple versions.

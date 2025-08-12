@@ -201,7 +201,7 @@ public record SpecContextImpl(
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		// TODO provide a project isolated way of doing this.
-		if (!extension.isProjectIsolationActive()
+		if (extension.isProjectIsolationActive()
 				|| GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
 			return Stream.empty();
 		}

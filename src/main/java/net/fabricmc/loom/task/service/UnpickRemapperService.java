@@ -67,7 +67,8 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 		return TYPE.create(project, options -> {
 			options.getTinyRemapper().set(TinyRemapperService.createSimple(project,
 					project.provider(metadata::namespace),
-					project.provider(MappingsNamespace.NAMED::toString)
+					project.provider(MappingsNamespace.NAMED::toString),
+					TinyRemapperService.ClasspathLibraries.INCLUDE // Must include the full set of libraries on classpath so fields can be looked up. This does use a lot of memory however...
 			));
 		});
 	}

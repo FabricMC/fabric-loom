@@ -44,4 +44,14 @@ public final class Strings {
 
 		return builder.toString();
 	}
+
+	// Turns camelCase/PascalCase into Capital Case
+	// caseConversionExample -> Case Conversion Example
+	public static String capitalizeCamelCaseName(String name) {
+		if (name.isEmpty()) {
+			return "";
+		}
+
+		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
+	}
 }

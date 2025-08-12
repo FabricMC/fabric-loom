@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -36,9 +37,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -58,6 +60,7 @@ import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
@@ -66,7 +69,7 @@ public class RunConfig {
 	public String ideaModuleName;
 	public String mainClass;
 	public String runDirIdeaUrl;
-	public String runDir;
+	public File runDir;
 	public String environment;
 	public List<String> vmArgs = new ArrayList<>();
 	public List<String> programArgs = new ArrayList<>();
@@ -75,58 +78,21 @@ public class RunConfig {
 	public String projectName;
 	public String folderName;
 
-	// Turns camelCase/PascalCase into Capital Case
-	// caseConversionExample -> Case Conversion Example
-	private static String capitalizeCamelCaseName(String name) {
-		if (name.length() == 0) {
-			return "";
-		}
-
-		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
-	}
-
 	public static RunConfig runConfig(Project project, RunConfigSettings settings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		LibraryContext context = new LibraryContext(extension.getMinecraftProvider().getVersionInfo(), JavaVersion.current());
 
-		if (settings.getEnvironment().equals("client") && context.usesLWJGL3()) {
-			settings.startFirstThread();
-		}
-
-		String name = settings.getName();
-
-		String configName = settings.getConfigName();
-		String environment = settings.getEnvironment();
-		SourceSet sourceSet = settings.getSource(project);
-
-		String mainClass = settings.getMainClass().getOrNull();
-
-		if (mainClass == null) {
-			throw new IllegalArgumentException("Run configuration '" + name + "' must specify 'mainClass'");
-		}
-
-		if (configName == null) {
-			configName = "";
-			String srcName = sourceSet.getName();
-
-			final boolean isSplitClientSourceSet = extension.areEnvironmentSourceSetsSplit()
-					&& srcName.equals("client")
-					&& environment.equals("client");
-
-			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
-				configName += capitalizeCamelCaseName(srcName) + " ";
+		if (settings.getRuntimeEnvironment().get().equals("client") && context.usesLWJGL3()) {
+			if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
+				settings.getJVMArguments().add("-XstartOnFirstThread");
 			}
-
-			configName += "Minecraft " + capitalizeCamelCaseName(name);
 		}
 
-		Objects.requireNonNull(environment, "No environment set for run config");
-
-		String runDir = settings.getRunDir();
-
-		if (runDir == null) {
-			runDir = "run";
-		}
+		String configName = settings.getConfigurationName().get();
+		String environment = settings.getRuntimeEnvironment().get();
+		SourceSet sourceSet = settings.getSourceSet().get();
+		String mainClass = settings.getMainClass().get();
+		File runDir = settings.getRunDirectory().get().getAsFile();
 
 		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
 		RunConfig runConfig = new RunConfig();
@@ -136,12 +102,12 @@ public class RunConfig {
 			runConfig.configName += " (" + project.getPath() + ")";
 		}
 
-		runConfig.mainClass = settings.devLaunchMainClass().get();
+		runConfig.mainClass = settings.getDevLaunchMainClass().get();
 		runConfig.vmArgs.add("-Dfabric.dli.config=" + encodeEscaped(extension.getFiles().getDevLauncherConfig().getAbsolutePath()));
 		runConfig.vmArgs.add("-Dfabric.dli.env=" + environment.toLowerCase());
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
-		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir;
+		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir; // TODO check if the runDir is relative to the project root
 		runConfig.runDir = runDir;
 		runConfig.sourceSet = sourceSet;
 		runConfig.environment = environment;
@@ -158,6 +124,13 @@ public class RunConfig {
 		return runConfig;
 	}
 
+	// TODO work to replace this.
+	@Deprecated(forRemoval = true)
+	public String getRelativeRunDir() {
+		// TODO fix me
+		return this.runDir.toString();
+	}
+
 	public String fromDummy(String dummy, boolean relativeDir, Project project) throws IOException {
 		String dummyConfig;
 
@@ -165,7 +138,7 @@ public class RunConfig {
 			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		}
 
-		String runDir = this.runDir;
+		String runDir = getRelativeRunDir();
 
 		if (relativeDir && project.getRootProject() != project) {
 			Path rootPath = project.getRootDir().toPath();
@@ -217,11 +190,12 @@ public class RunConfig {
 		return sb.toString();
 	}
 
-	static String getMainClass(String side, LoomGradleExtension extension, String defaultMainClass) {
+	@Nullable
+	static String getMainClass(String side, LoomGradleExtension extension) {
 		InstallerData installerData = extension.getInstallerData();
 
 		if (installerData == null) {
-			return defaultMainClass;
+			return null;
 		}
 
 		JsonObject installerJson = installerData.installerJson();
@@ -244,7 +218,7 @@ public class RunConfig {
 			return mainClassName;
 		}
 
-		return defaultMainClass;
+		return null;
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {

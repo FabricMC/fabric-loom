@@ -94,7 +94,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
-		getInternalRunDir().set(config.map(runConfig -> runConfig.runDir));
+		getInternalRunDir().set(config.map(runConfig -> runConfig.runDir.getAbsolutePath()));
 		getInternalEnvironmentVars().set(config.map(runConfig -> runConfig.environmentVariables));
 		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
@@ -132,7 +132,7 @@ public abstract class AbstractRunTask extends JavaExec {
 			super.setClasspath(getInternalClasspath());
 		}
 
-		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
+		setWorkingDir(new File(getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
 
 		super.exec();

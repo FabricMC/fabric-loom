@@ -164,7 +164,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
 			Path rootPath = project.getRootDir().toPath();
 			Path projectPath = project.getProjectDir().toPath();
-			String relativeRunDir = rootPath.relativize(projectPath).resolve(runConfig.runDir).toString();
+			String relativeRunDir = rootPath.relativize(projectPath).resolve(runConfig.getRelativeRunDir()).toString();
 			return new VsCodeConfiguration(
 					"java",
 					runConfig.configName,

@@ -98,7 +98,7 @@ public abstract class SandboxConfiguration implements Runnable {
 
 			// The sandbox also acts as DLI
 			// Set the sandbox as the true main class
-			settings.devLaunchMainClass().set(metadata.mainClass());
+			settings.getDevLaunchMainClass().set(metadata.mainClass());
 			settings.property("fabric.sandbox.realMain", clientRun.getMainClass().get());
 		});
 	}

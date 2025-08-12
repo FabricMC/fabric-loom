@@ -42,10 +42,16 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 	name: "21w13a-net.fabricmc.yarn.21w13a.21w13a+build.30-v2",
 	searchString: "Block.DEFAULT_SET_BLOCK_STATE_FLAG",
 	)
-	static final MappingInfo V2_NAMED = new MappingInfo(
+	static final MappingInfo V3_NAMED = new MappingInfo(
 	minecraft: "25w32a",
 	yarn: "25w32a+build.8:v2",
 	name: "25w32a-net.fabricmc.yarn.25w32a.25w32a+build.8-v2",
+	searchString: "Block.NOTIFY_ALL",
+	)
+	static final MappingInfo V3_INTERMEDIARY = new MappingInfo(
+	minecraft: "25w33a",
+	yarn: "25w33a+build.8:v2",
+	name: "25w33a-net.fabricmc.yarn.25w33a.25w33a+build.8-v2",
 	searchString: "Block.NOTIFY_ALL",
 	)
 
@@ -79,7 +85,7 @@ class UnpickTest extends Specification implements GradleProjectTestTrait {
 		[version, useCache, info] << [
 			STANDARD_TEST_VERSIONS,
 			[true, false],
-			[V1, V2_NAMED]
+			[V1, V3_NAMED, V3_INTERMEDIARY]
 		].combinations()
 	}
 

@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task.tool;
 
+import java.nio.file.Path;
+
 import javax.inject.Inject;
 
 import org.gradle.api.Project;
@@ -31,8 +33,9 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.Classpath;
-import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
@@ -47,8 +50,9 @@ import net.fabricmc.loom.util.LoomVersions;
 public abstract class ModEnigmaTask extends AbstractLoomTask {
 	private static final String ENIGMA_MAIN_CLASS = "cuchaz.enigma.gui.Main";
 
-	@InputFile
-	public abstract RegularFileProperty getMinecraftJar(); // TODO: what do we do with split jars?
+	// Must be a ListProperty because the order matters.
+	@Input
+	public abstract ListProperty<Path> getMinecraftJars();
 
 	/**
 	 * The mapping file path. It must be a single Enigma-formatted file.
@@ -64,13 +68,10 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	protected abstract ExecOperations getExecOperations();
 
 	public ModEnigmaTask() {
-		getMinecraftJar().set(getProject().getLayout().file(getProject().provider(() -> {
+		getMinecraftJars().convention(getProject().provider(() -> {
 			// Only supports the common jar in split setups
-			return getExtension()
-					.getMinecraftJars(MappingsNamespace.INTERMEDIARY)
-					.getFirst()
-					.toFile();
-		})));
+			return getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY);
+		}));
 		getToolClasspath().from(getEnigmaClasspath(getProject()));
 	}
 
@@ -85,7 +86,11 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 			spec.getMainClass().set(ENIGMA_MAIN_CLASS);
 			spec.setClasspath(getToolClasspath());
 			spec.jvmArgs("-Xmx2048m");
-			spec.args("-jar", getMinecraftJar().get().getAsFile().getAbsolutePath());
+
+			for (Path path : getMinecraftJars().get()) {
+				spec.args("-jar", path.toAbsolutePath().toString());
+			}
+
 			spec.args("-mappings", getMappingFile().get().getAsFile().getAbsolutePath());
 		});
 	}

@@ -76,18 +76,18 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Entrypoint> getEntrypoints();
 
-	void entrypoint(String value) {
-		entrypoint(value, entrypoint -> {});
+	public void entrypoint(String value) {
+		entrypoint(value, entrypoint -> { });
 	}
 
-	void entrypoint(String value, Action<Entrypoint> action) {
+	public void entrypoint(String value, Action<Entrypoint> action) {
 		entrypoint(entrypoint -> {
 			entrypoint.getValue().set(value);
 			action.execute(entrypoint);
 		});
 	}
 
-	void entrypoint(Action<Entrypoint> action) {
+	public void entrypoint(Action<Entrypoint> action) {
 		create(Entrypoint.class, getEntrypoints(), action);
 	}
 
@@ -99,18 +99,18 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Mixin> getMixins();
 
-	void mixin(String value) {
-		mixin(value, mixin -> {});
+	public void mixin(String value) {
+		mixin(value, mixin -> { });
 	}
 
-	void mixin(String value, Action<Mixin> action) {
+	public void mixin(String value, Action<Mixin> action) {
 		mixin(mixin -> {
 			mixin.getValue().set(value);
 			action.execute(mixin);
 		});
 	}
 
-	void mixin(Action<Mixin> action) {
+	public void mixin(Action<Mixin> action) {
 		create(Mixin.class, getMixins(), action);
 	}
 
@@ -122,26 +122,26 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Dependency> getDepends();
 
-	void depends(String modId, Iterable<String> versionRequirements) {
+	public void depends(String modId, Iterable<String> versionRequirements) {
 		depends(modId, dependency -> {
 			dependency.getVersionRequirements().addAll(versionRequirements);
 		});
 	}
 
-	void depends(String modId, String versionRequirement) {
+	public void depends(String modId, String versionRequirement) {
 		depends(modId, dependency -> {
 			dependency.getVersionRequirements().add(versionRequirement);
 		});
 	}
 
-	void depends(String modId, Action<Dependency> action) {
+	public void depends(String modId, Action<Dependency> action) {
 		depends(dependency -> {
 			dependency.getModId().set(modId);
 			action.execute(dependency);
 		});
 	}
 
-	void depends(Action<Dependency> action) {
+	public void depends(Action<Dependency> action) {
 		create(Dependency.class, getDepends(), action);
 	}
 
@@ -149,26 +149,26 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Dependency> getRecommends();
 
-	void recommends(String modId, Iterable<String> versionRequirements) {
+	public void recommends(String modId, Iterable<String> versionRequirements) {
 		recommends(modId, dependency -> {
 			dependency.getVersionRequirements().addAll(versionRequirements);
 		});
 	}
 
-	void recommends(String modId, String versionRequirement) {
+	public void recommends(String modId, String versionRequirement) {
 		recommends(modId, dependency -> {
 			dependency.getVersionRequirements().add(versionRequirement);
 		});
 	}
 
-	void recommends(String modId, Action<Dependency> action) {
+	public void recommends(String modId, Action<Dependency> action) {
 		recommends(dependency -> {
 			dependency.getModId().set(modId);
 			action.execute(dependency);
 		});
 	}
 
-	void recommends(Action<Dependency> action) {
+	public void recommends(Action<Dependency> action) {
 		create(Dependency.class, getRecommends(), action);
 	}
 
@@ -176,26 +176,26 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Dependency> getSuggests();
 
-	void suggests(String modId, Iterable<String> versionRequirements) {
+	public void suggests(String modId, Iterable<String> versionRequirements) {
 		suggests(modId, dependency -> {
 			dependency.getVersionRequirements().addAll(versionRequirements);
 		});
 	}
 
-	void suggests(String modId, String versionRequirement) {
+	public void suggests(String modId, String versionRequirement) {
 		suggests(modId, dependency -> {
 			dependency.getVersionRequirements().add(versionRequirement);
 		});
 	}
 
-	void suggests(String modId, Action<Dependency> action) {
+	public void suggests(String modId, Action<Dependency> action) {
 		suggests(dependency -> {
 			dependency.getModId().set(modId);
 			action.execute(dependency);
 		});
 	}
 
-	void suggests(Action<Dependency> action) {
+	public void suggests(Action<Dependency> action) {
 		create(Dependency.class, getSuggests(), action);
 	}
 
@@ -203,26 +203,26 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Dependency> getConflicts();
 
-	void conflicts(String modId, Iterable<String> versionRequirements) {
+	public void conflicts(String modId, Iterable<String> versionRequirements) {
 		conflicts(modId, dependency -> {
 			dependency.getVersionRequirements().addAll(versionRequirements);
 		});
 	}
 
-	void conflicts(String modId, String versionRequirement) {
+	public void conflicts(String modId, String versionRequirement) {
 		conflicts(modId, dependency -> {
 			dependency.getVersionRequirements().add(versionRequirement);
 		});
 	}
 
-	void conflicts(String modId, Action<Dependency> action) {
+	public void conflicts(String modId, Action<Dependency> action) {
 		conflicts(dependency -> {
 			dependency.getModId().set(modId);
 			action.execute(dependency);
 		});
 	}
 
-	void conflicts(Action<Dependency> action) {
+	public void conflicts(Action<Dependency> action) {
 		create(Dependency.class, getConflicts(), action);
 	}
 
@@ -230,19 +230,19 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Dependency> getBreaks();
 
-	void breaks(String modId, Iterable<String> versionRequirements) {
+	public void breaks(String modId, Iterable<String> versionRequirements) {
 		breaks(modId, dependency -> {
 			dependency.getVersionRequirements().addAll(versionRequirements);
 		});
 	}
 
-	void breaks(String modId, String versionRequirement) {
+	public void breaks(String modId, String versionRequirement) {
 		breaks(modId, dependency -> {
 			dependency.getVersionRequirements().add(versionRequirement);
 		});
 	}
 
-	void breaks(String modId, Action<Dependency> action) {
+	public void breaks(String modId, Action<Dependency> action) {
 		breaks(dependency -> {
 			dependency.getModId().set(modId);
 			action.execute(dependency);
@@ -261,18 +261,18 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Person> getAuthors();
 
-	void author(String name) {
-		author(name, person -> {});
+	public void author(String name) {
+		author(name, person -> { });
 	}
 
-	void author(String name, Action<Person> action) {
+	public void author(String name, Action<Person> action) {
 		author(person -> {
 			person.getName().set(name);
 			action.execute(person);
 		});
 	}
 
-	void author(Action<Person> action) {
+	public void author(Action<Person> action) {
 		create(Person.class, getAuthors(), action);
 	}
 
@@ -280,18 +280,18 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Person> getContributors();
 
-	void contributor(String name) {
-		contributor(name, person -> {});
+	public void contributor(String name) {
+		contributor(name, person -> { });
 	}
 
-	void contributor(String name, Action<Person> action) {
+	public void contributor(String name, Action<Person> action) {
 		contributor(person -> {
 			person.getName().set(name);
 			action.execute(person);
 		});
 	}
 
-	void contributor(Action<Person> action) {
+	public void contributor(Action<Person> action) {
 		create(Person.class, getContributors(), action);
 	}
 
@@ -303,18 +303,18 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Icon> getIcons();
 
-	void icon(String path) {
-		icon(path, icon -> {});
+	public void icon(String path) {
+		icon(path, icon -> { });
 	}
 
-	void icon(String path, Action<Icon> action) {
+	public void icon(String path, Action<Icon> action) {
 		icon(icon -> {
 			icon.getPath().set(path);
 			action.execute(icon);
 		});
 	}
 
-	void icon(Action<Icon> action) {
+	public void icon(Action<Icon> action) {
 		create(Icon.class, getIcons(), action);
 	}
 
@@ -324,7 +324,7 @@ public abstract class FabricModJsonV1Spec {
 
 	// TODO custom data
 
-	public static abstract class Entrypoint {
+	public abstract static class Entrypoint {
 		@Input
 		public abstract Property<String> getValue();
 
@@ -333,7 +333,7 @@ public abstract class FabricModJsonV1Spec {
 		public abstract Property<String> getAdapter();
 	}
 
-	public static abstract class Mixin {
+	public abstract static class Mixin {
 		@Input
 		public abstract Property<String> getValue();
 
@@ -342,7 +342,7 @@ public abstract class FabricModJsonV1Spec {
 		public abstract Property<String> getEnvironment();
 	}
 
-	public static abstract class Dependency {
+	public abstract static class Dependency {
 		@Input
 		public abstract Property<String> getModId();
 
@@ -351,7 +351,7 @@ public abstract class FabricModJsonV1Spec {
 		public abstract ListProperty<String> getVersionRequirements();
 	}
 
-	public static abstract class Person {
+	public abstract static class Person {
 		@Input
 		public abstract Property<String> getName();
 
@@ -360,7 +360,7 @@ public abstract class FabricModJsonV1Spec {
 		public abstract MapProperty<String, String> getContactInformation();
 	}
 
-	public static abstract class Icon {
+	public abstract static class Icon {
 		@Input
 		public abstract Property<String> getPath();
 

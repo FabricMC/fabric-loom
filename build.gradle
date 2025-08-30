@@ -161,6 +161,7 @@ dependencies {
 	testImplementation testLibs.bcprov
 	testImplementation testLibs.bcutil
 	testImplementation testLibs.bcpkix
+	testImplementation testLibs.fabric.loader
 
 	compileOnly runtimeLibs.jetbrains.annotations
 	testCompileOnly runtimeLibs.jetbrains.annotations

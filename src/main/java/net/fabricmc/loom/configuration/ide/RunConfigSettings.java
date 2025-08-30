@@ -63,7 +63,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
 			return SourceSetHelper.getSourceSetByName(sourceSetName, p);
 		});
-		getConfigurationName().convention(getSourceSet().map(sourceSet -> {
+		getDisplayName().convention(getSourceSet().map(sourceSet -> {
 			String configName = "";
 			String srcName = sourceSet.getName();
 
@@ -108,24 +108,6 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 		RunConfiguration.super.server();
 	}
 
-	// Note: Overridden for backwards compatibility
-	@Override
-	public void property(String name, String value) {
-		RunConfiguration.super.property(name, value);
-	}
-
-	// Note: Overridden for backwards compatibility
-	@Override
-	public void property(String name) {
-		RunConfiguration.super.property(name);
-	}
-
-	// Note: Overridden for backwards compatibility
-	@Override
-	public void properties(Map<String, String> props) {
-		RunConfiguration.super.properties(props);
-	}
-
 	// Note: Overload method for backwards compatibility
 	public void inherit(RunConfigSettings parent) {
 		RunConfiguration.super.inherit(parent);
@@ -155,19 +137,19 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	}
 
 	/**
-	 * @deprecated Use {@link #getConfigurationName()} instead.
+	 * @deprecated Use {@link #getDisplayName()} instead.
 	 */
 	@Deprecated
 	public void setName(String name) {
-		this.getConfigurationName().set(name);
+		this.getDisplayName().set(name);
 	}
 
 	/**
-	 * @deprecated Use {@link #getJVMArguments()} instead.
+	 * @deprecated Use {@link #getJvmArguments()} instead.
 	 */
 	@Deprecated
 	public List<String> getVmArgs() {
-		return getJVMArguments().get();
+		return getJvmArguments().get();
 	}
 
 	/**
@@ -195,19 +177,19 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	}
 
 	/**
-	 * @deprecated Use {@link #getConfigurationName()} instead.
+	 * @deprecated Use {@link #getDisplayName()} instead.
 	 */
 	@Deprecated
 	public String getConfigName() {
-		return getConfigurationName().get();
+		return getDisplayName().get();
 	}
 
 	/**
-	 * @deprecated Use {@link #getConfigurationName()} instead.
+	 * @deprecated Use {@link #getDisplayName()} instead.
 	 */
 	@Deprecated
 	public void setConfigName(String name) {
-		getConfigurationName().set(name);
+		getDisplayName().set(name);
 	}
 
 	/**
@@ -276,7 +258,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	}
 
 	/**
-	 * @deprecated Use {@link #getConfigurationName()} instead.
+	 * @deprecated Use {@link #getDisplayName()} instead.
 	 */
 	@Deprecated
 	public void name(String name) {
@@ -300,27 +282,27 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	}
 
 	/**
-	 * @deprecated Use {@link #getJVMArguments()} instead.
+	 * @deprecated Use {@link #getJvmArguments()} instead.
 	 */
 	@Deprecated
 	public void vmArg(String arg) {
-		getJVMArguments().add(arg);
+		getJvmArguments().add(arg);
 	}
 
 	/**
-	 * @deprecated Use {@link #getJVMArguments()} instead.
+	 * @deprecated Use {@link #getJvmArguments()} instead.
 	 */
 	@Deprecated
 	public void vmArgs(String... args) {
-		getJVMArguments().addAll(Arrays.asList(args));
+		getJvmArguments().addAll(Arrays.asList(args));
 	}
 
 	/**
-	 * @deprecated Use {@link #getJVMArguments()} instead.
+	 * @deprecated Use {@link #getJvmArguments()} instead.
 	 */
 	@Deprecated
 	public void vmArgs(Collection<String> args) {
-		getJVMArguments().addAll(args);
+		getJvmArguments().addAll(args);
 	}
 
 	/**
@@ -385,6 +367,30 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	@Deprecated
 	public void environmentVariable(String name, Object value) {
 		getEnvironmentVars().put(name, value);
+	}
+
+	/**
+	 * @deprecated Use {@link #getSystemProperties()} instead.
+	 */
+	@Deprecated
+	public void property(String name, String value) {
+		getSystemProperties().put(name, value);
+	}
+
+	/**
+	 * @deprecated Use {@link #getSystemProperties()} instead.
+	 */
+	@Deprecated
+	public void property(String name) {
+		getSystemProperties().put(name, (String) null);
+	}
+
+	/**
+	 * @deprecated Use {@link #getSystemProperties()} instead.
+	 */
+	@Deprecated
+	public void properties(Map<String, String> props) {
+		getSystemProperties().putAll(props);
 	}
 
 	/**

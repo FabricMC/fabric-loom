@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.api;
 
-import java.util.Map;
-
 import org.gradle.api.Named;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
@@ -52,12 +50,12 @@ public interface RunConfiguration extends Named {
 	 * <p>Note: unless the project is the root project (or {@link #getAppendProjectPathToConfigName()} is disabled),
 	 * the project path will be appended automatically, e.g. 'Minecraft Client (:some:project)'.
 	 */
-	Property<String> getConfigurationName();
+	Property<String> getDisplayName();
 
 	/**
 	 * Arguments for the JVM, such as system properties.
 	 */
-	ListProperty<String> getJVMArguments();
+	ListProperty<String> getJvmArguments();
 
 	/**
 	 * Arguments for the program, usually Minecraft specific arguments.
@@ -70,15 +68,20 @@ public interface RunConfiguration extends Named {
 	MapProperty<String, Object> getEnvironmentVars();
 
 	/**
+	 * System properties to set when running the configuration.
+	 */
+	MapProperty<String, String> getSystemProperties();
+
+	/**
 	 * The environment (or side) to run, usually client or server.
 	 */
 	Property<String> getRuntimeEnvironment();
 
 	/**
-	 * Whether to append the project path to the {@link #getConfigurationName()} when {@code project} isn't the root project.
+	 * Whether to append the project path to the {@link #getDisplayName()} when {@code project} isn't the root project.
 	 *
 	 * <p>Warning: could produce ambiguous run config names if disabled, unless used carefully in conjunction with
-	 * {@link #getConfigurationName()}.
+	 * {@link #getDisplayName()}.
 	 */
 	Property<Boolean> getAppendProjectPathToConfigName();
 
@@ -121,8 +124,8 @@ public interface RunConfiguration extends Named {
 	Property<String> getDevLaunchMainClass();
 
 	default void inherit(RunConfiguration parent) {
-		getConfigurationName().convention(parent.getConfigurationName());
-		getJVMArguments().convention(parent.getJVMArguments());
+		getDisplayName().convention(parent.getDisplayName());
+		getJvmArguments().convention(parent.getJvmArguments());
 		getProgramArguments().convention(parent.getProgramArguments());
 		getEnvironmentVars().convention(parent.getEnvironmentVars());
 		getRuntimeEnvironment().convention(parent.getRuntimeEnvironment());
@@ -153,17 +156,5 @@ public interface RunConfiguration extends Named {
 		getProgramArguments().add("nogui");
 		getRuntimeEnvironment().convention("server");
 		getMainClass().convention(Constants.Knot.KNOT_SERVER);
-	}
-
-	default void property(String name, String value) {
-		getJVMArguments().add("-D%s=%s".formatted(name, value));
-	}
-
-	default void property(String name) {
-		getJVMArguments().add("-D%s".formatted(name));
-	}
-
-	default void properties(Map<String, String> props) {
-		props.forEach(this::property);
 	}
 }

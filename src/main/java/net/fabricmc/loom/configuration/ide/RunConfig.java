@@ -54,6 +54,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
@@ -78,17 +79,17 @@ public class RunConfig {
 	public String projectName;
 	public String folderName;
 
-	public static RunConfig runConfig(Project project, RunConfigSettings settings) {
+	public static RunConfig runConfig(Project project, RunConfiguration settings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		LibraryContext context = new LibraryContext(extension.getMinecraftProvider().getVersionInfo(), JavaVersion.current());
 
 		if (settings.getRuntimeEnvironment().get().equals("client") && context.usesLWJGL3()) {
 			if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
-				settings.getJVMArguments().add("-XstartOnFirstThread");
+				settings.getJvmArguments().add("-XstartOnFirstThread");
 			}
 		}
 
-		String configName = settings.getConfigurationName().get();
+		String configName = settings.getDisplayName().get();
 		String environment = settings.getRuntimeEnvironment().get();
 		SourceSet sourceSet = settings.getSourceSet().get();
 		String mainClass = settings.getMainClass().get();
@@ -113,11 +114,11 @@ public class RunConfig {
 		runConfig.environment = environment;
 
 		// Custom parameters
-		runConfig.programArgs.addAll(settings.getProgramArgs());
-		runConfig.vmArgs.addAll(settings.getVmArgs());
+		runConfig.programArgs.addAll(settings.getProgramArguments().get());
+		runConfig.vmArgs.addAll(settings.getJvmArguments().get());
 		runConfig.vmArgs.add("-Dfabric.dli.main=" + mainClass);
 		runConfig.environmentVariables = new HashMap<>();
-		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
+		runConfig.environmentVariables.putAll(settings.getEnvironmentVars().get());
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 

@@ -72,36 +72,40 @@ public final class GeneratorUtils {
 		add(json, key, property, entries -> array(entries, converter));
 	}
 
-	public static <V, P extends Property<V>> void add(JsonObject json, String key, P provider, Function<V, JsonElement> converter) {
-		if (!provider.isPresent()) {
+	public static <V, P extends Property<V>> void add(JsonObject json, String key, P property, Function<V, JsonElement> converter) {
+		if (!property.isPresent()) {
 			return;
 		}
 
-		json.add(key, converter.apply(provider.get()));
+		json.add(key, converter.apply(property.get()));
 	}
 
-	public static <V, P extends Property<V>> void addRequired(JsonObject json, String key, P provider, Function<V, JsonElement> converter) {
-		provider.get(); // Ensure it's present
-		add(json, key, provider, converter);
+	public static <V, P extends Property<V>> void addRequired(JsonObject json, String key, P property, Function<V, JsonElement> converter) {
+		property.get(); // Ensure it's present
+		add(json, key, property, converter);
 	}
 
-	public static <V> void add(JsonObject json, String key, ListProperty<V> provider, Function<List<V>, JsonElement> converter) {
-		if (!provider.isPresent()) {
+	public static <V> void add(JsonObject json, String key, ListProperty<V> property, Function<List<V>, JsonElement> converter) {
+		if (property.get().isEmpty()) {
 			return;
 		}
 
-		json.add(key, converter.apply(provider.get()));
+		json.add(key, converter.apply(property.get()));
 	}
 
-	public static <K, V> void add(JsonObject json, String key, MapProperty<K, V> provider, Function<Map<K, V>, JsonElement> converter) {
-		if (!provider.isPresent()) {
+	public static <K, V> void add(JsonObject json, String key, MapProperty<K, V> property, Function<Map<K, V>, JsonElement> converter) {
+		if (property.get().isEmpty()) {
 			return;
 		}
 
-		json.add(key, converter.apply(provider.get()));
+		json.add(key, converter.apply(property.get()));
 	}
 
 	public static void add(JsonObject json, String key, MapProperty<String, String> property) {
+		if (property.get().isEmpty()) {
+			return;
+		}
+
 		add(json, key, property, GeneratorUtils::map);
 	}
 

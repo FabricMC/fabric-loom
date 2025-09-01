@@ -153,15 +153,32 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		tryParse(json) == 1
 	}
 
-	def "complete"() {
+	def "named contributor"() {
 		given:
-		def spec = objectFactory.newInstance(FabricModJsonV1Spec.class)
-		spec.modId.set("examplemod")
-		spec.version.set("1.0.0")
-		spec.name.set("Example Mod")
-		spec.description.set("This is an example mod.")
-		spec.licenses.addAll("MIT", "Apache-2.0")
-		spec.author("Epic Modder") {
+		def spec = baseSpec()
+		spec.contributor("Epic Modder")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "contributors": [
+		    "Epic Modder"
+		  ]
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "contributor with contact info"() {
+		given:
+		def spec = baseSpec()
+		spec.contributor("Epic Modder") {
 			it.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
 		}
 
@@ -174,12 +191,210 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		  "schemaVersion": 1,
 		  "id": "examplemod",
 		  "version": "1.0.0",
+		  "contributors": [
+		    {
+		      "name": "Epic Modder",
+		      "contact": {
+		        "discord": "epicmodder#1234",
+		        "email": "epicmodder@example.com"
+		      }
+		    }
+		  ]
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "contact info"() {
+		given:
+		def spec = baseSpec()
+		spec.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "contact": {
+		    "discord": "epicmodder#1234",
+		    "email": "epicmodder@example.com"
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "provides"() {
+		given:
+		def spec = baseSpec()
+		spec.provides.set(['oldid', 'veryoldid'])
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "provides": [
+		    "oldid",
+		    "veryoldid"
+		  ]
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "environment"() {
+		given:
+		def spec = baseSpec()
+		spec.environment.set("client")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "environment": "client"
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "jars"() {
+		given:
+		def spec = baseSpec()
+		spec.nestedJars.set(["libs/some-lib.jar"])
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "jars": [
+		    {
+		      "file": "libs/some-lib.jar"
+		    }
+		  ]
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "entrypoints"() {
+		given:
+		def spec = baseSpec()
+		spec.entrypoint("main", "com.example.Main")
+		spec.entrypoint("main", "com.example.Blocks")
+		spec.entrypoint("client", "com.example.KotlinClient::init") {
+			it.adapter.set("kotlin")
+		}
+		spec.entrypoint("client") {
+			it.value.set("com.example.Client")
+		}
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "entrypoints": {
+		    "client": [
+		      {
+		        "value": "com.example.KotlinClient::init",
+		        "adapter": "kotlin"
+		      },
+		      "com.example.Client"
+		    ],
+		    "main": [
+		      "com.example.Main",
+		      "com.example.Blocks"
+		    ]
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "complete"() {
+		given:
+		def spec = objectFactory.newInstance(FabricModJsonV1Spec.class)
+		spec.modId.set("examplemod")
+		spec.version.set("1.0.0")
+		spec.name.set("Example Mod")
+		spec.description.set("This is an example mod.")
+		spec.licenses.addAll("MIT", "Apache-2.0")
+		spec.author("Epic Modder") {
+			it.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
+		}
+		spec.contributor("Epic Modder") {
+			it.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
+		}
+		spec.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
+		spec.provides.set(['oldid', 'veryoldid'])
+		spec.environment.set("client")
+		spec.nestedJars.set(["libs/some-lib.jar"])
+		spec.entrypoint("main", "com.example.Main")
+		spec.entrypoint("main", "com.example.Blocks")
+		spec.entrypoint("client", "com.example.KotlinClient::init") {
+			it.adapter.set("kotlin")
+		}
+		spec.entrypoint("client") {
+			it.value.set("com.example.Client")
+		}
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "provides": [
+		    "oldid",
+		    "veryoldid"
+		  ],
+		  "environment": "client",
+		  "entrypoints": {
+		    "client": [
+		      {
+		        "value": "com.example.KotlinClient::init",
+		        "adapter": "kotlin"
+		      },
+		      "com.example.Client"
+		    ],
+		    "main": [
+		      "com.example.Main",
+		      "com.example.Blocks"
+		    ]
+		  },
+		  "jars": [
+		    {
+		      "file": "libs/some-lib.jar"
+		    }
+		  ],
 		  "name": "Example Mod",
 		  "description": "This is an example mod.",
-		  "license": [
-		    "MIT",
-		    "Apache-2.0"
-		  ],
 		  "authors": [
 		    {
 		      "name": "Epic Modder",
@@ -188,6 +403,23 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		        "email": "epicmodder@example.com"
 		      }
 		    }
+		  ],
+		  "contributors": [
+		    {
+		      "name": "Epic Modder",
+		      "contact": {
+		        "discord": "epicmodder#1234",
+		        "email": "epicmodder@example.com"
+		      }
+		    }
+		  ],
+		  "contact": {
+		    "discord": "epicmodder#1234",
+		    "email": "epicmodder@example.com"
+		  },
+		  "license": [
+		    "MIT",
+		    "Apache-2.0"
 		  ]
 		}
 		""")

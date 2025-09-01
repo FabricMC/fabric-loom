@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.api.fmj;
 
+import java.util.Collection;
+
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
@@ -76,19 +78,22 @@ public abstract class FabricModJsonV1Spec {
 	@Optional
 	public abstract ListProperty<Entrypoint> getEntrypoints();
 
-	public void entrypoint(String value) {
-		entrypoint(value, entrypoint -> { });
+	public void entrypoint(String entrypoint, String value) {
+		entrypoint(entrypoint, value, metadata -> { });
 	}
 
-	public void entrypoint(String value, Action<Entrypoint> action) {
-		entrypoint(entrypoint -> {
-			entrypoint.getValue().set(value);
-			action.execute(entrypoint);
+	public void entrypoint(String entrypoint, String value, Action<Entrypoint> action) {
+		entrypoint(entrypoint, metadata -> {
+			metadata.getValue().set(value);
+			action.execute(metadata);
 		});
 	}
 
-	public void entrypoint(Action<Entrypoint> action) {
-		create(Entrypoint.class, getEntrypoints(), action);
+	public void entrypoint(String entrypoint, Action<Entrypoint> action) {
+		create(Entrypoint.class, getEntrypoints(), e -> {
+			e.getEntrypoint().set(entrypoint);
+			action.execute(e);
+		});
 	}
 
 	@Input
@@ -326,6 +331,9 @@ public abstract class FabricModJsonV1Spec {
 
 	public abstract static class Entrypoint {
 		@Input
+		public abstract Property<String> getEntrypoint();
+
+		@Input
 		public abstract Property<String> getValue();
 
 		@Input
@@ -376,6 +384,12 @@ public abstract class FabricModJsonV1Spec {
 	protected abstract ObjectFactory getObjectFactory();
 
 	private <T> void create(Class<T> type, ListProperty<T> list, Action<T> action) {
+		T item = getObjectFactory().newInstance(type);
+		action.execute(item);
+		list.add(item);
+	}
+
+	private <T> void create(Class<T> type, Collection<T> list, Action<T> action) {
 		T item = getObjectFactory().newInstance(type);
 		action.execute(item);
 		list.add(item);

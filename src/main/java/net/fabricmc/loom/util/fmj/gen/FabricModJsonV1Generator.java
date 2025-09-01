@@ -29,8 +29,12 @@ import static net.fabricmc.loom.util.fmj.gen.GeneratorUtils.addArray;
 import static net.fabricmc.loom.util.fmj.gen.GeneratorUtils.addRequired;
 import static net.fabricmc.loom.util.fmj.gen.GeneratorUtils.addStringOrArray;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -58,10 +62,29 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		addRequired(fmj, "version", spec.getVersion());
 
 		// All other fields are optional
+		// Match the order as specified in V1ModMetadataParser to make it easier to compare
+
+		addArray(fmj, "provides", spec.getProvides(), JsonPrimitive::new);
+		add(fmj, "environment", spec.getEnvironment());
+		add(fmj, "entrypoints", spec.getEntrypoints(), this::generateEntrypoints);
+		addArray(fmj, "jars", spec.getNestedJars(), this::generateJar);
+		// mixins
+		// accessWidener
+		// depends
+		// recommends
+		// suggests
+		// conflicts
+		// breaks
+		// requires
 		add(fmj, "name", spec.getName());
 		add(fmj, "description", spec.getDescription());
-		addStringOrArray(fmj, "license", spec.getLicenses());
 		addArray(fmj, "authors", spec.getAuthors(), this::generatePerson);
+		addArray(fmj, "contributors", spec.getContributors(), this::generatePerson);
+		add(fmj, "contact", spec.getContactInformation());
+		addStringOrArray(fmj, "license", spec.getLicenses());
+		// icon
+		// languageAdapters
+		// custom
 
 		return LoomGradlePlugin.GSON.toJson(fmj);
 	}
@@ -75,6 +98,42 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		addRequired(json, "name", person.getName());
 		add(json, "contact", person.getContactInformation());
 
+		return json;
+	}
+
+	private JsonObject generateEntrypoints(List<FabricModJsonV1Spec.Entrypoint> entrypoints) {
+		Map<String, List<FabricModJsonV1Spec.Entrypoint>> entrypointsMap = entrypoints.stream()
+				.collect(Collectors.groupingBy(entrypoint -> entrypoint.getEntrypoint().get()));
+
+		JsonObject json = new JsonObject();
+		entrypointsMap.forEach((entrypoint, entries) -> json.add(entrypoint, generateEntpypoint(entries)));
+		return json;
+	}
+
+	private JsonArray generateEntpypoint(List<FabricModJsonV1Spec.Entrypoint> entries) {
+		JsonArray json = new JsonArray();
+
+		for (FabricModJsonV1Spec.Entrypoint entry : entries) {
+			json.add(generateEntrypointEntry(entry));
+		}
+
+		return json;
+	}
+
+	private JsonElement generateEntrypointEntry(FabricModJsonV1Spec.Entrypoint entrypoint) {
+		if (!entrypoint.getAdapter().isPresent()) {
+			return new JsonPrimitive(entrypoint.getValue().get());
+		}
+
+		JsonObject json = new JsonObject();
+		addRequired(json, "value", entrypoint.getValue());
+		addRequired(json, "adapter", entrypoint.getAdapter());
+		return json;
+	}
+
+	private JsonObject generateJar(String jar) {
+		JsonObject json = new JsonObject();
+		json.addProperty("file", jar);
 		return json;
 	}
 }

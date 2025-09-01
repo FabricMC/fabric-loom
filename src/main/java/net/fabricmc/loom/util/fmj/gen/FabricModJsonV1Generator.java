@@ -67,7 +67,7 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		addArray(fmj, "provides", spec.getProvides(), JsonPrimitive::new);
 		add(fmj, "environment", spec.getEnvironment());
 		add(fmj, "entrypoints", spec.getEntrypoints(), this::generateEntrypoints);
-		addArray(fmj, "jars", spec.getNestedJars(), this::generateJar);
+		addArray(fmj, "jars", spec.getJars(), this::generateJar);
 		addArray(fmj, "mixins", spec.getMixins(), this::generateMixins);
 		add(fmj, "accessWidener", spec.getAccessWidener());
 		add(fmj, "depends", spec.getDepends(), this::generateDependencies);

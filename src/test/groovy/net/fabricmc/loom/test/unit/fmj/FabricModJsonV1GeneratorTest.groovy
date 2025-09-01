@@ -274,7 +274,7 @@ class FabricModJsonV1GeneratorTest extends Specification {
 	def "jars"() {
 		given:
 		def spec = baseSpec()
-		spec.nestedJars.set(["libs/some-lib.jar"])
+		spec.jars.set(["libs/some-lib.jar"])
 
 		when:
 		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
@@ -523,7 +523,7 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		spec.contactInformation.set(["discord": "epicmodder#1234", "email": "epicmodder@example.com"])
 		spec.provides.set(['oldid', 'veryoldid'])
 		spec.environment.set("client")
-		spec.nestedJars.set(["libs/some-lib.jar"])
+		spec.jars.set(["libs/some-lib.jar"])
 		spec.entrypoint("main", "com.example.Main")
 		spec.entrypoint("main", "com.example.Blocks")
 		spec.entrypoint("client", "com.example.KotlinClient::init") {

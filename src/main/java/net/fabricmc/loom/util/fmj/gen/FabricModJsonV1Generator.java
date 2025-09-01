@@ -105,11 +105,11 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 				.collect(Collectors.groupingBy(entrypoint -> entrypoint.getEntrypoint().get()));
 
 		JsonObject json = new JsonObject();
-		entrypointsMap.forEach((entrypoint, entries) -> json.add(entrypoint, generateEntpypoint(entries)));
+		entrypointsMap.forEach((entrypoint, entries) -> json.add(entrypoint, generateEntrypoint(entries)));
 		return json;
 	}
 
-	private JsonArray generateEntpypoint(List<FabricModJsonV1Spec.Entrypoint> entries) {
+	private JsonArray generateEntrypoint(List<FabricModJsonV1Spec.Entrypoint> entries) {
 		JsonArray json = new JsonArray();
 
 		for (FabricModJsonV1Spec.Entrypoint entry : entries) {

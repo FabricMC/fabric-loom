@@ -480,7 +480,7 @@ public abstract class FabricModJsonV1Spec {
 	 *
 	 * @param action An action to configure the broken dependency
 	 */
-	void breaks(Action<Dependency> action) {
+	public void breaks(Action<Dependency> action) {
 		create(Dependency.class, getBreaks(), action);
 	}
 

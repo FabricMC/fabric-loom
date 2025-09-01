@@ -334,6 +334,178 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		tryParse(json) == 1
 	}
 
+	def "mixins"() {
+		given:
+		def spec = baseSpec()
+		spec.mixin("mymod.mixins.json")
+		spec.mixin("mymod.client.mixins.json") {
+			it.environment.set("client")
+		}
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "mixins": [
+		    "mymod.mixins.json",
+		    {
+		      "config": "mymod.client.mixins.json",
+		      "environment": "client"
+		    }
+		  ]
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "access widener"() {
+		given:
+		def spec = baseSpec()
+		spec.accessWidener.set("mymod.accesswidener")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "accessWidener": "mymod.accesswidener"
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "depends"() {
+		given:
+		def spec = baseSpec()
+		spec.depends("fabricloader", ">=0.14.0")
+		spec.depends("fabric-api", [">=0.14.0", "<0.15.0"])
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "depends": {
+		    "fabricloader": "fabricloader",
+		    "fabric-api": [
+		      "\\u003e\\u003d0.14.0",
+		      "\\u003c0.15.0"
+		    ]
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "single icon"() {
+		given:
+		def spec = baseSpec()
+		spec.icon("icon.png")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "icon": "icon.png"
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "multiple icons"() {
+		given:
+		def spec = baseSpec()
+		spec.icon(64, "icon_64.png")
+		spec.icon(128, "icon_128.png")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "icon": {
+		    "64": "icon_64.png",
+		    "128": "icon_128.png"
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "language adapters"() {
+		given:
+		def spec = baseSpec()
+		spec.languageAdapters.put("kotlin", "net.fabricmc.loader.api.language.KotlinAdapter")
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "languageAdapters": {
+		    "kotlin": "net.fabricmc.loader.api.language.KotlinAdapter"
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
+	def "custom data"() {
+		given:
+		def spec = baseSpec()
+		spec.customData.put("examplemap", ["custom": "data"])
+		spec.customData.put("examplelist", [1, 2, 3])
+
+		when:
+		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		json == j("""
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0",
+		  "custom": {
+		    "examplemap": {
+		      "custom": "data"
+		    },
+		    "examplelist": [
+		      1,
+		      2,
+		      3
+		    ]
+		  }
+		}
+		""")
+		tryParse(json) == 1
+	}
+
 	def "complete"() {
 		given:
 		def spec = objectFactory.newInstance(FabricModJsonV1Spec.class)
@@ -360,6 +532,24 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		spec.entrypoint("client") {
 			it.value.set("com.example.Client")
 		}
+		spec.mixin("mymod.mixins.json")
+		spec.mixin("mymod.client.mixins.json") {
+			it.environment.set("client")
+		}
+		spec.accessWidener.set("mymod.accesswidener")
+
+		spec.depends("fabricloader", ">=0.14.0")
+		spec.depends("fabric-api", [">=0.14.0", "<0.15.0"])
+		spec.recommends("recommended-mod", ">=1.0.0")
+		spec.suggests("suggested-mod", ">=1.0.0")
+		spec.conflicts("conflicting-mod", "<1.0.0")
+		spec.breaks("broken-mod", "<1.0.0")
+
+		spec.icon(64, "icon_64.png")
+		spec.icon(128, "icon_128.png")
+		spec.languageAdapters.put("kotlin", "net.fabricmc.loader.api.language.KotlinAdapter")
+		spec.customData.put("examplemap", ["custom": "data"])
+		spec.customData.put("examplelist", [1, 2, 3])
 
 		when:
 		def json = FabricModJsonV1Generator.INSTANCE.generate(spec)
@@ -393,6 +583,33 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		      "file": "libs/some-lib.jar"
 		    }
 		  ],
+		  "mixins": [
+		    "mymod.mixins.json",
+		    {
+		      "config": "mymod.client.mixins.json",
+		      "environment": "client"
+		    }
+		  ],
+		  "accessWidener": "mymod.accesswidener",
+		  "depends": {
+		    "fabricloader": "fabricloader",
+		    "fabric-api": [
+		      "\\u003e\\u003d0.14.0",
+		      "\\u003c0.15.0"
+		    ]
+		  },
+		  "recommends": {
+		    "recommended-mod": "recommended-mod"
+		  },
+		  "suggests": {
+		    "suggested-mod": "suggested-mod"
+		  },
+		  "conflicts": {
+		    "conflicting-mod": "conflicting-mod"
+		  },
+		  "breaks": {
+		    "broken-mod": "broken-mod"
+		  },
 		  "name": "Example Mod",
 		  "description": "This is an example mod.",
 		  "authors": [
@@ -420,9 +637,27 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		  "license": [
 		    "MIT",
 		    "Apache-2.0"
-		  ]
+		  ],
+		  "icon": {
+		    "64": "icon_64.png",
+		    "128": "icon_128.png"
+		  },
+		  "languageAdapters": {
+		    "kotlin": "net.fabricmc.loader.api.language.KotlinAdapter"
+		  },
+		  "custom": {
+		    "examplemap": {
+		      "custom": "data"
+		    },
+		    "examplelist": [
+		      1,
+		      2,
+		      3
+		    ]
+		  }
 		}
-		""")
+        """)
+		tryParse(json) == 1
 	}
 
 	// Ensure that Fabric loader can actually parse the generated JSON.

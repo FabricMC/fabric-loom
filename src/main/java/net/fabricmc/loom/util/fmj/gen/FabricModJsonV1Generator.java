@@ -68,23 +68,22 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		add(fmj, "environment", spec.getEnvironment());
 		add(fmj, "entrypoints", spec.getEntrypoints(), this::generateEntrypoints);
 		addArray(fmj, "jars", spec.getNestedJars(), this::generateJar);
-		// mixins
-		// accessWidener
-		// depends
-		// recommends
-		// suggests
-		// conflicts
-		// breaks
-		// requires
+		addArray(fmj, "mixins", spec.getMixins(), this::generateMixins);
+		add(fmj, "accessWidener", spec.getAccessWidener());
+		add(fmj, "depends", spec.getDepends(), this::generateDependencies);
+		add(fmj, "recommends", spec.getRecommends(), this::generateDependencies);
+		add(fmj, "suggests", spec.getSuggests(), this::generateDependencies);
+		add(fmj, "conflicts", spec.getConflicts(), this::generateDependencies);
+		add(fmj, "breaks", spec.getBreaks(), this::generateDependencies);
 		add(fmj, "name", spec.getName());
 		add(fmj, "description", spec.getDescription());
 		addArray(fmj, "authors", spec.getAuthors(), this::generatePerson);
 		addArray(fmj, "contributors", spec.getContributors(), this::generatePerson);
 		add(fmj, "contact", spec.getContactInformation());
 		addStringOrArray(fmj, "license", spec.getLicenses());
-		// icon
-		// languageAdapters
-		// custom
+		add(fmj, "icon", spec.getIcons(), this::generateIcon);
+		add(fmj, "languageAdapters", spec.getLanguageAdapters());
+		add(fmj, "custom", spec.getCustomData(), this::generateCustomData);
 
 		return LoomGradlePlugin.GSON.toJson(fmj);
 	}
@@ -134,6 +133,68 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 	private JsonObject generateJar(String jar) {
 		JsonObject json = new JsonObject();
 		json.addProperty("file", jar);
+		return json;
+	}
+
+	private JsonElement generateMixins(FabricModJsonV1Spec.Mixin mixin) {
+		if (!mixin.getEnvironment().isPresent()) {
+			return new JsonPrimitive(mixin.getValue().get());
+		}
+
+		JsonObject json = new JsonObject();
+		addRequired(json, "config", mixin.getValue());
+		addRequired(json, "environment", mixin.getEnvironment());
+		return json;
+	}
+
+	private JsonObject generateDependencies(List<FabricModJsonV1Spec.Dependency> dependencies) {
+		JsonObject json = new JsonObject();
+
+		for (FabricModJsonV1Spec.Dependency dependency : dependencies) {
+			json.add(dependency.getModId().get(), generateDependency(dependency));
+		}
+
+		return json;
+	}
+
+	private JsonElement generateDependency(FabricModJsonV1Spec.Dependency dependency) {
+		List<String> requirements = dependency.getVersionRequirements().get();
+
+		if (requirements.isEmpty()) {
+			throw new IllegalStateException("Dependency " + dependency.getModId().get() + " must have at least one version requirement");
+		}
+
+		if (requirements.size() == 1) {
+			return new JsonPrimitive(dependency.getModId().get());
+		}
+
+		JsonArray json = new JsonArray();
+
+		for (String s : requirements) {
+			json.add(s);
+		}
+
+		return json;
+	}
+
+	private JsonElement generateIcon(List<FabricModJsonV1Spec.Icon> icons) {
+		if (icons.size() == 1 && !icons.getFirst().getSize().isPresent()) {
+			return new JsonPrimitive(icons.getFirst().getPath().get());
+		}
+
+		JsonObject json = new JsonObject();
+
+		for (FabricModJsonV1Spec.Icon icon : icons) {
+			String size = String.valueOf(icon.getSize().get());
+			json.addProperty(size, icon.getPath().get());
+		}
+
+		return json;
+	}
+
+	private JsonObject generateCustomData(Map<String, Object> customData) {
+		JsonObject json = new JsonObject();
+		customData.forEach((name, o) -> json.add(name, LoomGradlePlugin.GSON.toJsonTree(o)));
 		return json;
 	}
 }

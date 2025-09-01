@@ -312,6 +312,10 @@ public abstract class FabricModJsonV1Spec {
 		icon(path, icon -> { });
 	}
 
+	public void icon(int size, String path) {
+		icon(path, icon -> icon.getSize().set(size));
+	}
+
 	public void icon(String path, Action<Icon> action) {
 		icon(icon -> {
 			icon.getPath().set(path);
@@ -326,6 +330,10 @@ public abstract class FabricModJsonV1Spec {
 	@Input
 	@Optional
 	public abstract MapProperty<String, String> getLanguageAdapters();
+
+	@Input
+	@Optional
+	public abstract MapProperty<String, Object> getCustomData();
 
 	// TODO custom data
 
@@ -373,7 +381,7 @@ public abstract class FabricModJsonV1Spec {
 		public abstract Property<String> getPath();
 
 		@Input
-		@Optional
+		@Optional // Icon is required if there is more than 1 icon specified
 		public abstract Property<Integer> getSize();
 	}
 

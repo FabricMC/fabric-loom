@@ -83,10 +83,17 @@ public record MinecraftVersionMeta(
 	}
 
 	/**
-	 * Returns true if the version was released before 1.3 and has both a client and a server.
+	 * Returns true if the version was released after Beta 1.0 (inclusive) but before 1.3 (exclusive).
+	 *
+	 * <p>This includes some versions that only have a client jar or a server jar to match behaviour
+	 * across all versions in the range.
 	 */
-	public boolean isLegacyClientAndServerVersion() {
-		return isLegacyVersion() && hasClient() && hasServer();
+	public boolean isLegacySplitOfficialNamespaceVersion() {
+		// TODO: Allow "official" as the obf namespace on versions in this range by checking the mappings
+		//       to see which one they have.
+		//       Likewise, "clientOfficial"/"serverOfficial" could be allowed older single-env releases
+		//       as an alternative to "official".
+		return isLegacyVersion() && isVersionOrNewer(Constants.RELEASE_TIME_BETA_1_0);
 	}
 
 	public boolean hasNativesToExtract() {

@@ -253,10 +253,11 @@ public abstract class MinecraftProvider {
 	}
 
 	/**
-	 * @return true if the minecraft version is older than 1.3 and the version has both a server and a client
+	 * Returns true if the minecraft version is between Beta 1.0 (inclusive) and 1.3 (exclusive),
+	 * which splits the {@code official} mapping namespace into env-specific variants.
 	 */
-	public boolean isLegacyClientAndServerVersion() {
-		return getVersionInfo().isLegacyClientAndServerVersion();
+	public boolean isLegacySplitOfficialNamespaceVersion() {
+		return getVersionInfo().isLegacySplitOfficialNamespaceVersion();
 	}
 
 	@Nullable

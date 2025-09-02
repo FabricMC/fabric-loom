@@ -295,7 +295,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
 
-		provider.getUseSplitOfficialNamespaces().set(getProject().provider(() -> getMinecraftProvider().isLegacyClientAndServerVersion()));
+		provider.getUseSplitOfficialNamespaces().set(getProject().provider(() -> getMinecraftProvider().isLegacySplitOfficialNamespaceVersion()));
 		provider.getUseSplitOfficialNamespaces().disallowChanges();
 	}
 

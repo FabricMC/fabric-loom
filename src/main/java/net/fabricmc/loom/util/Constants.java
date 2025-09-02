@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ public class Constants {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 	public static final String RELEASE_TIME_1_3 = "2012-07-25T22:00:00+00:00";
+	public static final String RELEASE_TIME_BETA_1_0 = "2010-12-19T22:00:00+00:00";
 
 	private Constants() {
 	}

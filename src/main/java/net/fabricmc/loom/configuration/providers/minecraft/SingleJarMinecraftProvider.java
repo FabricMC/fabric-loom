@@ -55,7 +55,7 @@ public abstract sealed class SingleJarMinecraftProvider extends MinecraftProvide
 
 	private static MappingsNamespace getOfficialNamespace(MinecraftMetadataProvider metadataProvider, boolean server) {
 		// Some versions before 1.3 don't have a common namespace, so use side specific namespaces.
-		if (metadataProvider.getVersionMeta().isLegacyClientAndServerVersion()) {
+		if (metadataProvider.getVersionMeta().isLegacySplitOfficialNamespaceVersion()) {
 			return server ? MappingsNamespace.SERVER_OFFICIAL : MappingsNamespace.CLIENT_OFFICIAL;
 		}
 

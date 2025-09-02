@@ -103,9 +103,9 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		// When merging legacy versions there will be multiple named namespaces, so use intermediary as the common src ns
 		// Newer versions will use intermediary as the src ns
-		final String expectedSrcNs = minecraftProvider.isLegacyClientAndServerVersion()
-				? MappingsNamespace.INTERMEDIARY.toString() // <1.3 when both the client and the server exist
-				: MappingsNamespace.OFFICIAL.toString(); // >=1.3 or single env version
+		final String expectedSrcNs = minecraftProvider.isLegacySplitOfficialNamespaceVersion()
+				? MappingsNamespace.INTERMEDIARY.toString() // >=beta 1.0 and <1.3
+				: MappingsNamespace.OFFICIAL.toString(); // >=1.3 or <b1.0
 
 		return TYPE.create(project, options -> {
 			options.getIntermediaryTiny().set(intermediaryTiny.toFile());

@@ -54,7 +54,7 @@ public final class MappingsMerger {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
-		if (minecraftProvider.isLegacyClientAndServerVersion()) {
+		if (minecraftProvider.isLegacySplitOfficialNamespaceVersion()) {
 			legacyMergedMergeAndSaveMappings(from, out, intermediateMappingsService);
 		} else {
 			mergeAndSaveMappings(from, out, intermediateMappingsService);

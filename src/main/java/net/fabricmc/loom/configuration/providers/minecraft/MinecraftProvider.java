@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2018-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -249,7 +249,14 @@ public abstract class MinecraftProvider {
 	 * @return true if the minecraft version is older than 1.3.
 	 */
 	public boolean isLegacyVersion() {
-		return !getVersionInfo().isVersionOrNewer(Constants.RELEASE_TIME_1_3);
+		return getVersionInfo().isLegacyVersion();
+	}
+
+	/**
+	 * @return true if the minecraft version is older than 1.3 and the version has both a server and a client
+	 */
+	public boolean isLegacyClientAndServerVersion() {
+		return getVersionInfo().isLegacyClientAndServerVersion();
 	}
 
 	@Nullable

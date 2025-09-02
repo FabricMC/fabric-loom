@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappi
 
 	@Override
 	public void provide(Path tinyMappings) throws IOException {
-		Files.writeString(tinyMappings, getIsLegacyMinecraft().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
+		Files.writeString(tinyMappings, getUseSplitOfficialNamespaces().get() ? HEADER_OFFICIAL_LEGACY_MERGED : HEADER_OFFICIAL_MERGED, StandardCharsets.UTF_8);
 	}
 
 	@Override

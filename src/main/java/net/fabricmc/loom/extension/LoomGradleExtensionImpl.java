@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2024 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -295,8 +295,8 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
 
-		provider.getIsLegacyMinecraft().set(getProject().provider(() -> getMinecraftProvider().isLegacyVersion()));
-		provider.getIsLegacyMinecraft().disallowChanges();
+		provider.getUseSplitOfficialNamespaces().set(getProject().provider(() -> getMinecraftProvider().isLegacyClientAndServerVersion()));
+		provider.getUseSplitOfficialNamespaces().disallowChanges();
 	}
 
 	@Override

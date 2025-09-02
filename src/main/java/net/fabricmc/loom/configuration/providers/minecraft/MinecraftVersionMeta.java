@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
 @SuppressWarnings("unused")
@@ -62,6 +63,30 @@ public record MinecraftVersionMeta(
 
 	public boolean isVersionOrNewer(String releaseTime) {
 		return this.releaseTime().compareTo(releaseTime) >= 0;
+	}
+
+	/**
+	 * Returns true if the version was released before 1.3.
+	 * This means that the client and server can't be merged normally due to different obfuscation
+	 * or one of the environments missing.
+	 */
+	public boolean isLegacyVersion() {
+		return !isVersionOrNewer(Constants.RELEASE_TIME_1_3);
+	}
+
+	public boolean hasClient() {
+		return downloads().containsKey("client");
+	}
+
+	public boolean hasServer() {
+		return downloads().containsKey("server");
+	}
+
+	/**
+	 * Returns true if the version was released before 1.3 and has both a client and a server.
+	 */
+	public boolean isLegacyClientAndServerVersion() {
+		return isLegacyVersion() && hasClient() && hasServer();
 	}
 
 	public boolean hasNativesToExtract() {

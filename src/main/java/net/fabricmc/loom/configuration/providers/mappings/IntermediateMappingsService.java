@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -103,9 +103,9 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		// When merging legacy versions there will be multiple named namespaces, so use intermediary as the common src ns
 		// Newer versions will use intermediary as the src ns
-		final String expectedSrcNs = minecraftProvider.isLegacyVersion()
-				? MappingsNamespace.INTERMEDIARY.toString() // <1.3
-				: MappingsNamespace.OFFICIAL.toString(); // >=1.3
+		final String expectedSrcNs = minecraftProvider.isLegacyClientAndServerVersion()
+				? MappingsNamespace.INTERMEDIARY.toString() // <1.3 when both the client and the server exist
+				: MappingsNamespace.OFFICIAL.toString(); // >=1.3 or single env version
 
 		return TYPE.create(project, options -> {
 			options.getIntermediaryTiny().set(intermediaryTiny.toFile());

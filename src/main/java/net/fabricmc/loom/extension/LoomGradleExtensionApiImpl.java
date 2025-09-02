@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2024 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfigura
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -160,11 +159,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 					// if no configuration is selected by the user, attempt to select one
 					// based on the mc version and which sides are present for it
-					if (!metadataProvider.getVersionMeta().downloads().containsKey("server")) {
+					if (!metadataProvider.getVersionMeta().hasServer()) {
 						return MinecraftJarConfiguration.CLIENT_ONLY;
-					} else if (!metadataProvider.getVersionMeta().downloads().containsKey("client")) {
+					} else if (!metadataProvider.getVersionMeta().hasClient()) {
 						return MinecraftJarConfiguration.SERVER_ONLY;
-					} else if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+					} else if (!metadataProvider.getVersionMeta().isLegacyVersion()) {
 						return MinecraftJarConfiguration.MERGED;
 					} else {
 						return MinecraftJarConfiguration.LEGACY_MERGED;

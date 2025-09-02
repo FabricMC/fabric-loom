@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,8 +54,8 @@ public final class MappingsMerger {
 		Stopwatch stopwatch = Stopwatch.createStarted();
 		LOGGER.info(":merging mappings");
 
-		if (minecraftProvider.isLegacyVersion()) {
-			legacyMergeAndSaveMappings(from, out, intermediateMappingsService);
+		if (minecraftProvider.isLegacyClientAndServerVersion()) {
+			legacyMergedMergeAndSaveMappings(from, out, intermediateMappingsService);
 		} else {
 			mergeAndSaveMappings(from, out, intermediateMappingsService);
 		}
@@ -85,7 +85,7 @@ public final class MappingsMerger {
 	}
 
 	@VisibleForTesting
-	public static void legacyMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
+	public static void legacyMergedMergeAndSaveMappings(Path from, Path out, IntermediateMappingsService intermediateMappingsService) throws IOException {
 		MemoryMappingTree intermediaryTree = new MemoryMappingTree();
 		intermediateMappingsService.getMemoryMappingTree().accept(intermediaryTree);
 

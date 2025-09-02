@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2022 FabricMC
+ * Copyright (c) 2018-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import java.nio.file.Files
 import java.nio.file.Path
 
 import spock.lang.Specification
@@ -143,6 +144,42 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		def result = gradle.run(task: "build", args: [
 			"-Ploom.test.legacyMergedIntermediary.mappingPath=${mappings}"
 		])
+
+		then:
+		result.task(":build").outcome == SUCCESS
+	}
+
+	def "Legacy single jar version with mappings but no intermediates"() {
+		setup:
+		def mappings = Path.of('src/test/resources/mappings/0.30-minimal.tiny')
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+
+		Files.copy(mappings, gradle.projectDir.toPath().resolve('mappings.tiny'))
+		gradle.buildGradle << """
+				loom.noIntermediateMappings()
+
+				dependencies {
+					minecraft "com.mojang:minecraft:c0.30_01c"
+					mappings loom.layered {
+						it.mappings file("mappings.tiny")
+					}
+
+					modImplementation "net.fabricmc:fabric-loader:0.15.7"
+				}
+			"""
+		def sourceFile = new File(gradle.projectDir, 'src/main/java/Test.java')
+		sourceFile.parentFile.mkdirs()
+		sourceFile.text = """
+			public final class Test {
+				public static void foo() {
+					// Reference a mapped class
+					System.out.println(com.mojang.minecraft.Minecraft.class);
+				}
+			}
+			"""
+
+		when:
+		def result = gradle.run(task: "build")
 
 		then:
 		result.task(":build").outcome == SUCCESS

@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -71,31 +72,33 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			try {
 				layeredMappingFactory.evaluate(configContext);
 			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to setup layered mappings: %s".formatted(layeredMappingFactory.mavenNotation()), e);
+				throw new UncheckedIOException("Failed to setup layered mappings: %s".formatted(layeredMappingFactory.mavenNotation(configContext.extension())), e);
 			}
 		}
 	}
 
 	private void evaluate(ConfigContext configContext) throws IOException {
-		LOGGER.info("Evaluating layer mapping: {}", mavenNotation());
+		LOGGER.info("Evaluating layer mapping: {}", mavenNotation(configContext.extension()));
 
 		final Path mavenRepoDir = configContext.extension().getFiles().getGlobalMinecraftRepo().toPath();
-		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec().getVersion(), null, mavenRepoDir);
+		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec().getVersion(configContext.extension().getIntermediateMappingsProvider()), null, mavenRepoDir);
 		final Path jar = resolve(configContext.project());
 		maven.copyToMaven(jar, null);
 	}
 
 	public Path resolve(Project project) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_"));
+		final IntermediateMappingsProvider intermediateMappingsProvider = extension.getIntermediateMappingsProvider();
+		final String mappingSpecVersion = spec.getVersion(intermediateMappingsProvider);
+		final MappingContext mappingContext = new GradleMappingContext(project, mappingSpecVersion.replace("+", "_").replace(".", "_"));
 		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
-		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, spec.getVersion()));
+		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, mappingSpecVersion));
 
 		if (Files.exists(mappingsZip) && !mappingContext.refreshDeps()) {
 			return mappingsZip;
 		}
 
-		boolean noIntermediateMappings = extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider;
+		boolean noIntermediateMappings = intermediateMappingsProvider instanceof NoOpIntermediateMappingsProvider;
 		var processor = new LayeredMappingsProcessor(spec, noIntermediateMappings);
 		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
@@ -110,11 +113,11 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	public Dependency createDependency(Project project) {
-		return project.getDependencies().create(mavenNotation());
+		return project.getDependencies().create(mavenNotation(LoomGradleExtension.get(project)));
 	}
 
-	public String mavenNotation() {
-		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion());
+	private String mavenNotation(LoomGradleExtension extension) {
+		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion(extension.getIntermediateMappingsProvider()));
 	}
 
 	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {

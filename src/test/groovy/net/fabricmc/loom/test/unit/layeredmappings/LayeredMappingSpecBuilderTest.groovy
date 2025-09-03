@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit.layeredmappings
 
 import spock.lang.Specification
 
+import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl
 import net.fabricmc.loom.configuration.providers.mappings.file.FileMappingsSpec
@@ -35,7 +36,12 @@ import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMap
 import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec
 import net.fabricmc.loom.util.ClosureAction
 
+import static org.mockito.Mockito.mock
+import static org.mockito.Mockito.when
+
 class LayeredMappingSpecBuilderTest extends Specification {
+	private static IntermediateMappingsProvider intermediateProvider = mockIntermediateMappingsProvider()
+
 	def "simple mojmap" () {
 		when:
 		def spec = layered {
@@ -44,7 +50,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		def layers = spec.layers()
 		then:
 		layers.size() == 2
-		spec.version == "layered+hash.2198"
+		spec.getVersion(intermediateProvider) == "layered+hash.3625597"
 		layers[0].class == IntermediaryMappingsSpec
 		layers[1].class == MojangMappingsSpec
 	}
@@ -58,8 +64,9 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		}
 		def layers = spec.layers()
 		def parchment = layers[2] as ParchmentMappingsSpec
+
 		then:
-		spec.version == "layered+hash.863752751"
+		spec.getVersion(intermediateProvider) == "layered+hash.1010088964"
 		layers.size() == 3
 		layers[0].class == IntermediaryMappingsSpec
 		layers[1].class == MojangMappingsSpec
@@ -79,7 +86,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		def layers = spec.layers()
 		def parchment = layers[2] as ParchmentMappingsSpec
 		then:
-		spec.version == "layered+hash.863752757"
+		spec.getVersion(intermediateProvider) == "layered+hash.1010089150"
 		layers.size() == 3
 		layers[0].class == IntermediaryMappingsSpec
 		layers[1].class == MojangMappingsSpec
@@ -99,7 +106,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		def layers = spec.layers()
 		def parchment = layers[2] as ParchmentMappingsSpec
 		then:
-		spec.version == "layered+hash.1144427140"
+		spec.getVersion(intermediateProvider) == "layered+hash.1113945513"
 		layers.size() == 3
 		layers[0].class == IntermediaryMappingsSpec
 		layers[1].class == MojangMappingsSpec
@@ -115,7 +122,7 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		}
 		def layers = spec.layers()
 		then:
-		spec.version == "layered+hash.771237341"
+		spec.getVersion(intermediateProvider) == "layered+hash.1865003664"
 		layers.size() == 2
 		layers[0].class == IntermediaryMappingsSpec
 		layers[1].class == FileMappingsSpec
@@ -126,5 +133,11 @@ class LayeredMappingSpecBuilderTest extends Specification {
 		LayeredMappingSpecBuilderImpl builder = new LayeredMappingSpecBuilderImpl()
 		new ClosureAction(cl).execute(builder)
 		return builder.build()
+	}
+
+	private static IntermediateMappingsProvider mockIntermediateMappingsProvider() {
+		def provider = mock(IntermediateMappingsProvider.class)
+		when(provider.name).thenReturn("test")
+		return provider
 	}
 }

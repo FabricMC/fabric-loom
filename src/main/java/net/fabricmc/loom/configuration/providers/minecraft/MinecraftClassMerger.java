@@ -286,7 +286,12 @@ public class MinecraftClassMerger {
 						formatMethodAccessFlags(clientEntry.access),
 						formatMethodAccessFlags(serverEntry.access));
 
-				clientEntry.access = mergeAccess(clientEntry.access, serverEntry.access);
+				try {
+					clientEntry.access = mergeAccess(clientEntry.access, serverEntry.access);
+				} catch (IllegalStateException e) {
+					throw new IllegalStateException("Failed to merge method %s#%s%s %s".formatted(nodeOut.name, clientEntry.name, clientEntry.desc, e.getMessage()), e);
+				}
+
 				return clientEntry;
 			}
 		}.merge(nodeOut.methods);
@@ -351,29 +356,21 @@ public class MinecraftClassMerger {
 		validateAccessMerge(clientAccess, serverAccess);
 
 		if (getAccessRating(clientAccess) > getAccessRating(serverAccess)) {
-			return removeFinalIfPrivate(serverAccess);
+			return serverAccess;
 		}
 
-		return removeFinalIfPrivate(clientAccess);
+		return clientAccess;
 	}
 
 	private static void validateAccessMerge(int clientAccess, int serverAccess) {
-		int clientFlags = removeFinalIfPrivate(clientAccess) & ~PERMISSION_BITS;
-		int serverFlags = removeFinalIfPrivate(serverAccess) & ~PERMISSION_BITS;
+		int clientFlags = clientAccess & ~PERMISSION_BITS;
+		int serverFlags = serverAccess & ~PERMISSION_BITS;
 
 		if (clientFlags != serverFlags) {
 			// If the access flags are different beyond the permission bits, we cannot merge them.
 			throw new IllegalStateException("Cannot merge methods with differing non-permission bits: client: %s server: %s"
 					.formatted(formatMethodAccessFlags(clientAccess), formatMethodAccessFlags(serverAccess)));
 		}
-	}
-
-	private static int removeFinalIfPrivate(int access) {
-		if ((access & Opcodes.ACC_PRIVATE) != 0) {
-			return access & ~Opcodes.ACC_FINAL;
-		}
-
-		return access;
 	}
 
 	private static int getAccessRating(int access) {

@@ -125,7 +125,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	def "Legacy merged"() {
 		setup:
 		def mappings = Path.of("src/test/resources/mappings/1.2.5-intermediary.tiny.zip").toAbsolutePath()
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE, gradleHomeDir: File.createTempDir())
 
 		gradle.buildGradle << """
                 dependencies {

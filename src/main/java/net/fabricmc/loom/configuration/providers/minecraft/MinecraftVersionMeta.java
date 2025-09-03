@@ -89,7 +89,7 @@ public record MinecraftVersionMeta(
 	 * across all versions in the range.
 	 */
 	public boolean isLegacySplitOfficialNamespaceVersion() {
-		// TODO: Allow "official" as the obf namespace on versions in this range by checking the mappings
+		// TODO: Allow "official" as the obf namespace on single-env versions in this range by checking the mappings
 		//       to see which one they have.
 		//       Likewise, "clientOfficial"/"serverOfficial" could be allowed older single-env releases
 		//       as an alternative to "official".

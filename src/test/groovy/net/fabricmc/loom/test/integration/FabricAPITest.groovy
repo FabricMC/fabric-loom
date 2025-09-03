@@ -50,10 +50,10 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				)
 
 		// Disable the mixin ap if needed. Fabric API is a large enough test project to see if something breaks.
-		if (disableMixinAp) {
+		if (!disableMixinAp) {
 			gradle.buildGradle << """
 				allprojects {
-					loom.mixin.useLegacyMixinAp = false
+					loom.mixin.useLegacyMixinAp = true
 				}
 				""".stripIndent()
 		}

@@ -48,11 +48,11 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
+import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
-import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
@@ -198,6 +198,14 @@ public record SpecContextImpl(
 
 	// Returns a list of Loom Projects found in both the runtime and compile classpath
 	private static Stream<Project> getCompileRuntimeProjectDependencies(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		// TODO provide a project isolated way of doing this.
+		if (extension.isProjectIsolationActive()
+				|| GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
+			return Stream.empty();
+		}
+
 		final Stream<Project> runtimeProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
 		final List<Project> compileProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)).toList();
 

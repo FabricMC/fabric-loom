@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -65,7 +67,8 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 		return TYPE.create(project, options -> {
 			options.getTinyRemapper().set(TinyRemapperService.createSimple(project,
 					project.provider(metadata::namespace),
-					project.provider(MappingsNamespace.NAMED::toString)
+					project.provider(MappingsNamespace.NAMED::toString),
+					TinyRemapperService.ClasspathLibraries.INCLUDE // Must include the full set of libraries on classpath so fields can be looked up. This does use a lot of memory however...
 			));
 		});
 	}
@@ -110,17 +113,17 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 
 		@Override
 		protected String mapClassName(String className) {
-			return remapper.map(className);
+			return remapper.map(className.replace('.', '/')).replace('/', '.');
 		}
 
 		@Override
 		protected String mapFieldName(String className, String fieldName, String fieldDesc) {
-			return remapper.mapFieldName(className, fieldName, fieldDesc);
+			return remapper.mapFieldName(className.replace('.', '/'), fieldName, fieldDesc);
 		}
 
 		@Override
 		protected String mapMethodName(String className, String methodName, String methodDesc) {
-			return remapper.mapMethodName(className, methodName, methodDesc);
+			return remapper.mapMethodName(className.replace('.', '/'), methodName, methodDesc);
 		}
 
 		// Return all classes in the given package, not recursively.
@@ -134,19 +137,35 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 
 		@Override
 		protected String getFieldDesc(String className, String fieldName) {
-			TrClass trClass = tinyRemapper.getEnvironment().getClass(className);
+			TrClass trClass = tinyRemapper.getEnvironment().getClass(className.replace('.', '/'));
 
-			if (trClass == null) {
-				return null;
-			}
-
-			for (TrField trField : trClass.getFields()) {
-				if (trField.getName().equals(fieldName)) {
-					return trField.getDesc();
+			if (trClass != null) {
+				for (TrField trField : trClass.getFields()) {
+					if (trField.getName().equals(fieldName)) {
+						return trField.getDesc();
+					}
 				}
 			}
 
-			return null;
+			String fieldDesc = getFieldDescFromReflection(className, fieldName);
+
+			if (fieldDesc == null) {
+				throw new IllegalStateException("Could not find field " + fieldName + " in class " + className);
+			}
+
+			return fieldDesc;
+		}
+
+		private static String getFieldDescFromReflection(String className, String fieldName) {
+			try {
+				// Use the bootstrap class loader, which should only resolve classes from the JDK.
+				// Don't run the static initializer.
+				Class<?> clazz = Class.forName(className, false, null);
+				Field field = clazz.getDeclaredField(fieldName);
+				return Type.getDescriptor(field.getType());
+			} catch (ClassNotFoundException | NoSuchFieldException e) {
+				return null;
+			}
 		}
 	}
 }

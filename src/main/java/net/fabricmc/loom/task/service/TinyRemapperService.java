@@ -52,6 +52,7 @@ import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Constants;
@@ -117,13 +118,10 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		});
 	}
 
-	public static Provider<Options> createSimple(Project project, Provider<String> from, Provider<String> to) {
+	public static Provider<Options> createSimple(Project project, Provider<String> from, Provider<String> to, ClasspathLibraries classpathLibraries) {
 		return TYPE.create(project, options -> {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
-			final ConfigurationContainer configurations = project.getConfigurations();
-			final FileCollection classpath = configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
-					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+			final FileCollection classpath = getRemapClasspath(project, from, classpathLibraries);
 
 			options.getFrom().set(from);
 			options.getTo().set(to);
@@ -133,6 +131,41 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
 		});
+	}
+
+	private static FileCollection getRemapClasspath(Project project, Provider<String> from, ClasspathLibraries classpathLibraries) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final ConfigurationContainer configurations = project.getConfigurations();
+
+		if (from.get().equals(MappingsNamespace.INTERMEDIARY.toString())) {
+			ConfigurableFileCollection files = project.files(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
+
+			if (classpathLibraries == ClasspathLibraries.INCLUDE) {
+				files = files.from(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+			}
+
+			return files;
+		}
+
+		if (classpathLibraries == ClasspathLibraries.INCLUDE) {
+			return configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+		}
+
+		return configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
+				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+	}
+
+	public enum ClasspathLibraries {
+		/**
+		 * Default, in most cases the Minecraft libraries are not required as they are not obfuscated and do not need to be queried.
+		 */
+		EXCLUDE,
+
+		/**
+		 * Uses more memory, but provides a complete index of all the classes within the libraries.
+		 */
+		INCLUDE
 	}
 
 	private TinyRemapper tinyRemapper;

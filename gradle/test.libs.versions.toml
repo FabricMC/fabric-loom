@@ -7,8 +7,8 @@ java-debug = "0.53.1"
 mixin = "0.15.3+mixin.0.8.7"
 bouncycastle = "1.81"
 
-gradle-latest = "9.0.0-rc-4"
-gradle-nightly = "9.1.0-20250729001554+0000"
+gradle-latest = "9.0.0"
+gradle-nightly = "9.2.0-20250902075334+0000"
 fabric-loader = "0.16.14"
 
 [libraries]

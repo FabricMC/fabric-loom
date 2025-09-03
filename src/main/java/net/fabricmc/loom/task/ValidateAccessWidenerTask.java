@@ -83,7 +83,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 		try (BufferedReader reader = Files.newBufferedReader(getAccessWidener().get().getAsFile().toPath(), StandardCharsets.UTF_8)) {
 			accessWidenerReader.read(reader, "named");
 		} catch (AccessWidenerFormatException e) {
-			getProject().getLogger().error("Failed to validate access-widener file {} on line {}: {}", getAccessWidener().get().getAsFile().getName(), e.getLineNumber(), e.getMessage());
+			getLogger().error("Failed to validate access-widener file {} on line {}: {}", getAccessWidener().get().getAsFile().getName(), e.getLineNumber(), e.getMessage());
 			throw e;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read access widener", e);

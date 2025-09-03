@@ -55,6 +55,7 @@ class MinecraftClassMergerTest extends Specification {
 		ACC_PROTECTED             | ACC_PRIVATE                | ACC_PRIVATE
 		ACC_PROTECTED             | ACC_PUBLIC                 | ACC_PROTECTED
 		ACC_PUBLIC_STATIC         | ACC_PRIVATE_STATIC         | ACC_PRIVATE_STATIC
+		ACC_PRIVATE_FINAL         | ACC_PUBLIC                 | ACC_PRIVATE
 	}
 
 	def "cannot merge access"() {
@@ -68,6 +69,5 @@ class MinecraftClassMergerTest extends Specification {
 		client                    | server
 		ACC_PRIVATE_STATIC        | ACC_PUBLIC
 		ACC_PRIVATE               | ACC_PRIVATE_STATIC
-		ACC_PRIVATE_FINAL         | ACC_PUBLIC
 	}
 }

@@ -29,7 +29,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -341,22 +343,37 @@ public class MinecraftClassMerger {
 	 * This ensures that the mod is compiled against the "worst case" access level.
 	 * At runtime fabric-loader will make all methods public, meaning it doesn't cause an issue in dev envs.
 	 * If a mod needs to uses one of these members it should use an access widener.
+	 *
+	 * <p>Allow merging private final members as the final modifier is irrelevant for private members.
 	 */
-	private static int mergeAccess(int clientAccess, int serverAccess) {
-		int clientFlags = clientAccess & ~PERMISSION_BITS;
-		int serverFlags = serverAccess & ~PERMISSION_BITS;
+	@VisibleForTesting
+	public static int mergeAccess(int clientAccess, int serverAccess) {
+		validateAccessMerge(clientAccess, serverAccess);
+
+		if (getAccessRating(clientAccess) > getAccessRating(serverAccess)) {
+			return removeFinalIfPrivate(serverAccess);
+		}
+
+		return removeFinalIfPrivate(clientAccess);
+	}
+
+	private static void validateAccessMerge(int clientAccess, int serverAccess) {
+		int clientFlags = removeFinalIfPrivate(clientAccess) & ~PERMISSION_BITS;
+		int serverFlags = removeFinalIfPrivate(serverAccess) & ~PERMISSION_BITS;
 
 		if (clientFlags != serverFlags) {
 			// If the access flags are different beyond the permission bits, we cannot merge them.
 			throw new IllegalStateException("Cannot merge methods with differing non-permission bits: client: %s server: %s"
 					.formatted(formatMethodAccessFlags(clientAccess), formatMethodAccessFlags(serverAccess)));
 		}
+	}
 
-		if (getAccessRating(clientAccess) > getAccessRating(serverAccess)) {
-			return serverAccess;
+	private static int removeFinalIfPrivate(int access) {
+		if ((access & Opcodes.ACC_PRIVATE) != 0) {
+			return access & ~Opcodes.ACC_FINAL;
 		}
 
-		return clientAccess;
+		return access;
 	}
 
 	private static int getAccessRating(int access) {
@@ -369,23 +386,24 @@ public class MinecraftClassMerger {
 		}
 	}
 
-	private static String formatMethodAccessFlags(int access) {
-		var sb = new StringBuilder();
+	@VisibleForTesting
+	public static String formatMethodAccessFlags(int access) {
+		var joiner = new StringJoiner(" ");
 
-		if ((access & Opcodes.ACC_PUBLIC) != 0) sb.append("public ");
-		if ((access & Opcodes.ACC_PRIVATE) != 0) sb.append("private ");
-		if ((access & Opcodes.ACC_PROTECTED) != 0) sb.append("protected ");
-		if ((access & Opcodes.ACC_STATIC) != 0) sb.append("static ");
-		if ((access & Opcodes.ACC_FINAL) != 0) sb.append("final ");
-		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) sb.append("synchronized ");
-		if ((access & Opcodes.ACC_BRIDGE) != 0) sb.append("bridge ");
-		if ((access & Opcodes.ACC_VARARGS) != 0) sb.append("varargs ");
-		if ((access & Opcodes.ACC_NATIVE) != 0) sb.append("native ");
-		if ((access & Opcodes.ACC_ABSTRACT) != 0) sb.append("abstract ");
-		if ((access & Opcodes.ACC_STRICT) != 0) sb.append("strictfp ");
-		if ((access & Opcodes.ACC_SYNTHETIC) != 0) sb.append("synthetic ");
-		if ((access & Opcodes.ACC_MANDATED) != 0) sb.append("mandated ");
+		if ((access & Opcodes.ACC_PUBLIC) != 0) joiner.add("public");
+		if ((access & Opcodes.ACC_PRIVATE) != 0) joiner.add("private");
+		if ((access & Opcodes.ACC_PROTECTED) != 0) joiner.add("protected");
+		if ((access & Opcodes.ACC_STATIC) != 0) joiner.add("static");
+		if ((access & Opcodes.ACC_FINAL) != 0) joiner.add("final");
+		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) joiner.add("synchronized");
+		if ((access & Opcodes.ACC_BRIDGE) != 0) joiner.add("bridge");
+		if ((access & Opcodes.ACC_VARARGS) != 0) joiner.add("varargs");
+		if ((access & Opcodes.ACC_NATIVE) != 0) joiner.add("native");
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) joiner.add("abstract");
+		if ((access & Opcodes.ACC_STRICT) != 0) joiner.add("strictfp");
+		if ((access & Opcodes.ACC_SYNTHETIC) != 0) joiner.add("synthetic");
+		if ((access & Opcodes.ACC_MANDATED) != 0) joiner.add("mandated");
 
-		return sb.toString().trim();
+		return joiner.toString();
 	}
 }

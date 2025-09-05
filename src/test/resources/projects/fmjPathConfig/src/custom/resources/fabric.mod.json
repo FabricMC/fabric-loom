@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "testmod",
+  "version": "1",
+  "name": "Test Mod",
+  "custom": {
+    "loom:injected_interfaces": {
+      "net/minecraft/class_310": ["InjectedInterface"]
+    }
+  }
+}

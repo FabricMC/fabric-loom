@@ -66,6 +66,8 @@ public interface LoomGradleExtensionAPI {
 
 	RegularFileProperty getAccessWidenerPath();
 
+	RegularFileProperty getFabricModJsonPath();
+
 	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();
 
 	void decompilers(Action<NamedDomainObjectContainer<DecompilerOptions>> action);

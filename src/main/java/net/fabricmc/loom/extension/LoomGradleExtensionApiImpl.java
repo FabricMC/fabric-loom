@@ -86,6 +86,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
+	protected final RegularFileProperty fabricModJsonPath;
 	protected final ManifestLocations versionsManifests;
 	protected final Property<String> customMetadata;
 	protected final SetProperty<String> knownIndyBsms;
@@ -118,6 +119,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.empty();
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
+		this.fabricModJsonPath = project.getObjects().fileProperty();
 		this.versionsManifests = new ManifestLocations();
 		this.versionsManifests.add("mojang", MirrorUtil.getVersionManifests(project), -2);
 		this.versionsManifests.add("fabric_experimental", MirrorUtil.getExperimentalVersions(project), -1);
@@ -203,6 +205,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
 		return accessWidener;
+	}
+
+	@Override
+	public RegularFileProperty getFabricModJsonPath() {
+		return fabricModJsonPath;
 	}
 
 	@Override

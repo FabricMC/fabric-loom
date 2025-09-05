@@ -37,7 +37,9 @@ import java.util.Optional;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -109,7 +111,10 @@ public final class FabricModJsonFactory {
 
 	@Nullable
 	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) throws IOException {
-		final File file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
+		final RegularFileProperty fmjPath = project.getExtensions().getByType(LoomGradleExtensionAPI.class).getFabricModJsonPath();
+		final File file = fmjPath.isPresent()
+			? fmjPath.getAsFile().get()
+			: SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
 
 		if (file == null) {
 			return null;

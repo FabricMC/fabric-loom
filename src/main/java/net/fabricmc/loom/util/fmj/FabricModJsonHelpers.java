@@ -48,7 +48,10 @@ public class FabricModJsonHelpers {
 		}
 
 		try {
-			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets.toArray(SourceSet[]::new));
+			var overrideFile = extension.getFabricModJsonPath().getAsFile();
+			var fabricModJson = overrideFile.isPresent()
+				? FabricModJsonFactory.createFromOverrideNullable(overrideFile)
+				: FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets.toArray(SourceSet[]::new));
 
 			if (fabricModJson != null) {
 				return List.of(fabricModJson);

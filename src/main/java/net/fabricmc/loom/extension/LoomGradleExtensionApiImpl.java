@@ -30,11 +30,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
-import org.gradle.api.UncheckedIOException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -73,8 +73,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
-import net.fabricmc.loom.util.fmj.FabricModJson;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
@@ -300,17 +298,13 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public String getModVersion() {
-		try {
-			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), SourceSetHelper.getMainSourceSet(getProject()));
+		var fabricModJsons = FabricModJsonHelpers.getModsInProject(getProject());
 
-			if (fabricModJson == null) {
-				throw new RuntimeException("Could not find a fabric.mod.json file in the main sourceset");
-			}
-
-			return fabricModJson.getModVersion();
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read mod version from main sourceset.", e);
+		if (fabricModJsons.isEmpty()) {
+			throw new RuntimeException("Could not find a fabric.mod.json file in the main sourceset");
 		}
+
+		return fabricModJsons.getFirst().getModVersion();
 	}
 
 	@Override

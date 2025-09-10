@@ -37,9 +37,8 @@ import java.util.Optional;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import org.gradle.api.Project;
-import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -110,12 +109,29 @@ public final class FabricModJsonFactory {
 	}
 
 	@Nullable
-	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) throws IOException {
-		final RegularFileProperty fmjPath = project.getExtensions().getByType(LoomGradleExtensionAPI.class).getFabricModJsonPath();
-		final File file = fmjPath.isPresent()
-			? fmjPath.getAsFile().get()
-			: SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
+	public static FabricModJson createFromOverrideNullable(Provider<File> fileProvider) throws IOException {
+		var file = fileProvider.getOrNull();
+		var modJson = readFmjJsonObject(file);
+		if (modJson == null) {
+			return null;
+		}
 
+		return create(modJson, new FabricModJsonSource.DirectorySource(file.toPath().getParent()));
+	}
+
+	@Nullable
+	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) throws IOException {
+		var file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
+		var modJson = readFmjJsonObject(file);
+		if (modJson == null) {
+			return null;
+		}
+
+		return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
+	}
+
+	@Nullable
+	private static JsonObject readFmjJsonObject(@Nullable File file) {
 		if (file == null) {
 			return null;
 		}
@@ -126,10 +142,9 @@ public final class FabricModJsonFactory {
 			if (modJson == null) {
 				// fromJson returns null if the file is empty
 				LOGGER.warn("Failed to parse empty fabric.mod.json: {}", file.getAbsolutePath());
-				return null;
 			}
 
-			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
+			return modJson;
 		} catch (JsonSyntaxException e) {
 			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());
 			return null;

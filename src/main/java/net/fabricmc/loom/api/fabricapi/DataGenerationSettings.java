@@ -26,6 +26,7 @@ package net.fabricmc.loom.api.fabricapi;
 
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Optional;
 
 /**
  * Represents the settings for data generation.
@@ -67,4 +68,11 @@ public interface DataGenerationSettings {
 	 * Contains a boolean property indicating whether data generation will be compiled and ran with the client.
 	 */
 	Property<Boolean> getClient();
+
+	/**
+	 * Contains the location of a `fabric.mod.json` file used for data generation.
+	 * If unset, the file in the root resources of the respective source set is used.
+	 */
+	@Optional
+	RegularFileProperty getFabricModJsonPath();
 }

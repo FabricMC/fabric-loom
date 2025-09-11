@@ -24,42 +24,54 @@
 
 package net.fabricmc.loom.util.fmj;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public class FabricModJsonHelpers {
-	// Returns a list of Mods found in the provided project's main or client sourcesets
+	/**
+	 * Returns the list of mods provided by either {@link LoomGradleExtensionAPI#getFabricModJsonPath()}
+	 * or {@code fabric.mod.json} in main or client resources.
+	 */
 	public static List<FabricModJson> getModsInProject(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
+		var overrideFile = extension.getFabricModJsonPath().getAsFile();
 		var sourceSets = new ArrayList<SourceSet>();
-		sourceSets.add(SourceSetHelper.getMainSourceSet(project));
 
+		sourceSets.add(SourceSetHelper.getMainSourceSet(project));
 		if (extension.areEnvironmentSourceSetsSplit()) {
 			sourceSets.add(SourceSetHelper.getSourceSetByName("client", project));
 		}
 
+		return getModsInProject(project, overrideFile, sourceSets.toArray(SourceSet[]::new));
+	}
+
+	/**
+	 * Returns the list of mods provided by either {@code overrideFile} property
+	 * or {@code fabric.mod.json} in the {@code sourceSets} array.
+	 */
+	public static List<FabricModJson> getModsInProject(Project project, Provider<File> overrideFile, SourceSet... sourceSets) {
 		try {
-			var overrideFile = extension.getFabricModJsonPath().getAsFile();
 			var fabricModJson = overrideFile.isPresent()
 				? FabricModJsonFactory.createFromOverrideNullable(overrideFile)
-				: FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets.toArray(SourceSet[]::new));
-
+				: FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets);
 			if (fabricModJson != null) {
 				return List.of(fabricModJson);
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-
 		return Collections.emptyList();
 	}
 }

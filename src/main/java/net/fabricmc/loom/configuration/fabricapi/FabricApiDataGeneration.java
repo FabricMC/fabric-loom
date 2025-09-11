@@ -68,6 +68,7 @@ public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet
 		settings.getClient().convention(false);
 
 		action.execute(settings);
+		getFabricModJsonPath().set(settings.getFabricModJsonPath());
 
 		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 		final File outputDirectory = settings.getOutputDirectory().getAsFile().get();

@@ -24,12 +24,14 @@
 
 package net.fabricmc.loom.configuration.fabricapi;
 
-import java.io.IOException;
+import java.util.List;
 
 import javax.inject.Inject;
 
+import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -37,7 +39,6 @@ import org.gradle.api.tasks.SourceSetContainer;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.fmj.FabricModJson;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 abstract class FabricApiAbstractSourceSet {
@@ -45,6 +46,8 @@ abstract class FabricApiAbstractSourceSet {
 	protected abstract Project getProject();
 
 	protected abstract String getSourceSetName();
+
+	protected abstract RegularFileProperty getFabricModJsonPath();
 
 	protected SourceSet configureSourceSet(Property<String> modId, boolean isClient) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
@@ -64,17 +67,14 @@ abstract class FabricApiAbstractSourceSet {
 		});
 
 		modId.convention(getProject().provider(() -> {
-			try {
-				final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), sourceSet);
+			List<FabricModJson> fabricModJsons = FabricModJsonHelpers
+				.getModsInProject(getProject(), getFabricModJsonPath().getAsFile(), sourceSet);
 
-				if (fabricModJson == null) {
-					throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
-				}
-
-				return fabricModJson.getId();
-			} catch (IOException e) {
-				throw new org.gradle.api.UncheckedIOException("Failed to read mod id from the datagen source set.", e);
+			if (fabricModJsons.isEmpty()) {
+				throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
 			}
+
+			return fabricModJsons.getFirst().getId();
 		}));
 
 		extension.getMods().create(modId.get(), mod -> {

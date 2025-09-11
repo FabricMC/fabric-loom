@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.api.fabricapi;
 
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.ApiStatus;
@@ -89,4 +90,11 @@ public interface GameTestSettings {
 	 */
 	@Optional
 	Property<String> getUsername();
+
+	/**
+	 * Contains the location of a `fabric.mod.json` file used for the game test.
+	 * If unset, the file in the root resources of the respective source set is used.
+	 */
+	@Optional
+	RegularFileProperty getFabricModJsonPath();
 }

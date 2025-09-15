@@ -28,11 +28,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.annotations.SerializedName;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record GenericAnnotationData(
 		@SerializedName("remove")
@@ -72,6 +75,15 @@ public record GenericAnnotationData(
 		List<TypeAnnotationNode> newTypeAnnotationsToAdd = new ArrayList<>(typeAnnotationsToAdd);
 		newTypeAnnotationsToAdd.addAll(other.typeAnnotationsToAdd);
 		return new GenericAnnotationData(newAnnotationToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd);
+	}
+
+	GenericAnnotationData remap(TinyRemapper remapper) {
+		return new GenericAnnotationData(
+				annotationsToRemove.stream().map(remapper.getEnvironment().getRemapper()::map).collect(Collectors.toCollection(LinkedHashSet::new)),
+				annotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				typeAnnotationsToRemove.stream().map(key -> key.remap(remapper)).collect(Collectors.toCollection(LinkedHashSet::new)),
+				typeAnnotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new))
+		);
 	}
 
 	public int modifyAccessFlags(int access) {

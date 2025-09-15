@@ -134,13 +134,13 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	private void writeAnnotationData(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
-		AnnotationsData annotationsData = processor.getAnnotationsData(layers);
+		List<AnnotationsData> annotationsData = processor.getAnnotationsData(layers);
 
-		if (annotationsData == null) {
+		if (annotationsData.isEmpty()) {
 			return;
 		}
 
-		byte[] data = AnnotationsData.GSON.toJson(annotationsData.toJson()).getBytes(StandardCharsets.UTF_8);
+		byte[] data = AnnotationsData.GSON.toJson(AnnotationsData.listToJson(annotationsData)).getBytes(StandardCharsets.UTF_8);
 
 		ZipUtils.add(mappingsFile, AnnotationsLayer.ANNOTATIONS_PATH, data);
 	}

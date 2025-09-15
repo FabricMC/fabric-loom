@@ -77,8 +77,7 @@ public class MappingConfiguration {
 	public final Path tinyMappingsJar;
 	private final Path unpickDefinitions;
 
-	@Nullable
-	private AnnotationsData annotationsData;
+	private List<AnnotationsData> annotationsData = List.of();
 	@Nullable
 	private UnpickMetadata unpickMetadata;
 	private Map<String, String> signatureFixes;
@@ -233,7 +232,7 @@ public class MappingConfiguration {
 		}
 
 		try (BufferedReader reader = Files.newBufferedReader(annotationsPath, StandardCharsets.UTF_8)) {
-			annotationsData = AnnotationsData.read(reader);
+			annotationsData = AnnotationsData.readList(reader);
 		}
 	}
 
@@ -312,8 +311,7 @@ public class MappingConfiguration {
 		return unpickMetadata != null;
 	}
 
-	@Nullable
-	public AnnotationsData getAnnotationsData() {
+	public List<AnnotationsData> getAnnotationsData() {
 		return annotationsData;
 	}
 

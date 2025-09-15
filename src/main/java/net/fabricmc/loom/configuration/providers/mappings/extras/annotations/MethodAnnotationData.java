@@ -30,11 +30,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.annotations.SerializedName;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record MethodAnnotationData(
 		@SerializedName("remove")
@@ -81,6 +84,20 @@ public record MethodAnnotationData(
 		Map<Integer, GenericAnnotationData> newParameters = new LinkedHashMap<>(parameters);
 		other.parameters.forEach((key, value) -> newParameters.merge(key, value, GenericAnnotationData::merge));
 		return new MethodAnnotationData(newAnnotationsToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd, newParameters);
+	}
+
+	MethodAnnotationData remap(TinyRemapper remapper) {
+		return new MethodAnnotationData(
+				annotationsToRemove.stream().map(remapper.getEnvironment().getRemapper()::map).collect(Collectors.toCollection(LinkedHashSet::new)),
+				annotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				typeAnnotationsToRemove.stream().map(key -> key.remap(remapper)).collect(Collectors.toCollection(LinkedHashSet::new)),
+				typeAnnotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				AnnotationsData.remapMap(
+						parameters,
+						Map.Entry::getKey,
+						entry -> entry.getValue().remap(remapper)
+				)
+		);
 	}
 
 	public int modifyAccessFlags(int access) {

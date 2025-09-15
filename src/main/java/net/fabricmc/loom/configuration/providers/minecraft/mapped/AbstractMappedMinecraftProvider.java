@@ -244,15 +244,14 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 		Files.deleteIfExists(remappedJars.outputJarPath());
 
+		final AnnotationsData remappedAnnotations = AnnotationsData.getRemappedAnnotations(getTargetNamespace(), mappingConfiguration, getProject(), configContext.serviceFactory(), toM);
 		final Map<String, String> remappedSignatures = SignatureFixerApplyVisitor.getRemappedSignatures(getTargetNamespace() == MappingsNamespace.INTERMEDIARY, mappingConfiguration, getProject(), configContext.serviceFactory(), toM);
 		final MinecraftVersionMeta.JavaVersion javaVersion = minecraftProvider.getVersionInfo().javaVersion();
 		final boolean fixRecords = javaVersion != null && javaVersion.majorVersion() >= 16;
 
 		TinyRemapper remapper = TinyRemapperHelper.getTinyRemapper(getProject(), configContext.serviceFactory(), fromM, toM, fixRecords, (builder) -> {
-			AnnotationsData annotationsData = mappingConfiguration.getAnnotationsData();
-
-			if (annotationsData != null) {
-				builder.extraPostApplyVisitor(new AnnotationsApplyVisitor(annotationsData));
+			if (remappedAnnotations != null) {
+				builder.extraPostApplyVisitor(new AnnotationsApplyVisitor(remappedAnnotations));
 			}
 
 			builder.extraPostApplyVisitor(new SignatureFixerApplyVisitor(remappedSignatures));

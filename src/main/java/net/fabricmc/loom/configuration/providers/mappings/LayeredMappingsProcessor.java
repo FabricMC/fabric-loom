@@ -119,20 +119,15 @@ public class LayeredMappingsProcessor {
 		return mappingTree;
 	}
 
-	@Nullable
-	public AnnotationsData getAnnotationsData(List<MappingLayer> layers) throws IOException {
-		AnnotationsData result = null;
+	public List<AnnotationsData> getAnnotationsData(List<MappingLayer> layers) throws IOException {
+		List<AnnotationsData> result = new ArrayList<>();
 
 		for (MappingLayer layer : layers) {
 			if (layer instanceof AnnotationsLayer annotationsLayer) {
 				AnnotationsData annotationsData = annotationsLayer.getAnnotationsData();
 
 				if (annotationsData != null) {
-					if (result == null) {
-						result = annotationsData;
-					} else {
-						result = result.merge(annotationsData);
-					}
+					result.add(annotationsData);
 				}
 			}
 		}

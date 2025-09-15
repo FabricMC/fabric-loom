@@ -24,17 +24,20 @@
 
 package net.fabricmc.loom.test.unit.service.mocks
 
+import org.mockito.Answers
+
 import net.fabricmc.tinyremapper.TinyRemapper
 import net.fabricmc.tinyremapper.api.TrEnvironment
 import net.fabricmc.tinyremapper.api.TrRemapper
 
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
+import static org.mockito.Mockito.withSettings
 
 class MockTinyRemapper {
 	TinyRemapper tinyRemapper = mock(TinyRemapper.class)
 	TrEnvironment trEnvironment = mock(TrEnvironment.class)
-	TrRemapper remapper = mock(TrRemapper.class)
+	TrRemapper remapper = mock(TrRemapper.class, withSettings().defaultAnswer(Answers.CALLS_REAL_METHODS))
 
 	MockTinyRemapper() {
 		when(tinyRemapper.getEnvironment()).thenReturn(trEnvironment)

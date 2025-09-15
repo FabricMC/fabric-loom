@@ -44,11 +44,11 @@ class AnnotationsLayerTest extends Specification {
 			"pkg/Annotation2",
 			"pkg/Annotation3"
 		] as Set
-		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[0].desc == "pkg/Annotation4"
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[0].desc == "Lpkg/Annotation4;"
 		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[1] == 42
 		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[3] == Type.getType("Ljava/lang/String;")
-		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[5] == ["pkg/MyEnum", "VALUE"] as String[]
-		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7] instanceof AnnotationNode && annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7].desc == "pkg/Annotation6"
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[5] == ["Lpkg/MyEnum;", "VALUE"] as String[]
+		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7] instanceof AnnotationNode && annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[7].desc == "Lpkg/Annotation6;"
 		annotationsData.classes()["pkg/Foo"].annotationsToAdd()[1].values[9] == [1, 2]
 		annotationsData.classes()["pkg/Foo"].typeAnnotationsToAdd()[0].typePath.toString() == "["
 		annotationsData.classes()["pkg/Foo"].fields().keySet().first() == "bar:Lbaz;"
@@ -83,10 +83,10 @@ class AnnotationsLayerTest extends Specification {
 			],
 			"add": [
 				{
-					"desc": "pkg/Annotation4"
+					"desc": "Lpkg/Annotation4;"
 				},
 				{
-					"desc": "pkg/Annotation5",
+					"desc": "Lpkg/Annotation5;",
 					"values": {
 						"foo": {
 							"type": "int",
@@ -98,12 +98,12 @@ class AnnotationsLayerTest extends Specification {
 						},
 						"baz": {
 							"type": "enum_constant",
-							"owner": "pkg/MyEnum",
+							"owner": "Lpkg/MyEnum;",
 							"name": "VALUE"
 						},
 						"ann": {
 							"type": "annotation",
-							"desc": "pkg/Annotation6"
+							"desc": "Lpkg/Annotation6;"
 						},
 						"arr": {
 							"type": "array",
@@ -123,7 +123,7 @@ class AnnotationsLayerTest extends Specification {
 			],
 			"type_add": [
 				{
-					"desc": "pkg/Annotation7",
+					"desc": "Lpkg/Annotation7;",
 					"type_ref": 22,
 					"type_path": "["
 				}
@@ -146,11 +146,12 @@ class AnnotationsLayerTest extends Specification {
 		"pkg/Bar": {
 			"add": [
 				{
-					"desc": "pkg/Annotation1"
+					"desc": "Lpkg/Annotation1;"
 				}
 			]
 		}
-	}
+	},
+	"namespace": "someNamespace"
 }
 """
 }

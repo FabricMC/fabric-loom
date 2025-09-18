@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -32,9 +33,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -159,12 +162,26 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			String vmArgs,
 			String args,
 			Map<String, Object> env,
+			Set<String> sourcePaths,
+			Set<String> classPaths,
 			String projectName,
 			String runDir) implements Serializable {
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
 			Path rootPath = project.getRootDir().toPath();
 			Path projectPath = project.getProjectDir().toPath();
 			String relativeRunDir = rootPath.relativize(projectPath).resolve(runConfig.runDir).toString();
+			Set<String> sourcePaths = new HashSet<String>();
+
+			for (File sourceFile : runConfig.sourceSet.getAllSource().getSrcDirs()) {
+				sourcePaths.add(sourceFile.getPath());
+			}
+
+			Set<String> classPaths = new HashSet<String>();
+
+			for (File classFile : runConfig.sourceSet.getRuntimeClasspath().getFiles()) {
+				classPaths.add(classFile.getPath());
+			}
+
 			return new VsCodeConfiguration(
 				"java",
 				runConfig.configName,
@@ -176,6 +193,8 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 				RunConfig.joinArguments(runConfig.vmArgs),
 				RunConfig.joinArguments(runConfig.programArgs),
 				new HashMap<>(runConfig.environmentVariables),
+				sourcePaths,
+				classPaths,
 				runConfig.projectName,
 				rootPath.resolve(relativeRunDir).toAbsolutePath().toString()
 			);

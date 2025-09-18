@@ -54,7 +54,7 @@ import net.fabricmc.loom.util.LoomVersions;
  * {@snippet lang=groovy :
  * tasks.register('enigma', ModEnigmaTask) {
  * 	// Must be a single Enigma-formatted mapping file:
- * 	mappingFile = file('src/main/resources/my_mod_data.enigma')
+ * 	mappingFile = file('src/main/resources/my_mod_data.mapping')
  * }
  * }
  */

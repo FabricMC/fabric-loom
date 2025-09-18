@@ -14,7 +14,7 @@ fabric-installer = "1.0.3"
 
 # Dev tools
 renderdoc = "1.37"
-enigma = "2.5.2"
+enigma = "3.0.1"
 
 [libraries]
 # Decompilers

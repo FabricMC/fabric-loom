@@ -46,6 +46,18 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.LoomVersions;
 
+/**
+ * Add this task to a mod development environment to use Enigma against the game jars.
+ * This can be used for writing mod-provided javadoc etc.
+ *
+ * <p>Usage:
+ * {@snippet lang=groovy :
+ * tasks.register('enigma', ModEnigmaTask) {
+ * 	// Must be a single Enigma-formatted mapping file:
+ * 	mappingFile = file('src/main/resources/my_mod_data.enigma')
+ * }
+ * }
+ */
 @UntrackedTask(because = "Enigma should always launch")
 public abstract class ModEnigmaTask extends AbstractLoomTask {
 	private static final String ENIGMA_MAIN_CLASS = "cuchaz.enigma.gui.Main";
@@ -60,6 +72,9 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	@OutputFile
 	public abstract RegularFileProperty getMappingFile();
 
+	/**
+	 * The Enigma classpath. You can add any Enigma plugin files to this file collection.
+	 */
 	@Classpath
 	public abstract ConfigurableFileCollection getToolClasspath();
 
@@ -68,10 +83,7 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	protected abstract ExecOperations getExecOperations();
 
 	public ModEnigmaTask() {
-		getMinecraftJars().convention(getProject().provider(() -> {
-			// Only supports the common jar in split setups
-			return getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY);
-		}));
+		getMinecraftJars().convention(getProject().provider(() -> getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)));
 		getToolClasspath().from(getEnigmaClasspath(getProject()));
 	}
 

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task.tool;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import javax.inject.Inject;
@@ -33,6 +34,9 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.problems.ProblemId;
+import org.gradle.api.problems.ProblemReporter;
+import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
@@ -44,6 +48,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.LoomProblems;
 import net.fabricmc.loom.util.LoomVersions;
 
 /**
@@ -60,6 +65,7 @@ import net.fabricmc.loom.util.LoomVersions;
  */
 @UntrackedTask(because = "Enigma should always launch")
 public abstract class ModEnigmaTask extends AbstractLoomTask {
+	private static final ProblemId MAPPINGS_MISSING_PROBLEM = LoomProblems.problemId("mappings-missing", "Mapping file doesn't exist");
 	private static final String ENIGMA_MAIN_CLASS = "cuchaz.enigma.gui.Main";
 
 	// Must be a ListProperty because the order matters.
@@ -82,6 +88,10 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	@Inject
 	protected abstract ExecOperations getExecOperations();
 
+	@ApiStatus.Internal
+	@Inject
+	protected abstract Problems getProblems();
+
 	public ModEnigmaTask() {
 		getMinecraftJars().convention(getProject().provider(() -> getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)));
 		getToolClasspath().from(getEnigmaClasspath(getProject()));
@@ -94,6 +104,16 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 
 	@TaskAction
 	public void launch() {
+		final Path mappingFile = getMappingFile().get().getAsFile().toPath().toAbsolutePath();
+
+		if (Files.notExists(mappingFile)) {
+			final ProblemReporter reporter = getProblems().getReporter();
+			reporter.throwing(new RuntimeException("Mapping file " + mappingFile + " doesn't exist"), MAPPINGS_MISSING_PROBLEM,
+					spec -> spec
+							.fileLocation(mappingFile.toString())
+							.solution("Create the missing mapping file. Remember to add it to the fabric.mod.json if needed!"));
+		}
+
 		getExecOperations().javaexec(spec -> {
 			spec.getMainClass().set(ENIGMA_MAIN_CLASS);
 			spec.setClasspath(getToolClasspath());
@@ -103,7 +123,7 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 				spec.args("-jar", path.toAbsolutePath().toString());
 			}
 
-			spec.args("-mappings", getMappingFile().get().getAsFile().getAbsolutePath());
+			spec.args("-mappings", mappingFile.toString());
 		});
 	}
 }

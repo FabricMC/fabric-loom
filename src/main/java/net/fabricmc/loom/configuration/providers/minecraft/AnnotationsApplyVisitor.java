@@ -46,31 +46,34 @@ import net.fabricmc.tinyremapper.api.TrClass;
 public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implements TinyRemapper.ApplyVisitorProvider {
 	@Override
 	public ClassVisitor insertApplyVisitor(TrClass cls, ClassVisitor next) {
-		return new AnnotationsApplyClassVisitor(next, cls.getName(), annotationsData);
+		ClassAnnotationData classData = annotationsData.classes().get(cls.getName());
+
+		if (classData == null) {
+			return next;
+		}
+
+		return new AnnotationsApplyClassVisitor(next, classData);
 	}
 
 	public static class AnnotationsApplyClassVisitor extends ClassVisitor {
 		private final ClassAnnotationData classData;
 		private boolean hasAddedAnnotations;
 
-		public AnnotationsApplyClassVisitor(ClassVisitor cv, String className, AnnotationsData annotationsData) {
+		public AnnotationsApplyClassVisitor(ClassVisitor cv, ClassAnnotationData classData) {
 			super(Constants.ASM_VERSION, cv);
-			this.classData = annotationsData.classes().get(className);
+			this.classData = classData;
 			hasAddedAnnotations = false;
 		}
 
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-			if (classData != null) {
-				access = classData.modifyAccessFlags(access);
-			}
-
+			access = classData.modifyAccessFlags(access);
 			super.visit(version, access, name, signature, superName, interfaces);
 		}
 
 		@Override
 		public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-			if (classData != null && classData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath.toString(), Type.getType(descriptor).getInternalName()))) {
+			if (classData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath.toString(), Type.getType(descriptor).getInternalName()))) {
 				return null;
 			}
 
@@ -79,7 +82,7 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 
 		@Override
 		public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-			if (classData != null && classData.annotationsToRemove().contains(Type.getType(descriptor).getInternalName())) {
+			if (classData.annotationsToRemove().contains(Type.getType(descriptor).getInternalName())) {
 				return null;
 			}
 

@@ -46,9 +46,9 @@ class AnnotationsApplyTest extends Specification {
 		def annotationData = AnnotationsData.read(new StringReader(ANNOTATIONS_DATA))
 
 		def annotatedNode1 = new ClassNode()
-		def classVisitor1 = new AnnotationsApplyVisitor.AnnotationsApplyClassVisitor(annotatedNode1, 'net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1', annotationData)
+		def classVisitor1 = new AnnotationsApplyVisitor.AnnotationsApplyClassVisitor(annotatedNode1, annotationData.classes().get('net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1'))
 		def annotatedNode2 = new ClassNode()
-		def classVisitor2 = new AnnotationsApplyVisitor.AnnotationsApplyClassVisitor(annotatedNode2, 'net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass2', annotationData)
+		def classVisitor2 = new AnnotationsApplyVisitor.AnnotationsApplyClassVisitor(annotatedNode2, annotationData.classes().get('net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass2'))
 
 		when:
 		def classReader1 = new ClassReader(getClassBytes(ExampleClass1))

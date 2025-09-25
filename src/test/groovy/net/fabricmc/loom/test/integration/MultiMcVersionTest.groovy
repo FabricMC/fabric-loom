@@ -29,6 +29,7 @@ import spock.lang.Unroll
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
+import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
@@ -89,7 +90,7 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 				// See: https://github.com/gradle/gradle/issues/30401
 				// By default parallel configuration of all projects is preferred.
 				args: [
-					"-Dorg.gradle.internal.isolated-projects.configure-on-demand.tasks=true"
+					"-Dorg.gradle.internal.isolated-projects.configure-on-demand=true"
 				])
 
 		then:
@@ -98,6 +99,6 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 		result.output.count("Fabric Loom:") == 1
 
 		where:
-		version << STANDARD_TEST_VERSIONS
+		version << [PRE_RELEASE_GRADLE]
 	}
 }

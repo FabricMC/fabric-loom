@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -80,6 +81,8 @@ import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 public abstract class CompileConfiguration implements Runnable {
+	private static final String LOCK_PROPERTY_KEY = "fabric.loom.internal.global.lock";
+
 	@Inject
 	protected abstract Project getProject();
 
@@ -110,7 +113,11 @@ public abstract class CompileConfiguration implements Runnable {
 			}
 
 			try {
-				setupMinecraft(configContext);
+				// Setting up loom across Gradle projects is not thread safe, synchronize it here to ensure that multiple projects cannot use it.
+				// There is no easy way around this, as we want to use the same global cache for downloaded or generated files.
+				synchronized (getGlobalLockObject()) {
+					setupMinecraft(configContext);
+				}
 
 				LoomDependencyManager dependencyManager = new LoomDependencyManager();
 				extension.setDependencyManager(dependencyManager);
@@ -151,8 +158,7 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 	}
 
-	// This is not thread safe across getProject()s synchronize it here just to be sure, might be possible to move this further down, but for now this will do.
-	private synchronized void setupMinecraft(ConfigContext configContext) throws Exception {
+	private void setupMinecraft(ConfigContext configContext) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
 
@@ -456,5 +462,19 @@ public abstract class CompileConfiguration implements Runnable {
 				throw new UncheckedIOException(e);
 			}
 		});
+	}
+
+	// This is a nasty piece of work, but seems to work quite nicely.
+	// We need a lock that works across classloaders, a regular synchronized method will not work here.
+	// We can abuse system properties as a shared object store that we know for sure will be on the same classloader regardless of what Gradle does to loom.
+	// This allows us to ensure that all instances of loom regardless of classloader get the same object to lock on.
+	private static Object getGlobalLockObject() {
+		if (!System.getProperties().contains(LOCK_PROPERTY_KEY)) {
+			// The .intern resolves a possible race where two difference value objects (remember not the same classloader) are set.
+			//noinspection StringOperationCanBeSimplified
+			System.getProperties().setProperty(LOCK_PROPERTY_KEY, LOCK_PROPERTY_KEY.intern());
+		}
+
+		return Objects.requireNonNull(System.getProperty(LOCK_PROPERTY_KEY));
 	}
 }

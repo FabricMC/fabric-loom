@@ -93,9 +93,7 @@ dependencies {
 	implementation gradleApi()
 
 	// libraries
-	implementation libs.commons.io
 	implementation libs.gson
-	implementation libs.guava
 	implementation libs.bundles.asm
 
 	// game handling utils
@@ -226,13 +224,6 @@ spotless {
 checkstyle {
 	configFile = file('checkstyle.xml')
 	toolVersion = libs.versions.checkstyle.get()
-}
-
-// Workaround https://github.com/gradle/gradle/issues/27035
-configurations.checkstyle {
-	resolutionStrategy.capabilitiesResolution.withCapability("com.google.collections:google-collections") {
-		select("com.google.guava:guava:0")
-	}
 }
 
 codenarc {

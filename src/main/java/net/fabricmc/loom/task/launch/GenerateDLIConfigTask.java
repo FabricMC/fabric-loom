@@ -27,6 +27,7 @@ package net.fabricmc.loom.task.launch;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,7 +36,6 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.configuration.ConsoleOutput;
@@ -161,7 +161,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 
-		FileUtils.writeStringToFile(getDevLauncherConfig().getAsFile().get(), launchConfig.asString(), StandardCharsets.UTF_8);
+		Files.writeString(getDevLauncherConfig().getAsFile().get().toPath(), launchConfig.asString(), StandardCharsets.UTF_8);
 	}
 
 	private static String getAllLog4JConfigFiles(Project project) {

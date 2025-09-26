@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.cadixdev.lorenz.MappingSet;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
@@ -37,6 +36,7 @@ import org.gradle.api.tasks.Nested;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -61,7 +61,7 @@ public final class LorenzMappingService extends Service<LorenzMappingService.Opt
 		));
 	}
 
-	private final Supplier<MappingSet> mappings = Suppliers.memoize(this::readMappings);
+	private final Supplier<MappingSet> mappings = Lazy.of(this::readMappings);
 
 	public LorenzMappingService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);

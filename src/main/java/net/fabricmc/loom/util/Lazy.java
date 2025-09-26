@@ -22,35 +22,45 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.minecraft.verify;
+package net.fabricmc.loom.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 
-import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.util.Lazy;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * The know versions keep track of the versions that are signed using SHA1 or not signature at all.
- * The maps are the Minecraft version to sha256 hash of the jar file.
- */
-public record KnownVersions(
-		Map<String, String> client,
-		Map<String, String> server) {
-	public static final Supplier<KnownVersions> INSTANCE = Lazy.of(KnownVersions::load);
+// Can be replaced by Lazy Constants (https://openjdk.org/jeps/526) once available.
+public final class Lazy {
+	private Lazy() {
+	}
 
-	private static KnownVersions load() {
-		try (InputStream is = KnownVersions.class.getClassLoader().getResourceAsStream("certs/known_versions.json");
-				Reader reader = new InputStreamReader(Objects.requireNonNull(is))) {
-			return LoomGradlePlugin.GSON.fromJson(reader, KnownVersions.class);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to load known versions", e);
+	public static <T> Supplier<T> of(Supplier<T> supplier) {
+		return new Impl<>(supplier);
+	}
+
+	private static final class Impl<T> implements Supplier<T> {
+		final Supplier<T> supplier;
+
+		volatile boolean initialized = false;
+		@Nullable
+		T value = null;
+
+		private Impl(Supplier<T> supplier) {
+			this.supplier = supplier;
+		}
+
+		@Override
+		public T get() {
+			// Classic double-checked locking pattern
+			if (!initialized) {
+				synchronized (this) {
+					if (!initialized) {
+						value = supplier.get();
+						initialized = true;
+					}
+				}
+			}
+
+			return value;
 		}
 	}
 }

@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -48,6 +47,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -68,7 +68,7 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		Property<String> getMinecraftVersion();
 	}
 
-	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
+	private final Supplier<MemoryMappingTree> memoryMappingTree = Lazy.of(this::createMemoryMappingTree);
 
 	public IntermediateMappingsService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);

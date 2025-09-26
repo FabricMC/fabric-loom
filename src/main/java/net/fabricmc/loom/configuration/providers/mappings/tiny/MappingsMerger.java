@@ -33,7 +33,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Stopwatch;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,7 @@ public final class MappingsMerger {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MappingsMerger.class);
 
 	public static void mergeAndSaveMappings(Path from, Path out, MinecraftProvider minecraftProvider, IntermediateMappingsService intermediateMappingsService) throws IOException {
-		Stopwatch stopwatch = Stopwatch.createStarted();
+		long start = System.currentTimeMillis();
 		LOGGER.info(":merging mappings");
 
 		if (minecraftProvider.isLegacySplitOfficialNamespaceVersion()) {
@@ -60,7 +59,7 @@ public final class MappingsMerger {
 			mergeAndSaveMappings(from, out, intermediateMappingsService);
 		}
 
-		LOGGER.info(":merged mappings in " + stopwatch.stop());
+		LOGGER.info(":merged mappings in {}ms", System.currentTimeMillis() - start);
 	}
 
 	@VisibleForTesting

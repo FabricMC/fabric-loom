@@ -27,11 +27,12 @@ package net.fabricmc.loom.api.decompilers;
 import java.io.Serializable;
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Named;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+
+import net.fabricmc.loom.util.Check;
 
 public abstract class DecompilerOptions implements Named {
 	/**
@@ -75,7 +76,7 @@ public abstract class DecompilerOptions implements Named {
 	public record Dto(String className, Map<String, String> options, int maxThreads) implements Serializable { }
 
 	public Dto toDto() {
-		Preconditions.checkArgument(getDecompilerClassName().isPresent(), "No decompiler classname specified for decompiler: " + getName());
+		Check.require(getDecompilerClassName().isPresent(), "No decompiler classname specified for decompiler: " + getName());
 		return new Dto(
 				getDecompilerClassName().get(),
 				getOptions().get(),

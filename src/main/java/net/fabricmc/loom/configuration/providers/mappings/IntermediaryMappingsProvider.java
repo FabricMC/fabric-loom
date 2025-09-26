@@ -25,13 +25,14 @@
 package net.fabricmc.loom.configuration.providers.mappings;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 import javax.inject.Inject;
 
-import com.google.common.net.UrlEscapers;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -70,7 +71,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 		// Download and extract intermediary
 		final Path intermediaryJarPath = Files.createTempFile(getName(), ".jar");
-		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
+		final String encodedMcVersion = URLEncoder.encode(getMinecraftVersion().get(), StandardCharsets.UTF_8);
 		final String urlRaw = getIntermediaryUrl().get();
 
 		if (project != null && urlRaw.equals(LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL)) {
@@ -108,7 +109,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 
 	@Override
 	public @NotNull String getName() {
-		final String encodedMcVersion = UrlEscapers.urlFragmentEscaper().escape(getMinecraftVersion().get());
+		final String encodedMcVersion = URLEncoder.encode(getMinecraftVersion().get(), StandardCharsets.UTF_8);
 		final String urlRaw = getIntermediaryUrl().get();
 
 		if (!LoomGradleExtensionApiImpl.DEFAULT_INTERMEDIARY_URL.equals(urlRaw)) {

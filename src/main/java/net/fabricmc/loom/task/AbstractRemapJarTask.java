@@ -36,7 +36,6 @@ import java.util.jar.Manifest;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -62,6 +61,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
@@ -238,7 +238,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 				return out.toByteArray();
 			}));
 
-			Preconditions.checkState(count > 0, "Did not transform any jar manifest");
+			Check.require(count > 0, "Did not transform any jar manifest");
 		}
 
 		protected void rewriteJar() throws IOException {
@@ -259,7 +259,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	}
 
 	private SourceSet getClientSourceSet() {
-		Preconditions.checkArgument(LoomGradleExtension.get(getProject()).areEnvironmentSourceSetsSplit(), "Cannot get client sourceset as project is not split");
+		Check.require(LoomGradleExtension.get(getProject()).areEnvironmentSourceSetsSplit(), "Cannot get client sourceset as project is not split");
 		return SourceSetHelper.getSourceSetByName(getClientOnlySourceSetName().get(), getProject());
 	}
 }

@@ -32,6 +32,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 public class DeletingFileVisitor extends SimpleFileVisitor<Path> {
+	public static void deleteDirectory(Path directory) throws IOException {
+		Files.walkFileTree(directory, new DeletingFileVisitor());
+	}
+
 	@Override
 	public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
 		Files.delete(path);

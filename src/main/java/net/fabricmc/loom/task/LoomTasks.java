@@ -28,7 +28,6 @@ import java.io.File;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
@@ -45,6 +44,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
+import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.Platform;
@@ -141,7 +141,7 @@ public abstract class LoomTasks implements Runnable {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final boolean renderDocSupported = RenderDocRunTask.isSupported(Platform.CURRENT);
 
-		Preconditions.checkArgument(extension.getRunConfigs().size() == 0, "Run configurations must not be registered before loom");
+		Check.require(extension.getRunConfigs().isEmpty(), "Run configurations must not be registered before loom");
 
 		extension.getRunConfigs().whenObjectAdded(config -> {
 			var runTask = getTasks().register(getRunConfigTaskName(config), RunGameTask.class, config);

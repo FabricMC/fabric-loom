@@ -29,7 +29,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -41,6 +40,7 @@ import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -80,7 +80,7 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 		super(options, serviceFactory);
 	}
 
-	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(() -> {
+	private final Supplier<MemoryMappingTree> mappingTree = Lazy.of(() -> {
 		Path mappings = getOptions().getMappings().getSingleFile().toPath();
 
 		if (getOptions().getZipEntryPath().isPresent()) {

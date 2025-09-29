@@ -24,16 +24,15 @@
 
 package net.fabricmc.loom.test.unit.layeredmappings
 
+import java.nio.file.Path
+
+import groovy.transform.CompileStatic
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData
-import net.fabricmc.loom.test.unit.service.mocks.MockTinyRemapper
-import net.fabricmc.tinyremapper.api.TrClass
-import net.fabricmc.tinyremapper.api.TrField
-import net.fabricmc.tinyremapper.api.TrMethod
-
-import static org.mockito.Mockito.*
+import net.fabricmc.tinyremapper.IMappingProvider
+import net.fabricmc.tinyremapper.TinyRemapper
 
 class AnnotationsDataRemapTest extends Specification {
 	def "remap annotations data"() {
@@ -41,42 +40,33 @@ class AnnotationsDataRemapTest extends Specification {
 		def reader = new BufferedReader(new StringReader(ANNOTATIONS))
 		def annotationsData = AnnotationsData.read(reader)
 
-		def mockTr = new MockTinyRemapper()
+		def remapper = TinyRemapper.newRemapper()
+				.withMappings { mappings ->
+					mappings.acceptClass('net/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest$Foo', 'mapped/pkg/FooMapped')
+					mappings.acceptClass('pkg/Bar', 'mapped/pkg/BarMapped')
 
-		when(mockTr.remapper.map("pkg/Foo")).thenReturn("mapped/pkg/FooMapped")
-		when(mockTr.remapper.map("pkg/Bar")).thenReturn("mapped/pkg/BarMapped")
+					mappings.acceptClass('pkg/Annotation1', 'mapped/pkg/Annotation1Mapped')
+					mappings.acceptClass('pkg/Annotation2', 'mapped/pkg/Annotation2Mapped')
+					mappings.acceptClass('pkg/Annotation3', 'mapped/pkg/Annotation3Mapped')
+					mappings.acceptClass('pkg/Annotation4', 'mapped/pkg/Annotation4Mapped')
+					mappings.acceptClass('pkg/Annotation5', 'mapped/pkg/Annotation5Mapped')
+					mappings.acceptClass('pkg/Annotation6', 'mapped/pkg/Annotation6Mapped')
+					mappings.acceptClass('pkg/Annotation7', 'mapped/pkg/Annotation7Mapped')
+					mappings.acceptClass('pkg/Annotation8', 'mapped/pkg/Annotation8Mapped')
 
-		when(mockTr.remapper.map("pkg/Annotation1")).thenReturn("mapped/pkg/Annotation1Mapped")
-		when(mockTr.remapper.map("pkg/Annotation2")).thenReturn("mapped/pkg/Annotation2Mapped")
-		when(mockTr.remapper.map("pkg/Annotation3")).thenReturn("mapped/pkg/Annotation3Mapped")
-		when(mockTr.remapper.map("pkg/Annotation4")).thenReturn("mapped/pkg/Annotation4Mapped")
-		when(mockTr.remapper.map("pkg/Annotation5")).thenReturn("mapped/pkg/Annotation5Mapped")
-		when(mockTr.remapper.map("pkg/Annotation6")).thenReturn("mapped/pkg/Annotation6Mapped")
-		when(mockTr.remapper.map("pkg/Annotation7")).thenReturn("mapped/pkg/Annotation7Mapped")
-		when(mockTr.remapper.map("pkg/Annotation8")).thenReturn("mapped/pkg/Annotation8Mapped")
+					mappings.acceptClass('pkg/MyEnum', 'mapped/pkg/MyEnumMapped')
 
-		when(mockTr.remapper.map("pkg/MyEnum")).thenReturn("mapped/pkg/MyEnumMapped")
+					mappings.acceptClass('baz', 'mapped/baz')
 
-		when(mockTr.remapper.map("baz")).thenReturn("mapped/baz")
+					mappings.acceptField(new IMappingProvider.Member('net/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest$Foo', 'bar', 'Lnet/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest$Foo;'), 'barRenamed')
+					mappings.acceptMethod(new IMappingProvider.Member('net/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest$Foo', 'bar', '()V'), 'barMethodRenamed')
+				}
+				.build()
 
-		when(mockTr.remapper.mapFieldName("pkg/Foo", "bar", "Lbaz;")).thenReturn("barRenamed")
-		when(mockTr.remapper.mapMethodName("pkg/Foo", "bar", "()V")).thenReturn("barMethodRenamed")
-
-		def mockClass = mock(TrClass.class)
-		when(mockTr.trEnvironment.getClass("pkg/Foo")).thenReturn(mockClass)
-
-		def mockField = mock(TrField.class)
-		when(mockField.name).thenReturn("bar")
-		when(mockField.desc).thenReturn("Lbaz;")
-		when(mockClass.fields).thenReturn([mockField])
-
-		def mockMethod = mock(TrMethod.class)
-		when(mockMethod.name).thenReturn("bar")
-		when(mockMethod.desc).thenReturn("()V")
-		when(mockClass.methods).thenReturn([mockMethod])
+		remapper.readClassPath(Path.of(Foo.class.protectionDomain.codeSource.location.toURI()))
 
 		when:
-		def remapped = annotationsData.remap(mockTr.tinyRemapper, "mapped")
+		def remapped = annotationsData.remap(remapper, "mapped")
 
 		then:
 		def json = AnnotationsData.GSON.newBuilder()
@@ -88,12 +78,20 @@ class AnnotationsDataRemapTest extends Specification {
 		json == REMAPPED_ANNOTATIONS.trim()
 	}
 
+	@CompileStatic
+	class Foo {
+		Foo bar
+
+		void bar() {
+		}
+	}
+
 	@Language("JSON")
 	private static final String ANNOTATIONS = """
 {
 	"version": 1,
 	"classes": {
-		"pkg/Foo": {
+		"net/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest${'$'}Foo": {
 			"remove": [
 				"pkg/Annotation1",
 				"pkg/Annotation2",
@@ -147,7 +145,7 @@ class AnnotationsDataRemapTest extends Specification {
 				}
 			],
 			"fields": {
-				"bar:Lbaz;": {
+				"bar:Lnet/fabricmc/loom/test/unit/layeredmappings/AnnotationsDataRemapTest${'$'}Foo;": {
 					"remove": [
 						"pkg/Annotation8"
 					]
@@ -231,7 +229,7 @@ class AnnotationsDataRemapTest extends Specification {
 				}
 			],
 			"fields": {
-				"barRenamed:Lmapped/baz;": {
+				"barRenamed:Lmapped/pkg/FooMapped;": {
 					"remove": [
 						"mapped/pkg/Annotation8Mapped"
 					]

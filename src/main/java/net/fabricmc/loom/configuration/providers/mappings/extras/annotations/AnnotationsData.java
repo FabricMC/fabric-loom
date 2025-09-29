@@ -42,7 +42,6 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.commons.AnnotationRemapper;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 
@@ -142,13 +141,13 @@ public record AnnotationsData(Map<String, ClassAnnotationData> classes, String n
 
 	static AnnotationNode remap(AnnotationNode node, TinyRemapper remapper) {
 		AnnotationNode remapped = new AnnotationNode(remapper.getEnvironment().getRemapper().mapDesc(node.desc));
-		node.accept(new AnnotationRemapper(node.desc, remapped, remapper.getEnvironment().getRemapper()));
+		node.accept(remapper.createAnnotationRemapperVisitor(remapped, node.desc));
 		return remapped;
 	}
 
 	static TypeAnnotationNode remap(TypeAnnotationNode node, TinyRemapper remapper) {
 		TypeAnnotationNode remapped = new TypeAnnotationNode(node.typeRef, node.typePath, remapper.getEnvironment().getRemapper().mapDesc(node.desc));
-		node.accept(new AnnotationRemapper(node.desc, remapped, remapper.getEnvironment().getRemapper()));
+		node.accept(remapper.createAnnotationRemapperVisitor(remapped, node.desc));
 		return remapped;
 	}
 

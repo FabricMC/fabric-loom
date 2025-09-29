@@ -158,7 +158,7 @@ public class Constants {
 		 */
 		public static final String DROP_NON_INTERMEDIATE_ROOT_METHODS = "fabric.loom.dropNonIntermediateRootMethods";
 		/**
-		 * Set to true in all RenderDocRunTask's, can be used to determine at runtime if running with loom's renderdoc setup.
+		 * Set to true in all {@link net.fabricmc.loom.task.RenderDocRunTask} can be used to determine at runtime if running with loom's renderdoc setup.
 		 */
 		public static final String RENDER_DOC = "fabric.loom.renderdoc.enabled";
 	}

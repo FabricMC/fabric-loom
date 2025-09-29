@@ -157,6 +157,10 @@ public class Constants {
 		 * When using the MojangMappingLayer this will remove names for non root methods by using the intermediary mappings.
 		 */
 		public static final String DROP_NON_INTERMEDIATE_ROOT_METHODS = "fabric.loom.dropNonIntermediateRootMethods";
+		/**
+		 * Set to true in all RenderDocRunTask's, can be used to determine at runtime if running with loom's renderdoc setup.
+		 */
+		public static final String RENDER_DOC = "fabric.loom.renderdoc.enabled";
 	}
 
 	public static final class Manifest {

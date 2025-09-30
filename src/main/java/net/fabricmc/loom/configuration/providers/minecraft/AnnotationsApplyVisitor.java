@@ -28,6 +28,7 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.RecordComponentVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
@@ -240,7 +241,18 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 			}
 
 			return new MethodVisitor(Constants.ASM_VERSION, mv) {
+				int syntheticParameterCount = 0;
+				boolean visitedAnnotableParameterCount = false;
 				boolean hasAddedAnnotations = false;
+
+				@Override
+				public void visitParameter(String name, int access) {
+					if ((access & Opcodes.ACC_SYNTHETIC) != 0) {
+						syntheticParameterCount++;
+					}
+
+					super.visitParameter(name, access);
+				}
 
 				@Override
 				public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -269,6 +281,16 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 					}
 
 					return super.visitParameterAnnotation(parameter, descriptor, visible);
+				}
+
+				@Override
+				public void visitAnnotableParameterCount(int parameterCount, boolean visible) {
+					if (!visible && !methodData.parameters().isEmpty()) {
+						parameterCount = Math.max(parameterCount, Type.getArgumentCount(descriptor) - syntheticParameterCount);
+						visitedAnnotableParameterCount = true;
+					}
+
+					super.visitAnnotableParameterCount(parameterCount, visible);
 				}
 
 				@Override
@@ -304,6 +326,11 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 						if (av != null) {
 							typeAnnotation.accept(av);
 						}
+					}
+
+					if (!visitedAnnotableParameterCount && !methodData.parameters().isEmpty()) {
+						mv.visitAnnotableParameterCount(Type.getArgumentCount(descriptor) - syntheticParameterCount, false);
+						visitedAnnotableParameterCount = true;
 					}
 
 					methodData.parameters().forEach((paramIndex, paramData) -> {

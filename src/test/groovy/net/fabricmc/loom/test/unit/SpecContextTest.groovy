@@ -73,8 +73,8 @@ class SpecContextTest extends Specification {
 
 		when(projectView.extension()).thenReturn(extension)
 		when(extension.getRemapConfigurations()).thenReturn(remapConfigurations)
-		when(projectView.resolveArtifacts(true)).thenReturn(resolve(runtimeArtifacts))
-		when(projectView.resolveArtifacts(false)).thenReturn(resolve(apiArtifacts))
+		when(projectView.resolveArtifacts(SpecContextProjectView.ArtifactUsage.RUNTIME)).thenReturn(resolve(runtimeArtifacts))
+		when(projectView.resolveArtifacts(SpecContextProjectView.ArtifactUsage.COMPILE)).thenReturn(resolve(apiArtifacts))
 
 		implementation = createConfigurationSettings("implementation")
 		runtimeOnly = createConfigurationSettings("runtimeOnly")
@@ -165,7 +165,6 @@ class SpecContextTest extends Specification {
 		specContext.allMods().size() == 1
 	}
 
-	// TODO I believe this test is testing broken behaviour
 	def "compile only runtime only dependency"() {
 		setup:
 		def test1 = mod("test1")
@@ -179,11 +178,11 @@ class SpecContextTest extends Specification {
 		def specContext = SpecContextImpl.create(projectView)
 
 		then:
-		specContext.modDependencies().size() == 2
+		specContext.modDependencies().size() == 1
 		specContext.localMods().size() == 0
-		specContext.modDependenciesCompileRuntime().size() == 0
+		specContext.modDependenciesCompileRuntime().size() == 1
 		specContext.modDependenciesCompileRuntimeClient().size() == 0
-		specContext.allMods().size() == 2
+		specContext.allMods().size() == 1
 	}
 
 	private void dependencies(Map<Object, List<Path>> files) {

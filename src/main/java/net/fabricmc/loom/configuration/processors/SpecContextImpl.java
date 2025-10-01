@@ -97,7 +97,7 @@ public record SpecContextImpl(
 			}
 		}
 
-		return sorted(AsyncCache.joinList(futures));
+		return distinctSorted(AsyncCache.joinList(futures));
 	}
 
 	private static Stream<Project> getDependentProjects(SpecContextProjectView projectView) {
@@ -129,6 +129,7 @@ public record SpecContextImpl(
 	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		// A set of mod ids from all remap configurations that are considered for dependency transforms.
 		final Set<String> runtimeModIds = getModIds(
+				SpecContextProjectView.ArtifactUsage.RUNTIME,
 				projectView,
 				fmjCache,
 				projectView.extension().getRuntimeRemapConfigurations().stream()
@@ -138,6 +139,7 @@ public record SpecContextImpl(
 		// A set of mod ids that are found on one or more remap configurations that target the common source set.
 		// Null when split source sets are not enabled, meaning all mods are common.
 		final Set<String> commonRuntimeModIds = projectView.extension().areEnvironmentSourceSetsSplit() ? getModIds(
+				SpecContextProjectView.ArtifactUsage.RUNTIME,
 				projectView,
 				fmjCache,
 				projectView.extension().getRuntimeRemapConfigurations().stream()
@@ -146,6 +148,7 @@ public record SpecContextImpl(
 				: null;
 
 		Stream<FabricModJson> compileMods = getMods(
+				SpecContextProjectView.ArtifactUsage.COMPILE,
 				projectView,
 				fmjCache,
 				projectView.extension().getCompileRemapConfigurations().stream()
@@ -161,14 +164,14 @@ public record SpecContextImpl(
 				.toList();
 	}
 
-	private static Stream<FabricModJson> getMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
-		return stream.flatMap(projectView.resolveArtifacts(true))
+	private static Stream<FabricModJson> getMods(SpecContextProjectView.ArtifactUsage artifactUsage, SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return stream.flatMap(projectView.resolveArtifacts(artifactUsage))
 				.map(modFromZip(fmjCache))
 				.filter(Objects::nonNull);
 	}
 
-	private static Set<String> getModIds(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
-		return getMods(projectView, fmjCache, stream)
+	private static Set<String> getModIds(SpecContextProjectView.ArtifactUsage artifactUsage, SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return getMods(artifactUsage, projectView, fmjCache, stream)
 				.map(FabricModJson::getId)
 				.collect(Collectors.toSet());
 	}
@@ -198,8 +201,11 @@ public record SpecContextImpl(
 	}
 
 	// Sort to ensure stable caching
-	private static List<FabricModJson> sorted(List<FabricModJson> mods) {
-		return mods.stream().sorted(Comparator.comparing(FabricModJson::getId)).toList();
+	private static List<FabricModJson> distinctSorted(List<FabricModJson> mods) {
+		return mods.stream()
+				.distinct()
+				.sorted(Comparator.comparing(FabricModJson::getId))
+				.toList();
 	}
 
 	@Override

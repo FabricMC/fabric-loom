@@ -49,11 +49,22 @@ public interface SpecContextProjectView {
 	// Returns a list of Loom Projects found in the specified Configuration
 	Stream<Project> getLoomProjectDependencies(String name);
 
-	Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(boolean runtime);
+	Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(ArtifactUsage artifactUsage);
 
 	List<FabricModJson> getMods();
 
 	boolean disableProjectDependantMods();
+
+	enum ArtifactUsage {
+		RUNTIME(Usage.JAVA_RUNTIME),
+		COMPILE(Usage.JAVA_API);
+
+		private final String gradleUsage;
+
+		ArtifactUsage(String gradleUsage) {
+			this.gradleUsage = gradleUsage;
+		}
+	}
 
 	record Impl(Project project, LoomGradleExtension extension) implements SpecContextProjectView {
 		@Override
@@ -67,8 +78,8 @@ public interface SpecContextProjectView {
 		}
 
 		@Override
-		public Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(boolean runtime) {
-			final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+		public Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(ArtifactUsage artifactUsage) {
+			final Usage usage = project.getObjects().named(Usage.class, artifactUsage.gradleUsage);
 
 			return settings -> {
 				final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();

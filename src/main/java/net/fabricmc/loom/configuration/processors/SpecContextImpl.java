@@ -38,22 +38,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ProjectDependency;
-import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.AsyncCache;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
-import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
  * @param modDependencies External mods that are depended on
@@ -65,20 +61,24 @@ public record SpecContextImpl(
 		List<FabricModJson> localMods,
 		List<ModHolder> compileRuntimeMods) implements SpecContext {
 	public static SpecContextImpl create(Project project) {
-		AsyncCache<List<FabricModJson>> fmjCache = new AsyncCache<List<FabricModJson>>();
+		return create(new SpecContextProjectView.Impl(project, LoomGradleExtension.get(project)));
+	}
+
+	@VisibleForTesting
+	public static SpecContextImpl create(SpecContextProjectView projectView) {
+		AsyncCache<List<FabricModJson>> fmjCache = new AsyncCache<>();
 		return new SpecContextImpl(
-				getDependentMods(project, fmjCache),
-				FabricModJsonHelpers.getModsInProject(project),
-				getCompileRuntimeMods(project, fmjCache)
+				getDependentMods(projectView, fmjCache),
+				projectView.getMods(),
+				getCompileRuntimeMods(projectView, fmjCache)
 		);
 	}
 
 	// Reruns a list of mods found on both the compile and/or runtime classpaths
-	private static List<FabricModJson> getDependentMods(Project project, AsyncCache<List<FabricModJson>> fmjCache) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+	private static List<FabricModJson> getDependentMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
-		for (RemapConfigurationSettings entry : extension.getRemapConfigurations()) {
+		for (RemapConfigurationSettings entry : projectView.extension().getRemapConfigurations()) {
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
@@ -90,10 +90,9 @@ public record SpecContextImpl(
 			}
 		}
 
-		// TODO provide a project isolated way of doing this.
-		if (!extension.isProjectIsolationActive() && !GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
+		if (!projectView.disableProjectDependantMods()) {
 			// Add all the dependent projects
-			for (Project dependentProject : getDependentProjects(project).toList()) {
+			for (Project dependentProject : getDependentProjects(projectView).toList()) {
 				futures.add(fmjCache.get(dependentProject.getPath(), () -> FabricModJsonHelpers.getModsInProject(dependentProject)));
 			}
 		}
@@ -101,19 +100,19 @@ public record SpecContextImpl(
 		return sorted(AsyncCache.joinList(futures));
 	}
 
-	private static Stream<Project> getDependentProjects(Project project) {
-		final Stream<Project> runtimeProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
-		final Stream<Project> compileProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+	private static Stream<Project> getDependentProjects(SpecContextProjectView projectView) {
+		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+		final Stream<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
 
 		return Stream.concat(runtimeProjects, compileProjects)
 				.distinct();
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<ModHolder> getCompileRuntimeMods(Project project, AsyncCache<List<FabricModJson>> fmjCache) {
-		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(project, fmjCache));
+	private static List<ModHolder> getCompileRuntimeMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(projectView, fmjCache));
 
-		for (Project dependentProject : getCompileRuntimeProjectDependencies(project).toList()) {
+		for (Project dependentProject : getCompileRuntimeProjectDependencies(projectView).toList()) {
 			List<FabricModJson> projectMods = fmjCache.getBlocking(dependentProject.getPath(), () -> {
 				return FabricModJsonHelpers.getModsInProject(dependentProject);
 			});
@@ -127,49 +126,49 @@ public record SpecContextImpl(
 	}
 
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
-	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(Project project, AsyncCache<List<FabricModJson>> fmjCache) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-
+	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		// A set of mod ids from all remap configurations that are considered for dependency transforms.
 		final Set<String> runtimeModIds = getModIds(
-				project,
+				projectView,
 				fmjCache,
-				extension.getRuntimeRemapConfigurations().stream()
+				projectView.extension().getRuntimeRemapConfigurations().stream()
 						.filter(settings -> settings.getApplyDependencyTransforms().get())
 		);
 
 		// A set of mod ids that are found on one or more remap configurations that target the common source set.
 		// Null when split source sets are not enabled, meaning all mods are common.
-		final Set<String> commonModIds = extension.areEnvironmentSourceSetsSplit() ? getModIds(
-				project,
+		final Set<String> commonRuntimeModIds = projectView.extension().areEnvironmentSourceSetsSplit() ? getModIds(
+				projectView,
 				fmjCache,
-				extension.getRuntimeRemapConfigurations().stream()
+				projectView.extension().getRuntimeRemapConfigurations().stream()
 						.filter(settings -> settings.getSourceSet().map(sourceSet -> !sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME)).get())
 						.filter(settings -> settings.getApplyDependencyTransforms().get()))
 				: null;
 
-		return getMods(
-				project,
+		Stream<FabricModJson> compileMods = getMods(
+				projectView,
 				fmjCache,
-				extension.getCompileRemapConfigurations().stream()
-					.filter(settings -> settings.getApplyDependencyTransforms().get()))
+				projectView.extension().getCompileRemapConfigurations().stream()
+						.filter(settings -> settings.getApplyDependencyTransforms().get()));
+
+		return compileMods
 				// Only check based on the modid, as there may be differing versions used between the compile and runtime classpath.
 				// We assume that the version used at runtime will be binary compatible with the version used to compile against.
 				// It's not perfect but better than silently not supplying the mod, and this could happen with regular API that you compile against anyway.
 				.filter(fabricModJson -> runtimeModIds.contains(fabricModJson.getId()))
 				.sorted(Comparator.comparing(FabricModJson::getId))
-				.map(fabricModJson -> new ModHolder(fabricModJson, commonModIds == null || commonModIds.contains(fabricModJson.getId())))
+				.map(fabricModJson -> new ModHolder(fabricModJson, commonRuntimeModIds == null || commonRuntimeModIds.contains(fabricModJson.getId())))
 				.toList();
 	}
 
-	private static Stream<FabricModJson> getMods(Project project, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
-		return stream.flatMap(resolveArtifacts(project, true))
+	private static Stream<FabricModJson> getMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return stream.flatMap(projectView.resolveArtifacts(true))
 				.map(modFromZip(fmjCache))
 				.filter(Objects::nonNull);
 	}
 
-	private static Set<String> getModIds(Project project, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
-		return getMods(project, fmjCache, stream)
+	private static Set<String> getModIds(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+		return getMods(projectView, fmjCache, stream)
 				.map(FabricModJson::getId)
 				.collect(Collectors.toSet());
 	}
@@ -185,41 +184,17 @@ public record SpecContextImpl(
 		};
 	}
 
-	private static Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(Project project, boolean runtime) {
-		final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
-
-		return settings -> {
-			final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
-			configuration.setCanBeConsumed(false);
-			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-			return configuration.resolve().stream().map(File::toPath);
-		};
-	}
-
 	// Returns a list of Loom Projects found in both the runtime and compile classpath
-	private static Stream<Project> getCompileRuntimeProjectDependencies(Project project) {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-
-		// TODO provide a project isolated way of doing this.
-		if (extension.isProjectIsolationActive()
-				|| GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS)) {
+	private static Stream<Project> getCompileRuntimeProjectDependencies(SpecContextProjectView projectView) {
+		if (projectView.disableProjectDependantMods()) {
 			return Stream.empty();
 		}
 
-		final Stream<Project> runtimeProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
-		final List<Project> compileProjects = getLoomProjectDependencies(project, project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)).toList();
+		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+		final List<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).toList();
 
 		return runtimeProjects
 				.filter(compileProjects::contains); // Use the intersection of the two configurations.
-	}
-
-	// Returns a list of Loom Projects found in the provided Configuration
-	private static Stream<Project> getLoomProjectDependencies(Project project, Configuration configuration) {
-		return configuration.getAllDependencies()
-				.withType(ProjectDependency.class)
-				.stream()
-				.map((d) -> project.project(d.getPath()))
-				.filter(GradleUtils::isLoomProject);
 	}
 
 	// Sort to ensure stable caching

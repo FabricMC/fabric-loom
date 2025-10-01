@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.util
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -47,6 +48,7 @@ import net.fabricmc.loom.util.download.Download
 
 import static org.mockito.ArgumentMatchers.any
 import static org.mockito.Mockito.*
+import static org.mockito.Mockito.mock
 
 class GradleTestUtil {
 	static <T> Property<T> mockProperty(T value) {
@@ -64,17 +66,19 @@ class GradleTestUtil {
 	}
 
 	static Project mockProject() {
-		def mock = mock(Project.class)
-		def serviceRegistry = TestServiceFactory.createServiceRegistry(mock)
+		def project = mock(Project.class)
+		def serviceRegistry = TestServiceFactory.createServiceRegistry(project)
 		def objectFactory = serviceRegistry.get(ObjectFactory)
 		def providerFactory = serviceRegistry.get(ProviderFactory)
 		def extensions = mockExtensionContainer()
-		when(mock.getExtensions()).thenReturn(extensions)
-		when(mock.getObjects()).thenReturn(objectFactory)
-		when(mock.provider(any())).thenAnswer {
+		def configurationContainer = mock(ConfigurationContainer.class)
+		when(project.getExtensions()).thenReturn(extensions)
+		when(project.getObjects()).thenReturn(objectFactory)
+		when(project.provider(any())).thenAnswer {
 			providerFactory.provider(it.getArgument(0))
 		}
-		return mock
+		when(project.getConfigurations()).thenReturn(configurationContainer)
+		return project
 	}
 
 	static ExtensionContainer mockExtensionContainer() {

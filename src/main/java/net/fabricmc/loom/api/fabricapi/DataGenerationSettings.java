@@ -24,9 +24,13 @@
 
 package net.fabricmc.loom.api.fabricapi;
 
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Optional;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Represents the settings for data generation.
@@ -70,9 +74,13 @@ public interface DataGenerationSettings {
 	Property<Boolean> getClient();
 
 	/**
-	 * Contains the location of a `fabric.mod.json` file used for data generation.
-	 * If unset, the file in the root resources of the respective source set is used.
+	 * Sets {@link #getModId()} property based on the {@code id} field defined in the provided file.
 	 */
-	@Optional
-	RegularFileProperty getFabricModJsonPath();
+	default void modId(File fabricModJsonFile) {
+        try {
+            getModId().set(Objects.requireNonNull(FabricModJsonFactory.createFromOverrideNullable(fabricModJsonFile)).getId());
+        } catch (IOException | NullPointerException e) {
+            throw new RuntimeException("Failed to set mod id from %s".formatted(fabricModJsonFile), e);
+        }
+    }
 }

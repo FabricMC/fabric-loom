@@ -38,7 +38,6 @@ import java.util.Optional;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.gradle.api.Project;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -109,8 +108,7 @@ public final class FabricModJsonFactory {
 	}
 
 	@Nullable
-	public static FabricModJson createFromOverrideNullable(Provider<File> fileProvider) throws IOException {
-		var file = fileProvider.getOrNull();
+	public static FabricModJson createFromOverrideNullable(@Nullable File file) throws IOException {
 		var modJson = readFmjJsonObject(file);
 		if (modJson == null) {
 			return null;

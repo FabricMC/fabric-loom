@@ -33,11 +33,11 @@ import java.util.List;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import org.gradle.api.Project;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import org.jetbrains.annotations.Nullable;
 
 public class FabricModJsonHelpers {
 	/**
@@ -54,16 +54,16 @@ public class FabricModJsonHelpers {
 			sourceSets.add(SourceSetHelper.getSourceSetByName("client", project));
 		}
 
-		return getModsInProject(project, overrideFile, sourceSets.toArray(SourceSet[]::new));
+		return getModsInProject(project, overrideFile.getOrNull(), sourceSets.toArray(SourceSet[]::new));
 	}
 
 	/**
 	 * Returns the list of mods provided by either {@code overrideFile} property
 	 * or {@code fabric.mod.json} in the {@code sourceSets} array.
 	 */
-	public static List<FabricModJson> getModsInProject(Project project, Provider<File> overrideFile, SourceSet... sourceSets) {
+	public static List<FabricModJson> getModsInProject(Project project, @Nullable File overrideFile, SourceSet... sourceSets) {
 		try {
-			var fabricModJson = overrideFile.isPresent()
+			var fabricModJson = overrideFile != null
 				? FabricModJsonFactory.createFromOverrideNullable(overrideFile)
 				: FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets);
 			if (fabricModJson != null) {

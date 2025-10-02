@@ -31,7 +31,6 @@ import javax.inject.Inject;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -46,8 +45,6 @@ abstract class FabricApiAbstractSourceSet {
 	protected abstract Project getProject();
 
 	protected abstract String getSourceSetName();
-
-	protected abstract RegularFileProperty getFabricModJsonPath();
 
 	protected SourceSet configureSourceSet(Property<String> modId, boolean isClient) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
@@ -68,10 +65,10 @@ abstract class FabricApiAbstractSourceSet {
 
 		modId.convention(getProject().provider(() -> {
 			List<FabricModJson> fabricModJsons = FabricModJsonHelpers
-				.getModsInProject(getProject(), getFabricModJsonPath().getAsFile(), sourceSet);
+				.getModsInProject(getProject(), null, sourceSet);
 
 			if (fabricModJsons.isEmpty()) {
-				throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
+				return null;
 			}
 
 			return fabricModJsons.getFirst().getId();

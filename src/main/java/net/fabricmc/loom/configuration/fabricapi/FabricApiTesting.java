@@ -75,7 +75,6 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		settings.getUsername().convention("Player0");
 
 		action.execute(settings);
-		getFabricModJsonPath().set(settings.getFabricModJsonPath());
 
 		final SourceSet testSourceSet;
 

@@ -24,11 +24,8 @@
 
 package net.fabricmc.loom.configuration.fabricapi;
 
-import java.util.List;
-
 import javax.inject.Inject;
 
-import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.provider.Property;
@@ -38,6 +35,7 @@ import org.gradle.api.tasks.SourceSetContainer;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 abstract class FabricApiAbstractSourceSet {
@@ -64,14 +62,13 @@ abstract class FabricApiAbstractSourceSet {
 		});
 
 		modId.convention(getProject().provider(() -> {
-			List<FabricModJson> fabricModJsons = FabricModJsonHelpers
-				.getModsInProject(getProject(), null, sourceSet);
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), sourceSet);
 
-			if (fabricModJsons.isEmpty()) {
-				return null;
+			if (fabricModJson == null) {
+				throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
 			}
 
-			return fabricModJsons.getFirst().getId();
+			return fabricModJson.getId();
 		}));
 
 		extension.getMods().create(modId.get(), mod -> {

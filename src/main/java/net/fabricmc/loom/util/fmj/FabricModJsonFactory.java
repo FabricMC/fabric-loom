@@ -107,33 +107,29 @@ public final class FabricModJsonFactory {
 		return Optional.ofNullable(createFromZipNullable(zipPath));
 	}
 
-	@Nullable
-	public static FabricModJson createFromOverrideNullable(@Nullable File file) throws IOException {
+	public static FabricModJson createFromFile(File file) {
 		var modJson = readFmjJsonObject(file);
-		if (modJson == null) {
-			return null;
-		}
-
 		return create(modJson, new FabricModJsonSource.DirectorySource(file.toPath().getParent()));
 	}
 
 	@Nullable
-	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) throws IOException {
+	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) {
 		var file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
-		var modJson = readFmjJsonObject(file);
-		if (modJson == null) {
-			return null;
-		}
 
-		return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
-	}
-
-	@Nullable
-	private static JsonObject readFmjJsonObject(@Nullable File file) {
 		if (file == null) {
 			return null;
 		}
 
+		try {
+			var modJson = readFmjJsonObject(file);
+			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
+		} catch (JsonSyntaxException e) {
+			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());
+			return null;
+		}
+	}
+
+	private static JsonObject readFmjJsonObject(File file) {
 		try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
 			final JsonObject modJson = LoomGradlePlugin.GSON.fromJson(reader, JsonObject.class);
 
@@ -143,9 +139,6 @@ public final class FabricModJsonFactory {
 			}
 
 			return modJson;
-		} catch (JsonSyntaxException e) {
-			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());
-			return null;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read " + file.getAbsolutePath(), e);
 		}

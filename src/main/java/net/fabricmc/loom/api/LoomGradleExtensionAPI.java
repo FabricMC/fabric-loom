@@ -66,6 +66,20 @@ public interface LoomGradleExtensionAPI {
 
 	RegularFileProperty getAccessWidenerPath();
 
+	/**
+	 * Specifies the {@code fabric.mod.json} file location used in injected interface processing.
+	 *
+	 * <p>
+	 *     By default, either {@code src/main/resources/fabric.mod.json}
+	 *     or {@code src/client/resources/fabric.mod.json} in the project directory is used.
+	 * </p>
+	 *
+	 * <p>
+	 *     Providing a path to a different location allows using a shared or preprocessed
+	 *     file. However, at the end it must be put into the root of the processed
+	 *     resources directory (usually {@code build/resources/main}).
+	 * </p>
+	 */
 	RegularFileProperty getFabricModJsonPath();
 
 	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();

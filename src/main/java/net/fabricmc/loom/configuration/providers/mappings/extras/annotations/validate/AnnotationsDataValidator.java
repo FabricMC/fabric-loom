@@ -57,6 +57,7 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.Cla
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.GenericAnnotationData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.MethodAnnotationData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.TypeAnnotationKey;
+import net.fabricmc.loom.util.Constants;
 
 public abstract class AnnotationsDataValidator {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationsDataValidator.class);
@@ -284,7 +285,7 @@ public abstract class AnnotationsDataValidator {
 					typePathChecker.visitClassType(Objects.requireNonNullElse(clazz.superName, "java/lang/Object"));
 					typePathChecker.visitEnd();
 				} else {
-					new SignatureReader(clazz.signature).accept(new SignatureVisitor(Opcodes.ASM9) {
+					new SignatureReader(clazz.signature).accept(new SignatureVisitor(Constants.ASM_VERSION) {
 						@Override
 						public SignatureVisitor visitSuperclass() {
 							return typePathChecker;
@@ -301,7 +302,7 @@ public abstract class AnnotationsDataValidator {
 					typePathChecker.visitClassType(clazz.interfaces.get(superTypeIndex));
 					typePathChecker.visitEnd();
 				} else {
-					new SignatureReader(clazz.signature).accept(new SignatureVisitor(Opcodes.ASM9) {
+					new SignatureReader(clazz.signature).accept(new SignatureVisitor(Constants.ASM_VERSION) {
 						int interfaceIndex = 0;
 
 						@Override
@@ -376,7 +377,7 @@ public abstract class AnnotationsDataValidator {
 			if (method.signature == null) {
 				new SignatureReader(Type.getReturnType(method.desc).getDescriptor()).acceptType(typePathChecker);
 			} else {
-				new SignatureReader(method.signature).accept(new SignatureVisitor(Opcodes.ASM9) {
+				new SignatureReader(method.signature).accept(new SignatureVisitor(Constants.ASM_VERSION) {
 					@Override
 					public SignatureVisitor visitReturnType() {
 						return typePathChecker;
@@ -415,7 +416,7 @@ public abstract class AnnotationsDataValidator {
 					return false;
 				}
 			} else {
-				var visitor = new SignatureVisitor(Opcodes.ASM9) {
+				var visitor = new SignatureVisitor(Constants.ASM_VERSION) {
 					int paramIndex = 0;
 					boolean found = false;
 
@@ -449,7 +450,7 @@ public abstract class AnnotationsDataValidator {
 				typePathChecker.visitClassType(method.exceptions.get(throwsIndex));
 				typePathChecker.visitEnd();
 			} else {
-				var visitor = new SignatureVisitor(Opcodes.ASM9) {
+				var visitor = new SignatureVisitor(Constants.ASM_VERSION) {
 					int exceptionIndex = 0;
 					boolean found = false;
 
@@ -493,7 +494,7 @@ public abstract class AnnotationsDataValidator {
 		if (signature == null) {
 			formalParamCount = 0;
 		} else {
-			var formalParamCounter = new SignatureVisitor(Opcodes.ASM9) {
+			var formalParamCounter = new SignatureVisitor(Constants.ASM_VERSION) {
 				int count = 0;
 
 				@Override
@@ -521,7 +522,7 @@ public abstract class AnnotationsDataValidator {
 	}
 
 	private boolean checkTypeParameterBoundTypeAnnotation(String memberType, TypeAnnotationNode typeAnnotation, @Nullable String signature, int typeParamIndex, int typeParamBoundIndex, TypePathCheckerVisitor typePathChecker) {
-		var visitor = new SignatureVisitor(Opcodes.ASM9) {
+		var visitor = new SignatureVisitor(Constants.ASM_VERSION) {
 					boolean found = false;
 					int formalParamIndex = -1;
 					int boundIndex = 0;

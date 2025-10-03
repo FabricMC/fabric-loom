@@ -28,9 +28,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureVisitor;
+
+import net.fabricmc.loom.util.Constants;
 
 public final class TypePathCheckerVisitor extends SignatureVisitor {
 	private final TypePath path;
@@ -40,11 +41,11 @@ public final class TypePathCheckerVisitor extends SignatureVisitor {
 	private String error = null;
 
 	private final Deque<Integer> argIndexStack = new ArrayDeque<>();
-	private final SignatureVisitor sink = new SignatureVisitor(Opcodes.ASM9) {
+	private final SignatureVisitor sink = new SignatureVisitor(Constants.ASM_VERSION) {
 	};
 
 	public TypePathCheckerVisitor(final TypePath path) {
-		super(Opcodes.ASM9);
+		super(Constants.ASM_VERSION);
 		this.path = path;
 		this.pathLen = path == null ? 0 : path.getLength();
 

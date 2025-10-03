@@ -31,6 +31,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.objectweb.asm.TypePath;
@@ -43,7 +44,8 @@ class TypeAnnotationNodeSerializer implements JsonSerializer<TypeAnnotationNode>
 		AnnotationNode annotation = context.deserialize(json, AnnotationNode.class);
 		JsonObject jsonObject = json.getAsJsonObject();
 		int typeRef = jsonObject.getAsJsonPrimitive("type_ref").getAsInt();
-		String typePath = jsonObject.getAsJsonPrimitive("type_path").getAsString();
+		JsonPrimitive typePathPrimitive = jsonObject.getAsJsonPrimitive("type_path");
+		String typePath = typePathPrimitive == null ? "" : typePathPrimitive.getAsString();
 		TypeAnnotationNode typeAnnotation = new TypeAnnotationNode(typeRef, TypePath.fromString(typePath), annotation.desc);
 		annotation.accept(typeAnnotation);
 		return typeAnnotation;
@@ -53,7 +55,11 @@ class TypeAnnotationNodeSerializer implements JsonSerializer<TypeAnnotationNode>
 	public JsonElement serialize(TypeAnnotationNode src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject json = context.serialize(src, AnnotationNode.class).getAsJsonObject();
 		json.addProperty("type_ref", src.typeRef);
-		json.addProperty("type_path", src.typePath.toString());
+
+		if (src.typePath != null) {
+			json.addProperty("type_path", src.typePath.toString());
+		}
+
 		return json;
 	}
 }

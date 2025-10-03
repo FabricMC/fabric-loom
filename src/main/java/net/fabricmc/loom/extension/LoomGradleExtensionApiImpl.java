@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.fabricmc.loom.util.fmj.FabricModJson;
-
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
@@ -74,6 +72,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
+import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 

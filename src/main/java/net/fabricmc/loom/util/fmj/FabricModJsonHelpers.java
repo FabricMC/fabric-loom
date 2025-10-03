@@ -24,11 +24,13 @@
 
 package net.fabricmc.loom.util.fmj;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.gradle.api.Project;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
@@ -42,7 +44,7 @@ public class FabricModJsonHelpers {
 	 */
 	public static List<FabricModJson> getModsInProject(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		var overrideFile = extension.getFabricModJsonPath().getAsFile();
+		Provider<File> overrideFile = extension.getFabricModJsonPath().getAsFile();
 
 		if (overrideFile.isPresent()) {
 			return List.of(FabricModJsonFactory.createFromFile(overrideFile.get()));

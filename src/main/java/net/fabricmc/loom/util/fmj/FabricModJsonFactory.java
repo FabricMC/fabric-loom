@@ -108,20 +108,20 @@ public final class FabricModJsonFactory {
 	}
 
 	public static FabricModJson createFromFile(File file) {
-		var modJson = readFmjJsonObject(file);
+		JsonObject modJson = readFmjJsonObject(file);
 		return create(modJson, new FabricModJsonSource.DirectorySource(file.toPath().getParent()));
 	}
 
 	@Nullable
 	public static FabricModJson createFromSourceSetsNullable(Project project, SourceSet... sourceSets) {
-		var file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
+		File file = SourceSetHelper.findFirstFileInResource(FABRIC_MOD_JSON, project, sourceSets);
 
 		if (file == null) {
 			return null;
 		}
 
 		try {
-			var modJson = readFmjJsonObject(file);
+			JsonObject modJson = readFmjJsonObject(file);
 			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
 		} catch (JsonSyntaxException e) {
 			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());

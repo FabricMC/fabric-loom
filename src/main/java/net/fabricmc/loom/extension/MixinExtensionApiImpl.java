@@ -40,6 +40,8 @@ import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
+	static final String MIXIN_AP_DISABLED_ERROR = "The mixin annotation is no longer enabled by default, you should remove any loom.mixin configuration. If you wish to continue to use the mixin AP you can set useLegacyMixinAp = true.";
+
 	protected final Project project;
 	protected final Property<Boolean> useMixinAp;
 	private final Property<String> refmapTargetNamespace;
@@ -75,7 +77,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 
 	@Override
 	public Property<String> getRefmapTargetNamespace() {
-		if (!getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+		if (!getUseLegacyMixinAp().get()) throw new IllegalStateException(MIXIN_AP_DISABLED_ERROR);
 
 		return refmapTargetNamespace;
 	}

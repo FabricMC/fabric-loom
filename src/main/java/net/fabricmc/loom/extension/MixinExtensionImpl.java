@@ -68,7 +68,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	public Property<String> getDefaultRefmapName() {
-		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException(MIXIN_AP_DISABLED_ERROR);
 
 		return defaultRefmapName;
 	}
@@ -81,7 +81,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
-		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException(MIXIN_AP_DISABLED_ERROR);
 
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("**/*.json"));
 		MixinExtension.setMixinInformationContainer(sourceSet, new MixinExtension.MixinInformationContainer(sourceSet, refmapName, pattern));

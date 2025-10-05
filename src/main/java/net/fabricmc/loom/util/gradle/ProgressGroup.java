@@ -60,7 +60,7 @@ public class ProgressGroup implements Closeable {
 
 		ProgressLogger progressLogger = this.progressLoggerFactory.newOperation(getClass(), progressGroup);
 		progressLogger.setDescription(name);
-		progressLogger.start(name, null);
+		progressLogger.start(name, name);
 		return progressLogger;
 	}
 

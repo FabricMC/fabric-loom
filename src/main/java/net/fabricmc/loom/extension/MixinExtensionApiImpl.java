@@ -29,18 +29,22 @@ import java.util.Objects;
 import org.gradle.api.Action;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
+import org.gradle.api.logging.configuration.WarningMode;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.util.PatternSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
-	static final String MIXIN_AP_DISABLED_ERROR = "The mixin annotation is no longer enabled by default, you should remove any loom.mixin configuration. If you wish to continue to use the mixin AP you can set useLegacyMixinAp = true.";
+	private static final String MIXIN_AP_DISABLED_ERROR = "The mixin annotation is no longer enabled by default, you should remove any loom.mixin configuration. If you wish to continue to use the mixin AP you can set useLegacyMixinAp = true.";
+	private static final Logger LOGGER = LoggerFactory.getLogger(MixinExtensionApiImpl.class);
 
 	protected final Project project;
 	protected final Property<Boolean> useMixinAp;
@@ -77,7 +81,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 
 	@Override
 	public Property<String> getRefmapTargetNamespace() {
-		if (!getUseLegacyMixinAp().get()) throw new IllegalStateException(MIXIN_AP_DISABLED_ERROR);
+		if (!getUseLegacyMixinAp().get()) logLegacyMixinAPConfiguration();
 
 		return refmapTargetNamespace;
 	}
@@ -173,6 +177,16 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 		@Override
 		protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
 			throw new RuntimeException("Yeah... something is really wrong");
+		}
+	}
+
+	final void logLegacyMixinAPConfiguration() {
+		final WarningMode warningMode = project.getGradle().getStartParameter().getWarningMode();
+
+		if (warningMode == WarningMode.Fail) {
+			throw new IllegalStateException(MIXIN_AP_DISABLED_ERROR);
+		} else if (warningMode != WarningMode.None) {
+			LOGGER.warn(MIXIN_AP_DISABLED_ERROR);
 		}
 	}
 }

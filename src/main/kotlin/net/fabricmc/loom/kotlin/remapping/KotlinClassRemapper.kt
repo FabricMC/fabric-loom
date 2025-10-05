@@ -88,7 +88,13 @@ class KotlinClassRemapper(
 
     private fun remap(name: ClassName): ClassName {
         val local = name.isLocalClassName()
-        val remapped = remapper.map(name.toJvmInternalName()).replace('$', '.')
+
+        // Ensure that none inner classes with names containing $ are persisted.
+        // See: https://github.com/FabricMC/fabric-loom/issues/1363 fix suggested by fan87
+        val normalizedName = name.replace('$', '\n')
+        val remapped = remapper.map(normalizedName.toJvmInternalName())
+            .replace('$', '.')
+            .replace('\n', '$')
 
         if (local) {
             return ".$remapped"

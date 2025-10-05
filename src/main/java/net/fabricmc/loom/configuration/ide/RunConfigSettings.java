@@ -46,6 +46,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class RunConfigSettings implements Named {
@@ -139,7 +140,7 @@ public abstract class RunConfigSettings implements Named {
 		this.project = project;
 		this.appendProjectPathToConfigName = project.getObjects().property(Boolean.class).convention(true);
 		this.extension = LoomGradleExtension.get(project);
-		this.ideConfigGenerated = extension.isRootProject();
+		this.ideConfigGenerated = GradleUtils.isRootProject(project);
 		this.mainClass = project.getObjects().property(String.class).convention(project.provider(() -> {
 			Objects.requireNonNull(environment, "Run config " + name + " must specify environment");
 			Objects.requireNonNull(defaultMainClass, "Run config " + name + " must specify default main class");

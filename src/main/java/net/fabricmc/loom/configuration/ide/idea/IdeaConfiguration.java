@@ -66,9 +66,7 @@ public abstract class IdeaConfiguration implements Runnable {
 	}
 
 	private void hookDownloadSources() {
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-
-		if (!extension.isRootProject()) {
+		if (!GradleUtils.isRootProject(getProject())) {
 			return;
 		}
 

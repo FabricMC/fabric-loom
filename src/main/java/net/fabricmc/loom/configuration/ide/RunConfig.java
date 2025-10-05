@@ -58,6 +58,7 @@ import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
@@ -132,7 +133,7 @@ public class RunConfig {
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 
-		if (appendProjectPath && !extension.isRootProject()) {
+		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
 			runConfig.configName += " (" + project.getPath() + ")";
 		}
 

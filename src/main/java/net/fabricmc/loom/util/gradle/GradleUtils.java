@@ -124,4 +124,8 @@ public final class GradleUtils {
 		property.set(file);
 		return property.getAsFile().get();
 	}
+
+	public static boolean isRootProject(Project project) {
+		return project.getRootProject() == project;
+	}
 }

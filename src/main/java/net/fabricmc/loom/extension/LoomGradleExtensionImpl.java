@@ -217,11 +217,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	}
 
 	@Override
-	public boolean isRootProject() {
-		return project.getRootProject() == project;
-	}
-
-	@Override
 	public MixinExtension getMixin() {
 		return this.mixinApExtension;
 	}

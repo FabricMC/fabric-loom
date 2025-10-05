@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.0.21"
-asm = "9.8"
+asm = "9.9"
 gson = "2.10.1"
 
 stitch = "0.6.2"

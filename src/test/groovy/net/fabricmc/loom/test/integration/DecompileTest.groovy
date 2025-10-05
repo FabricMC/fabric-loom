@@ -106,4 +106,30 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		result2.task(":genSourcesWithVineflower").outcome == SUCCESS
 		result3.task(":genSourcesWithVineflower").outcome == SUCCESS
 	}
+
+	// https://github.com/FabricMC/fabric-loom/issues/1362
+	@Unroll
+	def "CFR legacy"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << '''
+				loom {
+					noIntermediateMappings()
+					clientOnlyMinecraftJar()
+				}
+
+                dependencies {
+                    minecraft "com.mojang:minecraft:c0.30_01c"
+					mappings loom.layered() {
+						// No names
+					}
+                }
+		'''
+
+		when:
+		def result = gradle.run(task: "genSourcesWithCfr")
+
+		then:
+		result.task(":genSourcesWithCfr").outcome == SUCCESS
+	}
 }

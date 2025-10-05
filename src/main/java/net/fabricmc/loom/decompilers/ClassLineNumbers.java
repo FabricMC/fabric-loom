@@ -28,10 +28,7 @@ import static java.text.MessageFormat.format;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,14 +47,6 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 		for (Map.Entry<String, Entry> entry : lineMap.entrySet()) {
 			Objects.requireNonNull(entry.getKey(), "lineMap key");
 			Objects.requireNonNull(entry.getValue(), "lineMap value");
-		}
-	}
-
-	public static ClassLineNumbers readMappings(Path lineMappingsPath) {
-		try (BufferedReader reader = Files.newBufferedReader(lineMappingsPath)) {
-			return readMappings(reader);
-		} catch (IOException e) {
-			throw new UncheckedIOException("Exception reading LineMappings file.", e);
 		}
 	}
 
@@ -81,12 +70,15 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 
 		CurrentClass currentClass = null;
 		Map<Integer, Integer> currentMappings = new HashMap<>();
+		boolean didRead = false;
 
 		try {
 			while ((line = reader.readLine()) != null) {
 				if (line.isEmpty()) {
 					continue;
 				}
+
+				didRead = true;
 
 				final String[] segments = line.trim().split("\t");
 
@@ -108,7 +100,10 @@ public record ClassLineNumbers(Map<String, ClassLineNumbers.Entry> lineMap) {
 			throw new RuntimeException(format("Exception reading mapping line @{0}: {1}", lineNumber, line), e);
 		}
 
-		assert currentClass != null;
+		if (!didRead) {
+			throw new IllegalArgumentException("Unable to read empty linemap data");
+		}
+
 		currentClass.putEntry(lineMap, currentMappings);
 
 		return new ClassLineNumbers(Collections.unmodifiableMap(lineMap));

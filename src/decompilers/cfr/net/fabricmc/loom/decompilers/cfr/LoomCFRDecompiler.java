@@ -98,6 +98,10 @@ public final class LoomCFRDecompiler implements LoomInternalDecompiler {
 	}
 
 	private void writeLineMap(Path output, Map<String, Map<Integer, Integer>> lineMap) {
+		if (lineMap.isEmpty()) {
+			return;
+		}
+
 		try (Writer writer = Files.newBufferedWriter(output, StandardCharsets.UTF_8)) {
 			for (Map.Entry<String, Map<Integer, Integer>> classEntry : lineMap.entrySet()) {
 				final String name = classEntry.getKey().replace(".", "/");

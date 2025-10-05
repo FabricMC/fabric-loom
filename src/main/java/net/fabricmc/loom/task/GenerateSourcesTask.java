@@ -631,6 +631,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		try (BufferedReader reader = Files.newBufferedReader(linemapFile, StandardCharsets.UTF_8)) {
 			return ClassLineNumbers.readMappings(reader);
+		} catch (Exception e) {
+			throw new IOException("Failed to read line number map: " + linemapFile, e);
 		}
 	}
 

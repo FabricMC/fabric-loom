@@ -69,6 +69,10 @@ public record AnnotationsData(Map<String, ClassAnnotationData> classes, String n
 		}
 	}
 
+	public AnnotationsData(String namespace) {
+		this(new LinkedHashMap<>(), namespace);
+	}
+
 	public static AnnotationsData read(Reader reader) {
 		JsonObject json = GSON.fromJson(reader, JsonObject.class);
 		checkVersion(json);

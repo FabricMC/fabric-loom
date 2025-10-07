@@ -52,7 +52,7 @@ public record ClassAnnotationData(
 		List<TypeAnnotationNode> typeAnnotationsToAdd,
 		Map<String, GenericAnnotationData> fields,
 		Map<String, MethodAnnotationData> methods
-) {
+) implements BaseAnnotationData {
 	public ClassAnnotationData {
 		if (annotationsToRemove == null) {
 			annotationsToRemove = new LinkedHashSet<>();
@@ -77,6 +77,10 @@ public record ClassAnnotationData(
 		if (methods == null) {
 			methods = new LinkedHashMap<>();
 		}
+	}
+
+	public ClassAnnotationData() {
+		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
 	}
 
 	ClassAnnotationData merge(ClassAnnotationData other) {

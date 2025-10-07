@@ -49,7 +49,7 @@ public record MethodAnnotationData(
 		@SerializedName("type_add")
 		List<TypeAnnotationNode> typeAnnotationsToAdd,
 		Map<Integer, GenericAnnotationData> parameters
-) {
+) implements BaseAnnotationData {
 	public MethodAnnotationData {
 		if (annotationsToRemove == null) {
 			annotationsToRemove = new LinkedHashSet<>();
@@ -70,6 +70,10 @@ public record MethodAnnotationData(
 		if (parameters == null) {
 			parameters = new LinkedHashMap<>();
 		}
+	}
+
+	public MethodAnnotationData() {
+		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashMap<>());
 	}
 
 	MethodAnnotationData merge(MethodAnnotationData other) {

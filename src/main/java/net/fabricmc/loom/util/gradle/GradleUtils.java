@@ -33,6 +33,7 @@ import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 
 public final class GradleUtils {
 	private GradleUtils() {
@@ -59,7 +60,7 @@ public final class GradleUtils {
 	}
 
 	public static boolean isLoomProject(Project project) {
-		return project.getPluginManager().hasPlugin("fabric-loom");
+		return project.getPluginManager().hasPlugin(LoomGradlePlugin.NAME);
 	}
 
 	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {

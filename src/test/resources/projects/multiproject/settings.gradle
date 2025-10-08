@@ -2,3 +2,4 @@ rootProject.name = "fabric-example-mod"
 
 include 'core'
 include 'example'
+include 'javalib'

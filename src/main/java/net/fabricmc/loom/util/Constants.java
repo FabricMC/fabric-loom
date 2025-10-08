@@ -90,6 +90,10 @@ public class Constants {
 		 * Mods to be used by {@link net.fabricmc.loom.task.prod.AbstractProductionRunTask} tasks by default.
 		 */
 		public static final String PRODUCTION_RUNTIME_MODS = "productionRuntimeMods";
+		/**
+		 * Used to query classpath data across project boundaries.
+		 */
+		public static final String EXPORTED_CLASSPATH = "loomExportedClasspath";
 
 		private Configurations() {
 		}
@@ -125,6 +129,7 @@ public class Constants {
 
 	public static final class Task {
 		public static final String PROCESS_INCLUDE_JARS = "processIncludeJars";
+		public static final String EXPORT_CLASSPATH = "exportClasspath";
 
 		private Task() {
 		}

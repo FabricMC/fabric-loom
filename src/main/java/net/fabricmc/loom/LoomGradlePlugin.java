@@ -39,6 +39,7 @@ import net.fabricmc.loom.api.fabricapi.FabricApiExtension;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.configuration.MavenPublication;
+import net.fabricmc.loom.configuration.classpathgroups.plugin.LoomClasspathGroupPlugin;
 import net.fabricmc.loom.configuration.fabricapi.FabricApiExtensionImpl;
 import net.fabricmc.loom.configuration.ide.idea.IdeaConfiguration;
 import net.fabricmc.loom.configuration.sandbox.SandboxConfiguration;
@@ -50,6 +51,7 @@ import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.LibraryLocationLogger;
 
 public class LoomGradlePlugin implements Plugin<PluginAware> {
+	public static final String NAME = "fabric-loom";
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
@@ -92,5 +94,7 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		for (Class<? extends Runnable> jobClass : SETUP_JOBS) {
 			project.getObjects().newInstance(jobClass).run();
 		}
+
+		LoomClasspathGroupPlugin.applyToProject(project);
 	}
 }

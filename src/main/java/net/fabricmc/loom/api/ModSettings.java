@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.api;
 
+import java.io.File;
+import java.util.List;
+
 import javax.inject.Inject;
 
 import org.gradle.api.Named;
@@ -35,6 +38,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.configuration.classpathgroups.ExternalClasspathGroup;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
@@ -49,7 +53,7 @@ public abstract class ModSettings implements Named {
 
 	@Inject
 	public ModSettings() {
-		getModSourceSets().finalizeValueOnRead();
+		getExternalGroups().finalizeValueOnRead();
 		getModFiles().finalizeValueOnRead();
 	}
 
@@ -82,18 +86,40 @@ public abstract class ModSettings implements Named {
 
 	/**
 	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
+	 * @deprecated Replaced with {@link #sourceSet(String, String)} to avoid passing a project reference.
 	 */
+	@Deprecated
 	public void sourceSet(SourceSet sourceSet, Project project) {
-		getModSourceSets().add(new SourceSetReference(sourceSet, project));
+		sourceSet(sourceSet.getName(), project.getPath());
 	}
 
 	/**
 	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
 	 *
 	 * @param name the name of the source set
+	 * @deprecated Replaced with {@link #sourceSet(String, String)} to avoid passing a project reference.
 	 */
+	@Deprecated
 	public void sourceSet(String name, Project project) {
-		sourceSet(SourceSetHelper.getSourceSetByName(name, project), project);
+		sourceSet(name, project.getPath());
+	}
+
+	/**
+	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
+	 *
+	 * @param sourceSetName the name of the source set
+	 * @param projectPath the path of the project the source set belongs to
+	 */
+	public void sourceSet(String sourceSetName, String projectPath) {
+		if (projectPath.equals(getProject().getPath())) {
+			// Shortcut for source sets in our own project.
+			SourceSetReference ref = new SourceSetReference(SourceSetHelper.getSourceSetByName(sourceSetName, getProject()), getProject());
+			List<File> classpath = SourceSetHelper.getClasspath(ref);
+			getModFiles().from(classpath);
+			return;
+		}
+
+		getExternalGroups().add(new ExternalClasspathGroup(projectPath, sourceSetName));
 	}
 
 	/**
@@ -114,11 +140,10 @@ public abstract class ModSettings implements Named {
 	}
 
 	/**
-	 * List of classpath directories, used to populate the `fabric.classPathGroups` Fabric Loader system property.
-	 * Use the {@link ModSettings#sourceSet} methods to add to this.
+	 * List of {@link ExternalClasspathGroup} that will later be resolved to populate the classpath groups from another Gradle project.
 	 */
 	@ApiStatus.Internal
-	public abstract ListProperty<SourceSetReference> getModSourceSets();
+	public abstract ListProperty<ExternalClasspathGroup> getExternalGroups();
 
 	@Inject
 	public abstract Project getProject();

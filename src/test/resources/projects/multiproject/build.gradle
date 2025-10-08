@@ -5,6 +5,8 @@ plugins {
 }
 
 allprojects {
+	if (it.path == ":javalib") return;
+
 	apply plugin: "fabric-loom"
 
 	version = "1.0.0"
@@ -42,13 +44,14 @@ allprojects {
 loom {
 	mods {
 		core {
-			sourceSet project(':core').sourceSets.main
+			sourceSet("main", ":core")
 		}
 		example {
-			sourceSet project(':example').sourceSets.main
+			sourceSet("main", ":example")
 		}
 		root {
 			sourceSet sourceSets.main
+			sourceSet("main", ":javalib")
 		}
 	}
 }

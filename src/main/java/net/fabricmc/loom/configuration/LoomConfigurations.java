@@ -175,7 +175,7 @@ public abstract class LoomConfigurations implements Runnable {
 		getConfigurations().getByName(a, configuration -> configuration.extendsFrom(getConfigurations().getByName(b)));
 	}
 
-	enum Role {
+	public enum Role {
 		NONE(false, false),
 		CONSUMABLE(true, false),
 		RESOLVABLE(false, true);
@@ -188,7 +188,7 @@ public abstract class LoomConfigurations implements Runnable {
 			this.canBeResolved = canBeResolved;
 		}
 
-		void apply(Configuration configuration) {
+		public void apply(Configuration configuration) {
 			configuration.setCanBeConsumed(canBeConsumed);
 			configuration.setCanBeResolved(canBeResolved);
 		}

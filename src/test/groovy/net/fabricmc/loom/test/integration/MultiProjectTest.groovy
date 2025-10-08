@@ -57,4 +57,19 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "classpath groups (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "multiproject", version: version)
+
+		when:
+		def result = gradle.run(tasks: [":generateDLIConfig",])
+
+		then:
+		result.task(":generateDLIConfig").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

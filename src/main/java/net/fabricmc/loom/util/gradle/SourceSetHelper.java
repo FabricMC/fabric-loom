@@ -52,7 +52,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
 
@@ -113,18 +112,8 @@ public final class SourceSetHelper {
 		return it.hasNext() ? it.next().getProject() : null;
 	}
 
-	public static List<File> getClasspath(ModSettings modSettings, Project project) {
-		final List<File> files = new ArrayList<>();
-
-		files.addAll(modSettings.getModSourceSets().get().stream()
-				.flatMap(sourceSet -> getClasspath(sourceSet, project).stream())
-				.toList());
-		files.addAll(modSettings.getModFiles().getFiles());
-
-		return Collections.unmodifiableList(files);
-	}
-
-	public static List<File> getClasspath(SourceSetReference reference, Project project) {
+	public static List<File> getClasspath(SourceSetReference reference) {
+		final Project project = reference.project();
 		final List<File> classpath = getGradleClasspath(reference, project);
 
 		classpath.addAll(getIdeaClasspath(reference, project));

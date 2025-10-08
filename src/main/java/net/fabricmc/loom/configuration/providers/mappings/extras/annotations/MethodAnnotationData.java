@@ -76,6 +76,16 @@ public record MethodAnnotationData(
 		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashMap<>());
 	}
 
+	public MethodAnnotationData(MethodAnnotationData other) {
+		this(
+				new LinkedHashSet<>(other.annotationsToRemove),
+				AnnotationsData.copyAnnotations(other.annotationsToAdd),
+				new LinkedHashSet<>(other.typeAnnotationsToRemove),
+				AnnotationsData.copyTypeAnnotations(other.typeAnnotationsToAdd),
+				AnnotationsData.copyMap(other.parameters, GenericAnnotationData::new)
+		);
+	}
+
 	MethodAnnotationData merge(MethodAnnotationData other) {
 		Set<String> newAnnotationsToRemove = new LinkedHashSet<>(annotationsToRemove);
 		newAnnotationsToRemove.addAll(other.annotationsToRemove);

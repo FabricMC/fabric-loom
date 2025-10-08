@@ -69,6 +69,15 @@ public record GenericAnnotationData(
 		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>());
 	}
 
+	public GenericAnnotationData(GenericAnnotationData other) {
+		this(
+				new LinkedHashSet<>(other.annotationsToRemove),
+				AnnotationsData.copyAnnotations(other.annotationsToAdd),
+				new LinkedHashSet<>(other.typeAnnotationsToRemove),
+				AnnotationsData.copyTypeAnnotations(other.typeAnnotationsToAdd)
+		);
+	}
+
 	GenericAnnotationData merge(GenericAnnotationData other) {
 		Set<String> newAnnotationToRemove = new LinkedHashSet<>(annotationsToRemove);
 		newAnnotationToRemove.addAll(other.annotationsToRemove);

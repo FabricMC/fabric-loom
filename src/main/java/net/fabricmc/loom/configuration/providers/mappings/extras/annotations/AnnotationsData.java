@@ -27,11 +27,13 @@ package net.fabricmc.loom.configuration.providers.mappings.extras.annotations;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -71,6 +73,10 @@ public record AnnotationsData(Map<String, ClassAnnotationData> classes, String n
 
 	public AnnotationsData(String namespace) {
 		this(new LinkedHashMap<>(), namespace);
+	}
+
+	public AnnotationsData(AnnotationsData other) {
+		this(copyMap(other.classes, ClassAnnotationData::new), other.namespace);
 	}
 
 	public static AnnotationsData read(Reader reader) {
@@ -119,6 +125,36 @@ public record AnnotationsData(Map<String, ClassAnnotationData> classes, String n
 		JsonObject result = new JsonObject();
 		result.addProperty("version", CURRENT_VERSION);
 		result.add("values", GSON.toJsonTree(annotationsData));
+		return result;
+	}
+
+	static <K, V> Map<K, V> copyMap(Map<K, V> map, UnaryOperator<V> valueCopier) {
+		Map<K, V> result = LinkedHashMap.newLinkedHashMap(map.size());
+		map.forEach((key, value) -> result.put(key, valueCopier.apply(value)));
+		return result;
+	}
+
+	static List<AnnotationNode> copyAnnotations(List<AnnotationNode> annotations) {
+		List<AnnotationNode> result = new ArrayList<>(annotations.size());
+
+		for (AnnotationNode annotation : annotations) {
+			AnnotationNode newAnnotation = new AnnotationNode(annotation.desc);
+			annotation.accept(newAnnotation);
+			result.add(newAnnotation);
+		}
+
+		return result;
+	}
+
+	static List<TypeAnnotationNode> copyTypeAnnotations(List<TypeAnnotationNode> annotations) {
+		List<TypeAnnotationNode> result = new ArrayList<>(annotations.size());
+
+		for (TypeAnnotationNode annotation : annotations) {
+			TypeAnnotationNode newAnnotation = new TypeAnnotationNode(annotation.typeRef, annotation.typePath, annotation.desc);
+			annotation.accept(newAnnotation);
+			result.add(newAnnotation);
+		}
+
 		return result;
 	}
 

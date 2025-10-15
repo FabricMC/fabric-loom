@@ -55,7 +55,8 @@ import net.fabricmc.tinyremapper.api.TrClass;
 public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implements TinyRemapper.ApplyVisitorProvider {
 	@Override
 	public ClassVisitor insertApplyVisitor(TrClass cls, ClassVisitor next) {
-		ClassAnnotationData classData = annotationsData.classes().get(cls.getName());
+		String deobfName = cls.getEnvironment().getRemapper().map(cls.getName());
+		ClassAnnotationData classData = annotationsData.classes().get(deobfName);
 
 		if (classData == null) {
 			return next;

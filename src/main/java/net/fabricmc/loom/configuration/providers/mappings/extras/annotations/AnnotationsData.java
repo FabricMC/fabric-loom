@@ -24,11 +24,9 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.extras.annotations;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +47,7 @@ import org.objectweb.asm.tree.TypeAnnotationNode;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -204,34 +202,34 @@ public record AnnotationsData(Map<String, ClassAnnotationData> classes, String n
 	}
 
 	@Nullable
-	public static AnnotationsData getRemappedAnnotations(MappingsNamespace targetNamespace, MappingConfiguration mappingConfiguration, Project project, ServiceFactory serviceFactory, String newNamespace) throws IOException {
+	public static AnnotationsData getRemappedAnnotations(MappingsNamespace targetNamespace, MappingConfiguration mappingConfiguration, Project project, ServiceFactory serviceFactory, String newNamespace) {
 		List<AnnotationsData> datas = mappingConfiguration.getAnnotationsData();
 
 		if (datas.isEmpty()) {
 			return null;
 		}
 
-		Map<String, TinyRemapper> existingRemappers = new HashMap<>();
-		AnnotationsData result = datas.getFirst().remap(targetNamespace, project, serviceFactory, newNamespace, existingRemappers);
+		AnnotationsData result = datas.getFirst().remap(targetNamespace, project, serviceFactory, newNamespace);
 
 		for (int i = 1; i < datas.size(); i++) {
-			result = result.merge(datas.get(i).remap(targetNamespace, project, serviceFactory, newNamespace, existingRemappers));
+			result = result.merge(datas.get(i).remap(targetNamespace, project, serviceFactory, newNamespace));
 		}
 
 		return result;
 	}
 
-	private AnnotationsData remap(MappingsNamespace targetNamespace, Project project, ServiceFactory serviceFactory, String newNamespace, Map<String, TinyRemapper> existingRemappers) throws IOException {
+	private AnnotationsData remap(MappingsNamespace targetNamespace, Project project, ServiceFactory serviceFactory, String newNamespace) {
 		if (namespace.equals(targetNamespace.toString())) {
 			return this;
 		}
 
-		TinyRemapper remapper = existingRemappers.get(namespace);
-
-		if (remapper == null) {
-			remapper = TinyRemapperHelper.getTinyRemapper(project, serviceFactory, namespace, newNamespace);
-			existingRemappers.put(namespace, remapper);
-		}
+		TinyRemapperService remapperService = serviceFactory.get(TinyRemapperService.createSimple(
+				project,
+				project.provider(() -> namespace),
+				project.provider(() -> newNamespace),
+				TinyRemapperService.ClasspathLibraries.EXCLUDE
+		));
+		TinyRemapper remapper = remapperService.getTinyRemapperForRemapping();
 
 		return remap(remapper, newNamespace);
 	}

@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.test.util
 
-import groovy.io.FileType
 import groovy.transform.Immutable
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
@@ -261,25 +260,33 @@ trait GradleProjectTestTrait {
 			return ZipUtils.unpackNullable(file.toPath(), entryName) != null
 		}
 
-		File getGeneratedSources(String mappings, String jarType = "merged") {
-			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}-sources.jar")
+		File getGeneratedMinecraft(String mappings, String jarType = "merged", String classifier = "") {
+			String classifierSuffix = classifier.isEmpty() ? "" : "-$classifier"
+			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}${classifierSuffix}.jar")
 		}
 
-		File getGeneratedLocalSources(String mappings) {
-			File file
-			getProjectDir().traverse(type: FileType.FILES) {
-				if (it.name.startsWith("minecraft-merged-")
-						&& it.name.contains(mappings)
-						&& it.name.endsWith("-sources.jar")) {
-					file = it
-				}
+		File getGeneratedSources(String mappings, String jarType = "merged") {
+			return getGeneratedMinecraft(mappings, jarType, "sources")
+		}
+
+		File getGeneratedLocalMinecraft(String mappings, String jarType = "merged", String classifier = "") {
+			String classifierSuffix = classifier.isEmpty() ? "" : "-$classifier"
+
+			File file = new File(getProjectDir(), ".gradle/loom-cache/minecraftMaven/net/minecraft")
+			file = file.listFiles().find {
+				it.name.startsWith("minecraft-${jarType}-")
 			}
 
 			if (file == null) {
 				throw new FileNotFoundException()
 			}
 
-			return file
+			String jarFileName = "${file.name}-${mappings}${classifierSuffix}.jar"
+			return new File(file, "${mappings}/${jarFileName}")
+		}
+
+		File getGeneratedLocalSources(String mappings, String jarType = "merged") {
+			return getGeneratedLocalMinecraft(mappings, jarType, "sources")
 		}
 
 		void buildSrc(String name, boolean apply = true) {

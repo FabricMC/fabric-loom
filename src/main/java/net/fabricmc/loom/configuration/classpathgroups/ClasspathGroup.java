@@ -26,8 +26,8 @@ package net.fabricmc.loom.configuration.classpathgroups;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import net.fabricmc.loom.api.ModSettings;
@@ -37,9 +37,10 @@ public record ClasspathGroup(List<String> paths, List<ExternalClasspathGroup> ex
 		return modSettings.stream().map(s -> new ClasspathGroup(getPaths(s), s.getExternalGroups().get())).toList();
 	}
 
-	public ClasspathGroup {
-		Objects.requireNonNull(paths);
-		Objects.requireNonNull(externalGroups);
+	// TODO remove this constructor when updating to Gradle 9.0, works around an issue where config cache cannot serialize immutable lists
+	public ClasspathGroup(List<String> paths, List<ExternalClasspathGroup> externalGroups) {
+		this.paths = new ArrayList<>(paths);
+		this.externalGroups = new ArrayList<>(externalGroups);
 	}
 
 	private static List<String> getPaths(ModSettings modSettings) {

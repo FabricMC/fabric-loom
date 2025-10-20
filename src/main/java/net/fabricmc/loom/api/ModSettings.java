@@ -26,6 +26,7 @@ package net.fabricmc.loom.api;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -38,6 +39,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.LoomCompanionGradlePlugin;
 import net.fabricmc.loom.configuration.classpathgroups.ExternalClasspathGroup;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
@@ -90,6 +92,8 @@ public abstract class ModSettings implements Named {
 	 */
 	@Deprecated
 	public void sourceSet(SourceSet sourceSet, Project project) {
+		ensureCompanion(project);
+
 		sourceSet(sourceSet.getName(), project.getPath());
 	}
 
@@ -101,6 +105,8 @@ public abstract class ModSettings implements Named {
 	 */
 	@Deprecated
 	public void sourceSet(String name, Project project) {
+		ensureCompanion(project);
+
 		sourceSet(name, project.getPath());
 	}
 
@@ -153,5 +159,13 @@ public abstract class ModSettings implements Named {
 	@Override
 	public String toString() {
 		return "ModSettings '" + getName() + "'";
+	}
+
+	private void ensureCompanion(Project project) {
+		if (project == getProject()) {
+			return;
+		}
+
+		project.apply(Map.of("plugin", LoomCompanionGradlePlugin.NAME));
 	}
 }

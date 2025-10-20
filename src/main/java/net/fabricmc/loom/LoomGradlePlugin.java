@@ -39,7 +39,6 @@ import net.fabricmc.loom.api.fabricapi.FabricApiExtension;
 import net.fabricmc.loom.configuration.CompileConfiguration;
 import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.configuration.MavenPublication;
-import net.fabricmc.loom.configuration.classpathgroups.plugin.LoomClasspathGroupPlugin;
 import net.fabricmc.loom.configuration.fabricapi.FabricApiExtensionImpl;
 import net.fabricmc.loom.configuration.ide.idea.IdeaConfiguration;
 import net.fabricmc.loom.configuration.sandbox.SandboxConfiguration;
@@ -95,6 +94,6 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 			project.getObjects().newInstance(jobClass).run();
 		}
 
-		project.apply(Map.of("plugin", LoomClasspathGroupPlugin.NAME));
+		project.apply(Map.of("plugin", LoomCompanionGradlePlugin.NAME));
 	}
 }

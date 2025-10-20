@@ -1,4 +1,4 @@
 plugins {
 	id 'java-library'
-	id 'net.fabricmc.fabric-loom-classpath-group'
+	id 'net.fabricmc.fabric-loom-companion'
 }

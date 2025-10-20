@@ -237,9 +237,9 @@ gradlePlugin {
 			id = 'fabric-loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
-		fabricLoomClasspathGroup {
-			id = 'net.fabricmc.fabric-loom-classpath-group'
-			implementationClass = 'net.fabricmc.loom.configuration.classpathgroups.plugin.LoomClasspathGroupPlugin'
+		fabricLoomCompanion {
+			id = 'net.fabricmc.fabric-loom-companion'
+			implementationClass = 'net.fabricmc.loom.LoomClasspathGroupPlugin'
 		}
 	}
 }

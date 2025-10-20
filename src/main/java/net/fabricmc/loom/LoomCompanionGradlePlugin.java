@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.classpathgroups.plugin;
+package net.fabricmc.loom;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -32,8 +32,8 @@ import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.task.launch.ExportClasspathTask;
 import net.fabricmc.loom.util.Constants;
 
-public class LoomClasspathGroupPlugin implements Plugin<Project> {
-	public static final String NAME = "net.fabricmc.fabric-loom-classpath-group";
+public class LoomCompanionGradlePlugin implements Plugin<Project> {
+	public static final String NAME = "net.fabricmc.fabric-loom-companion";
 
 	@Override
 	public void apply(@NotNull Project project) {

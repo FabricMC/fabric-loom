@@ -107,6 +107,8 @@ public abstract class ModSettings implements Named {
 	/**
 	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
 	 *
+	 * <p>If the other project is not a Loom project you must apply the `net.fabricmc.fabric-loom-companion` plugin.
+	 *
 	 * @param sourceSetName the name of the source set
 	 * @param projectPath the path of the project the source set belongs to
 	 */

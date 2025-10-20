@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.classpathgroups;
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import net.fabricmc.loom.api.ModSettings;
@@ -34,6 +35,11 @@ import net.fabricmc.loom.api.ModSettings;
 public record ClasspathGroup(List<String> paths, List<ExternalClasspathGroup> externalGroups) implements Serializable {
 	public static List<ClasspathGroup> fromModSettings(Set<ModSettings> modSettings) {
 		return modSettings.stream().map(s -> new ClasspathGroup(getPaths(s), s.getExternalGroups().get())).toList();
+	}
+
+	public ClasspathGroup {
+		Objects.requireNonNull(paths);
+		Objects.requireNonNull(externalGroups);
 	}
 
 	private static List<String> getPaths(ModSettings modSettings) {

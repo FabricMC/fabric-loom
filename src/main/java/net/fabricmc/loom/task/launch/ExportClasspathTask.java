@@ -45,7 +45,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.classpathgroups.ExternalClasspathGroupDTO;
 import net.fabricmc.loom.task.AbstractLoomTask;
 
-public abstract class ExportClassPathTask extends AbstractLoomTask {
+public abstract class ExportClasspathTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<String> getClasspathDtoJson();
 
@@ -56,7 +56,7 @@ public abstract class ExportClassPathTask extends AbstractLoomTask {
 	protected abstract WorkerExecutor getWorkerExecutor();
 
 	@Inject
-	public ExportClassPathTask() {
+	public ExportClasspathTask() {
 		getClasspathDtoJson().set(getProject()
 				.provider(() -> ExternalClasspathGroupDTO.createFromProject(getProject()))
 				.map(LoomGradlePlugin.GSON::toJson));

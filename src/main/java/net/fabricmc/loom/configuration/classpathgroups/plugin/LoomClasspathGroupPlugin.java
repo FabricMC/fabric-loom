@@ -28,25 +28,16 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.jetbrains.annotations.NotNull;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.LoomConfigurations;
-import net.fabricmc.loom.task.launch.ExportClassPathTask;
+import net.fabricmc.loom.task.launch.ExportClasspathTask;
 import net.fabricmc.loom.util.Constants;
 
 public class LoomClasspathGroupPlugin implements Plugin<Project> {
-	private static final String NAME = "net.fabricmc.fabric-loom-classpath-group";
+	public static final String NAME = "net.fabricmc.fabric-loom-classpath-group";
 
 	@Override
-	public void apply(@NotNull Project target) {
-		applyToProject(target);
-	}
-
-	public static void applyToProject(Project project) {
-		if (project.getPlugins().hasPlugin(LoomGradlePlugin.NAME) && project.getPlugins().hasPlugin(NAME)) {
-			throw new IllegalStateException("fabric-loom-classpath-group must not be applied alongside fabric-loom");
-		}
-
-		var exportClassPathTask = project.getTasks().register(Constants.Task.EXPORT_CLASSPATH, ExportClassPathTask.class);
+	public void apply(@NotNull Project project) {
+		var exportClassPathTask = project.getTasks().register(Constants.Task.EXPORT_CLASSPATH, ExportClasspathTask.class);
 		project.getConfigurations().register(Constants.Configurations.EXPORTED_CLASSPATH, LoomConfigurations.Role.CONSUMABLE::apply);
 		project.artifacts(artifactHandler -> artifactHandler.add(Constants.Configurations.EXPORTED_CLASSPATH, exportClassPathTask));
 	}

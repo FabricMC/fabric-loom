@@ -95,6 +95,6 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 			project.getObjects().newInstance(jobClass).run();
 		}
 
-		LoomClasspathGroupPlugin.applyToProject(project);
+		project.apply(Map.of("plugin", LoomClasspathGroupPlugin.NAME));
 	}
 }

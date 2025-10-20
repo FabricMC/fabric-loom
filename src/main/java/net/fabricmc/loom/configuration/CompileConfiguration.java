@@ -45,7 +45,6 @@ import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.AbstractCopyTask;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -273,8 +272,7 @@ public abstract class CompileConfiguration implements Runnable {
 				@Override
 				public void execute(Task task) {
 					try (ScopedServiceFactory serviceFactory = new ScopedServiceFactory()) {
-						//noinspection unchecked
-						var options = (Provider<ClasspathGroupService.Options>) task.getInputs().getProperties().get("LoomClassPathGroups");
+						var options = (ClasspathGroupService.Options) task.getInputs().getProperties().get("LoomClassPathGroups");
 						ClasspathGroupService classpathGroupService = serviceFactory.get(options);
 
 						if (classpathGroupService.hasGroups()) {
